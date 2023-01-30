@@ -57,6 +57,8 @@ https://www.mouser.ca/ProductDetail/Hirose-Connector/BM14B08-30DP-04V53?qs=QRVci
 
 https://jlcpcb.com/partdetail/XkbConnectivity-X0400FVS_30LPV01/C2880693 ???
 
+Has 4 rows and 5 columns 
+
 
 ## Power Supply 
 
