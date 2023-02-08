@@ -7,7 +7,7 @@
   (paper "A4")
   (layers
     (0 "F.Cu" signal)
-    (31 "B.Cu" signal)
+    (31 "B.Cu" power)
     (32 "B.Adhes" user "B.Adhesive")
     (33 "F.Adhes" user "F.Adhesive")
     (34 "B.Paste" user)
@@ -38,6 +38,19 @@
   )
 
   (setup
+    (stackup
+      (layer "F.SilkS" (type "Top Silk Screen"))
+      (layer "F.Paste" (type "Top Solder Paste"))
+      (layer "F.Mask" (type "Top Solder Mask") (thickness 0.01))
+      (layer "F.Cu" (type "copper") (thickness 0.035))
+      (layer "dielectric 1" (type "core") (thickness 1.51) (material "FR4") (epsilon_r 4.5) (loss_tangent 0.02))
+      (layer "B.Cu" (type "copper") (thickness 0.035))
+      (layer "B.Mask" (type "Bottom Solder Mask") (thickness 0.01))
+      (layer "B.Paste" (type "Bottom Solder Paste"))
+      (layer "B.SilkS" (type "Bottom Silk Screen"))
+      (copper_finish "None")
+      (dielectric_constraints no)
+    )
     (pad_to_mask_clearance 0)
     (pcbplotparams
       (layerselection 0x00010fc_ffffffff)
@@ -159,7 +172,7 @@
 
   (footprint "Package_QFP:LQFP-64_10x10mm_P0.5mm" (layer "F.Cu")
     (tedit 5D9F72AF) (tstamp 170a5253-8ab7-47f1-90fb-0f3a4d3cd555)
-    (at 166.5384 98.1672)
+    (at 194.9704 91.186)
     (descr "LQFP, 64 Pin (https://www.analog.com/media/en/technical-documentation/data-sheets/ad7606_7606-6_7606-4.pdf), generated with kicad-footprint-generator ipc_gullwing_generator.py")
     (tags "LQFP QFP")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -353,7 +366,7 @@
 
   (footprint "Resistor_SMD:R_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 1f6c248b-954a-4213-84b7-6c2659b37baa)
-    (at 161.5184 109.8772)
+    (at 81.2858 108.1797)
     (descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -395,7 +408,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 26b9964c-bc82-4a9f-8343-074275eb4bf9)
-    (at 151.9384 116.2172)
+    (at 71.7058 114.5197)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -437,7 +450,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 2c5408da-03b0-42bc-b8ba-f73cd8cac4cb)
-    (at 151.9384 113.2072)
+    (at 71.7058 111.5097)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -479,7 +492,7 @@
 
   (footprint "Inductor_SMD:L_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEF0) (tstamp 2e52bcb0-2616-489f-8daa-52a205e3d5ae)
-    (at 142.1384 105.8672)
+    (at 61.9058 104.1697)
     (descr "Inductor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 80, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "inductor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -521,7 +534,7 @@
 
   (footprint "Connector_JST:JST_XH_S7B-XH-A_1x07_P2.50mm_Horizontal" (layer "F.Cu")
     (tedit 5C281475) (tstamp 3934f0db-3c9c-4971-83aa-9858aabce54d)
-    (at 150.7384 80.7172)
+    (at 70.5058 79.0197)
     (descr "JST XH series connector, S7B-XH-A (http://www.jst-mfg.com/product/pdf/eng/eXH.pdf), generated with kicad-footprint-generator")
     (tags "connector JST XH horizontal")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -620,7 +633,7 @@
 
   (footprint "Oscillator:Oscillator_SMD_SeikoEpson_SG8002LB-4Pin_5.0x3.2mm" (layer "F.Cu")
     (tedit 58CD3345) (tstamp 3b289f84-1b11-42ff-bb31-b6355230e942)
-    (at 134.0884 117.4972)
+    (at 53.8558 115.7997)
     (descr "SMD Crystal Oscillator Seiko Epson SG-8002LB https://support.epson.biz/td/api/doc_check.php?mode=dl&lang=en&Parts=SG-8002DC, 5.0x3.2mm^2 package")
     (tags "SMD SMT crystal oscillator")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -679,7 +692,7 @@
 
   (footprint "Resistor_SMD:R_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 45546b5d-6a16-4e00-bc5a-d410ff41bf95)
-    (at 195.6684 81.8772)
+    (at 115.4358 80.1797)
     (descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -721,7 +734,7 @@
 
   (footprint "Resistor_SMD:R_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 5cf7855b-89f0-4170-ae44-a042cd186a39)
-    (at 180.4184 92.1972)
+    (at 100.1858 90.4997)
     (descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -763,7 +776,7 @@
 
   (footprint "Resistor_SMD:R_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 6a10943b-dc04-4f92-8f1e-cfd1c06583a4)
-    (at 175.9684 95.2972)
+    (at 95.7358 93.5997)
     (descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -805,7 +818,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 89159efc-4722-4d75-9d64-1f67ef87c26b)
-    (at 156.3884 113.2072)
+    (at 191.516 82.8294)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -847,7 +860,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 8af36b9b-7071-48b0-bf6b-3ea4188f9b6f)
-    (at 185.9884 83.3672)
+    (at 105.7558 81.6697)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -889,7 +902,7 @@
 
   (footprint "Connector_JST:JST_XH_S9B-XH-A-1_1x09_P2.50mm_Horizontal" (layer "F.Cu")
     (tedit 5C281477) (tstamp 8cb8d5de-39bb-445c-9351-2c442ece4714)
-    (at 123.7884 82.3172)
+    (at 43.5558 80.6197)
     (descr "JST XH series connector, S9B-XH-A-1 (http://www.jst-mfg.com/product/pdf/eng/eXH.pdf), generated with kicad-footprint-generator")
     (tags "connector JST XH horizontal")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -998,7 +1011,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 92e13bb3-7b6a-4568-9aec-8e28d9f155bb)
-    (at 142.0884 108.7472)
+    (at 61.8558 107.0497)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1040,7 +1053,7 @@
 
   (footprint "Button_Switch_SMD:SW_DIP_SPSTx01_Slide_6.7x4.1mm_W6.73mm_P2.54mm_LowProfile_JPin" (layer "F.Cu")
     (tedit 5A4E1404) (tstamp 95bd46dc-bea3-4a90-a7e6-4b1dcd38a229)
-    (at 125.5384 117.7972)
+    (at 45.3058 116.0997)
     (descr "SMD 1x-dip-switch SPST , Slide, row spacing 6.73 mm (264 mils), body size 6.7x4.1mm (see e.g. https://www.ctscorp.com/wp-content/uploads/219.pdf), SMD, LowProfile, JPin")
     (tags "SMD DIP Switch SPST Slide 6.73mm 264mil SMD LowProfile JPin")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1125,7 +1138,7 @@
 
   (footprint "Resistor_SMD:R_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp 9e644ff2-9c8a-4226-adfe-01e965f6a7db)
-    (at 165.9284 109.8772)
+    (at 85.6958 108.1797)
     (descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1167,7 +1180,7 @@
 
   (footprint "Resistor_SMD:R_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp a12142de-823b-4c19-b418-06d8cd659420)
-    (at 180.4184 89.2472)
+    (at 100.1858 87.5497)
     (descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1209,7 +1222,7 @@
 
   (footprint "Resistor_SMD:R_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp a27915c4-a6d8-42aa-aaaa-667a6d849449)
-    (at 151.9184 119.1972)
+    (at 71.6858 117.4997)
     (descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1251,7 +1264,7 @@
 
   (footprint "LED_SMD:LED_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEF1) (tstamp a9aaf0e1-0409-4172-a50c-81c74d2c24c9)
-    (at 175.9084 89.2922)
+    (at 95.6758 87.5947)
     (descr "LED SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "LED")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1295,7 +1308,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp b2cacd3d-2cb1-42ae-8f25-67782da31d31)
-    (at 175.9884 92.3172)
+    (at 95.7558 90.6197)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1337,7 +1350,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp b59f9c23-66f4-4fb3-83f9-62cac3e5e8c9)
-    (at 185.9884 86.3772)
+    (at 105.7558 84.6797)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1379,7 +1392,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp bd8c58e5-da84-4496-b4fd-6c0ec8e00737)
-    (at 190.4384 83.3672)
+    (at 128.4376 83.312)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1421,7 +1434,7 @@
 
   (footprint "Resistor_SMD:R_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp c2628cde-6544-4a8a-b734-71847ed86645)
-    (at 161.5184 112.8272)
+    (at 81.2858 111.1297)
     (descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1463,7 +1476,7 @@
 
   (footprint "Connector_JST:JST_EH_S6B-EH_1x06_P2.50mm_Horizontal" (layer "F.Cu")
     (tedit 5C281425) (tstamp c46f9d3f-70a6-486d-b900-d388af5c1f52)
-    (at 123.8384 112.2172)
+    (at 43.6058 110.5197)
     (descr "JST EH series connector, S6B-EH (http://www.jst-mfg.com/product/pdf/eng/eEH.pdf), generated with kicad-footprint-generator")
     (tags "connector JST EH horizontal")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1575,7 +1588,7 @@
 
   (footprint "Connector_USB:USB_C_Plug_Molex_105444" (layer "F.Cu")
     (tedit 5A142044) (tstamp c847384b-32a1-4bc9-9002-f7d12831325a)
-    (at 188.6134 79.3772)
+    (at 85.1408 115.0152)
     (descr "Universal Serial Bus (USB) Shielded I/O Plug, Type C, Right Angle, Surface Mount, http://www.molex.com/pdm_docs/sd/1054440001_sd.pdf")
     (tags "USB Type-C Plug Edge Mount")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1668,7 +1681,7 @@
 
   (footprint "Package_TO_SOT_SMD:SOT-223-3_TabPin2" (layer "F.Cu")
     (tedit 5A02FF57) (tstamp c89c1206-f41b-4787-b918-5ecf11c5ce79)
-    (at 144.7884 115.8272)
+    (at 64.5558 114.1297)
     (descr "module CMS SOT223 4 pins")
     (tags "CMS SOT")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1717,7 +1730,7 @@
 
   (footprint "Resistor_SMD:R_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp caad0e96-3175-47af-bef1-db29390ea822)
-    (at 165.9684 106.8672)
+    (at 85.7358 105.1697)
     (descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1759,7 +1772,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp d12af147-3c21-45f5-9f3a-75294f83ca55)
-    (at 195.6884 78.8972)
+    (at 115.4558 77.1997)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1801,7 +1814,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp d5cbbbdc-7ea4-4df7-adc3-e022b07be4cf)
-    (at 171.4384 89.2772)
+    (at 91.2058 87.5797)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1843,7 +1856,7 @@
 
   (footprint "Diode_SMD:D_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEF0) (tstamp d7b613b3-fe20-47b4-967b-47288a716248)
-    (at 144.8562 125.6284)
+    (at 64.6236 123.9309)
     (descr "Diode SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "diode")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1887,7 +1900,7 @@
 
   (footprint "Connector_JST:JST_EH_S4B-EH_1x04_P2.50mm_Horizontal" (layer "F.Cu")
     (tedit 5C281425) (tstamp daa27c0e-e014-453f-ac59-57154b3396bb)
-    (at 148.2884 109.0472)
+    (at 68.0558 107.3497)
     (descr "JST EH series connector, S4B-EH (http://www.jst-mfg.com/product/pdf/eng/eEH.pdf), generated with kicad-footprint-generator")
     (tags "connector JST EH horizontal")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1981,7 +1994,7 @@
 
   (footprint "Resistor_SMD:R_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp e024aa69-e9b2-4a56-83d1-19844c221158)
-    (at 156.3684 116.1872)
+    (at 76.1358 114.4897)
     (descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -1992,7 +2005,7 @@
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 1089f4f8-097f-441b-9cce-dd211a475962)
     )
-    (fp_text value "1k5" (at 0 1.65) (layer "F.Fab")
+    (fp_text value "130" (at 0 1.65) (layer "F.Fab")
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp c745a6ea-afc0-4e92-baeb-fd5f0ce471f4)
     )
@@ -2023,7 +2036,7 @@
 
   (footprint "Button_Switch_SMD:SW_SPDT_PCM12" (layer "F.Cu")
     (tedit 5A02FC95) (tstamp e4572cb8-b538-4630-a79d-c2ab9d1215db)
-    (at 151.9682 125.5268)
+    (at 71.7356 123.8293)
     (descr "Ultraminiature Surface Mount Slide Switch, right-angle, https://www.ckswitches.com/media/1424/pcm.pdf")
     (property "Sheetfile" "EV1.kicad_sch")
     (property "Sheetname" "")
@@ -2090,7 +2103,7 @@
 
   (footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
     (tedit 5F68FEEE) (tstamp e49dface-b5e1-4ba8-be14-0b17e5ed1273)
-    (at 161.5384 106.8972)
+    (at 81.3058 105.1997)
     (descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -2132,7 +2145,7 @@
 
   (footprint "Connector_JST:JST_XH_S8B-XH-A-1_1x08_P2.50mm_Horizontal" (layer "F.Cu")
     (tedit 5C281477) (tstamp e9bd1993-3ffa-4fed-bc3b-b81c7ce04fb5)
-    (at 123.7884 95.8672)
+    (at 43.5558 94.1697)
     (descr "JST XH series connector, S8B-XH-A-1 (http://www.jst-mfg.com/product/pdf/eng/eXH.pdf), generated with kicad-footprint-generator")
     (tags "connector JST XH horizontal")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -2235,7 +2248,7 @@
 
   (footprint "Connector_JST:JST_EH_S4B-EH_1x04_P2.50mm_Horizontal" (layer "F.Cu")
     (tedit 5C281425) (tstamp eb635dc7-a6ce-4b99-9227-bd00e34934c5)
-    (at 172.7384 85.1172)
+    (at 92.5058 83.4197)
     (descr "JST EH series connector, S4B-EH (http://www.jst-mfg.com/product/pdf/eng/eEH.pdf), generated with kicad-footprint-generator")
     (tags "connector JST EH horizontal")
     (property "Sheetfile" "EV1.kicad_sch")
@@ -2329,7 +2342,7 @@
 
   (footprint "Connector_JST:JST_EH_S4B-EH_1x04_P2.50mm_Horizontal" (layer "F.Cu")
     (tedit 5C281425) (tstamp f72d0c6d-e4cb-4aac-b399-31771b809c9d)
-    (at 148.2884 98.6672)
+    (at 68.0558 96.9697)
     (descr "JST EH series connector, S4B-EH (http://www.jst-mfg.com/product/pdf/eng/eEH.pdf), generated with kicad-footprint-generator")
     (tags "connector JST EH horizontal")
     (property "Sheetfile" "EV1.kicad_sch")
