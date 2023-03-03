@@ -1,0 +1,6 @@
+.vscode
+
+build
+
+net/shared_inc
+wifi_creds.hh
