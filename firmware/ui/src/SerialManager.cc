@@ -1,23 +1,24 @@
 #include "SerialManager.hh"
 #include "stm32f4xx_hal_uart.h"
 
-SerialManager::SerialManager(UART_HandleTypeDef *uart_handler) :
+SerialManager::SerialManager(UART_HandleTypeDef *uart_handler,
+                             const uint16_t rx_buffer_sz,
+                             const uint16_t rx_ring_sz) :
     uart(uart_handler),
+    rx_buffer_sz(rx_buffer_sz),
+    rx_ring(rx_ring_sz),
     rx_parsed_packets(10),
-    tx_is_free(true),
+    rx_buffer(nullptr),
+    rx_packet(nullptr),
     has_rx_data(false),
     tx_buffer(nullptr),
-    rx_buffer(nullptr),
-    rx_ring(512),
-    rx_packet(nullptr),
     tx_buffer_sz(0),
-    rx_buffer_sz(0)
+    tx_is_free(true)
 {
-    // THINK move to userinterface?
-    // TODO remove magic number
-
-    // Start receiving
-    StartRTIRx(256);
+    // write an error?
+    if (this->rx_buffer_sz == 0) this->rx_buffer_sz = 1;
+    this->rx_buffer = new uint8_t[this->rx_buffer_sz]{0};
+    StartRxI();
 }
 
 SerialManager::~SerialManager()
@@ -72,61 +73,95 @@ bool SerialManager::TxWatchDog(const uint32_t current_time)
 
 void SerialManager::RxEventTrigger(const uint32_t sz)
 {
-    has_rx_data = true;
-
     // Transfer to ring buff
+    uint8_t data;
+    has_rx_data = true;
     for (uint16_t i = 0; i < sz; i++)
     {
         rx_ring.Write(rx_buffer[i]);
     }
+
+    StartRxI();
 }
 
 SerialManager::SerialStatus
 SerialManager::ReadSerialInterrupt(const uint32_t current_time)
 {
-    if (!has_rx_data) return SerialStatus::EMPTY;
+    SerialManager::SerialStatus status = SerialStatus::EMPTY;
+
+    if (!has_rx_data) return status;
+    uint16_t available_bytes = rx_ring.AvailableBytes();
 
     // Read from the ring buff
     uint8_t data = 0;
     bool is_end = false;
-    // Find the start
-    while (data != 0xFF && !is_end)
+
+    if (rx_packet == nullptr)
     {
-        // Read data into the data buffer
-        rx_ring.Read(data, is_end);
+        if (available_bytes < 4)
+        {
+            has_rx_data = false;
+            return status;
+        }
+
+        // Read the next byte if it is the start of a packet then continue on
+        if (rx_ring.Read() != 0xFF)
+        {
+            has_rx_data = false;
+            return SerialStatus::ERROR;
+        }
+
+        // Found the start, so create a packet
+        rx_packet = new Packet();
+
+        // Get the next 3 bytes and put them into the packet
+        rx_packet->SetData(rx_ring.Read(), 0, 8);
+        rx_packet->SetData(rx_ring.Read(), 8, 8);
+        rx_packet->SetData(rx_ring.Read(), 16, 8);
+
+        // Move to the vector of packets
+        if (rx_packet->GetData(0, 6) == Packet::PacketTypes::NetworkDebug)
+        {
+            delete rx_packet;
+            rx_packet = nullptr;
+            has_rx_data = false;
+            return SerialManager::SerialStatus::EMPTY;
+        }
+
+        status = SerialStatus::PARTIAL;
+    }
+    else
+    {
+        // FIX this can cause out of memory, we should hard-cap the packet size
+
+        // Get the length of the incoming message
+        uint16_t data_length = rx_packet->GetData(14, 10);
+
+        // Read n bytes from the ring to the packet
+        for (uint16_t i = 0; i < available_bytes; i++)
+        {
+            if (rx_packet->SizeInBytes() > 256)
+            {
+                has_rx_data = false;
+                return SerialStatus::ERROR;
+            }
+
+            rx_packet->SetData(rx_ring.Read(), 24U + i * 8U, 8U);
+        }
+
+        // FIX this moves the packet before it is fully complete sometimes?
+        // TODO add functionality to keep track of bytes in use.
+        // if (data_length == rx_packet)
+        rx_parsed_packets.push_back(std::move(rx_packet));
+        rx_packet = nullptr;
+        status = SerialStatus::OK;
     }
 
-    // Couldn't find the start of the message
-    if (is_end && data != 0xFF) return SerialStatus::ERROR;
-
-    // Found the start, so create a packet
-    rx_packet = new Packet();
-
-    // Get the next 3 bytes and put them into the packet
-    rx_packet->SetData(rx_ring.Read(), 0, 8);
-    rx_packet->SetData(rx_ring.Read(), 8, 8);
-    rx_packet->SetData(rx_ring.Read(), 16, 8);
-
-    // Get the length of the incoming message
-    uint16_t data_length = rx_packet->GetData(14, 10);
-
-    // Move read n bytes from the ring to the packet
-    for (uint16_t i = 0; i < data_length; i++)
-    {
-        rx_packet->SetData(rx_ring.Read(), 24 + i * 8, 8);
-    }
-
-    // Move to the vector of packets
-    rx_parsed_packets.push_back(std::move(rx_packet));
-
-    rx_packet = nullptr;
-
-    StartRTIRx(256);
-
-    return SerialManager::SerialStatus::OK;
+    has_rx_data = false;
+    return status;
 }
 
-
+#if 0
 // TODO notes
 // Note - This is generally not used but is he for legacy purposes, will be
 // optimized out by the compiler.
@@ -226,6 +261,7 @@ bool SerialManager::RxWatchDog(const uint32_t current_time)
     StartRx(Start_Bytes, current_time);
     return true;
 }
+#endif
 
 Vector<Packet*>& SerialManager::GetPackets()
 {
@@ -473,22 +509,12 @@ void SerialManager::StartRx(const uint16_t num_bytes,
     HAL_UART_Receive_IT(uart, rx_buffer, rx_buffer_sz);
 }
 
-
-// TODO do I need to pass the num_bytes?
 // Maybe should do a check to make sure only one type of rx interrupt is used?
-void SerialManager::StartRTIRx(const uint16_t num_bytes)
+void SerialManager::StartRxI()
 {
-    // Delete the current rx_buffer
-    if (rx_buffer) delete [] rx_buffer;
-
-    // Standard packet size
-    rx_buffer_sz = num_bytes;
-
-    // Create a new buffer
-    rx_buffer = new uint8_t[rx_buffer_sz];
-
-    // Reset the rx flag
-    has_rx_data = false;
+    // Empty the buffer
+    for (uint16_t i = 0; i < rx_buffer_sz; i++)
+        rx_buffer[i] = 0;
 
     // Begin the receive IT
     HAL_UARTEx_ReceiveToIdle_IT(uart, rx_buffer, rx_buffer_sz);

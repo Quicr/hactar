@@ -29,7 +29,6 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32.h"
 
-void EnablePortIf(GPIO_TypeDef* port);
 void Error_Handler(void);
 
 // THINK do I need extern?

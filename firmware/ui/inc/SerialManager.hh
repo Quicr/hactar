@@ -30,7 +30,9 @@ public:
         Packet packet;
     } SerialMessage;
 
-    SerialManager(UART_HandleTypeDef* uart_handler);
+    SerialManager(UART_HandleTypeDef* uart_handler,
+                  const uint16_t rx_buffer_sz = 1,
+                  const uint16_t rx_ring_sz = 256);
     ~SerialManager();
 
     SerialMessage ReadSerial(uint16_t max_size, uint32_t timeout);
@@ -48,7 +50,7 @@ private:
     bool TxWatchDog(const uint32_t current_time);
     bool RxWatchDog(const uint32_t current_time);
     void StartRx(const uint16_t num_bytes, const uint32_t current_time);
-    void StartRTIRx(const uint16_t num_bytes);
+    void StartRxI();
 
     UART_HandleTypeDef *uart;
     volatile bool tx_is_free;
@@ -56,6 +58,7 @@ private:
 
     uint16_t tx_buffer_sz;
     uint32_t tx_watchdog_timeout;
+
     Vector<Packet*> rx_parsed_packets;
     volatile bool has_rx_data;
     uint8_t* rx_buffer;
