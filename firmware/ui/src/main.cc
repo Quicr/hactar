@@ -107,17 +107,18 @@ int main(void)
         { Q10_ROW_7_GPIO_PORT, Q10_ROW_7_PIN },
     };
 
-    keyboard = new Q10Keyboard(col_pins, row_pins, 500, 100);
+    // Initialize the keyboard timer
+    KeyboardTimerInit();
+
+    // Create the keyboard object
+    keyboard = new Q10Keyboard(col_pins, row_pins, 500, 100, &htim2);
+
+    // Initialize the keyboard
     keyboard->Begin();
 
     net_layer = new SerialManager(&huart2);
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer);
-
-    // Start the keyboard timer
-    // THINK move this into the keyboard init? To make it fool proof?
-    KeyboardTimerInit();
-    HAL_TIM_Base_Start_IT(&htim2);
 
     while (1)
     {
@@ -324,6 +325,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
+        // TODO remove
         HAL_GPIO_TogglePin(Q10_TIMER_LED_PORT, Q10_TIMER_LED_PIN);
         // Poll the keyboard and have the keys saved in the internal rx_buffer
         keyboard->Read();
@@ -369,23 +371,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 #endif
 
 // TODO move to helper function
-void EnablePortIf(GPIO_TypeDef *port)
-{
-    if (port == GPIOA && !(RCC->AHB1ENR & RCC_AHB1ENR_GPIOAEN))
-    {
-        __HAL_RCC_GPIOA_CLK_ENABLE();
-    }
-
-    if (port == GPIOB && !(RCC->AHB1ENR & RCC_AHB1ENR_GPIOBEN))
-    {
-        __HAL_RCC_GPIOB_CLK_ENABLE();
-    }
-
-    if (port == GPIOC && !(RCC->AHB1ENR & RCC_AHB1ENR_GPIOCEN))
-    {
-        __HAL_RCC_GPIOC_CLK_ENABLE();
-    }
-}
 // TODO add error messaging
 /**
  * @brief  This function is executed in case of error occurrence.

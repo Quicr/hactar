@@ -1,6 +1,6 @@
 #include <algorithm>
+#include "Helper.h"
 #include "Screen.hh"
-#include "main.hh"
 #include "RingBuffer.hh"
 
 #define DELAY HAL_MAX_DELAY
@@ -30,10 +30,7 @@ Screen::~Screen()
 void Screen::Begin()
 {
     // Ensure the spi is initialize at this point
-    if (HAL_SPI_Init(spi_handle) != HAL_OK)
-    {
-        Error_Handler();
-    }
+    if (spi_handle == nullptr) return;
 
     // Setup GPIO for the screen.
     GPIO_InitTypeDef GPIO_InitStruct = {0};

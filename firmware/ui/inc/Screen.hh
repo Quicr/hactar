@@ -148,7 +148,7 @@ private:
               uint16_t &y_end);
 
     // Variables
-    SPI_HandleTypeDef *spi_handle;
+    SPI_HandleTypeDef *spi_handle = nullptr;
     port_pin cs;
     port_pin dc;
     port_pin rst;

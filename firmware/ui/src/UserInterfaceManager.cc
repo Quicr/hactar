@@ -124,6 +124,7 @@ void UserInterfaceManager::GetSerialMessages()
     // Get the packets
     Vector<Packet*>& packets = net_layer->GetPackets();
 
+    // Handle incoming packets
     for (uint32_t i = 0; i < packets.size(); ++i)
     {
         // Write a message to the screen

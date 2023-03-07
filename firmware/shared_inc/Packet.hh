@@ -22,8 +22,12 @@ public:
     enum PacketTypes
     {
         NetworkDebug = 1,
+        NetworkMessageSentOK,
+        NetworkMessageSentError,
         UIDebug,
         UIMessage,
+        UIMessageSentOK,
+        UIMessageSentError
     };
 
     // TODO important to have different data lengths for each type..
