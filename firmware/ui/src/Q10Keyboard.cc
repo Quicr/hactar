@@ -70,6 +70,7 @@ void Q10Keyboard::Begin()
         GPIO_InitStruct.Pin = row_pins[j].pin;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
         GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
         HAL_GPIO_Init(row_pins[j].port, &GPIO_InitStruct);
     }
 
@@ -203,11 +204,8 @@ void Q10Keyboard::ReadKeys()
         }
     }
     // Disable the last column
-    // HAL_GPIO_WritePin(col_pins[Q10_COLS-1].port,
-    //     col_pins[Q10_COLS-1].pin, GPIO_PIN_RESET);
-
-    // Set all of the columns high so we can get an interrupt from it
-    SetAllColumns(GPIO_PIN_SET);
+    HAL_GPIO_WritePin(col_pins[Q10_COLS-1].port,
+        col_pins[Q10_COLS-1].pin, GPIO_PIN_RESET);
 
     // If both left shift and right shift are on then we can toggle shift lock
     // Or if alt and a shift is pressed

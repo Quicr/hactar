@@ -90,7 +90,7 @@ public:
 
         perform_push_back_resize();
 
-        array[_size++] = std::move(data);
+        array[_size++] = data;
 
         return true;
     }
@@ -156,12 +156,12 @@ public:
         return array[idx];
     }
 
-    T front() const
+    T& front() const
     {
         return array[0];
     }
 
-    T back() const
+    T& back() const
     {
         return array[_size - 1];
     }

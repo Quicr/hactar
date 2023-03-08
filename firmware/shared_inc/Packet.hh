@@ -27,7 +27,9 @@ public:
         UIDebug,
         UIMessage,
         UIMessageSentOK,
-        UIMessageSentError
+        UIMessageSentError,
+        ReceiveOk,
+        ReceiveError
     };
 
     // TODO important to have different data lengths for each type..

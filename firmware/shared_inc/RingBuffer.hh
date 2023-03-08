@@ -5,7 +5,7 @@ class RingBuffer
 {
 public:
     RingBuffer(const unsigned short size) :
-        size(size), read_idx(0), write_idx(0), available_bytes(0)
+        size(size), read_idx(0), write_idx(0), available_bytes(0), buffer(nullptr)
     {
         // Don't allow a zero for buffer size
         if (this->size == 0) this->size = 1;

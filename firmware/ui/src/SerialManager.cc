@@ -10,9 +10,10 @@ SerialManager::SerialManager(UART_HandleTypeDef *uart_handler,
     rx_parsed_packets(10),
     rx_buffer(nullptr),
     rx_packet(nullptr),
-    has_rx_data(false),
+    rx_packet_timeout(0),
     tx_buffer(nullptr),
     tx_buffer_sz(0),
+    tx_watchdog_timeout(0),
     tx_is_free(true)
 {
     // write an error?
@@ -57,7 +58,7 @@ SerialManager::SerialStatus SerialManager::WriteSerialInterrupt(
 
     HAL_UART_Transmit_IT(uart, tx_buffer, tx_buffer_sz);
 
-    rx_watchdog_timeout = current_time + 10000;
+    tx_watchdog_timeout = current_time + 10000;
 
     return SerialStatus::OK;
 }
@@ -74,91 +75,78 @@ bool SerialManager::TxWatchDog(const uint32_t current_time)
 void SerialManager::RxEventTrigger(const uint32_t sz)
 {
     // Transfer to ring buff
-    uint8_t data;
-    has_rx_data = true;
     for (uint16_t i = 0; i < sz; i++)
-    {
         rx_ring.Write(rx_buffer[i]);
-    }
 
+    // Start waiting for transmissions
     StartRxI();
 }
 
 SerialManager::SerialStatus
 SerialManager::ReadSerialInterrupt(const uint32_t current_time)
 {
-    SerialManager::SerialStatus status = SerialStatus::EMPTY;
+    if (rx_packet != nullptr && current_time > rx_packet_timeout)
+    {
+        delete rx_packet;
+        rx_packet == nullptr;
+        return SerialStatus::TIMEOUT;
+    }
 
-    if (!has_rx_data) return status;
-    uint16_t available_bytes = rx_ring.AvailableBytes();
-
-    // Read from the ring buff
-    uint8_t data = 0;
-    bool is_end = false;
+    if (!rx_ring.AvailableBytes()) return SerialStatus::EMPTY;
 
     if (rx_packet == nullptr)
     {
-        if (available_bytes < 4)
-        {
-            has_rx_data = false;
-            return status;
-        }
+        // Enough bytes to determine the start of a packet and
+        // packet id, type, and length
+        if (rx_ring.AvailableBytes() < 4) return SerialStatus::EMPTY;
 
         // Read the next byte if it is the start of a packet then continue on
-        if (rx_ring.Read() != 0xFF)
-        {
-            has_rx_data = false;
-            return SerialStatus::ERROR;
-        }
+        if (rx_ring.Read() != 0xFF) return SerialStatus::ERROR;
 
         // Found the start, so create a packet
         rx_packet = new Packet();
+
+        // Timeout the packet in 5 seconds after it has started.
+        rx_packet_timeout = current_time + 5000;
 
         // Get the next 3 bytes and put them into the packet
         rx_packet->SetData(rx_ring.Read(), 0, 8);
         rx_packet->SetData(rx_ring.Read(), 8, 8);
         rx_packet->SetData(rx_ring.Read(), 16, 8);
 
-        // Move to the vector of packets
         if (rx_packet->GetData(0, 6) == Packet::PacketTypes::NetworkDebug)
         {
             delete rx_packet;
             rx_packet = nullptr;
-            has_rx_data = false;
             return SerialManager::SerialStatus::EMPTY;
         }
-
-        status = SerialStatus::PARTIAL;
     }
-    else
+
+    // Get the length of the incoming message
+    uint16_t data_length = rx_packet->GetData(14U, 10U);
+
+    // Read n bytes from the ring to the packet
+    while (rx_ring.AvailableBytes())
     {
-        // FIX this can cause out of memory, we should hard-cap the packet size
+        if (rx_packet->SizeInBytes() > 256U) return SerialStatus::TIMEOUT;
 
-        // Get the length of the incoming message
-        uint16_t data_length = rx_packet->GetData(14, 10);
+        rx_packet->AppendData(rx_ring.Read(), 8U);
 
-        // Read n bytes from the ring to the packet
-        for (uint16_t i = 0; i < available_bytes; i++)
+        if (data_length+3 == (rx_packet->BitsUsed() / 8U))
         {
-            if (rx_packet->SizeInBytes() > 256)
+            for (uint16_t i = 0; i < data_length; i++)
             {
-                has_rx_data = false;
-                return SerialStatus::ERROR;
+                uint8_t test = rx_packet->GetData(i * 8, 8);
+                uint8_t test2= test;
             }
-
-            rx_packet->SetData(rx_ring.Read(), 24U + i * 8U, 8U);
+            rx_parsed_packets.push_back(std::move(rx_packet));
+            rx_packet = nullptr;
+            return SerialStatus::OK;
         }
-
-        // FIX this moves the packet before it is fully complete sometimes?
-        // TODO add functionality to keep track of bytes in use.
-        // if (data_length == rx_packet)
-        rx_parsed_packets.push_back(std::move(rx_packet));
-        rx_packet = nullptr;
-        status = SerialStatus::OK;
     }
 
-    has_rx_data = false;
-    return status;
+    // Not a full transmission, so we'll wait
+    return SerialStatus::PARTIAL;
 }
 
 #if 0
@@ -483,6 +471,7 @@ SerialManager::SerialStatus SerialManager::WriteSerial(const Packet& packet,
 
 
 /* Private functions */
+#if 0
 void SerialManager::StartRx(const uint16_t num_bytes,
                             const uint32_t current_time)
 {
@@ -508,6 +497,7 @@ void SerialManager::StartRx(const uint16_t num_bytes,
     // Begin the receive IT
     HAL_UART_Receive_IT(uart, rx_buffer, rx_buffer_sz);
 }
+#endif
 
 // Maybe should do a check to make sure only one type of rx interrupt is used?
 void SerialManager::StartRxI()

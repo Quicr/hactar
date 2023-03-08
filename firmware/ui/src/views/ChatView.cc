@@ -129,8 +129,8 @@ bool ChatView::HandleInput()
         // Set the type
         packet.SetData(Packet::PacketTypes::UIMessage, 0, 6);
 
-        // TODO ids
-        packet.SetData(3, 6, 8);
+        // Set the id
+        packet.SetData(packet_id++, 6, 8);
 
         // Set the data length
         packet.SetData(msg.Length(), 14, 10);
