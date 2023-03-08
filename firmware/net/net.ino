@@ -28,7 +28,7 @@ unsigned long incoming_serial_timeout = 0;
 
 void HandleIncomingNetwork()
 {
-    if (current_time < incoming_network_timeout) return;
+    // if (current_time < incoming_network_timeout) return;
 
     // Get the packet from the client
     Packet recv_packet = client.GetMessage();
@@ -71,19 +71,20 @@ void HandleIncomingNetwork()
 
 void HandleOutgoingNetwork()
 {
-    if (current_time < outgoing_network_timeout) return;
-    outgoing_network_timeout = current_time + 5000;
+    // if (current_time < outgoing_network_timeout) return;
+    // outgoing_network_timeout = current_time + 5000;
     client.SendMessages();
 
 }
 
 void HandleIncomingSerial()
 {
-    if (current_time < incoming_serial_timeout) return;
-    incoming_serial_timeout = current_time + 1000;
 
     // If there are no messages just skip it then
     if (!Serial.available()) return;
+
+    // Serial is available, so lets give it some time to finish the transmission
+    delay(200);
 
     Packet incoming_packet(1);
     unsigned int offset = 0;
@@ -93,14 +94,22 @@ void HandleIncomingSerial()
         offset += Byte_Size;
     }
 
+    // Get the id from the packet
+    uint16_t packet_id = incoming_packet.GetData(6, 8);
+
     client.EnqueuePacket(incoming_packet);
+
+    // Assuming everything is successful then we will say ok we got it
+    Packet confirm_packet(1);
+    confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
+    confirm_packet.SetData(1, 6, 8);
+    confirm_packet.SetData(1, 14, 10);
+    confirm_packet.SetData(packet_id, 0, 8);
+    outgoing_serial.push_back(std::move(confirm_packet));
 }
 
 void HandleOutgoingSerial()
 {
-    if (current_time < outgoing_serial_timeout) return;
-    outgoing_serial_timeout = current_time + 1000;
-
     if (!Serial.availableForWrite()) return;
 
     // Print the vector and clear it for now
@@ -115,8 +124,14 @@ void HandleOutgoingSerial()
         Serial.write(0xFF);
         for (unsigned int j = 0; j < size; ++j)
         {
+            while (!Serial.availableForWrite())
+            {
+                delay(1);
+            }
             Serial.write((unsigned char)outgoing_serial[i].GetData((j * Byte_Size), Byte_Size));
         }
+
+        delay(100);
     }
 
     outgoing_serial.clear();

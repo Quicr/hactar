@@ -31,7 +31,7 @@ public:
     } SerialMessage;
 
     SerialManager(UART_HandleTypeDef* uart_handler,
-                  const uint16_t rx_buffer_sz = 1,
+                  const uint16_t rx_buffer_sz = 32,
                   const uint16_t rx_ring_sz = 256);
     ~SerialManager();
 
@@ -53,18 +53,24 @@ private:
     void StartRxI();
 
     UART_HandleTypeDef *uart;
-    volatile bool tx_is_free;
-    uint8_t* tx_buffer;
 
+    // Rx
+    uint16_t rx_buffer_sz;
+    RingBuffer<uint8_t> rx_ring;
+    Vector<Packet*> rx_parsed_packets;
+    uint8_t* rx_buffer;
+    Packet* rx_packet;
+    uint32_t rx_packet_timeout;
+
+    // Tx
+    uint8_t* tx_buffer;
     uint16_t tx_buffer_sz;
     uint32_t tx_watchdog_timeout;
+    volatile bool tx_is_free;
 
-    Vector<Packet*> rx_parsed_packets;
-    volatile bool has_rx_data;
-    uint8_t* rx_buffer;
-    RingBuffer<uint8_t> rx_ring;
-    uint16_t rx_buffer_sz;
-    Packet* rx_packet;
-    uint32_t rx_packet_offset;
+    // Legacy
+    #if 0
+    bool has_rx_data;
     uint32_t rx_watchdog_timeout;
+    #endif
 };
