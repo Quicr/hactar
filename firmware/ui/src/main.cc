@@ -198,6 +198,13 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(Q10_TIMER_LED_PORT, &GPIO_InitStruct);
 
+    HAL_GPIO_WritePin(TEST_LED_PORT, TEST_LED_PIN, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = TEST_LED_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(TEST_LED_PORT, &GPIO_InitStruct);
+
     // GPIO_InitStruct.Pin = USART2_TX_LED_PIN;
     // GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     // GPIO_InitStruct.Pull = GPIO_NOPULL;

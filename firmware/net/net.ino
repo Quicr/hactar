@@ -86,7 +86,7 @@ void HandleIncomingSerial()
     // Serial is available, so lets give it some time to finish the transmission
     delay(200);
 
-    Packet incoming_packet(1);
+    Packet incoming_packet(millis(), 1);
     unsigned int offset = 0;
     while (Serial.available())
     {
@@ -100,11 +100,11 @@ void HandleIncomingSerial()
     client.EnqueuePacket(incoming_packet);
 
     // Assuming everything is successful then we will say ok we got it
-    Packet confirm_packet(1);
+    Packet confirm_packet(millis(), 1);
     confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
     confirm_packet.SetData(1, 6, 8);
     confirm_packet.SetData(1, 14, 10);
-    confirm_packet.SetData(packet_id, 0, 8);
+    confirm_packet.SetData(packet_id, 24, 8);
     outgoing_serial.push_back(std::move(confirm_packet));
 }
 
@@ -115,11 +115,12 @@ void HandleOutgoingSerial()
     // Print the vector and clear it for now
     // Serial.print("Outgoing serial message ");
     unsigned int size = 0;
-    for (unsigned int i = 0; i < outgoing_serial.size(); ++i)
+    while (outgoing_serial.size() > 0)
     {
         // Get the size + 3 for the first three bytes being the type
         // and data length
-        size = outgoing_serial[i].GetData(14, 10) + 3;
+        Packet& out_packet = outgoing_serial[0];
+        size = out_packet.GetData(14, 10) + 3;
 
         Serial.write(0xFF);
         for (unsigned int j = 0; j < size; ++j)
@@ -128,14 +129,13 @@ void HandleOutgoingSerial()
             {
                 delay(1);
             }
-            Serial.write((unsigned char)outgoing_serial[i].GetData((j * Byte_Size), Byte_Size));
+            Serial.write((unsigned char)out_packet.GetData((j * Byte_Size), Byte_Size));
         }
+
+        outgoing_serial.erase(0);
 
         delay(100);
     }
-
-    outgoing_serial.clear();
-
 }
 
 void setup()
