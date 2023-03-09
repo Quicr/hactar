@@ -104,7 +104,7 @@ SerialManager::ReadSerialInterrupt(const uint32_t current_time)
         if (rx_ring.Read() != 0xFF) return SerialStatus::ERROR;
 
         // Found the start, so create a packet
-        rx_packet = new Packet();
+        rx_packet = new Packet(current_time);
 
         // Timeout the packet in 5 seconds after it has started.
         rx_packet_timeout = current_time + 5000;
@@ -128,7 +128,12 @@ SerialManager::ReadSerialInterrupt(const uint32_t current_time)
     // Read n bytes from the ring to the packet
     while (rx_ring.AvailableBytes())
     {
-        if (rx_packet->SizeInBytes() > 256U) return SerialStatus::TIMEOUT;
+        if (rx_packet->SizeInBytes() > 256U)
+        {
+            delete rx_packet;
+            rx_packet = nullptr;
+            return SerialStatus::TIMEOUT;
+        }
 
         rx_packet->AppendData(rx_ring.Read(), 8U);
 
@@ -174,7 +179,7 @@ SerialManager::SerialStatus SerialManager::ReadSerialInterruptSpecialized(
         }
 
         // Make a new packet
-        rx_packet = new Packet();
+        rx_packet = new Packet(current_time);
         for (uint16_t i = 0; i < rx_buffer_sz-1; ++i)
         {
             rx_packet->SetData(rx_buffer[i+1], (i*8), 8);

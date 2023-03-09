@@ -34,7 +34,10 @@ public:
 
     // TODO important to have different data lengths for each type..
 
-    Packet(const unsigned int size=0, const bool dynamic=true) :
+    Packet(const unsigned int created_at=0,
+           const unsigned int size=0,
+           const bool dynamic=true) :
+        created_at(created_at),
         size(size),
         dynamic(dynamic),
         bits_in_use(0),
@@ -46,6 +49,7 @@ public:
     // Copy
     Packet(const Packet& other)
     {
+        created_at = other.created_at;
         size = other.size;
         bits_in_use = other.bits_in_use;
         dynamic = other.dynamic;
@@ -60,6 +64,7 @@ public:
     // Move
     Packet(Packet&& other) noexcept
     {
+        created_at = other.created_at;
         size = other.size;
         bits_in_use = other.bits_in_use;
         dynamic = other.dynamic;
@@ -76,6 +81,7 @@ public:
     Packet& operator=(const Packet &other)
     {
         delete [] data;
+        created_at = other.created_at;
         size = other.size;
         bits_in_use = other.bits_in_use;
         dynamic = other.dynamic;
@@ -94,6 +100,7 @@ public:
         // Move operator
         delete [] data;
 
+        created_at = other.created_at;
         size = other.size;
         bits_in_use = other.bits_in_use;
         dynamic = other.dynamic;
@@ -333,6 +340,16 @@ public:
         return bytes;
     }
 
+    unsigned int GetCreatedAt() const
+    {
+        return created_at;
+    }
+
+    void UpdateCreatedAt(unsigned int time)
+    {
+        created_at = time;
+    }
+
 private:
     void InitializeToZero(unsigned int start, unsigned int end)
     {
@@ -343,6 +360,8 @@ private:
             data[i] = 0;
     }
 
+    // TODO rename created_at
+    unsigned int created_at;
     unsigned int size;
     bool dynamic;
     unsigned int bits_in_use;

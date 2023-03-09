@@ -24,7 +24,7 @@ public:
     bool HasMessages();
     Vector<Message>& GetMessages();
     void ClearMessages();
-    void EnqueuePacket(Packet& msg);
+    void EnqueuePacket(Packet&& msg);
     void ForceRedraw();
     bool RedrawForced();
 
@@ -39,6 +39,7 @@ public:
 private:
     void HandleIncomingSerial();
     void HandleOutgoingSerial();
+    void TimeoutPackets();
     const uint32_t GetStatusColour(
         const SerialManager::SerialStatus status) const;
 
@@ -58,6 +59,6 @@ private:
 
     uint32_t next_message_receive_timeout;
     uint32_t next_message_transmit_timeout;
-    const String TX = "tx";
-    const String RX = "rx";
+
+    bool stop = 0;
 };

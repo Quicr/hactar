@@ -51,6 +51,8 @@ void UserInterfaceManager::Run()
     HandleOutgoingSerial();
     HandleIncomingSerial();
 
+    TimeoutPackets();
+
     screen->DrawText(0, 50, String::int_to_string(sent_tx_packets.size()), font7x12,
         C_WHITE, C_BLACK);
 }
@@ -70,10 +72,10 @@ void UserInterfaceManager::ClearMessages()
     received_messages.clear();
 }
 
-void UserInterfaceManager::EnqueuePacket(Packet& packet)
+void UserInterfaceManager::EnqueuePacket(Packet&& packet)
 {
     // TODO maybe make this into a linked list?
-    unsent_tx_packets.push_back(std::move(packet));
+    unsent_tx_packets.push_back(packet);
 }
 
 void UserInterfaceManager::ForceRedraw()
@@ -105,9 +107,16 @@ void UserInterfaceManager::HandleOutgoingSerial()
 
         // Get the packet id
         uint16_t packet_id = tx_packet.GetData(6, 8);
+
+        // Move the sent packet to the map if it was not sent
         sent_tx_packets[packet_id] = std::move(tx_packet);
+
+        // Erase the sent packet from the unsent packets
         unsent_tx_packets.erase(0);
     }
+
+    // If the message didn't get a response then resend the packet again?
+    // TODO
 }
 
 void UserInterfaceManager::HandleIncomingSerial()
@@ -128,23 +137,31 @@ void UserInterfaceManager::HandleIncomingSerial()
     Vector<Packet*>& packets = net_layer->GetPackets();
 
     // Handle incoming packets
-    for (uint32_t i = 0; i < packets.size(); ++i)
+    // for (uint32_t i = 0; i < packets.size(); ++i)
+    while (packets.size() > 0)
     {
         // Get the type
-        uint8_t p_type = packets[i]->GetData(0, 6);
+        Packet& rx_packet = *packets[0];
+        uint8_t p_type = rx_packet.GetData(0, 6);
 
         // Check the packet type
         if (p_type == Packet::PacketTypes::ReceiveOk)
         {
             // Get the message id
-            uint8_t id = packets[i]->GetData(24, 8);
+            uint8_t confirm_id = rx_packet.GetData(24, 8);
 
             // Find and remove the sent tx
-            sent_tx_packets.erase(id);
+            sent_tx_packets.erase(confirm_id);
+
         }
         else if (p_type == Packet::PacketTypes::ReceiveError)
         {
-            // Retry packet as specified
+            // Get the failed packet id
+            uint8_t failed_id = rx_packet.GetData(24, 8);
+
+            Packet& failed_packet = sent_tx_packets[failed_id];
+            EnqueuePacket(std::move(failed_packet));
+            sent_tx_packets.erase(failed_id);
         }
         else if (p_type == Packet::PacketTypes::UIMessage)
         {
@@ -157,20 +174,47 @@ void UserInterfaceManager::HandleIncomingSerial()
             String body;
 
             // Skip the type and length, add the whole message
-            unsigned short packet_len = packets[i]->GetData(14, 10);
+            unsigned short packet_len = rx_packet.GetData(14, 10);
             for (uint32_t j = 0; j < packet_len; ++j)
             {
-                volatile char ch = (char)packets[i]->GetData(24 + (j * 8), 8);
+                volatile char ch = (char)rx_packet.GetData(24 + (j * 8), 8);
                 body.push_back((char)ch);
             }
 
             in_msg.Body(body);
             received_messages.push_back(in_msg);
         }
+
+        packets.erase(0);
+    }
+}
+
+void UserInterfaceManager::TimeoutPackets()
+{
+    Vector<uint16_t> remove_packets_ids;
+
+    for (auto& p_packet : sent_tx_packets)
+    {
+        // Check if the packet has expired
+        if (p_packet.second.GetCreatedAt() + 5000 > current_time)
+            continue;
+
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+
+        remove_packets_ids.push_back(p_packet.first);
+
+        // Update the time on the packet
+        p_packet.second.UpdateCreatedAt(current_time);
+
+        // The packet has expired with no response so resend it.
+        EnqueuePacket(std::move(p_packet.second));
     }
 
-    // THINK Is this legal?
-    packets.clear();
+    // Remove packets from the sent_tx_packets as it is being resent
+    for (uint16_t i = 0; i < remove_packets_ids.size(); i++)
+    {
+        sent_tx_packets.erase(remove_packets_ids[i]);
+    }
 }
 
 const uint32_t UserInterfaceManager::GetStatusColour(

@@ -124,7 +124,7 @@ bool ChatView::HandleInput()
 
         messages.push_back(msg);
 
-        Packet packet(1);
+        Packet packet(HAL_GetTick(), 1);
 
         // Set the type
         packet.SetData(Packet::PacketTypes::UIMessage, 0, 6);
@@ -140,7 +140,7 @@ bool ChatView::HandleInput()
         packet.SetDataArray(reinterpret_cast<const unsigned char*>(
             msg.Concatenate().c_str()), msg.Length(), 24);
 
-        manager.EnqueuePacket(packet);
+        manager.EnqueuePacket(std::move(packet));
 
         redraw_messages = true;
 

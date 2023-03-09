@@ -31,7 +31,7 @@ public:
     } SerialMessage;
 
     SerialManager(UART_HandleTypeDef* uart_handler,
-                  const uint16_t rx_buffer_sz = 32,
+                  const uint16_t rx_buffer_sz = 1,
                   const uint16_t rx_ring_sz = 256);
     ~SerialManager();
 
