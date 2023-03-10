@@ -75,7 +75,7 @@ void UserInterfaceManager::ClearMessages()
 void UserInterfaceManager::EnqueuePacket(Packet&& packet)
 {
     // TODO maybe make this into a linked list?
-    unsent_tx_packets.push_back(packet);
+    unsent_tx_packets.push_back(std::move(packet));
 }
 
 void UserInterfaceManager::ForceRedraw()
