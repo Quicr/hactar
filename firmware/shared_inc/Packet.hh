@@ -46,9 +46,11 @@ public:
         InitializeToZero(0, this->size);
     }
 
+    // TODO combine this with the operator
     // Copy
     Packet(const Packet& other)
     {
+        if (data) delete [] data;
         created_at = other.created_at;
         size = other.size;
         bits_in_use = other.bits_in_use;
@@ -64,6 +66,7 @@ public:
     // Move
     Packet(Packet&& other) noexcept
     {
+        delete [] data;
         created_at = other.created_at;
         size = other.size;
         bits_in_use = other.bits_in_use;

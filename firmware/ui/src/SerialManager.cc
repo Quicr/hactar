@@ -88,7 +88,7 @@ SerialManager::ReadSerialInterrupt(const uint32_t current_time)
     if (rx_packet != nullptr && current_time > rx_packet_timeout)
     {
         delete rx_packet;
-        rx_packet == nullptr;
+        rx_packet = nullptr;
         return SerialStatus::TIMEOUT;
     }
 

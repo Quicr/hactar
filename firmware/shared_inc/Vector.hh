@@ -90,7 +90,7 @@ public:
 
         perform_push_back_resize();
 
-        array[_size++] = data;
+        array[_size++] = std::move(data);
 
         return true;
     }
