@@ -41,39 +41,22 @@ public:
         size(size),
         dynamic(dynamic),
         bits_in_use(0),
+        retries(0),
         data(new unsigned int[size]())
     {
         InitializeToZero(0, this->size);
     }
 
-    // TODO combine this with the operator
     // Copy
     Packet(const Packet& other)
     {
-        if (data) delete [] data;
-        created_at = other.created_at;
-        size = other.size;
-        bits_in_use = other.bits_in_use;
-        dynamic = other.dynamic;
-
-        data = new unsigned int[size];
-
-        // Copy over the the data
-        for (unsigned int i = 0; i < size; i++)
-            data[i] = other.data[i];
+        *this = other;
     }
 
     // Move
     Packet(Packet&& other) noexcept
     {
-        delete [] data;
-        created_at = other.created_at;
-        size = other.size;
-        bits_in_use = other.bits_in_use;
-        dynamic = other.dynamic;
-
-        data = other.data;
-        other.data = nullptr;
+        *this = std::move(other);
     }
 
     ~Packet()
@@ -88,6 +71,7 @@ public:
         size = other.size;
         bits_in_use = other.bits_in_use;
         dynamic = other.dynamic;
+        retries = other.retries;
 
         data = new unsigned int[size];
 
@@ -107,6 +91,7 @@ public:
         size = other.size;
         bits_in_use = other.bits_in_use;
         dynamic = other.dynamic;
+        retries = other.retries;
 
         data = other.data;
         other.data = nullptr;
@@ -353,6 +338,16 @@ public:
         created_at = time;
     }
 
+    unsigned int GetRetries() const
+    {
+        return retries;
+    }
+
+    void IncrementRetry()
+    {
+        retries++;
+    }
+
 private:
     void InitializeToZero(unsigned int start, unsigned int end)
     {
@@ -368,5 +363,6 @@ private:
     unsigned int size;
     bool dynamic;
     unsigned int bits_in_use;
+    unsigned int retries;
     unsigned int* data;
 };

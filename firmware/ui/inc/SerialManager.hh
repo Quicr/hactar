@@ -61,6 +61,7 @@ private:
     uint8_t* rx_buffer;
     Packet* rx_packet;
     uint32_t rx_packet_timeout;
+    uint32_t rx_next_id;
 
     // Tx
     uint8_t* tx_buffer;

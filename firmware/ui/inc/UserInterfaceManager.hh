@@ -36,6 +36,8 @@ public:
 
         view = new T(*this, *screen, *keyboard);
     }
+
+    static uint32_t Packet_Id;
 private:
     void HandleIncomingSerial();
     void HandleOutgoingSerial();
@@ -62,3 +64,8 @@ private:
 
     bool stop = 0;
 };
+
+// Init the static var
+// Not sure what is the best place to put this for now
+// but it will stay here until that is changed.
+uint32_t UserInterfaceManager::Packet_Id = 0;
