@@ -137,7 +137,6 @@ void UserInterfaceManager::HandleIncomingSerial()
     Vector<Packet*>& packets = net_layer->GetPackets();
 
     // Handle incoming packets
-    // for (uint32_t i = 0; i < packets.size(); ++i)
     while (packets.size() > 0)
     {
         // Get the type
@@ -165,6 +164,27 @@ void UserInterfaceManager::HandleIncomingSerial()
         }
         else if (p_type == Packet::PacketTypes::UIMessage)
         {
+            // Create a OK packet
+            // Get the id
+            uint8_t received_id = rx_packet.GetData(6, 8);
+
+            Packet ok_packet(current_time, 1);
+
+            // Set the type
+            ok_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
+
+            // Set the id
+            ok_packet.SetData(UserInterfaceManager::Packet_Id++, 6, 8);
+
+            // Set the length
+            ok_packet.SetData(1, 14, 10);
+
+            // Set the data
+            ok_packet.SetData(received_id, 24, 8);
+
+            // Enqueue the ok
+            EnqueuePacket(std::move(ok_packet));
+
             // Write a message to the screen
             Message in_msg;
             // TODO The message should be parsed some how here.
@@ -199,12 +219,20 @@ void UserInterfaceManager::TimeoutPackets()
         if (p_packet.second.GetCreatedAt() + 5000 > current_time)
             continue;
 
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+        if (p_packet.second.GetRetries() >= 3)
+        {
+            remove_packets_ids.push_back(p_packet.first);
+            continue;
+        }
 
+        // Add to the packets to remove from the map
         remove_packets_ids.push_back(p_packet.first);
 
         // Update the time on the packet
         p_packet.second.UpdateCreatedAt(current_time);
+
+        // Increment the retry on the packet
+        p_packet.second.IncrementRetry();
 
         // The packet has expired with no response so resend it.
         EnqueuePacket(std::move(p_packet.second));

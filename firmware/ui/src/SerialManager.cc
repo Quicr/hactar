@@ -1,7 +1,7 @@
 #include "SerialManager.hh"
 #include "stm32f4xx_hal_uart.h"
 
-SerialManager::SerialManager(UART_HandleTypeDef *uart_handler,
+SerialManager::SerialManager(UART_HandleTypeDef* uart_handler,
                              const uint16_t rx_buffer_sz,
                              const uint16_t rx_ring_sz) :
     uart(uart_handler),
@@ -11,6 +11,7 @@ SerialManager::SerialManager(UART_HandleTypeDef *uart_handler,
     rx_buffer(nullptr),
     rx_packet(nullptr),
     rx_packet_timeout(0),
+    rx_next_id(0),
     tx_buffer(nullptr),
     tx_buffer_sz(0),
     tx_watchdog_timeout(0),

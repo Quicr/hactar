@@ -38,7 +38,6 @@ private:
     // Perhaps in the user interface manager.
     Vector<Message> messages;
     bool redraw_messages = true;
-    uint16_t packet_id = 0;
 
     struct
     {

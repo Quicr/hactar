@@ -94,18 +94,36 @@ void HandleIncomingSerial()
         offset += Byte_Size;
     }
 
-    // Get the id from the packet
-    uint16_t packet_id = incoming_packet.GetData(6, 8);
+    // Get the type
+    uint8_t packet_type = incoming_packet.GetData(0, 6);
 
-    client.EnqueuePacket(incoming_packet);
+    //TODO  Check the type
+    if (packet_type == Packet::PacketTypes::UIMessage)
+    {
+        client.EnqueuePacket(incoming_packet);
 
-    // Assuming everything is successful then we will say ok we got it
-    Packet confirm_packet(millis(), 1);
-    confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
-    confirm_packet.SetData(1, 6, 8);
-    confirm_packet.SetData(1, 14, 10);
-    confirm_packet.SetData(packet_id, 24, 8);
-    outgoing_serial.push_back(std::move(confirm_packet));
+        // Assuming everything is successful then we will say ok we got it
+        Packet confirm_packet(millis(), 1);
+
+        // Get the id from the incoming packet
+        uint8_t packet_id = incoming_packet.GetData(6, 8);
+
+        confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
+        confirm_packet.SetData(1, 6, 8);
+        confirm_packet.SetData(1, 14, 10);
+        confirm_packet.SetData(packet_id, 24, 8);
+        outgoing_serial.push_back(std::move(confirm_packet));
+    }
+    else if (packet_type == Packet::PacketTypes::ReceiveOk)
+    {
+        // Get the data from the packet
+        uint8_t confirmed_id = incoming_packet.GetData(24, 8);
+
+        // Remove it from the packet map
+
+        // confirm we got it with the led
+        digitalWrite(17, 1);
+    }
 }
 
 void HandleOutgoingSerial()

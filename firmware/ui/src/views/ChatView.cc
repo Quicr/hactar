@@ -130,7 +130,7 @@ bool ChatView::HandleInput()
         packet.SetData(Packet::PacketTypes::UIMessage, 0, 6);
 
         // Set the id
-        packet.SetData(packet_id++, 6, 8);
+        packet.SetData(UserInterfaceManager::Packet_Id++, 6, 8);
 
         // Set the data length
         packet.SetData(msg.Length(), 14, 10);
