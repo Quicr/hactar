@@ -100,19 +100,20 @@ void HandleIncomingSerial()
     //TODO  Check the type
     if (packet_type == Packet::PacketTypes::UIMessage)
     {
-        client.EnqueuePacket(incoming_packet);
+        client.EnqueuePacket(std::move(incoming_packet));
 
-        // Assuming everything is successful then we will say ok we got it
-        Packet confirm_packet(millis(), 1);
 
         // Get the id from the incoming packet
         uint8_t packet_id = incoming_packet.GetData(6, 8);
 
-        confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
-        confirm_packet.SetData(1, 6, 8);
-        confirm_packet.SetData(1, 14, 10);
-        confirm_packet.SetData(packet_id, 24, 8);
-        outgoing_serial.push_back(std::move(confirm_packet));
+        // BUG causes a crash for some reason????
+        // Assuming everything is successful then we will say ok we got it
+        // Packet confirm_packet(millis(), 1);
+        // confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
+        // confirm_packet.SetData(1, 6, 8);
+        // confirm_packet.SetData(1, 14, 10);
+        // confirm_packet.SetData(packet_id, 24, 8);
+        // outgoing_serial.push_back(std::move(confirm_packet));
     }
     else if (packet_type == Packet::PacketTypes::ReceiveOk)
     {
@@ -148,6 +149,7 @@ void HandleOutgoingSerial()
                 delay(1);
             }
             Serial.write((unsigned char)out_packet.GetData((j * Byte_Size), Byte_Size));
+            // Serial.write(,)
         }
 
         outgoing_serial.erase(0);
@@ -162,6 +164,7 @@ void setup()
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     delay(10000);
+    Serial.println("Starting");
 }
 
 void loop()

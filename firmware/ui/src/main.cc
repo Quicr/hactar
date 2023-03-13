@@ -29,7 +29,7 @@
 #include "Q10Keyboard.hh"
 #include "UserInterfaceManager.hh"
 
-#include "SerialManager.hh"
+#include "SerialStm.hh"
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -56,7 +56,7 @@ port_pin bl = {LCD_BL_GPIO_Port, LCD_BL_Pin};
 
 Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::portrait);
 Q10Keyboard *keyboard;
-SerialManager *net_layer = nullptr;
+SerialStm *net_layer = nullptr;
 UserInterfaceManager *ui_manager = nullptr;
 
 int main(void)
@@ -116,7 +116,7 @@ int main(void)
     // Initialize the keyboard
     keyboard->Begin();
 
-    net_layer = new SerialManager(&huart2);
+    net_layer = new SerialStm(&huart2);
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer);
 
@@ -275,13 +275,12 @@ static void MX_USART2_Init()
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
 {
-    net_layer->RxEventTrigger(size);
-    HAL_GPIO_TogglePin(USART2_RX_LED_PORT, USART2_RX_LED_PIN);
+    net_layer->RxEvent();
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-    net_layer->SetTxFlag();
+    net_layer->TxEvent();
     HAL_GPIO_TogglePin(USART2_TX_LED_PORT, USART2_TX_LED_PIN);
 }
 

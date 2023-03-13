@@ -56,7 +56,7 @@ bool ModuleClient::SendMessages()
     return messages_sent;
 }
 
-void ModuleClient::EnqueuePacket(Packet &packet)
+void ModuleClient::EnqueuePacket(Packet&& packet)
 {
     packets.push_back(std::move(packet));
 }
