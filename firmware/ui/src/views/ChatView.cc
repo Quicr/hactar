@@ -240,7 +240,7 @@ void ChatView::DrawMessages()
                 clear_rec_x_start = x_window_start;
 
             // We have a special case for the first box clear
-            if (msg_idx == messages.size() - 1)
+            if (msg_idx == static_cast<int32_t>(messages.size()) - 1)
             {
                 // Clear from the expected y position
                 screen.FillRectangle(clear_rec_x_start,

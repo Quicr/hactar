@@ -4,12 +4,15 @@
 #include "ChatView.hh"
 #include "TeamView.hh"
 
+// Init the static var
+uint32_t UserInterfaceManager::Packet_Id = 0;
+
 UserInterfaceManager::UserInterfaceManager(Screen &screen,
                                            Q10Keyboard &keyboard,
-                                           SerialManager &net_layer) :
+                                           SerialInterface &net_interface) :
     screen(&screen),
     keyboard(&keyboard),
-    net_layer(&net_layer),
+    net_layer(&net_interface),
     view(nullptr),
     received_messages(),
     unsent_tx_packets(),
@@ -28,7 +31,6 @@ UserInterfaceManager::~UserInterfaceManager()
     // However it does manage it
     delete screen;
     delete keyboard;
-    delete net_layer;
     delete view;
 }
 
@@ -92,15 +94,12 @@ bool UserInterfaceManager::RedrawForced()
 
 void UserInterfaceManager::HandleOutgoingSerial()
 {
-    // TODO keep track of packets until they are successful in transferring
-    unsigned int data_size = 0;
-
     if (unsent_tx_packets.size() > 0)
     {
         // Linked queue would be better for this.
         // Send a packet
         Packet& tx_packet = unsent_tx_packets[0];
-        SerialManager::SerialStatus status = net_layer->WriteSerialInterrupt(
+        SerialManager::SerialStatus status = net_layer.WriteSerial(
             tx_packet, current_time);
 
         view->SetTxColour(GetStatusColour(status));
@@ -114,15 +113,12 @@ void UserInterfaceManager::HandleOutgoingSerial()
         // Erase the sent packet from the unsent packets
         unsent_tx_packets.erase(0);
     }
-
-    // If the message didn't get a response then resend the packet again?
-    // TODO
 }
 
 void UserInterfaceManager::HandleIncomingSerial()
 {
     SerialManager::SerialStatus status =
-        net_layer->ReadSerialInterrupt(current_time);
+        net_layer.ReadSerial(current_time);
 
     // Set the colour if its not empty because it will reset its colour
     // after a short timeout
@@ -134,7 +130,7 @@ void UserInterfaceManager::HandleIncomingSerial()
     if (status != SerialManager::SerialStatus::OK) return;
 
     // Get the packets
-    Vector<Packet*>& packets = net_layer->GetPackets();
+    Vector<Packet*>& packets = net_layer.GetPackets();
 
     // Handle incoming packets
     while (packets.size() > 0)
@@ -151,7 +147,6 @@ void UserInterfaceManager::HandleIncomingSerial()
 
             // Find and remove the sent tx
             sent_tx_packets.erase(confirm_id);
-
         }
         else if (p_type == Packet::PacketTypes::ReceiveError)
         {

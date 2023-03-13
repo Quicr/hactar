@@ -7,6 +7,8 @@
 // TODO add a 0xFF start to packet to force cohesion and hide the implementation
 // so the user isn't stuck having to remember it (should be custom at creation time)
 
+#include <utility>
+
 /*
 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -16,6 +18,7 @@
 |                          ....                                 |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
+
 class Packet
 {
 public:

@@ -9,7 +9,7 @@ public:
     ~ModuleClient();
 
     bool SendMessages();
-    void EnqueuePacket(Packet &packet);
+    void EnqueuePacket(Packet&& packet);
 
     Packet GetMessage();
     bool GetMessage(Packet& incoming_packet);

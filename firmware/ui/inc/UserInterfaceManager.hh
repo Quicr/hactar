@@ -8,6 +8,7 @@
 #include "Message.hh"
 #include "Packet.hh"
 #include "SerialManager.hh"
+#include "SerialInterface.hh"
 #include "Screen.hh"
 
 class ViewBase;
@@ -15,9 +16,9 @@ class ViewBase;
 class UserInterfaceManager
 {
 public:
-    UserInterfaceManager(Screen &screen,
-                         Q10Keyboard &keyboard,
-                         SerialManager &net_layer);
+    UserInterfaceManager(Screen& screen,
+                         Q10Keyboard& keyboard,
+                         SerialInterface& net_interface);
     ~UserInterfaceManager();
 
     void Run();
@@ -47,10 +48,10 @@ private:
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
-    Screen *screen;
-    Q10Keyboard *keyboard;
-    SerialManager *net_layer;
-    ViewBase *view;
+    Screen* screen;
+    Q10Keyboard* keyboard;
+    SerialManager net_layer;
+    ViewBase* view;
     Vector<Message> received_messages;
     Vector<Packet> unsent_tx_packets;
     std::map<uint16_t, Packet> sent_tx_packets;
@@ -64,8 +65,3 @@ private:
 
     bool stop = 0;
 };
-
-// Init the static var
-// Not sure what is the best place to put this for now
-// but it will stay here until that is changed.
-uint32_t UserInterfaceManager::Packet_Id = 0;
