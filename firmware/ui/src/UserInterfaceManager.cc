@@ -99,8 +99,7 @@ void UserInterfaceManager::HandleOutgoingSerial()
         // Linked queue would be better for this.
         // Send a packet
         Packet& tx_packet = unsent_tx_packets[0];
-        SerialManager::SerialStatus status = net_layer.WriteSerial(
-            tx_packet, current_time);
+        SerialManager::SerialStatus status = net_layer.WriteSerial(tx_packet);
 
         view->SetTxColour(GetStatusColour(status));
 

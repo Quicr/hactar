@@ -28,6 +28,7 @@ bool SerialStm::ReadyToWrite()
 void SerialStm::Write(unsigned char* buff, const unsigned short buff_sz)
 {
     tx_free = false;
+    HAL_UART_Transmit(uart, new uint8_t[1]{0xFF}, 1, 1);
     HAL_UART_Transmit_IT(uart, buff, buff_sz);
 }
 
