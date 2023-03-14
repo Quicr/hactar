@@ -17,3 +17,6 @@ program: compile upload
 
 upload:
 	arduino-cli upload --port ${PORT} --fqbn ${BOARD} --input-dir ${BUILD_PATH} ${INO_FILE}
+
+monitor:
+	arduino-cli monitor --port COM3 --config baudrate=115200 --fqbn ${BOARD}

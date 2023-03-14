@@ -1,11 +1,14 @@
 #pragma once
 
+#include <map>
+
 #include "stm32.h"
 
 #include "Q10Keyboard.hh"
 #include "Message.hh"
 #include "Packet.hh"
 #include "SerialManager.hh"
+#include "SerialInterface.hh"
 #include "Screen.hh"
 
 class ViewBase;
@@ -13,16 +16,16 @@ class ViewBase;
 class UserInterfaceManager
 {
 public:
-    UserInterfaceManager(Screen &screen,
-                         Q10Keyboard &keyboard,
-                         SerialManager &net_layer);
+    UserInterfaceManager(Screen& screen,
+                         Q10Keyboard& keyboard,
+                         SerialInterface& net_interface);
     ~UserInterfaceManager();
 
     void Run();
     bool HasMessages();
     Vector<Message>& GetMessages();
     void ClearMessages();
-    void EnqueuePacket(Packet& msg);
+    void EnqueuePacket(Packet&& msg);
     void ForceRedraw();
     bool RedrawForced();
 
@@ -34,20 +37,24 @@ public:
 
         view = new T(*this, *screen, *keyboard);
     }
+
+    static uint32_t Packet_Id;
 private:
-    void GetSerialMessages();
-    void SendSerialMessages();
+    void HandleIncomingSerial();
+    void HandleOutgoingSerial();
+    void TimeoutPackets();
     const uint32_t GetStatusColour(
         const SerialManager::SerialStatus status) const;
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
-    Screen *screen;
-    Q10Keyboard *keyboard;
-    SerialManager *net_layer;
-    ViewBase *view;
+    Screen* screen;
+    Q10Keyboard* keyboard;
+    SerialManager net_layer;
+    ViewBase* view;
     Vector<Message> received_messages;
-    Vector<Packet> send_packets;
+    Vector<Packet> unsent_tx_packets;
+    std::map<uint16_t, Packet> sent_tx_packets;
 
     bool force_redraw;
 
@@ -55,6 +62,6 @@ private:
 
     uint32_t next_message_receive_timeout;
     uint32_t next_message_transmit_timeout;
-    const String TX = "tx";
-    const String RX = "rx";
+
+    bool stop = 0;
 };

@@ -124,13 +124,13 @@ bool ChatView::HandleInput()
 
         messages.push_back(msg);
 
-        Packet packet(1);
+        Packet packet(HAL_GetTick(), 1);
 
         // Set the type
         packet.SetData(Packet::PacketTypes::UIMessage, 0, 6);
 
-        // TODO ids
-        packet.SetData(3, 6, 8);
+        // Set the id
+        packet.SetData(UserInterfaceManager::Packet_Id++, 6, 8);
 
         // Set the data length
         packet.SetData(msg.Length(), 14, 10);
@@ -140,7 +140,7 @@ bool ChatView::HandleInput()
         packet.SetDataArray(reinterpret_cast<const unsigned char*>(
             msg.Concatenate().c_str()), msg.Length(), 24);
 
-        manager.EnqueuePacket(packet);
+        manager.EnqueuePacket(std::move(packet));
 
         redraw_messages = true;
 
@@ -240,7 +240,7 @@ void ChatView::DrawMessages()
                 clear_rec_x_start = x_window_start;
 
             // We have a special case for the first box clear
-            if (msg_idx == messages.size() - 1)
+            if (msg_idx == static_cast<int32_t>(messages.size()) - 1)
             {
                 // Clear from the expected y position
                 screen.FillRectangle(clear_rec_x_start,

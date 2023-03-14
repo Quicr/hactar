@@ -28,7 +28,7 @@ unsigned long incoming_serial_timeout = 0;
 
 void HandleIncomingNetwork()
 {
-    if (current_time < incoming_network_timeout) return;
+    // if (current_time < incoming_network_timeout) return;
 
     // Get the packet from the client
     Packet recv_packet = client.GetMessage();
@@ -71,21 +71,22 @@ void HandleIncomingNetwork()
 
 void HandleOutgoingNetwork()
 {
-    if (current_time < outgoing_network_timeout) return;
-    outgoing_network_timeout = current_time + 5000;
+    // if (current_time < outgoing_network_timeout) return;
+    // outgoing_network_timeout = current_time + 5000;
     client.SendMessages();
 
 }
 
 void HandleIncomingSerial()
 {
-    if (current_time < incoming_serial_timeout) return;
-    incoming_serial_timeout = current_time + 1000;
 
     // If there are no messages just skip it then
     if (!Serial.available()) return;
 
-    Packet incoming_packet(1);
+    // Serial is available, so lets give it some time to finish the transmission
+    delay(200);
+
+    Packet incoming_packet(millis(), 1);
     unsigned int offset = 0;
     while (Serial.available())
     {
@@ -93,34 +94,68 @@ void HandleIncomingSerial()
         offset += Byte_Size;
     }
 
-    client.EnqueuePacket(incoming_packet);
+    // Get the type
+    uint8_t packet_type = incoming_packet.GetData(0, 6);
+
+    //TODO  Check the type
+    if (packet_type == Packet::PacketTypes::UIMessage)
+    {
+        client.EnqueuePacket(std::move(incoming_packet));
+
+
+        // Get the id from the incoming packet
+        uint8_t packet_id = incoming_packet.GetData(6, 8);
+
+        // BUG causes a crash for some reason????
+        // Assuming everything is successful then we will say ok we got it
+        // Packet confirm_packet(millis(), 1);
+        // confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
+        // confirm_packet.SetData(1, 6, 8);
+        // confirm_packet.SetData(1, 14, 10);
+        // confirm_packet.SetData(packet_id, 24, 8);
+        // outgoing_serial.push_back(std::move(confirm_packet));
+    }
+    else if (packet_type == Packet::PacketTypes::ReceiveOk)
+    {
+        // Get the data from the packet
+        uint8_t confirmed_id = incoming_packet.GetData(24, 8);
+
+        // Remove it from the packet map
+
+        // confirm we got it with the led
+        digitalWrite(17, 1);
+    }
 }
 
 void HandleOutgoingSerial()
 {
-    if (current_time < outgoing_serial_timeout) return;
-    outgoing_serial_timeout = current_time + 1000;
-
     if (!Serial.availableForWrite()) return;
 
     // Print the vector and clear it for now
     // Serial.print("Outgoing serial message ");
     unsigned int size = 0;
-    for (unsigned int i = 0; i < outgoing_serial.size(); ++i)
+    while (outgoing_serial.size() > 0)
     {
         // Get the size + 3 for the first three bytes being the type
         // and data length
-        size = outgoing_serial[i].GetData(14, 10) + 3;
+        Packet& out_packet = outgoing_serial[0];
+        size = out_packet.GetData(14, 10) + 3;
 
         Serial.write(0xFF);
         for (unsigned int j = 0; j < size; ++j)
         {
-            Serial.write((unsigned char)outgoing_serial[i].GetData((j * Byte_Size), Byte_Size));
+            while (!Serial.availableForWrite())
+            {
+                delay(1);
+            }
+            Serial.write((unsigned char)out_packet.GetData((j * Byte_Size), Byte_Size));
+            // Serial.write(,)
         }
+
+        outgoing_serial.erase(0);
+
+        delay(100);
     }
-
-    outgoing_serial.clear();
-
 }
 
 void setup()
@@ -129,6 +164,7 @@ void setup()
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     delay(10000);
+    Serial.println("Starting");
 }
 
 void loop()

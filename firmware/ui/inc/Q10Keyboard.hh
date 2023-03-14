@@ -53,7 +53,8 @@ public:
     Q10Keyboard(port_pin col_pins[Q10_COLS],
                 port_pin row_pins[Q10_ROWS],
                 unsigned int debounce_duration,
-                unsigned int repeat_duration);
+                unsigned int repeat_duration,
+                TIM_HandleTypeDef* htim=nullptr);
     ~Q10Keyboard();
 
     void Begin();
@@ -130,9 +131,11 @@ private:
 
     unsigned char flags = 0b00000000;
 
+
     // Pins array
     port_pin* col_pins;
     port_pin* row_pins;
+    TIM_HandleTypeDef* htim;
 
     // Queues for holding the indices we will reference for characters
     // TODO make a queue that utilizes the vector concept
