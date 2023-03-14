@@ -156,12 +156,12 @@ public:
         return array[idx];
     }
 
-    T front() const
+    T& front() const
     {
         return array[0];
     }
 
-    T back() const
+    T& back() const
     {
         return array[_size - 1];
     }

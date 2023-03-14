@@ -1,4 +1,5 @@
 #include "PushReleaseButton.hh"
+#include "Helper.h"
 
 PushReleaseButton::PushReleaseButton(port_pin &group,
                                      uint16_t debounce_duration) :
@@ -15,22 +16,7 @@ void PushReleaseButton::Begin()
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-
-    // TODO get from helper function
-    if (group.port == GPIOA && !(RCC->AHB1ENR & RCC_AHB1ENR_GPIOAEN))
-    {
-        __HAL_RCC_GPIOA_CLK_ENABLE();
-    }
-
-    if (group.port == GPIOB && !(RCC->AHB1ENR & RCC_AHB1ENR_GPIOBEN))
-    {
-        __HAL_RCC_GPIOB_CLK_ENABLE();
-    }
-
-    if (group.port == GPIOC && !(RCC->AHB1ENR & RCC_AHB1ENR_GPIOCEN))
-    {
-        __HAL_RCC_GPIOC_CLK_ENABLE();
-    }
+    EnablePortIf(group.port);
 
     GPIO_InitStruct.Pin = group.pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;

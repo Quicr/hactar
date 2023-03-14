@@ -29,7 +29,6 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32.h"
 
-void EnablePortIf(GPIO_TypeDef* port);
 void Error_Handler(void);
 
 // THINK do I need extern?
@@ -92,6 +91,9 @@ extern TIM_HandleTypeDef htim2;
 #define USART2_TX_LED_PORT  GPIOB
 #define USART2_RX_LED_PIN   GPIO_PIN_10
 #define USART2_RX_LED_PORT  GPIOB
+
+#define TEST_LED_PORT       GPIOC
+#define TEST_LED_PIN        GPIO_PIN_7
 
 #ifdef __cplusplus
 }

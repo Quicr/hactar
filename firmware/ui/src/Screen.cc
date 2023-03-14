@@ -1,6 +1,6 @@
 #include <algorithm>
+#include "Helper.h"
 #include "Screen.hh"
-#include "main.hh"
 #include "RingBuffer.hh"
 
 #define DELAY HAL_MAX_DELAY
@@ -30,10 +30,7 @@ Screen::~Screen()
 void Screen::Begin()
 {
     // Ensure the spi is initialize at this point
-    if (HAL_SPI_Init(spi_handle) != HAL_OK)
-    {
-        Error_Handler();
-    }
+    if (spi_handle == nullptr) return;
 
     // Setup GPIO for the screen.
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -42,7 +39,7 @@ void Screen::Begin()
     HAL_GPIO_WritePin(cs.port, cs.pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = cs.pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(cs.port, &GPIO_InitStruct);
 
@@ -50,7 +47,7 @@ void Screen::Begin()
     HAL_GPIO_WritePin(rst.port, rst.pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = rst.pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(rst.port, &GPIO_InitStruct);
 
@@ -58,7 +55,7 @@ void Screen::Begin()
     HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = dc.pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(dc.port, &GPIO_InitStruct);
 
@@ -66,7 +63,7 @@ void Screen::Begin()
     HAL_GPIO_WritePin(bl.port, bl.pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = bl.pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(bl.port, &GPIO_InitStruct);
 
@@ -231,7 +228,6 @@ void Screen::WriteDataDMA(uint8_t* data, const uint32_t data_size)
     {
         if (HAL_GetTick() > next_blink)
         {
-            HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
             next_blink += 500;
         }
         __NOP();

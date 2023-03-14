@@ -29,7 +29,7 @@
 #include "Q10Keyboard.hh"
 #include "UserInterfaceManager.hh"
 
-#include "SerialManager.hh"
+#include "SerialStm.hh"
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -56,7 +56,7 @@ port_pin bl = {LCD_BL_GPIO_Port, LCD_BL_Pin};
 
 Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::portrait);
 Q10Keyboard *keyboard;
-SerialManager *net_layer = nullptr;
+SerialStm *net_layer = nullptr;
 UserInterfaceManager *ui_manager = nullptr;
 
 int main(void)
@@ -107,17 +107,18 @@ int main(void)
         { Q10_ROW_7_GPIO_PORT, Q10_ROW_7_PIN },
     };
 
-    keyboard = new Q10Keyboard(col_pins, row_pins, 500, 100);
+    // Initialize the keyboard timer
+    KeyboardTimerInit();
+
+    // Create the keyboard object
+    keyboard = new Q10Keyboard(col_pins, row_pins, 500, 100, &htim2);
+
+    // Initialize the keyboard
     keyboard->Begin();
 
-    net_layer = new SerialManager(&huart2);
+    net_layer = new SerialStm(&huart2);
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer);
-
-    // Start the keyboard timer
-    // THINK move this into the keyboard init? To make it fool proof?
-    KeyboardTimerInit();
-    HAL_TIM_Base_Start_IT(&htim2);
 
     while (1)
     {
@@ -197,6 +198,13 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(Q10_TIMER_LED_PORT, &GPIO_InitStruct);
 
+    HAL_GPIO_WritePin(TEST_LED_PORT, TEST_LED_PIN, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = TEST_LED_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(TEST_LED_PORT, &GPIO_InitStruct);
+
     // GPIO_InitStruct.Pin = USART2_TX_LED_PIN;
     // GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     // GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -267,13 +275,12 @@ static void MX_USART2_Init()
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
 {
-    net_layer->RxEventTrigger(size);
-    HAL_GPIO_TogglePin(USART2_RX_LED_PORT, USART2_RX_LED_PIN);
+    net_layer->RxEvent();
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-    net_layer->SetTxFlag();
+    net_layer->TxEvent();
     HAL_GPIO_TogglePin(USART2_TX_LED_PORT, USART2_TX_LED_PIN);
 }
 
@@ -324,6 +331,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
+        // TODO remove
         HAL_GPIO_TogglePin(Q10_TIMER_LED_PORT, Q10_TIMER_LED_PIN);
         // Poll the keyboard and have the keys saved in the internal rx_buffer
         keyboard->Read();
@@ -369,23 +377,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 #endif
 
 // TODO move to helper function
-void EnablePortIf(GPIO_TypeDef *port)
-{
-    if (port == GPIOA && !(RCC->AHB1ENR & RCC_AHB1ENR_GPIOAEN))
-    {
-        __HAL_RCC_GPIOA_CLK_ENABLE();
-    }
-
-    if (port == GPIOB && !(RCC->AHB1ENR & RCC_AHB1ENR_GPIOBEN))
-    {
-        __HAL_RCC_GPIOB_CLK_ENABLE();
-    }
-
-    if (port == GPIOC && !(RCC->AHB1ENR & RCC_AHB1ENR_GPIOCEN))
-    {
-        __HAL_RCC_GPIOC_CLK_ENABLE();
-    }
-}
 // TODO add error messaging
 /**
  * @brief  This function is executed in case of error occurrence.

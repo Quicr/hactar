@@ -1,9 +1,14 @@
 #include "Q10Keyboard.hh"
+#include "Helper.h"
 
 Q10Keyboard::Q10Keyboard(port_pin col_pins[Q10_COLS],
                          port_pin row_pins[Q10_ROWS],
                          unsigned int debounce_duration,
-                         unsigned int repeat_duration) :
+                         unsigned int repeat_duration,
+                         TIM_HandleTypeDef* htim) :
+                         col_pins(col_pins),
+                         row_pins(row_pins),
+                         htim(htim),
                          lshift_flag(false),
                          rshift_flag(false),
                          alt_flag(false),
@@ -21,11 +26,9 @@ Q10Keyboard::Q10Keyboard(port_pin col_pins[Q10_COLS],
                          available_space(Max_Internal_Buffer_Size-1),
                          back_press(false),
                          enter_press(false),
-                         debounce_duration(debounce_duration), // TODO
+                         debounce_duration(debounce_duration),
                          repeat_duration(repeat_duration)
 {
-    this->col_pins = col_pins;
-    this->row_pins = row_pins;
     cols_queue = new LinkedQueue<unsigned char>();
     rows_queue = new LinkedQueue<unsigned char>();
     press_type_queue = new LinkedQueue<key_type>();
@@ -51,6 +54,7 @@ void Q10Keyboard::Begin()
 
     for (uint8_t i = 0; i < Q10_COLS; i++)
     {
+        EnablePortIf(col_pins[i].port);
         HAL_GPIO_WritePin(col_pins[i].port, col_pins[i].pin, GPIO_PIN_RESET);
         GPIO_InitStruct.Pin = col_pins[i].pin;
         GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -61,11 +65,18 @@ void Q10Keyboard::Begin()
 
     for (uint8_t j = 0; j < Q10_ROWS; j++)
     {
+        EnablePortIf(row_pins[j].port);
         HAL_GPIO_WritePin(row_pins[j].port, row_pins[j].pin, GPIO_PIN_SET);
         GPIO_InitStruct.Pin = row_pins[j].pin;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
         GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
         HAL_GPIO_Init(row_pins[j].port, &GPIO_InitStruct);
+    }
+
+    if (htim->Instance)
+    {
+        HAL_TIM_Base_Start_IT(htim);
     }
 }
 
@@ -89,19 +100,19 @@ bool Q10Keyboard::EnterPressed()
     return res;
 }
 
-void Q10Keyboard::Read()
-{
-    ReadKeys();
-}
-
 String& Q10Keyboard::GetKeys()
 {
     return internal_buffer;
 }
 
+void Q10Keyboard::Read()
+{
+    ReadKeys();
+}
+
 bool Q10Keyboard::Read(String &buffer)
 {
-    // ReadKeys();
+    ReadKeys();
 
     bool has_keys = char_pressed || internal_buffer.length();
 
@@ -193,11 +204,8 @@ void Q10Keyboard::ReadKeys()
         }
     }
     // Disable the last column
-    // HAL_GPIO_WritePin(col_pins[Q10_COLS-1].port,
-    //     col_pins[Q10_COLS-1].pin, GPIO_PIN_RESET);
-
-    // Set all of the columns high so we can get an interrupt from it
-    SetAllColumns(GPIO_PIN_SET);
+    HAL_GPIO_WritePin(col_pins[Q10_COLS-1].port,
+        col_pins[Q10_COLS-1].pin, GPIO_PIN_RESET);
 
     // If both left shift and right shift are on then we can toggle shift lock
     // Or if alt and a shift is pressed

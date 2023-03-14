@@ -7,6 +7,8 @@
 // TODO add a 0xFF start to packet to force cohesion and hide the implementation
 // so the user isn't stuck having to remember it (should be custom at creation time)
 
+#include <utility>
+
 /*
 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -16,22 +18,33 @@
 |                          ....                                 |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
+
 class Packet
 {
 public:
     enum PacketTypes
     {
         NetworkDebug = 1,
+        NetworkMessageSentOK,
+        NetworkMessageSentError,
         UIDebug,
         UIMessage,
+        UIMessageSentOK,
+        UIMessageSentError,
+        ReceiveOk,
+        ReceiveError
     };
 
     // TODO important to have different data lengths for each type..
 
-    Packet(const unsigned int size=0, const bool dynamic=true) :
+    Packet(const unsigned int created_at=0,
+           const unsigned int size=0,
+           const bool dynamic=true) :
+        created_at(created_at),
         size(size),
         dynamic(dynamic),
         bits_in_use(0),
+        retries(0),
         data(new unsigned int[size]())
     {
         InitializeToZero(0, this->size);
@@ -40,26 +53,13 @@ public:
     // Copy
     Packet(const Packet& other)
     {
-        size = other.size;
-        bits_in_use = other.bits_in_use;
-        dynamic = other.dynamic;
-
-        data = new unsigned int[size];
-
-        // Copy over the the data
-        for (unsigned int i = 0; i < size; i++)
-            data[i] = other.data[i];
+        *this = other;
     }
 
     // Move
     Packet(Packet&& other) noexcept
     {
-        size = other.size;
-        bits_in_use = other.bits_in_use;
-        dynamic = other.dynamic;
-
-        data = other.data;
-        other.data = nullptr;
+        *this = std::move(other);
     }
 
     ~Packet()
@@ -70,9 +70,11 @@ public:
     Packet& operator=(const Packet &other)
     {
         delete [] data;
+        created_at = other.created_at;
         size = other.size;
         bits_in_use = other.bits_in_use;
         dynamic = other.dynamic;
+        retries = other.retries;
 
         data = new unsigned int[size];
 
@@ -88,9 +90,11 @@ public:
         // Move operator
         delete [] data;
 
+        created_at = other.created_at;
         size = other.size;
         bits_in_use = other.bits_in_use;
         dynamic = other.dynamic;
+        retries = other.retries;
 
         data = other.data;
         other.data = nullptr;
@@ -327,6 +331,26 @@ public:
         return bytes;
     }
 
+    unsigned int GetCreatedAt() const
+    {
+        return created_at;
+    }
+
+    void UpdateCreatedAt(unsigned int time)
+    {
+        created_at = time;
+    }
+
+    unsigned int GetRetries() const
+    {
+        return retries;
+    }
+
+    void IncrementRetry()
+    {
+        retries++;
+    }
+
 private:
     void InitializeToZero(unsigned int start, unsigned int end)
     {
@@ -337,8 +361,11 @@ private:
             data[i] = 0;
     }
 
+    // TODO rename created_at
+    unsigned int created_at;
     unsigned int size;
     bool dynamic;
     unsigned int bits_in_use;
+    unsigned int retries;
     unsigned int* data;
 };
