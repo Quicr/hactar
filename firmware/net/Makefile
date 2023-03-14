@@ -10,7 +10,7 @@ all: copy compile upload
 copy:
 	cp -r ${SHARED_INC_DIR} ./
 
-compile:
+compile: copy
 	arduino-cli compile --build-path ${BUILD_PATH} --build-cache-path ${CACHE_PATH} --fqbn ${BOARD}
 
 program: compile upload

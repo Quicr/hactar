@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include "inc/ModuleClient.hh"
+#include "inc/SerialEsp.hh"
+#include "shared_inc/SerialManager.hh"
 #include "shared_inc/Packet.hh"
 
 /** NOTE this is temporary
@@ -11,13 +13,19 @@
 */
 #include "wifi_creds.hh"
 
+
+
 constexpr unsigned int Byte_Size = 8;
 
 Vector<Packet> outgoing_serial;
 
+
 char* host = "192.168.1.120";
 unsigned int port = 60777;
-ModuleClient client(host, port);
+ModuleClient* client;
+
+SerialEsp* uart;
+SerialManager* ui_layer;
 
 // Timeouts
 unsigned long current_time = 0;
@@ -31,7 +39,7 @@ void HandleIncomingNetwork()
     // if (current_time < incoming_network_timeout) return;
 
     // Get the packet from the client
-    Packet recv_packet = client.GetMessage();
+    Packet recv_packet = client->GetMessage();
 
     if (recv_packet.GetSize() == 0) return;
     incoming_network_timeout = current_time + 5000;
@@ -73,58 +81,94 @@ void HandleOutgoingNetwork()
 {
     // if (current_time < outgoing_network_timeout) return;
     // outgoing_network_timeout = current_time + 5000;
-    client.SendMessages();
+    client->SendMessages();
 
 }
 
 void HandleIncomingSerial()
 {
+    SerialManager::SerialStatus status = ui_layer->ReadSerial(current_time);
+
+    if (status == SerialManager::SerialStatus::EMPTY) return;
+
+    if (status != SerialManager::SerialStatus::OK) return;
+
+    // Get packets
+    Vector<Packet*>& packets = ui_layer->GetPackets();
+
+    while (packets.size() > 0)
+    {
+        Packet& rx_packet = *packets[0];
+
+        // Get type
+        uint8_t p_type = rx_packet.GetData(0, 6);
+        if (p_type == Packet::PacketTypes::UIMessage)
+        {
+            // Get id
+            uint8_t confirm_id = rx_packet.GetData(6, 8);
+
+
+            Packet confirm_packet(current_time, 1);
+            confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
+            confirm_packet.SetData(1, 6, 8);
+            confirm_packet.SetData(1, 14, 10);
+            confirm_packet.SetData(confirm_id, 24, 8);
+
+            // TODO push this onto a vector of packets to be sent
+            ui_layer->WriteSerial(confirm_packet);
+        }
+
+        packets.erase(0);
+    }
+    // Get id
+
+    // Respond
 
     // If there are no messages just skip it then
-    if (!Serial.available()) return;
+    // if (!Serial.available()) return;
 
-    // Serial is available, so lets give it some time to finish the transmission
-    delay(200);
+    // // Serial is available, so lets give it some time to finish the transmission
+    // delay(200);
 
-    Packet incoming_packet(millis(), 1);
-    unsigned int offset = 0;
-    while (Serial.available())
-    {
-        incoming_packet.SetData(Serial.read(), offset, Byte_Size);
-        offset += Byte_Size;
-    }
+    // Packet incoming_packet(current_time, 1);
+    // unsigned int offset = 0;
+    // while (Serial.available())
+    // {
+    //     incoming_packet.SetData(Serial.read(), offset, Byte_Size);
+    //     offset += Byte_Size;
+    // }
 
-    // Get the type
-    uint8_t packet_type = incoming_packet.GetData(0, 6);
+    // // Get the type
+    // uint8_t packet_type = incoming_packet.GetData(0, 6);
 
-    //TODO  Check the type
-    if (packet_type == Packet::PacketTypes::UIMessage)
-    {
-        client.EnqueuePacket(std::move(incoming_packet));
+    // //TODO  Check the type
+    // if (packet_type == Packet::PacketTypes::UIMessage)
+    // {
+    //     client->EnqueuePacket(std::move(incoming_packet));
 
 
-        // Get the id from the incoming packet
-        uint8_t packet_id = incoming_packet.GetData(6, 8);
+    //     // Get the id from the incoming packet
+    //     uint8_t packet_id = incoming_packet.GetData(6, 8);
 
-        // BUG causes a crash for some reason????
-        // Assuming everything is successful then we will say ok we got it
-        // Packet confirm_packet(millis(), 1);
-        // confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
-        // confirm_packet.SetData(1, 6, 8);
-        // confirm_packet.SetData(1, 14, 10);
-        // confirm_packet.SetData(packet_id, 24, 8);
-        // outgoing_serial.push_back(std::move(confirm_packet));
-    }
-    else if (packet_type == Packet::PacketTypes::ReceiveOk)
-    {
-        // Get the data from the packet
-        uint8_t confirmed_id = incoming_packet.GetData(24, 8);
+    //     // BUG causes a crash for some reason????
+    //     // Assuming everything is successful then we will say ok we got it
+    //     // Packet confirm_packet(current_time, 1);
+    //     // confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
+    //     // confirm_packet.SetData(1, 6, 8);
+    //     // confirm_packet.SetData(1, 14, 10);
+    //     // confirm_packet.SetData(packet_id, 24, 8);
+    //     // outgoing_serial.push_back(std::move(confirm_packet));
+    // }
+    // else if (packet_type == Packet::PacketTypes::ReceiveOk)
+    // {
+    //     // Get the data from the packet
+    //     uint8_t confirmed_id = incoming_packet.GetData(24, 8);
 
-        // Remove it from the packet map
+    //     // Remove it from the packet map
 
-        // confirm we got it with the led
-        digitalWrite(17, 1);
-    }
+    //     // confirm we got it with the led
+    //     digitalWrite(17, 1);
+    // }
 }
 
 void HandleOutgoingSerial()
@@ -163,6 +207,12 @@ void setup()
     Serial.begin(115200);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
+
+    client = new ModuleClient(host, port);
+
+    uart = new SerialEsp(Serial);
+    ui_layer = new SerialManager(uart);
+
     delay(10000);
     Serial.println("Starting");
 }
@@ -174,12 +224,12 @@ void loop()
         Serial.println("Not connected to wifi");
     }
 
-    HandleIncomingSerial();
-    HandleOutgoingNetwork();
-    HandleIncomingNetwork();
-    HandleOutgoingSerial();
-
     current_time = millis();
+
+    HandleIncomingSerial();
+    // HandleOutgoingNetwork();
+    // HandleIncomingNetwork();
+    // HandleOutgoingSerial();
 
     yield();
 }
