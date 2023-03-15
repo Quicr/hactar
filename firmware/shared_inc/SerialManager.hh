@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include "SerialInterface.hh"
 #include "Vector.hh"
 #include "Packet.hh"
@@ -10,6 +12,9 @@
 class SerialManager
 {
 public:
+    static constexpr unsigned long Packet_Timeout = 5000;
+    static constexpr unsigned char Max_Retry = 3;
+
     typedef enum
     {
         EMPTY,
@@ -17,26 +22,75 @@ public:
         PARTIAL,
         BUSY,
         ERROR,
-        TIMEOUT,
+        TIMEOUT
     } SerialStatus;
 
     SerialManager(SerialInterface* uart) :
         uart(uart),
-        rx_parsed_packets(10),
+        rx_packets(10),
         rx_packet(nullptr),
         rx_packet_timeout(0),
-        rx_next_id(0)
+        rx_status(SerialStatus::EMPTY),
+        tx_packets(10),
+        tx_pending_packets(),
+        tx_status(SerialStatus::EMPTY)
     {}
 
     ~SerialManager()
     {
         if (rx_packet) delete rx_packet;
-        for (unsigned long i = 0; i < rx_parsed_packets.size(); i++)
+        for (unsigned long i = 0; i < rx_packets.size(); i++)
         {
-            delete rx_parsed_packets[i];
+            delete rx_packets[i];
         }
     }
 
+    void RxTx(const unsigned long current_time)
+    {
+        Rx(current_time);
+        Tx(current_time);
+    }
+
+    void Tx(const unsigned long current_time)
+    {
+        // Check pending tx packets
+        HandlePendingTx(current_time);
+
+        // Send tx packet
+        tx_status = WriteSerial();
+    }
+
+    void Rx(const unsigned long current_time)
+    {
+        rx_status = ReadSerial(current_time);
+    }
+
+    void EnqueuePacket(Packet&& packet)
+    {
+        tx_packets.push_back(std::move(packet));
+    }
+
+    const bool HasRxPackets() const
+    {
+        return rx_packets.size();
+    }
+
+    Vector<Packet*>& GetRxPackets()
+    {
+        return rx_packets;
+    }
+
+    const SerialStatus GetTxStatus() const
+    {
+        return tx_status;
+    }
+
+    const SerialStatus GetRxStatus() const
+    {
+        return rx_status;
+    }
+
+private:
     SerialStatus ReadSerial(const unsigned long current_time)
     {
         if (rx_packet != nullptr && current_time > rx_packet_timeout)
@@ -69,14 +123,6 @@ public:
             rx_packet->AppendData(uart->Read(), 8);
             rx_packet->AppendData(uart->Read(), 8);
             rx_packet->AppendData(uart->Read(), 8);
-
-            if (rx_packet->GetData(0, 6) == Packet::PacketTypes::NetworkDebug)
-            {
-                // THINK read the size and ignore that many bytes?
-                delete rx_packet;
-                rx_packet = nullptr;
-                return SerialStatus::EMPTY;
-            }
         }
 
         // Get the length of the incoming message
@@ -94,44 +140,160 @@ public:
 
             rx_packet->AppendData(uart->Read(), 8U);
 
-            if (data_length+3U == (rx_packet->BitsUsed() / 8U))
+            if (data_length+3U != (rx_packet->BitsUsed() / 8U)) continue;
+
+            unsigned char rx_type = rx_packet->GetData(0, 6);
+
+            SerialStatus status;
+
+            switch (rx_type)
             {
-                rx_parsed_packets.push_back(std::move(rx_packet));
-                rx_packet = nullptr;
-                return SerialStatus::OK;
+                case (unsigned char)Packet::Types::LocalDebug:
+                {
+                    delete rx_packet;
+                    rx_packet = nullptr;
+                    status = SerialStatus::EMPTY;
+                    break;
+                }
+                case (unsigned char)Packet::Types::Ok:
+                {
+                    // Get the id
+                    unsigned char ok_id = rx_packet->GetData(24, 8);
+                    tx_pending_packets.erase(ok_id);
+                    status = SerialStatus::OK;
+                    break;
+                }
+                case (unsigned char)Packet::Types::Error:
+                {
+                    unsigned char failed_id = rx_packet->GetData(24, 8);
+                    Packet& failed_packet = tx_pending_packets[failed_id];
+                    EnqueuePacket(std::move(failed_packet));
+                    tx_pending_packets.erase(failed_id);
+                    status = SerialStatus::ERROR;
+                    break;
+                }
+                case Packet::Types::Busy:
+                {
+                    // TODO resend our message
+                    status = SerialStatus::BUSY;
+                    break;
+                }
+                default:
+                {
+                    // All other packets can just be assumed to be normal
+                    // for now, debug messages should go elsewhere (eeprom?)
+
+                    // Now that we got this packet, we will respond
+                    Packet ok_packet;
+                    ok_packet.SetData(Packet::Types::Ok, 0, 6);
+                    ok_packet.SetData(1, 6, 8); // Id here doesn't matter
+                    ok_packet.SetData(1, 14, 10);
+
+                    // Get the id of the rx packet and set it to the data
+                    ok_packet.SetData(rx_packet->GetData(6, 8), 24, 8);
+
+                    // Push the ok packet
+                    EnqueuePacket(std::move(ok_packet));
+
+                    rx_packets.push_back(std::move(rx_packet));
+                    rx_packet = nullptr;
+                    status = SerialStatus::OK;
+                    break;
+                }
             }
+            return status;
         }
 
         // Not a full transmission, so we'll wait
         return SerialStatus::PARTIAL;
     }
 
-    SerialStatus WriteSerial(const Packet& packet)
+    inline void HandlePendingTx(const unsigned long current_time)
     {
+        // Check the pending packets
+        if (tx_pending_packets.size() == 0) return;
+
+        Vector<unsigned char> remove_ids;
+
+        for (std::pair<const unsigned char, Packet>& packet_pair : tx_pending_packets)
+        {
+            if (packet_pair.second.GetCreatedAt() + Packet_Timeout > current_time)
+                continue;
+
+            if (packet_pair.second.GetRetries() >= Max_Retry)
+            {
+                remove_ids.push_back(packet_pair.first);
+                continue;
+            }
+
+            // Add to the packets to remove from the map
+            remove_ids.push_back(packet_pair.first);
+
+            // Update the time on the packet
+            packet_pair.second.UpdateCreatedAt(current_time);
+
+            // Increment the retry on the packet
+            packet_pair.second.IncrementRetry();
+
+            // The packet has expired with no response so resend it.
+            EnqueuePacket(std::move(packet_pair.second));
+        }
+
+        // Remove resent packets from the tx_pending_packets map
+        for (unsigned char i = 0; i < remove_ids.size(); i++)
+        {
+            tx_pending_packets.erase(remove_ids[i]);
+        }
+    }
+
+    SerialStatus WriteSerial()
+    {
+        if (tx_packets.size() == 0) return SerialStatus::EMPTY;
+
         if (!uart->ReadyToWrite()) return SerialStatus::BUSY;
 
+        Packet& tx_packet = tx_packets.front();
+
         // Get the buffer
-        unsigned char* tx_buffer = std::move(packet.ToBytes());
+        unsigned char* tx_buffer = std::move(tx_packet.ToBytes());
 
         // Get the size
         unsigned short tx_buffer_sz = static_cast<unsigned short>(
-            packet.GetData(14, 10)) + 3;
+            tx_packet.GetData(14, 10)) + 3;
 
         uart->Write(tx_buffer, tx_buffer_sz);
+
+        // Check the type of packet sent
+        unsigned char packet_type = tx_packet.GetData(0, 6);
+        if (packet_type == Packet::Types::Message ||
+            packet_type == Packet::Types::Debug)
+        {
+            // Get the packet id
+            unsigned char packet_id = tx_packet.GetData(6, 8);
+
+            // Move the tx packet to the sent packets
+            tx_pending_packets[packet_id] = std::move(tx_packet);
+        }
+
+        // Remove the packet from tx_packets
+        tx_packets.erase(0);
 
         return SerialStatus::OK;
     }
 
-    Vector<Packet*>& GetPackets()
-    {
-        return rx_parsed_packets;
-    }
-
-private:
     SerialInterface* uart;
 
-    Vector<Packet*> rx_parsed_packets;
+    // THINK should I have a map of vector of packets?
+    // THINK linked list?
+    // rx
+    Vector<Packet*> rx_packets;
     Packet* rx_packet;
     unsigned long rx_packet_timeout;
-    unsigned long rx_next_id;
+    SerialStatus rx_status;
+
+    // tx
+    Vector<Packet> tx_packets;
+    std::map<unsigned char, Packet> tx_pending_packets; // TODO max packets
+    SerialStatus tx_status;
+
 };

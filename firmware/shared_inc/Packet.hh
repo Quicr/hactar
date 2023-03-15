@@ -22,17 +22,14 @@
 class Packet
 {
 public:
-    enum PacketTypes
+    enum Types
     {
-        NetworkDebug = 1,
-        NetworkMessageSentOK,
-        NetworkMessageSentError,
-        UIDebug,
-        UIMessage,
-        UIMessageSentOK,
-        UIMessageSentError,
-        ReceiveOk,
-        ReceiveError
+        Ok = 1,
+        Error,
+        Busy,
+        Debug,
+        LocalDebug,
+        Message,
     };
 
     // TODO important to have different data lengths for each type..
