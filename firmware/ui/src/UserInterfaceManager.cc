@@ -14,12 +14,9 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     keyboard(&keyboard),
     net_layer(&net_interface),
     view(nullptr),
-    received_messages(),
-    unsent_tx_packets(),
+    received_messages(), // TODO limit?
     force_redraw(false),
-    current_time(HAL_GetTick()),
-    next_message_receive_timeout(0),
-    next_message_transmit_timeout(0)
+    current_time(HAL_GetTick())
 {
     ChangeView<LoginView>();
 }
@@ -46,17 +43,16 @@ void UserInterfaceManager::Run()
         force_redraw = false;
         return;
     }
+
+    // Run the receive and transmit
+    net_layer.RxTx(current_time);
+
     // TODO we probably should keep a small list of the most recent messages
     //      in the user interface manager instead of chat view
     //      otherwise it will be bizarre having to get all of the old messages.
     // TODO this should only occur in the chat view mode?
-    HandleOutgoingSerial();
-    HandleIncomingSerial();
 
-    TimeoutPackets();
-
-    screen->DrawText(0, 50, String::int_to_string(sent_tx_packets.size()), font7x12,
-        C_WHITE, C_BLACK);
+    HandleIncomingPackets();
 }
 
 bool UserInterfaceManager::HasMessages()
@@ -77,7 +73,7 @@ void UserInterfaceManager::ClearMessages()
 void UserInterfaceManager::EnqueuePacket(Packet&& packet)
 {
     // TODO maybe make this into a linked list?
-    unsent_tx_packets.push_back(std::move(packet));
+    net_layer.EnqueuePacket(std::move(packet));
 }
 
 void UserInterfaceManager::ForceRedraw()
@@ -92,44 +88,17 @@ bool UserInterfaceManager::RedrawForced()
     return force_redraw;
 }
 
-void UserInterfaceManager::HandleOutgoingSerial()
+uint32_t UserInterfaceManager::NextPacketId()
 {
-    if (unsent_tx_packets.size() > 0)
-    {
-        // Linked queue would be better for this.
-        // Send a packet
-        Packet& tx_packet = unsent_tx_packets[0];
-        SerialManager::SerialStatus status = net_layer.WriteSerial(tx_packet);
-
-        view->SetTxColour(GetStatusColour(status));
-
-        // Get the packet id
-        uint16_t packet_id = tx_packet.GetData(6, 8);
-
-        // Move the sent packet to the map if it was not sent
-        sent_tx_packets[packet_id] = std::move(tx_packet);
-
-        // Erase the sent packet from the unsent packets
-        unsent_tx_packets.erase(0);
-    }
+    return UserInterfaceManager::Packet_Id++;
 }
 
-void UserInterfaceManager::HandleIncomingSerial()
+void UserInterfaceManager::HandleIncomingPackets()
 {
-    SerialManager::SerialStatus status =
-        net_layer.ReadSerial(current_time);
-
-    // Set the colour if its not empty because it will reset its colour
-    // after a short timeout
-    if (status != SerialManager::SerialStatus::EMPTY)
-        view->SetRxColour(GetStatusColour(status));
-
-    // TODO need to have some sort of error?
-    // Check the status
-    if (status != SerialManager::SerialStatus::OK) return;
+    if (!net_layer.HasRxPackets()) return;
 
     // Get the packets
-    Vector<Packet*>& packets = net_layer.GetPackets();
+    Vector<Packet*>& packets = net_layer.GetRxPackets();
 
     // Handle incoming packets
     while (packets.size() > 0)
@@ -138,47 +107,9 @@ void UserInterfaceManager::HandleIncomingSerial()
         Packet& rx_packet = *packets[0];
         uint8_t p_type = rx_packet.GetData(0, 6);
 
-        // Check the packet type
-        if (p_type == Packet::PacketTypes::ReceiveOk)
+        // P_type will only be message or debug by this point
+        if (p_type == Packet::Types::Message)
         {
-            // Get the message id
-            uint8_t confirm_id = rx_packet.GetData(24, 8);
-
-            // Find and remove the sent tx
-            sent_tx_packets.erase(confirm_id);
-        }
-        else if (p_type == Packet::PacketTypes::ReceiveError)
-        {
-            // Get the failed packet id
-            uint8_t failed_id = rx_packet.GetData(24, 8);
-
-            Packet& failed_packet = sent_tx_packets[failed_id];
-            EnqueuePacket(std::move(failed_packet));
-            sent_tx_packets.erase(failed_id);
-        }
-        else if (p_type == Packet::PacketTypes::UIMessage)
-        {
-            // Create a OK packet
-            // Get the id
-            uint8_t received_id = rx_packet.GetData(6, 8);
-
-            Packet ok_packet(current_time, 1);
-
-            // Set the type
-            ok_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
-
-            // Set the id
-            ok_packet.SetData(UserInterfaceManager::Packet_Id++, 6, 8);
-
-            // Set the length
-            ok_packet.SetData(1, 14, 10);
-
-            // Set the data
-            ok_packet.SetData(received_id, 24, 8);
-
-            // Enqueue the ok
-            EnqueuePacket(std::move(ok_packet));
-
             // Write a message to the screen
             Message in_msg;
             // TODO The message should be parsed some how here.
@@ -191,8 +122,7 @@ void UserInterfaceManager::HandleIncomingSerial()
             unsigned short packet_len = rx_packet.GetData(14, 10);
             for (uint32_t j = 0; j < packet_len; ++j)
             {
-                volatile char ch = (char)rx_packet.GetData(24 + (j * 8), 8);
-                body.push_back((char)ch);
+                body.push_back((char)rx_packet.GetData(24 + (j * 8), 8));
             }
 
             in_msg.Body(body);
@@ -203,40 +133,14 @@ void UserInterfaceManager::HandleIncomingSerial()
     }
 }
 
-void UserInterfaceManager::TimeoutPackets()
+const uint32_t UserInterfaceManager::GetTxStatusColour() const
 {
-    Vector<uint16_t> remove_packets_ids;
+    return GetStatusColour(net_layer.GetTxStatus());
+}
 
-    for (auto& p_packet : sent_tx_packets)
-    {
-        // Check if the packet has expired
-        if (p_packet.second.GetCreatedAt() + 5000 > current_time)
-            continue;
-
-        if (p_packet.second.GetRetries() >= 3)
-        {
-            remove_packets_ids.push_back(p_packet.first);
-            continue;
-        }
-
-        // Add to the packets to remove from the map
-        remove_packets_ids.push_back(p_packet.first);
-
-        // Update the time on the packet
-        p_packet.second.UpdateCreatedAt(current_time);
-
-        // Increment the retry on the packet
-        p_packet.second.IncrementRetry();
-
-        // The packet has expired with no response so resend it.
-        EnqueuePacket(std::move(p_packet.second));
-    }
-
-    // Remove packets from the sent_tx_packets as it is being resent
-    for (uint16_t i = 0; i < remove_packets_ids.size(); i++)
-    {
-        sent_tx_packets.erase(remove_packets_ids[i]);
-    }
+const uint32_t UserInterfaceManager::GetRxStatusColour() const
+{
+    return GetStatusColour(net_layer.GetRxStatus());
 }
 
 const uint32_t UserInterfaceManager::GetStatusColour(

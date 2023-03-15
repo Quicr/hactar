@@ -29,6 +29,11 @@ public:
     void ForceRedraw();
     bool RedrawForced();
 
+    const uint32_t GetTxStatusColour() const;
+    const uint32_t GetRxStatusColour() const;
+
+    uint32_t NextPacketId();
+
     template<typename T>
     void ChangeView()
     {
@@ -38,10 +43,10 @@ public:
         view = new T(*this, *screen, *keyboard);
     }
 
-    static uint32_t Packet_Id;
 private:
-    void HandleIncomingSerial();
-    void HandleOutgoingSerial();
+    static uint32_t Packet_Id;
+
+    void HandleIncomingPackets();
     void TimeoutPackets();
     const uint32_t GetStatusColour(
         const SerialManager::SerialStatus status) const;
@@ -53,15 +58,6 @@ private:
     SerialManager net_layer;
     ViewBase* view;
     Vector<Message> received_messages;
-    Vector<Packet> unsent_tx_packets;
-    std::map<uint16_t, Packet> sent_tx_packets;
-
     bool force_redraw;
-
     uint32_t current_time;
-
-    uint32_t next_message_receive_timeout;
-    uint32_t next_message_transmit_timeout;
-
-    bool stop = 0;
 };

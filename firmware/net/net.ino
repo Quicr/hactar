@@ -56,7 +56,7 @@ void HandleIncomingNetwork()
     // Get the packet data size
     unsigned short size = recv_packet.GetData(14, 10);
 
-    if (type == Packet::PacketTypes::NetworkDebug)
+    if (type == Packet::Types::LocalDebug)
     {
         // Dump it to the serial monitor for now
         Serial.print("Network debug message ");
@@ -87,39 +87,65 @@ void HandleOutgoingNetwork()
 
 void HandleIncomingSerial()
 {
-    SerialManager::SerialStatus status = ui_layer->ReadSerial(current_time);
+    // Skip if no packets have come in
+    if (!ui_layer->HasRxPackets()) return;
 
-    if (status == SerialManager::SerialStatus::EMPTY) return;
+    // Get the packets from the ui layer
+    Vector<Packet*>& rx_packets = ui_layer->GetRxPackets();
 
-    if (status != SerialManager::SerialStatus::OK) return;
-
-    // Get packets
-    Vector<Packet*>& packets = ui_layer->GetPackets();
-
-    while (packets.size() > 0)
+    // Handle incoming packets
+    while (rx_packets.size() > 0)
     {
-        Packet& rx_packet = *packets[0];
+        // Get the type
+        Packet& rx_packet = *rx_packets[0];
+        uint8_t packet_type = rx_packet.GetData(0, 6);
 
-        // Get type
-        uint8_t p_type = rx_packet.GetData(0, 6);
-        if (p_type == Packet::PacketTypes::UIMessage)
+        // P_type will only be message or debug by this point
+        if (packet_type == Packet::Types::Message)
         {
-            // Get id
-            uint8_t confirm_id = rx_packet.GetData(6, 8);
-
-
-            Packet confirm_packet(current_time, 1);
-            confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
-            confirm_packet.SetData(1, 6, 8);
-            confirm_packet.SetData(1, 14, 10);
-            confirm_packet.SetData(confirm_id, 24, 8);
-
-            // TODO push this onto a vector of packets to be sent
-            ui_layer->WriteSerial(confirm_packet);
+            // Pass the message to the client
+            client->EnqueuePacket(std::move(rx_packet));
         }
 
-        packets.erase(0);
+        Serial.println(rx_packets.size());
+
+        rx_packets.erase(0);
     }
+
+
+    // SerialManager::SerialStatus status = ui_layer->ReadSerial(current_time);
+
+    // if (status == SerialManager::SerialStatus::EMPTY) return;
+
+    // if (status != SerialManager::SerialStatus::OK) return;
+
+    // // Get packets
+    // Vector<Packet*>& packets = ui_layer->GetPackets();
+
+    // while (packets.size() > 0)
+    // {
+    //     Packet& rx_packet = *packets[0];
+
+    //     // Get type
+    //     uint8_t p_type = rx_packet.GetData(0, 6);
+    //     if (p_type == Packet::Types::Message)
+    //     {
+    //         // Get id
+    //         uint8_t confirm_id = rx_packet.GetData(6, 8);
+
+
+    //         Packet confirm_packet(current_time, 1);
+    //         confirm_packet.SetData(Packet::Types::Ok, 0, 6);
+    //         confirm_packet.SetData(1, 6, 8);
+    //         confirm_packet.SetData(1, 14, 10);
+    //         confirm_packet.SetData(confirm_id, 24, 8);
+
+    //         // TODO push this onto a vector of packets to be sent
+    //         ui_layer->WriteSerial(confirm_packet);
+    //     }
+
+    //     packets.erase(0);
+    // }
     // Get id
 
     // Respond
@@ -142,7 +168,7 @@ void HandleIncomingSerial()
     // uint8_t packet_type = incoming_packet.GetData(0, 6);
 
     // //TODO  Check the type
-    // if (packet_type == Packet::PacketTypes::UIMessage)
+    // if (packet_type == Packet::Types::UIMessage)
     // {
     //     client->EnqueuePacket(std::move(incoming_packet));
 
@@ -153,13 +179,13 @@ void HandleIncomingSerial()
     //     // BUG causes a crash for some reason????
     //     // Assuming everything is successful then we will say ok we got it
     //     // Packet confirm_packet(current_time, 1);
-    //     // confirm_packet.SetData(Packet::PacketTypes::ReceiveOk, 0, 6);
+    //     // confirm_packet.SetData(Packet::Types::ReceiveOk, 0, 6);
     //     // confirm_packet.SetData(1, 6, 8);
     //     // confirm_packet.SetData(1, 14, 10);
     //     // confirm_packet.SetData(packet_id, 24, 8);
     //     // outgoing_serial.push_back(std::move(confirm_packet));
     // }
-    // else if (packet_type == Packet::PacketTypes::ReceiveOk)
+    // else if (packet_type == Packet::Types::ReceiveOk)
     // {
     //     // Get the data from the packet
     //     uint8_t confirmed_id = incoming_packet.GetData(24, 8);
@@ -225,6 +251,8 @@ void loop()
     }
 
     current_time = millis();
+
+    ui_layer->RxTx(current_time);
 
     HandleIncomingSerial();
     // HandleOutgoingNetwork();

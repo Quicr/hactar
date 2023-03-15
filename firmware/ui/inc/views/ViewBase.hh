@@ -1,5 +1,6 @@
 #pragma once
 
+#include "UserInterfaceManager.hh"
 #include "Screen.hh"
 #include "Q10Keyboard.hh"
 #include "String.hh"
@@ -25,9 +26,7 @@ public:
         last_drawn_idx(0),
         redraw_input(true),
         usr_input(""),
-        tx_colour(C_WHITE),
         tx_redraw_timeout(0),
-        rx_colour(C_WHITE),
         rx_redraw_timeout(0)
     {
         ResetCursorPosition();
@@ -52,16 +51,6 @@ public:
         screen.FillScreen(bg);
         screen.EnableBackLight();
     }
-
-    void SetTxColour(const uint32_t colour)
-    {
-        tx_colour = colour;
-    }
-
-    void SetRxColour(const uint32_t colour)
-    {
-        rx_colour = colour;
-    }
 protected:
     // Cursor types and const expr
     typedef struct {
@@ -82,17 +71,15 @@ protected:
         if (HAL_GetTick() > tx_redraw_timeout)
         {
             screen.DrawText(WIDTH-32, 0, "tx", font5x8,
-                tx_colour, bg);
+                manager.GetTxStatusColour(), bg);
             tx_redraw_timeout = HAL_GetTick() + 500;
-            tx_colour = C_WHITE;
         }
 
         if (HAL_GetTick() > rx_redraw_timeout)
         {
             screen.DrawText(WIDTH-16, 0, "rx", font5x8,
-                rx_colour, bg);
+                manager.GetRxStatusColour(), bg);
             rx_redraw_timeout = HAL_GetTick() + 500;
-            rx_colour = C_WHITE;
         }
     }
 
@@ -245,9 +232,7 @@ protected:
     // Input variables
     String usr_input;
 
-    uint32_t tx_colour;
     uint32_t tx_redraw_timeout;
-    uint32_t rx_colour;
     uint32_t rx_redraw_timeout;
 
     // TODO EEPROM setting
