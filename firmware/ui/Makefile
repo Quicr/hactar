@@ -163,6 +163,19 @@ CFLAGS += -g -gdwarf-2
 endif
 
 
+ifeq (${PROGRAMMER}, CUBE)
+	ifeq (${OS}, WINDOWS_NT)
+		EXT = .exe
+	else
+		EXT =
+	endif
+endif
+
+OCD_DIR    = /usr/share/openocd/scripts
+# OCDFLAGS   = -f interface/stlink-v2.cfg -f target/${CHIP_NAME_LC}x.cfg
+OCDFLAGS   = -f interface/stlink.cfg -f target/stm32f4x.cfg
+
+
 # Generate dependency informationINCS	  = $(addprefix -I,$(shell find inc -type d))INCS	  = $(addprefix -I,$(shell find inc -type d))INCS	  = $(addprefix -I,$(shell find inc -type d))
 CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 
@@ -237,13 +250,9 @@ compile: $(BIN_DIR)/$(TARGET).bin $(BIN_DIR)/$(TARGET).hex
 program: compile upload
 
 upload:
-	if [ ${PROGRAMMER} == CUBE ] ; then \
-		if [ ${OS} == WINDOWS_NT ] ; then \
-			STM32_Programmer_CLI.exe ${CUBE_PROGRAMMER_ARGS} ; \
-		else \
-			STM32_Programmer_CLI ${CUBE_PROGRAMMER_ARGS} ; \
-		fi \
-	fi
+	if [ ${PROGRAMMER} = CUBE ] ; then \
+		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
+	fi \
 
 info:
 	@echo "[Build path]		${DIRS}"
@@ -256,6 +265,9 @@ dirs: ${DIRS}
 ${DIRS}:
 	@echo "[MKDIR]		$@"
 	@mkdir -p $@
+
+openocd:
+	openocd $(OCDFLAGS)
 
 #######################################
 # clean up
