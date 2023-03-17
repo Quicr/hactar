@@ -80,14 +80,15 @@ def HandleClient(client:socket.socket, addr):
                     # Since this is an echo server we are going to generally
                     # ignore the type
 
-                    # Get bit 3 and 4 for the type
-                    msg_type = ((data[0] & (3 << 2)) >> 2)
+                    # Get the first 6 bits
+                    msg_type = ((data[0] & 252) >> 2)
 
-                    # Get the whole byte data1 and the first two bits of data0
-                    msg_id = (((data[1] & (3 << 2)) >> 2) + (data[0] & 3))
+                    # Get the first 2 bits of the first byte and 6 bits from
+                    # the next
+                    msg_id = ((data[0] & 3) << 6) + ((data[1] & 252) >> 2)
 
-                    #  Add the second byte to the first
-                    msg_length = data[2] + 3
+                    # Get 10 bits from the next bytes
+                    msg_length = ((data[1] & 3) << 6) + data[2] + 3
 
                     # We want to receive the size of the message
                     receive_size = msg_length

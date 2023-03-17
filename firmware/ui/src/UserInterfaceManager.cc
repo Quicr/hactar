@@ -5,7 +5,7 @@
 #include "TeamView.hh"
 
 // Init the static var
-uint32_t UserInterfaceManager::Packet_Id = 0;
+uint32_t UserInterfaceManager::Packet_Id = 1;
 
 UserInterfaceManager::UserInterfaceManager(Screen &screen,
                                            Q10Keyboard &keyboard,

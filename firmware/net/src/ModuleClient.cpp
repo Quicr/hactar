@@ -18,10 +18,11 @@ bool ModuleClient::SendMessages()
     if (!Connect())
         return messages_sent;
 
-    unsigned int i, j;
+    unsigned int j;
     unsigned char data;
+
     // Try to send all messages
-    for (i = 0; i < packets.size(); i++)
+    while (packets.size() > 0)
     {
         // If the client disconnects stop the transmission
         if (!client.connected()) return messages_sent;
@@ -29,29 +30,22 @@ bool ModuleClient::SendMessages()
         // Busy, try again later
         if (!client.availableForWrite()) return messages_sent;
 
-        for (j = 0; j < packets[i].SizeInBytes(); j++)
+        Packet& packet = packets[0];
+
+        for (j = 0; j < packet.SizeInBytes(); j++)
         {
             data = static_cast<unsigned char>(
-                packets[i].GetData(j*8, 8));
+                packet.GetData(j*8, 8));
 
             client.write(data);
             messages_sent = true;
         }
+
         // End the message
         client.write('\0');
+
+        packets.erase(0);
     }
-
-    // unsigned int delete_shift = 0;
-    // size_t idx;
-    // for (unsigned int i = 0; i < sent_indices.size(); i++)
-    // {
-    //     idx = sent_indices[i];
-    //     msgs.erase(idx - delete_shift);
-    //     delete_shift++;
-    // }
-
-    // Just clear for now
-    packets.clear();
 
     return messages_sent;
 }
@@ -97,7 +91,6 @@ bool ModuleClient::GetMessage(Packet& incoming_packet)
 
 bool ModuleClient::Connect()
 {
-
     unsigned int attempts = 0;
     while (!client.connect(host, port))
     {

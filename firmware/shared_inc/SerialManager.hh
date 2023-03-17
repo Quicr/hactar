@@ -12,7 +12,7 @@
 class SerialManager
 {
 public:
-    static constexpr unsigned long Packet_Timeout = 5000;
+    static constexpr unsigned long Packet_Timeout = 10000;
     static constexpr unsigned char Max_Retry = 3;
 
     typedef enum
@@ -39,7 +39,7 @@ public:
     ~SerialManager()
     {
         if (rx_packet) delete rx_packet;
-        for (unsigned long i = 0; i < rx_packets.size(); i++)
+        for (unsigned long i = 0; i < rx_packets.size(); ++i)
         {
             delete rx_packets[i];
         }
@@ -151,7 +151,6 @@ private:
                 case (unsigned char)Packet::Types::LocalDebug:
                 {
                     delete rx_packet;
-                    rx_packet = nullptr;
                     status = SerialStatus::EMPTY;
                     break;
                 }
@@ -160,6 +159,8 @@ private:
                     // Get the id
                     unsigned char ok_id = rx_packet->GetData(24, 8);
                     tx_pending_packets.erase(ok_id);
+
+                    delete rx_packet;
                     status = SerialStatus::OK;
                     break;
                 }
@@ -169,12 +170,17 @@ private:
                     Packet& failed_packet = tx_pending_packets[failed_id];
                     EnqueuePacket(std::move(failed_packet));
                     tx_pending_packets.erase(failed_id);
+
+                    delete rx_packet;
                     status = SerialStatus::ERROR;
                     break;
                 }
                 case Packet::Types::Busy:
                 {
                     // TODO resend our message
+
+
+                    delete rx_packet;
                     status = SerialStatus::BUSY;
                     break;
                 }
@@ -196,11 +202,11 @@ private:
                     EnqueuePacket(std::move(ok_packet));
 
                     rx_packets.push_back(std::move(rx_packet));
-                    rx_packet = nullptr;
                     status = SerialStatus::OK;
                     break;
                 }
             }
+            rx_packet = nullptr;
             return status;
         }
 
@@ -229,14 +235,19 @@ private:
             // Add to the packets to remove from the map
             remove_ids.push_back(packet_pair.first);
 
+            // Error state for now
+            // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
+
+
+            // TODO later add this in
             // Update the time on the packet
-            packet_pair.second.UpdateCreatedAt(current_time);
+            // packet_pair.second.UpdateCreatedAt(current_time);
 
             // Increment the retry on the packet
-            packet_pair.second.IncrementRetry();
+            // packet_pair.second.IncrementRetry();
 
             // The packet has expired with no response so resend it.
-            EnqueuePacket(std::move(packet_pair.second));
+            // EnqueuePacket(std::move(packet_pair.second));
         }
 
         // Remove resent packets from the tx_pending_packets map
