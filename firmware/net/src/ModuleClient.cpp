@@ -1,5 +1,4 @@
 #include "../inc/ModuleClient.hh"
-#include <ESP8266WiFi.h>
 
 ModuleClient::ModuleClient(String host, unsigned int port)
     : client(), packets(), host(host), port(port)
@@ -27,9 +26,6 @@ bool ModuleClient::SendMessages()
         // If the client disconnects stop the transmission
         if (!client.connected()) return messages_sent;
 
-        // Busy, try again later
-        if (!client.availableForWrite()) return messages_sent;
-
         Packet& packet = packets[0];
 
         for (j = 0; j < packet.SizeInBytes(); j++)
@@ -42,7 +38,7 @@ bool ModuleClient::SendMessages()
         }
 
         // End the message
-        client.write('\0');
+        client.write((uint8_t)0);
 
         packets.erase(0);
     }
@@ -92,10 +88,10 @@ bool ModuleClient::GetMessage(Packet& incoming_packet)
 bool ModuleClient::Connect()
 {
     unsigned int attempts = 0;
-    while (!client.connect(host, port))
+    while (!client.connect(host.c_str(), port, 1000))
     {
-        // Serial.print("Attempting to connect to host ");
-        // Serial.println(attempts);
+        Serial.print("Attempting to connect to host ");
+        Serial.println(attempts);
         if (++attempts > 9)
         {
             return false; // failed to connect not sending message.

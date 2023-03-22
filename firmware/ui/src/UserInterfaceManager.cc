@@ -34,6 +34,13 @@ UserInterfaceManager::~UserInterfaceManager()
 // TODO should update this to be a draw/update architecture
 void UserInterfaceManager::Run()
 {
+    // if (current_time > last_test_packet)
+    // {
+    //     SendTestPacket();
+    //     last_test_packet = current_time + 5000;
+    // }
+
+
     current_time = HAL_GetTick();
 
     view->Run();
@@ -158,4 +165,20 @@ const uint32_t UserInterfaceManager::GetStatusColour(
         return C_RED;
     else
         return C_WHITE;
+}
+
+const void UserInterfaceManager::SendTestPacket()
+{
+    Packet test_packet(current_time);
+
+    test_packet.SetData(Packet::Types::Message, 0, 6);
+    test_packet.SetData(NextPacketId(), 6, 8);
+    test_packet.SetData(5, 14, 10);
+    test_packet.SetData('H', 24, 8);
+    test_packet.SetData('e', 32, 8);
+    test_packet.SetData('l', 40, 8);
+    test_packet.SetData('l', 48, 8);
+    test_packet.SetData('o', 56, 8);
+
+    EnqueuePacket(std::move(test_packet));
 }

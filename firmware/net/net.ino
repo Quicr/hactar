@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include "inc/ModuleClient.hh"
 #include "inc/SerialEsp.hh"
 #include "shared_inc/SerialManager.hh"
@@ -23,6 +23,8 @@ SerialEsp* uart;
 SerialManager* ui_layer;
 
 unsigned long current_time = 0;
+
+HardwareSerial serial_alt(Serial1);
 
 void HandleIncomingNetwork()
 {
@@ -56,25 +58,24 @@ void HandleIncomingNetwork()
     }
     else
     {
-        // TODO Make a frame buffer class that has a "complete flag"
-        // For now just assume its the right size..
-
-        // Send the serial messages to the ui
-        // Enqueue  the packet to the outgoing buffer
-        ui_layer->EnqueuePacket(std::move(recv_packet));
-
         // Dump it to the serial monitor for now
-        // Serial.print("Network debug message ");
+        Serial.print("Network debug message ");
 
-        // Serial.println(type);
-        // Serial.println(id);
-        // Serial.println(size);
-        // for (unsigned short i = 0; i < size; ++i)
-        // {
-        //     Serial.print((int)recv_packet.GetData(24 + (i * Byte_Size), Byte_Size));
-        //     Serial.print(" ");
-        // }
-        // Serial.println("");
+        Serial.print(type);
+        Serial.print(" ");
+        Serial.print(id);
+        Serial.print(" ");
+        Serial.print(size);
+        Serial.print(" - ");
+        for (unsigned short i = 0; i < size; ++i)
+        {
+            Serial.print((int)recv_packet.GetData(24 + (i * Byte_Size), Byte_Size));
+            Serial.print(" ");
+        }
+        Serial.println("");
+
+        // Enqueue the packet for serial transmission
+        ui_layer->EnqueuePacket(std::move(recv_packet));
     }
 }
 
@@ -100,6 +101,15 @@ void HandleIncomingSerial()
         Packet& rx_packet = *rx_packets[0];
         uint8_t packet_type = rx_packet.GetData(0, 6);
 
+        // message from stm
+        uint16_t data_len = rx_packet.GetData(14, 10);
+        Serial.println("Message from stm");
+        for (uint16_t i = 0; i < data_len; ++i)
+        {
+            Serial.print((char)rx_packet.GetData(24 + (i * 8), 8));
+        }
+        Serial.println("");
+
         // P_type will only be message or debug by this point
         if (packet_type == Packet::Types::Message)
         {
@@ -114,28 +124,29 @@ void HandleIncomingSerial()
 void setup()
 {
     Serial.begin(115200);
+    serial_alt.begin(115200, SERIAL_8N1, 17, 18);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
 
     client = new ModuleClient(host, port);
 
-    uart = new SerialEsp(Serial);
+    uart = new SerialEsp(serial_alt);
     ui_layer = new SerialManager(uart);
 
 
     Serial.println("Waiting");
-    pinMode(5, OUTPUT);
 
     // Give time to connect to wifi
     delay(5000);
     Serial.println("Starting");
 }
 
+unsigned long send_message = 0;
 void loop()
 {
     if (WiFi.status() != WL_CONNECTED)
     {
-        Serial.println("Not connected to wifi");
+        return;
     }
 
     current_time = millis();

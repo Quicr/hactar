@@ -51,7 +51,10 @@ private:
     const uint32_t GetStatusColour(
         const SerialManager::SerialStatus status) const;
 
+    const void SendTestPacket();
+
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
+
 
     Screen* screen;
     Q10Keyboard* keyboard;
@@ -60,4 +63,6 @@ private:
     Vector<Message> received_messages;
     bool force_redraw;
     uint32_t current_time;
+
+    uint32_t last_test_packet = 0;
 };

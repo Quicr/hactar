@@ -32,6 +32,7 @@ def BeginServer():
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(("0.0.0.0", port))
     sock.listen(1)
+    print("Listening on port", port)
 
 def RunThreads():
     con_thread = threading.Thread(target=HandleConnection)

@@ -1,4 +1,4 @@
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include "../shared_inc/Vector.hh"
 #include "../shared_inc/Packet.hh"
 
