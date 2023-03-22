@@ -1,6 +1,7 @@
-PORT 				= /dev/ttyUSB0
-CORE 				= esp8266:esp8266
-BOARD				= ${CORE}:nodemcuv2
+PORT 				= /dev/ttyACM0
+CORE 				= esp32:esp32
+BOARD				= ${CORE}:esp32s3
+OPTIONS				= :UploadSpeed=115200
 BUILD_PATH			= ../build/net
 CACHE_PATH    		= ${BUILD_PATH}/cache
 SHARED_INC_DIR		= ../shared_inc
@@ -17,7 +18,7 @@ compile: copy
 program: compile upload
 
 upload:
-	arduino-cli upload --port ${PORT} --fqbn ${BOARD} --input-dir ${BUILD_PATH} ${INO_FILE}
+	arduino-cli upload --port ${PORT} --fqbn ${BOARD}${OPTIONS} --input-dir ${BUILD_PATH} ${INO_FILE}
 
 monitor:
 	arduino-cli monitor --port ${PORT} --config baudrate=115200 --fqbn ${BOARD}

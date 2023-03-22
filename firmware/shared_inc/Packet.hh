@@ -3,10 +3,6 @@
 // TODO function for is network, or is debug
 // TODO Make a inherited class that generally knows the data and type positions
 
-
-// TODO add a 0xFF start to packet to force cohesion and hide the implementation
-// so the user isn't stuck having to remember it (should be custom at creation time)
-
 #include <utility>
 
 /*

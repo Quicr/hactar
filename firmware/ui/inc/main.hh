@@ -72,12 +72,12 @@ extern TIM_HandleTypeDef htim2;
 #define Q10_ROW_3_GPIO_PORT GPIOB
 #define Q10_ROW_4_PIN       GPIO_PIN_15
 #define Q10_ROW_4_GPIO_PORT GPIOB
-#define Q10_ROW_5_PIN       GPIO_PIN_8
-#define Q10_ROW_5_GPIO_PORT GPIOA
-#define Q10_ROW_6_PIN       GPIO_PIN_9
-#define Q10_ROW_6_GPIO_PORT GPIOA
-#define Q10_ROW_7_PIN       GPIO_PIN_10
-#define Q10_ROW_7_GPIO_PORT GPIOA
+#define Q10_ROW_5_PIN       GPIO_PIN_2
+#define Q10_ROW_5_GPIO_PORT GPIOB
+#define Q10_ROW_6_PIN       GPIO_PIN_3
+#define Q10_ROW_6_GPIO_PORT GPIOB
+#define Q10_ROW_7_PIN       GPIO_PIN_4
+#define Q10_ROW_7_GPIO_PORT GPIOB
 
 #define Q10_TIMER_LED_PIN   GPIO_PIN_6
 #define Q10_TIMER_LED_PORT  GPIOC
