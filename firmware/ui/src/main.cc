@@ -27,6 +27,7 @@
 
 #include "Screen.hh"
 #include "Q10Keyboard.hh"
+#include "EEPROM.hh"
 #include "UserInterfaceManager.hh"
 
 #include "SerialStm.hh"
@@ -37,8 +38,8 @@ static void MX_GPIO_Init();
 static void MX_SPI1_Init();
 static void MX_DMA_Init();
 static void MX_USART2_Init();
+static void MX_I2C1_Init();
 static void KeyboardTimerInit();
-// static void IRQInit();
 
 // Overriden interrupt callbacks
 // void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
@@ -47,7 +48,9 @@ static void KeyboardTimerInit();
 UART_HandleTypeDef huart2;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
+I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim2;
+
 
 port_pin cs = {LCD_CS_GPIO_Port, LCD_CS_Pin};
 port_pin dc = {LCD_DC_GPIO_Port, LCD_DC_Pin};
@@ -58,6 +61,7 @@ Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::portrait);
 Q10Keyboard *keyboard;
 SerialStm *net_layer = nullptr;
 UserInterfaceManager *ui_manager = nullptr;
+EEPROM* eeprom = nullptr;
 
 int main(void)
 {
@@ -82,6 +86,10 @@ int main(void)
 
     // Init the SPI for the screen
     MX_SPI1_Init();
+
+    MX_I2C1_Init();
+
+    eeprom = new EEPROM(hi2c1);
 
     screen.Begin();
 
@@ -118,11 +126,17 @@ int main(void)
 
     net_layer = new SerialStm(&huart2);
 
-    ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer);
+    ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer, *eeprom);
 
     while (1)
     {
         ui_manager->Run();
+        uint8_t sz = 2;
+        uint8_t data[sz] = { 0, 0xAF};
+        eeprom->Write(data, sz);
+        eeprom->Read(0);
+        HAL_Delay(1000);
+
     }
 }
 
@@ -257,6 +271,23 @@ static void MX_USART2_Init()
     huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     huart2.Init.OverSampling = UART_OVERSAMPLING_16;
     if (HAL_UART_Init(&huart2) != HAL_OK)
+    {
+        Error_Handler();
+    }
+}
+
+static void MX_I2C1_Init()
+{
+    hi2c1.Instance = I2C1;
+    hi2c1.Init.ClockSpeed = 100000;
+    hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+    hi2c1.Init.OwnAddress1 = 0;
+    hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+    hi2c1.Init.OwnAddress2 = 0;
+    hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+    hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+    if (HAL_I2C_Init(&hi2c1) != HAL_OK)
     {
         Error_Handler();
     }
