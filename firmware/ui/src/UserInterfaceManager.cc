@@ -113,29 +113,51 @@ void UserInterfaceManager::HandleIncomingPackets()
         // Get the type
         Packet& rx_packet = *packets[0];
         uint8_t p_type = rx_packet.GetData(0, 6);
-
-        // P_type will only be message or debug by this point
-        if (p_type == Packet::Types::Message)
+        switch (p_type)
         {
-            // Write a message to the screen
-            Message in_msg;
-            // TODO The message should be parsed some how here.
-            in_msg.Timestamp("00:00");
-            in_msg.Sender("Server");
-
-            String body;
-
-            // Skip the type and length, add the whole message
-            unsigned short packet_len = rx_packet.GetData(14, 10);
-            for (uint32_t j = 0; j < packet_len; ++j)
+            // P_type will only be message or debug by this point
+            case (Packet::Types::Message):
             {
-                body.push_back((char)rx_packet.GetData(24 + (j * 8), 8));
+                // Write a message to the screen
+                Message in_msg;
+                // TODO The message should be parsed some how here.
+                in_msg.Timestamp("00:00");
+                in_msg.Sender("Server");
+
+                String body;
+
+                // Skip the type and length, add the whole message
+                uint16_t packet_len = rx_packet.GetData(14, 10);
+                for (uint32_t j = 0; j < packet_len; ++j)
+                {
+                    body.push_back((char)rx_packet.GetData(24 + (j * 8), 8));
+                }
+
+                in_msg.Body(body);
+                received_messages.push_back(in_msg);
+                break;
             }
+            case (Packet::Types::Setting):
+            {
+                // For settings we expect the data to dedicate 16 bits to the id
+                uint16_t packet_len = rx_packet.GetData(14, 10);
 
-            in_msg.Body(body);
-            received_messages.push_back(in_msg);
+                // Get the setting id
+                uint16_t setting_id = rx_packet.GetData(24, 16);
+
+                // Get the data from the packet and set the setting
+                // for now we expect a 32 bit value for each setting
+                uint32_t setting_data = rx_packet.GetData(40, 32);
+
+                // TODO Set the setting
+
+                break;
+            }
+            default:
+            {
+                // We'll do nothing if it doesn't fit these types
+            }
         }
-
         packets.erase(0);
     }
 }

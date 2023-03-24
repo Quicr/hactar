@@ -57,7 +57,6 @@ private:
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
-
     Screen* screen;
     Q10Keyboard* keyboard;
     SerialManager net_layer;
