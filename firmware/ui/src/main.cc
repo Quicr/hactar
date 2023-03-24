@@ -131,12 +131,6 @@ int main(void)
     while (1)
     {
         ui_manager->Run();
-        uint8_t sz = 2;
-        uint8_t data[sz] = { 0, 0xAF};
-        eeprom->Write(data, sz);
-        eeprom->Read(0);
-        HAL_Delay(1000);
-
     }
 }
 
