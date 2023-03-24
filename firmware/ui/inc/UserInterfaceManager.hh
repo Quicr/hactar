@@ -4,9 +4,10 @@
 
 #include "stm32.h"
 
-#include "Q10Keyboard.hh"
+#include "EEPROM.hh"
 #include "Message.hh"
 #include "Packet.hh"
+#include "Q10Keyboard.hh"
 #include "SerialManager.hh"
 #include "SerialInterface.hh"
 #include "Screen.hh"
@@ -18,7 +19,8 @@ class UserInterfaceManager
 public:
     UserInterfaceManager(Screen& screen,
                          Q10Keyboard& keyboard,
-                         SerialInterface& net_interface);
+                         SerialInterface& net_interface,
+                         EEPROM& eeprom);
     ~UserInterfaceManager();
 
     void Run();
@@ -59,6 +61,7 @@ private:
     Screen* screen;
     Q10Keyboard* keyboard;
     SerialManager net_layer;
+    EEPROM* eeprom;
     ViewBase* view;
     Vector<Message> received_messages;
     bool force_redraw;

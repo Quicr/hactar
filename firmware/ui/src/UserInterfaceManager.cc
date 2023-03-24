@@ -9,10 +9,12 @@ uint32_t UserInterfaceManager::Packet_Id = 1;
 
 UserInterfaceManager::UserInterfaceManager(Screen &screen,
                                            Q10Keyboard &keyboard,
-                                           SerialInterface &net_interface) :
+                                           SerialInterface &net_interface,
+                                           EEPROM& eeprom) :
     screen(&screen),
     keyboard(&keyboard),
     net_layer(&net_interface),
+    eeprom(&eeprom),
     view(nullptr),
     received_messages(), // TODO limit?
     force_redraw(false),
@@ -23,12 +25,10 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
 
 UserInterfaceManager::~UserInterfaceManager()
 {
-    // TODO note - Do we need to delete the next 3?
-    // Probably not since they are allocated outside of this class
-    // However it does manage it
-    delete screen;
-    delete keyboard;
-    delete view;
+    screen = nullptr;
+    keyboard = nullptr;
+    net_layer = nullptr;
+    eeprom = nullptr;
 }
 
 // TODO should update this to be a draw/update architecture

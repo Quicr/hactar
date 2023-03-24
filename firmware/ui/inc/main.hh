@@ -36,6 +36,7 @@ void Error_Handler(void);
 extern UART_HandleTypeDef huart2;
 extern SPI_HandleTypeDef hspi1;
 extern DMA_HandleTypeDef hdma_spi1_tx;
+extern I2C_HandleTypeDef hi2c1;
 extern TIM_HandleTypeDef htim2;
 
 #define LCD_SPI             SPI1
@@ -94,6 +95,13 @@ extern TIM_HandleTypeDef htim2;
 
 #define TEST_LED_PORT       GPIOC
 #define TEST_LED_PIN        GPIO_PIN_7
+
+#define EEPROM_SCL_PORT     GPIOB
+#define EEPROM_SCL_PIN      GPIO_PIN_6
+#define EEPROM_SDA_PORT     GPIOB
+#define EEPROM_SDA_PIN      GPIO_PIN_7
+#define EEPROM_RW_PORT      GPIOC
+#define EEPROM_RW_PIN       GPIO_PIN_8
 
 #ifdef __cplusplus
 }
