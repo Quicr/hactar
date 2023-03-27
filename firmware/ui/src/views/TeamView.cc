@@ -2,10 +2,11 @@
 #include "UserInterfaceManager.hh"
 #include "ChatView.hh"
 
-TeamView::TeamView(UserInterfaceManager &manager,
-                   Screen &screen,
-                   Q10Keyboard &keyboard)
-    : ViewBase(manager, screen, keyboard)
+TeamView::TeamView(UserInterfaceManager& manager,
+                   Screen& screen,
+                   Q10Keyboard& keyboard,
+                   SettingManager& settings)
+    : ViewBase(manager, screen, keyboard, settings)
 {
 }
 

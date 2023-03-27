@@ -3,10 +3,11 @@
 #include "TeamView.hh"
 #include "SettingsView.hh"
 
-ChatView::ChatView(UserInterfaceManager &manager,
-                   Screen &screen,
-                   Q10Keyboard &keyboard)
-    : ViewBase(manager, screen, keyboard)
+ChatView::ChatView(UserInterfaceManager& manager,
+                   Screen& screen,
+                   Q10Keyboard& keyboard,
+                   SettingManager& settings)
+    : ViewBase(manager, screen, keyboard, settings)
 {
     // messages = new Vector<String>();
     // for (int i = 0; i < 15; i++)

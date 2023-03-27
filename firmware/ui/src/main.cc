@@ -89,7 +89,7 @@ int main(void)
 
     MX_I2C1_Init();
 
-    eeprom = new EEPROM(hi2c1);
+    eeprom = new EEPROM(hi2c1, 2048);
 
     screen.Begin();
 

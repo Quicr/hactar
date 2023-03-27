@@ -1,7 +1,5 @@
 #pragma once
 
-
-// TODO struct?
 class Setting
 {
 public:
@@ -14,11 +12,11 @@ public:
     const unsigned long& data() const;
 
     const unsigned short& address() const;
+    unsigned short& address();
+
+    unsigned char* ToBytes();
 
 private:
-    // THINK Should this come from the eeprom?
-    static unsigned short Next_Address;
-
     unsigned short _id;
     unsigned long _data;
     unsigned short _address;

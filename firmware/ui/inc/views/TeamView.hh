@@ -6,9 +6,10 @@
 class TeamView : public ViewBase
 {
 public:
-    TeamView(UserInterfaceManager &manager,
-             Screen &screen,
-             Q10Keyboard &keyboard);
+    TeamView(UserInterfaceManager& manager,
+             Screen& screen,
+             Q10Keyboard& keyboard,
+             SettingManager& settings);
     ~TeamView();
 protected:
     void Get();
