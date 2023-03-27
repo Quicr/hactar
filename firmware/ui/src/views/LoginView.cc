@@ -2,10 +2,11 @@
 #include "UserInterfaceManager.hh"
 #include "ChatView.hh"
 
-LoginView::LoginView(UserInterfaceManager &manager,
-                     Screen &screen,
-                     Q10Keyboard &keyboard)
-    : ViewBase(manager, screen, keyboard),
+LoginView::LoginView(UserInterfaceManager& manager,
+                     Screen& screen,
+                     Q10Keyboard& keyboard,
+                     SettingManager& settings)
+    : ViewBase(manager, screen, keyboard, settings),
       incorrect_passcode_entered(false)
 {
 }

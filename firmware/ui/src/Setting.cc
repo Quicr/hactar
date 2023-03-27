@@ -20,7 +20,6 @@ const unsigned short& Setting::id() const
     return _id;
 }
 
-
 unsigned long& Setting::data()
 {
     return _data;
@@ -31,10 +30,18 @@ const unsigned long& Setting::data() const
     return _data;
 }
 
+unsigned short& Setting::address()
+{
+    return _address;
+}
+
 const unsigned short& Setting::address() const
 {
     return _address;
 }
 
+unsigned char* ToBytes()
+{
 
+}
 

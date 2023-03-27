@@ -2,10 +2,11 @@
 #include "ChatView.hh"
 #include "UserInterfaceManager.hh"
 
-SettingsView::SettingsView(UserInterfaceManager &manager,
-                           Screen &screen,
-                           Q10Keyboard &keyboard)
-    : ViewBase(manager, screen, keyboard)
+SettingsView::SettingsView(UserInterfaceManager& manager,
+                           Screen& screen,
+                           Q10Keyboard& keyboard,
+                           SettingManager& settings)
+    : ViewBase(manager, screen, keyboard, settings)
 {
 }
 

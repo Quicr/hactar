@@ -5,9 +5,10 @@
 class SettingsView : public ViewBase
 {
 public:
-    SettingsView(UserInterfaceManager &manager,
-                 Screen &screen,
-                 Q10Keyboard &keyboard);
+    SettingsView(UserInterfaceManager& manager,
+                 Screen& screen,
+                 Q10Keyboard& keyboard,
+                 SettingManager& settings);
     ~SettingsView();
 protected:
     void AnimatedDraw();

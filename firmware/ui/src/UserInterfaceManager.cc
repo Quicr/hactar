@@ -4,6 +4,8 @@
 #include "ChatView.hh"
 #include "TeamView.hh"
 
+#include "SettingManager.hh"
+
 // Init the static var
 uint32_t UserInterfaceManager::Packet_Id = 1;
 
@@ -20,6 +22,10 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     force_redraw(false),
     current_time(HAL_GetTick())
 {
+    // Load all settings first
+    SettingManager settings = SettingManager(eeprom);
+
+
     ChangeView<LoginView>();
 }
 

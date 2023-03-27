@@ -17,9 +17,10 @@
 class ChatView : public ViewBase
 {
 public:
-    ChatView(UserInterfaceManager &manager,
-             Screen &screen,
-             Q10Keyboard &keyboard);
+    ChatView(UserInterfaceManager& manager,
+             Screen& screen,
+             Q10Keyboard& keyboard,
+             SettingManager& settings);
     ~ChatView();
 protected:
     void AnimatedDraw();

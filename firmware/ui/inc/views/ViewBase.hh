@@ -3,6 +3,7 @@
 #include "UserInterfaceManager.hh"
 #include "Screen.hh"
 #include "Q10Keyboard.hh"
+#include "SettingManager.hh"
 #include "String.hh"
 #include <functional>
 
@@ -13,10 +14,12 @@ class ViewBase
 public:
     ViewBase(UserInterfaceManager &manager,
              Screen &screen,
-             Q10Keyboard &keyboard):
+             Q10Keyboard &keyboard,
+             SettingManager &settings):
         manager(manager),
         screen(screen),
         keyboard(keyboard),
+        settings(settings),
         first_load(true),
         redraw_menu(true),
         cursor_animate_timeout(0),
@@ -210,6 +213,7 @@ protected:
     UserInterfaceManager &manager;
     Screen &screen;
     Q10Keyboard &keyboard;
+    SettingManager &settings;
 
     // If this is the first load, then we should
     // Run the first load draw
