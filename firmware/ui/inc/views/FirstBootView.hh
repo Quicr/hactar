@@ -9,13 +9,27 @@ public:
     FirstBootView(UserInterfaceManager& manager,
                   Screen& screen,
                   Q10Keyboard& keyboard,
-                  SettingManager& settings);
+                  EEPROM& eeprom);
     ~FirstBootView();
 
 protected:
+    enum State {
+        Username,
+        Passcode,
+        Wifi,
+        Final
+    };
+
+    void AnimatedDraw();
     void Draw();
     bool HandleInput();
 
 private:
-    void SetPasscode(String pass);
+    void SetUsername();
+    void SetPasscode();
+    void SetWifi();
+    void SetFinal();
+    void SetAllDefaults();
+
+    State state;
 };

@@ -12,6 +12,9 @@
 #include "SerialInterface.hh"
 #include "Screen.hh"
 
+#define VIEW_ADDRESS 0x00
+#define FIRST_BOOT_TRUE 0x01
+
 class ViewBase;
 
 class UserInterfaceManager
@@ -42,7 +45,7 @@ public:
         if (view != nullptr)
             delete view;
 
-        view = new T(*this, *screen, *keyboard);
+        view = new T(*this, *screen, *keyboard, *eeprom);
     }
 
 private:

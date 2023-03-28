@@ -90,7 +90,6 @@ public:
         return rx_status;
     }
 
-    Vector<Packet> tx_packets;
 private:
     SerialStatus ReadSerial(const unsigned long current_time)
     {
@@ -304,6 +303,7 @@ private:
     SerialStatus rx_status;
 
     // tx
+    Vector<Packet> tx_packets;
     std::map<unsigned char, Packet> tx_pending_packets; // TODO max packets
     SerialStatus tx_status;
 

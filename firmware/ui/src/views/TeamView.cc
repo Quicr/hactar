@@ -5,8 +5,8 @@
 TeamView::TeamView(UserInterfaceManager& manager,
                    Screen& screen,
                    Q10Keyboard& keyboard,
-                   SettingManager& settings)
-    : ViewBase(manager, screen, keyboard, settings)
+                   EEPROM& eeprom)
+    : ViewBase(manager, screen, keyboard, eeprom)
 {
 }
 

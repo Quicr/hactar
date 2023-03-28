@@ -9,7 +9,7 @@ public:
     TeamView(UserInterfaceManager& manager,
              Screen& screen,
              Q10Keyboard& keyboard,
-             SettingManager& settings);
+             EEPROM& eeprom);
     ~TeamView();
 protected:
     void Get();

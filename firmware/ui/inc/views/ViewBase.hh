@@ -3,7 +3,7 @@
 #include "UserInterfaceManager.hh"
 #include "Screen.hh"
 #include "Q10Keyboard.hh"
-#include "SettingManager.hh"
+#include "EEPROM.hh"
 #include "String.hh"
 #include <functional>
 
@@ -15,11 +15,11 @@ public:
     ViewBase(UserInterfaceManager &manager,
              Screen &screen,
              Q10Keyboard &keyboard,
-             SettingManager &settings):
+             EEPROM& eeprom):
         manager(manager),
         screen(screen),
         keyboard(keyboard),
-        settings(settings),
+        eeprom(eeprom),
         first_load(true),
         redraw_menu(true),
         cursor_animate_timeout(0),
@@ -213,7 +213,7 @@ protected:
     UserInterfaceManager &manager;
     Screen &screen;
     Q10Keyboard &keyboard;
-    SettingManager &settings;
+    EEPROM& eeprom;
 
     // If this is the first load, then we should
     // Run the first load draw

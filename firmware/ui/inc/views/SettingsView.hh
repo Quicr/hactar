@@ -8,7 +8,7 @@ public:
     SettingsView(UserInterfaceManager& manager,
                  Screen& screen,
                  Q10Keyboard& keyboard,
-                 SettingManager& settings);
+                 EEPROM& eeprom);
     ~SettingsView();
 protected:
     void AnimatedDraw();
