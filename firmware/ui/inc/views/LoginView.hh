@@ -9,7 +9,7 @@ public:
     LoginView(UserInterfaceManager& manager,
               Screen& screen,
               Q10Keyboard& keyboard,
-              SettingManager& settings);
+              EEPROM& eeprom);
     ~LoginView();
 protected:
     void AnimatedDraw();

@@ -1,5 +1,6 @@
 #include "UserInterfaceManager.hh"
 #include "String.hh"
+#include "FirstBootView.hh"
 #include "LoginView.hh"
 #include "ChatView.hh"
 #include "TeamView.hh"
@@ -22,11 +23,14 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     force_redraw(false),
     current_time(HAL_GetTick())
 {
-    // Load all settings first
-    SettingManager settings = SettingManager(eeprom);
+    // Get if first boot or not
 
 
-    ChangeView<LoginView>();
+    if (eeprom.Read(0) == 0x01)
+        ChangeView<LoginView>();
+    else
+        ChangeView<FirstBootView>();
+
 }
 
 UserInterfaceManager::~UserInterfaceManager()

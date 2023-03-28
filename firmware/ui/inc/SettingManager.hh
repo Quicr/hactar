@@ -1,26 +1,53 @@
-#pragma once
+// #pragma once
 
-#include <map>
-#include "EEPROM.hh"
-#include "Setting.hh"
+// #include <map>
+// #include "EEPROM.hh"
+// #include "Setting.hh"
 
-class SettingManager
-{
-public:
-    SettingManager(EEPROM& eeprom);
+// class SettingManager
+// {
+// public:
+//     SettingManager(EEPROM& eeprom);
 
-    bool RegisterSetting(const unsigned short id, const unsigned long data);
-    bool RemoveSetting(const unsigned short id);
+//     template <typename T>
+//     bool RegisterSetting(const unsigned short id,
+//                          const T& data,
+//                          const unsigned int sz=1)
+//     {
+//         if (settings.find(id) != settings.end())
+//             return false;
 
-    bool GetSetting(const unsigned short id, unsigned long& data);
-    bool LoadSettingFromAddress(const unsigned short address);
+//         // Save to eeprom
+//         // address_t address = eeprom.Write<T>(&setting.data(), sz);
+//         // settings[id] = address;
 
-    void SaveSetting(const unsigned short id);
+//         return true;
+//     }
 
-    void ClearSettings();
+//     bool LoadSetting(const unsigned short id,
+//                      unsigned long& data,
+//                      const unsigned int sz=1)
+//     {
+//         if (settings.find(id) == settings.end())
+//             return false;
 
-private:
-    EEPROM& eeprom;
-    // TODO settings should be pointers
-    std::map<unsigned int, Setting> settings;
-};
+//         eeprom.Read(settings[id], data, sz);
+//     }
+
+//     void UpdateSetting(const unsigned short id)
+//     {
+
+//     }
+
+//     void ClearSettings()
+//     {
+
+//     }
+
+// private:
+//     EEPROM& eeprom;
+//     // TODO settings should be pointers
+//     typedef unsigned short id_t;
+//     typedef unsigned short address_t;
+//     std::map<id_t, address_t> settings;
+// };

@@ -26,6 +26,7 @@ public:
         Debug,
         LocalDebug,
         Message,
+        Setting
     };
 
     // TODO important to have different data lengths for each type..

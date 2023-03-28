@@ -20,7 +20,7 @@ public:
     ChatView(UserInterfaceManager& manager,
              Screen& screen,
              Q10Keyboard& keyboard,
-             SettingManager& settings);
+             EEPROM& eeprom);
     ~ChatView();
 protected:
     void AnimatedDraw();

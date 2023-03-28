@@ -6,8 +6,8 @@
 ChatView::ChatView(UserInterfaceManager& manager,
                    Screen& screen,
                    Q10Keyboard& keyboard,
-                   SettingManager& settings)
-    : ViewBase(manager, screen, keyboard, settings)
+                   EEPROM& eeprom)
+    : ViewBase(manager, screen, keyboard, eeprom)
 {
     // messages = new Vector<String>();
     // for (int i = 0; i < 15; i++)
@@ -60,6 +60,7 @@ void ChatView::Draw()
         }
     }
 
+    // TODO move into viewbase?
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
         // Shift over and draw the input that is currently in the buffer
