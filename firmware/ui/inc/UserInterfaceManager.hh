@@ -38,6 +38,14 @@ public:
     const uint32_t GetTxStatusColour() const;
     const uint32_t GetRxStatusColour() const;
 
+    const uint8_t& UsernameAddr() const;
+    uint8_t& UsernameAddr();
+    const uint8_t& PasscodeAddr() const;
+    uint8_t& PasscodeAddr();
+
+    Vector<String> RequestSSIDs();
+    void ConnectToWifi(const String& password);
+
     uint32_t NextPacketId();
 
     template<typename T>
@@ -71,4 +79,7 @@ private:
     uint32_t current_time;
 
     uint32_t last_test_packet = 0;
+
+    uint8_t username_addr;
+    uint8_t passcode_addr;
 };

@@ -26,7 +26,8 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     // Get if first boot or not
 
 
-    if (*eeprom.Read(0) == FIRST_BOOT_DONE)
+    // The first byte will be the length of the next set of data
+    if (eeprom.ReadByte(1) == FIRST_BOOT_DONE)
         ChangeView<LoginView>();
     else
         ChangeView<FirstBootView>();
@@ -180,6 +181,36 @@ const uint32_t UserInterfaceManager::GetTxStatusColour() const
 const uint32_t UserInterfaceManager::GetRxStatusColour() const
 {
     return GetStatusColour(net_layer.GetRxStatus());
+}
+
+const uint8_t& UserInterfaceManager::UsernameAddr() const
+{
+    return username_addr;
+}
+
+uint8_t& UserInterfaceManager::UsernameAddr()
+{
+    return username_addr;
+}
+
+const uint8_t& UserInterfaceManager::PasscodeAddr() const
+{
+    return passcode_addr;
+}
+
+uint8_t& UserInterfaceManager::PasscodeAddr()
+{
+    return passcode_addr;
+}
+
+Vector<String> RequestSSIDs()
+{
+
+}
+
+void ConnectToWifi(const String& password)
+{
+
 }
 
 const uint32_t UserInterfaceManager::GetStatusColour(

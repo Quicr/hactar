@@ -9,7 +9,8 @@ public:
     EEPROM(I2C_HandleTypeDef& hi2c, const unsigned int max_sz) :
         i2c(&hi2c),
         max_sz(max_sz),
-        next_address(0)
+        next_address(0),
+        read_value(nullptr)
     {
 
     }
@@ -17,6 +18,7 @@ public:
     ~EEPROM()
     {
         i2c = nullptr;
+        if (read_value) delete read_value;
     }
 
 
@@ -89,14 +91,16 @@ public:
             HAL_MAX_DELAY);
 
         // Get the length of the data
-        unsigned char length[1] = { 0 };
-        res = HAL_I2C_Master_Receive(i2c, Read_Condition, length, 1, HAL_MAX_DELAY);
+        unsigned char length;
+        res = HAL_I2C_Master_Receive(i2c, Read_Condition, &length, 1, HAL_MAX_DELAY);
 
-        unsigned char output_data[2] = { 0 };
-        res = HAL_I2C_Master_Receive(i2c, Read_Condition, output_data, *length,
+        // If we have a read value, delete it
+        if (read_value) delete read_value;
+        read_value = new unsigned char[length];
+        res = HAL_I2C_Master_Receive(i2c, Read_Condition, read_value, length,
             HAL_MAX_DELAY);
 
-        return output_data;
+        return read_value;
     }
 
     unsigned char ReadByte(const uint8_t address)
@@ -129,7 +133,7 @@ public:
 
         while (bytes_loop--)
         {
-            Write(&clear_bytes);
+            // TODO manual
         }
 
         // Reset the next address back to the start
@@ -189,4 +193,5 @@ private:
     I2C_HandleTypeDef* i2c;
     const unsigned int max_sz;
     unsigned int next_address;
+    unsigned char* read_value;
 };

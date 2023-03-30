@@ -8,7 +8,7 @@ FirstBootView::FirstBootView(UserInterfaceManager& manager,
     state(State::Username)
 {
     // Clear the whole eeprom
-    // eeprom.Clear();
+    eeprom.Clear();
     eeprom.Write((unsigned char)FIRST_BOOT_STARTED);
 }
 
@@ -98,12 +98,21 @@ bool FirstBootView::HandleInput()
     {
         case State::Username:
         {
-            SetUsername();
+            // Write the data
+            manager.UsernameAddr() = eeprom.Write(usr_input.data(),
+                usr_input.length());
+
+            state = State::Passcode;
             break;
         }
         case State::Passcode:
         {
-            SetPasscode();
+            // TODO save address
+            // Write the data
+            manager.PasscodeAddr() = eeprom.Write(usr_input.data(),
+                usr_input.length());
+
+            state = State::Wifi;
             break;
         }
         case State::Wifi:
@@ -132,11 +141,6 @@ void FirstBootView::SetUsername()
 {
     // Write the data
     unsigned int address = eeprom.Write(usr_input.data(), usr_input.length());
-
-    unsigned char* username;
-    username = eeprom.Read(address);
-    // eeprom.Read(1, username, )
-
     state = State::Passcode;
 }
 

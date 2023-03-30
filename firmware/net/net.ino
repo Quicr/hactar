@@ -24,8 +24,6 @@ SerialManager* ui_layer;
 
 unsigned long current_time = 0;
 
-HardwareSerial serial_alt(Serial1);
-
 void HandleIncomingNetwork()
 {
 
@@ -124,13 +122,13 @@ void HandleIncomingSerial()
 void setup()
 {
     Serial.begin(115200);
-    serial_alt.begin(115200, SERIAL_8N1, 17, 18);
+    Serial1.begin(115200);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
 
     client = new ModuleClient(host, port);
 
-    uart = new SerialEsp(serial_alt);
+    uart = new SerialEsp(Serial1);
     ui_layer = new SerialManager(uart);
 
 
