@@ -13,7 +13,8 @@
 #include "Screen.hh"
 
 #define VIEW_ADDRESS 0x00
-#define FIRST_BOOT_TRUE 0x01
+#define FIRST_BOOT_STARTED 0x01
+#define FIRST_BOOT_DONE 0x02
 
 class ViewBase;
 

@@ -8,7 +8,8 @@ FirstBootView::FirstBootView(UserInterfaceManager& manager,
     state(State::Username)
 {
     // Clear the whole eeprom
-    eeprom.Clear();
+    // eeprom.Clear();
+    eeprom.Write((unsigned char)FIRST_BOOT_STARTED);
 }
 
 FirstBootView::~FirstBootView()
@@ -63,6 +64,11 @@ void FirstBootView::Draw()
         case State::Final:
         {
             message = "Thank you for completing the first boot";
+
+            // Set the view address to 0x02
+            eeprom.Write((unsigned char*)FIRST_BOOT_DONE);
+
+            HAL_Delay(1000);
             break;
         }
     }
@@ -118,20 +124,17 @@ bool FirstBootView::HandleInput()
 
 
     // Which is 0
-    // Set the view address to 0x01
-    // eeprom.Write((unsigned char)FIRST_BOOT_TRUE);
     ClearInput();
     return false;
 }
 
 void FirstBootView::SetUsername()
 {
+    // Write the data
+    unsigned int address = eeprom.Write(usr_input.data(), usr_input.length());
 
-    // Enter pressed so lets save the username
-    eeprom.Write(usr_input.data(), usr_input.length());
-
-    unsigned char username;
-    username = eeprom.Read(1);
+    unsigned char* username;
+    username = eeprom.Read(address);
     // eeprom.Read(1, username, )
 
     state = State::Passcode;
