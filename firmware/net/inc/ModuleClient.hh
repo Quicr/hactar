@@ -13,6 +13,7 @@ public:
 
     Packet GetMessage();
     bool GetMessage(Packet& incoming_packet);
+    void SendSSIDs();
 private:
     bool Connect();
 

@@ -26,7 +26,8 @@ public:
         Debug,
         LocalDebug,
         Message,
-        Setting
+        Setting,
+        SSID,
     };
 
     // TODO important to have different data lengths for each type..
