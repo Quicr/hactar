@@ -25,11 +25,11 @@ public:
      * and writes it to the eeprom at the next available address
     */
     template<typename T>
-    const unsigned int Write(T* data, const unsigned int sz=1)
+    const unsigned short Write(T* data, const unsigned int sz=1)
     {
         const unsigned short addr = next_address;
         const size_t data_size = sizeof(*data) * sz;
-        unsigned char* to_write = (unsigned char*)(void*)&data;
+        unsigned char* to_write = (unsigned char*)(void*)data;
 
         PerformWrite(to_write, addr, data_size);
 
@@ -37,19 +37,19 @@ public:
         return addr;
     }
 
-    // template<typename T>
-    // const unsigned int Write(T data, const unsigned int sz=1)
-    // {
-    //     const unsigned short addr = next_address;
-    //     size_t x = sizeof(unsigned char);
-    //     const size_t data_size = sizeof(data) * sz;
-    //     unsigned char* to_write = (unsigned char*)(void*)&data;
+    template<typename T>
+    const unsigned int Write(T data, const unsigned int sz=1)
+    {
+        const unsigned short addr = next_address;
+        const size_t data_size = sizeof(data) * sz;
+        unsigned char* to_write = (unsigned char*)(void*)&data;
 
-    //     PerformWrite(to_write, addr, data_size);
+        PerformWrite(to_write, addr, data_size);
 
-    //     next_address += data_size;
-    //     return addr;
-    // }
+        // +1 for address
+        next_address += data_size + 1;
+        return addr;
+    }
 
     template<typename T>
     const void Write(const unsigned int address,
@@ -63,35 +63,53 @@ public:
         PerformWrite(to_write, address, data_size);
     }
 
+    // Assumes the user knows what they want
     template<typename T>
     void Read(const uint8_t address, T& data, const uint16_t sz=1)
     {
         // Set the address to read from
-        uint8_t set_address[1] = { address };
-        HAL_I2C_Master_Transmit(i2c, Write_Condition, set_address, 1,
+        unsigned char set_address[1] = { address };
+        HAL_StatusTypeDef res = HAL_I2C_Master_Transmit(i2c, Write_Condition, set_address, 1,
             HAL_MAX_DELAY);
 
-        // Read data
         unsigned short output_sz = sizeof(data) * sz;
         unsigned char* output_data = (unsigned char*)(void*)&data;
-        HAL_I2C_Master_Receive(i2c, Read_Condition, output_data, output_sz,
+        res = HAL_I2C_Master_Receive(i2c, Read_Condition, output_data, output_sz,
             HAL_MAX_DELAY);
 
         // Cast it back to normal data for T
         data = *(T*)output_data;
     }
 
-    unsigned char Read(const uint8_t address)
+    unsigned char* Read(const uint8_t address)
+    {
+        // Set the address to read from
+        unsigned char set_address[1] = { address };
+        HAL_StatusTypeDef res = HAL_I2C_Master_Transmit(i2c, Write_Condition, set_address, 1,
+            HAL_MAX_DELAY);
+
+        // Get the length of the data
+        unsigned char length[1] = { 0 };
+        res = HAL_I2C_Master_Receive(i2c, Read_Condition, length, 1, HAL_MAX_DELAY);
+
+        unsigned char output_data[2] = { 0 };
+        res = HAL_I2C_Master_Receive(i2c, Read_Condition, output_data, *length,
+            HAL_MAX_DELAY);
+
+        return output_data;
+    }
+
+    unsigned char ReadByte(const uint8_t address)
     {
         // Set the address to read from
         uint8_t set_address[1] = { address };
-        HAL_I2C_Master_Transmit(i2c, Write_Condition, set_address, 1,
+        HAL_StatusTypeDef res = HAL_I2C_Master_Transmit(i2c, Write_Condition, set_address, 1,
             HAL_MAX_DELAY);
 
         // Read data
-        unsigned char data;
-        HAL_I2C_Master_Receive(i2c, Read_Condition, &data, 1, HAL_MAX_DELAY);
-        return data;
+        unsigned char data[1] = {0};
+        res = HAL_I2C_Master_Receive(i2c, Read_Condition, data, 1, HAL_MAX_DELAY);
+        return data[0];
     }
 
     void Clear()
@@ -134,7 +152,7 @@ public:
     }
 
 private:
-    inline void PerformWrite(unsigned char* data,
+    void PerformWrite(unsigned char* data,
                              const unsigned short address,
                              const unsigned short data_size)
     {
@@ -142,17 +160,28 @@ private:
 
         // Copy to_write to a new array
         unsigned char bytes[data_w_address];
-        bytes[0] = address;
 
+        bytes[0] = address;
+        bytes[1] = data_size;
+        // Write the length
+        HAL_StatusTypeDef write_res = HAL_I2C_Master_Transmit(i2c, Write_Condition, bytes, 2,
+            HAL_MAX_DELAY);
+
+
+        // TODO rewrite hal transmit so I can send an open message that has
+        // just the address and then continue the message with the rest
+        // of the data, instead of copying it. so slow.
+        bytes[0] = address + 1;
         for (size_t i = 0; i < data_size; ++i)
         {
             bytes[i+1] = data[i];
         }
 
-        // TODO rewrite hal transmit so I don't need to copy each message..
         // Write data
-        HAL_I2C_Master_Transmit(i2c, Write_Condition, bytes, data_w_address,
+        write_res = HAL_I2C_Master_Transmit(i2c, Write_Condition, bytes, data_w_address,
             HAL_MAX_DELAY);
+
+        return;
     }
 
     static constexpr uint8_t Read_Condition     = 0xA1;

@@ -26,7 +26,7 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     // Get if first boot or not
 
 
-    if (eeprom.Read(0) == 0x01)
+    if (*eeprom.Read(0) == FIRST_BOOT_DONE)
         ChangeView<LoginView>();
     else
         ChangeView<FirstBootView>();
