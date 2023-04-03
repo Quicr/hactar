@@ -24,6 +24,8 @@ SerialManager* ui_layer;
 
 unsigned long current_time = 0;
 
+HardwareSerial serial_alt(Serial1);
+
 void HandleIncomingNetwork()
 {
 
@@ -57,7 +59,7 @@ void HandleIncomingNetwork()
     else
     {
         // Dump it to the serial monitor for now
-        Serial.print("Network debug message ");
+        Serial.print("Message received: ");
 
         Serial.print(type);
         Serial.print(" ");
@@ -100,11 +102,16 @@ void HandleIncomingSerial()
         uint8_t packet_type = rx_packet.GetData(0, 6);
 
         // message from stm
-        uint16_t data_len = rx_packet.GetData(14, 10);
         Serial.println("Message from stm");
+        uint16_t data_len = rx_packet.GetData(14, 10);
+        unsigned char data;
         for (uint16_t i = 0; i < data_len; ++i)
         {
-            Serial.print((char)rx_packet.GetData(24 + (i * 8), 8));
+            data = rx_packet.GetData(24 + (i * 8), 8);
+            if ((data > '0' && data < '9') || (data > 'A' && data < 'z'))
+                Serial.print((char)data);
+            else
+                Serial.print((int)data);
         }
         Serial.println("");
 
@@ -114,6 +121,72 @@ void HandleIncomingSerial()
             // Pass the message to the client
             client->EnqueuePacket(std::move(rx_packet));
         }
+        else if (packet_type == Packet::Types::Command)
+        {
+            // Get the command type
+            uint8_t command_type = rx_packet.GetData(24, 8);
+            if (command_type == Packet::Commands::SSIDs)
+            {
+                // Get the ssids
+                int networks = WiFi.scanNetworks();
+
+                if (networks == 0)
+                {
+                    Serial.println("No networks found");
+                    return;
+                }
+
+                Serial.print("Networks found: ");
+                Serial.println(networks);
+
+                // Put ssids into a vector of packets and enqueue them
+                for (int i = 0; i < networks; ++i)
+                {
+                    String res = WiFi.SSID(i);
+
+                    if (res.length() == 0) continue;
+                    Serial.print(i + 1);
+                    Serial.print(" length - ");
+                    Serial.print(res.length());
+                    Serial.print(" - ");
+
+                    Packet packet;
+                    // Set the type
+                    packet.SetData(Packet::Types::Command, 0, 6);
+
+                    // Set the packet id
+                    packet.SetData(1, 6, 8);
+
+                    // Add 1 for the command type
+                    // Add 1 for the ssid id
+                    packet.SetData(res.length() + 2, 14, 10);
+
+                    // Set the first byte to the command type
+                    packet.SetData(Packet::Commands::SSIDs, 24, 8);
+
+                    // Set the ssid id
+                    packet.SetData(i+1, 32, 8);
+                    for (unsigned int j = 0; j < res.length(); j++)
+                    {
+                        packet.SetData(res[j], 40 + (j * 8), 8);
+                        Serial.print((char)res[j]);
+                    }
+                    Serial.println("");
+                    ui_layer->EnqueuePacket(std::move(packet));
+                }
+            }
+            else if (command_type == Packet::Commands::ConnectToSSID)
+            {
+                // Get the ssid value, followed by the passcode
+                uint8_t ssid_id = rx_packet.GetData(32, 8);
+                String passcode;
+
+                for (unsigned int i = 0; i < data_len - 1; ++i)
+                {
+                    passcode.concat(rx_packet.GetData(40 + (8 * i), 8));
+                }
+            }
+        }
 
         rx_packets.erase(0);
     }
@@ -122,20 +195,22 @@ void HandleIncomingSerial()
 void setup()
 {
     Serial.begin(115200);
-    Serial1.begin(115200);
+    serial_alt.begin(115200, SERIAL_8N1, 17, 18);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
 
     client = new ModuleClient(host, port);
 
-    uart = new SerialEsp(Serial1);
+    uart = new SerialEsp(serial_alt);
     ui_layer = new SerialManager(uart);
-
 
     Serial.println("Waiting");
 
     // Give time to connect to wifi
     delay(5000);
+
+    pinMode(19, OUTPUT);
+    digitalWrite(19, LOW);
     Serial.println("Starting");
 }
 

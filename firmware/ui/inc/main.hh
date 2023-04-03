@@ -88,6 +88,9 @@ extern TIM_HandleTypeDef htim2;
 #define USART2_RX_PIN       GPIO_PIN_3
 #define USART2_RX_GPIO_PORT GPIOA
 
+#define USART2_RX_EN_PORT    GPIOC
+#define USART2_RX_EN_PIN     GPIO_PIN_2
+
 #define USART2_TX_LED_PIN   GPIO_PIN_2
 #define USART2_TX_LED_PORT  GPIOB
 #define USART2_RX_LED_PIN   GPIO_PIN_10

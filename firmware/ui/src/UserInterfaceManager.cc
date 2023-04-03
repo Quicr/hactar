@@ -17,11 +17,16 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     screen(&screen),
     keyboard(&keyboard),
     net_layer(&net_interface),
-    eeprom(&eeprom),
+    setting_manager(eeprom),
     view(nullptr),
     received_messages(), // TODO limit?
     force_redraw(false),
-    current_time(HAL_GetTick())
+    current_time(HAL_GetTick()),
+    ssids(),
+    username_addr(0),
+    passcode_addr(0),
+    ssid_addr(0),
+    ssid_passcode_addr(0)
 {
     // Get if first boot or not
 
@@ -32,6 +37,7 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     else
         ChangeView<FirstBootView>();
 
+    // ChangeView<ChatView>();
 }
 
 UserInterfaceManager::~UserInterfaceManager()
@@ -39,7 +45,6 @@ UserInterfaceManager::~UserInterfaceManager()
     screen = nullptr;
     keyboard = nullptr;
     net_layer = nullptr;
-    eeprom = nullptr;
 }
 
 // TODO should update this to be a draw/update architecture
@@ -164,6 +169,36 @@ void UserInterfaceManager::HandleIncomingPackets()
 
                 break;
             }
+            case (Packet::Types::Command):
+            {
+                // TODO move to a parse command function
+                // TODO switch statement
+                uint8_t command_type = rx_packet.GetData(24, 8);
+                if (Packet::Commands::SSIDs == command_type)
+                {
+                    // Get the packet len
+                    uint16_t len = rx_packet.GetData(14, 10);
+
+                    // Get the ssid id
+                    uint8_t ssid_id = rx_packet.GetData(32, 8);
+
+                    // Build the string
+                    String str;
+                    for (uint8_t i = 0; i < len - 2; ++i)
+                    {
+                        str.push_back(static_cast<char>(
+                            rx_packet.GetData(40 + i * 8, 8)));
+                    }
+
+                    ssids[ssid_id] = std::move(str);
+                }
+                else
+                {
+                    // TODO
+                }
+
+                break;
+            }
             default:
             {
                 // We'll do nothing if it doesn't fit these types
@@ -203,14 +238,34 @@ uint8_t& UserInterfaceManager::PasscodeAddr()
     return passcode_addr;
 }
 
-Vector<String> RequestSSIDs()
+const uint8_t& UserInterfaceManager::SSIDAddr() const
 {
-
+    return ssid_addr;
 }
 
-void ConnectToWifi(const String& password)
+uint8_t& UserInterfaceManager::SSIDAddr()
 {
+    return ssid_addr;
+}
 
+const uint8_t& UserInterfaceManager::SSIDPasscodeAddr() const
+{
+    return ssid_passcode_addr;
+}
+
+uint8_t& UserInterfaceManager::SSIDPasscodeAddr()
+{
+    return ssid_passcode_addr;
+}
+
+const std::map<uint8_t, String>& UserInterfaceManager::SSIDs() const
+{
+    return ssids;
+}
+
+void UserInterfaceManager::SendJoinNetworkPacket(Packet& password_packet)
+{
+    EnqueuePacket(std::move(password_packet));
 }
 
 const uint32_t UserInterfaceManager::GetStatusColour(

@@ -10,6 +10,7 @@
 #include "Q10Keyboard.hh"
 #include "SerialManager.hh"
 #include "SerialInterface.hh"
+#include "SettingManager.hh"
 #include "Screen.hh"
 
 #define VIEW_ADDRESS 0x00
@@ -42,9 +43,13 @@ public:
     uint8_t& UsernameAddr();
     const uint8_t& PasscodeAddr() const;
     uint8_t& PasscodeAddr();
+    const uint8_t& SSIDAddr() const;
+    uint8_t& SSIDAddr();
+    const uint8_t& SSIDPasscodeAddr() const;
+    uint8_t& SSIDPasscodeAddr();
 
-    Vector<String> RequestSSIDs();
-    void ConnectToWifi(const String& password);
+    const std::map<uint8_t, String>& SSIDs() const;
+    void SendJoinNetworkPacket(Packet& password_packet);
 
     uint32_t NextPacketId();
 
@@ -54,7 +59,7 @@ public:
         if (view != nullptr)
             delete view;
 
-        view = new T(*this, *screen, *keyboard, *eeprom);
+        view = new T(*this, *screen, *keyboard, setting_manager);
     }
 
 private:
@@ -72,7 +77,7 @@ private:
     Screen* screen;
     Q10Keyboard* keyboard;
     SerialManager net_layer;
-    EEPROM* eeprom;
+    SettingManager setting_manager;
     ViewBase* view;
     Vector<Message> received_messages;
     bool force_redraw;
@@ -80,6 +85,10 @@ private:
 
     uint32_t last_test_packet = 0;
 
+    std::map<uint8_t, String> ssids;
+
     uint8_t username_addr;
     uint8_t passcode_addr;
+    uint8_t ssid_addr;
+    uint8_t ssid_passcode_addr;
 };

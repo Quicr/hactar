@@ -89,9 +89,11 @@ int main(void)
 
     MX_I2C1_Init();
 
-    eeprom = new EEPROM(hi2c1, 256);
+    // Reserver the first 32 bytes, and the total size is 256 bytes
+    eeprom = new EEPROM(hi2c1, 32, 256);
 
     screen.Begin();
+    HAL_GPIO_WritePin(USART2_RX_EN_PORT, USART2_RX_EN_PIN, GPIO_PIN_RESET);
 
     // // Set the port pins and groups for the keyboard columns
     port_pin col_pins[Q10_COLS] =
@@ -234,6 +236,13 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(USART2_RX_EN_PORT, USART2_RX_EN_PIN, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = USART2_RX_EN_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(USART2_RX_EN_PORT, &GPIO_InitStruct);
 
     // GPIO_InitStruct.Pin = USART2_TX_LED_PIN;
     // GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;

@@ -15,11 +15,11 @@ public:
     ViewBase(UserInterfaceManager &manager,
              Screen &screen,
              Q10Keyboard &keyboard,
-             EEPROM& eeprom):
+             SettingManager& setting_manager):
         manager(manager),
         screen(screen),
         keyboard(keyboard),
-        eeprom(eeprom),
+        setting_manager(setting_manager),
         first_load(true),
         redraw_menu(true),
         cursor_animate_timeout(0),
@@ -213,7 +213,7 @@ protected:
     UserInterfaceManager &manager;
     Screen &screen;
     Q10Keyboard &keyboard;
-    EEPROM& eeprom;
+    SettingManager& setting_manager;
 
     // If this is the first load, then we should
     // Run the first load draw

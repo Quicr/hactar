@@ -6,10 +6,11 @@
 class EEPROM
 {
 public:
-    EEPROM(I2C_HandleTypeDef& hi2c, const unsigned int max_sz) :
+    EEPROM(I2C_HandleTypeDef& hi2c, const unsigned short reserved, const unsigned short max_sz) :
         i2c(&hi2c),
+        reserved(reserved),
         max_sz(max_sz),
-        next_address(0),
+        next_address(reserved),
         read_value(nullptr)
     {
 
@@ -20,6 +21,9 @@ public:
         i2c = nullptr;
         if (read_value) delete read_value;
     }
+
+    // TODO we need to make sure that write doesn't take too large of a data
+    // size and overwrite some data
 
 
     /* EEPROM::Write
@@ -35,12 +39,13 @@ public:
 
         PerformWrite(to_write, addr, data_size);
 
-        next_address += data_size;
+        // +1 for address
+        next_address += data_size + 1;
         return addr;
     }
 
     template<typename T>
-    const unsigned int Write(T data, const unsigned int sz=1)
+    const unsigned short Write(T data, const unsigned int sz=1)
     {
         const unsigned short addr = next_address;
         const size_t data_size = sizeof(data) * sz;
@@ -83,6 +88,7 @@ public:
         data = *(T*)output_data;
     }
 
+    // TODO probably should be const
     unsigned char* Read(const uint8_t address)
     {
         // Set the address to read from
@@ -188,10 +194,12 @@ private:
         return;
     }
 
-    static constexpr uint8_t Read_Condition     = 0xA1;
-    static constexpr uint8_t Write_Condition    = 0xA0;
+    static constexpr unsigned char Read_Condition     = 0xA1;
+    static constexpr unsigned char Write_Condition    = 0xA0;
+
     I2C_HandleTypeDef* i2c;
-    const unsigned int max_sz;
-    unsigned int next_address;
+    const unsigned short reserved;
+    const unsigned short max_sz;
+    unsigned short next_address;
     unsigned char* read_value;
 };
