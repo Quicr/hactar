@@ -166,7 +166,7 @@ public:
         return array[_size - 1];
     }
 
-    T* data() const
+    const T* data() const
     {
         return array;
     }

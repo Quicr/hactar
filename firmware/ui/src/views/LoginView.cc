@@ -5,9 +5,9 @@
 LoginView::LoginView(UserInterfaceManager& manager,
                      Screen& screen,
                      Q10Keyboard& keyboard,
-                     EEPROM& eeprom)
-    : ViewBase(manager, screen, keyboard, eeprom),
-      incorrect_passcode_entered(false)
+                     SettingManager& setting_manager) :
+    ViewBase(manager, screen, keyboard, setting_manager),
+    incorrect_passcode_entered(false)
 {
 }
 

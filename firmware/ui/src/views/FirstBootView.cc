@@ -3,13 +3,15 @@
 FirstBootView::FirstBootView(UserInterfaceManager& manager,
                              Screen& screen,
                              Q10Keyboard& keyboard,
-                             EEPROM& eeprom) :
-    ViewBase(manager, screen, keyboard, eeprom),
-    state(State::Username)
+                             SettingManager& setting_manager) :
+    ViewBase(manager, screen, keyboard, setting_manager),
+    state(State::Username),
+    request_message("Please enter your name:")
 {
     // Clear the whole eeprom
-    eeprom.Clear();
-    eeprom.Write((unsigned char)FIRST_BOOT_STARTED);
+    setting_manager.ClearEeprom();
+    setting_manager.SaveSetting(SettingManager::SettingManager::Firstboot,
+        (uint8_t)FIRST_BOOT_STARTED);
 }
 
 FirstBootView::~FirstBootView()
@@ -41,40 +43,23 @@ void FirstBootView::Draw()
 {
     ViewBase::Draw();
 
-    String message;
-    switch (state)
-    {
-        case State::Username:
-        {
-            message = "Please enter your name:";
-            break;
-        }
-        case State::Passcode:
-        {
-            message = "Please enter a passcode:";
-            break;
-        }
-        case State::Wifi:
-        {
-            // TODO get wifi's that are in range, and have them type a number
-            // then ask for a password
-            // two stage wifi..
-            break;
-        }
-        case State::Final:
-        {
-            message = "Thank you for completing the first boot";
-
-            // Set the view address to 0x02
-            eeprom.Write((unsigned char*)FIRST_BOOT_DONE);
-
-            HAL_Delay(1000);
-            break;
-        }
-    }
-
     screen.DrawText(1,
-        screen.ViewHeight() - (usr_font.height * 2), message, usr_font, fg, bg);
+        screen.ViewHeight() - (usr_font.height * 2), request_message,
+            usr_font, fg, bg);
+
+    auto ssids = manager.SSIDs();
+    uint16_t idx = 0;
+    for (auto ssid : ssids)
+    {
+        uint16_t len = ssid.second.length();
+        const char* message = ssid.second.c_str();
+        const uint16_t y_start = 50;
+        screen.DrawText(1, y_start + (idx * usr_font.height),
+            String::int_to_string(ssid.first), usr_font, C_WHITE, C_BLACK);
+        screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
+            ssid.second, usr_font, C_WHITE, C_BLACK);
+        ++idx;
+    }
 
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
@@ -93,25 +78,36 @@ bool FirstBootView::HandleInput()
 
     if (!keyboard.EnterPressed()) return false;
 
-    // TODO switch statement
+    // TODO error checking
     switch (state)
     {
         case State::Username:
         {
             // Write the data
-            manager.UsernameAddr() = eeprom.Write(usr_input.data(),
-                usr_input.length());
+            setting_manager.SaveSetting(
+                SettingManager::SettingAddress::Username,
+                usr_input.data(), usr_input.length());
 
+            request_message = "Please enter a passcode:";
             state = State::Passcode;
             break;
         }
         case State::Passcode:
         {
-            // TODO save address
+            // TODO need to hide the passcode as they type it?
             // Write the data
-            manager.PasscodeAddr() = eeprom.Write(usr_input.data(),
-                usr_input.length());
+            setting_manager.SaveSetting(
+                SettingManager::SettingAddress::Password,
+                usr_input.data(), usr_input.length());
 
+            request_message = "Please select SSID by number:";
+
+            Packet ssid_req_packet;
+            ssid_req_packet.SetData(Packet::Types::Command, 0, 6);
+            ssid_req_packet.SetData(manager.NextPacketId(), 6, 8);
+            ssid_req_packet.SetData(1, 14, 10);
+            ssid_req_packet.SetData(Packet::Commands::SSIDs, 24, 8);
+            manager.EnqueuePacket(std::move(ssid_req_packet));
             state = State::Wifi;
             break;
         }
@@ -131,27 +127,41 @@ bool FirstBootView::HandleInput()
         }
     }
 
-
-    // Which is 0
     ClearInput();
     return false;
 }
 
-void FirstBootView::SetUsername()
-{
-    // Write the data
-    unsigned int address = eeprom.Write(usr_input.data(), usr_input.length());
-    state = State::Passcode;
-}
-
-void FirstBootView::SetPasscode()
-{
-
-}
-
 void FirstBootView::SetWifi()
 {
+    if (manager.SSIDAddr() == 0)
+    {
+        // Get the ssid selection
+        uint32_t ssid = usr_input.ToNumber();
+        if (ssid == -1)
+        {
+            request_message = "Error. Please select SSID by number:";
+            return;
+        }
 
+        const std::map<uint8_t, String>& ssids = manager.SSIDs();
+
+        if (ssids.find(ssid) == ssids.end())
+        {
+            request_message = "Error. Please select SSID number:";
+            return;
+        }
+
+        setting_manager.SaveSetting(
+            SettingManager::SettingAddress::SSID,
+            usr_input.data(), usr_input.length());
+    }
+    else if (manager.SSIDPasscodeAddr() == 0)
+    {
+        setting_manager.SaveSetting(
+            SettingManager::SettingAddress::SSID_Password,
+            usr_input.data(), usr_input.length());
+        // TODO Wait until a connection is returned
+    }
 }
 
 void FirstBootView::SetFinal()

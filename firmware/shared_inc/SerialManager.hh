@@ -27,11 +27,11 @@ public:
 
     SerialManager(SerialInterface* uart) :
         uart(uart),
-        rx_packets(10),
+        rx_packets(),
         rx_packet(nullptr),
         rx_packet_timeout(0),
         rx_status(SerialStatus::EMPTY),
-        tx_packets(10),
+        tx_packets(),
         tx_pending_packets(),
         tx_status(SerialStatus::EMPTY)
     {}
@@ -276,8 +276,11 @@ private:
 
         // Check the type of packet sent
         unsigned char packet_type = tx_packet.GetData(0, 6);
-        if (packet_type == Packet::Types::Message ||
-            packet_type == Packet::Types::Debug)
+
+        if (packet_type != Packet::Types::Ok ||
+            packet_type != Packet::Types::Error ||
+            packet_type != Packet::Types::Busy ||
+            packet_type != Packet::Types::LocalDebug)
         {
             // Get the packet id
             unsigned char packet_id = tx_packet.GetData(6, 8);

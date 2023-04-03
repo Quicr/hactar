@@ -6,8 +6,8 @@
 ChatView::ChatView(UserInterfaceManager& manager,
                    Screen& screen,
                    Q10Keyboard& keyboard,
-                   EEPROM& eeprom)
-    : ViewBase(manager, screen, keyboard, eeprom)
+                   SettingManager& setting_manager) :
+    ViewBase(manager, screen, keyboard, setting_manager)
 {
     // messages = new Vector<String>();
     // for (int i = 0; i < 15; i++)

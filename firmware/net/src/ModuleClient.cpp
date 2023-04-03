@@ -55,6 +55,9 @@ void ModuleClient::EnqueuePacket(Packet&& packet)
 // Packet(const Packet& other) for return type Packet to work.
 // TODO need to read response from the server saying it received a message with
 // specific ID
+
+// TODO this is improper, especially considering we should be able to
+// join a server and request certain things
 Packet ModuleClient::GetMessage()
 {
     Packet packet;
@@ -87,41 +90,6 @@ bool ModuleClient::GetMessage(Packet& incoming_packet)
 
 void ModuleClient::SendSSIDs()
 {
-    // Get the ssids
-    int networks = WiFi.scanNetworks();
-
-    if (networks == 0)
-    {
-        Serial.println("No networks found");
-        return;
-    }
-
-    Serial.print("Networks found: ");
-    Serial.println(networks);
-
-
-    // Put ssids into a vector of packets and enqueue them
-    for (int i = 0; i < networks; ++i)
-    {
-        String res = WiFi.SSID(i);
-
-        if (res.length() == 0) continue;
-        Serial.print(i + 1);
-        Serial.print(" ");
-        Serial.println(res);
-
-        Packet packet;
-        packet.SetData(Packet::Types::SSID, 0, 6);
-        packet.SetData(1, 6, 8);
-        packet.SetData(res.length(), 14, 10);
-
-        for (unsigned int j = 0; j < res.length(); j++)
-        {
-            packet.SetData(res[j], 24 + (j * 8), 8);
-        }
-
-        EnqueuePacket(std::move(packet));
-    }
 }
 
 bool ModuleClient::Connect()

@@ -1,53 +1,94 @@
-// #pragma once
+#pragma once
 
-// #include <map>
-// #include "EEPROM.hh"
-// #include "Setting.hh"
+#include <map>
+#include "EEPROM.hh"
+#include "Setting.hh"
 
-// class SettingManager
-// {
-// public:
-//     SettingManager(EEPROM& eeprom);
+class SettingManager
+{
+public:
+    // Permanent addresses
+    enum SettingAddress {
+        Firstboot,
+        Username,
+        Password,
+        SSID,
+        SSID_Password,
+        Usr_Font,
+        Fg,
+        Bg
+    };
 
-//     template <typename T>
-//     bool RegisterSetting(const unsigned short id,
-//                          const T& data,
-//                          const unsigned int sz=1)
-//     {
-//         if (settings.find(id) != settings.end())
-//             return false;
+    SettingManager(EEPROM& eeprom) :
+        eeprom(eeprom)
+    {
 
-//         // Save to eeprom
-//         // address_t address = eeprom.Write<T>(&setting.data(), sz);
-//         // settings[id] = address;
+    }
 
-//         return true;
-//     }
+    template <typename T>
+    void LoadSetting(const SettingAddress setting, T* data)
+    {
+        // The setting is an address on its own
+        unsigned char address = eeprom.Read(setting);
 
-//     bool LoadSetting(const unsigned short id,
-//                      unsigned long& data,
-//                      const unsigned int sz=1)
-//     {
-//         if (settings.find(id) == settings.end())
-//             return false;
+        // Get the length from the address we are going to read from
+        unsigned char len = eeprom.Read(address);
 
-//         eeprom.Read(settings[id], data, sz);
-//     }
+        eeprom.Read(address+1, data, len);
+    }
 
-//     void UpdateSetting(const unsigned short id)
-//     {
+    template <typename T>
+    void SaveSetting(const SettingAddress setting,
+                     T data,
+                     const unsigned short sz = 1)
+    {
+        // Get the address
+        unsigned char address = eeprom.ReadByte(setting);
 
-//     }
+        // The address is unset
+        if (address == 0xFF)
+        {
+            address = eeprom.Write<T>(data, sz);
 
-//     void ClearSettings()
-//     {
+            // Save the address to the reserved space
+            eeprom.Write(setting, address, 1);
+        }
+        else
+        {
+            // We have written to this address before, so overwrite it
+            eeprom.Write(address, data, sz);
+        }
+    }
 
-//     }
+    template <typename T>
+    void SaveSetting(const SettingAddress setting,
+                     T* data,
+                     const unsigned short sz = 1)
+    {
+        // Get the address
+        unsigned char address = eeprom.ReadByte(setting);
 
-// private:
-//     EEPROM& eeprom;
-//     // TODO settings should be pointers
-//     typedef unsigned short id_t;
-//     typedef unsigned short address_t;
-//     std::map<id_t, address_t> settings;
-// };
+        // The address is unset
+        if (address == 0xFF)
+        {
+            address = eeprom.Write<T>(data, sz);
+
+            // Save the address to the reserved space
+            eeprom.Write(setting, address, 1);
+        }
+        else
+        {
+            // We have written to this address before, so overwrite it
+            eeprom.Write(address, data, sz);
+        }
+    }
+
+    void ClearEeprom()
+    {
+        eeprom.Clear();
+    }
+
+private:
+    EEPROM& eeprom;
+
+};

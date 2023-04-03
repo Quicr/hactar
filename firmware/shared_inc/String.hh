@@ -151,6 +151,26 @@ public:
         return -1;
     }
 
+    long ToNumber()
+    {
+        long val = 0;
+        char ch = 0;
+        for (unsigned int i = 0; i < length(); ++i)
+        {
+            ch = array[i];
+            if (ch < '0' || ch > '9')
+                return -1;
+
+            // Multiply by 10
+            val *= 10;
+
+            // Add the next number
+            val += ch - '0';
+        }
+
+        return val;
+    }
+
     static String int_to_string(const unsigned long input)
     {
         unsigned long value = input;

@@ -9,7 +9,7 @@ public:
     FirstBootView(UserInterfaceManager& manager,
                   Screen& screen,
                   Q10Keyboard& keyboard,
-                  EEPROM& eeprom);
+                  SettingManager& setting_manager);
     ~FirstBootView();
 
 protected:
@@ -25,11 +25,10 @@ protected:
     bool HandleInput();
 
 private:
-    void SetUsername();
-    void SetPasscode();
     void SetWifi();
     void SetFinal();
     void SetAllDefaults();
 
     State state;
+    String request_message;
 };
