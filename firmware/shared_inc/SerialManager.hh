@@ -236,10 +236,12 @@ private:
             remove_ids.push_back(packet_pair.first);
 
             // Error state for now
-            // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
+            // TODO error state for the serial interface
 
 
-            // TODO later add this in
+            // TODO update the tx_pending_packets to be a pointer
+            // otherwise we run into memory issues
+
             // Update the time on the packet
             // packet_pair.second.UpdateCreatedAt(current_time);
 
