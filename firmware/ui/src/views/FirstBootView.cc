@@ -6,7 +6,10 @@ FirstBootView::FirstBootView(UserInterfaceManager& manager,
                              SettingManager& setting_manager) :
     ViewBase(manager, screen, keyboard, setting_manager),
     state(State::Username),
-    request_message("Please enter your name:")
+    request_message("Please enter your name:"),
+    wifi_state(WifiState::SSID),
+    ssid(),
+    password()
 {
     // Clear the whole eeprom
     setting_manager.ClearEeprom();
@@ -47,18 +50,36 @@ void FirstBootView::Draw()
         screen.ViewHeight() - (usr_font.height * 2), request_message,
             usr_font, fg, bg);
 
-    auto ssids = manager.SSIDs();
-    uint16_t idx = 0;
-    for (auto ssid : ssids)
+    if (wifi_state == WifiState::SSID)
     {
-        uint16_t len = ssid.second.length();
-        const char* message = ssid.second.c_str();
-        const uint16_t y_start = 50;
-        screen.DrawText(1, y_start + (idx * usr_font.height),
-            String::int_to_string(ssid.first), usr_font, C_WHITE, C_BLACK);
-        screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
-            ssid.second, usr_font, C_WHITE, C_BLACK);
-        ++idx;
+        auto ssids = manager.SSIDs();
+
+        // TODO move into function
+        uint16_t idx = 0;
+        for (auto ssid : ssids)
+        {
+            uint16_t len = ssid.second.length();
+            const char* message = ssid.second.c_str();
+            const uint16_t y_start = 50;
+
+            const String ssid_id_str = String::int_to_string(ssid.first);
+
+            screen.FillRectangle(1 + usr_font.width * ssid_id_str.length(),
+                y_start + (idx * usr_font.height),
+                1 + usr_font.width * 3,
+                y_start + ((idx + 1) * usr_font.height), C_BLACK);
+
+            screen.DrawText(1, y_start + (idx * usr_font.height),
+                ssid_id_str, usr_font, C_WHITE, C_BLACK);
+
+            screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
+                ssid.second, usr_font, C_WHITE, C_BLACK);
+            ++idx;
+        }
+    }
+    else if (wifi_state == WifiState::Connecting)
+    {
+
     }
 
     if (usr_input.length() > last_drawn_idx || redraw_input)
@@ -87,6 +108,12 @@ bool FirstBootView::HandleInput()
             setting_manager.SaveSetting(
                 SettingManager::SettingAddress::Username,
                 usr_input.data(), usr_input.length());
+
+            char* username;
+            unsigned char len;
+            setting_manager.LoadSetting(
+                SettingManager::SettingAddress::Username,
+                username, len);
 
             request_message = "Please enter a passcode:";
             state = State::Passcode;
@@ -133,11 +160,11 @@ bool FirstBootView::HandleInput()
 
 void FirstBootView::SetWifi()
 {
-    if (manager.SSIDAddr() == 0)
+    if (wifi_state == SSID)
     {
         // Get the ssid selection
-        uint32_t ssid = usr_input.ToNumber();
-        if (ssid == -1)
+        uint32_t ssid_id = usr_input.ToNumber();
+        if (ssid_id == -1)
         {
             request_message = "Error. Please select SSID by number:";
             return;
@@ -145,22 +172,88 @@ void FirstBootView::SetWifi()
 
         const std::map<uint8_t, String>& ssids = manager.SSIDs();
 
-        if (ssids.find(ssid) == ssids.end())
+        if (ssids.find(ssid_id) == ssids.end())
         {
             request_message = "Error. Please select SSID number:";
             return;
         }
 
+        ssid = ssids.at(ssid_id);
         setting_manager.SaveSetting(
             SettingManager::SettingAddress::SSID,
-            usr_input.data(), usr_input.length());
+            ssid.data(), ssid.length());
+
+        // THINK should this be moved somewhere else?
+        const uint16_t y_start = 50;
+        screen.FillRectangle(1, y_start, WIDTH, HEIGHT, C_BLACK, 32);
+
+        request_message = "Please enter the wifi password";
+        wifi_state = WifiState::Password;
     }
-    else if (manager.SSIDPasscodeAddr() == 0)
+    else if (wifi_state == WifiState::Password)
     {
+        password = usr_input;
         setting_manager.SaveSetting(
             SettingManager::SettingAddress::SSID_Password,
-            usr_input.data(), usr_input.length());
-        // TODO Wait until a connection is returned
+            password.data(), password.length());
+        setting_manager.SaveSetting(
+            SettingManager::SettingAddress::SSID_Password,
+            password.data(), password.length());
+
+        // Send a wifi connection packet to esp
+        Packet connect_packet;
+        connect_packet.SetData(Packet::Types::Command, 0, 6);
+        connect_packet.SetData(manager.NextPacketId(), 6, 8);
+        // THINK should these be separate packets?
+        // +3 for the length of the ssid, length of the password
+        connect_packet.SetData(ssid.length() + password.length() + 3, 14, 10);
+
+        connect_packet.SetData(Packet::Commands::ConnectToSSID, 24, 8);
+
+        // Set the length of the ssid
+        connect_packet.SetData(ssid.length(), 32, 8);
+
+        // Populate with the ssid
+        uint16_t i;
+        for (i = 0; i < ssid.length(); ++i)
+        {
+            connect_packet.SetData(ssid[i], 40 + i * 8, 8);
+        }
+
+        // Set the length of the password
+        connect_packet.SetData(password.length(), 40 + i * 8, 8);
+
+        // Populate with the password
+        uint16_t j;
+        for (j = 0; j < ssid.length(); ++j)
+        {
+            connect_packet.SetData(password[j], 48 + (i * 8) + (j * 8), 8);
+        }
+
+        // Enqueue the message
+        manager.EnqueuePacket(std::move(connect_packet));
+
+        // Set the state to waiting
+        request_message = "Connecting";
+
+        // TODO consider making a draw queue
+        screen.FillRectangle(0, HEIGHT - usr_font.height*2, WIDTH,
+            HEIGHT - usr_font.height, C_BLACK);
+
+        wifi_state = WifiState::Connecting;
+    }
+    else if (wifi_state == WifiState::Connecting)
+    {
+        // Check the status of the manager
+        if (!manager.IsConnectedToWifi())
+            return;
+
+        // Connected to wifi
+        wifi_state = WifiState::Connected;
+    }
+    else if (wifi_state == WifiState::Connected)
+    {
+        state = State::Final;
     }
 }
 

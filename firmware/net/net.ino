@@ -177,14 +177,48 @@ void HandleIncomingSerial()
             }
             else if (command_type == Packet::Commands::ConnectToSSID)
             {
-                // Get the ssid value, followed by the passcode
-                uint8_t ssid_id = rx_packet.GetData(32, 8);
-                String passcode;
+                // Get the ssid value, followed by the ssid_password
+                unsigned char ssid_len = rx_packet.GetData(32, 8);
+                Serial.print("ssid length - ");
+                Serial.println(ssid_len);
 
-                for (unsigned int i = 0; i < data_len - 1; ++i)
+                // Build the ssid
+                String ssid;
+                unsigned char i = 0;
+                for (i = 0; i < ssid_len; ++i)
                 {
-                    passcode.concat(rx_packet.GetData(40 + (8 * i), 8));
+                    ssid += static_cast<char>(
+                        rx_packet.GetData(40 + i * 8, 8));
                 }
+                Serial.print("SSID - ");
+                Serial.println(ssid);
+
+                unsigned char ssid_password_len = rx_packet.GetData(
+                    40 + i * 8, 8);
+
+                String ssid_password;
+                for (unsigned char j = 0; j < ssid_password_len; ++j)
+                {
+                    ssid_password += static_cast<char>(rx_packet.GetData(
+                        40 + (i * 8) + (j * 8), 8));
+                }
+                Serial.print("REMOVE ME SSID Password - ");
+                Serial.println(ssid_password);
+
+                WiFi.begin(ssid.c_str(), ssid_password.c_str());
+            }
+            else if (command_type == Packet::Commands::WifiStatus)
+            {
+                Serial.print("Connection status - ");
+                Serial.println(WiFi.isConnected());
+                // Create a packet that tells the current status
+
+                Packet connected_packet;
+                connected_packet.SetData(Packet::Types::Command, 0, 6);
+                connected_packet.SetData(1, 6, 8);
+                connected_packet.SetData(2, 14, 10);
+                connected_packet.SetData(Packet::Commands::WifiStatus, 24, 8);
+                connected_packet.SetData(WiFi.isConnected(), 32, 8);
             }
         }
 
@@ -197,31 +231,21 @@ void setup()
     Serial.begin(115200);
     serial_alt.begin(115200, SERIAL_8N1, 17, 18);
     WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
+    // WiFi.begin(ssid, password);
 
     client = new ModuleClient(host, port);
 
     uart = new SerialEsp(serial_alt);
     ui_layer = new SerialManager(uart);
 
-    Serial.println("Waiting");
-
-    // Give time to connect to wifi
-    delay(5000);
-
     pinMode(19, OUTPUT);
     digitalWrite(19, LOW);
-    Serial.println("Starting");
+    Serial.println("Done setup");
 }
 
 unsigned long send_message = 0;
 void loop()
 {
-    if (WiFi.status() != WL_CONNECTED)
-    {
-        return;
-    }
-
     current_time = millis();
 
     ui_layer->RxTx(current_time);

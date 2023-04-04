@@ -8,7 +8,7 @@
 #include "SettingManager.hh"
 
 // Init the static var
-uint32_t UserInterfaceManager::Packet_Id = 1;
+uint8_t UserInterfaceManager::Packet_Id = 1;
 
 UserInterfaceManager::UserInterfaceManager(Screen &screen,
                                            Q10Keyboard &keyboard,
@@ -23,10 +23,8 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     force_redraw(false),
     current_time(HAL_GetTick()),
     ssids(),
-    username_addr(0),
-    passcode_addr(0),
-    ssid_addr(0),
-    ssid_passcode_addr(0)
+    last_wifi_check(0),
+    is_connected_to_wifi(false)
 {
     // Get if first boot or not
 
@@ -65,6 +63,19 @@ void UserInterfaceManager::Run()
     {
         force_redraw = false;
         return;
+    }
+
+    if (current_time > last_wifi_check)
+    {
+        // Check a check wifi status packet
+        Packet check_wifi;
+        check_wifi.SetData(Packet::Types::Command, 0, 6);
+        check_wifi.SetData(NextPacketId(), 6, 8);
+        check_wifi.SetData(1, 14, 10);
+        check_wifi.SetData(Packet::Commands::WifiStatus, 24, 8);
+
+        EnqueuePacket(std::move(check_wifi));
+        last_wifi_check = current_time + 5000;
     }
 
     // Run the receive and transmit
@@ -113,6 +124,8 @@ bool UserInterfaceManager::RedrawForced()
 
 uint32_t UserInterfaceManager::NextPacketId()
 {
+    if (Packet_Id == 0xFE)
+        Packet_Id = 1;
     return UserInterfaceManager::Packet_Id++;
 }
 
@@ -192,9 +205,9 @@ void UserInterfaceManager::HandleIncomingPackets()
 
                     ssids[ssid_id] = std::move(str);
                 }
-                else
+                else if (Packet::Commands::WifiStatus == command_type)
                 {
-                    // TODO
+                    is_connected_to_wifi = rx_packet.GetData(32, 8);
                 }
 
                 break;
@@ -218,54 +231,14 @@ const uint32_t UserInterfaceManager::GetRxStatusColour() const
     return GetStatusColour(net_layer.GetRxStatus());
 }
 
-const uint8_t& UserInterfaceManager::UsernameAddr() const
-{
-    return username_addr;
-}
-
-uint8_t& UserInterfaceManager::UsernameAddr()
-{
-    return username_addr;
-}
-
-const uint8_t& UserInterfaceManager::PasscodeAddr() const
-{
-    return passcode_addr;
-}
-
-uint8_t& UserInterfaceManager::PasscodeAddr()
-{
-    return passcode_addr;
-}
-
-const uint8_t& UserInterfaceManager::SSIDAddr() const
-{
-    return ssid_addr;
-}
-
-uint8_t& UserInterfaceManager::SSIDAddr()
-{
-    return ssid_addr;
-}
-
-const uint8_t& UserInterfaceManager::SSIDPasscodeAddr() const
-{
-    return ssid_passcode_addr;
-}
-
-uint8_t& UserInterfaceManager::SSIDPasscodeAddr()
-{
-    return ssid_passcode_addr;
-}
-
 const std::map<uint8_t, String>& UserInterfaceManager::SSIDs() const
 {
     return ssids;
 }
 
-void UserInterfaceManager::SendJoinNetworkPacket(Packet& password_packet)
+const bool UserInterfaceManager::IsConnectedToWifi() const
 {
-    EnqueuePacket(std::move(password_packet));
+    return is_connected_to_wifi;
 }
 
 const uint32_t UserInterfaceManager::GetStatusColour(
