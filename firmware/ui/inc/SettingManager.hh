@@ -26,13 +26,13 @@ public:
     }
 
     template <typename T>
-    void LoadSetting(const SettingAddress setting, T* data)
+    void LoadSetting(const SettingAddress setting, T* data, unsigned char& len)
     {
         // The setting is an address on its own
-        unsigned char address = eeprom.Read(setting);
+        unsigned char address = eeprom.ReadByte(setting);
 
         // Get the length from the address we are going to read from
-        unsigned char len = eeprom.Read(address);
+        len = eeprom.ReadByte(address);
 
         eeprom.Read(address+1, data, len);
     }

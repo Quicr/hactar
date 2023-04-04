@@ -20,6 +20,13 @@ protected:
         Final
     };
 
+    enum WifiState {
+        SSID,
+        Password,
+        Connecting,
+        Connected
+    };
+
     void AnimatedDraw();
     void Draw();
     bool HandleInput();
@@ -31,4 +38,7 @@ private:
 
     State state;
     String request_message;
+    WifiState wifi_state;
+    String ssid;
+    String password;
 };
