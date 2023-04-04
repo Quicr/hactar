@@ -39,17 +39,8 @@ public:
     const uint32_t GetTxStatusColour() const;
     const uint32_t GetRxStatusColour() const;
 
-    const uint8_t& UsernameAddr() const;
-    uint8_t& UsernameAddr();
-    const uint8_t& PasscodeAddr() const;
-    uint8_t& PasscodeAddr();
-    const uint8_t& SSIDAddr() const;
-    uint8_t& SSIDAddr();
-    const uint8_t& SSIDPasscodeAddr() const;
-    uint8_t& SSIDPasscodeAddr();
-
     const std::map<uint8_t, String>& SSIDs() const;
-    void SendJoinNetworkPacket(Packet& password_packet);
+    const bool IsConnectedToWifi() const;
 
     uint32_t NextPacketId();
 
@@ -63,7 +54,7 @@ public:
     }
 
 private:
-    static uint32_t Packet_Id;
+    static uint8_t Packet_Id;
 
     void HandleIncomingPackets();
     void TimeoutPackets();
@@ -83,12 +74,8 @@ private:
     bool force_redraw;
     uint32_t current_time;
 
-    uint32_t last_test_packet = 0;
 
     std::map<uint8_t, String> ssids;
-
-    uint8_t username_addr;
-    uint8_t passcode_addr;
-    uint8_t ssid_addr;
-    uint8_t ssid_passcode_addr;
+    uint32_t last_wifi_check;
+    bool is_connected_to_wifi;
 };

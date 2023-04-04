@@ -34,6 +34,7 @@ public:
     {
         SSIDs = 1,
         ConnectToSSID,
+        WifiStatus
     };
 
     // TODO important to have different data lengths for each type..
