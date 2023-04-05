@@ -1,4 +1,7 @@
 #include "FirstBootView.hh"
+#include "LoginView.hh"
+
+// TODO make sure the usr input is not empty
 
 FirstBootView::FirstBootView(UserInterfaceManager& manager,
                              Screen& screen,
@@ -9,7 +12,9 @@ FirstBootView::FirstBootView(UserInterfaceManager& manager,
     request_message("Please enter your name:"),
     wifi_state(WifiState::SSID),
     ssid(),
-    password()
+    password(),
+    state_update_timeout(0),
+    num_connection_checks(0)
 {
     // Clear the whole eeprom
     setting_manager.ClearEeprom();
@@ -77,10 +82,6 @@ void FirstBootView::Draw()
             ++idx;
         }
     }
-    else if (wifi_state == WifiState::Connecting)
-    {
-
-    }
 
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
@@ -143,11 +144,6 @@ bool FirstBootView::HandleInput()
             SetWifi();
             break;
         }
-        case State::Final:
-        {
-            SetFinal();
-            break;
-        }
         default:
         {
             state = State::Username;
@@ -158,6 +154,27 @@ bool FirstBootView::HandleInput()
     return false;
 }
 
+void FirstBootView::Update()
+{
+    // Oh boy
+    if (state == State::Wifi)
+    {
+        if (wifi_state == WifiState::Connecting)
+        {
+            UpdateConnecting();
+        }
+    }
+    else if (state == State::Final)
+    {
+        if (HAL_GetTick() > state_update_timeout)
+        {
+            manager.ChangeView<LoginView>();
+            return;
+        }
+    }
+
+}
+
 void FirstBootView::SetWifi()
 {
     if (wifi_state == SSID)
@@ -166,7 +183,7 @@ void FirstBootView::SetWifi()
         uint32_t ssid_id = usr_input.ToNumber();
         if (ssid_id == -1)
         {
-            request_message = "Error. Please select SSID by number:";
+            request_message = "Error. Please select SSID number:";
             return;
         }
 
@@ -184,6 +201,7 @@ void FirstBootView::SetWifi()
             ssid.data(), ssid.length());
 
         // THINK should this be moved somewhere else?
+        // Clear the area above the user input
         const uint16_t y_start = 50;
         screen.FillRectangle(1, y_start, WIDTH, HEIGHT, C_BLACK, 32);
 
@@ -206,6 +224,7 @@ void FirstBootView::SetWifi()
         connect_packet.SetData(manager.NextPacketId(), 6, 8);
         // THINK should these be separate packets?
         // +3 for the length of the ssid, length of the password
+        uint16_t length = ssid.length() + password.length() + 4;
         connect_packet.SetData(ssid.length() + password.length() + 3, 14, 10);
 
         connect_packet.SetData(Packet::Commands::ConnectToSSID, 24, 8);
@@ -215,19 +234,24 @@ void FirstBootView::SetWifi()
 
         // Populate with the ssid
         uint16_t i;
+        uint16_t offset = 40;
         for (i = 0; i < ssid.length(); ++i)
         {
-            connect_packet.SetData(ssid[i], 40 + i * 8, 8);
+            connect_packet.SetData(ssid[i], offset, 8);
+            offset += 8;
         }
 
         // Set the length of the password
-        connect_packet.SetData(password.length(), 40 + i * 8, 8);
+        connect_packet.SetData(password.length(), offset, 8);
+        offset += 8;
 
         // Populate with the password
         uint16_t j;
-        for (j = 0; j < ssid.length(); ++j)
+        for (j = 0; j < password.length(); ++j)
         {
-            connect_packet.SetData(password[j], 48 + (i * 8) + (j * 8), 8);
+            char ch = password[j];
+            connect_packet.SetData(password[j], offset, 8);
+            offset += 8;
         }
 
         // Enqueue the message
@@ -242,24 +266,38 @@ void FirstBootView::SetWifi()
 
         wifi_state = WifiState::Connecting;
     }
-    else if (wifi_state == WifiState::Connecting)
-    {
-        // Check the status of the manager
-        if (!manager.IsConnectedToWifi())
-            return;
-
-        // Connected to wifi
-        wifi_state = WifiState::Connected;
-    }
-    else if (wifi_state == WifiState::Connected)
-    {
-        state = State::Final;
-    }
 }
 
-void FirstBootView::SetFinal()
+void FirstBootView::UpdateConnecting()
 {
+    if (HAL_GetTick() < state_update_timeout) return;
 
+    if (manager.IsConnectedToWifi())
+    {
+        request_message = "Device setup successful";
+        state_update_timeout = HAL_GetTick() + 5000;
+        state = State::Final;
+        return;
+    }
+
+    if (++num_connection_checks > 30)
+    {
+        // Failed to connect to the internet repeat connecting to ssid
+        wifi_state = WifiState::SSID;
+        request_message = "Failed to connect. Select SSID";
+        num_connection_checks = 0;
+        return;
+    }
+
+    request_message += ".";
+
+    if (request_message.length() > 13)
+    {
+        request_message = "Connecting";
+        const uint16_t y_start = 50;
+        screen.FillRectangle(1, y_start, WIDTH, HEIGHT, C_BLACK, 32);
+    }
+    state_update_timeout = HAL_GetTick() + 1000;
 }
 
 void FirstBootView::SetAllDefaults()

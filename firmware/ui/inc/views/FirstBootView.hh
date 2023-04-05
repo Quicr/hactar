@@ -30,15 +30,21 @@ protected:
     void AnimatedDraw();
     void Draw();
     bool HandleInput();
+    void Update();
 
 private:
+    // Input functions
     void SetWifi();
-    void SetFinal();
     void SetAllDefaults();
+
+    // Update functions
+    void UpdateConnecting();
 
     State state;
     String request_message;
     WifiState wifi_state;
     String ssid;
     String password;
+    uint32_t state_update_timeout;
+    uint8_t num_connection_checks;
 };

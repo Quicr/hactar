@@ -25,7 +25,7 @@ public:
 protected:
     void AnimatedDraw();
     void Draw();
-    void Get();
+    void Update();
     bool HandleInput();
 private:
     void DrawTitle();
