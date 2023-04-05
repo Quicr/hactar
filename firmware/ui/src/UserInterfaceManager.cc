@@ -217,6 +217,9 @@ void UserInterfaceManager::HandleIncomingPackets()
                 // We'll do nothing if it doesn't fit these types
             }
         }
+
+        // TODO this should be automatic when the vector erases it?
+        delete packets[0];
         packets.erase(0);
     }
 }

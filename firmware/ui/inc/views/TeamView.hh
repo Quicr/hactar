@@ -12,7 +12,7 @@ public:
              SettingManager& setting_manager);
     ~TeamView();
 protected:
-    void Get();
+    void Update();
     void AnimatedDraw();
     void Draw();
     bool HandleInput();
