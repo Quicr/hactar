@@ -15,7 +15,7 @@ TeamView::~TeamView()
 
 }
 
-void TeamView::Get()
+void TeamView::Update()
 {
     // Periodically get the list of teams.
 }

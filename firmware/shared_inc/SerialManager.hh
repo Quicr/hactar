@@ -53,6 +53,10 @@ public:
 
     void Tx(const unsigned long current_time)
     {
+        // Don't try to send if we are reading
+        if (uart->AvailableBytes() >= 4) return;
+        if (rx_packet) return;
+
         // Check pending tx packets
         HandlePendingTx(current_time);
 

@@ -42,7 +42,7 @@ public:
 
     virtual void Run()
     {
-        Get();
+        Update();
         if (HandleInput()) return;
         AnimatedDraw();
         Draw();
@@ -63,7 +63,7 @@ protected:
     static constexpr uint16_t Cursor_Animate_Duration = 2500;
     static constexpr uint16_t Cursor_Hollow_Thickness = 1;
 
-    virtual void Get() {};
+    virtual void Update() {};
     virtual bool HandleInput() = 0;
     virtual void AnimatedDraw() = 0;
     virtual void Draw()

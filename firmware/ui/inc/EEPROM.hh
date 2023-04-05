@@ -124,26 +124,33 @@ public:
 
     void Clear()
     {
+        const unsigned int Bytes_Sz = 256;
+        const unsigned int Bytes_W_Address_Sz = Bytes_Sz + 1;
         // Reset the write address to the start
         next_address = 0;
 
         // Number of bytes we have to delete
-        unsigned int bytes_loop = max_sz / 256;
+        unsigned int bytes_loop = max_sz / Bytes_Sz;
 
         // Write a bunch of 1s
-        unsigned char clear_bytes[256] = { 0 };
-        for (int i = 0; i < 256; i++)
+        unsigned char clear_bytes[Bytes_W_Address_Sz] = { 0 };
+        for (int i = 1; i < Bytes_W_Address_Sz; i++)
         {
             clear_bytes[i] = 0xFF;
         }
 
         while (bytes_loop--)
         {
-            // TODO manual
+            clear_bytes[0] = next_address;
+
+            HAL_I2C_Master_Transmit(i2c, Write_Condition, clear_bytes, Bytes_Sz,
+                HAL_MAX_DELAY);
+
+            next_address += Bytes_Sz;
         }
 
-        // Reset the next address back to the start
-        next_address = 0;
+        // Reset the next address back to the start after the reserved space
+        next_address = reserved;
     }
 
     const unsigned int Size() const

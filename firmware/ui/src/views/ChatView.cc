@@ -22,8 +22,9 @@ ChatView::~ChatView()
 
 }
 
-void ChatView::Get()
+void ChatView::Update()
 {
+    // TODO move this into a function
     if (!manager.HasMessages()) return;
 
     Vector<Message>& msgs = manager.GetMessages();
