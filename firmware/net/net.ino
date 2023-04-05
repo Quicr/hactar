@@ -26,6 +26,9 @@ unsigned long current_time = 0;
 
 HardwareSerial serial_alt(Serial1);
 
+String ssid;
+String password;
+
 void HandleIncomingNetwork()
 {
 
@@ -108,10 +111,15 @@ void HandleIncomingSerial()
         for (uint16_t i = 0; i < data_len; ++i)
         {
             data = rx_packet.GetData(24 + (i * 8), 8);
-            if ((data > '0' && data < '9') || (data > 'A' && data < 'z'))
+            if ((data >= '0' && data <= '9') || (data >= 'A' && data <= 'z'))
+            {
                 Serial.print((char)data);
+            }
             else
+            {
                 Serial.print((int)data);
+                Serial.print(" ");
+            }
         }
         Serial.println("");
 
@@ -128,7 +136,13 @@ void HandleIncomingSerial()
             if (command_type == Packet::Commands::SSIDs)
             {
                 // Get the ssids
+                WiFi.disconnect();
                 int networks = WiFi.scanNetworks();
+
+                if (ssid.length() != 0 && password.length() != 0)
+                {
+                    WiFi.begin(ssid.c_str(), password.c_str());
+                }
 
                 if (networks == 0)
                 {
@@ -184,24 +198,30 @@ void HandleIncomingSerial()
 
                 // Build the ssid
                 String ssid;
+                unsigned short offset = 40;
                 unsigned char i = 0;
                 for (i = 0; i < ssid_len; ++i)
                 {
                     ssid += static_cast<char>(
-                        rx_packet.GetData(40 + i * 8, 8));
+                        rx_packet.GetData(offset, 8));
+                    offset += 8;
                 }
                 Serial.print("SSID - ");
                 Serial.println(ssid);
 
-                unsigned char ssid_password_len = rx_packet.GetData(
-                    40 + i * 8, 8);
+                unsigned char ssid_password_len = rx_packet.GetData(offset, 8);
+                offset += 8;
+                Serial.print("password length - ");
+                Serial.println(ssid_password_len);
 
                 String ssid_password;
                 for (unsigned char j = 0; j < ssid_password_len; ++j)
                 {
                     ssid_password += static_cast<char>(rx_packet.GetData(
-                        40 + (i * 8) + (j * 8), 8));
+                        offset, 8));
+                    offset += 8;
                 }
+                Serial.println("");
                 Serial.print("REMOVE ME SSID Password - ");
                 Serial.println(ssid_password);
 
@@ -219,6 +239,8 @@ void HandleIncomingSerial()
                 connected_packet.SetData(2, 14, 10);
                 connected_packet.SetData(Packet::Commands::WifiStatus, 24, 8);
                 connected_packet.SetData(WiFi.isConnected(), 32, 8);
+
+                ui_layer->EnqueuePacket(std::move(connected_packet));
             }
         }
 

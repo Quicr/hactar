@@ -28,9 +28,14 @@ void LoginView::AnimatedDraw()
         return;
 
     uint16_t speed = 10;
-    String msg = "Welcome to Cisco";
+    String msg = "Welcome ";
     screen.DrawBlockAnimateString(34, 6, msg, font11x16, fg, bg, speed);
-    msg = "Secure Messaging";
+    // msg = "Secure Messaging";
+
+    char* username;
+    unsigned char len;
+    setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
+        username, len);
     screen.DrawBlockAnimateString(34, 22, msg, font11x16, fg, bg, speed);
     msg = "Enter your passcode";
     screen.DrawBlockAnimateString(1,
