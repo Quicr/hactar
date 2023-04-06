@@ -2,7 +2,37 @@
 
 #include <map>
 #include "EEPROM.hh"
-#include "Setting.hh"
+#include "Vector.hh"
+
+// TODO use
+template <typename T>
+class Setting
+{
+    public:
+        const T& data() const
+        {
+            return _data;
+        }
+
+        T& data()
+        {
+            return _data;
+        }
+
+        const unsigned char& len() const
+        {
+            return _len;
+        }
+
+        unsigned char& len()
+        {
+            _len;
+        }
+
+    private:
+        T* _data;
+        unsigned char _len;
+};
 
 class SettingManager
 {
@@ -19,22 +49,52 @@ public:
         Bg
     };
 
+    // TODO use
+    typedef struct {
+        unsigned char* data;
+        unsigned char len;
+    } setting_t;
+
     SettingManager(EEPROM& eeprom) :
-        eeprom(eeprom)
+        eeprom(eeprom),
+        settings()
     {
 
     }
 
+// TODO make the loading of settings all internal
     template <typename T>
-    void LoadSetting(const SettingAddress setting, T* data, unsigned char& len)
+    void LoadSetting(const SettingAddress setting, T** data, unsigned char& len)
     {
+        // Check if the setting has been loaded already
+        // if (settings.find(setting) != settings.end())
+        // {
+        //     // Found the setting
+        //     return
+        // }
+
         // The setting is an address on its own
-        unsigned char address = eeprom.ReadByte(setting);
+        unsigned char address = eeprom.ReadByte(setting); // TODO 255 is error
 
         // Get the length from the address we are going to read from
         len = eeprom.ReadByte(address);
 
         eeprom.Read(address+1, data, len);
+    }
+
+    unsigned char LoadSetting(const SettingAddress setting)
+    {
+        // Check if the setting has been loaded already
+        // if (settings.find(setting) != settings.end())
+        // {
+        //     // Found the setting
+        //     return
+        // }
+
+        // The setting is an address on its own
+        unsigned char address = eeprom.ReadByte(setting); // TODO 255 is error
+
+        return eeprom.ReadByte(address);
     }
 
     template <typename T>
@@ -43,15 +103,17 @@ public:
                      const unsigned short sz = 1)
     {
         // Get the address
-        unsigned char address = eeprom.ReadByte(setting);
+        unsigned char address = eeprom.ReadByte(
+            static_cast<unsigned char>(setting));
 
         // The address is unset
         if (address == 0xFF)
         {
+            // Get the next address available and save the data there
             address = eeprom.Write<T>(data, sz);
 
             // Save the address to the reserved space
-            eeprom.Write(setting, address, 1);
+            eeprom.WriteByte(static_cast<unsigned char>(setting), address);
         }
         else
         {
@@ -66,15 +128,17 @@ public:
                      const unsigned short sz = 1)
     {
         // Get the address
-        unsigned char address = eeprom.ReadByte(setting);
+        unsigned char address = eeprom.ReadByte(
+            static_cast<unsigned char>(setting));
 
         // The address is unset
         if (address == 0xFF)
         {
+            // Get the next address available and save the data there
             address = eeprom.Write<T>(data, sz);
 
             // Save the address to the reserved space
-            eeprom.Write(setting, address, 1);
+            eeprom.WriteByte(static_cast<unsigned char>(setting), address);
         }
         else
         {
@@ -90,5 +154,5 @@ public:
 
 private:
     EEPROM& eeprom;
-
+    std::map<SettingAddress, setting_t> settings;
 };

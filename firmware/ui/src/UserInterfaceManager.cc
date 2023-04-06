@@ -26,16 +26,11 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     last_wifi_check(0),
     is_connected_to_wifi(false)
 {
-    // Get if first boot or not
-
-
-    // The first byte will be the length of the next set of data
-    if (eeprom.ReadByte(1) == FIRST_BOOT_DONE)
+    if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
+        == FIRST_BOOT_DONE)
         ChangeView<LoginView>();
     else
         ChangeView<FirstBootView>();
-
-    // ChangeView<ChatView>();
 }
 
 UserInterfaceManager::~UserInterfaceManager()
