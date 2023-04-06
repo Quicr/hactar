@@ -18,7 +18,7 @@ FirstBootView::FirstBootView(UserInterfaceManager& manager,
 {
     // Clear the whole eeprom
     setting_manager.ClearEeprom();
-    setting_manager.SaveSetting(SettingManager::SettingManager::Firstboot,
+    setting_manager.SaveSetting(SettingManager::SettingAddress::Firstboot,
         (uint8_t)FIRST_BOOT_STARTED);
 }
 
@@ -110,12 +110,6 @@ bool FirstBootView::HandleInput()
                 SettingManager::SettingAddress::Username,
                 usr_input.data(), usr_input.length());
 
-            char* username;
-            unsigned char len;
-            setting_manager.LoadSetting(
-                SettingManager::SettingAddress::Username,
-                username, len);
-
             request_message = "Please enter a passcode:";
             state = State::Passcode;
             break;
@@ -166,8 +160,11 @@ void FirstBootView::Update()
     }
     else if (state == State::Final)
     {
+        // Save to the eeprom that we finished the first boot
         if (HAL_GetTick() > state_update_timeout)
         {
+            // FIX sometimes crashes here
+            // because we need to return true all the way upwards
             manager.ChangeView<LoginView>();
             return;
         }
@@ -211,6 +208,7 @@ void FirstBootView::SetWifi()
     else if (wifi_state == WifiState::Password)
     {
         password = usr_input;
+        password = "Spikeball21Computers";
         setting_manager.SaveSetting(
             SettingManager::SettingAddress::SSID_Password,
             password.data(), password.length());
@@ -275,6 +273,10 @@ void FirstBootView::UpdateConnecting()
     if (manager.IsConnectedToWifi())
     {
         request_message = "Device setup successful";
+
+        setting_manager.SaveSetting(SettingManager::SettingAddress::Firstboot,
+            (uint8_t)FIRST_BOOT_DONE);
+
         state_update_timeout = HAL_GetTick() + 5000;
         state = State::Final;
         return;
@@ -295,7 +297,8 @@ void FirstBootView::UpdateConnecting()
     {
         request_message = "Connecting";
         const uint16_t y_start = 50;
-        screen.FillRectangle(1, y_start, WIDTH, HEIGHT, C_BLACK, 32);
+        screen.FillRectangle(request_message.length() * usr_font.width, y_start,
+            WIDTH, HEIGHT, C_BLACK, 32);
     }
     state_update_timeout = HAL_GetTick() + 1000;
 }

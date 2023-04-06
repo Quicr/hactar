@@ -42,7 +42,7 @@ public:
 
     virtual void Run()
     {
-        Update();
+        Update(); // TODO somehow need to return here so change views doesn't crash
         if (HandleInput()) return;
         AnimatedDraw();
         Draw();
