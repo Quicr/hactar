@@ -22,10 +22,10 @@ ChatView::~ChatView()
 
 }
 
-void ChatView::Update()
+bool ChatView::Update()
 {
     // TODO move this into a function
-    if (!manager.HasMessages()) return;
+    if (!manager.HasMessages()) return false;
 
     Vector<Message>& msgs = manager.GetMessages();
 
@@ -40,6 +40,8 @@ void ChatView::Update()
     manager.ClearMessages();
 
     redraw_messages = true;
+
+    return false;
 }
 
 void ChatView::AnimatedDraw()

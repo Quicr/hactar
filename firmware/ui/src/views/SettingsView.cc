@@ -71,3 +71,9 @@ bool SettingsView::HandleInput()
 
     return false;
 }
+
+bool SettingsView::Update()
+{
+    return false;
+}
+

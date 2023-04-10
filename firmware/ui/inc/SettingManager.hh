@@ -26,7 +26,7 @@ class Setting
 
         unsigned char& len()
         {
-            _len;
+            return _len;
         }
 
     private:

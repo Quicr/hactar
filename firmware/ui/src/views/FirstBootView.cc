@@ -63,10 +63,9 @@ void FirstBootView::Draw()
         uint16_t idx = 0;
         for (auto ssid : ssids)
         {
-            uint16_t len = ssid.second.length();
-            const char* message = ssid.second.c_str();
             const uint16_t y_start = 50;
 
+            // convert the ssid int val to a string
             const String ssid_id_str = String::int_to_string(ssid.first);
 
             screen.FillRectangle(1 + usr_font.width * ssid_id_str.length(),
@@ -148,7 +147,7 @@ bool FirstBootView::HandleInput()
     return false;
 }
 
-void FirstBootView::Update()
+bool FirstBootView::Update()
 {
     // Oh boy
     if (state == State::Wifi)
@@ -166,10 +165,11 @@ void FirstBootView::Update()
             // FIX sometimes crashes here
             // because we need to return true all the way upwards
             manager.ChangeView<LoginView>();
-            return;
+            return true;
         }
     }
 
+    return false;
 }
 
 void FirstBootView::SetWifi()
@@ -177,7 +177,7 @@ void FirstBootView::SetWifi()
     if (wifi_state == SSID)
     {
         // Get the ssid selection
-        uint32_t ssid_id = usr_input.ToNumber();
+        int32_t ssid_id = usr_input.ToNumber();
         if (ssid_id == -1)
         {
             request_message = "Error. Please select SSID number:";
@@ -221,8 +221,8 @@ void FirstBootView::SetWifi()
         connect_packet.SetData(manager.NextPacketId(), 6, 8);
         // THINK should these be separate packets?
         // +3 for the length of the ssid, length of the password
-        uint16_t length = ssid.length() + password.length() + 4;
-        connect_packet.SetData(ssid.length() + password.length() + 3, 14, 10);
+        uint16_t length = ssid.length() + password.length() + 3;
+        connect_packet.SetData(length, 14, 10);
 
         connect_packet.SetData(Packet::Commands::ConnectToSSID, 24, 8);
 
@@ -246,7 +246,6 @@ void FirstBootView::SetWifi()
         uint16_t j;
         for (j = 0; j < password.length(); ++j)
         {
-            char ch = password[j];
             connect_packet.SetData(password[j], offset, 8);
             offset += 8;
         }

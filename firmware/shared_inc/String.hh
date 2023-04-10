@@ -200,7 +200,7 @@ public:
         String res = str;
 
         // Delete to match my new
-        delete str;
+        delete [] str;
 
         // Return a String
         return res;

@@ -30,7 +30,7 @@ protected:
     void AnimatedDraw();
     void Draw();
     bool HandleInput();
-    void Update();
+    bool Update();
 
 private:
     // Input functions

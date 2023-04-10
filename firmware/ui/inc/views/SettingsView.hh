@@ -14,4 +14,5 @@ protected:
     void AnimatedDraw();
     void Draw();
     bool HandleInput();
+    bool Update();
 };

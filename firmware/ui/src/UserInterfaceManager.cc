@@ -163,17 +163,17 @@ void UserInterfaceManager::HandleIncomingPackets()
             }
             case (Packet::Types::Setting):
             {
+                // TODO Set the setting
+
                 // For settings we expect the data to dedicate 16 bits to the id
-                uint16_t packet_len = rx_packet.GetData(14, 10);
+                // uint16_t packet_len = rx_packet.GetData(14, 10);
 
                 // Get the setting id
-                uint16_t setting_id = rx_packet.GetData(24, 16);
+                // uint16_t setting_id = rx_packet.GetData(24, 16);
 
                 // Get the data from the packet and set the setting
                 // for now we expect a 32 bit value for each setting
-                uint32_t setting_data = rx_packet.GetData(40, 32);
-
-                // TODO Set the setting
+                // uint32_t setting_data = rx_packet.GetData(40, 32);
 
                 break;
             }
