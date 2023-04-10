@@ -42,7 +42,7 @@ public:
 
     virtual void Run()
     {
-        Update(); // TODO somehow need to return here so change views doesn't crash
+        if (Update()) return; // TODO somehow need to return here so change views doesn't crash
         if (HandleInput()) return;
         AnimatedDraw();
         Draw();
@@ -63,7 +63,7 @@ protected:
     static constexpr uint16_t Cursor_Animate_Duration = 2500;
     static constexpr uint16_t Cursor_Hollow_Thickness = 1;
 
-    virtual void Update() {};
+    virtual bool Update() = 0;
     virtual bool HandleInput() = 0;
     virtual void AnimatedDraw() = 0;
     virtual void Draw()

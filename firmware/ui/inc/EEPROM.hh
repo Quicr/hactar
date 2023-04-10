@@ -36,7 +36,9 @@ public:
         const size_t data_size = sizeof(*data) * sz;
         unsigned char* to_write = (unsigned char*)(void*)data;
 
-        PerformWrite(to_write, addr, data_size);
+        // If the write failed return a -1 address
+        if (PerformWrite(to_write, addr, data_size) != HAL_OK)
+            return -1;
 
         // +1 for address
         next_address += data_size + 1;
@@ -44,13 +46,15 @@ public:
     }
 
     template<typename T>
-    const unsigned short Write(T data, const unsigned int sz=1)
+    const int Write(T data, const unsigned int sz=1)
     {
         const unsigned short addr = next_address;
         const size_t data_size = sizeof(data) * sz;
         unsigned char* to_write = (unsigned char*)(void*)&data;
 
-        PerformWrite(to_write, addr, data_size);
+        // If the write failed return a -1 address
+        if (PerformWrite(to_write, addr, data_size) != HAL_OK)
+            return -1;
 
         // +1 for address
         next_address += data_size + 1;
@@ -58,19 +62,18 @@ public:
     }
 
     template<typename T>
-    const void Write(const unsigned int address,
-                     T& data,
-                     const unsigned int sz=1)
+    const HAL_StatusTypeDef Write(const unsigned int address,
+                                  T& data,
+                                  const unsigned int sz=1)
     {
         const size_t data_size = sizeof(data) * sz;
-        const size_t data_w_address = data_size + 1;
         unsigned char* to_write = (unsigned char*)(void*)&data;
 
-        PerformWrite(to_write, address, data_size);
+        return PerformWrite(to_write, address, data_size);
     }
 
-    const void WriteByte(const unsigned int address,
-                         unsigned char data)
+    const HAL_StatusTypeDef WriteByte(const unsigned int address,
+                                      unsigned char data)
     {
         unsigned char write_byte[2];
         write_byte[0] = address;
@@ -79,41 +82,55 @@ public:
         HAL_StatusTypeDef write_byte_res = HAL_I2C_Master_Transmit(
             i2c, Write_Condition, write_byte, 2, HAL_MAX_DELAY);
         HAL_Delay(operation_delay);
+
+        return write_byte_res;
     }
 
     // Assumes the user knows what they want
     template<typename T>
-    void Read(const uint8_t address, T** data, const uint16_t sz=1)
+    HAL_StatusTypeDef Read(const uint8_t address, T** data, const uint16_t sz=1)
     {
         // Set the address to read from
         unsigned char set_address[1] = { address };
-        HAL_StatusTypeDef res = HAL_I2C_Master_Transmit(i2c, Write_Condition, set_address, 1,
-            HAL_MAX_DELAY);
+        HAL_StatusTypeDef set_address_res = HAL_I2C_Master_Transmit(i2c,
+            Write_Condition, set_address, 1, HAL_MAX_DELAY);
+
+        if (set_address_res != HAL_OK) return set_address_res;
+
         HAL_Delay(operation_delay);
 
         unsigned short output_sz = sizeof(*data) * sz;
 
         // Create a new pointer to this data
         unsigned char* output_data = new unsigned char[sz];
-        res = HAL_I2C_Master_Receive(i2c, Read_Condition, output_data, output_sz,
-            HAL_MAX_DELAY);
+        HAL_StatusTypeDef read_res = HAL_I2C_Master_Receive(i2c,
+            Read_Condition, output_data, output_sz, HAL_MAX_DELAY);
         HAL_Delay(operation_delay);
 
         // Cast it back to normal data for T
         *data = (T*)output_data;
+
+        return read_res;
     }
 
     unsigned char ReadByte(const uint8_t address)
     {
         // Set the address to read from
         uint8_t set_address[1] = { address };
-        HAL_StatusTypeDef res = HAL_I2C_Master_Transmit(i2c, Write_Condition, set_address, 1,
-            HAL_MAX_DELAY);
+        HAL_StatusTypeDef set_address_res = HAL_I2C_Master_Transmit(i2c,
+            Write_Condition, set_address, 1, HAL_MAX_DELAY);
+
+        if (set_address_res != HAL_OK) return set_address_res;
 
         // Read data
         unsigned char data[1] = {0};
-        res = HAL_I2C_Master_Receive(i2c, Read_Condition, data, 1, HAL_MAX_DELAY);
+        HAL_StatusTypeDef read_res = HAL_I2C_Master_Receive(i2c, Read_Condition,
+            data, 1, HAL_MAX_DELAY);
         HAL_Delay(operation_delay);
+
+        if (read_res != HAL_OK)
+            return (unsigned char)255; // Err
+
         return data[0];
     }
 
@@ -129,7 +146,7 @@ public:
 
         // Write a bunch of 1s
         unsigned char clear_bytes[Bytes_W_Address_Sz] = { 0 };
-        for (int i = 1; i < Bytes_W_Address_Sz; i++)
+        for (unsigned int i = 1; i < Bytes_W_Address_Sz; i++)
         {
             clear_bytes[i] = 0xFF;
         }
@@ -166,7 +183,7 @@ public:
     }
 
 private:
-    void PerformWrite(unsigned char* data,
+    HAL_StatusTypeDef PerformWrite(unsigned char* data,
                              const unsigned short address,
                              const unsigned short data_size)
     {
@@ -178,10 +195,12 @@ private:
         write_bytes[0] = address;
         write_bytes[1] = data_size;
         // Write the length
-        HAL_StatusTypeDef write_res = HAL_I2C_Master_Transmit(i2c,
+        HAL_StatusTypeDef len_write_res = HAL_I2C_Master_Transmit(i2c,
             Write_Condition, write_bytes, 2, HAL_MAX_DELAY);
         HAL_Delay(operation_delay);
 
+        if (len_write_res != HAL_OK)
+            return len_write_res;
 
         // TODO rewrite hal transmit so I can send an open message that has
         // just the address and then continue the message with the rest
@@ -193,9 +212,12 @@ private:
         }
 
         // Write data
-        write_res = HAL_I2C_Master_Transmit(i2c, Write_Condition, write_bytes,
-            data_w_address, HAL_MAX_DELAY);
+        HAL_StatusTypeDef write_res = HAL_I2C_Master_Transmit(i2c,
+            Write_Condition, write_bytes, data_w_address, HAL_MAX_DELAY);
+
         HAL_Delay(operation_delay);
+
+        return write_res;
     }
 
     static constexpr unsigned char Read_Condition     = 0xA1;
@@ -204,6 +226,6 @@ private:
     I2C_HandleTypeDef* i2c;
     const unsigned short reserved;
     const unsigned short max_sz;
-    unsigned char operation_delay;
     unsigned short next_address;
+    unsigned char operation_delay;
 };

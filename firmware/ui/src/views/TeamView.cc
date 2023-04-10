@@ -15,9 +15,10 @@ TeamView::~TeamView()
 
 }
 
-void TeamView::Update()
+bool TeamView::Update()
 {
     // Periodically get the list of teams.
+    return false;
 }
 
 void TeamView::AnimatedDraw()

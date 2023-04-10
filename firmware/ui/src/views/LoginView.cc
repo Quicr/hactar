@@ -102,3 +102,8 @@ bool LoginView::HandleInput()
 
     return false;
 }
+
+bool LoginView::Update()
+{
+    return false;
+}
