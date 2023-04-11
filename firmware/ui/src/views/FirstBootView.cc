@@ -109,13 +109,6 @@ bool FirstBootView::HandleInput()
                 SettingManager::SettingAddress::Username,
                 usr_input.data(), usr_input.length());
 
-
-
-            char* username;
-            unsigned char len;
-            setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
-                &username, len);
-
             request_message = "Please enter a passcode:";
             state = State::Passcode;
             break;

@@ -203,6 +203,17 @@ void UserInterfaceManager::HandleIncomingPackets()
                 else if (Packet::Commands::WifiStatus == command_type)
                 {
                     is_connected_to_wifi = rx_packet.GetData(32, 8);
+                    uint32_t colour = C_GREEN;
+                    if (!is_connected_to_wifi)
+                    {
+                        colour = C_WHITE;
+                        ConnectToWifi();
+                    }
+
+                    // TODO remove this..
+                    screen->FillRectangle(0, 0, 10, 2, colour);
+                    screen->FillRectangle(2, 4, 8, 6, colour);
+                    screen->FillRectangle(4, 8, 6, 10, colour);
                 }
 
                 break;
@@ -238,15 +249,16 @@ void UserInterfaceManager::ConnectToWifi()
 {
     //TODO error checking
     // Load the ssid and password from eeprom
-    char* ssid;
-    unsigned char ssid_len = 0;
-    setting_manager.LoadSetting(SettingManager::SettingAddress::SSID,
-        &ssid, ssid_len);
+    int8_t* ssid;
+    int16_t ssid_len = 0;
+    if (!setting_manager.LoadSetting(SettingManager::SettingAddress::SSID,
+        &ssid, ssid_len)) return;
 
-    char* ssid_password;
-    unsigned char ssid_password_len;
-    setting_manager.LoadSetting(SettingManager::SettingAddress::SSID_Password,
-        &ssid_password, ssid_password_len);
+    int8_t* ssid_password;
+    int16_t ssid_password_len = 0;
+    if (!setting_manager.LoadSetting(
+        SettingManager::SettingAddress::SSID_Password, &ssid_password,
+        ssid_password_len)) return;
 
     // Create the packet
     Packet connect_packet;
