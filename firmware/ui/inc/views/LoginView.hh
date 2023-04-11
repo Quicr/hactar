@@ -20,7 +20,5 @@ protected:
 private:
     void DrawFirstLoad();
     void DrawIncorrectPasscode();
-    // TODO load from the EEPROM
-    String passcode = "";
     bool incorrect_passcode_entered;
 };

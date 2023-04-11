@@ -89,18 +89,8 @@ int main(void)
 
     MX_I2C1_Init();
 
-    // Reserver the first 32 bytes, and the total size is 256 bytes
+    // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
-    // eeprom->Clear();
-
-    // char* bytes;
-    // unsigned char sz = 50;
-    // eeprom->Read(0, &bytes, sz);
-
-    // while (1)
-    // {
-    //     eeprom->Clear();
-    // }
 
     screen.Begin();
     HAL_GPIO_WritePin(USART2_RX_EN_PORT, USART2_RX_EN_PIN, GPIO_PIN_RESET);

@@ -31,25 +31,34 @@ void LoginView::AnimatedDraw()
     String msg = "Welcome to Cisco";
     screen.DrawBlockAnimateString(34, 6, msg, font11x16, fg, bg, speed);
     msg = "Secure Messaging";
+    screen.DrawBlockAnimateString(34, 22, msg, font11x16, fg, bg, speed);
 
     // TODO
+
+    msg = "User: ";
+    screen.DrawBlockAnimateString(1, screen.ViewHeight()-(usr_font.height * 4),
+        msg, usr_font, fg, bg, speed);
+
+    // TODO make this better
     char* username;
-    unsigned char len;
+    short len;
     setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
         &username, len);
-    // TODO make this better
     String user;
-    for (unsigned char i = 0; i < len; i++)
+    for (short i = 0; i < len; i++)
     {
         user.push_back(username[i]);
     }
     delete username;
+    // ^^^ ugly chunk
 
-    screen.DrawBlockAnimateString(34, 22, user, font11x16, fg, bg, speed);
+    screen.DrawBlockAnimateString(
+        1 + usr_font.width * msg.length(), screen.ViewHeight()-(usr_font.height * 4),
+        user, usr_font, fg, bg, speed);
+
     msg = "Enter your passcode";
-    screen.DrawBlockAnimateString(1,
-        screen.ViewHeight() - (usr_font.height * 2), msg, usr_font, fg,
-        bg, speed);
+    screen.DrawBlockAnimateString(1, screen.ViewHeight()-(usr_font.height * 2),
+        msg, usr_font, fg, bg, speed);
 
     first_load = false;
 }
@@ -91,7 +100,20 @@ bool LoginView::HandleInput()
 
     if (!keyboard.EnterPressed()) return false;
 
-    if (usr_input == passcode)
+    // TODO remove this is bad!
+    char* eeprom_password;
+    short eeprom_password_len;
+    setting_manager.LoadSetting(SettingManager::SettingAddress::Password,
+        &eeprom_password, eeprom_password_len);
+    String password;
+    for (short i =0 ; i < eeprom_password_len; ++i)
+    {
+        password.push_back(eeprom_password[i]);
+    }
+    delete eeprom_password;
+    // Ugly code above...
+
+    if (usr_input == password)
     {
         manager.ChangeView<ChatView>();
         return true;
