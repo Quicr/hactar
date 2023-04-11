@@ -64,7 +64,9 @@ public:
 
 // TODO make the loading of settings all internal
     template <typename T>
-    void LoadSetting(const SettingAddress setting, T** data, unsigned char& len)
+    void LoadSetting(const SettingAddress setting,
+                     T** data,
+                     unsigned char& len) const
     {
         // Check if the setting has been loaded already
         // if (settings.find(setting) != settings.end())
@@ -82,7 +84,7 @@ public:
         eeprom.Read(address+1, data, len);
     }
 
-    unsigned char LoadSetting(const SettingAddress setting)
+    unsigned char LoadSetting(const SettingAddress setting) const
     {
         // Check if the setting has been loaded already
         // if (settings.find(setting) != settings.end())
@@ -94,7 +96,7 @@ public:
         // The setting is an address on its own
         unsigned char address = eeprom.ReadByte(setting); // TODO 255 is error
 
-        return eeprom.ReadByte(address);
+        return eeprom.ReadByte(address+1);
     }
 
     template <typename T>

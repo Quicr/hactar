@@ -109,6 +109,13 @@ bool FirstBootView::HandleInput()
                 SettingManager::SettingAddress::Username,
                 usr_input.data(), usr_input.length());
 
+
+
+            char* username;
+            unsigned char len;
+            setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
+                &username, len);
+
             request_message = "Please enter a passcode:";
             state = State::Passcode;
             break;
@@ -149,7 +156,6 @@ bool FirstBootView::HandleInput()
 
 bool FirstBootView::Update()
 {
-    // Oh boy
     if (state == State::Wifi)
     {
         if (wifi_state == WifiState::Connecting)
@@ -168,6 +174,7 @@ bool FirstBootView::Update()
             return true;
         }
     }
+
 
     return false;
 }
@@ -211,47 +218,8 @@ void FirstBootView::SetWifi()
         setting_manager.SaveSetting(
             SettingManager::SettingAddress::SSID_Password,
             password.data(), password.length());
-        setting_manager.SaveSetting(
-            SettingManager::SettingAddress::SSID_Password,
-            password.data(), password.length());
 
-        // Send a wifi connection packet to esp
-        Packet connect_packet;
-        connect_packet.SetData(Packet::Types::Command, 0, 6);
-        connect_packet.SetData(manager.NextPacketId(), 6, 8);
-        // THINK should these be separate packets?
-        // +3 for the length of the ssid, length of the password
-        uint16_t length = ssid.length() + password.length() + 3;
-        connect_packet.SetData(length, 14, 10);
-
-        connect_packet.SetData(Packet::Commands::ConnectToSSID, 24, 8);
-
-        // Set the length of the ssid
-        connect_packet.SetData(ssid.length(), 32, 8);
-
-        // Populate with the ssid
-        uint16_t i;
-        uint16_t offset = 40;
-        for (i = 0; i < ssid.length(); ++i)
-        {
-            connect_packet.SetData(ssid[i], offset, 8);
-            offset += 8;
-        }
-
-        // Set the length of the password
-        connect_packet.SetData(password.length(), offset, 8);
-        offset += 8;
-
-        // Populate with the password
-        uint16_t j;
-        for (j = 0; j < password.length(); ++j)
-        {
-            connect_packet.SetData(password[j], offset, 8);
-            offset += 8;
-        }
-
-        // Enqueue the message
-        manager.EnqueuePacket(std::move(connect_packet));
+        manager.ConnectToWifi();
 
         // Set the state to waiting
         request_message = "Connecting";
