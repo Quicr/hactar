@@ -99,10 +99,10 @@ public:
 
         HAL_Delay(operation_delay);
 
-        unsigned short output_sz = sizeof(*data) * sz;
+        unsigned short output_sz = sizeof(**data) * sz;
 
         // Create a new pointer to this data
-        unsigned char* output_data = new unsigned char[sz];
+        unsigned char* output_data = new unsigned char[output_sz];
         HAL_StatusTypeDef read_res = HAL_I2C_Master_Receive(i2c,
             Read_Condition, output_data, output_sz, HAL_MAX_DELAY);
         HAL_Delay(operation_delay);
@@ -115,12 +115,13 @@ public:
 
     unsigned char ReadByte(const uint8_t address)
     {
+        // TODO error state..
         // Set the address to read from
         uint8_t set_address[1] = { address };
         HAL_StatusTypeDef set_address_res = HAL_I2C_Master_Transmit(i2c,
             Write_Condition, set_address, 1, HAL_MAX_DELAY);
 
-        if (set_address_res != HAL_OK) return set_address_res;
+        if (set_address_res != HAL_OK) return (unsigned char)255;
 
         // Read data
         unsigned char data[1] = {0};
@@ -134,28 +135,30 @@ public:
         return data[0];
     }
 
-    void Clear()
+    bool Clear()
     {
-        const unsigned int Bytes_Sz = 256;
+        const unsigned char Clear_Byte = 0xFF;
+        const unsigned int Bytes_Sz = 32;
         const unsigned int Bytes_W_Address_Sz = Bytes_Sz + 1;
         // Reset the write address to the start
         next_address = 0;
 
-        // Number of bytes we have to delete
+        // Multiple of bytes we have to delete
         unsigned int bytes_loop = max_sz / Bytes_Sz;
 
         // Write a bunch of 1s
         unsigned char clear_bytes[Bytes_W_Address_Sz] = { 0 };
         for (unsigned int i = 1; i < Bytes_W_Address_Sz; i++)
         {
-            clear_bytes[i] = 0xFF;
+            clear_bytes[i] = Clear_Byte;
         }
 
+        HAL_StatusTypeDef clear_res;
         while (bytes_loop--)
         {
             clear_bytes[0] = next_address;
 
-            HAL_I2C_Master_Transmit(i2c, Write_Condition, clear_bytes, Bytes_Sz,
+            clear_res = HAL_I2C_Master_Transmit(i2c, Write_Condition, clear_bytes, Bytes_Sz,
                 HAL_MAX_DELAY);
 
             next_address += Bytes_Sz;
@@ -165,6 +168,8 @@ public:
 
         // Reset the next address back to the start after the reserved space
         next_address = reserved;
+
+        return clear_res == HAL_OK;
     }
 
     const unsigned int Size() const
@@ -187,14 +192,12 @@ private:
                              const unsigned short address,
                              const unsigned short data_size)
     {
-        const size_t data_w_address = data_size + 1;
-
         // Copy to_write to a new array
-        unsigned char write_bytes[data_w_address];
+        unsigned char write_bytes[2];
 
+        // Write the length
         write_bytes[0] = address;
         write_bytes[1] = data_size;
-        // Write the length
         HAL_StatusTypeDef len_write_res = HAL_I2C_Master_Transmit(i2c,
             Write_Condition, write_bytes, 2, HAL_MAX_DELAY);
         HAL_Delay(operation_delay);
@@ -202,20 +205,20 @@ private:
         if (len_write_res != HAL_OK)
             return len_write_res;
 
-        // TODO rewrite hal transmit so I can send an open message that has
-        // just the address and then continue the message with the rest
-        // of the data, instead of copying it. so slow.
-        write_bytes[0] = address + 1;
-        for (size_t i = 0; i < data_size; ++i)
-        {
-            write_bytes[i+1] = data[i];
-        }
-
         // Write data
-        HAL_StatusTypeDef write_res = HAL_I2C_Master_Transmit(i2c,
-            Write_Condition, write_bytes, data_w_address, HAL_MAX_DELAY);
+        HAL_StatusTypeDef write_res;
+        for (unsigned short i = 0; i < data_size; ++i)
+        {
+            write_bytes[0] = (address+1) + i;
+            write_bytes[1] = data[i];
+            write_res = HAL_I2C_Master_Transmit(i2c,
+                Write_Condition, write_bytes, 2, HAL_MAX_DELAY);
 
-        HAL_Delay(operation_delay);
+            if (write_res != HAL_OK)
+                return write_res;
+
+            HAL_Delay(operation_delay);
+        }
 
         return write_res;
     }

@@ -33,11 +33,19 @@ void LoginView::AnimatedDraw()
     msg = "Secure Messaging";
 
     // TODO
-    // char* username;
-    // unsigned char len;
-    // setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
-    //     &username, len);
-    screen.DrawBlockAnimateString(34, 22, msg, font11x16, fg, bg, speed);
+    char* username;
+    unsigned char len;
+    setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
+        &username, len);
+    // TODO make this better
+    String user;
+    for (unsigned char i = 0; i < len; i++)
+    {
+        user.push_back(username[i]);
+    }
+    delete username;
+
+    screen.DrawBlockAnimateString(34, 22, user, font11x16, fg, bg, speed);
     msg = "Enter your passcode";
     screen.DrawBlockAnimateString(1,
         screen.ViewHeight() - (usr_font.height * 2), msg, usr_font, fg,

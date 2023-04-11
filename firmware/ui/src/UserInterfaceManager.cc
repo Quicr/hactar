@@ -234,6 +234,62 @@ const std::map<uint8_t, String>& UserInterfaceManager::SSIDs() const
     return ssids;
 }
 
+void UserInterfaceManager::ConnectToWifi()
+{
+    //TODO error checking
+    // Load the ssid and password from eeprom
+    char* ssid;
+    unsigned char ssid_len = 0;
+    setting_manager.LoadSetting(SettingManager::SettingAddress::SSID,
+        &ssid, ssid_len);
+
+    char* ssid_password;
+    unsigned char ssid_password_len;
+    setting_manager.LoadSetting(SettingManager::SettingAddress::SSID_Password,
+        &ssid_password, ssid_password_len);
+
+    // Create the packet
+    Packet connect_packet;
+    connect_packet.SetData(Packet::Types::Command, 0, 6);
+    connect_packet.SetData(UserInterfaceManager::NextPacketId(), 6, 8);
+    // THINK should these be separate packets?
+    // +3 for the length of the ssid, length of the password
+    uint16_t length = ssid_len + ssid_password_len + 3;
+    connect_packet.SetData(length, 14, 10);
+
+    connect_packet.SetData(Packet::Commands::ConnectToSSID, 24, 8);
+
+    // Set the length of the ssid
+    connect_packet.SetData(ssid_len, 32, 8);
+
+    // Populate with the ssid
+    uint16_t i;
+    uint16_t offset = 40;
+    for (i = 0; i < ssid_len; ++i)
+    {
+        connect_packet.SetData(ssid[i], offset, 8);
+        offset += 8;
+    }
+
+    // Set the length of the password
+    connect_packet.SetData(ssid_password_len, offset, 8);
+    offset += 8;
+
+    // Populate with the password
+    uint16_t j;
+    for (j = 0; j < ssid_password_len; ++j)
+    {
+        connect_packet.SetData(ssid_password[j], offset, 8);
+        offset += 8;
+    }
+
+    // Enqueue the message
+    EnqueuePacket(std::move(connect_packet));
+
+    delete ssid;
+    delete ssid_password;
+}
+
 const bool UserInterfaceManager::IsConnectedToWifi() const
 {
     return is_connected_to_wifi;

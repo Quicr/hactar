@@ -53,7 +53,7 @@
 // Default orientation
 #define WIDTH                240
 #define HEIGHT               320
-#define PORTRAIT_DATA        (MAD_CTL_MX | MAD_CTL_BGR)
+#define PORTRAIT_DATA        (MAD_CTL_MY | MAD_CTL_BGR)
 #define LEFT_LANDSCAPE_DATA  (MAD_CTL_MV | MAD_CTL_BGR)
 #define RIGHT_LANDSCAPE_DATA (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
 
@@ -129,6 +129,10 @@ public:
     void FillScreen(const uint16_t colour);
     uint16_t ViewWidth() const;
     uint16_t ViewHeight() const;
+
+    // TODO draw triangle
+
+    // TODO draw arrow
 
     void ReleaseSPI();
     void DrawCharacter(uint16_t x_start,

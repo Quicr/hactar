@@ -35,6 +35,7 @@ public:
     void EnqueuePacket(Packet&& msg);
     void ForceRedraw();
     bool RedrawForced();
+    void ConnectToWifi();
 
     const uint32_t GetTxStatusColour() const;
     const uint32_t GetRxStatusColour() const;
