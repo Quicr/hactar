@@ -1,4 +1,4 @@
-PORT 				= /dev/ttyACM0
+PORT 				= /dev/ttyUSB0
 CORE 				= esp32:esp32
 BOARD				= ${CORE}:esp32s3
 OPTIONS				= :UploadSpeed=115200

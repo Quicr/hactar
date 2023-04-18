@@ -251,7 +251,7 @@ void HandleIncomingSerial()
 void setup()
 {
     Serial.begin(115200);
-    serial_alt.begin(115200, SERIAL_8N1, 17, 18);
+    serial_alt.begin(115200, SERIAL_8N1, 18, 17);
     WiFi.mode(WIFI_STA);
     // WiFi.begin(ssid, password);
 
@@ -263,12 +263,23 @@ void setup()
     pinMode(19, OUTPUT);
     digitalWrite(19, LOW);
     Serial.println("Done setup");
+
+    // LED for pinging
+    pinMode(12, OUTPUT);
+    digitalWrite(12, HIGH);
 }
 
-unsigned long send_message = 0;
+unsigned long ping = 0;
 void loop()
 {
     current_time = millis();
+
+    if (current_time > ping)
+    {
+        digitalWrite(12, !digitalRead(12));
+        Serial.println("Alive");
+        ping = current_time + 10000;
+    }
 
     ui_layer->RxTx(current_time);
     HandleIncomingSerial();
