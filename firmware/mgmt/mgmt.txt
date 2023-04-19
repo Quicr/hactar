@@ -1,7 +1,7 @@
 Configuration	mgmt
 STM32CubeMX 	6.8.0
 Date	04/19/2023
-MCU	STM32F070CBTx
+MCU	STM32F072C8Tx
 
 
 
@@ -115,7 +115,7 @@ SOFTWARE PROJECT
 Project Settings : 
 Project Name : mgmt
 Project Folder : /Users/fluffy/src/hactar/firmware/mgmt
-Toolchain / IDE : Makefile
+Toolchain / IDE : EWARM V8.32
 Firmware Package Name and Version : STM32Cube FW_F0 V1.11.4
 
 
