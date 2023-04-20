@@ -89,16 +89,16 @@ int main(void)
 
     MX_I2C1_Init();
 
-    // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
-
+    // TODO remove
     const uint8_t sz = 2;
     uint8_t audio_data[sz] = { 0x19, 0b00000010 };
-
     const uint8_t write_condition = 0x34 + 0;
     const uint8_t read_condition = 0x34 + 1;
     HAL_StatusTypeDef audio_select = HAL_I2C_Master_Transmit(&hi2c1,
         write_condition, audio_data, sz, HAL_MAX_DELAY);
+    // TODO remove to here
 
+    // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
 
     screen.Begin();
