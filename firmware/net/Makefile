@@ -7,7 +7,7 @@ CACHE_PATH    		= ${BUILD_PATH}/cache
 SHARED_INC_DIR		= ../shared_inc
 INO_FILE			= net.ino
 
-all: copy compile upload
+all: compile upload
 
 copy:
 	cp -r ${SHARED_INC_DIR} ./
@@ -15,10 +15,10 @@ copy:
 compile: copy
 	arduino-cli compile --build-path ${BUILD_PATH} --build-cache-path ${CACHE_PATH} --fqbn ${BOARD}
 
-program: compile upload
-
 upload:
 	arduino-cli upload --port ${PORT} --fqbn ${BOARD}${OPTIONS} --input-dir ${BUILD_PATH} ${INO_FILE}
+
+program: compile upload
 
 monitor:
 	arduino-cli monitor --port ${PORT} --config baudrate=115200 --fqbn ${BOARD}

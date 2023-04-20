@@ -5,15 +5,12 @@
 #include "shared_inc/SerialManager.hh"
 #include "shared_inc/Packet.hh"
 
-/** NOTE this is temporary
-* This file is just for your ssid and password
-* make a file called "wifi_creds.hh" with two lines of code in it
-* const char* ssid = "your_ssid";
-* const char* password = "your_password";
-* const char* host = "your ip address";
-* const unsigned int port = 12345;
-*/
-#include "wifi_creds.hh"
+
+// NOTE
+// These values are relative to your server that the net chip should
+// connect to. 60777 is the default port for the echo_server.
+const char* host = "192.168.1.120";
+const unsigned int port = 60777;
 
 constexpr unsigned int Byte_Size = 8;
 
