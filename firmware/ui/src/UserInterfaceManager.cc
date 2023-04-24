@@ -8,7 +8,6 @@
 #include "SettingManager.hh"
 
 // Init the static var
-uint8_t UserInterfaceManager::Packet_Id = 1;
 
 UserInterfaceManager::UserInterfaceManager(Screen &screen,
                                            Q10Keyboard &keyboard,
@@ -43,11 +42,6 @@ UserInterfaceManager::~UserInterfaceManager()
 // TODO should update this to be a draw/update architecture
 void UserInterfaceManager::Run()
 {
-    // if (current_time > last_test_packet)
-    // {
-    //     SendTestPacket();
-    //     last_test_packet = current_time + 5000;
-    // }
 
 
     current_time = HAL_GetTick();
@@ -71,6 +65,11 @@ void UserInterfaceManager::Run()
 
         EnqueuePacket(std::move(check_wifi));
         last_wifi_check = current_time + 5000;
+    }
+    if (current_time > last_test_packet && is_connected_to_wifi)
+    {
+        SendTestPacket();
+        last_test_packet = current_time + 7000;
     }
 
     // Run the receive and transmit
@@ -117,11 +116,9 @@ bool UserInterfaceManager::RedrawForced()
     return force_redraw;
 }
 
-uint32_t UserInterfaceManager::NextPacketId()
+uint8_t UserInterfaceManager::NextPacketId()
 {
-    if (Packet_Id == 0xFE)
-        Packet_Id = 1;
-    return UserInterfaceManager::Packet_Id++;
+    return net_layer.NextPacketId();
 }
 
 void UserInterfaceManager::HandleIncomingPackets()
@@ -326,7 +323,7 @@ const uint32_t UserInterfaceManager::GetStatusColour(
 
 const void UserInterfaceManager::SendTestPacket()
 {
-    Packet test_packet(current_time);
+    Packet test_packet;
 
     test_packet.SetData(Packet::Types::Message, 0, 6);
     test_packet.SetData(NextPacketId(), 6, 8);

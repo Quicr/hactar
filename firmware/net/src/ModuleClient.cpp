@@ -14,6 +14,8 @@ bool ModuleClient::SendMessages()
     bool messages_sent = false;
     if (!packets.size() > 0)
         return messages_sent;
+    if (!WiFi.isConnected())
+        return messages_sent;
     if (!Connect())
         return messages_sent;
 
@@ -94,6 +96,7 @@ void ModuleClient::SendSSIDs()
 
 bool ModuleClient::Connect()
 {
+    digitalWrite(7, LOW);
     unsigned int attempts = 0;
     while (!client.connect(host.c_str(), port, 1000))
     {
@@ -105,5 +108,6 @@ bool ModuleClient::Connect()
         }
         delay(500);
     }
+    digitalWrite(7, HIGH);
     return true;
 }
