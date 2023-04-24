@@ -33,7 +33,8 @@ public:
         rx_status(SerialStatus::EMPTY),
         tx_packets(),
         tx_pending_packets(),
-        tx_status(SerialStatus::EMPTY)
+        tx_status(SerialStatus::EMPTY),
+        next_packet_id(1)
     {}
 
     ~SerialManager()
@@ -84,6 +85,11 @@ public:
         return rx_packets;
     }
 
+    const bool HasTxPackets() const
+    {
+        return tx_packets.size();
+    }
+
     const SerialStatus GetTxStatus() const
     {
         return tx_status;
@@ -92,6 +98,13 @@ public:
     const SerialStatus GetRxStatus() const
     {
         return rx_status;
+    }
+
+    uint8_t NextPacketId()
+    {
+        if (next_packet_id == 0xFE)
+            next_packet_id = 1;
+        return next_packet_id++;
     }
 
 private:
@@ -196,7 +209,7 @@ private:
                     // Now that we got this packet, we will respond
                     Packet ok_packet;
                     ok_packet.SetData(Packet::Types::Ok, 0, 6);
-                    ok_packet.SetData(1, 6, 8); // Id here doesn't matter
+                    ok_packet.SetData(NextPacketId(), 6, 8); // Id here doesn't matter
                     ok_packet.SetData(1, 14, 10);
 
                     // Get the id of the rx packet and set it to the data
@@ -315,5 +328,7 @@ private:
     Vector<Packet> tx_packets;
     std::map<unsigned char, Packet> tx_pending_packets; // TODO max packets
     SerialStatus tx_status;
+
+    uint8_t next_packet_id;
 
 };

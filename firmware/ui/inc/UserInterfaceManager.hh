@@ -43,7 +43,7 @@ public:
     const std::map<uint8_t, String>& SSIDs() const;
     const bool IsConnectedToWifi() const;
 
-    uint32_t NextPacketId();
+    uint8_t NextPacketId();
 
     template<typename T>
     void ChangeView()
@@ -55,8 +55,6 @@ public:
     }
 
 private:
-    static uint8_t Packet_Id;
-
     void HandleIncomingPackets();
     void TimeoutPackets();
     const uint32_t GetStatusColour(
@@ -79,4 +77,6 @@ private:
     std::map<uint8_t, String> ssids;
     uint32_t last_wifi_check;
     bool is_connected_to_wifi;
+
+    uint32_t last_test_packet = 0;
 };

@@ -29,6 +29,8 @@ public:
         last_drawn_idx(0),
         redraw_input(true),
         usr_input(""),
+        tx_colour(0),
+        rx_colour(0),
         tx_redraw_timeout(0),
         rx_redraw_timeout(0)
     {
@@ -71,18 +73,20 @@ protected:
         DrawInput();
 
         // Draw Tx and Rx
-        if (HAL_GetTick() > tx_redraw_timeout)
+        if (tx_colour != manager.GetTxStatusColour() &&
+            HAL_GetTick() > tx_redraw_timeout)
         {
-            screen.DrawText(WIDTH-32, 0, "tx", font5x8,
-                manager.GetTxStatusColour(), bg);
-            tx_redraw_timeout = HAL_GetTick() + 500;
+            tx_colour = manager.GetTxStatusColour();
+            screen.DrawText(WIDTH-32, 0, "tx", font5x8, tx_colour, bg);
+            tx_redraw_timeout = HAL_GetTick() + 200;
         }
 
-        if (HAL_GetTick() > rx_redraw_timeout)
+        if (rx_colour != manager.GetRxStatusColour() &&
+            HAL_GetTick() > rx_redraw_timeout)
         {
-            screen.DrawText(WIDTH-16, 0, "rx", font5x8,
-                manager.GetRxStatusColour(), bg);
-            rx_redraw_timeout = HAL_GetTick() + 500;
+            rx_colour = manager.GetRxStatusColour();
+            screen.DrawText(WIDTH-16, 0, "rx", font5x8, rx_colour, bg);
+            rx_redraw_timeout = HAL_GetTick() + 200;
         }
     }
 
@@ -235,6 +239,9 @@ protected:
 
     // Input variables
     String usr_input;
+
+    uint32_t tx_colour;
+    uint32_t rx_colour;
 
     uint32_t tx_redraw_timeout;
     uint32_t rx_redraw_timeout;
