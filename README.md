@@ -39,8 +39,8 @@ stuff in hardware
 
 The Firmware is split into 4 categories. Management, User Interface, Security, and Network.
 - Management - STM32F072
-- User Interface - STM32F05
-- Security - STM32F05?
+- User Interface - STM32F405
+- Security - STM32F405?
 - Network - ESP32S3
 
 <h3 id="management"><b>Management</b></h3>
@@ -49,7 +49,7 @@ WIP
 
 <h3 id="ui"><b>User Interface</b></h3>
 
-The User Interface chip is where most of the processing takes place. It utilizes a STM32F05 chip empowered by the STM HAL Library. To generate the baseline HAL Library code and Makefile, ST's CubeMX was used.
+The User Interface chip is where most of the processing takes place. It utilizes a STM32F405 chip empowered by the STM HAL Library. To generate the baseline HAL Library code and Makefile, ST's CubeMX was used.
 
 <b>Target Overview</b>
 
@@ -122,7 +122,6 @@ WIP
 The following tools are used for Management and User Interface.
 - [Make](ui_make) \[required]
 - [ARM GNU Toolchain](arm-gnu) \[required]
-- [libusb](libusb) \[required - Linux only]
 - [STM32_Programmer_CLI](stm_prog_cli) \[required]
 - [OpenOCD](openocd) \[optional]
 
@@ -174,15 +173,6 @@ sudo apt install gcc-arm-none-eabi binutils-arm-none-eabi
 <i>MacOS</i>
 
 - TODO
-
-<br/>
-
-<b id="libusb">libusb \[required] - Linux only</b>
-
-On linux you may need `libusb` installed. To install it run:
-```
-sudo apt install libusb-dev
-```
 
 <br/>
 
