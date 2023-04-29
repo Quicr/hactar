@@ -3411,7 +3411,6 @@
     )
   )
 
-
   (junction (at 478.79 200.66) (diameter 0) (color 0 0 0 0)
     (uuid 03d6e65e-86a6-4060-a419-e2e8fc3c74fe)
   )
@@ -8182,7 +8181,7 @@
     (property "Reference" "C2" (at 525.78 53.34 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "22u" (at 525.78 55.88 0)
+    (property "Value" "15u" (at 525.78 55.88 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Capacitor_SMD:C_0402_1005Metric" (at 524.2052 58.42 0)
@@ -8365,7 +8364,7 @@
     (property "Value" "BM14B(0.8)-24DS-0.4V(53)" (at 482.6 217.17 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "BM14B(0.B)-24DS-0:BM14B(0.B)-24DS-0.4V(53)" (at 495.3 217.17 0)
+    (property "Footprint" "" (at 495.3 217.17 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 495.3 217.17 0)
