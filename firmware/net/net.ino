@@ -5,15 +5,18 @@
 #include "shared_inc/SerialManager.hh"
 #include "shared_inc/Packet.hh"
 
-/** NOTE this is temporary
-* This file is just for your ssid and password
-* make a file called "wifi_creds.hh" with two lines of code in it
-* const char* ssid = "your_ssid";
-* const char* password = "your_password";
-* const char* host = "your ip address";
-* const unsigned int port = 12345;
-*/
-#include "wifi_creds.hh"
+const unsigned char Enable_Serial_Pin = 19;
+const unsigned char Alive_LED_Pin = 12;
+const unsigned char Network_LED_Pin = 7;
+const unsigned char Rx_LED_Pin = 6;
+const unsigned char Tx_LED_Pin = 5;
+
+
+// NOTE
+// These values are relative to your server that the net chip should
+// connect to. 60777 is the default port for the echo_server.
+const char* host = "192.168.1.120";
+const unsigned int port = 60777;
 
 constexpr unsigned int Byte_Size = 8;
 
@@ -97,6 +100,8 @@ void HandleIncomingSerial()
     // Get the packets from the ui layer
     Vector<Packet*>& rx_packets = ui_layer->GetRxPackets();
 
+    digitalWrite(Rx_LED_Pin, HIGH);
+
     // Handle incoming packets
     while (rx_packets.size() > 0)
     {
@@ -147,7 +152,7 @@ void HandleIncomingSerial()
                 if (networks == 0)
                 {
                     Serial.println("No networks found");
-                    return;
+                    break;
                 }
 
                 Serial.print("Networks found: ");
@@ -246,12 +251,14 @@ void HandleIncomingSerial()
 
         rx_packets.erase(0);
     }
+
+    digitalWrite(Rx_LED_Pin, LOW);
 }
 
 void setup()
 {
     Serial.begin(115200);
-    serial_alt.begin(115200, SERIAL_8N1, 17, 18);
+    serial_alt.begin(115200, SERIAL_8N1, 18, 17);
     WiFi.mode(WIFI_STA);
     // WiFi.begin(ssid, password);
 
@@ -260,18 +267,43 @@ void setup()
     uart = new SerialEsp(serial_alt);
     ui_layer = new SerialManager(uart);
 
-    pinMode(19, OUTPUT);
-    digitalWrite(19, LOW);
+    pinMode(Enable_Serial_Pin, OUTPUT);
+    digitalWrite(Enable_Serial_Pin, LOW);
     Serial.println("Done setup");
+
+    // LED for pinging
+    pinMode(Alive_LED_Pin, OUTPUT);
+    digitalWrite(Alive_LED_Pin, LOW);
+
+    // LED for serial rx
+    pinMode(Rx_LED_Pin, OUTPUT);
+    digitalWrite(Rx_LED_Pin, LOW);
+
+    // LED for serial tx
+    pinMode(Tx_LED_Pin, OUTPUT);
+    digitalWrite(Tx_LED_Pin, LOW);
+
+    // LED for network
+    pinMode(Network_LED_Pin, OUTPUT);
+    digitalWrite(Network_LED_Pin, LOW);
 }
 
-unsigned long send_message = 0;
+unsigned long ping = 0;
 void loop()
 {
     current_time = millis();
 
+    if (current_time > ping)
+    {
+        digitalWrite(Alive_LED_Pin, !digitalRead(Alive_LED_Pin));
+        Serial.println("Alive");
+        ping = current_time + 10000;
+    }
+
+
     ui_layer->RxTx(current_time);
     HandleIncomingSerial();
+    digitalWrite(Tx_LED_Pin, (ui_layer->HasTxPackets()));
     HandleOutgoingNetwork();
     HandleIncomingNetwork();
 
