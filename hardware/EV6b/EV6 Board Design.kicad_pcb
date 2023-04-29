@@ -1185,7 +1185,7 @@
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 6c78a7b2-c33d-41b4-9c3f-b71d1957f6d9)
     )
-    (fp_text value "22u" (at 0 1.16 90) (layer "F.Fab") hide
+    (fp_text value "15u" (at 0 1.16 90) (layer "F.Fab") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 567398b9-dae2-4a7c-aa56-3a662c654e93)
     )
@@ -1518,7 +1518,7 @@
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 6dfbf789-5af1-4f3a-9be0-3bb6f35426d1)
     )
-    (fp_text value "STM32F405RGTx" (at 0 7.4) (layer "F.Fab") hide
+    (fp_text value "STM32F446RET6" (at 0 7.4) (layer "F.Fab") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 8ef96ba9-ac92-4bca-ae5d-4fe66f8e12a4)
     )
@@ -5145,7 +5145,7 @@
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 2ce74791-6e26-4cb7-84e3-75e70b84ae1c)
     )
-    (fp_text value "0" (at 0 1.17) (layer "F.Fab") hide
+    (fp_text value "1R0" (at 0 1.17) (layer "F.Fab") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 78158a27-d214-454f-9af5-c5d9bafd6c37)
     )
@@ -6957,7 +6957,7 @@
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 3caad452-89a6-40dc-bdf1-a51ab09e158f)
     )
-    (fp_text value "1" (at 0 1.17 90) (layer "F.Fab") hide
+    (fp_text value "1R0" (at 0 1.17 90) (layer "F.Fab") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 5bc77401-e3fe-410e-9f76-0cb484935aa6)
     )
