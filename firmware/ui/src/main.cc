@@ -31,6 +31,7 @@
 #include "UserInterfaceManager.hh"
 
 #include "SerialStm.hh"
+#include "Led.hh"
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -63,6 +64,9 @@ SerialStm *net_layer = nullptr;
 UserInterfaceManager *ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
 
+Led rx_led(LED1_Port, LED1_Pin, 10);
+Led tx_led(LED2_Port, LED2_Pin, 10);
+
 int main(void)
 {
     // Reset of all peripherals, Initializes the Flash interface and the Systick.
@@ -88,6 +92,15 @@ int main(void)
     MX_SPI1_Init();
 
     MX_I2C1_Init();
+
+    // TODO remove
+    const uint8_t sz = 2;
+    uint8_t audio_data[sz] = { 0x19, 0b00000010 };
+    const uint8_t write_condition = 0x34 + 0;
+    const uint8_t read_condition = 0x34 + 1;
+    HAL_StatusTypeDef audio_select = HAL_I2C_Master_Transmit(&hi2c1,
+        write_condition, audio_data, sz, HAL_MAX_DELAY);
+    // TODO remove to here
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
@@ -133,6 +146,9 @@ int main(void)
     while (1)
     {
         ui_manager->Run();
+
+        rx_led.Timeout();
+        tx_led.Timeout();
     }
 }
 
@@ -209,12 +225,26 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(Q10_TIMER_LED_PORT, &GPIO_InitStruct);
 
-    HAL_GPIO_WritePin(TEST_LED_PORT, TEST_LED_PIN, GPIO_PIN_RESET);
-    GPIO_InitStruct.Pin = TEST_LED_PIN;
+    HAL_GPIO_WritePin(LED1_Port,LED1_Pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = LED1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(TEST_LED_PORT, &GPIO_InitStruct);
+    HAL_GPIO_Init(LED1_Port, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(LED2_Port,LED2_Pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = LED2_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(LED2_Port, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(LED3_Port,LED3_Pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = LED3_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(LED3_Port, &GPIO_InitStruct);
 
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = GPIO_PIN_1;
@@ -243,19 +273,8 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(USART2_RX_EN_PORT, &GPIO_InitStruct);
-
-    // GPIO_InitStruct.Pin = USART2_TX_LED_PIN;
-    // GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    // GPIO_InitStruct.Pull = GPIO_NOPULL;
-    // GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    // HAL_GPIO_Init(USART2_TX_LED_PORT, &GPIO_InitStruct);
-
-    // GPIO_InitStruct.Pin = USART2_RX_LED_PIN;
-    // GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    // GPIO_InitStruct.Pull = GPIO_NOPULL;
-    // GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    // HAL_GPIO_Init(USART2_RX_LED_PORT, &GPIO_InitStruct);
 }
+
 static void MX_SPI1_Init(void)
 {
     /* SPI1 parameter configuration*/
@@ -332,17 +351,17 @@ static void MX_I2C1_Init()
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
 {
     net_layer->RxEvent();
+    rx_led.On();
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
     net_layer->TxEvent();
-    HAL_GPIO_TogglePin(USART2_TX_LED_PORT, USART2_TX_LED_PIN);
+    tx_led.On();
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-    HAL_GPIO_TogglePin(USART2_TX_LED_PORT, USART2_TX_LED_PIN);
     screen.ReleaseSPI();
 }
 
