@@ -30,7 +30,6 @@ CH340C,U3,Package_SO:SOIC-16_3.9x9.9mm_P1.27mm,C84681
 Conn_01x02_Female,"J1,J2,J15",Connector_JST:JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal,C295747
 Conn_01x04_Female,"J3,J5,J6,J7,J12,J13,J14",1x4 pin download:1x4pin 1mm connector,C3029343
 Conn_01x06_Female,"J8,J11",Connector_JST:JST_PH_S6B-PH-SM4-TB_1x06-1MP_P2.00mm_Horizontal,C265405
-Conn_01x08_Female,J10,Connector_JST:JST_PH_S8B-PH-SM4-TB_1x08-1MP_P2.00mm_Horizontal,C265121
 Conn_01x08_Male,J4,Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical,C2894931
 Crystal_GND24,Y1,Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm,C13738
 ESP32-S3-WROOM-1-N8R2,U11,RF_Module:ESP32-S3-WROOM-1U,C3013944
