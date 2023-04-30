@@ -44,7 +44,6 @@ D18,ASMB-MTB1-0A3A2,LED RGB,149.4625,-61.695,90,top
 J1,Conn_01x02_Female,JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal,137.6975,-83.105,180,top
 J2,Conn_01x02_Female,JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal,181.2875,-116.125,90,top
 J3,Conn_01x04_Female,1x4pin 1mm connector,115.0275,-143.775,0,top
-J4,Conn_01x08_Male,PinHeader_1x08_P2.54mm_Vertical,183.0875,-79.885,0,top
 J5,Conn_01x04_Female,1x4pin 1mm connector,126.6575,-143.825,0,top
 J6,Conn_01x04_Female,1x4pin 1mm connector,168.3075,-123.885,180,top
 J7,Conn_01x04_Female,1x4pin 1mm connector,133.5375,-143.795,0,top
