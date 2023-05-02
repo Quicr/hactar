@@ -4378,7 +4378,7 @@
     (stroke (width 0) (type default))
     (uuid 409d7797-abbb-4b67-b67f-f76cfae85157)
   )
-  (polyline (pts (xy 349.25 180.34) (xy 370.84 180.34))
+  (polyline (pts (xy 349.25 177.8) (xy 370.84 177.8))
     (stroke (width 0) (type default))
     (uuid 40c54dad-6251-4256-a480-7843043e74c0)
   )
@@ -4698,7 +4698,7 @@
     (stroke (width 0) (type default))
     (uuid 63689167-82c8-43bc-8457-dd1cfe093439)
   )
-  (polyline (pts (xy 349.25 203.2) (xy 349.25 180.34))
+  (polyline (pts (xy 349.25 203.2) (xy 349.25 177.8))
     (stroke (width 0) (type default))
     (uuid 637dc9d6-e0d5-4605-9eaf-b29f0bd34bff)
   )
@@ -5303,7 +5303,7 @@
     (uuid 9ae14b9a-a69c-44b9-8985-924bcce80f3e)
   )
 
-  (wire (pts (xy 353.06 196.85) (xy 361.95 196.85))
+  (wire (pts (xy 351.79 196.85) (xy 360.68 196.85))
     (stroke (width 0) (type default))
     (uuid 9b402c2a-58c9-4f9a-8ca9-e05865c751d9)
   )
@@ -5402,7 +5402,7 @@
     (stroke (width 0) (type default))
     (uuid a5dfc37d-c8d9-41ac-8ac6-6a47c554df74)
   )
-  (polyline (pts (xy 370.84 180.34) (xy 370.84 203.2))
+  (polyline (pts (xy 370.84 177.8) (xy 370.84 203.2))
     (stroke (width 0) (type default))
     (uuid a6b5ee82-75cb-4f49-95aa-97cf9f091c26)
   )
@@ -5517,7 +5517,7 @@
     (stroke (width 0) (type default))
     (uuid ad5d1531-f1b1-45e3-b056-7ad107aa75da)
   )
-  (wire (pts (xy 353.06 182.88) (xy 361.95 182.88))
+  (wire (pts (xy 351.79 180.34) (xy 360.68 180.34))
     (stroke (width 0) (type default))
     (uuid ae6a4c8f-6983-4a2c-85c7-fb528f26304a)
   )
@@ -5634,11 +5634,11 @@
     (stroke (width 0) (type default))
     (uuid b57207b5-ede0-431a-924a-2bd91c75f6d3)
   )
-  (wire (pts (xy 353.06 187.96) (xy 361.95 187.96))
+  (wire (pts (xy 351.79 185.42) (xy 360.68 185.42))
     (stroke (width 0) (type default))
     (uuid b780ab13-def4-4825-83ac-f17854fa89e7)
   )
-  (wire (pts (xy 353.06 199.39) (xy 361.95 199.39))
+  (wire (pts (xy 351.79 199.39) (xy 360.68 199.39))
     (stroke (width 0) (type default))
     (uuid b78edd85-f447-4f74-a5b2-752ff87a41ae)
   )
@@ -5942,7 +5942,7 @@
     (stroke (width 0) (type default))
     (uuid dd80e506-798d-42fc-90d8-67a44b089d78)
   )
-  (wire (pts (xy 353.06 185.42) (xy 361.95 185.42))
+  (wire (pts (xy 351.79 182.88) (xy 360.68 182.88))
     (stroke (width 0) (type default))
     (uuid de1b739e-6006-4bac-b6a5-8dce48076921)
   )
@@ -6090,7 +6090,7 @@
     (stroke (width 0) (type default))
     (uuid ead13a31-281a-4b45-8317-502acdf00478)
   )
-  (wire (pts (xy 353.06 190.5) (xy 361.95 190.5))
+  (wire (pts (xy 351.79 187.96) (xy 360.68 187.96))
     (stroke (width 0) (type default))
     (uuid eae8df80-306e-47cb-9988-ac9ed993f561)
   )
@@ -6141,7 +6141,7 @@
     (stroke (width 0) (type default))
     (uuid ec89096f-d764-4d4d-8498-8bf6f0393ef6)
   )
-  (wire (pts (xy 353.06 194.31) (xy 361.95 194.31))
+  (wire (pts (xy 351.79 194.31) (xy 360.68 194.31))
     (stroke (width 0) (type default))
     (uuid ec8d4de8-dc92-42af-8df4-114a8bb25852)
   )
@@ -6287,7 +6287,7 @@
     (stroke (width 0) (type default))
     (uuid fa643d22-d78d-40f9-92bb-ae531f464745)
   )
-  (wire (pts (xy 353.06 201.93) (xy 361.95 201.93))
+  (wire (pts (xy 351.79 201.93) (xy 360.68 201.93))
     (stroke (width 0) (type default))
     (uuid fab9d1d5-7ecb-4476-829c-ab9cb72a0315)
   )
@@ -6367,7 +6367,7 @@
     (effects (font (size 7 7) (thickness 1) bold) (justify right bottom))
     (uuid 4ab6b5ec-fea3-492c-a56c-72938bfa82d8)
   )
-  (text "PROGRAM - 2MM L\n" (at 349.25 180.34 0)
+  (text "PROGRAM - 2MM L\n" (at 350.52 177.8 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 4e8b1251-6996-4278-8f7b-9ab001c5cff3)
   )
@@ -6468,7 +6468,7 @@
     (effects (font (size 7 7) (thickness 1) bold) (justify left bottom))
     (uuid cefd7559-62fa-46f6-be7a-5b620a8b8505)
   )
-  (text "Display - 2MM T" (at 297.18 204.47 0)
+  (text "Display - 2.54MM T" (at 297.18 204.47 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid d62b1d06-e4cc-4b5d-bda7-ffacb1d8375b)
   )
@@ -6489,7 +6489,7 @@
     (uuid f605a78f-ce3d-4b5e-a5f6-cabfbc3994b3)
   )
 
-  (label "NET_TX0_MGMT" (at 353.06 182.88 0) (fields_autoplaced)
+  (label "NET_TX0_MGMT" (at 351.79 180.34 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 0004ccf1-7971-4e28-afe2-169889ec358f)
   )
@@ -6561,7 +6561,7 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 134b6305-1e50-4f61-baf3-4173d8e2ef5b)
   )
-  (label "NET_RX0_MGMT" (at 353.06 185.42 0) (fields_autoplaced)
+  (label "NET_RX0_MGMT" (at 351.79 182.88 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 14e49e81-bb7b-491a-8aab-5001001fe361)
   )
@@ -6693,7 +6693,7 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 45f5db9e-0115-4a0a-8c79-4f3a32c88d3a)
   )
-  (label "NET_RST" (at 353.06 190.5 0) (fields_autoplaced)
+  (label "NET_RST" (at 351.79 187.96 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 4a09158c-a23e-4796-9a23-c4c1a3a43f53)
   )
@@ -6845,7 +6845,7 @@
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid 78bc4dd6-dea6-4516-a5ec-e96a46a53ad7)
   )
-  (label "UI_RST" (at 353.06 201.93 0) (fields_autoplaced)
+  (label "UI_RST" (at 351.79 201.93 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 78e6fe08-6076-416e-853f-58dd34ed5dc9)
   )
@@ -7001,7 +7001,7 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid a984ff81-66b8-4ff2-8718-c4b8ba4747a9)
   )
-  (label "UI_BOOT" (at 353.06 199.39 0) (fields_autoplaced)
+  (label "UI_BOOT" (at 351.79 199.39 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid aaee99da-09bc-4e6f-8c54-58cf837d016e)
   )
@@ -7101,7 +7101,7 @@
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid caddeab6-12e8-4cf0-a353-e9eaacc2302a)
   )
-  (label "UI_SWDCLK" (at 353.06 196.85 0) (fields_autoplaced)
+  (label "UI_SWDCLK" (at 351.79 196.85 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid cb1157f2-a909-4b43-b16a-dcd894af2cc7)
   )
@@ -7137,7 +7137,7 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid dafcd72a-6a8f-496a-a7a0-c6e54d96b2ea)
   )
-  (label "NET_BOOT" (at 353.06 187.96 0) (fields_autoplaced)
+  (label "NET_BOOT" (at 351.79 185.42 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid db491628-28ef-4b36-abd1-b599a1ad9958)
   )
@@ -7265,7 +7265,7 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid f24a196a-58f0-4cfb-8e03-a5de96ecd952)
   )
-  (label "UI_SWDIO" (at 353.06 194.31 0) (fields_autoplaced)
+  (label "UI_SWDIO" (at 351.79 194.31 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid f39cc3b1-366f-4088-b390-141fdc3f24f1)
   )
@@ -7333,10 +7333,13 @@
     (property "Datasheet" "~" (at 49.53 104.14 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C409670" (at 49.53 104.14 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 4327d291-eb78-47e5-8377-5b504b8b0e11))
     (pin "2" (uuid d92c9c93-dc4e-457c-8a70-8bc510e7cd38))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R4") (unit 1)
         )
@@ -7350,7 +7353,7 @@
     (property "Reference" "C29" (at 266.7 168.91 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "100U" (at 267.97 171.45 90)
+    (property "Value" "100u" (at 267.97 171.45 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Capacitor_SMD:C_1206_3216Metric" (at 265.43 169.2148 0)
@@ -7359,10 +7362,16 @@
     (property "Datasheet" "~" (at 261.62 170.18 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C87164" (at 261.62 170.18 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "JLC" "1206" (at 261.62 170.18 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid ae734b3c-9d51-42c7-9596-efe6719bbbd5))
     (pin "2" (uuid ec9f8e86-b647-4a02-8c8a-2b5eaac6d43c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C29") (unit 1)
         )
@@ -7387,7 +7396,7 @@
     )
     (pin "1" (uuid b6ecf25d-a4cf-43a0-a5a0-0f62755b872a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0135") (unit 1)
         )
@@ -7410,10 +7419,13 @@
     (property "Datasheet" "~" (at 313.69 184.15 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C295747" (at 313.69 184.15 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 9b187abd-7c99-45c7-b78e-60274c07d367))
     (pin "2" (uuid ae98829b-ac48-4c55-a233-1149dceca74f))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J1") (unit 1)
         )
@@ -7436,10 +7448,13 @@
     (property "Datasheet" "~" (at 331.47 48.26 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C338032" (at 331.47 48.26 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 7b264fc6-f7bc-44a5-b0aa-3ebe7da03603))
     (pin "2" (uuid 725ba1a6-366f-4038-9063-2d8eb44b492e))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C11") (unit 1)
         )
@@ -7464,7 +7479,7 @@
     )
     (pin "1" (uuid b295637b-f6f5-48d2-b68d-a6b3b55be08b))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0163") (unit 1)
         )
@@ -7487,10 +7502,13 @@
     (property "Datasheet" "https://datasheet.lcsc.com/lcsc/2204281430_Guangdong-Hottech-1N5819WS_C191023.pdf" (at 474.98 49.53 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C191023" (at 474.98 49.53 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 43414e24-8b41-4a16-bdbd-4ce315ad16fa))
     (pin "2" (uuid e5709e8a-1cd4-4234-8cb3-ea54b40f9d76))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "D10") (unit 1)
         )
@@ -7515,7 +7533,7 @@
     )
     (pin "1" (uuid 6e0d36bd-5b30-4900-9a93-e0db84f7af93))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0120") (unit 1)
         )
@@ -7540,7 +7558,7 @@
     )
     (pin "1" (uuid 9db7b624-4424-480e-8729-734d33aa9cee))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0109") (unit 1)
         )
@@ -7554,7 +7572,7 @@
     (property "Reference" "C30" (at 266.7 163.83 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "100U" (at 267.97 166.37 90)
+    (property "Value" "100u" (at 267.97 166.37 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Capacitor_SMD:C_1206_3216Metric" (at 265.43 164.1348 0)
@@ -7563,10 +7581,16 @@
     (property "Datasheet" "~" (at 261.62 165.1 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C87164" (at 261.62 165.1 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "JLC" "1206" (at 261.62 165.1 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 36827fd9-a811-40d5-ad15-46298d42937d))
     (pin "2" (uuid 6ed5e404-31be-4877-b7f7-815b4fe40e12))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C30") (unit 1)
         )
@@ -7591,7 +7615,7 @@
     )
     (pin "1" (uuid d35ae8a6-65bb-408a-a357-9fecbc09fe56))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0123") (unit 1)
         )
@@ -7616,7 +7640,7 @@
     )
     (pin "1" (uuid 243e9f4b-2d4d-450f-828d-6e60b1085e25))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0131") (unit 1)
         )
@@ -7642,7 +7666,7 @@
     (pin "1" (uuid 0c5d7e44-a94f-4671-82f4-c189c47bb7e9))
     (pin "2" (uuid 962f2ae4-d8c1-484b-a87f-472839cfee15))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C24") (unit 1)
         )
@@ -7667,7 +7691,7 @@
     )
     (pin "1" (uuid 4bf084dd-bd42-43a0-a101-635ca20f8bb3))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0169") (unit 1)
         )
@@ -7681,7 +7705,7 @@
     (property "Reference" "R14" (at 127 67.31 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "150" (at 125.73 69.85 90)
+    (property "Value" "150r" (at 125.73 69.85 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 125.73 68.072 90)
@@ -7693,7 +7717,7 @@
     (pin "1" (uuid 1657dbe3-3fb0-4a28-ba24-d9097290b267))
     (pin "2" (uuid d21f153d-140d-4133-a473-86c95e5b3f35))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R14") (unit 1)
         )
@@ -7718,7 +7742,7 @@
     )
     (pin "1" (uuid 96fbda59-ac75-4233-b2fb-9e1587ff654f))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0105") (unit 1)
         )
@@ -7741,6 +7765,9 @@
     (property "Datasheet" "" (at 424.18 185.42 0)
       (effects (font (size 1.524 1.524)))
     )
+    (property "LCSC" "C83836" (at 424.18 185.42 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid a0a38ec1-8727-4a54-b348-e04e5feabbc3))
     (pin "2" (uuid d5c37d33-9677-4815-956c-9e2f1b2c2fc3))
     (pin "3" (uuid 0f00623e-94cf-4e50-8d44-0a3694f1c2ae))
@@ -7750,7 +7777,7 @@
     (pin "7" (uuid 082e2dbe-3b4f-4cd0-b644-071d9d914000))
     (pin "8" (uuid 47975fa4-5b73-4f04-817c-d0257149d523))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "CR1") (unit 1)
         )
@@ -7773,10 +7800,13 @@
     (property "Datasheet" "~" (at 535.94 86.36 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C409612" (at 535.94 86.36 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 820b6e16-5a19-443c-ad45-d4c45452664e))
     (pin "2" (uuid a1c14929-cbc0-401c-97e9-2b1ccd0337a4))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R38") (unit 1)
         )
@@ -7790,7 +7820,7 @@
     (property "Reference" "R16" (at 262.89 58.42 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "180" (at 264.16 55.88 90)
+    (property "Value" "180r" (at 264.16 55.88 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 264.16 57.658 90)
@@ -7802,7 +7832,7 @@
     (pin "1" (uuid 05be82ef-0f84-4f3f-b584-efa8a11b1be7))
     (pin "2" (uuid 25d8878e-5bca-48e5-b5ad-0131ebe0a46a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R16") (unit 1)
         )
@@ -7827,7 +7857,7 @@
     )
     (pin "1" (uuid ac4a669a-afc0-4768-a616-1eb27944a070))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0205") (unit 1)
         )
@@ -7848,6 +7878,9 @@
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "https://www.usb.org/sites/default/files/documents/usb_type-c.zip" (at 48.26 203.2 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "LCSC" "C165948" (at 52.07 203.2 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "A1" (uuid 05578897-780d-45af-8dc7-a5969d62d562))
@@ -7876,7 +7909,7 @@
     (pin "B9" (uuid b73d2458-802e-4606-b2c6-cdc0fee764be))
     (pin "S1" (uuid dde18ab5-7847-4d14-8039-fccec30e289c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J9") (unit 1)
         )
@@ -7902,7 +7935,7 @@
     (pin "1" (uuid 6c58fd86-e19f-4098-8b94-78b0a75c64e3))
     (pin "2" (uuid 3ca3adf8-75a0-4744-b436-c9a9be12bcf0))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "SW3") (unit 1)
         )
@@ -7927,7 +7960,7 @@
     )
     (pin "1" (uuid 76b42efe-7e60-43e2-bc41-d659d6359217))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0115") (unit 1)
         )
@@ -7941,7 +7974,7 @@
     (property "Reference" "R18" (at 262.89 48.26 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "150" (at 264.16 45.72 90)
+    (property "Value" "150r" (at 264.16 45.72 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 264.16 47.498 90)
@@ -7953,7 +7986,7 @@
     (pin "1" (uuid 6498f299-1a23-4217-96a2-f4175f4c22a9))
     (pin "2" (uuid 57fb1edb-bfbc-4a72-90e4-5061ca73ab7e))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R18") (unit 1)
         )
@@ -7981,7 +8014,7 @@
     (pin "3" (uuid fc1f1432-a4b4-41e2-9b82-fe611f605a0a))
     (pin "4" (uuid 74cc6059-5326-4b57-882b-a54cc4c6d649))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "D4") (unit 1)
         )
@@ -8004,10 +8037,13 @@
     (property "Datasheet" "https://datasheet.lcsc.com/lcsc/2204281430_Guangdong-Hottech-1N5819WS_C191023.pdf" (at 474.98 41.91 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C191023" (at 474.98 41.91 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 6d8168cb-62e8-460d-b065-adafe0774f55))
     (pin "2" (uuid e0e5ddfd-d126-4ca4-83b3-59f0a9be6a64))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "D2") (unit 1)
         )
@@ -8021,7 +8057,7 @@
     (property "Reference" "R26" (at 336.55 248.92 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "330" (at 332.74 250.19 90)
+    (property "Value" "330r" (at 332.74 250.19 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 332.74 248.412 90)
@@ -8033,7 +8069,7 @@
     (pin "1" (uuid 980959db-0af0-44a1-a45a-0abf5a5e9243))
     (pin "2" (uuid f8e320f7-efc8-45fa-8122-efa385b282f5))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R26") (unit 1)
         )
@@ -8058,7 +8094,7 @@
     )
     (pin "1" (uuid 2feb9223-2ed7-4450-bd6f-7965db2796ac))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0150") (unit 1)
         )
@@ -8084,7 +8120,7 @@
     (pin "1" (uuid 5773c4bd-4e06-4dcf-8939-ac8e2bb982ed))
     (pin "2" (uuid 39fd28dd-aad7-4c13-b641-2e2d103d60d0))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C27") (unit 1)
         )
@@ -8093,7 +8129,7 @@
   )
 
   (symbol (lib_name "WM8960CGEFL{slash}RV_1") (lib_id "Audio Interface:WM8960CGEFL{slash}RV") (at 207.01 205.74 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp yes) (fields_autoplaced)
+    (in_bom no) (on_board yes) (dnp yes) (fields_autoplaced)
     (uuid 33c256e0-48fe-44e0-8a8e-c3b6cd0d86a1)
     (property "Reference" "U6" (at 228.6 154.94 0)
       (effects (font (size 1.27 1.27)))
@@ -8107,7 +8143,7 @@
     (property "Datasheet" "" (at 207.01 205.74 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "LCSC" "" (at 207.01 205.74 0)
+    (property "LCSC" "C18752" (at 207.01 205.74 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 9b510d87-cb9d-4e4a-b170-7dd5d5143a72))
@@ -8144,7 +8180,7 @@
     (pin "8" (uuid f41b7a6b-a91d-413a-837f-13c88619dd7b))
     (pin "9" (uuid 3e56b9ba-41c5-4c94-8e3b-f53dbab0a089))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "U6") (unit 1)
         )
@@ -8167,10 +8203,13 @@
     (property "Datasheet" "~" (at 128.27 177.8 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C144053" (at 128.27 177.8 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 6ef56e52-cc04-46c7-81f3-221a3e4412fe))
     (pin "2" (uuid 4aa8ec61-005c-441e-b620-57aca91cb402))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R7") (unit 1)
         )
@@ -8193,10 +8232,13 @@
     (property "Datasheet" "~" (at 523.24 54.61 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C703069" (at 523.24 54.61 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid ea808803-a533-4f1c-9e65-3a8570a7c9c5))
     (pin "2" (uuid 33d3f757-e034-4da4-90fc-b29606a08da4))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C2") (unit 1)
         )
@@ -8222,7 +8264,7 @@
     (pin "1" (uuid 49016344-dcc6-45f7-b61d-f4487abcfb53))
     (pin "2" (uuid fd1531df-37e8-495f-9f2d-d6a52b25e805))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C17") (unit 1)
         )
@@ -8236,7 +8278,7 @@
     (property "Reference" "R24" (at 416.56 48.26 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "150" (at 417.83 45.72 90)
+    (property "Value" "150r" (at 417.83 45.72 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 417.83 47.498 90)
@@ -8248,7 +8290,7 @@
     (pin "1" (uuid 971c0a12-3d1d-45e1-8acc-8bcd5528c71c))
     (pin "2" (uuid 8c296391-ad76-4c63-8ce7-cc181e604fc0))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R24") (unit 1)
         )
@@ -8262,7 +8304,7 @@
     (property "Reference" "R23" (at 416.56 53.34 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "180" (at 417.83 50.8 90)
+    (property "Value" "180r" (at 417.83 50.8 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 417.83 52.578 90)
@@ -8274,7 +8316,7 @@
     (pin "1" (uuid 693768be-d0ce-4d4f-97e0-d0557f52abe9))
     (pin "2" (uuid 8b53ea1d-c51c-4122-9e63-37ec6ca7b289))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R23") (unit 1)
         )
@@ -8299,7 +8341,7 @@
     )
     (pin "1" (uuid e3a686eb-5fb9-47fe-9477-31a7833d86e3))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0125") (unit 1)
         )
@@ -8324,7 +8366,7 @@
     )
     (pin "1" (uuid 239627f1-227e-4683-8f7b-98145821a7f9))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0124") (unit 1)
         )
@@ -8347,10 +8389,13 @@
     (property "Datasheet" "~" (at 172.72 209.55 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C191023" (at 172.72 209.55 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 3de0117a-7113-4043-8869-ee23f5acf62e))
     (pin "2" (uuid 531387b1-5bc1-440e-801d-e0796c927947))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C7") (unit 1)
         )
@@ -8359,7 +8404,7 @@
   )
 
   (symbol (lib_id "Keyboard Symbol:BM14B(0.8)-24DS-0.4V(53)") (at 491.49 212.09 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp yes)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 3bca1226-3f9f-4530-ae1b-483e8e7708e0)
     (property "Reference" "U13" (at 497.84 180.34 0)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -8367,10 +8412,13 @@
     (property "Value" "BM14B(0.8)-24DS-0.4V(53)" (at 482.6 217.17 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "" (at 495.3 217.17 0)
+    (property "Footprint" "BM14B(0.B)-24DS-0:BM14B(0.B)-24DS-0.4V(53)" (at 495.3 217.17 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 495.3 217.17 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "LCSC" "C3640874" (at 491.49 212.09 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 0d7be9fd-9163-4ce4-92c1-3d39d2010862))
@@ -8402,7 +8450,7 @@
     (pin "8" (uuid a74b4394-772a-4ad1-bd75-09711c321631))
     (pin "9" (uuid 62fd86d8-c18d-49e4-9f9d-5469a4baf9d1))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "U13") (unit 1)
         )
@@ -8427,7 +8475,7 @@
     )
     (pin "1" (uuid 937880dc-37a9-497c-abdb-d7c35f81fd1d))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0138") (unit 1)
         )
@@ -8441,7 +8489,7 @@
     (property "Reference" "R41" (at 384.81 91.44 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "1R0" (at 381 92.71 90)
+    (property "Value" "1r0" (at 381 92.71 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 381 94.488 90)
@@ -8450,10 +8498,16 @@
     (property "Datasheet" "~" (at 381 92.71 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C881335" (at 381 92.71 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "JLC" "0402" (at 381 92.71 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid dda6bcbb-f52c-4431-9955-9b169ceb8648))
     (pin "2" (uuid 45ba0643-6ba2-499c-a18b-fc4d30cfc258))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R41") (unit 1)
         )
@@ -8476,13 +8530,16 @@
     (property "Datasheet" "http://ww1.microchip.com/downloads/en/DeviceDoc/20001984g.pdf" (at 487.68 99.06 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C424093" (at 491.49 97.79 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 9486959d-ae21-422b-8ee1-6245b83d4469))
     (pin "2" (uuid cf2eeef9-e021-4113-8a0e-b841e3acff8f))
     (pin "3" (uuid 070e10ac-a60b-41c0-9fef-d2359a9b8b58))
     (pin "4" (uuid 238841ae-9938-4e24-8f2e-a93127f5214e))
     (pin "5" (uuid 1186654b-9032-40a7-b50b-8ceaa0d28506))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "U12") (unit 1)
         )
@@ -8508,7 +8565,7 @@
     (pin "1" (uuid a705904b-f70a-4eea-8963-61e33af035d2))
     (pin "2" (uuid 49a3d213-f5f3-4af5-be51-e29cea4f368a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C25") (unit 1)
         )
@@ -8522,7 +8579,7 @@
     (property "Reference" "R15" (at 127 62.23 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "150" (at 125.73 64.77 90)
+    (property "Value" "150r" (at 125.73 64.77 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 125.73 62.992 90)
@@ -8534,7 +8591,7 @@
     (pin "1" (uuid 26557667-c436-4d71-bc09-47c8ab68c7c5))
     (pin "2" (uuid 28d1e9b1-1142-4567-baf6-6cc30fff1d7e))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R15") (unit 1)
         )
@@ -8559,7 +8616,7 @@
     )
     (pin "1" (uuid 45aea75c-61f4-4afc-b110-2cf1a410838b))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0107") (unit 1)
         )
@@ -8584,7 +8641,7 @@
     )
     (pin "1" (uuid 0b9c56c7-1a1c-4f01-a05d-e402e49a2af8))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0159") (unit 1)
         )
@@ -8609,7 +8666,7 @@
     )
     (pin "1" (uuid e8b60bd0-7290-4e01-8d8b-eecb608195ca))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0101") (unit 1)
         )
@@ -8634,7 +8691,7 @@
     )
     (pin "1" (uuid 6add0e18-4e58-4451-9b8c-c17e40c0910a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0106") (unit 1)
         )
@@ -8642,19 +8699,19 @@
     )
   )
 
-  (symbol (lib_id "Connector:Conn_01x04_Female") (at 367.03 185.42 0) (unit 1)
+  (symbol (lib_id "Connector:Conn_01x04_Female") (at 365.76 182.88 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 49e2c82b-dbe4-41fe-8241-ae476dc3a297)
-    (property "Reference" "J6" (at 365.76 181.61 0)
+    (property "Reference" "J6" (at 367.03 180.34 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "Conn_01x04_Female" (at 351.79 191.77 0)
+    (property "Value" "Conn_01x04_Female" (at 350.52 189.23 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "1x4 pin download:1x4pin 1mm connector" (at 367.03 185.42 0)
+    (property "Footprint" "1x4 pin download:1x4pin 1mm connector" (at 365.76 182.88 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "Datasheet" "~" (at 367.03 185.42 0)
+    (property "Datasheet" "~" (at 365.76 182.88 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid f24e14ea-5eb4-4db8-99a2-b5eacd15e519))
@@ -8662,7 +8719,7 @@
     (pin "3" (uuid 717b3080-a03a-43c1-8918-3b1af5d07fb3))
     (pin "4" (uuid 0bf6a0eb-df1f-421c-a729-7c4295f0e14b))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J6") (unit 1)
         )
@@ -8688,7 +8745,7 @@
     (pin "1" (uuid 5474cd3c-ed03-4a8c-a69a-41c77aed6a7a))
     (pin "2" (uuid 8c2b5f30-7e1f-48ec-80a8-23bcc87cad9e))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "SW2") (unit 1)
         )
@@ -8713,7 +8770,7 @@
     )
     (pin "1" (uuid fbacf7ed-614c-426e-90b1-1671e34330ba))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0121") (unit 1)
         )
@@ -8736,10 +8793,16 @@
     (property "Datasheet" "~" (at 485.14 143.51 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C127301" (at 485.14 143.51 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "JLC" "0603" (at 485.14 143.51 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 126ade79-c4f9-4c12-b555-e3553c22cbc4))
     (pin "2" (uuid e863794c-58cf-4efa-9374-5f5c2cc8f9bc))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "120R1") (unit 1)
         )
@@ -8764,7 +8827,7 @@
     )
     (pin "1" (uuid 141fc107-1897-45a7-8fdd-b55e3589eda7))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0168") (unit 1)
         )
@@ -8778,7 +8841,7 @@
     (property "Reference" "R25" (at 416.56 43.18 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "150" (at 417.83 40.64 90)
+    (property "Value" "150r" (at 417.83 40.64 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 417.83 42.418 90)
@@ -8790,7 +8853,7 @@
     (pin "1" (uuid 33d30e1d-8429-46fe-9cab-899f16fc020f))
     (pin "2" (uuid 6982f6c1-4f9d-4cb0-95f7-0c3dd75ab6f5))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R25") (unit 1)
         )
@@ -8813,10 +8876,13 @@
     (property "Datasheet" "~" (at 513.08 107.95 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C23733" (at 513.08 107.95 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid f7bfcad6-e2e3-47c0-9dec-dcdb20421e48))
     (pin "2" (uuid 4634a598-d0b8-447e-9214-c51d26ee9f82))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C19") (unit 1)
         )
@@ -8841,7 +8907,7 @@
     )
     (pin "1" (uuid d702731e-7b47-4df4-8680-fe32e7fda118))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0141") (unit 1)
         )
@@ -8867,7 +8933,7 @@
     (pin "1" (uuid 1e3dcb75-be40-46cf-8430-a5c515b1036b))
     (pin "2" (uuid a45b9421-be4e-4b2e-a00c-8e74b2cb38db))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R32") (unit 1)
         )
@@ -8881,7 +8947,7 @@
     (property "Reference" "R35" (at 389.89 215.9 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "150" (at 386.08 217.17 90)
+    (property "Value" "150r" (at 386.08 217.17 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 386.08 215.392 90)
@@ -8893,7 +8959,7 @@
     (pin "1" (uuid 42763f51-b112-41d8-a747-97aebbf3f169))
     (pin "2" (uuid 46e6e5f9-5447-4b01-924a-07e82646dc85))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R35") (unit 1)
         )
@@ -8918,7 +8984,7 @@
     )
     (pin "1" (uuid 2768f3d8-941d-4357-94c5-361f8440b275))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0133") (unit 1)
         )
@@ -8944,7 +9010,7 @@
     (pin "1" (uuid 0e2b3773-9a8e-4545-bce9-326d106aae05))
     (pin "2" (uuid c32a3568-7db7-4741-a634-8871f6595607))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R8") (unit 1)
         )
@@ -8969,7 +9035,7 @@
     )
     (pin "1" (uuid 0e2f981c-bc5d-4ecf-908e-b0971bdd2548))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0113") (unit 1)
         )
@@ -8994,7 +9060,7 @@
     )
     (pin "1" (uuid 2b514a78-e510-4665-99ab-15fc7d4f612f))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0139") (unit 1)
         )
@@ -9019,7 +9085,7 @@
     )
     (pin "1" (uuid 94ec16bb-fa42-4cd4-808d-b396a366cc2a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0137") (unit 1)
         )
@@ -9044,7 +9110,7 @@
     )
     (pin "1" (uuid 95a967fe-af29-4273-a8a7-6197c1307c88))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0112") (unit 1)
         )
@@ -9069,7 +9135,7 @@
     )
     (pin "1" (uuid 50b3f30c-6fa4-49f1-a94e-3e05d9af0881))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0203") (unit 1)
         )
@@ -9094,7 +9160,7 @@
     )
     (pin "1" (uuid 1a3352e9-472f-4709-8a18-943ab5c21ec4))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0148") (unit 1)
         )
@@ -9108,7 +9174,7 @@
     (property "Reference" "R40" (at 491.49 43.18 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
-    (property "Value" "1R0" (at 488.95 45.72 90)
+    (property "Value" "1r0" (at 488.95 45.72 90)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 487.172 46.99 90)
@@ -9117,10 +9183,16 @@
     (property "Datasheet" "~" (at 488.95 46.99 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C881335" (at 488.95 46.99 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "JLC" "0402" (at 488.95 46.99 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 5b8898b0-1417-4670-b8d3-08a3945d25ff))
     (pin "2" (uuid 0eb3832c-7f2a-4be2-b3f3-9f499dbedade))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R40") (unit 1)
         )
@@ -9146,7 +9218,7 @@
     (pin "1" (uuid 8d189b07-91fc-4eac-818b-9aee594b8e9c))
     (pin "2" (uuid beec73e5-ecae-4d71-a020-fb110957b054))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J15") (unit 1)
         )
@@ -9171,7 +9243,7 @@
     )
     (pin "1" (uuid 3b544938-f6c1-4c4a-937c-61038cdc2739))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0111") (unit 1)
         )
@@ -9194,10 +9266,13 @@
     (property "Datasheet" "~" (at 471.17 93.98 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C130114" (at 471.17 93.98 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 66b2e8b2-57ef-4c33-a0e8-29452272d8df))
     (pin "2" (uuid 1e5ce1a1-91e1-4681-b5f7-fc0a147c94a4))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "D11") (unit 1)
         )
@@ -9222,7 +9297,7 @@
     )
     (pin "1" (uuid 122efde9-a26d-4a5e-ad49-690f57f7aea2))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0132") (unit 1)
         )
@@ -9248,7 +9323,7 @@
     (pin "1" (uuid c83122be-f804-4b78-9d96-8350881b0cb2))
     (pin "2" (uuid 68ff5831-6969-4d55-a773-6abc9a28aa5c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C13") (unit 1)
         )
@@ -9273,7 +9348,7 @@
     )
     (pin "1" (uuid fbd95585-d26a-4c12-abe2-ec79a663cc82))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0162") (unit 1)
         )
@@ -9299,7 +9374,7 @@
     (pin "1" (uuid 8708b029-6557-40a7-98aa-8adcba79b2ba))
     (pin "2" (uuid 12dc04e8-cfcd-419c-8bf6-08037a9fa653))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C12") (unit 1)
         )
@@ -9322,10 +9397,16 @@
     (property "Datasheet" "~" (at 474.98 147.32 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C142376" (at 474.98 147.32 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "JLC" "0402" (at 474.98 147.32 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 7d9c458b-8b96-4040-a756-81353bbd8e84))
     (pin "2" (uuid 7873a2bd-c0cd-406a-b647-d3c78f4c2c6b))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C9") (unit 1)
         )
@@ -9350,7 +9431,7 @@
     )
     (pin "1" (uuid e5d5bdd4-b112-4247-a9bf-7718bbb3c5ce))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR06") (unit 1)
         )
@@ -9376,7 +9457,7 @@
     (pin "1" (uuid b7cd98d1-8291-4448-97a8-ec308c5de43f))
     (pin "2" (uuid 4b5cc1e8-70e6-4230-9504-a41cce4fd84b))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C22") (unit 1)
         )
@@ -9401,7 +9482,7 @@
     )
     (pin "1" (uuid 48af94ad-1e7b-4b85-8191-4a4f2300dcaf))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0114") (unit 1)
         )
@@ -9424,10 +9505,13 @@
     (property "Datasheet" "~" (at 323.85 71.12 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C76594" (at 323.85 71.12 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid cc52cc05-e8d2-4f87-b75d-1a6c1b8816d6))
     (pin "2" (uuid fb4d33a4-5530-4401-92cf-ec318dd92a8a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C21") (unit 1)
         )
@@ -9455,7 +9539,7 @@
     (pin "3" (uuid b5f79497-26c5-4567-a2b0-275fae105d4a))
     (pin "4" (uuid 34101fe9-6090-47c5-9484-fb00d87f8b6e))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J5") (unit 1)
         )
@@ -9480,7 +9564,7 @@
     )
     (pin "1" (uuid 9b10620b-aabc-4667-901b-223c77da91a6))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0149") (unit 1)
         )
@@ -9505,7 +9589,7 @@
     )
     (pin "1" (uuid 8090f9b1-04b7-499c-b2ed-ecc8990294a4))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0166") (unit 1)
         )
@@ -9530,7 +9614,7 @@
     )
     (pin "1" (uuid aa30b984-2ef7-4b04-9327-0810ee360499))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0119") (unit 1)
         )
@@ -9555,7 +9639,7 @@
     )
     (pin "1" (uuid fc463ef1-f599-4194-9b0c-0dcd2b3471d9))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0156") (unit 1)
         )
@@ -9580,7 +9664,7 @@
     )
     (pin "1" (uuid e4150117-aa55-4073-97a6-2067ac29ee75))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0151") (unit 1)
         )
@@ -9605,7 +9689,7 @@
     )
     (pin "1" (uuid d62c1884-23cd-425a-b43f-f7ba914a673c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0103") (unit 1)
         )
@@ -9633,7 +9717,7 @@
     (pin "3" (uuid 0f22eaf0-617f-4a32-a37c-f06d6e76538a))
     (pin "4" (uuid abaec3f8-47a9-4eda-b0a8-0448a949b63a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "D5") (unit 1)
         )
@@ -9656,11 +9740,14 @@
     (property "Datasheet" "http://www.advanced-monolithic.com/pdf/ds1117.pdf" (at 502.92 55.88 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C351784" (at 500.38 49.53 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 7320487b-694e-4162-85c5-353b01e73cc5))
     (pin "2" (uuid af22911d-2e15-4bef-bd30-1d5b3ac2514a))
     (pin "3" (uuid e18c9738-9b96-4957-9ee6-af9206e11646))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "U2") (unit 1)
         )
@@ -9686,7 +9773,7 @@
     (pin "1" (uuid 6350d5bb-19ff-41ca-a914-cfbb7be45e3a))
     (pin "2" (uuid 2cb6041f-4dda-4477-b762-0c6cdee4f732))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R19") (unit 1)
         )
@@ -9694,19 +9781,22 @@
     )
   )
 
-  (symbol (lib_id "Connector:Conn_01x04_Female") (at 367.03 196.85 0) (unit 1)
+  (symbol (lib_id "Connector:Conn_01x04_Female") (at 365.76 196.85 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 7f21fdcb-f553-4f39-bb99-c44cb4f0f617)
-    (property "Reference" "J12" (at 365.76 193.04 0)
+    (property "Reference" "J12" (at 367.03 195.58 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "Conn_01x04_Female" (at 351.79 191.77 0)
+    (property "Value" "Conn_01x04_Female" (at 350.52 191.77 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "1x4 pin download:1x4pin 1mm connector" (at 367.03 196.85 0)
+    (property "Footprint" "1x4 pin download:1x4pin 1mm connector" (at 365.76 196.85 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "Datasheet" "~" (at 367.03 196.85 0)
+    (property "Datasheet" "~" (at 365.76 196.85 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "LCSC" "C3029343" (at 365.76 196.85 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid dbe4b399-371a-4b8d-9a83-31c347dc6766))
@@ -9714,7 +9804,7 @@
     (pin "3" (uuid f558bd49-63af-469c-b532-8424d049d10d))
     (pin "4" (uuid c3ba6711-aac5-4e85-8ced-26bd7152f71c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J12") (unit 1)
         )
@@ -9740,7 +9830,7 @@
     (pin "1" (uuid cae2f5bb-9ef2-4c2c-a25c-c7be09f86a54))
     (pin "2" (uuid c5b5c7ab-56c3-4d60-9c55-6b1853eb4abc))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C18") (unit 1)
         )
@@ -9763,10 +9853,13 @@
     (property "Datasheet" "~" (at 462.28 97.79 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C23733" (at 462.28 97.79 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid ffdcd5b1-bfdf-42ef-896f-ee7fafccdb67))
     (pin "2" (uuid d963dfa1-c806-4f21-a142-06aed1936f7b))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C1") (unit 1)
         )
@@ -9791,7 +9884,7 @@
     )
     (pin "1" (uuid 7f0e7104-9e44-45ac-9233-5c5ca81daf3c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0116") (unit 1)
         )
@@ -9816,7 +9909,7 @@
     )
     (pin "1" (uuid cff5022c-d03b-4f0b-a467-82f4672786af))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0144") (unit 1)
         )
@@ -9830,7 +9923,7 @@
     (property "Reference" "C6" (at 167.64 207.01 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "4.7u" (at 167.64 212.09 0)
+    (property "Value" "4u7" (at 167.64 212.09 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Capacitor_SMD:C_0402_1005Metric" (at 168.6052 213.36 0)
@@ -9839,10 +9932,13 @@
     (property "Datasheet" "~" (at 167.64 209.55 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C159984" (at 167.64 209.55 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid d1a566f7-2120-4007-8c38-42b5673236a8))
     (pin "2" (uuid 442a5532-7ec5-479c-adf2-ff08e020f4da))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C6") (unit 1)
         )
@@ -9868,7 +9964,7 @@
     (pin "1" (uuid fa3d10f6-6eb6-48eb-aa7a-b8ff1f5ab9a9))
     (pin "2" (uuid 67d76186-3a0d-473e-9fc1-dbe39421b6c1))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J2") (unit 1)
         )
@@ -9882,7 +9978,7 @@
     (property "Reference" "R17" (at 262.89 53.34 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "150" (at 264.16 50.8 90)
+    (property "Value" "150r" (at 264.16 50.8 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 264.16 52.578 90)
@@ -9894,7 +9990,7 @@
     (pin "1" (uuid 7b71fa86-8db4-4578-a8f5-23cf43773efb))
     (pin "2" (uuid 451355cb-702b-453f-89bc-077cdee6095c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R17") (unit 1)
         )
@@ -9917,10 +10013,13 @@
     (property "Datasheet" "~" (at 27.94 218.44 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C325521" (at 27.94 218.44 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 32a8e407-699a-45c7-aaa8-aedb493a3666))
     (pin "2" (uuid 13fcdc81-77aa-4401-81c6-fc429a1a3d97))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R2") (unit 1)
         )
@@ -9946,7 +10045,7 @@
     (pin "1" (uuid 36ffb92f-3afa-4f65-b80a-f7c234a5fd0c))
     (pin "2" (uuid 7ea6dc21-8650-49a7-a6a8-554b2de75c03))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C32") (unit 1)
         )
@@ -9960,7 +10059,7 @@
     (property "Reference" "R13" (at 127 72.39 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "180" (at 125.73 74.93 90)
+    (property "Value" "180r" (at 125.73 74.93 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 125.73 73.152 90)
@@ -9969,10 +10068,13 @@
     (property "Datasheet" "~" (at 125.73 74.93 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C186119" (at 125.73 74.93 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid f483037d-93b5-417f-a2e0-7c0bba6f8b15))
     (pin "2" (uuid cb681ee6-9e34-4677-9588-51d5c06418d4))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R13") (unit 1)
         )
@@ -9995,10 +10097,13 @@
     (property "Datasheet" "~" (at 492.76 147.32 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C142376" (at 492.76 147.32 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid e39fe44a-e178-4e5c-aab6-641c28b4ebd9))
     (pin "2" (uuid 3f970ebc-fc79-4294-a212-9ce94c9b14dc))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C10") (unit 1)
         )
@@ -10023,7 +10128,7 @@
     )
     (pin "1" (uuid 429f1b22-a548-4083-b212-11f8c6448c21))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0202") (unit 1)
         )
@@ -10048,7 +10153,7 @@
     )
     (pin "1" (uuid 9ac6b09c-111d-4e51-afd9-00636d2ad3a1))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0172") (unit 1)
         )
@@ -10062,7 +10167,7 @@
     (property "Reference" "R11" (at 127 45.72 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "150" (at 125.73 48.26 90)
+    (property "Value" "150r" (at 125.73 48.26 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 125.73 46.482 90)
@@ -10071,10 +10176,13 @@
     (property "Datasheet" "~" (at 125.73 48.26 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C186306" (at 125.73 48.26 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 5bd1c56e-15bc-485a-9751-0048fef73b9e))
     (pin "2" (uuid 82ab7aad-b567-4a0e-a8e2-2e5cefa70000))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R11") (unit 1)
         )
@@ -10100,7 +10208,7 @@
     (pin "1" (uuid 7373a5bb-9339-470e-83c3-3811cd00718a))
     (pin "2" (uuid 61860899-62ce-4d38-a624-2d6132bf345d))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R3") (unit 1)
         )
@@ -10125,7 +10233,7 @@
     )
     (pin "1" (uuid 479a7be3-bbfe-49a0-a6cd-110663251980))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0167") (unit 1)
         )
@@ -10139,7 +10247,7 @@
     (property "Reference" "R29" (at 336.55 261.62 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "330" (at 332.74 262.89 90)
+    (property "Value" "330r" (at 332.74 262.89 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 332.74 261.112 90)
@@ -10151,7 +10259,7 @@
     (pin "1" (uuid 42d76758-f7ff-472b-9c25-41d8de77d8d1))
     (pin "2" (uuid 9e4741d1-2688-4e6c-b81a-596f0a258dc8))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R29") (unit 1)
         )
@@ -10176,7 +10284,7 @@
     )
     (pin "1" (uuid 42309b18-3db9-4777-9d1a-232e2a2d58f8))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0108") (unit 1)
         )
@@ -10202,7 +10310,7 @@
     (pin "1" (uuid f57fc0c5-f7be-471f-88dc-a56a38a0db1a))
     (pin "2" (uuid 8e83cde1-61ce-4bbc-b164-976556aa4c2c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C16") (unit 1)
         )
@@ -10227,7 +10335,7 @@
     )
     (pin "1" (uuid 4b261130-3102-4723-9cda-8d4799f33551))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0191") (unit 1)
         )
@@ -10252,7 +10360,7 @@
     )
     (pin "1" (uuid 6981641a-5e57-4a41-9fb0-e965c100a81a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0164") (unit 1)
         )
@@ -10275,12 +10383,15 @@
     (property "Datasheet" "https://docs.broadcom.com/docs/AV02-4194EN" (at 134.62 59.69 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C2927824" (at 134.62 48.26 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 613133a9-a49c-4768-b66c-b02fd7dfc225))
     (pin "2" (uuid 6b9fb03a-6223-475c-98dd-9bf6fda72141))
     (pin "3" (uuid 090df583-563f-4bc3-b994-9479a3fd4ee0))
     (pin "4" (uuid 63774655-f2b5-4e98-a0fc-beb42a540d0e))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "D18") (unit 1)
         )
@@ -10303,6 +10414,9 @@
     (property "Datasheet" "~" (at 345.44 187.96 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C265405" (at 345.44 187.96 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 1dcf3ed5-12b7-4d23-b8c9-f3ad06044a0f))
     (pin "2" (uuid ff36f444-7d6f-4f36-9306-0bcdae2e6a20))
     (pin "3" (uuid 06bf56da-07cd-445a-a9e8-b9ad207133fa))
@@ -10310,7 +10424,7 @@
     (pin "5" (uuid ef083157-a397-4db9-af82-bf001f053956))
     (pin "6" (uuid 9fe9ca2d-716d-4ae2-a29c-a60f19653bf1))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J11") (unit 1)
         )
@@ -10335,7 +10449,7 @@
     )
     (pin "1" (uuid 4ae85523-9e25-4e7a-993e-f5f26583c164))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0154") (unit 1)
         )
@@ -10349,7 +10463,7 @@
     (property "Reference" "R27" (at 336.55 251.46 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "330" (at 332.74 252.73 90)
+    (property "Value" "330r" (at 332.74 252.73 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 332.74 250.952 90)
@@ -10361,7 +10475,7 @@
     (pin "1" (uuid 007531f2-421f-4c4d-a69e-5b33d1b10c92))
     (pin "2" (uuid 64ff89d9-ebe1-42a3-8d8c-48be0ec17f01))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R27") (unit 1)
         )
@@ -10375,7 +10489,7 @@
     (property "Reference" "R33" (at 389.89 210.82 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "180" (at 386.08 212.09 90)
+    (property "Value" "180r" (at 386.08 212.09 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 386.08 210.312 90)
@@ -10387,7 +10501,7 @@
     (pin "1" (uuid 07253aa3-132b-40c6-af9e-bcaf1248cfad))
     (pin "2" (uuid 6ed84a8e-461f-436a-a5e1-29f514efb786))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R33") (unit 1)
         )
@@ -10412,7 +10526,7 @@
     )
     (pin "1" (uuid 9f9f88a4-124c-4236-9c9c-83be4f5ea4a4))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0145") (unit 1)
         )
@@ -10487,7 +10601,7 @@
     (pin "8" (uuid fec040c4-51c3-4cc0-b234-6cfa613313ad))
     (pin "9" (uuid e49d79a9-a20f-40b1-9674-12a301adce75))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "U5") (unit 1)
         )
@@ -10512,7 +10626,7 @@
     )
     (pin "1" (uuid 5eb97ba0-ccec-4a75-8d8b-59f4044088ab))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0157") (unit 1)
         )
@@ -10537,7 +10651,7 @@
     )
     (pin "1" (uuid ebc133ae-bd8b-4cff-a588-66925765d9dc))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0171") (unit 1)
         )
@@ -10560,10 +10674,13 @@
     (property "Datasheet" "~" (at 128.27 92.71 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C266189" (at 128.27 97.79 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid fbed810d-eb5d-4cf6-bed1-135f0848d260))
     (pin "2" (uuid c7e46280-edac-4aee-86c6-3279155168f8))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "SW1") (unit 1)
         )
@@ -10588,7 +10705,7 @@
     )
     (pin "1" (uuid 921af297-6eec-4251-88bc-8ace20819f35))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0193") (unit 1)
         )
@@ -10613,7 +10730,7 @@
     )
     (pin "1" (uuid a17db5d7-8bb2-43c8-add9-3e44deda51c4))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0136") (unit 1)
         )
@@ -10634,6 +10751,9 @@
       (effects (font (size 1.27 1.27)) (justify left) hide)
     )
     (property "Datasheet" "http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/DM00037051.pdf" (at 347.98 102.87 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "LCSC" "C69336" (at 347.98 102.87 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 2b3173c6-a833-4cc4-8a99-3eef070be944))
@@ -10701,7 +10821,7 @@
     (pin "8" (uuid ffc1cd0c-6b7d-486e-bcba-a4a3ec2282f6))
     (pin "9" (uuid 7a94877a-3297-4a04-9ab5-266816e3d6ce))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "U1") (unit 1)
         )
@@ -10729,7 +10849,7 @@
     (pin "3" (uuid 812bace1-43a9-4fcc-bbd7-558f4a765a7b))
     (pin "4" (uuid c6711a0f-5c39-47e6-8038-96193a3d06d8))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J7") (unit 1)
         )
@@ -10743,7 +10863,7 @@
     (property "Reference" "R22" (at 336.55 246.38 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "330" (at 332.74 247.65 90)
+    (property "Value" "330r" (at 332.74 247.65 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 332.74 245.872 90)
@@ -10752,10 +10872,13 @@
     (property "Datasheet" "~" (at 332.74 247.65 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C105876" (at 332.74 247.65 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid e2bc6912-9571-4f08-904a-85146428e91a))
     (pin "2" (uuid 12016f52-06ac-43b9-a362-25b9ae7ea47a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R22") (unit 1)
         )
@@ -10783,7 +10906,7 @@
     (pin "3" (uuid cfa0c1fa-01ac-4505-948e-9ed0f2c5d99a))
     (pin "4" (uuid dca1933a-d752-45d4-91dd-de6b0a196dfc))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J14") (unit 1)
         )
@@ -10808,7 +10931,7 @@
     )
     (pin "1" (uuid b5fcee42-de88-4937-87f6-ddfdb99ee194))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0153") (unit 1)
         )
@@ -10831,6 +10954,9 @@
     (property "Datasheet" "https://www.st.com/resource/en/datasheet/usblc6-2.pdf" (at 74.93 232.41 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C2827693" (at 80.01 223.52 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 523273eb-4042-47ea-b3ed-757f8ed80e10))
     (pin "2" (uuid 95470b83-379b-47f7-9b93-76750e725ef6))
     (pin "3" (uuid e8443627-468b-4471-8304-81f04457e685))
@@ -10838,7 +10964,7 @@
     (pin "5" (uuid 9108ba67-b0db-4a83-8659-7651990545e0))
     (pin "6" (uuid 590c2f08-b5ed-44a3-80c8-a151df6aab93))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "U4") (unit 1)
         )
@@ -10863,7 +10989,7 @@
     )
     (pin "1" (uuid e2ffbdb8-30fb-4392-a517-bf4018a4f6fd))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0147") (unit 1)
         )
@@ -10888,7 +11014,7 @@
     )
     (pin "1" (uuid 3e9cbf61-4deb-4902-9bed-04edf95e7a08))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0152") (unit 1)
         )
@@ -10913,7 +11039,7 @@
     )
     (pin "1" (uuid 02c4b716-8421-4b7b-aebf-f8cd8dfc1caf))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0134") (unit 1)
         )
@@ -10936,10 +11062,13 @@
     (property "Datasheet" "~" (at 55.88 53.34 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C82453" (at 55.88 53.34 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid a46def87-1a9e-444b-8e86-4fe5ff61d0ef))
     (pin "2" (uuid a6a31bf7-68ac-436b-b2cf-6671cfa5bae7))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R1") (unit 1)
         )
@@ -10964,7 +11093,7 @@
     )
     (pin "1" (uuid 2ccb0f70-cf86-4c9c-95cf-f3ca9ebb20f8))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0122") (unit 1)
         )
@@ -10990,7 +11119,7 @@
     (pin "1" (uuid b9902ca3-0e83-4678-8bef-e5289993f4f3))
     (pin "2" (uuid 94271bc4-5ade-401c-8dfe-8ad63886f3aa))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C33") (unit 1)
         )
@@ -11004,7 +11133,7 @@
     (property "Reference" "R30" (at 336.55 256.54 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "330" (at 332.7502 257.81 90)
+    (property "Value" "330r" (at 332.7502 257.81 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 332.7502 256.032 90)
@@ -11016,7 +11145,7 @@
     (pin "1" (uuid f71fa649-af21-4655-a5ef-96a467b21e93))
     (pin "2" (uuid b3bd979c-51a4-4b7c-9a0e-ca9127b6173b))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R30") (unit 1)
         )
@@ -11041,7 +11170,7 @@
     )
     (pin "1" (uuid 9c2c027c-87e4-4f64-8031-b7d0497775a8))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0129") (unit 1)
         )
@@ -11055,7 +11184,7 @@
     (property "Reference" "R34" (at 389.89 213.36 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "150" (at 386.08 214.63 90)
+    (property "Value" "150r" (at 386.08 214.63 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 386.08 212.852 90)
@@ -11067,7 +11196,7 @@
     (pin "1" (uuid 9cdd950f-f850-41db-9b39-4b7ae0734909))
     (pin "2" (uuid 648b90eb-bb43-4c8b-9ab1-ad688d988467))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R34") (unit 1)
         )
@@ -11081,7 +11210,7 @@
     (property "Reference" "R28" (at 336.55 254 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "330" (at 332.74 255.27 90)
+    (property "Value" "330r" (at 332.74 255.27 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 332.74 253.492 90)
@@ -11093,7 +11222,7 @@
     (pin "1" (uuid 91b5d033-6921-4364-9122-63a08eed574c))
     (pin "2" (uuid 8849a0ea-dd44-473f-b083-3cd34da5033f))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R28") (unit 1)
         )
@@ -11116,10 +11245,13 @@
     (property "Datasheet" "~" (at 471.17 105.41 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C279981" (at 471.17 105.41 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid ff4c977b-7ec5-4d75-a872-10a148225fe8))
     (pin "2" (uuid 9cf708c1-97dc-4aaa-a388-fbc6e8f323ad))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R36") (unit 1)
         )
@@ -11142,6 +11274,9 @@
     (property "Datasheet" "~" (at 345.44 214.63 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C265405" (at 345.44 214.63 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid b5beedf9-e46f-4e48-a183-3ba30ec5acac))
     (pin "2" (uuid 7c278297-e5b5-46d5-97ed-f7808ec9f337))
     (pin "3" (uuid 92519669-13ad-4e0b-9694-3425f6ce4826))
@@ -11149,7 +11284,7 @@
     (pin "5" (uuid 99c96ce7-5aec-4218-bd79-798e0d83c8c0))
     (pin "6" (uuid 276438b2-5c75-4334-99a5-0c16ddd30b1c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J8") (unit 1)
         )
@@ -11172,10 +11307,13 @@
     (property "Datasheet" "~" (at 508 107.95 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C258126" (at 508 107.95 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 05298a9a-6b68-425c-882e-95f8045b9b89))
     (pin "2" (uuid 5de85de5-99e8-4298-aec3-4bb99882471a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R37") (unit 1)
         )
@@ -11201,7 +11339,7 @@
     (pin "1" (uuid c00b4d45-de5e-4a1a-a2dd-a53744122385))
     (pin "2" (uuid 01a8fbb3-5f87-4a2b-9b85-cb7e75fa8007))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R21") (unit 1)
         )
@@ -11226,7 +11364,7 @@
     )
     (pin "1" (uuid f48e9e24-19c7-4de5-b572-ac0126d4f863))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0140") (unit 1)
         )
@@ -11251,7 +11389,7 @@
     )
     (pin "1" (uuid c5477c69-a9e3-4682-b8b3-8f1631526131))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0130") (unit 1)
         )
@@ -11274,12 +11412,15 @@
     (property "Datasheet" "~" (at 40.64 71.12 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C13738" (at 40.64 71.12 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid fe462864-fef4-406d-a7ed-65585eaf760b))
     (pin "2" (uuid 8b452503-5327-4035-94f6-a599e88ff027))
     (pin "3" (uuid 0c590c70-702f-4c12-bd6b-e998c315971f))
     (pin "4" (uuid 7a7a4e0c-93e4-426a-8c3f-775143eb59f2))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "Y1") (unit 1)
         )
@@ -11293,7 +11434,7 @@
     (property "Reference" "R31" (at 336.55 259.08 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "330" (at 332.8592 260.35 90)
+    (property "Value" "330r" (at 332.8592 260.35 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 332.8592 258.572 90)
@@ -11305,7 +11446,7 @@
     (pin "1" (uuid 4b3206a3-3e05-42b2-bda5-e1a36a133935))
     (pin "2" (uuid e831a591-ebc5-467a-bbdb-a3c274e9db45))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R31") (unit 1)
         )
@@ -11319,7 +11460,7 @@
     (property "Reference" "C28" (at 187.96 151.13 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "4.7u" (at 187.96 156.21 0)
+    (property "Value" "4u7" (at 187.96 156.21 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Capacitor_SMD:C_0402_1005Metric" (at 188.9252 157.48 0)
@@ -11328,10 +11469,13 @@
     (property "Datasheet" "~" (at 187.96 153.67 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C159984" (at 187.96 153.67 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 6b95e8b5-9221-4381-a741-267567d1c3a7))
     (pin "2" (uuid 8a4d1dae-a3e0-46dc-bdb3-45e37f933289))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C28") (unit 1)
         )
@@ -11356,7 +11500,7 @@
     )
     (pin "1" (uuid 3161b0d9-3601-4317-a83c-5f40c54b2d56))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0126") (unit 1)
         )
@@ -11379,12 +11523,15 @@
     (property "Datasheet" "~" (at 369.57 237.49 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C3029343" (at 369.57 237.49 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid cb52c4b6-74ea-4266-8e62-9f4d9786e44c))
     (pin "2" (uuid d5123bd6-a4cf-4126-91e3-8c13d88f3307))
     (pin "3" (uuid 169b55cc-7fe8-4fc9-af65-b3925bcbd357))
     (pin "4" (uuid 14a7b5b8-a2fe-464b-a000-a7c2e0edaa0c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J3") (unit 1)
         )
@@ -11407,10 +11554,13 @@
     (property "Datasheet" "~" (at 466.09 147.32 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C361206" (at 466.09 147.32 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 76f4388c-42cb-40b5-840f-ca745779ce3b))
     (pin "2" (uuid 0c800aa4-b947-4ae2-a4f9-d471abb05110))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C8") (unit 1)
         )
@@ -11424,7 +11574,7 @@
     (property "Reference" "C3" (at 162.56 207.01 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "4.7u" (at 162.56 212.09 0)
+    (property "Value" "4u7" (at 162.56 212.09 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Capacitor_SMD:C_0402_1005Metric" (at 163.5252 213.36 0)
@@ -11433,10 +11583,13 @@
     (property "Datasheet" "~" (at 162.56 209.55 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C159984" (at 162.56 209.55 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 91b2cb26-4e53-49e1-9915-964c9c281137))
     (pin "2" (uuid ef55de15-d6e0-4136-8a61-fda4a4aaf9c6))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C3") (unit 1)
         )
@@ -11459,12 +11612,15 @@
     (property "Datasheet" "https://docs.broadcom.com/docs/AV02-4194EN" (at 134.62 81.28 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C2927824" (at 134.62 69.85 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid a012b222-9e22-41a3-83c5-97d400cc0984))
     (pin "2" (uuid 957cf6ad-d0a9-4c72-a06c-609543a82753))
     (pin "3" (uuid bc29812a-b686-4a54-8355-7de835619bb0))
     (pin "4" (uuid 4b0d0b18-10d4-458a-97fd-92d65735f94d))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "D3") (unit 1)
         )
@@ -11478,7 +11634,7 @@
     (property "Reference" "C31" (at 274.32 173.99 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "4.7u" (at 274.32 176.53 90)
+    (property "Value" "4u7" (at 274.32 176.53 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Capacitor_SMD:C_0402_1005Metric" (at 269.24 176.2252 0)
@@ -11487,10 +11643,13 @@
     (property "Datasheet" "~" (at 273.05 175.26 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C159984" (at 273.05 175.26 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 75254d92-c12f-4cc6-bdc3-f87ec46e30ff))
     (pin "2" (uuid 5ebf1169-4fce-420d-8ddb-6aefcc539a3b))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C31") (unit 1)
         )
@@ -11499,7 +11658,7 @@
   )
 
   (symbol (lib_id "Connector:Conn_01x08_Female") (at 342.9 255.27 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp yes)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid dcc2934f-b1d7-4b4d-9ee1-1acd566e5ac2)
     (property "Reference" "J10" (at 341.63 246.38 0)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -11513,6 +11672,9 @@
     (property "Datasheet" "~" (at 342.9 255.27 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C265121" (at 342.9 255.27 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 5933632b-7212-490e-be48-8249a9d79cee))
     (pin "2" (uuid c82eaf6d-9408-456f-8aa5-a222e033de17))
     (pin "3" (uuid 54d743c1-e9df-465a-85fe-71a2094f133f))
@@ -11522,7 +11684,7 @@
     (pin "7" (uuid c0cd0257-0a9d-419e-aefe-b253dde9091b))
     (pin "8" (uuid f7ef3061-c47a-4986-8298-1073ca755196))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J10") (unit 1)
         )
@@ -11545,10 +11707,13 @@
     (property "Datasheet" "~" (at 128.27 186.69 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C144053" (at 128.27 186.69 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 65877015-c345-4203-9e55-290b88d151a9))
     (pin "2" (uuid bed516c4-e573-4440-84af-276f6f6eacf7))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R20") (unit 1)
         )
@@ -11573,7 +11738,7 @@
     )
     (pin "1" (uuid 443205bc-a3e9-4050-8b44-dd07e8c6b7c5))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0161") (unit 1)
         )
@@ -11598,7 +11763,7 @@
     )
     (pin "1" (uuid 7a922edd-bb2f-4724-9833-258627d38bf5))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0194") (unit 1)
         )
@@ -11623,7 +11788,7 @@
     )
     (pin "1" (uuid 4c053cbd-a175-48bd-840b-57fb77228d51))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0195") (unit 1)
         )
@@ -11648,7 +11813,7 @@
     )
     (pin "1" (uuid 433231a2-894a-4e33-8fac-06653314aa31))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0118") (unit 1)
         )
@@ -11676,7 +11841,7 @@
     (pin "3" (uuid 7ac4de9f-7949-4258-9dda-8736c68d1787))
     (pin "4" (uuid d693665f-da24-4115-b201-bf76f8dd10b4))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J13") (unit 1)
         )
@@ -11699,6 +11864,9 @@
     (property "Datasheet" "https://datasheet.lcsc.com/szlcsc/Jiangsu-Qin-Heng-CH340C_C84681.pdf" (at 71.12 170.18 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C84681" (at 80.01 190.5 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid db8ae2d0-60d0-4cd9-804f-664d5ad202d1))
     (pin "10" (uuid 6853fbeb-77f6-49aa-ab6f-a4e6ef15948c))
     (pin "11" (uuid 02220b61-3cf9-4532-913d-a7b01adae08d))
@@ -11716,7 +11884,7 @@
     (pin "8" (uuid 0c60545e-fe28-4e35-b19a-99c6fd1e0201))
     (pin "9" (uuid 46fb0b6a-f974-4dc7-9898-5a3498c14720))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "U3") (unit 1)
         )
@@ -11742,23 +11910,14 @@
     (property "MF" "Espressif Systems" (at 215.9 91.44 0)
       (effects (font (size 1.27 1.27)) (justify left bottom) hide)
     )
-    (property "Purchase-URL" "https://pricing.snapeda.com/search/part/ESP32-S3-WROOM-1-N8R2/?ref=eda" (at 215.9 91.44 0)
-      (effects (font (size 1.27 1.27)) (justify left bottom) hide)
-    )
     (property "Description" "\\nWiFi 802.11a/b/g/n, Bluetooth v5.0 Transceiver Module 2.4GHz Antenna Not Included -\\n" (at 215.9 91.44 0)
-      (effects (font (size 1.27 1.27)) (justify left bottom) hide)
-    )
-    (property "Price" "None" (at 215.9 91.44 0)
       (effects (font (size 1.27 1.27)) (justify left bottom) hide)
     )
     (property "MP" "ESP32-S3-WROOM-1-N8R2" (at 215.9 91.44 0)
       (effects (font (size 1.27 1.27)) (justify left bottom) hide)
     )
-    (property "Availability" "In Stock" (at 215.9 91.44 0)
-      (effects (font (size 1.27 1.27)) (justify left bottom) hide)
-    )
-    (property "Package" "- Espressif Systems" (at 215.9 91.44 0)
-      (effects (font (size 1.27 1.27)) (justify left bottom) hide)
+    (property "LCSC" "C3013944" (at 215.9 91.44 0)
+      (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 3911c380-8679-4055-b1aa-8ac2ff4c6d51))
     (pin "10" (uuid dffc3953-e545-4510-9201-6894d0cb7519))
@@ -11810,7 +11969,7 @@
     (pin "8" (uuid 5d3be159-24ed-4c96-b298-4260c70852b7))
     (pin "9" (uuid dcb98421-cbbb-4b30-b834-dc1d135ff262))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "U11") (unit 1)
         )
@@ -11835,7 +11994,7 @@
     )
     (pin "1" (uuid 74245fe7-e7ec-426e-84d5-214545232665))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0170") (unit 1)
         )
@@ -11860,7 +12019,7 @@
     )
     (pin "1" (uuid 33b48922-f826-4f1b-bb0d-b528e2fb0475))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0158") (unit 1)
         )
@@ -11885,7 +12044,7 @@
     )
     (pin "1" (uuid 2a3cff35-257d-46ab-b74d-964260172af4))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0110") (unit 1)
         )
@@ -11894,7 +12053,7 @@
   )
 
   (symbol (lib_id "Connector:Conn_01x08_Male") (at 300.99 215.9 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid ea66b43e-5485-44bf-8ed7-11bea154298e)
     (property "Reference" "J4" (at 306.07 207.01 0)
       (effects (font (size 1.27 1.27)))
@@ -11908,6 +12067,9 @@
     (property "Datasheet" "~" (at 300.99 215.9 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C5156616" (at 300.99 215.9 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid a9834be1-ac4d-40cb-a06b-48bb0fc38b89))
     (pin "2" (uuid 38cdbcce-68b8-4d43-b089-6afb306b05df))
     (pin "3" (uuid 0e74c976-28a7-4e70-be71-3ad9109e3484))
@@ -11917,7 +12079,7 @@
     (pin "7" (uuid 8f2091f0-78bc-482a-9f21-76e4a9616685))
     (pin "8" (uuid 39edf501-b537-4206-a16e-fb835d07d080))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "J4") (unit 1)
         )
@@ -11942,7 +12104,7 @@
     )
     (pin "1" (uuid c4d2de65-272f-46e9-851f-2416a5b14218))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0104") (unit 1)
         )
@@ -11968,7 +12130,7 @@
     (pin "1" (uuid 5567f937-7757-42ce-8b5d-9b4beb780909))
     (pin "2" (uuid f0f2bd10-e9de-4f85-aeb2-fba652e9180a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C14") (unit 1)
         )
@@ -11982,7 +12144,7 @@
     (property "Reference" "C23" (at 24.13 77.47 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "33P" (at 29.21 77.47 0)
+    (property "Value" "33p" (at 29.21 77.47 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Capacitor_SMD:C_0805_2012Metric" (at 30.48 76.5048 0)
@@ -11991,10 +12153,16 @@
     (property "Datasheet" "~" (at 26.67 77.47 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C1663" (at 26.67 77.47 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "JLC" "0805" (at 26.67 77.47 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid ad7a9c7b-4d8b-419f-9f9b-84c52bdce10d))
     (pin "2" (uuid 604725d5-7028-45f2-bdbc-17aedaa1dd2a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C23") (unit 1)
         )
@@ -12019,7 +12187,7 @@
     )
     (pin "1" (uuid dccfbcd7-d9cc-4a4d-a58b-12d1c03f7509))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0146") (unit 1)
         )
@@ -12044,7 +12212,7 @@
     )
     (pin "1" (uuid 6908fe7a-6db6-4742-b423-00e69824f8ba))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0127") (unit 1)
         )
@@ -12069,7 +12237,7 @@
     )
     (pin "1" (uuid a8c00981-94e2-4f70-9086-fe8a7c1b6309))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0155") (unit 1)
         )
@@ -12094,7 +12262,7 @@
     )
     (pin "1" (uuid dac10425-8293-4cd3-beb5-87a8bc393497))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0188") (unit 1)
         )
@@ -12120,7 +12288,7 @@
     (pin "1" (uuid 8d0af103-26bc-4c01-9ede-8d7f0f242581))
     (pin "2" (uuid 854c27aa-30aa-40bd-9cfc-50449f273cf7))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C20") (unit 1)
         )
@@ -12134,7 +12302,7 @@
     (property "Reference" "R12" (at 127 40.64 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "150" (at 125.73 43.18 90)
+    (property "Value" "150r" (at 125.73 43.18 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 125.73 41.402 90)
@@ -12146,7 +12314,7 @@
     (pin "1" (uuid 4c5d0bbb-bc31-4ca9-a7a5-5e3f98d1d04d))
     (pin "2" (uuid d0aba186-f78e-4479-b562-6e04ddddde9c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R12") (unit 1)
         )
@@ -12171,7 +12339,7 @@
     )
     (pin "1" (uuid 1c1044fb-88f6-47b1-b4e0-418c2185762a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0142") (unit 1)
         )
@@ -12196,7 +12364,7 @@
     )
     (pin "1" (uuid 91d19b8c-974b-432d-abd1-b83e3bdcd294))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0160") (unit 1)
         )
@@ -12221,7 +12389,7 @@
     )
     (pin "1" (uuid a1fc29df-75fc-403f-a668-8864f61d273e))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0143") (unit 1)
         )
@@ -12246,7 +12414,7 @@
     )
     (pin "1" (uuid a0aa23b3-2064-4966-ac3f-925fe5b75cff))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0117") (unit 1)
         )
@@ -12271,7 +12439,7 @@
     )
     (pin "1" (uuid d0fb0079-a0d3-4677-8740-ed8ece2effb1))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0165") (unit 1)
         )
@@ -12294,10 +12462,13 @@
     (property "Datasheet" "~" (at 544.83 90.17 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C131617" (at 544.83 90.17 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid b2cb61ad-4f76-47c4-88ec-8d504948a980))
     (pin "2" (uuid 25247cf7-733e-4f99-9f27-a7577b56fe09))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R39") (unit 1)
         )
@@ -12322,7 +12493,7 @@
     )
     (pin "1" (uuid 18e72f20-ce36-4038-9061-47aecb55afd7))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0192") (unit 1)
         )
@@ -12347,7 +12518,7 @@
     )
     (pin "1" (uuid 9905831b-6960-4a7e-94a8-27ff79b436d1))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0128") (unit 1)
         )
@@ -12373,7 +12544,7 @@
     (pin "1" (uuid 3f4071d1-1381-4438-b3e3-64196e2f0845))
     (pin "2" (uuid 1217e342-48cc-40fa-a5f6-50274bc675ca))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R5") (unit 1)
         )
@@ -12396,10 +12567,16 @@
     (property "Datasheet" "~" (at 491.49 57.15 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C87148" (at 491.49 57.15 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "JLC" "0402" (at 491.49 57.15 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 6eaf5c77-b9a4-4fb2-99ae-4d0ba340744d))
     (pin "2" (uuid 644774fc-d7fb-46d2-aa2c-bbadc080f814))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C5") (unit 1)
         )
@@ -12413,7 +12590,7 @@
     (property "Reference" "R6" (at 127 50.8 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "180" (at 125.73 53.34 90)
+    (property "Value" "180r" (at 125.73 53.34 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 125.73 51.562 90)
@@ -12422,10 +12599,13 @@
     (property "Datasheet" "~" (at 125.73 53.34 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C186119" (at 125.73 53.34 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 28dfc602-f3f9-4f76-b1da-05737ceadbea))
     (pin "2" (uuid dcecbd13-b135-4a02-a8cc-10156d7a9740))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R6") (unit 1)
         )
@@ -12448,10 +12628,13 @@
     (property "Datasheet" "~" (at 182.88 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C102890" (at 182.88 149.86 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 5100024e-278f-4d0b-8449-2a783c6442e0))
     (pin "2" (uuid 9b1d3891-f779-4cb6-9ce7-bf02c5f93e77))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "R9") (unit 1)
         )
@@ -12476,7 +12659,7 @@
     )
     (pin "1" (uuid 90c60743-4aca-4ef5-af88-6ca06b0c1e42))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "#PWR0102") (unit 1)
         )
@@ -12502,7 +12685,7 @@
     (pin "1" (uuid 7f11d848-8be7-4f26-914f-028aacbe2888))
     (pin "2" (uuid e791146b-c47e-4ce7-87e9-f6dd9999426d))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C15") (unit 1)
         )
@@ -12516,7 +12699,7 @@
     (property "Reference" "C4" (at 24.13 66.04 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "33P" (at 29.21 66.04 0)
+    (property "Value" "33p" (at 29.21 66.04 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Capacitor_SMD:C_0805_2012Metric" (at 30.48 65.0748 0)
@@ -12525,10 +12708,16 @@
     (property "Datasheet" "~" (at 26.67 66.04 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "LCSC" "C1663" (at 26.67 66.04 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "JLC" "0805" (at 26.67 66.04 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid de6075dd-a3e6-4c09-b181-734b5eae9f19))
     (pin "2" (uuid e36cf826-5bfb-4bfc-887e-38e24fa9633a))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C4") (unit 1)
         )
@@ -12554,7 +12743,7 @@
     (pin "1" (uuid 6e69e36a-7a1d-47a8-8f5c-2f45b7fd4369))
     (pin "2" (uuid f2a69944-b72a-471a-ad51-15b4b4a7d27c))
     (instances
-      (project "EV6 Board Design"
+      (project "HactarEV6b"
         (path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
           (reference "C26") (unit 1)
         )
