@@ -9956,7 +9956,7 @@
   )
 
   (symbol (lib_id "Connector:Conn_01x02_Female") (at 344.17 233.68 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 831414a7-671f-4144-817f-283de58aa77f)
     (property "Reference" "J2" (at 341.63 232.41 0)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -11272,7 +11272,7 @@
   )
 
   (symbol (lib_id "Connector:Conn_01x06_Female") (at 345.44 214.63 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid c956dd0f-91dd-479e-850f-2a8a094a46e8)
     (property "Reference" "J8" (at 344.17 208.28 0)
       (effects (font (size 1.27 1.27)) (justify left))
