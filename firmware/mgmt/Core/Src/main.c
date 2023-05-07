@@ -112,38 +112,69 @@ int main(void)
 
     // If UI button pressed 
     if ( HAL_GPIO_ReadPin( GPIOC, BTN_UI_Pin ) == 0 ) {
-      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_RESET); 
-      HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_RESET); 
-			 
+      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_RESET); // put UI in reset mode 
+      HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_RESET); // put net in reset mode
+      
+      HAL_GPIO_WritePin(GPIOB, UI_BOOT_Pin,  GPIO_PIN_SET); // put UI in bootloader mode 
+      HAL_GPIO_WritePin(GPIOB, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
+ 			 
       //  NET LED Off
       HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET);
-
-      
       //  UI LED Purple 
       HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_RESET); 
       HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_RESET); 
 
- 
-
-      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_SET); 
+      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_SET); // release UI reset and start program
       while( HAL_GPIO_ReadPin( GPIOC, BTN_RST_Pin ) != 0 ) {
-	// Program mode 
+	// Program UI mode 
       }
-      
+
+      // go back to normal mode 
+      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_SET); 
+      HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
+      HAL_GPIO_WritePin(GPIOB, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
     }
 
      // If NET button pressed 
     if ( HAL_GPIO_ReadPin( GPIOC, BTN_NET_Pin ) == 0 ) {
-      // TODO 
+      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_RESET); // put UI in reset mode 
+      HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_RESET); // put net in reset mode
+      
+      HAL_GPIO_WritePin(GPIOB, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
+      HAL_GPIO_WritePin(GPIOB, NET_BOOT_Pin, GPIO_PIN_RESET); // put NET in bootload mode 
+ 			 
+      //  NET LED Purple
+      HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_RESET);
+      //  UI LED Off 
+      HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET); 
+      HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_SET); 
+
+      HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_SET); // release NET reset and start program
+      while( HAL_GPIO_ReadPin( GPIOC, BTN_RST_Pin ) != 0 ) {
+	// Program NET mode 
+      }
+
+      // go back to normal mode
+      HAL_GPIO_WritePin(GPIOB, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
+      HAL_GPIO_WritePin(GPIOB, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
+      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_SET); 
+      HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_SET);
     }
     
     // If reset button pressed 
     if ( HAL_GPIO_ReadPin( GPIOC, BTN_RST_Pin ) == 0 ) {
       HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_RESET); 
       HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_RESET);
+
+      HAL_GPIO_WritePin(GPIOB, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
+      HAL_GPIO_WritePin(GPIOB, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
       
       //  UI LED Off 
       HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET); 
@@ -159,6 +190,9 @@ int main(void)
       // Normal mode
       HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_SET); 
       HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_SET);
+
+      HAL_GPIO_WritePin(GPIOB, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
+      HAL_GPIO_WritePin(GPIOB, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
       
       // Check UI CPU status 
       if ( HAL_GPIO_ReadPin( GPIOC, UI_STAT_Pin ) == 0 ) {
