@@ -67,6 +67,10 @@ void Error_Handler(void);
 #define ADC_UI_STAT_GPIO_Port GPIOA
 #define ADC_NET_STAT_Pin GPIO_PIN_1
 #define ADC_NET_STAT_GPIO_Port GPIOA
+#define UI_TX2_MGMT_Pin GPIO_PIN_2
+#define UI_TX2_MGMT_GPIO_Port GPIOA
+#define UI_RX2_MGMT_Pin GPIO_PIN_3
+#define UI_RX2_MGMT_GPIO_Port GPIOA
 #define LEDB_R_Pin GPIO_PIN_4
 #define LEDB_R_GPIO_Port GPIOA
 #define LEDA_R_Pin GPIO_PIN_6
@@ -77,6 +81,10 @@ void Error_Handler(void);
 #define LEDA_B_GPIO_Port GPIOB
 #define RTS_Pin GPIO_PIN_1
 #define RTS_GPIO_Port GPIOB
+#define USB_TX1_MGMT_Pin GPIO_PIN_10
+#define USB_TX1_MGMT_GPIO_Port GPIOB
+#define USB_RX1_MGMT_Pin GPIO_PIN_11
+#define USB_RX1_MGMT_GPIO_Port GPIOB
 #define CTS_Pin GPIO_PIN_13
 #define CTS_GPIO_Port GPIOB
 #define LEDB_G_Pin GPIO_PIN_14
@@ -87,6 +95,8 @@ void Error_Handler(void);
 #define UI_STAT_GPIO_Port GPIOA
 #define NET_STAT_Pin GPIO_PIN_10
 #define NET_STAT_GPIO_Port GPIOA
+#define MGMT_DBG7_Pin GPIO_PIN_11
+#define MGMT_DBG7_GPIO_Port GPIOA
 #define UI_RST_Pin GPIO_PIN_15
 #define UI_RST_GPIO_Port GPIOA
 #define UI_BOOT_Pin GPIO_PIN_3
@@ -95,6 +105,10 @@ void Error_Handler(void);
 #define NET_RST_GPIO_Port GPIOB
 #define NET_BOOT_Pin GPIO_PIN_5
 #define NET_BOOT_GPIO_Port GPIOB
+#define NET_TX0_MGMT_Pin GPIO_PIN_6
+#define NET_TX0_MGMT_GPIO_Port GPIOB
+#define NET_RX0_MGMT_Pin GPIO_PIN_7
+#define NET_RX0_MGMT_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
