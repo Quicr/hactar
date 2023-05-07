@@ -109,39 +109,80 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+    // If UI button pressed 
+    if ( HAL_GPIO_ReadPin( GPIOC, BTN_UI_Pin ) == 0 ) {
+      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_RESET); 
+      HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_RESET); 
+			 
+      //  NET LED Off
+      HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET);
+
+      
+      //  UI LED Purple 
+      HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_RESET); 
+      HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_RESET); 
+
+ 
+
+      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_SET); 
+      while( HAL_GPIO_ReadPin( GPIOC, BTN_RST_Pin ) != 0 ) {
+	// Program mode 
+      }
+      
+    }
+
+     // If NET button pressed 
+    if ( HAL_GPIO_ReadPin( GPIOC, BTN_NET_Pin ) == 0 ) {
+      // TODO 
+    }
+    
+    // If reset button pressed 
     if ( HAL_GPIO_ReadPin( GPIOC, BTN_RST_Pin ) == 0 ) {
-      //  Net LED Off 
+      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_RESET); 
+      HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_RESET);
+      
+      //  UI LED Off 
       HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET); 
       HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_SET); 
 
-      //  UI LED  Off
+      //  NET LED  Off
       HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET); 
     }
     else {
-      if ( HAL_GPIO_ReadPin( GPIOC, NET_STAT_Pin ) == 0 ) {
-	//  Net LED Red
+      // Normal mode
+      HAL_GPIO_WritePin(GPIOA, UI_RST_Pin,  GPIO_PIN_SET); 
+      HAL_GPIO_WritePin(GPIOB, NET_RST_Pin, GPIO_PIN_SET);
+      
+      // Check UI CPU status 
+      if ( HAL_GPIO_ReadPin( GPIOC, UI_STAT_Pin ) == 0 ) {
+	//  UI LED Red
 	HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_RESET); 
 	HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_SET); 
       }
       else {
-	//  Net LED Green 
+	//  UI LED Green 
 	HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET); 
 	HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_SET); 
       }
-          
-      if ( HAL_GPIO_ReadPin( GPIOC, UI_STAT_Pin ) == 0 ) {
-	//  UI LED Red
+
+      // Check NET CPU status 
+      if ( HAL_GPIO_ReadPin( GPIOC, NET_STAT_Pin ) == 0 ) {
+	//  NET LED Red
 	HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET);
       }
       else {
-	//  UI LED Green
+	//  NET LED Green
 	HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET);
@@ -268,13 +309,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ADC_UI_STAT_Pin ADC_NET_STAT_Pin UI_TX2_MGMT_Pin UI_STAT_Pin
-                           NET_STAT_Pin */
-  GPIO_InitStruct.Pin = ADC_UI_STAT_Pin|ADC_NET_STAT_Pin|UI_TX2_MGMT_Pin|UI_STAT_Pin
-                          |NET_STAT_Pin;
+  /*Configure GPIO pins : ADC_UI_STAT_Pin ADC_NET_STAT_Pin UI_STAT_Pin NET_STAT_Pin */
+  GPIO_InitStruct.Pin = ADC_UI_STAT_Pin|ADC_NET_STAT_Pin|UI_STAT_Pin|NET_STAT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : UI_TX2_MGMT_Pin */
+  GPIO_InitStruct.Pin = UI_TX2_MGMT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(UI_TX2_MGMT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : UI_RX2_MGMT_Pin */
   GPIO_InitStruct.Pin = UI_RX2_MGMT_Pin;
