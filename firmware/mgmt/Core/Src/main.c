@@ -110,6 +110,17 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    int rstButton = HAL_GPIO_ReadPin( GPIOC, BTN_RST_Pin );
+    if ( rstButton == 0 ) {
+      HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_RESET);// TURN on Red on left LED 
+      HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET); 
+    }
+    else {
+      HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_RESET); // TURN on Green on left LED 
+      HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET);
+    }
   }
   /* USER CODE END 3 */
 }
