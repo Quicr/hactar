@@ -128,10 +128,24 @@ int main(void)
       HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET); 
 
       HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); // release UI reset and start program
-      while( HAL_GPIO_ReadPin( BTN_RST_GPIO_Port, BTN_RST_Pin ) != 0 ) {
-	// Program UI mode 
-      }
 
+      // Port notes:
+      //    USB_TX1_MGMT_GPIO_Port and  USB_RX1_MGMT_GPIO_Port are GPIOB
+      //    UI_TX2_MGMT_GPIO_Port and UI_RX2_MGMT_GPIO_Port are GPIOA
+      
+      // Program UI mode
+      while( HAL_GPIO_ReadPin( BTN_RST_GPIO_Port, BTN_RST_Pin ) != 0 ) {
+	// Copy USB serial to UI serial 
+	HAL_GPIO_WritePin( UI_RX2_MGMT_GPIO_Port, UI_RX2_MGMT_Pin,
+			   ( HAL_GPIO_ReadPin( USB_TX1_MGMT_GPIO_Port, USB_TX1_MGMT_Pin ) == 0 )
+			   ? GPIO_PIN_RESET : GPIO_PIN_SET ); 
+      
+	// Copy UI serial to USB serial 
+	HAL_GPIO_WritePin( USB_RX1_MGMT_GPIO_Port, USB_RX1_MGMT_Pin,
+			   ( HAL_GPIO_ReadPin( UI_TX2_MGMT_GPIO_Port, UI_TX2_MGMT_Pin ) == 0 )
+			   ? GPIO_PIN_RESET:GPIO_PIN_SET); 
+      }
+    
       // go back to normal mode 
       HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); 
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
@@ -157,8 +171,22 @@ int main(void)
       HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
 
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET); // release NET reset and start program
+
+      // Port notes:
+      //    USB_TX1_MGMT_GPIO_Port and USB_RX1_MGMT_GPIO_Port are GPIOB
+      //    NET_TX0_MGMT_GPIO_Port and NET_RX0_MGMT_GPIO_Port are GPIOB
+
+      // Program NET mode
       while( HAL_GPIO_ReadPin(BTN_RST_GPIO_Port, BTN_RST_Pin ) != 0 ) {
-	// Program NET mode 
+	// Copy USB serial to NET serial 
+	HAL_GPIO_WritePin( NET_RX0_MGMT_GPIO_Port, NET_RX0_MGMT_Pin,
+			   ( HAL_GPIO_ReadPin( USB_TX1_MGMT_GPIO_Port, USB_TX1_MGMT_Pin ) == 0 )
+			   ? GPIO_PIN_RESET : GPIO_PIN_SET ); 
+	
+	// Copy NET serial to USB serial 
+	HAL_GPIO_WritePin( USB_RX1_MGMT_GPIO_Port, USB_RX1_MGMT_Pin,
+			   ( HAL_GPIO_ReadPin( NET_TX0_MGMT_GPIO_Port, NET_TX0_MGMT_Pin ) == 0 )
+			   ? GPIO_PIN_RESET:GPIO_PIN_SET); 
       }
 
       // go back to normal mode
