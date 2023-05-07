@@ -39,8 +39,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc;
-
 TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
@@ -50,7 +48,6 @@ TIM_HandleTypeDef htim3;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_ADC_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -89,10 +86,21 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ADC_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_RESET); // TURN on Blue on right LED 
+     
+  HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET); // TURN on Green on left LED 
+ 
+  //HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_RESET); // TURN on Red on right LED
+  //HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
+  //HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_SET);
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -118,11 +126,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI14;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSI14State = RCC_HSI14_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.HSI14CalibrationValue = 16;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL3;
@@ -145,68 +151,6 @@ void SystemClock_Config(void)
     Error_Handler();
   }
   HAL_RCC_MCOConfig(RCC_MCO, RCC_MCO1SOURCE_PLLCLK_DIV2, RCC_MCODIV_1);
-}
-
-/**
-  * @brief ADC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_ADC_Init(void)
-{
-
-  /* USER CODE BEGIN ADC_Init 0 */
-
-  /* USER CODE END ADC_Init 0 */
-
-  ADC_ChannelConfTypeDef sConfig = {0};
-
-  /* USER CODE BEGIN ADC_Init 1 */
-
-  /* USER CODE END ADC_Init 1 */
-
-  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
-  */
-  hadc.Instance = ADC1;
-  hadc.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
-  hadc.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc.Init.ScanConvMode = ADC_SCAN_DIRECTION_FORWARD;
-  hadc.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  hadc.Init.LowPowerAutoWait = DISABLE;
-  hadc.Init.LowPowerAutoPowerOff = DISABLE;
-  hadc.Init.ContinuousConvMode = DISABLE;
-  hadc.Init.DiscontinuousConvMode = DISABLE;
-  hadc.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc.Init.DMAContinuousRequests = DISABLE;
-  hadc.Init.Overrun = ADC_OVR_DATA_PRESERVED;
-  if (HAL_ADC_Init(&hadc) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure for the selected ADC regular channel to be converted.
-  */
-  sConfig.Channel = ADC_CHANNEL_0;
-  sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
-  if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure for the selected ADC regular channel to be converted.
-  */
-  sConfig.Channel = ADC_CHANNEL_1;
-  if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN ADC_Init 2 */
-
-  /* USER CODE END ADC_Init 2 */
-
 }
 
 /**
@@ -277,8 +221,8 @@ static void MX_GPIO_Init(void)
                           |MGMT_DBG7_Pin|UI_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin|USB_RX1_MGMT_Pin|UI_BOOT_Pin|NET_RST_Pin
-                          |NET_BOOT_Pin|NET_RX0_MGMT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin|USB_RX1_MGMT_Pin|LEDB_G_Pin|LEDB_B_Pin
+                          |UI_BOOT_Pin|NET_RST_Pin|NET_BOOT_Pin|NET_RX0_MGMT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : BTN_RST_Pin BTN_UI_Pin BTN_NET_Pin */
   GPIO_InitStruct.Pin = BTN_RST_Pin|BTN_UI_Pin|BTN_NET_Pin;
@@ -286,8 +230,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : UI_TX2_MGMT_Pin UI_STAT_Pin NET_STAT_Pin */
-  GPIO_InitStruct.Pin = UI_TX2_MGMT_Pin|UI_STAT_Pin|NET_STAT_Pin;
+  /*Configure GPIO pins : ADC_UI_STAT_Pin ADC_NET_STAT_Pin UI_TX2_MGMT_Pin UI_STAT_Pin
+                           NET_STAT_Pin */
+  GPIO_InitStruct.Pin = ADC_UI_STAT_Pin|ADC_NET_STAT_Pin|UI_TX2_MGMT_Pin|UI_STAT_Pin
+                          |NET_STAT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -308,17 +254,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDA_B_Pin UI_BOOT_Pin NET_RST_Pin NET_BOOT_Pin */
-  GPIO_InitStruct.Pin = LEDA_B_Pin|UI_BOOT_Pin|NET_RST_Pin|NET_BOOT_Pin;
+  /*Configure GPIO pins : LEDA_B_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT_Pin
+                           NET_RST_Pin NET_BOOT_Pin */
+  GPIO_InitStruct.Pin = LEDA_B_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT_Pin
+                          |NET_RST_Pin|NET_BOOT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RTS_Pin USB_TX1_MGMT_Pin CTS_Pin LEDB_G_Pin
-                           LEDB_B_Pin NET_TX0_MGMT_Pin */
-  GPIO_InitStruct.Pin = RTS_Pin|USB_TX1_MGMT_Pin|CTS_Pin|LEDB_G_Pin
-                          |LEDB_B_Pin|NET_TX0_MGMT_Pin;
+  /*Configure GPIO pins : RTS_Pin USB_TX1_MGMT_Pin CTS_Pin NET_TX0_MGMT_Pin */
+  GPIO_InitStruct.Pin = RTS_Pin|USB_TX1_MGMT_Pin|CTS_Pin|NET_TX0_MGMT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
