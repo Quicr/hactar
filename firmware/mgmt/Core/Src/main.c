@@ -89,17 +89,16 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET);
+  // TURN off right Net LED 
+  HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET); 
   HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_RESET); // TURN on Blue on right LED 
-     
+  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_SET); 
+
+  // TURN off left UI LED 
   HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET); // TURN on Green on left LED 
- 
-  //HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_RESET); // TURN on Red on right LED
-  //HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
-  //HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET); 
+
   
   /* USER CODE END 2 */
 
@@ -110,16 +109,27 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    int rstButton = HAL_GPIO_ReadPin( GPIOC, BTN_RST_Pin );
-    if ( rstButton == 0 ) {
-      HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_RESET);// TURN on Red on left LED 
+    if ( HAL_GPIO_ReadPin( GPIOC, BTN_RST_Pin ) == 0 ) {
+      //  Net LED Off 
+      HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET); 
+      HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_SET); 
+
+      //  UI LED  Off
+      HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET); 
     }
     else {
+      //  Net LED Blue 
+      HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET); 
+      HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_RESET); 
+
+      //  UI LED  Blue
       HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_RESET); // TURN on Green on left LED 
-      HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_RESET); 
     }
   }
   /* USER CODE END 3 */
