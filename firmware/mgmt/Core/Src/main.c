@@ -121,15 +121,32 @@ int main(void)
       HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET); 
     }
     else {
-      //  Net LED Blue 
-      HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET); 
-      HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_RESET); 
-
-      //  UI LED  Blue
-      HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_RESET); 
+      if ( HAL_GPIO_ReadPin( GPIOC, NET_STAT_Pin ) == 0 ) {
+	//  Net LED Red
+	HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_RESET); 
+	HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_SET); 
+      }
+      else {
+	//  Net LED Green 
+	HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin, GPIO_PIN_SET); 
+	HAL_GPIO_WritePin(GPIOA, LEDA_G_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin, GPIO_PIN_SET); 
+      }
+          
+      if ( HAL_GPIO_ReadPin( GPIOC, UI_STAT_Pin ) == 0 ) {
+	//  UI LED Red
+	HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET);
+      }
+      else {
+	//  UI LED Green
+	HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, LEDB_G_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, LEDB_B_Pin, GPIO_PIN_SET);
+      }
+      
     }
   }
   /* USER CODE END 3 */
