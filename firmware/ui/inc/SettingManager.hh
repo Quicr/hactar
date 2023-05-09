@@ -1,53 +1,151 @@
-// #pragma once
+#pragma once
 
-// #include <map>
-// #include "EEPROM.hh"
-// #include "Setting.hh"
+#include <map>
+#include "EEPROM.hh"
+#include "Vector.hh"
 
-// class SettingManager
-// {
-// public:
-//     SettingManager(EEPROM& eeprom);
+// TODO use
+template <typename T>
+class Setting
+{
+    public:
+        const T& data() const
+        {
+            return _data;
+        }
 
-//     template <typename T>
-//     bool RegisterSetting(const unsigned short id,
-//                          const T& data,
-//                          const unsigned int sz=1)
-//     {
-//         if (settings.find(id) != settings.end())
-//             return false;
+        T& data()
+        {
+            return _data;
+        }
 
-//         // Save to eeprom
-//         // address_t address = eeprom.Write<T>(&setting.data(), sz);
-//         // settings[id] = address;
+        const unsigned char& len() const
+        {
+            return _len;
+        }
 
-//         return true;
-//     }
+        unsigned char& len()
+        {
+            return _len;
+        }
 
-//     bool LoadSetting(const unsigned short id,
-//                      unsigned long& data,
-//                      const unsigned int sz=1)
-//     {
-//         if (settings.find(id) == settings.end())
-//             return false;
+    private:
+        T* _data;
+        unsigned char _len;
+};
 
-//         eeprom.Read(settings[id], data, sz);
-//     }
+class SettingManager
+{
+public:
+    // Permanent addresses
+    enum SettingAddress {
+        Firstboot,
+        Username,
+        Password,
+        SSID,
+        SSID_Password,
+        Usr_Font,
+        Fg,
+        Bg
+    };
 
-//     void UpdateSetting(const unsigned short id)
-//     {
+    // TODO use
+    typedef struct {
+        unsigned char* data;
+        unsigned char len;
+    } setting_t;
 
-//     }
+    SettingManager(EEPROM& eeprom) :
+        eeprom(eeprom),
+        settings()
+    {
 
-//     void ClearSettings()
-//     {
+    }
 
-//     }
+    template <typename T>
+    bool LoadSetting(const SettingAddress setting,
+                     T** data,
+                     short& len) const
+    {
+        // The setting is an address on its own
+        short address = eeprom.ReadByte(setting);
 
-// private:
-//     EEPROM& eeprom;
-//     // TODO settings should be pointers
-//     typedef unsigned short id_t;
-//     typedef unsigned short address_t;
-//     std::map<id_t, address_t> settings;
-// };
+        if (address == 255 || address == -1) return false;
+
+        // Get the length from the address we are going to read from
+        len = eeprom.ReadByte(address);
+        if (address == 255 || address == -1) return false;
+
+        eeprom.Read(address+1, data, len);
+
+        return true;
+    }
+
+    short LoadSetting(const SettingAddress setting) const
+    {
+        short address = eeprom.ReadByte(setting);
+
+        if (address == 255) return (short)-1;
+
+        return eeprom.ReadByte(address+1);
+    }
+
+    template <typename T>
+    void SaveSetting(const SettingAddress setting,
+                     T data,
+                     const unsigned short sz = 1)
+    {
+        // Get the address
+        unsigned char address = eeprom.ReadByte(
+            static_cast<unsigned char>(setting));
+
+        // The address is unset
+        if (address == 0xFF)
+        {
+            // Get the next address available and save the data there
+            address = eeprom.Write<T>(data, sz);
+
+            // Save the address to the reserved space
+            eeprom.WriteByte(static_cast<unsigned char>(setting), address);
+        }
+        else
+        {
+            // We have written to this address before, so overwrite it
+            eeprom.Write(address, data, sz);
+        }
+    }
+
+    template <typename T>
+    void SaveSetting(const SettingAddress setting,
+                     T* data,
+                     const unsigned short sz = 1)
+    {
+        // Get the address
+        unsigned char address = eeprom.ReadByte(
+            static_cast<unsigned char>(setting));
+
+        // The address is unset
+        if (address == 0xFF)
+        {
+            // Get the next address available and save the data there
+            address = eeprom.Write<T>(data, sz);
+
+            // Save the address to the reserved space
+            eeprom.WriteByte(static_cast<unsigned char>(setting), address);
+        }
+        else
+        {
+            // We have written to this address before, so overwrite it
+            eeprom.Write(address, data, sz);
+        }
+    }
+
+    void ClearEeprom()
+    {
+        eeprom.Clear();
+    }
+
+private:
+    EEPROM& eeprom;
+    std::map<SettingAddress, setting_t> settings;
+};

@@ -5,8 +5,8 @@
 SettingsView::SettingsView(UserInterfaceManager& manager,
                            Screen& screen,
                            Q10Keyboard& keyboard,
-                           EEPROM& eeprom)
-    : ViewBase(manager, screen, keyboard, eeprom)
+                           SettingManager& setting_manager)
+    : ViewBase(manager, screen, keyboard, setting_manager)
 {
 }
 
@@ -71,3 +71,9 @@ bool SettingsView::HandleInput()
 
     return false;
 }
+
+bool SettingsView::Update()
+{
+    return false;
+}
+

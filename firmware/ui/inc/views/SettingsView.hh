@@ -8,10 +8,11 @@ public:
     SettingsView(UserInterfaceManager& manager,
                  Screen& screen,
                  Q10Keyboard& keyboard,
-                 EEPROM& eeprom);
+                 SettingManager& setting_manager);
     ~SettingsView();
 protected:
     void AnimatedDraw();
     void Draw();
     bool HandleInput();
+    bool Update();
 };

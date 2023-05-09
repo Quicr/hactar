@@ -1,15 +1,25 @@
 #include "FirstBootView.hh"
+#include "LoginView.hh"
+
+// TODO make sure the usr input is not empty
 
 FirstBootView::FirstBootView(UserInterfaceManager& manager,
                              Screen& screen,
                              Q10Keyboard& keyboard,
-                             EEPROM& eeprom) :
-    ViewBase(manager, screen, keyboard, eeprom),
-    state(State::Username)
+                             SettingManager& setting_manager) :
+    ViewBase(manager, screen, keyboard, setting_manager),
+    state(State::Username),
+    request_message("Please enter your name:"),
+    wifi_state(WifiState::SSID),
+    ssid(),
+    password(),
+    state_update_timeout(0),
+    num_connection_checks(0)
 {
     // Clear the whole eeprom
-    eeprom.Clear();
-    eeprom.Write((unsigned char)FIRST_BOOT_STARTED);
+    setting_manager.ClearEeprom();
+    setting_manager.SaveSetting(SettingManager::SettingAddress::Firstboot,
+        (uint8_t)FIRST_BOOT_STARTED);
 }
 
 FirstBootView::~FirstBootView()
@@ -41,40 +51,36 @@ void FirstBootView::Draw()
 {
     ViewBase::Draw();
 
-    String message;
-    switch (state)
+    screen.DrawText(1,
+        screen.ViewHeight() - (usr_font.height * 2), request_message,
+            usr_font, fg, bg);
+
+    if (wifi_state == WifiState::SSID)
     {
-        case State::Username:
-        {
-            message = "Please enter your name:";
-            break;
-        }
-        case State::Passcode:
-        {
-            message = "Please enter a passcode:";
-            break;
-        }
-        case State::Wifi:
-        {
-            // TODO get wifi's that are in range, and have them type a number
-            // then ask for a password
-            // two stage wifi..
-            break;
-        }
-        case State::Final:
-        {
-            message = "Thank you for completing the first boot";
+        auto ssids = manager.SSIDs();
 
-            // Set the view address to 0x02
-            eeprom.Write((unsigned char*)FIRST_BOOT_DONE);
+        // TODO move into function
+        uint16_t idx = 0;
+        for (auto ssid : ssids)
+        {
+            const uint16_t y_start = 50;
 
-            HAL_Delay(1000);
-            break;
+            // convert the ssid int val to a string
+            const String ssid_id_str = String::int_to_string(ssid.first);
+
+            screen.FillRectangle(1 + usr_font.width * ssid_id_str.length(),
+                y_start + (idx * usr_font.height),
+                1 + usr_font.width * 3,
+                y_start + ((idx + 1) * usr_font.height), C_BLACK);
+
+            screen.DrawText(1, y_start + (idx * usr_font.height),
+                ssid_id_str, usr_font, C_WHITE, C_BLACK);
+
+            screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
+                ssid.second, usr_font, C_WHITE, C_BLACK);
+            ++idx;
         }
     }
-
-    screen.DrawText(1,
-        screen.ViewHeight() - (usr_font.height * 2), message, usr_font, fg, bg);
 
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
@@ -93,25 +99,36 @@ bool FirstBootView::HandleInput()
 
     if (!keyboard.EnterPressed()) return false;
 
-    // TODO switch statement
+    // TODO error checking
     switch (state)
     {
         case State::Username:
         {
             // Write the data
-            manager.UsernameAddr() = eeprom.Write(usr_input.data(),
-                usr_input.length());
+            setting_manager.SaveSetting(
+                SettingManager::SettingAddress::Username,
+                usr_input.data(), usr_input.length());
 
+            request_message = "Please enter a passcode:";
             state = State::Passcode;
             break;
         }
         case State::Passcode:
         {
-            // TODO save address
+            // TODO need to hide the passcode as they type it?
             // Write the data
-            manager.PasscodeAddr() = eeprom.Write(usr_input.data(),
-                usr_input.length());
+            setting_manager.SaveSetting(
+                SettingManager::SettingAddress::Password,
+                usr_input.data(), usr_input.length());
 
+            request_message = "Please select SSID by number:";
+
+            Packet ssid_req_packet;
+            ssid_req_packet.SetData(Packet::Types::Command, 0, 6);
+            ssid_req_packet.SetData(manager.NextPacketId(), 6, 8);
+            ssid_req_packet.SetData(1, 14, 10);
+            ssid_req_packet.SetData(Packet::Commands::SSIDs, 24, 8);
+            manager.EnqueuePacket(std::move(ssid_req_packet));
             state = State::Wifi;
             break;
         }
@@ -120,43 +137,129 @@ bool FirstBootView::HandleInput()
             SetWifi();
             break;
         }
-        case State::Final:
-        {
-            SetFinal();
-            break;
-        }
         default:
         {
             state = State::Username;
         }
     }
 
-
-    // Which is 0
     ClearInput();
     return false;
 }
 
-void FirstBootView::SetUsername()
+bool FirstBootView::Update()
 {
-    // Write the data
-    unsigned int address = eeprom.Write(usr_input.data(), usr_input.length());
-    state = State::Passcode;
-}
+    if (state == State::Wifi)
+    {
+        if (wifi_state == WifiState::Connecting)
+        {
+            UpdateConnecting();
+        }
+    }
+    else if (state == State::Final)
+    {
+        // Save to the eeprom that we finished the first boot
+        if (HAL_GetTick() > state_update_timeout)
+        {
+            // FIX sometimes crashes here
+            // because we need to return true all the way upwards
+            manager.ChangeView<LoginView>();
+            return true;
+        }
+    }
 
-void FirstBootView::SetPasscode()
-{
 
+    return false;
 }
 
 void FirstBootView::SetWifi()
 {
+    if (wifi_state == SSID)
+    {
+        // Get the ssid selection
+        int32_t ssid_id = usr_input.ToNumber();
+        if (ssid_id == -1)
+        {
+            request_message = "Error. Please select SSID number:";
+            return;
+        }
 
+        const std::map<uint8_t, String>& ssids = manager.SSIDs();
+
+        if (ssids.find(ssid_id) == ssids.end())
+        {
+            request_message = "Error. Please select SSID number:";
+            return;
+        }
+
+        ssid = ssids.at(ssid_id);
+        setting_manager.SaveSetting(
+            SettingManager::SettingAddress::SSID,
+            ssid.data(), ssid.length());
+
+        // THINK should this be moved somewhere else?
+        // Clear the area above the user input
+        const uint16_t y_start = 50;
+        screen.FillRectangle(1, y_start, WIDTH, HEIGHT, C_BLACK, 32);
+
+        request_message = "Please enter the wifi password";
+        wifi_state = WifiState::Password;
+    }
+    else if (wifi_state == WifiState::Password)
+    {
+        password = usr_input;
+        setting_manager.SaveSetting(
+            SettingManager::SettingAddress::SSID_Password,
+            password.data(), password.length());
+
+        manager.ConnectToWifi();
+
+        // Set the state to waiting
+        request_message = "Connecting";
+
+        // TODO consider making a draw queue
+        screen.FillRectangle(0, HEIGHT - usr_font.height*2, WIDTH,
+            HEIGHT - usr_font.height, C_BLACK);
+
+        wifi_state = WifiState::Connecting;
+    }
 }
 
-void FirstBootView::SetFinal()
+void FirstBootView::UpdateConnecting()
 {
+    if (HAL_GetTick() < state_update_timeout) return;
 
+    if (manager.IsConnectedToWifi())
+    {
+        request_message = "Device setup successful";
+
+        setting_manager.SaveSetting(SettingManager::SettingAddress::Firstboot,
+            (uint8_t)FIRST_BOOT_DONE);
+
+        state_update_timeout = HAL_GetTick() + 5000;
+        state = State::Final;
+        return;
+    }
+
+    if (++num_connection_checks > 30)
+    {
+        // Failed to connect to the internet repeat connecting to ssid
+        wifi_state = WifiState::SSID;
+        request_message = "Failed to connect. Select SSID";
+        num_connection_checks = 0;
+        return;
+    }
+
+    request_message += ".";
+
+    if (request_message.length() > 13)
+    {
+        request_message = "Connecting";
+        const uint16_t y_start = 50;
+        screen.FillRectangle(request_message.length() * usr_font.width, y_start,
+            WIDTH, HEIGHT, C_BLACK, 32);
+    }
+    state_update_timeout = HAL_GetTick() + 1000;
 }
 
 void FirstBootView::SetAllDefaults()

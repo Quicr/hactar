@@ -27,7 +27,14 @@ public:
         LocalDebug,
         Message,
         Setting,
-        SSID,
+        Command,
+    };
+
+    enum Commands
+    {
+        SSIDs = 1,
+        ConnectToSSID,
+        WifiStatus
     };
 
     // TODO important to have different data lengths for each type..
@@ -193,6 +200,8 @@ public:
         SetData(val, bits_in_use, bits);
     }
 
+
+    // TODO template with type T
     unsigned int GetData(unsigned int offset_bits, unsigned char bits) const
     {
         if (offset_bits + bits > size * 32)

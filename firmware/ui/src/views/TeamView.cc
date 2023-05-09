@@ -5,8 +5,8 @@
 TeamView::TeamView(UserInterfaceManager& manager,
                    Screen& screen,
                    Q10Keyboard& keyboard,
-                   EEPROM& eeprom)
-    : ViewBase(manager, screen, keyboard, eeprom)
+                   SettingManager& setting_manager)
+    : ViewBase(manager, screen, keyboard, setting_manager)
 {
 }
 
@@ -15,9 +15,10 @@ TeamView::~TeamView()
 
 }
 
-void TeamView::Get()
+bool TeamView::Update()
 {
     // Periodically get the list of teams.
+    return false;
 }
 
 void TeamView::AnimatedDraw()
