@@ -31,6 +31,8 @@ public:
 
     virtual ~Vector()
     {
+        // TODO loop through the array and delete all of the items
+        // if they are pointers
         delete [] array;
     }
 
@@ -102,6 +104,8 @@ public:
 
     void erase(unsigned int idx)
     {
+        // TODO add capability to delete pointers
+
         if (idx > _size) return;
 
         // When the _size equals 1/4 of _capacity reduce _capacity by 1/2
@@ -166,7 +170,7 @@ public:
         return array[_size - 1];
     }
 
-    T* data() const
+    const T* data() const
     {
         return array;
     }

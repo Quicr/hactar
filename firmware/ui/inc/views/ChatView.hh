@@ -20,12 +20,12 @@ public:
     ChatView(UserInterfaceManager& manager,
              Screen& screen,
              Q10Keyboard& keyboard,
-             EEPROM& eeprom);
+             SettingManager& setting_manager);
     ~ChatView();
 protected:
     void AnimatedDraw();
     void Draw();
-    void Get();
+    bool Update();
     bool HandleInput();
 private:
     void DrawTitle();

@@ -30,5 +30,4 @@ void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
 {
     uart->write(0xFF);
     uart->write(buff, buff_size);
-    uart->println(" ");
 }

@@ -6,8 +6,8 @@
 ChatView::ChatView(UserInterfaceManager& manager,
                    Screen& screen,
                    Q10Keyboard& keyboard,
-                   EEPROM& eeprom)
-    : ViewBase(manager, screen, keyboard, eeprom)
+                   SettingManager& setting_manager) :
+    ViewBase(manager, screen, keyboard, setting_manager)
 {
     // messages = new Vector<String>();
     // for (int i = 0; i < 15; i++)
@@ -22,9 +22,10 @@ ChatView::~ChatView()
 
 }
 
-void ChatView::Get()
+bool ChatView::Update()
 {
-    if (!manager.HasMessages()) return;
+    // TODO move this into a function
+    if (!manager.HasMessages()) return false;
 
     Vector<Message>& msgs = manager.GetMessages();
 
@@ -39,6 +40,8 @@ void ChatView::Get()
     manager.ClearMessages();
 
     redraw_messages = true;
+
+    return false;
 }
 
 void ChatView::AnimatedDraw()

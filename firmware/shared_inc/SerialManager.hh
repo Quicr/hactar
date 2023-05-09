@@ -27,13 +27,14 @@ public:
 
     SerialManager(SerialInterface* uart) :
         uart(uart),
-        rx_packets(10),
+        rx_packets(),
         rx_packet(nullptr),
         rx_packet_timeout(0),
         rx_status(SerialStatus::EMPTY),
-        tx_packets(10),
+        tx_packets(),
         tx_pending_packets(),
-        tx_status(SerialStatus::EMPTY)
+        tx_status(SerialStatus::EMPTY),
+        next_packet_id(1)
     {}
 
     ~SerialManager()
@@ -53,6 +54,10 @@ public:
 
     void Tx(const unsigned long current_time)
     {
+        // Don't try to send if we are reading
+        if (uart->AvailableBytes() >= 4) return;
+        if (rx_packet) return;
+
         // Check pending tx packets
         HandlePendingTx(current_time);
 
@@ -80,6 +85,11 @@ public:
         return rx_packets;
     }
 
+    const bool HasTxPackets() const
+    {
+        return tx_packets.size();
+    }
+
     const SerialStatus GetTxStatus() const
     {
         return tx_status;
@@ -88,6 +98,13 @@ public:
     const SerialStatus GetRxStatus() const
     {
         return rx_status;
+    }
+
+    uint8_t NextPacketId()
+    {
+        if (next_packet_id == 0xFE)
+            next_packet_id = 1;
+        return next_packet_id++;
     }
 
 private:
@@ -192,7 +209,7 @@ private:
                     // Now that we got this packet, we will respond
                     Packet ok_packet;
                     ok_packet.SetData(Packet::Types::Ok, 0, 6);
-                    ok_packet.SetData(1, 6, 8); // Id here doesn't matter
+                    ok_packet.SetData(NextPacketId(), 6, 8); // Id here doesn't matter
                     ok_packet.SetData(1, 14, 10);
 
                     // Get the id of the rx packet and set it to the data
@@ -236,10 +253,12 @@ private:
             remove_ids.push_back(packet_pair.first);
 
             // Error state for now
-            // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
+            // TODO error state for the serial interface
 
 
-            // TODO later add this in
+            // TODO update the tx_pending_packets to be a pointer
+            // otherwise we run into memory issues
+
             // Update the time on the packet
             // packet_pair.second.UpdateCreatedAt(current_time);
 
@@ -276,8 +295,11 @@ private:
 
         // Check the type of packet sent
         unsigned char packet_type = tx_packet.GetData(0, 6);
-        if (packet_type == Packet::Types::Message ||
-            packet_type == Packet::Types::Debug)
+
+        if (packet_type != Packet::Types::Ok ||
+            packet_type != Packet::Types::Error ||
+            packet_type != Packet::Types::Busy ||
+            packet_type != Packet::Types::LocalDebug)
         {
             // Get the packet id
             unsigned char packet_id = tx_packet.GetData(6, 8);
@@ -306,5 +328,7 @@ private:
     Vector<Packet> tx_packets;
     std::map<unsigned char, Packet> tx_pending_packets; // TODO max packets
     SerialStatus tx_status;
+
+    uint8_t next_packet_id;
 
 };

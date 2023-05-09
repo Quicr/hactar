@@ -10,6 +10,7 @@
 #include "Q10Keyboard.hh"
 #include "SerialManager.hh"
 #include "SerialInterface.hh"
+#include "SettingManager.hh"
 #include "Screen.hh"
 
 #define VIEW_ADDRESS 0x00
@@ -34,19 +35,15 @@ public:
     void EnqueuePacket(Packet&& msg);
     void ForceRedraw();
     bool RedrawForced();
+    void ConnectToWifi();
 
     const uint32_t GetTxStatusColour() const;
     const uint32_t GetRxStatusColour() const;
 
-    const uint8_t& UsernameAddr() const;
-    uint8_t& UsernameAddr();
-    const uint8_t& PasscodeAddr() const;
-    uint8_t& PasscodeAddr();
+    const std::map<uint8_t, String>& SSIDs() const;
+    const bool IsConnectedToWifi() const;
 
-    Vector<String> RequestSSIDs();
-    void ConnectToWifi(const String& password);
-
-    uint32_t NextPacketId();
+    uint8_t NextPacketId();
 
     template<typename T>
     void ChangeView()
@@ -54,12 +51,10 @@ public:
         if (view != nullptr)
             delete view;
 
-        view = new T(*this, *screen, *keyboard, *eeprom);
+        view = new T(*this, *screen, *keyboard, setting_manager);
     }
 
 private:
-    static uint32_t Packet_Id;
-
     void HandleIncomingPackets();
     void TimeoutPackets();
     const uint32_t GetStatusColour(
@@ -72,14 +67,16 @@ private:
     Screen* screen;
     Q10Keyboard* keyboard;
     SerialManager net_layer;
-    EEPROM* eeprom;
+    SettingManager setting_manager;
     ViewBase* view;
     Vector<Message> received_messages;
     bool force_redraw;
     uint32_t current_time;
 
-    uint32_t last_test_packet = 0;
 
-    uint8_t username_addr;
-    uint8_t passcode_addr;
+    std::map<uint8_t, String> ssids;
+    uint32_t last_wifi_check;
+    bool is_connected_to_wifi;
+
+    uint32_t last_test_packet = 0;
 };

@@ -38,6 +38,11 @@ void SerialStm::RxEvent()
     // Buffer only has one byte
     rx_ring.Write(rx_buff[0]);
 
+    if (rx_ring.IsFull())
+    {
+        // Maybe set "busy?"
+    }
+
     // Restart receive
     StartRx();
 }

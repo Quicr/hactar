@@ -8,7 +8,6 @@
 #include "SettingManager.hh"
 
 // Init the static var
-uint32_t UserInterfaceManager::Packet_Id = 1;
 
 UserInterfaceManager::UserInterfaceManager(Screen &screen,
                                            Q10Keyboard &keyboard,
@@ -17,21 +16,20 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     screen(&screen),
     keyboard(&keyboard),
     net_layer(&net_interface),
-    eeprom(&eeprom),
+    setting_manager(eeprom),
     view(nullptr),
     received_messages(), // TODO limit?
     force_redraw(false),
-    current_time(HAL_GetTick())
+    current_time(HAL_GetTick()),
+    ssids(),
+    last_wifi_check(0),
+    is_connected_to_wifi(false)
 {
-    // Get if first boot or not
-
-
-    // The first byte will be the length of the next set of data
-    if (eeprom.ReadByte(1) == FIRST_BOOT_DONE)
+    if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
+        == FIRST_BOOT_DONE)
         ChangeView<LoginView>();
     else
         ChangeView<FirstBootView>();
-
 }
 
 UserInterfaceManager::~UserInterfaceManager()
@@ -39,17 +37,11 @@ UserInterfaceManager::~UserInterfaceManager()
     screen = nullptr;
     keyboard = nullptr;
     net_layer = nullptr;
-    eeprom = nullptr;
 }
 
 // TODO should update this to be a draw/update architecture
 void UserInterfaceManager::Run()
 {
-    // if (current_time > last_test_packet)
-    // {
-    //     SendTestPacket();
-    //     last_test_packet = current_time + 5000;
-    // }
 
 
     current_time = HAL_GetTick();
@@ -60,6 +52,24 @@ void UserInterfaceManager::Run()
     {
         force_redraw = false;
         return;
+    }
+
+    if (current_time > last_wifi_check)
+    {
+        // Check a check wifi status packet
+        Packet check_wifi;
+        check_wifi.SetData(Packet::Types::Command, 0, 6);
+        check_wifi.SetData(NextPacketId(), 6, 8);
+        check_wifi.SetData(1, 14, 10);
+        check_wifi.SetData(Packet::Commands::WifiStatus, 24, 8);
+
+        EnqueuePacket(std::move(check_wifi));
+        last_wifi_check = current_time + 5000;
+    }
+    if (current_time > last_test_packet && is_connected_to_wifi)
+    {
+        SendTestPacket();
+        last_test_packet = current_time + 7000;
     }
 
     // Run the receive and transmit
@@ -106,9 +116,9 @@ bool UserInterfaceManager::RedrawForced()
     return force_redraw;
 }
 
-uint32_t UserInterfaceManager::NextPacketId()
+uint8_t UserInterfaceManager::NextPacketId()
 {
-    return UserInterfaceManager::Packet_Id++;
+    return net_layer.NextPacketId();
 }
 
 void UserInterfaceManager::HandleIncomingPackets()
@@ -150,17 +160,58 @@ void UserInterfaceManager::HandleIncomingPackets()
             }
             case (Packet::Types::Setting):
             {
+                // TODO Set the setting
+
                 // For settings we expect the data to dedicate 16 bits to the id
-                uint16_t packet_len = rx_packet.GetData(14, 10);
+                // uint16_t packet_len = rx_packet.GetData(14, 10);
 
                 // Get the setting id
-                uint16_t setting_id = rx_packet.GetData(24, 16);
+                // uint16_t setting_id = rx_packet.GetData(24, 16);
 
                 // Get the data from the packet and set the setting
                 // for now we expect a 32 bit value for each setting
-                uint32_t setting_data = rx_packet.GetData(40, 32);
+                // uint32_t setting_data = rx_packet.GetData(40, 32);
 
-                // TODO Set the setting
+                break;
+            }
+            case (Packet::Types::Command):
+            {
+                // TODO move to a parse command function
+                // TODO switch statement
+                uint8_t command_type = rx_packet.GetData(24, 8);
+                if (Packet::Commands::SSIDs == command_type)
+                {
+                    // Get the packet len
+                    uint16_t len = rx_packet.GetData(14, 10);
+
+                    // Get the ssid id
+                    uint8_t ssid_id = rx_packet.GetData(32, 8);
+
+                    // Build the string
+                    String str;
+                    for (uint8_t i = 0; i < len - 2; ++i)
+                    {
+                        str.push_back(static_cast<char>(
+                            rx_packet.GetData(40 + i * 8, 8)));
+                    }
+
+                    ssids[ssid_id] = std::move(str);
+                }
+                else if (Packet::Commands::WifiStatus == command_type)
+                {
+                    is_connected_to_wifi = rx_packet.GetData(32, 8);
+                    uint32_t colour = C_GREEN;
+                    if (!is_connected_to_wifi)
+                    {
+                        colour = C_WHITE;
+                        ConnectToWifi();
+                    }
+
+                    // TODO remove this..
+                    screen->FillRectangle(0, 0, 10, 2, colour);
+                    screen->FillRectangle(2, 4, 8, 6, colour);
+                    screen->FillRectangle(4, 8, 6, 10, colour);
+                }
 
                 break;
             }
@@ -169,6 +220,9 @@ void UserInterfaceManager::HandleIncomingPackets()
                 // We'll do nothing if it doesn't fit these types
             }
         }
+
+        // TODO this should be automatic when the vector erases it?
+        delete packets[0];
         packets.erase(0);
     }
 }
@@ -183,34 +237,71 @@ const uint32_t UserInterfaceManager::GetRxStatusColour() const
     return GetStatusColour(net_layer.GetRxStatus());
 }
 
-const uint8_t& UserInterfaceManager::UsernameAddr() const
+const std::map<uint8_t, String>& UserInterfaceManager::SSIDs() const
 {
-    return username_addr;
+    return ssids;
 }
 
-uint8_t& UserInterfaceManager::UsernameAddr()
+void UserInterfaceManager::ConnectToWifi()
 {
-    return username_addr;
+    //TODO error checking
+    // Load the ssid and password from eeprom
+    int8_t* ssid;
+    int16_t ssid_len = 0;
+    if (!setting_manager.LoadSetting(SettingManager::SettingAddress::SSID,
+        &ssid, ssid_len)) return;
+
+    int8_t* ssid_password;
+    int16_t ssid_password_len = 0;
+    if (!setting_manager.LoadSetting(
+        SettingManager::SettingAddress::SSID_Password, &ssid_password,
+        ssid_password_len)) return;
+
+    // Create the packet
+    Packet connect_packet;
+    connect_packet.SetData(Packet::Types::Command, 0, 6);
+    connect_packet.SetData(UserInterfaceManager::NextPacketId(), 6, 8);
+    // THINK should these be separate packets?
+    // +3 for the length of the ssid, length of the password
+    uint16_t length = ssid_len + ssid_password_len + 3;
+    connect_packet.SetData(length, 14, 10);
+
+    connect_packet.SetData(Packet::Commands::ConnectToSSID, 24, 8);
+
+    // Set the length of the ssid
+    connect_packet.SetData(ssid_len, 32, 8);
+
+    // Populate with the ssid
+    uint16_t i;
+    uint16_t offset = 40;
+    for (i = 0; i < ssid_len; ++i)
+    {
+        connect_packet.SetData(ssid[i], offset, 8);
+        offset += 8;
+    }
+
+    // Set the length of the password
+    connect_packet.SetData(ssid_password_len, offset, 8);
+    offset += 8;
+
+    // Populate with the password
+    uint16_t j;
+    for (j = 0; j < ssid_password_len; ++j)
+    {
+        connect_packet.SetData(ssid_password[j], offset, 8);
+        offset += 8;
+    }
+
+    // Enqueue the message
+    EnqueuePacket(std::move(connect_packet));
+
+    delete ssid;
+    delete ssid_password;
 }
 
-const uint8_t& UserInterfaceManager::PasscodeAddr() const
+const bool UserInterfaceManager::IsConnectedToWifi() const
 {
-    return passcode_addr;
-}
-
-uint8_t& UserInterfaceManager::PasscodeAddr()
-{
-    return passcode_addr;
-}
-
-Vector<String> RequestSSIDs()
-{
-
-}
-
-void ConnectToWifi(const String& password)
-{
-
+    return is_connected_to_wifi;
 }
 
 const uint32_t UserInterfaceManager::GetStatusColour(
@@ -232,7 +323,7 @@ const uint32_t UserInterfaceManager::GetStatusColour(
 
 const void UserInterfaceManager::SendTestPacket()
 {
-    Packet test_packet(current_time);
+    Packet test_packet;
 
     test_packet.SetData(Packet::Types::Message, 0, 6);
     test_packet.SetData(NextPacketId(), 6, 8);

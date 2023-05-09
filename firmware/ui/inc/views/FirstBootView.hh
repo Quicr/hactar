@@ -9,7 +9,7 @@ public:
     FirstBootView(UserInterfaceManager& manager,
                   Screen& screen,
                   Q10Keyboard& keyboard,
-                  EEPROM& eeprom);
+                  SettingManager& setting_manager);
     ~FirstBootView();
 
 protected:
@@ -20,16 +20,31 @@ protected:
         Final
     };
 
+    enum WifiState {
+        SSID,
+        Password,
+        Connecting,
+        Connected
+    };
+
     void AnimatedDraw();
     void Draw();
     bool HandleInput();
+    bool Update();
 
 private:
-    void SetUsername();
-    void SetPasscode();
+    // Input functions
     void SetWifi();
-    void SetFinal();
     void SetAllDefaults();
 
+    // Update functions
+    void UpdateConnecting();
+
     State state;
+    String request_message;
+    WifiState wifi_state;
+    String ssid;
+    String password;
+    uint32_t state_update_timeout;
+    uint8_t num_connection_checks;
 };

@@ -15,11 +15,11 @@ public:
     ViewBase(UserInterfaceManager &manager,
              Screen &screen,
              Q10Keyboard &keyboard,
-             EEPROM& eeprom):
+             SettingManager& setting_manager):
         manager(manager),
         screen(screen),
         keyboard(keyboard),
-        eeprom(eeprom),
+        setting_manager(setting_manager),
         first_load(true),
         redraw_menu(true),
         cursor_animate_timeout(0),
@@ -29,6 +29,8 @@ public:
         last_drawn_idx(0),
         redraw_input(true),
         usr_input(""),
+        tx_colour(0),
+        rx_colour(0),
         tx_redraw_timeout(0),
         rx_redraw_timeout(0)
     {
@@ -42,7 +44,7 @@ public:
 
     virtual void Run()
     {
-        Get();
+        if (Update()) return; // TODO somehow need to return here so change views doesn't crash
         if (HandleInput()) return;
         AnimatedDraw();
         Draw();
@@ -63,7 +65,7 @@ protected:
     static constexpr uint16_t Cursor_Animate_Duration = 2500;
     static constexpr uint16_t Cursor_Hollow_Thickness = 1;
 
-    virtual void Get() {};
+    virtual bool Update() = 0;
     virtual bool HandleInput() = 0;
     virtual void AnimatedDraw() = 0;
     virtual void Draw()
@@ -71,18 +73,20 @@ protected:
         DrawInput();
 
         // Draw Tx and Rx
-        if (HAL_GetTick() > tx_redraw_timeout)
+        if (tx_colour != manager.GetTxStatusColour() &&
+            HAL_GetTick() > tx_redraw_timeout)
         {
-            screen.DrawText(WIDTH-32, 0, "tx", font5x8,
-                manager.GetTxStatusColour(), bg);
-            tx_redraw_timeout = HAL_GetTick() + 500;
+            tx_colour = manager.GetTxStatusColour();
+            screen.DrawText(WIDTH-32, 0, "tx", font5x8, tx_colour, bg);
+            tx_redraw_timeout = HAL_GetTick() + 200;
         }
 
-        if (HAL_GetTick() > rx_redraw_timeout)
+        if (rx_colour != manager.GetRxStatusColour() &&
+            HAL_GetTick() > rx_redraw_timeout)
         {
-            screen.DrawText(WIDTH-16, 0, "rx", font5x8,
-                manager.GetRxStatusColour(), bg);
-            rx_redraw_timeout = HAL_GetTick() + 500;
+            rx_colour = manager.GetRxStatusColour();
+            screen.DrawText(WIDTH-16, 0, "rx", font5x8, rx_colour, bg);
+            rx_redraw_timeout = HAL_GetTick() + 200;
         }
     }
 
@@ -213,7 +217,7 @@ protected:
     UserInterfaceManager &manager;
     Screen &screen;
     Q10Keyboard &keyboard;
-    EEPROM& eeprom;
+    SettingManager& setting_manager;
 
     // If this is the first load, then we should
     // Run the first load draw
@@ -235,6 +239,9 @@ protected:
 
     // Input variables
     String usr_input;
+
+    uint32_t tx_colour;
+    uint32_t rx_colour;
 
     uint32_t tx_redraw_timeout;
     uint32_t rx_redraw_timeout;

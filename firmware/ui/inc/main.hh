@@ -54,30 +54,30 @@ extern TIM_HandleTypeDef htim2;
 #define LCD_BL_Pin          GPIO_PIN_4
 #define LCD_BL_GPIO_Port    GPIOA
 
-#define Q10_COL_1_PIN       GPIO_PIN_9
+#define Q10_COL_1_PIN       GPIO_PIN_5
 #define Q10_COL_1_GPIO_PORT GPIOB
-#define Q10_COL_2_PIN       GPIO_PIN_8
-#define Q10_COL_2_GPIO_PORT GPIOB
+#define Q10_COL_2_PIN       GPIO_PIN_15
+#define Q10_COL_2_GPIO_PORT GPIOC
 #define Q10_COL_3_PIN       GPIO_PIN_14
 #define Q10_COL_3_GPIO_PORT GPIOC
-#define Q10_COL_4_PIN       GPIO_PIN_15
-#define Q10_COL_4_GPIO_PORT GPIOC
-#define Q10_COL_5_PIN       GPIO_PIN_5
+#define Q10_COL_4_PIN       GPIO_PIN_8
+#define Q10_COL_4_GPIO_PORT GPIOB
+#define Q10_COL_5_PIN       GPIO_PIN_9
 #define Q10_COL_5_GPIO_PORT GPIOB
 
-#define Q10_ROW_1_PIN       GPIO_PIN_12
+#define Q10_ROW_1_PIN       GPIO_PIN_4
 #define Q10_ROW_1_GPIO_PORT GPIOB
-#define Q10_ROW_2_PIN       GPIO_PIN_13
+#define Q10_ROW_2_PIN       GPIO_PIN_3
 #define Q10_ROW_2_GPIO_PORT GPIOB
-#define Q10_ROW_3_PIN       GPIO_PIN_14
+#define Q10_ROW_3_PIN       GPIO_PIN_2
 #define Q10_ROW_3_GPIO_PORT GPIOB
 #define Q10_ROW_4_PIN       GPIO_PIN_15
 #define Q10_ROW_4_GPIO_PORT GPIOB
-#define Q10_ROW_5_PIN       GPIO_PIN_2
+#define Q10_ROW_5_PIN       GPIO_PIN_14
 #define Q10_ROW_5_GPIO_PORT GPIOB
-#define Q10_ROW_6_PIN       GPIO_PIN_3
+#define Q10_ROW_6_PIN       GPIO_PIN_13
 #define Q10_ROW_6_GPIO_PORT GPIOB
-#define Q10_ROW_7_PIN       GPIO_PIN_4
+#define Q10_ROW_7_PIN       GPIO_PIN_12
 #define Q10_ROW_7_GPIO_PORT GPIOB
 
 #define Q10_TIMER_LED_PIN   GPIO_PIN_6
@@ -88,13 +88,15 @@ extern TIM_HandleTypeDef htim2;
 #define USART2_RX_PIN       GPIO_PIN_3
 #define USART2_RX_GPIO_PORT GPIOA
 
-#define USART2_TX_LED_PIN   GPIO_PIN_2
-#define USART2_TX_LED_PORT  GPIOB
-#define USART2_RX_LED_PIN   GPIO_PIN_10
-#define USART2_RX_LED_PORT  GPIOB
+#define USART2_RX_EN_PORT    GPIOC
+#define USART2_RX_EN_PIN     GPIO_PIN_2
 
-#define TEST_LED_PORT       GPIOC
-#define TEST_LED_PIN        GPIO_PIN_7
+#define LED1_Pin            GPIO_PIN_1
+#define LED1_Port           GPIOC
+#define LED2_Pin            GPIO_PIN_0
+#define LED2_Port           GPIOC
+#define LED3_Pin           GPIO_PIN_2
+#define LED3_Port           GPIOD
 
 #define EEPROM_SCL_PORT     GPIOB
 #define EEPROM_SCL_PIN      GPIO_PIN_6

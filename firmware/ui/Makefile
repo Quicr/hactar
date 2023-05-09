@@ -248,12 +248,12 @@ $(BIN_DIR)/%.bin: $(BIN_DIR)/%.elf | $(DIRS)
 
 compile: $(BIN_DIR)/$(TARGET).bin $(BIN_DIR)/$(TARGET).hex
 
-program: compile upload
-
 upload:
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
 	fi \
+
+program: compile upload
 
 info:
 	@echo "[Build path]		${DIRS}"
