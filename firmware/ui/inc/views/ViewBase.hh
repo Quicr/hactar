@@ -44,6 +44,11 @@ public:
 
     virtual void Run()
     {
+
+        screen.FillRectangle(0, 50+font5x8.height*1, screen.ViewWidth(),
+                            50+font5x8.height*2, C_BLACK);
+        screen.DrawText(0, 50+8*1, "ViewBase::Run()", font5x8,
+                        C_WHITE, C_BLACK);
         if (Update()) return; // TODO somehow need to return here so change views doesn't crash
         if (HandleInput()) return;
         AnimatedDraw();
@@ -70,6 +75,10 @@ protected:
     virtual void AnimatedDraw() = 0;
     virtual void Draw()
     {
+        screen.FillRectangle(0, 50+8*3, screen.ViewWidth(),
+                            50+8*4, C_BLACK);
+        screen.DrawText(0, 50+8*3, "ViewBase::Draw()", font5x8,
+                        C_WHITE, C_BLACK);
         DrawInput();
 
         // Draw Tx and Rx

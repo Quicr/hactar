@@ -129,23 +129,25 @@ bool ChatView::HandleInput()
 
         messages.push_back(msg);
 
-        Packet packet(HAL_GetTick(), 1);
+        Packet* packet = new Packet(HAL_GetTick(), 1);
 
         // Set the type
-        packet.SetData(Packet::Types::Message, 0, 6);
+        packet->SetData(Packet::Types::Message, 0, 6);
 
         // Set the id
-        packet.SetData(manager.NextPacketId(), 6, 8);
+        packet->SetData(manager.NextPacketId(), 6, 8);
 
         // Set the data length
-        packet.SetData(msg.Length(), 14, 10);
+        packet->SetData(msg.Length(), 14, 10);
 
         // Append the data
         // TODO update the packet arr to take unsigned char and signed char
-        packet.SetDataArray(reinterpret_cast<const unsigned char*>(
+        packet->SetDataArray(reinterpret_cast<const unsigned char*>(
             msg.Concatenate().c_str()), msg.Length(), 24);
 
-        manager.EnqueuePacket(std::move(packet));
+        manager.EnqueuePacket(packet);
+        packet = nullptr;
+
 
         redraw_messages = true;
 

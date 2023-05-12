@@ -106,7 +106,6 @@ int main(void)
     eeprom = new EEPROM(hi2c1, 32, 255);
 
     screen.Begin();
-    HAL_GPIO_WritePin(USART2_RX_EN_PORT, USART2_RX_EN_PIN, GPIO_PIN_RESET);
 
     // // Set the port pins and groups for the keyboard columns
     port_pin col_pins[Q10_COLS] =
@@ -140,6 +139,7 @@ int main(void)
     keyboard->Begin();
 
     net_layer = new SerialStm(&huart2);
+    HAL_GPIO_WritePin(USART2_RX_EN_PORT, USART2_RX_EN_PIN, GPIO_PIN_RESET);
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer, *eeprom);
 

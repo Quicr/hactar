@@ -7,20 +7,21 @@
 class String : public Vector<char>
 {
 public:
-    String() {}
-    String(const char ch) { SetString(ch); }
-    String(const char *c_str) { SetString(c_str); }
-    String(const unsigned char ch) { SetString(ch); }
-    String(const unsigned char *c_str) { SetString(c_str); }
-    String(const String &str) { SetString(str); }
-    String(const String &&str) { SetString(str); }
+    String() : Vector<char>() {}
+    String(const char ch) : Vector<char>() { SetString(ch); }
+    String(const char* c_str) : Vector<char>() { SetString(c_str); }
+    String(const unsigned char ch) : Vector<char>() { SetString(ch); }
+    String(const unsigned char* c_str) : Vector<char>() { SetString(c_str); }
+    String(const String& str) : Vector<char>() { SetString(str); }
+    String(const String&& str) : Vector<char>() { SetString(str); }
+    virtual ~String() {}
 
     String& operator=(const char ch) { return SetString(ch); }
-    String& operator=(const char *c_str) { return SetString(c_str); }
+    String& operator=(const char* c_str) { return SetString(c_str); }
     String& operator=(const unsigned char ch) { return SetString(ch); }
-    String& operator=(const unsigned char *c_str) { return SetString(c_str); }
-    String& operator=(const String &str) { return SetString(str); }
-    String& operator=(const String &&str) { return SetString(str); }
+    String& operator=(const unsigned char* c_str) { return SetString(c_str); }
+    String& operator=(const String& str) { return SetString(str); }
+    String& operator=(const String&& str) { return SetString(str); }
 
     String& operator+(const char ch)
     {
@@ -34,32 +35,32 @@ public:
         return *this;
     }
 
-    String& operator+(const char *c_str)
+    String& operator+(const char* c_str)
     {
         return AppendString(c_str);
     }
 
-    String& operator+=(const char *c_str)
+    String& operator+=(const char* c_str)
     {
         return AppendString(c_str);
     }
 
-    String& operator+(const String &str)
+    String& operator+(const String& str)
     {
         return AppendString(str);
     }
 
-    String& operator+=(const String &str)
+    String& operator+=(const String& str)
     {
         return AppendString(str);
     }
 
-    String& operator+(const String *str)
+    String& operator+(const String* str)
     {
         return AppendString(*str);
     }
 
-    String& operator+=(const String *str)
+    String& operator+=(const String* str)
     {
         return AppendString(*str);
     }
@@ -186,13 +187,13 @@ public:
         //15  -> 1 sz 2
         //1   -> 0 sz 3
 
-        char *str = new char[sz+1];
+        char* str = new char[sz + 1];
         str[sz] = '\0';
         unsigned long mod = 0;
         do
         {
             mod = value % 10;
-            str[sz-1] = '0' + mod;
+            str[sz - 1] = '0' + mod;
             sz--;
             value = value / 10;
         } while (value > 0);
@@ -216,7 +217,7 @@ private:
         push_back(ch);
         return *this;
     }
-    inline String& SetString(const char *c_str)
+    inline String& SetString(const char* c_str)
     {
         this->clear();
 
@@ -235,7 +236,7 @@ private:
         push_back(ch);
         return *this;
     }
-    inline String& SetString(const unsigned char *c_str)
+    inline String& SetString(const unsigned char* c_str)
     {
         this->clear();
 
@@ -248,7 +249,7 @@ private:
 
         return *this;
     }
-    inline String& SetString(const String &str)
+    inline String& SetString(const String& str)
     {
         this->clear();
 
@@ -259,7 +260,7 @@ private:
 
         return *this;
     }
-    inline String& SetString(String &&str)
+    inline String& SetString(String&& str)
     {
         this->clear();
         resize(str._capacity);
@@ -267,9 +268,9 @@ private:
         str.array = nullptr;
         return *this;
     }
-    inline String& AppendString(const char *c_str)
+    inline String& AppendString(const char* c_str)
     {
-        const char *ch = c_str;
+        const char* ch = c_str;
         while (*ch != '\0')
         {
             push_back(*ch);
@@ -278,7 +279,7 @@ private:
 
         return *this;
     }
-    inline String& AppendString(const String &str)
+    inline String& AppendString(const String& str)
     {
         unsigned int idx = 0;
         while (idx < str.length())

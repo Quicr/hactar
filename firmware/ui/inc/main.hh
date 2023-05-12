@@ -39,6 +39,7 @@ extern DMA_HandleTypeDef hdma_spi1_tx;
 extern I2C_HandleTypeDef hi2c1;
 extern TIM_HandleTypeDef htim2;
 
+
 #define LCD_SPI             SPI1
 
 #define LCD_MOSI_Pin        GPIO_PIN_7

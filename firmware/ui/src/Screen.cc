@@ -76,23 +76,29 @@ void Screen::Begin()
 
     // Set power control A
     WriteCommand(PWRC_A);
-    WriteData(new uint8_t[5]{0x39, 0x2C, 0x00, 0x34, 0x02}, 5);
+    // TODO there are many memory leaks in this file
+    uint8_t power_a_data[5] = {0x39, 0x2C, 0x00, 0x34, 0x02};
+    WriteData(power_a_data, 5);
 
     // Set power control B
     WriteCommand(PWRC_B);
-    WriteData(new uint8_t[3]{0x00, 0xC1, 0x30}, 3);
+    uint8_t power_b_data[3] = {0x00, 0xC1, 0x30};
+    WriteData(power_b_data, 3);
 
     // Driver timing control A
     WriteCommand(TIMC_A);
-    WriteData(new uint8_t[3]{0x85, 0x00, 0x78}, 3);
+    uint8_t timer_a_data[3] = {0x85, 0x00, 0x78};
+    WriteData(timer_a_data, 3);
 
     // Driver timing control B
     WriteCommand(TIMC_B);
-    WriteData(new uint8_t[2]{0x00, 0x00}, 2);
+    uint8_t timer_b_data[2] = {0x00, 0x00};
+    WriteData(timer_b_data, 2);
 
     // Power on sequence control
     WriteCommand(PWR_ON);
-    WriteData(new uint8_t[4]{0x64, 0x03, 0x12, 0x81}, 4);
+    uint8_t power_data[4] = {0x64, 0x03, 0x12, 0x81};
+    WriteData(power_data, 4);
 
     // Pump ratio control
     WriteCommand(PMP_RA);
@@ -108,7 +114,8 @@ void Screen::Begin()
 
     // VCM Control 1
     WriteCommand(VCM_C1);
-    WriteData(new uint8_t[2]{0x3E, 0x28}, 2);
+    uint8_t vcm_control[2] = {0x3E, 0x28 };
+    WriteData(vcm_control, 2);
 
     // VCM Control 2
     WriteCommand(VCM_C2);
@@ -124,11 +131,13 @@ void Screen::Begin()
 
     // Frame ratio control. RGB Color
     WriteCommand(FR_CTL); // 0xB1
-    WriteData(new uint8_t[2]{0x00, 0x18}, 2);
+    uint8_t fr_control_data[2] = {0x00, 0x18};
+    WriteData(fr_control_data, 2);
 
     // Display function control
     WriteCommand(DIS_CT); // 0xB6
-    WriteData(new uint8_t[3]{0x08, 0x82, 0x27}, 3);
+    uint8_t df_control_data[3] = {0x08, 0x82, 0x27};
+    WriteData(df_control_data, 3);
 
     // 3Gamma function
     WriteCommand(GAMM_3); // 0xF2
@@ -140,13 +149,15 @@ void Screen::Begin()
 
     // Positive Gamma correction
     WriteCommand(GAM_PC); // 0xE0
-    WriteData(new uint8_t[15]{0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1,
-                              0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00}, 15);
+    uint8_t positive_gamma_correction_data[15] = {0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1,
+                              0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00};
+    WriteData(positive_gamma_correction_data, 15);
 
     // Negative gamma correction
     WriteCommand(GAM_NC);
-    WriteData(new uint8_t[15]{0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1,
-                              0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F}, 15);
+    uint8_t negative_gamma_correction_data[15] = {0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1,
+                              0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F };
+    WriteData(negative_gamma_correction_data, 15);
 
     // Exit sleep
     WriteCommand(END_SL); // 0x11
@@ -288,8 +299,9 @@ void Screen::DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour
     SetWritablePixels(x, y, x, y);
 
     // Draw pixel
-    WriteDataDMA(new uint8_t[2]{ static_cast<uint8_t>(colour >> 8),
-                                 static_cast<uint8_t>(colour) }, 2);
+    uint8_t pixel[2] = { static_cast<uint8_t>(colour >> 8),
+                            static_cast<uint8_t>(colour) };
+    WriteDataDMA(pixel, 2);
 
     Deselect();
 }
