@@ -981,6 +981,7 @@ const uint8_t font5x8_table[] =
 	0x30, //   ##
 	0x20, //   #
 	0x20, //   #
+    // Literally is reversed focusNextGroup goes like group2->group1
 	0x40, //  #
 	0x00, //
 

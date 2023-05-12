@@ -40,7 +40,7 @@ public:
     // TODO important to have different data lengths for each type..
 
     Packet(const unsigned int created_at=0,
-           const unsigned int size=0,
+           const unsigned int size=1,
            const bool dynamic=true) :
         created_at(created_at),
         size(size),

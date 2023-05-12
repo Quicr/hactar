@@ -4,18 +4,18 @@
 #include "LoginView.hh"
 #include "ChatView.hh"
 #include "TeamView.hh"
+#include "Global.hh"
 
 #include "SettingManager.hh"
 
 // Init the static var
-
 UserInterfaceManager::UserInterfaceManager(Screen &screen,
                                            Q10Keyboard &keyboard,
                                            SerialInterface &net_interface,
                                            EEPROM& eeprom) :
     screen(&screen),
     keyboard(&keyboard),
-    net_layer(&net_interface),
+    net_layer(&screen,&net_interface),
     setting_manager(eeprom),
     view(nullptr),
     received_messages(), // TODO limit?
@@ -36,15 +36,17 @@ UserInterfaceManager::~UserInterfaceManager()
 {
     screen = nullptr;
     keyboard = nullptr;
-    net_layer = nullptr;
 }
 
 // TODO should update this to be a draw/update architecture
 void UserInterfaceManager::Run()
 {
-
-
     current_time = HAL_GetTick();
+
+    screen->FillRectangle(0, 50, screen->ViewWidth(),
+                        screen->ViewHeight(), C_BLACK);
+    screen->DrawText(0, 50, "UserInterface::Run()", font5x8,
+                     C_WHITE, C_BLACK);
 
     view->Run();
 
@@ -54,26 +56,48 @@ void UserInterfaceManager::Run()
         return;
     }
 
+
+    screen->FillRectangle(0, 50, screen->ViewWidth(),
+                        screen->ViewHeight(), C_BLACK);
+    screen->DrawText(0, 50, "UserInterface::Run()", font5x8,
+                     C_WHITE, C_BLACK);
     if (current_time > last_wifi_check)
     {
+        screen->DrawText(0, 58, "UserInterface::SendCheck()", font5x8,
+                        C_WHITE, C_BLACK);
         // Check a check wifi status packet
-        Packet check_wifi;
-        check_wifi.SetData(Packet::Types::Command, 0, 6);
-        check_wifi.SetData(NextPacketId(), 6, 8);
-        check_wifi.SetData(1, 14, 10);
-        check_wifi.SetData(Packet::Commands::WifiStatus, 24, 8);
+        Packet* check_wifi = new Packet();
+        check_wifi->SetData(Packet::Types::Command, 0, 6);
+        check_wifi->SetData(NextPacketId(), 6, 8);
+        check_wifi->SetData(1, 14, 10);
+        check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
 
-        EnqueuePacket(std::move(check_wifi));
-        last_wifi_check = current_time + 5000;
+        EnqueuePacket(check_wifi);
+        // delete check_wifi;
+        last_wifi_check = current_time + 10000;
     }
-    if (current_time > last_test_packet && is_connected_to_wifi)
+    if (current_time > last_test_packet)
     {
-        SendTestPacket();
-        last_test_packet = current_time + 7000;
+        // SendTestPacket();
+        last_test_packet = current_time + 1000;
     }
+
+
+    screen->FillRectangle(0, 50, screen->ViewWidth(),
+                        screen->ViewHeight(), C_BLACK);
+    screen->DrawText(0, 50, "UserInterface::Run()", font5x8,
+                     C_WHITE, C_BLACK);
 
     // Run the receive and transmit
     net_layer.RxTx(current_time);
+
+
+    screen->FillRectangle(0, 50, screen->ViewWidth(),
+                        screen->ViewHeight(), C_BLACK);
+    screen->DrawText(0, 50, "UserInterface::Run()", font5x8,
+                     C_WHITE, C_BLACK);
+    screen->DrawText(0, 58, "UserInterface::Run() before incoming", font5x8,
+                     C_WHITE, C_BLACK);
 
     // TODO we probably should keep a small list of the most recent messages
     //      in the user interface manager instead of chat view
@@ -98,10 +122,10 @@ void UserInterfaceManager::ClearMessages()
     received_messages.clear();
 }
 
-void UserInterfaceManager::EnqueuePacket(Packet&& packet)
+void UserInterfaceManager::EnqueuePacket(Packet* packet)
 {
     // TODO maybe make this into a linked list?
-    net_layer.EnqueuePacket(std::move(packet));
+    net_layer.EnqueuePacket(packet);
 }
 
 void UserInterfaceManager::ForceRedraw()
@@ -128,6 +152,10 @@ void UserInterfaceManager::HandleIncomingPackets()
     // Get the packets
     Vector<Packet*>& packets = net_layer.GetRxPackets();
 
+        screen->DrawText(0, 128, String::int_to_string(packets.size()), font5x8,
+                        C_WHITE, C_BLACK);
+        screen->DrawText(16, 128, "- Reference to packets", font5x8,
+                        C_WHITE, C_BLACK);
     // Handle incoming packets
     while (packets.size() > 0)
     {
@@ -258,42 +286,42 @@ void UserInterfaceManager::ConnectToWifi()
         ssid_password_len)) return;
 
     // Create the packet
-    Packet connect_packet;
-    connect_packet.SetData(Packet::Types::Command, 0, 6);
-    connect_packet.SetData(UserInterfaceManager::NextPacketId(), 6, 8);
+    Packet* connect_packet = new Packet();
+    connect_packet->SetData(Packet::Types::Command, 0, 6);
+    connect_packet->SetData(UserInterfaceManager::NextPacketId(), 6, 8);
     // THINK should these be separate packets?
     // +3 for the length of the ssid, length of the password
     uint16_t length = ssid_len + ssid_password_len + 3;
-    connect_packet.SetData(length, 14, 10);
+    connect_packet->SetData(length, 14, 10);
 
-    connect_packet.SetData(Packet::Commands::ConnectToSSID, 24, 8);
+    connect_packet->SetData(Packet::Commands::ConnectToSSID, 24, 8);
 
     // Set the length of the ssid
-    connect_packet.SetData(ssid_len, 32, 8);
+    connect_packet->SetData(ssid_len, 32, 8);
 
     // Populate with the ssid
     uint16_t i;
     uint16_t offset = 40;
     for (i = 0; i < ssid_len; ++i)
     {
-        connect_packet.SetData(ssid[i], offset, 8);
+        connect_packet->SetData(ssid[i], offset, 8);
         offset += 8;
     }
 
     // Set the length of the password
-    connect_packet.SetData(ssid_password_len, offset, 8);
+    connect_packet->SetData(ssid_password_len, offset, 8);
     offset += 8;
 
     // Populate with the password
     uint16_t j;
     for (j = 0; j < ssid_password_len; ++j)
     {
-        connect_packet.SetData(ssid_password[j], offset, 8);
+        connect_packet->SetData(ssid_password[j], offset, 8);
         offset += 8;
     }
 
     // Enqueue the message
-    EnqueuePacket(std::move(connect_packet));
+    EnqueuePacket(connect_packet);
 
     delete ssid;
     delete ssid_password;
@@ -323,16 +351,16 @@ const uint32_t UserInterfaceManager::GetStatusColour(
 
 const void UserInterfaceManager::SendTestPacket()
 {
-    Packet test_packet;
+    Packet* test_packet = new Packet();
 
-    test_packet.SetData(Packet::Types::Message, 0, 6);
-    test_packet.SetData(NextPacketId(), 6, 8);
-    test_packet.SetData(5, 14, 10);
-    test_packet.SetData('H', 24, 8);
-    test_packet.SetData('e', 32, 8);
-    test_packet.SetData('l', 40, 8);
-    test_packet.SetData('l', 48, 8);
-    test_packet.SetData('o', 56, 8);
+    test_packet->SetData(Packet::Types::Message, 0, 6);
+    test_packet->SetData(NextPacketId(), 6, 8);
+    test_packet->SetData(5, 14, 10);
+    test_packet->SetData('H', 24, 8);
+    test_packet->SetData('e', 32, 8);
+    test_packet->SetData('l', 40, 8);
+    test_packet->SetData('l', 48, 8);
+    test_packet->SetData('o', 56, 8);
 
-    EnqueuePacket(std::move(test_packet));
+    EnqueuePacket(test_packet);
 }

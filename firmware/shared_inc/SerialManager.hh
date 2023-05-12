@@ -1,11 +1,14 @@
 #pragma once
 
+#include <memory>
 #include <map>
 
 #include "SerialInterface.hh"
 #include "Vector.hh"
 #include "Packet.hh"
 #include "RingBuffer.hh"
+
+#include "Screen.hh"
 
 #define Start_Bytes 4
 
@@ -25,17 +28,20 @@ public:
         TIMEOUT
     } SerialStatus;
 
-    SerialManager(SerialInterface* uart) :
+    SerialManager(Screen* screen, SerialInterface* uart) :
+        screen(*screen),
         uart(uart),
         rx_packets(),
         rx_packet(nullptr),
         rx_packet_timeout(0),
         rx_status(SerialStatus::EMPTY),
+        tx_buffer(nullptr),
         tx_packets(),
         tx_pending_packets(),
         tx_status(SerialStatus::EMPTY),
         next_packet_id(1)
-    {}
+    {
+    }
 
     ~SerialManager()
     {
@@ -50,10 +56,25 @@ public:
     {
         Rx(current_time);
         Tx(current_time);
+
+        screen.FillRectangle(0, 50+8*1, screen.ViewWidth(),
+                            50+8*2, C_BLACK);
+        screen.DrawText(0, 50+8*1, "SerialManager::RxTx()", font5x8,
+                        C_WHITE, C_BLACK);
+    }
+
+    void Rx(const unsigned long current_time)
+    {
+        rx_status = ReadSerial(current_time);
     }
 
     void Tx(const unsigned long current_time)
     {
+        screen.FillRectangle(0, 50+8*2, screen.ViewWidth(),
+                            50+8*3, C_BLACK);
+        screen.DrawText(0, 50+8*2, "SerialManager::Tx()", font5x8,
+                        C_WHITE, C_BLACK);
+
         // Don't try to send if we are reading
         if (uart->AvailableBytes() >= 4) return;
         if (rx_packet) return;
@@ -65,14 +86,9 @@ public:
         tx_status = WriteSerial();
     }
 
-    void Rx(const unsigned long current_time)
+    void EnqueuePacket(Packet* packet)
     {
-        rx_status = ReadSerial(current_time);
-    }
-
-    void EnqueuePacket(Packet&& packet)
-    {
-        tx_packets.push_back(std::move(packet));
+        tx_packets.push_back(packet);
     }
 
     const bool HasRxPackets() const
@@ -82,6 +98,11 @@ public:
 
     Vector<Packet*>& GetRxPackets()
     {
+
+        screen.DrawText(0, 128, String::int_to_string(rx_packets.size()), font5x8,
+                        C_WHITE, C_BLACK);
+        screen.DrawText(16, 128, "- SerialManager::GetRxPackets", font5x8,
+                        C_WHITE, C_BLACK);
         return rx_packets;
     }
 
@@ -157,7 +178,7 @@ private:
 
             rx_packet->AppendData(uart->Read(), 8U);
 
-            if (data_length+3U != (rx_packet->BitsUsed() / 8U)) continue;
+            if (data_length + 3U != (rx_packet->BitsUsed() / 8U)) continue;
 
             unsigned char rx_type = rx_packet->GetData(0, 6);
 
@@ -175,6 +196,11 @@ private:
                 {
                     // Get the id
                     unsigned char ok_id = rx_packet->GetData(24, 8);
+
+                    // Delete the pending packet
+                    delete tx_pending_packets[ok_id];
+
+                    // Erase the pointer to the packet
                     tx_pending_packets.erase(ok_id);
 
                     delete rx_packet;
@@ -184,8 +210,11 @@ private:
                 case (unsigned char)Packet::Types::Error:
                 {
                     unsigned char failed_id = rx_packet->GetData(24, 8);
-                    Packet& failed_packet = tx_pending_packets[failed_id];
-                    EnqueuePacket(std::move(failed_packet));
+                    Packet* failed_packet = tx_pending_packets[failed_id];
+                    EnqueuePacket(failed_packet);
+
+                    // Erase the element from the pending packets
+                    // the pointer is not deleted by this function
                     tx_pending_packets.erase(failed_id);
 
                     delete rx_packet;
@@ -207,18 +236,20 @@ private:
                     // for now, debug messages should go elsewhere (eeprom?)
 
                     // Now that we got this packet, we will respond
-                    Packet ok_packet;
-                    ok_packet.SetData(Packet::Types::Ok, 0, 6);
-                    ok_packet.SetData(NextPacketId(), 6, 8); // Id here doesn't matter
-                    ok_packet.SetData(1, 14, 10);
+                    Packet* ok_packet = new Packet();
+                    ok_packet->SetData(Packet::Types::Ok, 0, 6);
+                    ok_packet->SetData(NextPacketId(), 6, 8); // Id here doesn't matter
+                    ok_packet->SetData(1, 14, 10);
 
                     // Get the id of the rx packet and set it to the data
-                    ok_packet.SetData(rx_packet->GetData(6, 8), 24, 8);
+                    ok_packet->SetData(rx_packet->GetData(6, 8), 24, 8);
 
                     // Push the ok packet
-                    EnqueuePacket(std::move(ok_packet));
+                    EnqueuePacket(ok_packet);
 
-                    rx_packets.push_back(std::move(rx_packet));
+                    // Push the pointer on the vector
+                    // The pointer will be set to null soon
+                    rx_packets.push_back(rx_packet);
                     status = SerialStatus::OK;
                     break;
                 }
@@ -233,68 +264,95 @@ private:
 
     inline void HandlePendingTx(const unsigned long current_time)
     {
+        screen.FillRectangle(0, 50+8*3, screen.ViewWidth(),
+                            50+8*4, C_BLACK);
+        screen.DrawText(0, 50+8*3, "SerialManager::HandlePendingTx()", font5x8,
+                        C_WHITE, C_BLACK);
         // Check the pending packets
         if (tx_pending_packets.size() == 0) return;
 
-        Vector<unsigned char> remove_ids;
+        Vector<unsigned char> delete_ids;
+        Vector<unsigned char> resend_ids;
 
-        for (std::pair<const unsigned char, Packet>& packet_pair : tx_pending_packets)
+        for (std::pair<const unsigned char, Packet*>& packet_pair : tx_pending_packets)
         {
-            if (packet_pair.second.GetCreatedAt() + Packet_Timeout > current_time)
+            if (packet_pair.second->GetCreatedAt() + Packet_Timeout > current_time)
                 continue;
 
-            if (packet_pair.second.GetRetries() >= Max_Retry)
+            if (packet_pair.second->GetRetries() >= Max_Retry)
             {
-                remove_ids.push_back(packet_pair.first);
+                // Packet has failed to send several times, delete it
+                delete_ids.push_back(packet_pair.first);
                 continue;
             }
 
             // Add to the packets to remove from the map
-            remove_ids.push_back(packet_pair.first);
-
-            // Error state for now
-            // TODO error state for the serial interface
-
-
-            // TODO update the tx_pending_packets to be a pointer
-            // otherwise we run into memory issues
+            resend_ids.push_back(packet_pair.first);
 
             // Update the time on the packet
-            // packet_pair.second.UpdateCreatedAt(current_time);
+            packet_pair.second->UpdateCreatedAt(current_time);
 
             // Increment the retry on the packet
-            // packet_pair.second.IncrementRetry();
-
-            // The packet has expired with no response so resend it.
-            // EnqueuePacket(std::move(packet_pair.second));
+            packet_pair.second->IncrementRetry();
         }
 
         // Remove resent packets from the tx_pending_packets map
-        for (unsigned char i = 0; i < remove_ids.size(); i++)
+        for (unsigned char i = 0; i < delete_ids.size(); i++)
         {
-            tx_pending_packets.erase(remove_ids[i]);
+            delete tx_pending_packets[delete_ids[i]];
+            tx_pending_packets.erase(delete_ids[i]);
+        }
+
+        for (unsigned char i = 0; i < resend_ids.size(); i++)
+        {
+            // The packet has expired with no response so resend it
+            Packet* packet = tx_pending_packets[resend_ids[i]];
+            EnqueuePacket(packet);
+
+            // Remove the pointer to it
+            tx_pending_packets.erase(resend_ids[i]);
         }
     }
 
     SerialStatus WriteSerial()
     {
+        screen.FillRectangle(0, 50+8*3, screen.ViewWidth(),
+                            50+8*4, C_BLACK);
+        screen.DrawText(0, 50+8*3, "SerialManager::WriteSerial()", font5x8,
+                        C_WHITE, C_BLACK);
         if (tx_packets.size() == 0) return SerialStatus::EMPTY;
 
         if (!uart->ReadyToWrite()) return SerialStatus::BUSY;
 
-        Packet& tx_packet = tx_packets.front();
+        // If tx buffer is allocated at this point, delete it.
+        if (tx_buffer) delete tx_buffer;
+
+        screen.DrawText(0, 50+8*4, "SerialManager::WriteSerial() -- After checks", font5x8,
+                        C_WHITE, C_BLACK);
+
+        Packet* tx_packet = tx_packets.front();
+        screen.DrawText(0, 50+8*5, "SerialManager::WriteSerial() -- After Get tx packet", font5x8,
+                        C_WHITE, C_BLACK);
 
         // Get the buffer
-        unsigned char* tx_buffer = std::move(tx_packet.ToBytes());
+        tx_buffer = tx_packet->ToBytes();
+        screen.DrawText(0, 50+8*6, "SerialManager::WriteSerial() -- Getting byte buffer", font5x8,
+                        C_WHITE, C_BLACK);
 
         // Get the size
         unsigned short tx_buffer_sz = static_cast<unsigned short>(
-            tx_packet.GetData(14, 10)) + 3;
+            tx_packet->GetData(14, 10)) + 3;
+        screen.DrawText(0, 50+8*7, "SerialManager::WriteSerial() -- Getting buffer sz", font5x8,
+                        C_WHITE, C_BLACK);
 
         uart->Write(tx_buffer, tx_buffer_sz);
+        screen.DrawText(0, 50+8*8, "SerialManager::WriteSerial() -- After write", font5x8,
+                        C_WHITE, C_BLACK);
 
         // Check the type of packet sent
-        unsigned char packet_type = tx_packet.GetData(0, 6);
+        unsigned char packet_type = tx_packet->GetData(0, 6);
+        screen.DrawText(0, 50+8*9, "SerialManager::WriteSerial() -- After getting packet type", font5x8,
+                        C_WHITE, C_BLACK);
 
         if (packet_type != Packet::Types::Ok ||
             packet_type != Packet::Types::Error ||
@@ -302,18 +360,33 @@ private:
             packet_type != Packet::Types::LocalDebug)
         {
             // Get the packet id
-            unsigned char packet_id = tx_packet.GetData(6, 8);
+            unsigned char packet_id = tx_packet->GetData(6, 8);
+        screen.DrawText(0, 50+8*10, "SerialManager::WriteSerial() -- After getting packet id", font5x8,
+                        C_WHITE, C_BLACK);
 
             // Move the tx packet to the sent packets
-            tx_pending_packets[packet_id] = std::move(tx_packet);
+            tx_pending_packets[packet_id] = tx_packet;
+
+            screen.DrawText(0, 50+8*11, "SerialManager::WriteSerial() -- Putting packet onto map", font5x8,
+                            C_WHITE, C_BLACK);
+        }
+        else
+        {
+            // Otherwise delete the packet
+            delete tx_packet;
+            screen.DrawText(0, 50+8*10, "SerialManager::WriteSerial() -- Delete packet", font5x8,
+                            C_WHITE, C_BLACK);
         }
 
         // Remove the packet from tx_packets
         tx_packets.erase(0);
 
+        screen.DrawText(0, 50+8*12, "SerialManager::WriteSerial() -- After vector erase", font5x8,
+                        C_WHITE, C_BLACK);
         return SerialStatus::OK;
     }
 
+    Screen& screen;
     SerialInterface* uart;
 
     // THINK should I have a map of vector of packets?
@@ -325,10 +398,10 @@ private:
     SerialStatus rx_status;
 
     // tx
-    Vector<Packet> tx_packets;
-    std::map<unsigned char, Packet> tx_pending_packets; // TODO max packets
+    unsigned char* tx_buffer;
+    Vector<Packet*> tx_packets;
+    std::map<unsigned char, Packet*> tx_pending_packets; // TODO max packets
     SerialStatus tx_status;
 
     uint8_t next_packet_id;
-
 };

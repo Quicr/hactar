@@ -10,6 +10,7 @@ class SerialStm : public SerialInterface
 public:
     SerialStm(UART_HandleTypeDef* uart_handler,
               unsigned short rx_ring_sz=256);
+    ~SerialStm();
 
     unsigned long AvailableBytes() override;
     unsigned long Read() override;

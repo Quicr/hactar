@@ -29,6 +29,10 @@ FirstBootView::~FirstBootView()
 
 void FirstBootView::AnimatedDraw()
 {
+    screen.FillRectangle(0, 50+font5x8.height*2, screen.ViewWidth(),
+                        50+font5x8.height*3, C_BLACK);
+    screen.DrawText(0, 50+8*2, "FirstBootView::Animated()", font5x8,
+                    C_WHITE, C_BLACK);
     if (!redraw_menu)
         return;
 
@@ -49,6 +53,10 @@ void FirstBootView::AnimatedDraw()
 
 void FirstBootView::Draw()
 {
+    screen.FillRectangle(0, 50+font5x8.height*2, screen.ViewWidth(),
+                        50+font5x8.height*3, C_BLACK);
+    screen.DrawText(0, 50+8*2, "FirstBootView::Draw()", font5x8,
+                    C_WHITE, C_BLACK);
     ViewBase::Draw();
 
     screen.DrawText(1,
@@ -94,6 +102,10 @@ void FirstBootView::Draw()
 
 bool FirstBootView::HandleInput()
 {
+    screen.FillRectangle(0, 50+font5x8.height*2, screen.ViewWidth(),
+                        50+font5x8.height*3, C_BLACK);
+    screen.DrawText(0, 50+8*2, "FirstBootView::HandleInput()", font5x8,
+                    C_WHITE, C_BLACK);
     // Handle the input from the user.
     GetInput();
 
@@ -123,12 +135,13 @@ bool FirstBootView::HandleInput()
 
             request_message = "Please select SSID by number:";
 
-            Packet ssid_req_packet;
-            ssid_req_packet.SetData(Packet::Types::Command, 0, 6);
-            ssid_req_packet.SetData(manager.NextPacketId(), 6, 8);
-            ssid_req_packet.SetData(1, 14, 10);
-            ssid_req_packet.SetData(Packet::Commands::SSIDs, 24, 8);
-            manager.EnqueuePacket(std::move(ssid_req_packet));
+            Packet* ssid_req_packet = new Packet();
+            ssid_req_packet->SetData(Packet::Types::Command, 0, 6);
+            ssid_req_packet->SetData(manager.NextPacketId(), 6, 8);
+            ssid_req_packet->SetData(1, 14, 10);
+            ssid_req_packet->SetData(Packet::Commands::SSIDs, 24, 8);
+            manager.EnqueuePacket(ssid_req_packet);
+            ssid_req_packet = nullptr;
             state = State::Wifi;
             break;
         }
@@ -149,6 +162,12 @@ bool FirstBootView::HandleInput()
 
 bool FirstBootView::Update()
 {
+
+    screen.FillRectangle(0, 50+font5x8.height*2, screen.ViewWidth(),
+                        50+font5x8.height*3, C_BLACK);
+    screen.DrawText(0, 50+8*2, "FirstBootView::Update()", font5x8,
+                    C_WHITE, C_BLACK);
+
     if (state == State::Wifi)
     {
         if (wifi_state == WifiState::Connecting)
