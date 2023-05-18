@@ -15,9 +15,10 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
+  /* USER CODE END Header */
+  /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#define OTHER 1
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -50,11 +51,340 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void InitButtons();
+static void InitLEDs();
+static void InitBitBangPins();
+static void InitIRQ();
+static void ResetUpload();
+static void UploadUIBegin();
+static void UploadNetBegin();
+static void TransmitReceive();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+enum State
+{
+  Reset,
+  UI,
+  Net,
+};
+
+enum State state;
+volatile uint8_t uploading = 0;
+
+// Button interrupt debounce
+uint32_t btn_debounce_timeout = 0;
+
+// Callback from interrupt
+void HAL_GPIO_EXTI_Callback(uint16_t gpio_pin)
+{
+  if (HAL_GetTick() < btn_debounce_timeout)
+    return;
+  btn_debounce_timeout = HAL_GetTick() + 500;
+
+  if (gpio_pin == GPIO_PIN_13)
+  {
+    ResetUpload();
+  }
+  else if (gpio_pin == GPIO_PIN_14)
+  {
+    UploadUIBegin();
+  }
+  else if (gpio_pin == GPIO_PIN_15)
+  {
+    UploadNetBegin();
+  }
+}
+
+static void InitButtons()
+{
+  RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+  // RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+
+  // Put pin 13, 14, and 15 into input mode [00] (reset)
+  // GPIOC->MODER &= ~GPIO_MODER_MODER13;
+  // GPIOC->PUPDR
+  // GPIOC->MODER &= ~GPIO_MODER_MODER14;
+  // GPIOC->MODER &= ~GPIO_MODER_MODER15;
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_RESET);
+
+  GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin = GPIO_PIN_14;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin = GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  SYSCFG->EXTICR[3] |= SYSCFG_EXTICR4_EXTI13_PC;
+  EXTI->IMR |= EXTI_IMR_IM13;
+  EXTI->RTSR &= ~EXTI_RTSR_TR13;
+  EXTI->FTSR |= EXTI_FTSR_FT13;
+
+  SYSCFG->EXTICR[3] |= SYSCFG_EXTICR4_EXTI14_PC;
+  EXTI->IMR |= EXTI_IMR_IM14;
+  EXTI->RTSR &= ~EXTI_RTSR_TR14;
+  EXTI->FTSR |= EXTI_FTSR_FT14;
+
+  SYSCFG->EXTICR[3] |= SYSCFG_EXTICR4_EXTI15_PC;
+  EXTI->IMR |= EXTI_IMR_IM15;
+  EXTI->RTSR &= ~EXTI_RTSR_TR15;
+  EXTI->FTSR |= EXTI_FTSR_FT15;
+}
+
+static void InitLEDs()
+{
+  // TODO move to LL version
+  GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
+
+    /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin : PA6 */
+  GPIO_InitStruct.Pin = LEDA_R_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LEDA_R_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA7 */
+  GPIO_InitStruct.Pin = LEDA_G_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LEDA_G_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB0 */
+  GPIO_InitStruct.Pin = LEDA_B_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LEDA_B_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA4 */
+  GPIO_InitStruct.Pin = LEDB_R_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LEDB_R_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB14 */
+  GPIO_InitStruct.Pin = LEDB_G_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LEDB_G_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB15 */
+  GPIO_InitStruct.Pin = LEDB_B_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LEDB_B_GPIO_Port, &GPIO_InitStruct);
+}
+
+static void InitBitBangPins()
+{
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+
+  // USB uart
+  // Configure GPIO pins : PB10|PB11 tx/rx
+  GPIO_InitStruct.Pin = USB_RX1_MGMT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(USB_RX1_MGMT_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = USB_TX1_MGMT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(USB_TX1_MGMT_GPIO_Port, &GPIO_InitStruct);
+
+  // UI uart
+  // Configure GPIO pins : PA2|PA3 tx/rx
+  GPIO_InitStruct.Pin = UI_TX2_MGMT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(UI_TX2_MGMT_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = UI_RX2_MGMT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(UI_RX2_MGMT_GPIO_Port, &GPIO_InitStruct);
+
+  // UI reset and boot
+  GPIO_InitStruct.Pin = UI_RST_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(UI_RST_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = UI_BOOT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(UI_BOOT_GPIO_Port, &GPIO_InitStruct);
+
+  // TODO future note, the tx and rx pins are reversed.
+  GPIO_InitStruct.Pin = NET_TX0_MGMT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(NET_TX0_MGMT_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = NET_RX0_MGMT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(NET_RX0_MGMT_GPIO_Port, &GPIO_InitStruct);
+
+  // Net reset and boot
+  GPIO_InitStruct.Pin = NET_RST_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(NET_RST_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = NET_BOOT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(NET_BOOT_GPIO_Port, &GPIO_InitStruct);
+
+}
+
+static void InitIRQ()
+{
+  HAL_NVIC_EnableIRQ(BTN_RST_EXTI_IRQn);
+  HAL_NVIC_EnableIRQ(BTN_UI_EXTI_IRQn);
+  HAL_NVIC_EnableIRQ(BTN_NET_EXTI_IRQn);
+
+  HAL_NVIC_SetPriority(BTN_RST_EXTI_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(BTN_UI_EXTI_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(BTN_NET_EXTI_IRQn, 0, 0);
+}
+
+static void ResetUpload()
+{
+  state = Reset;
+  uploading = 0;
+
+  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+}
+
+static void UploadUIBegin()
+{
+  state = UI;
+  // TODO
+  // slave_port = GPIOA;
+  // slave_odr_on = GPIO_IDR_2;
+  // slave_odr_off = ~slave_odr_on;
+  // slave_idr = GPIO_IDR_3;
+
+  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+
+
+  // Put esp and stm into reset
+  HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+
+  // Bring the boot high for stm
+  HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
+
+  // Bring the boot high for esp, normal boot (1)
+  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+
+  // Release the stm reset
+  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+  // Release the esp reset
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+}
+
+static void UploadNetBegin()
+{
+  state = Net;
+  uploading = 1;
+
+  // TODO move into upload code
+  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
+}
+
+static void TransmitReceive()
+{
+  // TODO use as a template for the UI
+  // volatile uint32_t usb_input_pins;
+  // const uint32_t USB_odr_on = GPIO_ODR_11;
+  // const uint32_t USB_odr_off = ~GPIO_ODR_11;
+
+  // uploading = 1;
+  // while (uploading)
+  // {
+
+  //   // Copy from slave
+  //   if (slave_port->IDR & slave_idr)
+  //   {
+  //     GPIOB->ODR |= GPIO_ODR_11;
+  //   }
+  //   else
+  //   {
+  //     GPIOB->ODR &= ~GPIO_ODR_11;
+  //   }
+  //   // usb_input_pins = GPIOB->IDR;
+
+
+  //   // Check the usb uart bit
+  //   if (GPIOB->IDR & GPIO_IDR_10)
+  //   {
+  //     // HAL_GPIO_TogglePin(LEDA_B_GPIO_Port, LEDA_B_Pin);
+  //     slave_port->ODR |= slave_odr_on;
+  //     // GPIOB->ODR |= USB_odr_on;
+  //     // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
+  //   }
+  //   else
+  //   {
+  //     // HAL_GPIO_TogglePin(LEDA_B_GPIO_Port, LEDA_B_Pin);
+  //     slave_port->ODR &= slave_odr_off;
+  //     // GPIOB->ODR &= USB_odr_off;
+  //     // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
+  //   }
+  // }
+}
 
 /* USER CODE END 0 */
 
@@ -79,180 +409,122 @@ int main(void)
 
   /* Configure the system clock */
   SystemClock_Config();
+  MX_TIM3_Init();
 
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
-  // TURN off right Net LED 
-  HAL_GPIO_WritePin( LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET); 
-  HAL_GPIO_WritePin( LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin( LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
-
-  // TURN off left UI LED 
-  HAL_GPIO_WritePin( LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin( LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin( LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET); 
-
-  
+  InitButtons();
+  InitIRQ();
+  InitLEDs();
+  InitBitBangPins();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  // Turn off leds
+  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+
+  // TODO Enable UI chip
+
+  // Enable Net chip
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+
   while (1)
   {
-    /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
-
-    // If UI button pressed 
-    if ( HAL_GPIO_ReadPin( GPIOC, BTN_UI_Pin ) == 0 ) {
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_RESET); // put UI in reset mode 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET); // put net in reset mode
-      
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_SET); // put UI in bootloader mode 
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
- 			 
-      //  NET LED Off
-      HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
-      //  UI LED Purple 
-      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET); 
-      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET); 
-
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); // release UI reset and start program
-      // Note - the reset pulse to UI looks like it is about 4 uS wide on scope 
-
-      // Port notes:
-      //    USB_TX1_MGMT_GPIO_Port and  USB_RX1_MGMT_GPIO_Port are GPIOB
-      //    UI_TX2_MGMT_GPIO_Port and UI_RX2_MGMT_GPIO_Port are GPIOA
-      //    BTN_RST_GPIO_Port is on GPIOC
-      
-      // Program UI mode
-      while( HAL_GPIO_ReadPin( BTN_RST_GPIO_Port, BTN_RST_Pin ) != 0 ) {
-	// Copy USB serial to UI serial 
-	HAL_GPIO_WritePin( UI_RX2_MGMT_GPIO_Port, UI_RX2_MGMT_Pin,
-			   ( HAL_GPIO_ReadPin( USB_TX1_MGMT_GPIO_Port, USB_TX1_MGMT_Pin ) == 0 )
-			   ? GPIO_PIN_RESET : GPIO_PIN_SET ); 
-      
-	// Copy UI serial to USB serial 
-	HAL_GPIO_WritePin( USB_RX1_MGMT_GPIO_Port, USB_RX1_MGMT_Pin,
-			   ( HAL_GPIO_ReadPin( UI_TX2_MGMT_GPIO_Port, UI_TX2_MGMT_Pin ) == 0 )
-			   ? GPIO_PIN_RESET:GPIO_PIN_SET); 
-      }
-    
-      // go back to normal mode 
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
+    while (state == UI)
+    {
+      // TODO
     }
 
-     // If NET button pressed 
-    if ( HAL_GPIO_ReadPin(BTN_NET_GPIO_Port, BTN_NET_Pin ) == 0 ) {
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_RESET); // put UI in reset mode 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET); // put net in reset mode
-      
-      HAL_GPIO_WritePin(GPIOB, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
-      HAL_GPIO_WritePin(GPIOB, NET_BOOT_Pin, GPIO_PIN_RESET); // put NET in bootload mode 
- 			 
-      //  NET LED Purple
-      HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
-      //  UI LED Off 
-      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET); 
-      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
+    while (state == Net)
+    {
+      // Get some bits to ignore
+      uint32_t bits_copied = 0;
 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET); // release NET reset and start program
-
-      // Port notes:
-      //    USB_TX1_MGMT_GPIO_Port and USB_RX1_MGMT_GPIO_Port are GPIOB
-      //    NET_TX0_MGMT_GPIO_Port and NET_RX0_MGMT_GPIO_Port are GPIOB
-      //    BTN_RST_GPIO_Port is on GPIOC
-
-      // Program NET mode
-      while( HAL_GPIO_ReadPin(BTN_RST_GPIO_Port, BTN_RST_Pin ) != 0 ) {
-	// Copy USB serial to NET serial
-	HAL_GPIO_WritePin( NET_RX0_MGMT_GPIO_Port, NET_RX0_MGMT_Pin,
-			   ( HAL_GPIO_ReadPin( USB_TX1_MGMT_GPIO_Port, USB_TX1_MGMT_Pin ) == 0 )
-			   ? GPIO_PIN_RESET : GPIO_PIN_SET ); 
-	
-	// Copy NET serial to USB serial
-	HAL_GPIO_WritePin( USB_RX1_MGMT_GPIO_Port, USB_RX1_MGMT_Pin,
-			   ( HAL_GPIO_ReadPin( NET_TX0_MGMT_GPIO_Port, NET_TX0_MGMT_Pin ) == 0 )
-			   ? GPIO_PIN_RESET:GPIO_PIN_SET); 
+      // Wait for the start bit from esptool
+      while (USB_PORT->IDR & USB_RX_Bit)
+      {
+        USB_PORT->ODR |= NET_TX_Bit_On;
       }
+      USB_PORT->ODR &= NET_TX_Bit_Off;
 
-      // go back to normal mode
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-    }
-    
-    // If reset button pressed 
-    if ( HAL_GPIO_ReadPin( BTN_RST_GPIO_Port, BTN_RST_Pin ) == 0 ) {
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_RESET); 
+      // Put esp and stm into reset
+      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
 
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
-      
-      //  UI LED Off 
-      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET); 
-      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
+      // Bring the boot for ui low (normal)
+      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
 
-      //  NET LED  Off
-      HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET); 
-    }
-    else {
-      // Normal mode
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); 
+      // Bring the boot low for esp, bootloader mode (0)
+      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
+
+      // Pretty much ignore a bunch of bits
+      while (bits_copied++ < 0x100000)
+      {
+        // Copy from network
+        if (NET_PORT->IDR & NET_RX_Bit)
+        {
+          USB_PORT->ODR |= USB_TX_Bit_On;
+        }
+        else
+        {
+          USB_PORT->ODR &= USB_TX_Bit_Off;
+        }
+
+        // Check the usb uart bit
+        if (USB_PORT->IDR & USB_RX_Bit)
+        {
+          NET_PORT->ODR |= NET_TX_Bit_On;
+        }
+        else
+        {
+          NET_PORT->ODR &= NET_TX_Bit_Off;
+        }
+      }
+
+      // Release the esp reset to put into boot mode
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
 
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
-      
-      // Check UI CPU status 
-      if ( HAL_GPIO_ReadPin( UI_STAT_GPIO_Port, UI_STAT_Pin ) == 0 ) {
-	//  UI LED Red
-	HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET); 
-	HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
-      }
-      else {
-	//  UI LED Green 
-	HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET); 
-	HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
-      }
+      // TODO need the signal from the usb that uploading is complete
+      while (uploading)
+      {
+        // Copy from network
+        if (NET_PORT->IDR & NET_RX_Bit)
+        {
+          USB_PORT->ODR |= USB_TX_Bit_On;
+        }
+        else
+        {
+          USB_PORT->ODR &= USB_TX_Bit_Off;
+        }
 
-      // Check NET CPU status 
-      if ( HAL_GPIO_ReadPin( NET_STAT_GPIO_Port, NET_STAT_Pin ) == 0 ) {
-	//  NET LED Red
-	HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+        // Check the usb uart bit for input
+        if (USB_PORT->IDR & USB_RX_Bit)
+        {
+          NET_PORT->ODR |= NET_TX_Bit_On;
+        }
+        else
+        {
+          NET_PORT->ODR &= NET_TX_Bit_Off;
+        }
       }
-      else {
-	//  NET LED Green
-	HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
-      }
-      
+      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET);
+      USB_PORT->ODR &= USB_TX_Bit_Off;
+      NET_PORT->ODR &= NET_TX_Bit_Off;
     }
   }
   /* USER CODE END 3 */
@@ -264,8 +536,8 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -283,8 +555,8 @@ void SystemClock_Config(void)
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+    | RCC_CLOCKTYPE_PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -308,8 +580,8 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 0 */
 
-  TIM_SlaveConfigTypeDef sSlaveConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_SlaveConfigTypeDef sSlaveConfig = { 0 };
+  TIM_MasterConfigTypeDef sMasterConfig = { 0 };
 
   /* USER CODE BEGIN TIM3_Init 1 */
 
@@ -349,32 +621,32 @@ static void MX_TIM3_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
-  /* GPIO Ports Clock Enable */
+    /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, UI_RX2_MGMT_Pin|LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin
-                          |MGMT_DBG7_Pin|UI_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, UI_RX2_MGMT_Pin | LEDB_R_Pin | LEDA_R_Pin | LEDA_G_Pin
+    | MGMT_DBG7_Pin | UI_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin|USB_RX1_MGMT_Pin|LEDB_G_Pin|LEDB_B_Pin
-                          |UI_BOOT_Pin|NET_RST_Pin|NET_BOOT_Pin|NET_RX0_MGMT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin | USB_RX1_MGMT_Pin | LEDB_G_Pin | LEDB_B_Pin
+    | UI_BOOT_Pin | NET_RST_Pin | NET_BOOT_Pin | NET_RX0_MGMT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : BTN_RST_Pin BTN_UI_Pin BTN_NET_Pin */
-  GPIO_InitStruct.Pin = BTN_RST_Pin|BTN_UI_Pin|BTN_NET_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pin = BTN_RST_Pin | BTN_UI_Pin | BTN_NET_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : ADC_UI_STAT_Pin ADC_NET_STAT_Pin UI_STAT_Pin NET_STAT_Pin */
-  GPIO_InitStruct.Pin = ADC_UI_STAT_Pin|ADC_NET_STAT_Pin|UI_STAT_Pin|NET_STAT_Pin;
+  GPIO_InitStruct.Pin = ADC_UI_STAT_Pin | ADC_NET_STAT_Pin | UI_STAT_Pin | NET_STAT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -383,6 +655,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = UI_TX2_MGMT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(UI_TX2_MGMT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : UI_RX2_MGMT_Pin */
@@ -394,8 +667,8 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : LEDB_R_Pin LEDA_R_Pin LEDA_G_Pin MGMT_DBG7_Pin
                            UI_RST_Pin */
-  GPIO_InitStruct.Pin = LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin|MGMT_DBG7_Pin
-                          |UI_RST_Pin;
+  GPIO_InitStruct.Pin = LEDB_R_Pin | LEDA_R_Pin | LEDA_G_Pin | MGMT_DBG7_Pin
+    | UI_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -403,21 +676,26 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : LEDA_B_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT_Pin
                            NET_RST_Pin NET_BOOT_Pin */
-  GPIO_InitStruct.Pin = LEDA_B_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT_Pin
-                          |NET_RST_Pin|NET_BOOT_Pin;
+  GPIO_InitStruct.Pin = LEDA_B_Pin | LEDB_G_Pin | LEDB_B_Pin | UI_BOOT_Pin
+    | NET_RST_Pin | NET_BOOT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RTS_Pin USB_TX1_MGMT_Pin CTS_Pin NET_TX0_MGMT_Pin */
-  GPIO_InitStruct.Pin = RTS_Pin|USB_TX1_MGMT_Pin|CTS_Pin|NET_TX0_MGMT_Pin;
+  GPIO_InitStruct.Pin = RTS_Pin | USB_TX1_MGMT_Pin | CTS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  GPIO_InitStruct.Pin = NET_TX0_MGMT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+
   /*Configure GPIO pins : USB_RX1_MGMT_Pin NET_RX0_MGMT_Pin */
-  GPIO_InitStruct.Pin = USB_RX1_MGMT_Pin|NET_RX0_MGMT_Pin;
+  GPIO_InitStruct.Pin = USB_RX1_MGMT_Pin | NET_RX0_MGMT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
@@ -434,8 +712,12 @@ static void MX_GPIO_Init(void)
   /**/
   HAL_I2CEx_EnableFastModePlus(SYSCFG_CFGR1_I2C_FMP_PB7);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -453,15 +735,15 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
-    	//  UI LED Blue 
-	HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET); 
-	HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET);
+    //  UI LED Blue
+    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET);
 
-       //  NET LED Blue
-	HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
+    //  NET LED Blue
+    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
   }
   /* USER CODE END Error_Handler_Debug */
 }
@@ -474,11 +756,11 @@ void Error_Handler(void)
   * @param  line: assert_param error line source number
   * @retval None
   */
-void assert_failed(uint8_t *file, uint32_t line)
+void assert_failed(uint8_t* file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
+     /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
