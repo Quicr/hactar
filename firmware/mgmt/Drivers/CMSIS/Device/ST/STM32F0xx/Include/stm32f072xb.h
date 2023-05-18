@@ -4818,7 +4818,7 @@ typedef struct
 #define CEC_RXDR_RXD_Msk         (0xFFUL << CEC_RXDR_RXD_Pos)                   /*!< 0x000000FF */
 #define CEC_RXDR_RXD             CEC_RXDR_RXD_Msk                              /*!< CEC Rx Data                        */
 /* Legacy aliases */
-#define CEC_TXDR_RXD_Pos         CEC_RXDR_RXD_Pos    
+#define CEC_TXDR_RXD_Pos         CEC_RXDR_RXD_Pos
 #define CEC_TXDR_RXD_Msk         CEC_RXDR_RXD_Msk
 #define CEC_TXDR_RXD             CEC_RXDR_RXD
 /*******************  Bit definition for CEC_ISR register  ********************/

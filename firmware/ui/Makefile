@@ -40,7 +40,8 @@ DIRS = ${OBJ_DIR} ${BIN_DIR} ${DEP_DIR}
 #######################################
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
-CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
+# CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS = -c port=/dev/ttyUSB0 br=57600 P=even db=8 -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
 
 
 ######################################
@@ -214,7 +215,7 @@ DEPS       = ${DEPS_C} ${DEPS_CC}
 .PHONY: all
 
 # default action: build all
-all: info compile program
+all: info program
 
 -include $(DEPS)
 
