@@ -175,23 +175,42 @@ int main(void)
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET); // release NET reset and start program
 
       // Port notes:
-      //    USB_TX1_MGMT_GPIO_Port and USB_RX1_MGMT_GPIO_Port are GPIOB
-      //    NET_TX0_MGMT_GPIO_Port and NET_RX0_MGMT_GPIO_Port are GPIOB
-      //    BTN_RST_GPIO_Port is on GPIOC
+      //    USB_TX1_MGMT_GPIO_Port(Pin 10) and USB_RX1_MGMT_GPIO_Port(Pin 11) are GPIOB
+      //    NET_TX0_MGMT_GPIO_Port(Pin 6) and NET_RX0_MGMT_GPIO_Port(Pin 7) are GPIOB
+      //    BTN_RST_GPIO_Port is on GPIOC, pin 13
 
       // Program NET mode
-      while( HAL_GPIO_ReadPin(BTN_RST_GPIO_Port, BTN_RST_Pin ) != 0 ) {
-	// Copy USB serial to NET serial
-	HAL_GPIO_WritePin( NET_RX0_MGMT_GPIO_Port, NET_RX0_MGMT_Pin,
-			   ( HAL_GPIO_ReadPin( USB_TX1_MGMT_GPIO_Port, USB_TX1_MGMT_Pin ) == 0 )
-			   ? GPIO_PIN_RESET : GPIO_PIN_SET ); 
-	
-	// Copy NET serial to USB serial
-	HAL_GPIO_WritePin( USB_RX1_MGMT_GPIO_Port, USB_RX1_MGMT_Pin,
-			   ( HAL_GPIO_ReadPin( NET_TX0_MGMT_GPIO_Port, NET_TX0_MGMT_Pin ) == 0 )
-			   ? GPIO_PIN_RESET:GPIO_PIN_SET); 
+#if 1 // fast code
+      __disable_irq();
+      register uint32_t idr = GPIOB->IDR;
+      register uint32_t odr = GPIOB->ODR;
+      odr &=  ~( GPIO_ODR_7 | GPIO_ODR_11 ); // clear pins 7 and 11 
+      register uint32_t baseOdr = odr;
+      while ( GPIOC->IDR & GPIO_IDR_13 ) {
+        idr = GPIOB->IDR;
+        odr = baseOdr; // clear pins 7 and 11 
+        // Copy USB serial to NET serial ( pin 10 to pin 7 ) 
+        if ( idr & GPIO_IDR_10 ) { odr |=  GPIO_ODR_7; }
+        // Copy NET serial to USB serial ( pin 6 to pin 11 )
+        if ( idr &  GPIO_IDR_6  ) { odr |= GPIO_ODR_11; }
+        GPIOB->ODR = odr;
       }
-
+      __enable_irq();
+#else // slow code 
+      while( HAL_GPIO_ReadPin(BTN_RST_GPIO_Port, BTN_RST_Pin ) != 0 ) {
+        // Copy USB serial to NET serial
+       
+        HAL_GPIO_WritePin( NET_RX0_MGMT_GPIO_Port, NET_RX0_MGMT_Pin,
+                           ( HAL_GPIO_ReadPin( USB_TX1_MGMT_GPIO_Port, USB_TX1_MGMT_Pin ) == 0 )
+                           ? GPIO_PIN_RESET : GPIO_PIN_SET ); 
+        
+        // Copy NET serial to USB serial
+        HAL_GPIO_WritePin( USB_RX1_MGMT_GPIO_Port, USB_RX1_MGMT_Pin,
+                           ( HAL_GPIO_ReadPin( NET_TX0_MGMT_GPIO_Port, NET_TX0_MGMT_Pin ) == 0 )
+                           ? GPIO_PIN_RESET:GPIO_PIN_SET); 
+      }
+#endif
+      
       // go back to normal mode
       HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
       HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
