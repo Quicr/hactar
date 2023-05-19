@@ -89,17 +89,25 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET); // put net in reset mode
+  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal mode is 1
+  
+  //HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_SET); // normal mode is 0 
+  //HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_RESET); // put UI in reset mode 
+
   // TURN off right Net LED 
   HAL_GPIO_WritePin( LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET); 
-  HAL_GPIO_WritePin( LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin( LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
+  HAL_GPIO_WritePin( LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin( LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET); 
 
   // TURN off left UI LED 
   HAL_GPIO_WritePin( LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin( LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin( LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET); 
+  HAL_GPIO_WritePin( LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
 
-  
+  //HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); // take  UI out of reset mode 
+ 
+      
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -110,154 +118,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    // If UI button pressed 
-    if ( HAL_GPIO_ReadPin( GPIOC, BTN_UI_Pin ) == 0 ) {
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_RESET); // put UI in reset mode 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET); // put net in reset mode
-      
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_SET); // put UI in bootloader mode 
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
- 			 
-      //  NET LED Off
-      HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
-      //  UI LED Purple 
-      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET); 
-      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET); 
-
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); // release UI reset and start program
-      // Note - the reset pulse to UI looks like it is about 4 uS wide on scope 
-
-      // Port notes:
-      //    USB_TX1_MGMT_GPIO_Port and  USB_RX1_MGMT_GPIO_Port are GPIOB
-      //    UI_TX2_MGMT_GPIO_Port and UI_RX2_MGMT_GPIO_Port are GPIOA
-      //    BTN_RST_GPIO_Port is on GPIOC
-      
-      // Program UI mode
-      while( HAL_GPIO_ReadPin( BTN_RST_GPIO_Port, BTN_RST_Pin ) != 0 ) {
-	// Copy USB serial to UI serial 
-	HAL_GPIO_WritePin( UI_RX2_MGMT_GPIO_Port, UI_RX2_MGMT_Pin,
-			   ( HAL_GPIO_ReadPin( USB_TX1_MGMT_GPIO_Port, USB_TX1_MGMT_Pin ) == 0 )
-			   ? GPIO_PIN_RESET : GPIO_PIN_SET ); 
-      
-	// Copy UI serial to USB serial 
-	HAL_GPIO_WritePin( USB_RX1_MGMT_GPIO_Port, USB_RX1_MGMT_Pin,
-			   ( HAL_GPIO_ReadPin( UI_TX2_MGMT_GPIO_Port, UI_TX2_MGMT_Pin ) == 0 )
-			   ? GPIO_PIN_RESET:GPIO_PIN_SET); 
-      }
-    
-      // go back to normal mode 
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
-    }
-
-     // If NET button pressed 
-    if ( HAL_GPIO_ReadPin(BTN_NET_GPIO_Port, BTN_NET_Pin ) == 0 ) {
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_RESET); // put UI in reset mode 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET); // put net in reset mode
-      
-      HAL_GPIO_WritePin(GPIOB, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
-      HAL_GPIO_WritePin(GPIOB, NET_BOOT_Pin, GPIO_PIN_RESET); // put NET in bootload mode 
- 			 
-      //  NET LED Purple
-      HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
-      //  UI LED Off 
-      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET); 
-      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
-
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET); // release NET reset and start program
-
-      // Port notes:
-      //    USB_TX1_MGMT_GPIO_Port and USB_RX1_MGMT_GPIO_Port are GPIOB
-      //    NET_TX0_MGMT_GPIO_Port and NET_RX0_MGMT_GPIO_Port are GPIOB
-      //    BTN_RST_GPIO_Port is on GPIOC
-
-      // Program NET mode
-      while( HAL_GPIO_ReadPin(BTN_RST_GPIO_Port, BTN_RST_Pin ) != 0 ) {
-#if 0 // TODO - remove later 
-	// Copy USB serial to NET serial
-	HAL_GPIO_WritePin( NET_RX0_MGMT_GPIO_Port, NET_RX0_MGMT_Pin,
-			   ( HAL_GPIO_ReadPin( USB_TX1_MGMT_GPIO_Port, USB_TX1_MGMT_Pin ) == 0 )
-			   ? GPIO_PIN_RESET : GPIO_PIN_SET ); 
-#endif
-    
-	// Copy NET serial to USB serial
-	HAL_GPIO_WritePin( USB_RX1_MGMT_GPIO_Port, USB_RX1_MGMT_Pin,
-			   ( HAL_GPIO_ReadPin( NET_TX0_MGMT_GPIO_Port, NET_TX0_MGMT_Pin ) == 0 )
-			   ? GPIO_PIN_RESET:GPIO_PIN_SET); 
-      }
-
-      // go back to normal mode
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-    }
-    
-    // If reset button pressed 
-    if ( HAL_GPIO_ReadPin( BTN_RST_GPIO_Port, BTN_RST_Pin ) == 0 ) {
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_RESET); 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
-
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
-      
-      //  UI LED Off 
-      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET); 
-      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
-
-      //  NET LED  Off
-      HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET); 
-    }
-    else {
-      // Normal mode
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin,  GPIO_PIN_SET); 
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin,  GPIO_PIN_RESET); // normal boot mode is 0
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET); // normal boot mode is 1 
-      
-      // Check UI CPU status
-      if ( HAL_GPIO_ReadPin( UI_STAT_GPIO_Port, UI_STAT_Pin ) == 0 ) {
-	//  UI LED Red
-	HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET); 
-	HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
-      }
-      else {
-	//  UI LED Green 
-	HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET); 
-	HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET); 
-      }
-
-      // Check NET CPU status 
-      if ( HAL_GPIO_ReadPin( NET_STAT_GPIO_Port, NET_STAT_Pin ) == 0 ) {
-	//  NET LED Red
-	HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
-      }
-      else {
-	//  NET LED Green
-	HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
-      }
-      
-    }
-  }
   /* USER CODE END 3 */
+  }
 }
 
 /**
@@ -363,11 +225,11 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, UI_RX2_MGMT_Pin|LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin
-                          |MGMT_DBG7_Pin|UI_RST_Pin, GPIO_PIN_RESET);
+                          |MGMT_DBG7_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin|USB_RX1_MGMT_Pin|LEDB_G_Pin|LEDB_B_Pin
-                          |UI_BOOT_Pin|NET_RST_Pin|NET_BOOT_Pin, GPIO_PIN_RESET);
+                          |NET_RST_Pin|NET_BOOT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : BTN_RST_Pin BTN_UI_Pin BTN_NET_Pin */
   GPIO_InitStruct.Pin = BTN_RST_Pin|BTN_UI_Pin|BTN_NET_Pin;
@@ -381,11 +243,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : UI_TX2_MGMT_Pin */
-  GPIO_InitStruct.Pin = UI_TX2_MGMT_Pin;
+  /*Configure GPIO pins : UI_TX2_MGMT_Pin UI_RST_Pin */
+  GPIO_InitStruct.Pin = UI_TX2_MGMT_Pin|UI_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(UI_TX2_MGMT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : UI_RX2_MGMT_Pin */
   GPIO_InitStruct.Pin = UI_RX2_MGMT_Pin;
@@ -394,28 +256,26 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(UI_RX2_MGMT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDB_R_Pin LEDA_R_Pin LEDA_G_Pin MGMT_DBG7_Pin
-                           UI_RST_Pin */
-  GPIO_InitStruct.Pin = LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin|MGMT_DBG7_Pin
-                          |UI_RST_Pin;
+  /*Configure GPIO pins : LEDB_R_Pin LEDA_R_Pin LEDA_G_Pin MGMT_DBG7_Pin */
+  GPIO_InitStruct.Pin = LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin|MGMT_DBG7_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDA_B_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT_Pin
-                           NET_RST_Pin NET_BOOT_Pin */
-  GPIO_InitStruct.Pin = LEDA_B_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT_Pin
-                          |NET_RST_Pin|NET_BOOT_Pin;
+  /*Configure GPIO pins : LEDA_B_Pin LEDB_G_Pin LEDB_B_Pin NET_RST_Pin
+                           NET_BOOT_Pin */
+  GPIO_InitStruct.Pin = LEDA_B_Pin|LEDB_G_Pin|LEDB_B_Pin|NET_RST_Pin
+                          |NET_BOOT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RTS_Pin USB_TX1_MGMT_Pin CTS_Pin NET_TX0_MGMT_Pin
-                           NET_RX0_MGMT_Pin */
-  GPIO_InitStruct.Pin = RTS_Pin|USB_TX1_MGMT_Pin|CTS_Pin|NET_TX0_MGMT_Pin
-                          |NET_RX0_MGMT_Pin;
+  /*Configure GPIO pins : RTS_Pin USB_TX1_MGMT_Pin CTS_Pin UI_BOOT_Pin
+                           NET_TX0_MGMT_Pin NET_RX0_MGMT_Pin */
+  GPIO_InitStruct.Pin = RTS_Pin|USB_TX1_MGMT_Pin|CTS_Pin|UI_BOOT_Pin
+                          |NET_TX0_MGMT_Pin|NET_RX0_MGMT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
