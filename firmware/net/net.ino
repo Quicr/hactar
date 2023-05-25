@@ -6,10 +6,9 @@
 #include "shared_inc/Packet.hh"
 
 const unsigned char Enable_Serial_Pin = 19;
-const unsigned char Alive_LED_Pin = 12;
-const unsigned char Network_LED_Pin = 7;
-const unsigned char Rx_LED_Pin = 6;
-const unsigned char Tx_LED_Pin = 5;
+const unsigned char LED_R_Pin = 5;
+const unsigned char LED_G_Pin = 6;
+const unsigned char LED_B_Pin = 7;
 
 
 // NOTE
@@ -100,7 +99,7 @@ void HandleIncomingSerial()
     // Get the packets from the ui layer
     Vector<Packet*>& rx_packets = ui_layer->GetRxPackets();
 
-    digitalWrite(Rx_LED_Pin, HIGH);
+    digitalWrite(LED_B_Pin, LOW);
 
     // Handle incoming packets
     while (rx_packets.size() > 0)
@@ -252,7 +251,7 @@ void HandleIncomingSerial()
         rx_packets.erase(0);
     }
 
-    digitalWrite(Rx_LED_Pin, LOW);
+    digitalWrite(LED_B_Pin, HIGH);
 }
 
 void setup()
@@ -272,20 +271,16 @@ void setup()
     Serial.println("Done setup");
 
     // LED for pinging
-    pinMode(Alive_LED_Pin, OUTPUT);
-    digitalWrite(Alive_LED_Pin, LOW);
+    pinMode(LED_R_Pin, OUTPUT);
+    digitalWrite(LED_R_Pin, HIGH);
 
     // LED for serial rx
-    pinMode(Rx_LED_Pin, OUTPUT);
-    digitalWrite(Rx_LED_Pin, LOW);
+    pinMode(LED_B_Pin, OUTPUT);
+    digitalWrite(LED_B_Pin, HIGH);
 
     // LED for serial tx
-    pinMode(Tx_LED_Pin, OUTPUT);
-    digitalWrite(Tx_LED_Pin, LOW);
-
-    // LED for network
-    pinMode(Network_LED_Pin, OUTPUT);
-    digitalWrite(Network_LED_Pin, LOW);
+    pinMode(LED_G_Pin, OUTPUT);
+    digitalWrite(LED_G_Pin, HIGH);
 }
 
 unsigned long ping = 0;
@@ -295,7 +290,7 @@ void loop()
 
     if (current_time > ping)
     {
-        digitalWrite(Alive_LED_Pin, !digitalRead(Alive_LED_Pin));
+        digitalWrite(LED_R_Pin, !digitalRead(LED_R_Pin));
         Serial.println("Alive");
         ping = current_time + 10000;
     }
@@ -303,9 +298,33 @@ void loop()
 
     ui_layer->RxTx(current_time);
     HandleIncomingSerial();
-    digitalWrite(Tx_LED_Pin, (ui_layer->HasTxPackets()));
+    // digitalWrite(Tx_LED_Pin, (ui_layer->HasTxPackets()));
     HandleOutgoingNetwork();
     HandleIncomingNetwork();
 
     yield();
 }
+
+// #include <Arduino.h>
+// void setup()
+// {
+//     pinMode(5, OUTPUT);
+//     pinMode(6, OUTPUT);
+//     pinMode(7, OUTPUT);
+
+//     digitalWrite(5, LOW);
+//     digitalWrite(6, HIGH);
+//     digitalWrite(7, HIGH);
+//     Serial.begin(115200);
+// }
+
+// unsigned long long timeout = 0;
+// void loop()
+// {
+//     if (millis() > timeout)
+//     {
+//         digitalWrite(5, !digitalRead(5));
+//         Serial.println("Hello from esp");
+//         timeout = millis() + 5000;
+//     }
+// }

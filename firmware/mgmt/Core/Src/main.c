@@ -66,24 +66,35 @@ static void TransmitReceive();
 enum State
 {
   Reset,
+  Running,
   UI,
   Net,
+  NetDebug
 };
 
-enum State state;
+volatile enum State state;
 volatile uint8_t uploading = 0;
 
 // Button interrupt debounce
 uint32_t btn_debounce_timeout = 0;
+
+uint32_t network_button_last_press = 0;
 
 // Callback from interrupt
 void HAL_GPIO_EXTI_Callback(uint16_t gpio_pin)
 {
   if (HAL_GetTick() < btn_debounce_timeout)
     return;
-  btn_debounce_timeout = HAL_GetTick() + 500;
-
-  if (gpio_pin == GPIO_PIN_13)
+  btn_debounce_timeout = HAL_GetTick() + 50;
+  if (gpio_pin == GPIO_PIN_1)
+  {
+    // Interrupt line for when the uploading completes
+    if (uploading)
+    {
+      ResetUpload();
+    }
+  }
+  else if (gpio_pin == GPIO_PIN_13)
   {
     ResetUpload();
   }
@@ -99,7 +110,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t gpio_pin)
 
 static void InitButtons()
 {
-  RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  // RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
   // RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
   // Put pin 13, 14, and 15 into input mode [00] (reset)
@@ -215,6 +227,18 @@ static void InitBitBangPins()
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(USB_TX1_MGMT_GPIO_Port, &GPIO_InitStruct);
 
+  GPIO_InitStruct.Pin = CTS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(CTS_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = RTS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(RTS_GPIO_Port, &GPIO_InitStruct);
+
   // UI uart
   // Configure GPIO pins : PA2|PA3 tx/rx
   GPIO_InitStruct.Pin = UI_TX2_MGMT_Pin;
@@ -268,6 +292,12 @@ static void InitBitBangPins()
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(NET_BOOT_GPIO_Port, &GPIO_InitStruct);
 
+  // The RTS line goes low when uploading finishes
+  SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI1_PB;
+  EXTI->IMR |= EXTI_IMR_IM1;
+  EXTI->RTSR &= ~EXTI_RTSR_TR1;   // Turn off rising edge detection
+  EXTI->FTSR |= EXTI_FTSR_FT1;    // Turn on falling edge detection
+
 }
 
 static void InitIRQ()
@@ -275,74 +305,31 @@ static void InitIRQ()
   HAL_NVIC_EnableIRQ(BTN_RST_EXTI_IRQn);
   HAL_NVIC_EnableIRQ(BTN_UI_EXTI_IRQn);
   HAL_NVIC_EnableIRQ(BTN_NET_EXTI_IRQn);
+  HAL_NVIC_EnableIRQ(RTS_EXTI_IRQn);
 
   HAL_NVIC_SetPriority(BTN_RST_EXTI_IRQn, 0, 0);
   HAL_NVIC_SetPriority(BTN_UI_EXTI_IRQn, 0, 0);
   HAL_NVIC_SetPriority(BTN_NET_EXTI_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(RTS_EXTI_IRQn, 0, 0);
 }
 
 static void ResetUpload()
 {
   state = Reset;
   uploading = 0;
-
-  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
-
-  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 }
 
 static void UploadUIBegin()
 {
   state = UI;
-  // TODO
-  // slave_port = GPIOA;
-  // slave_odr_on = GPIO_IDR_2;
-  // slave_odr_off = ~slave_odr_on;
-  // slave_idr = GPIO_IDR_3;
-
-  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
-
-  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
-
-
-  // Put esp and stm into reset
-  HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
-
-  // Bring the boot high for stm
-  HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
-
-  // Bring the boot high for esp, normal boot (1)
-  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
-
-  // Release the stm reset
-  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
-  // Release the esp reset
-  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
 }
 
 static void UploadNetBegin()
 {
-  state = Net;
-  uploading = 1;
-
-  // TODO move into upload code
-  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
-
-  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
+  if (state == Net)
+    state = NetDebug;
+  else
+    state = Net;
 }
 
 static void TransmitReceive()
@@ -435,31 +422,108 @@ int main(void)
   HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
-  // TODO Enable UI chip
+  // Bring the stm boot into normal mode (0) and send the reset
+  // HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
+  // HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
 
-  // Enable Net chip
-  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+  // // Bring the esp boot into normal mode (1)
+  // HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+  // HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+
+  // // Wait a moment
+  // HAL_Delay(10);
+
+  // // Release the LEDs
+  // HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+  // HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
 
   while (1)
   {
-
-    while (state == UI)
+    if (state == Reset)
     {
-      // TODO
+      // Bring the stm boot into normal mode (0) and send the reset
+      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+
+      // Bring the esp boot into normal mode (1)
+      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+
+      // Wait a moment
+      HAL_Delay(500);
+
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+
+      // HAL_Delay(100);
+      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+
+      // Release the LEDs
+      // Loop in here forever while running
+      state = Running;
+      while (state == Running)
+      {
+        HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+        HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+      }
     }
 
-    while (state == Net)
+    if (state == UI)
+    {
+      // Set LEDS for ui
+      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+      HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+
+
+      // Put esp and stm into reset
+      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+
+      // Bring the boot high for stm
+      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
+
+      // Bring the boot high for esp, normal boot (1)
+      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+
+      // Release the stm reset
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+      // Release the esp reset
+      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+    }
+
+    if (state == Net)
     {
       // Get some bits to ignore
       uint32_t bits_copied = 0;
 
+      // Set leds
+      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+      HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+
       // Wait for the start bit from esptool
-      while (USB_PORT->IDR & USB_RX_Bit)
+      while ((USB_PORT->IDR & USB_RX_Bit) && (state == Net))
       {
         USB_PORT->ODR |= NET_TX_Bit_On;
       }
       USB_PORT->ODR &= NET_TX_Bit_Off;
+
+      if (state != Net)
+        continue;
 
       // Put esp and stm into reset
       HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
@@ -473,7 +537,7 @@ int main(void)
       HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
 
       // Pretty much ignore a bunch of bits
-      while (bits_copied++ < 0x100000)
+      while (bits_copied++ < 0x100000 && state == Net)
       {
         // Copy from network
         if (NET_PORT->IDR & NET_RX_Bit)
@@ -496,13 +560,17 @@ int main(void)
         }
       }
 
+      if (state != Net)
+        continue;
+
+      uploading = 1;
+
       // Release the esp reset to put into boot mode
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
 
-      // TODO need the signal from the usb that uploading is complete
       while (uploading)
       {
-        // Copy from network
+        // Copy from net chip
         if (NET_PORT->IDR & NET_RX_Bit)
         {
           USB_PORT->ODR |= USB_TX_Bit_On;
@@ -522,9 +590,60 @@ int main(void)
           NET_PORT->ODR &= NET_TX_Bit_Off;
         }
       }
-      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET);
       USB_PORT->ODR &= USB_TX_Bit_Off;
       NET_PORT->ODR &= NET_TX_Bit_Off;
+    } // end if state == net
+
+    if (state == NetDebug)
+    {
+      // Set the debug led (blue)
+      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+      HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
+
+
+      // Bring the stm boot into normal mode (0) and send the reset
+      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+
+      // Bring the esp boot into normal mode (1)
+      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+
+      // Wait a moment
+      HAL_Delay(500);
+
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+
+      // HAL_Delay(100);
+      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+
+      while (state == NetDebug)
+      {
+        // Copy from net chip
+        if (NET_PORT->IDR & NET_RX_Bit)
+        {
+          USB_PORT->ODR |= USB_TX_Bit_On;
+        }
+        else
+        {
+          USB_PORT->ODR &= USB_TX_Bit_Off;
+        }
+
+        // Check the usb uart bit for input
+        if (USB_PORT->IDR & USB_RX_Bit)
+        {
+          NET_PORT->ODR |= NET_TX_Bit_On;
+        }
+        else
+        {
+          NET_PORT->ODR &= NET_TX_Bit_Off;
+        }
+      }
     }
   }
   /* USER CODE END 3 */

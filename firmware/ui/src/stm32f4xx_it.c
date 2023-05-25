@@ -200,9 +200,9 @@ void SysTick_Handler(void)
 
 /* USER CODE BEGIN 1 */
 
-void USART2_IRQHandler(void)
+void USART1_IRQHandler(void)
 {
-    HAL_UART_IRQHandler(&huart2);
+    HAL_UART_IRQHandler(&huart1);
 }
 
 #if 0
