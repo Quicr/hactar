@@ -84,6 +84,7 @@ void Error_Handler(void);
 #define LEDA_R_GPIO_Port GPIOB
 #define RTS_Pin GPIO_PIN_1
 #define RTS_GPIO_Port GPIOB
+#define RTS_EXTI_IRQn EXTI0_1_IRQn
 #define USB_TX1_MGMT_Pin GPIO_PIN_10
 #define USB_TX1_MGMT_GPIO_Port GPIOB
 #define USB_RX1_MGMT_Pin GPIO_PIN_11

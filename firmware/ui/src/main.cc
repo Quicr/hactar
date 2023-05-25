@@ -38,7 +38,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init();
 static void MX_SPI1_Init();
 static void MX_DMA_Init();
-static void MX_USART2_Init();
+static void MX_USART1_Init();
 static void MX_I2C1_Init();
 static void KeyboardTimerInit();
 
@@ -46,7 +46,7 @@ static void KeyboardTimerInit();
 // void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 // Handlers
-UART_HandleTypeDef huart2;
+UART_HandleTypeDef huart1;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 I2C_HandleTypeDef hi2c1;
@@ -83,7 +83,7 @@ int main(void)
     // Not in use
     // IRQInit();
 
-    MX_USART2_Init();
+    MX_USART1_Init();
 
     // Init DMA for SPI1, NOTE- This MUST come before SPI1
     MX_DMA_Init();
@@ -106,7 +106,7 @@ int main(void)
     eeprom = new EEPROM(hi2c1, 32, 255);
 
     screen.Begin();
-    HAL_GPIO_WritePin(USART2_RX_EN_PORT, USART2_RX_EN_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(USART1_RX_EN_PORT, USART1_RX_EN_PIN, GPIO_PIN_RESET);
 
     // // Set the port pins and groups for the keyboard columns
     port_pin col_pins[Q10_COLS] =
@@ -139,7 +139,7 @@ int main(void)
     // Initialize the keyboard
     keyboard->Begin();
 
-    net_layer = new SerialStm(&huart2);
+    net_layer = new SerialStm(&huart1);
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer, *eeprom);
 
@@ -267,12 +267,12 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-    HAL_GPIO_WritePin(USART2_RX_EN_PORT, USART2_RX_EN_PIN, GPIO_PIN_RESET);
-    GPIO_InitStruct.Pin = USART2_RX_EN_PIN;
+    HAL_GPIO_WritePin(USART1_RX_EN_PORT, USART1_RX_EN_PIN, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = USART1_RX_EN_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(USART2_RX_EN_PORT, &GPIO_InitStruct);
+    HAL_GPIO_Init(USART1_RX_EN_PORT, &GPIO_InitStruct);
 }
 
 static void MX_SPI1_Init(void)
@@ -304,17 +304,17 @@ static void MX_DMA_Init()
     HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 }
 
-static void MX_USART2_Init()
+static void MX_USART1_Init()
 {
-    huart2.Instance = USART2;
-    huart2.Init.BaudRate = 115200;
-    huart2.Init.WordLength = UART_WORDLENGTH_8B;
-    huart2.Init.StopBits = UART_STOPBITS_1;
-    huart2.Init.Parity = UART_PARITY_NONE;
-    huart2.Init.Mode = UART_MODE_TX_RX;
-    huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-    if (HAL_UART_Init(&huart2) != HAL_OK)
+    huart1.Instance = USART1;
+    huart1.Init.BaudRate = 115200;
+    huart1.Init.WordLength = UART_WORDLENGTH_8B;
+    huart1.Init.StopBits = UART_STOPBITS_1;
+    huart1.Init.Parity = UART_PARITY_NONE;
+    huart1.Init.Mode = UART_MODE_TX_RX;
+    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+    if (HAL_UART_Init(&huart1) != HAL_OK)
     {
         Error_Handler();
     }
@@ -340,12 +340,12 @@ static void MX_I2C1_Init()
 // This will only be called when the rx_buffer is filled up
 // void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart)
 // {
-//     if (huart->Instance == huart2.Instance)
+//     if (huart->Instance == huart1.Instance)
 //     {
 //         net_layer->SetRxFlag();
-//         // HAL_GPIO_TogglePin(USART2_RX_LED_PORT, USART2_RX_LED_PIN);
+//         // HAL_GPIO_TogglePin(USART1_RX_LED_PORT, USART1_RX_LED_PIN);
 //     }
-//     // HAL_UARTEx_ReceiveToIdle_IT(&huart2, rx_buff, 16);
+//     // HAL_UARTEx_ReceiveToIdle_IT(&huart1, rx_buff, 16);
 // }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
