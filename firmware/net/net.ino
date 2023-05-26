@@ -6,9 +6,9 @@
 #include "shared_inc/Packet.hh"
 
 const unsigned char Enable_Serial_Pin = 19;
-const unsigned char LED_R_Pin = 5;
+const unsigned char LED_B_Pin = 5;
 const unsigned char LED_G_Pin = 6;
-const unsigned char LED_B_Pin = 7;
+const unsigned char LED_R_Pin = 7;
 
 
 // NOTE
@@ -99,7 +99,7 @@ void HandleIncomingSerial()
     // Get the packets from the ui layer
     Vector<Packet*>& rx_packets = ui_layer->GetRxPackets();
 
-    digitalWrite(LED_B_Pin, LOW);
+    digitalWrite(LED_R_Pin, LOW);
 
     // Handle incoming packets
     while (rx_packets.size() > 0)
@@ -251,7 +251,7 @@ void HandleIncomingSerial()
         rx_packets.erase(0);
     }
 
-    digitalWrite(LED_B_Pin, HIGH);
+    digitalWrite(LED_R_Pin, HIGH);
 }
 
 void setup()
@@ -271,12 +271,12 @@ void setup()
     Serial.println("Done setup");
 
     // LED for pinging
-    pinMode(LED_R_Pin, OUTPUT);
-    digitalWrite(LED_R_Pin, HIGH);
-
-    // LED for serial rx
     pinMode(LED_B_Pin, OUTPUT);
     digitalWrite(LED_B_Pin, HIGH);
+
+    // LED for serial rx
+    pinMode(LED_R_Pin, OUTPUT);
+    digitalWrite(LED_R_Pin, HIGH);
 
     // LED for serial tx
     pinMode(LED_G_Pin, OUTPUT);
@@ -290,7 +290,7 @@ void loop()
 
     if (current_time > ping)
     {
-        digitalWrite(LED_R_Pin, !digitalRead(LED_R_Pin));
+        digitalWrite(LED_B_Pin, !digitalRead(LED_B_Pin));
         Serial.println("Alive");
         ping = current_time + 10000;
     }
@@ -298,7 +298,7 @@ void loop()
 
     ui_layer->RxTx(current_time);
     HandleIncomingSerial();
-    // digitalWrite(Tx_LED_Pin, (ui_layer->HasTxPackets()));
+    digitalWrite(LED_R_Pin, (ui_layer->HasTxPackets()));
     HandleOutgoingNetwork();
     HandleIncomingNetwork();
 

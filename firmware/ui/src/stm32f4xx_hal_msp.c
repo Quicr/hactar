@@ -26,39 +26,41 @@
   ******************************************************************************
   */
 
-/* Includes ------------------------------------------------------------------*/
+  /* Includes ------------------------------------------------------------------*/
 #include "main.hh"
 
 /** @addtogroup STM32F4xx_HAL_Driver
  * @{
  */
 
-/** @defgroup HAL_MSP
- * @brief HAL MSP module.
- * @{
- */
+ /** @defgroup HAL_MSP
+  * @brief HAL MSP module.
+  * @{
+  */
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
+  /* Private typedef -----------------------------------------------------------*/
+  /* Private define ------------------------------------------------------------*/
+  /* Private macro -------------------------------------------------------------*/
+  /* Private variables ---------------------------------------------------------*/
+  /* Private function prototypes -----------------------------------------------*/
+  /* Private functions ---------------------------------------------------------*/
 
-/** @defgroup HAL_MSP_Private_Functions
- * @{
- */
+  /** @defgroup HAL_MSP_Private_Functions
+   * @{
+   */
 
-/**
- * @brief  Initializes the Global MSP.
- * @param  None
- * @retval None
- */
+   /**
+    * @brief  Initializes the Global MSP.
+    * @param  None
+    * @retval None
+    */
 void HAL_MspInit(void)
 {
     /* NOTE : This function is generated automatically by STM32CubeMX and eventually
               modified by the user
      */
+    __HAL_RCC_SYSCFG_CLK_ENABLE();
+    __HAL_RCC_PWR_CLK_ENABLE();
 
     HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_0);
 
@@ -91,9 +93,9 @@ void HAL_MspDeInit(void)
      */
 }
 
-void HAL_SPI_MspInit(SPI_HandleTypeDef *spiHandle)
+void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
 {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
     if (spiHandle->Instance == SPI1)
     {
         // Clock enable
@@ -134,7 +136,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef *spiHandle)
     }
 }
 
-void HAL_SPI_MspDeInit(SPI_HandleTypeDef *spiHandle)
+void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
 {
     if (spiHandle->Instance == SPI1)
     {
@@ -157,9 +159,9 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef *spiHandle)
  * @param huart: UART handle pointer
  * @retval None
  */
-void HAL_UART_MspInit(UART_HandleTypeDef *huart)
+void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
     if (huart->Instance == USART1)
     {
         /* Peripheral clock enable */
@@ -193,7 +195,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
  * @param huart: UART handle pointer
  * @retval None
  */
-void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
+void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
 {
     if (huart->Instance == USART1)
     {
@@ -219,19 +221,19 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
 */
 void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-    if(hi2c->Instance==I2C1)
+    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+    if (hi2c->Instance == I2C1)
     {
-    /* USER CODE BEGIN I2C1_MspInit 0 */
+        /* USER CODE BEGIN I2C1_MspInit 0 */
 
-    /* USER CODE END I2C1_MspInit 0 */
+        /* USER CODE END I2C1_MspInit 0 */
 
         __HAL_RCC_GPIOB_CLK_ENABLE();
         /**I2C1 GPIO Configuration
         PB6     ------> I2C1_SCL
         PB7     ------> I2C1_SDA
         */
-        GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+        GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_7;
         GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
         GPIO_InitStruct.Pull = GPIO_NOPULL;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -240,9 +242,9 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 
         /* Peripheral clock enable */
         __HAL_RCC_I2C1_CLK_ENABLE();
-    /* USER CODE BEGIN I2C1_MspInit 1 */
+        /* USER CODE BEGIN I2C1_MspInit 1 */
 
-    /* USER CODE END I2C1_MspInit 1 */
+        /* USER CODE END I2C1_MspInit 1 */
     }
 
 }
@@ -255,12 +257,12 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 */
 void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
 {
-    if(hi2c->Instance==I2C1)
+    if (hi2c->Instance == I2C1)
     {
-    /* USER CODE BEGIN I2C1_MspDeInit 0 */
+        /* USER CODE BEGIN I2C1_MspDeInit 0 */
 
-    /* USER CODE END I2C1_MspDeInit 0 */
-        /* Peripheral clock disable */
+        /* USER CODE END I2C1_MspDeInit 0 */
+            /* Peripheral clock disable */
         __HAL_RCC_I2C1_CLK_DISABLE();
 
         /**I2C1 GPIO Configuration
@@ -271,14 +273,14 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
 
         HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
 
-    /* USER CODE BEGIN I2C1_MspDeInit 1 */
+        /* USER CODE BEGIN I2C1_MspDeInit 1 */
 
-    /* USER CODE END I2C1_MspDeInit 1 */
+        /* USER CODE END I2C1_MspDeInit 1 */
     }
 
 }
 
-void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim)
+void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim)
 {
     if (htim->Instance == TIM2)
     {
@@ -289,7 +291,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim)
     }
 }
 
-void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef *htim)
+void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim)
 {
     if (htim->Instance == TIM2)
     {

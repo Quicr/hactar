@@ -66,11 +66,11 @@ void UserInterfaceManager::Run()
         EnqueuePacket(std::move(check_wifi));
         last_wifi_check = current_time + 5000;
     }
-    if (current_time > last_test_packet && is_connected_to_wifi)
-    {
-        SendTestPacket();
-        last_test_packet = current_time + 7000;
-    }
+    // if (current_time > last_test_packet && is_connected_to_wifi)
+    // {
+    //     SendTestPacket();
+    //     last_test_packet = current_time + 7000;
+    // }
 
     // Run the receive and transmit
     net_layer.RxTx(current_time);

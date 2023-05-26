@@ -422,21 +422,6 @@ int main(void)
   HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
-  // Bring the stm boot into normal mode (0) and send the reset
-  // HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
-  // HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
-
-  // // Bring the esp boot into normal mode (1)
-  // HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
-  // HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
-
-  // // Wait a moment
-  // HAL_Delay(10);
-
-  // // Release the LEDs
-  // HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
-  // HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-
   while (1)
   {
     if (state == Reset)
@@ -499,6 +484,29 @@ int main(void)
       HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
       // Release the esp reset
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+
+      while (state == UI)
+      {
+        // Copy from net chip
+        if (NET_PORT->IDR & NET_RX_Bit)
+        {
+          USB_PORT->ODR |= USB_TX_Bit_On;
+        }
+        else
+        {
+          USB_PORT->ODR &= USB_TX_Bit_Off;
+        }
+
+        // Check the usb uart bit for input
+        if (USB_PORT->IDR & USB_RX_Bit)
+        {
+          NET_PORT->ODR |= NET_TX_Bit_On;
+        }
+        else
+        {
+          NET_PORT->ODR &= NET_TX_Bit_Off;
+        }
+      }
     }
 
     if (state == Net)
@@ -622,10 +630,10 @@ int main(void)
       // HAL_Delay(100);
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
 
-      while (state == NetDebug)
+      while (state == UI)
       {
         // Copy from net chip
-        if (NET_PORT->IDR & NET_RX_Bit)
+        if (UI_PORT->IDR & UI_RX_Bit)
         {
           USB_PORT->ODR |= USB_TX_Bit_On;
         }
@@ -637,11 +645,11 @@ int main(void)
         // Check the usb uart bit for input
         if (USB_PORT->IDR & USB_RX_Bit)
         {
-          NET_PORT->ODR |= NET_TX_Bit_On;
+          UI_PORT->ODR |= UI_TX_Bit_On;
         }
         else
         {
-          NET_PORT->ODR &= NET_TX_Bit_Off;
+          UI_PORT->ODR &= UI_TX_Bit_Off;
         }
       }
     }

@@ -121,6 +121,11 @@ void Error_Handler(void);
 #define USB_TX_Bit_On GPIO_ODR_11
 #define USB_TX_Bit_Off ~GPIO_ODR_11
 
+#define UI_PORT GPIOA
+#define UI_RX_Bit GPIO_IDR_3
+#define UI_TX_Bit_On GPIO_ODR_2
+#define UI_TX_Bit_Off ~GPIO_ODR_7
+
 #define NET_PORT GPIOB
 #define NET_RX_Bit GPIO_IDR_6
 #define NET_TX_Bit_On GPIO_ODR_7

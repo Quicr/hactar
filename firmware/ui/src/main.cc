@@ -53,15 +53,15 @@ I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim2;
 
 
-port_pin cs = {LCD_CS_GPIO_Port, LCD_CS_Pin};
-port_pin dc = {LCD_DC_GPIO_Port, LCD_DC_Pin};
-port_pin rst = {LCD_RST_GPIO_Port, LCD_RST_Pin};
-port_pin bl = {LCD_BL_GPIO_Port, LCD_BL_Pin};
+port_pin cs = { LCD_CS_GPIO_Port, LCD_CS_Pin };
+port_pin dc = { LCD_DC_GPIO_Port, LCD_DC_Pin };
+port_pin rst = { LCD_RST_GPIO_Port, LCD_RST_Pin };
+port_pin bl = { LCD_BL_GPIO_Port, LCD_BL_Pin };
 
 Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::portrait);
-Q10Keyboard *keyboard;
-SerialStm *net_layer = nullptr;
-UserInterfaceManager *ui_manager = nullptr;
+Q10Keyboard* keyboard;
+SerialStm* net_layer = nullptr;
+UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
 
 Led rx_led(LED1_Port, LED1_Pin, 10);
@@ -134,7 +134,7 @@ int main(void)
     KeyboardTimerInit();
 
     // Create the keyboard object
-    keyboard = new Q10Keyboard(col_pins, row_pins, 500, 100, &htim2);
+    keyboard = new Q10Keyboard(col_pins, row_pins, 200, 100, &htim2);
 
     // Initialize the keyboard
     keyboard->Begin();
@@ -158,8 +158,8 @@ int main(void)
  */
 void SystemClock_Config(void)
 {
-    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
     /** Configure the main internal regulator output voltage
      */
@@ -169,10 +169,14 @@ void SystemClock_Config(void)
     /** Initializes the RCC Oscillators according to the specified parameters
      * in the RCC_OscInitTypeDef structure.
      */
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLM = 25;
+    RCC_OscInitStruct.PLL.PLLN = 192;
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ = 4;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
     {
         Error_Handler();
@@ -180,13 +184,14 @@ void SystemClock_Config(void)
 
     /** Initializes the CPU, AHB and APB buses clocks
      */
-    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+        | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
     RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
     {
         Error_Handler();
     }
@@ -210,13 +215,14 @@ void SystemClock_Config(void)
  */
 static void MX_GPIO_Init(void)
 {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 
     /* GPIO Ports Clock Enable */
     __HAL_RCC_GPIOC_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOD_CLK_ENABLE();
+    __HAL_RCC_GPIOH_CLK_ENABLE();
 
     HAL_GPIO_WritePin(Q10_TIMER_LED_PORT, Q10_TIMER_LED_PIN, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = Q10_TIMER_LED_PIN;
@@ -225,21 +231,21 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(Q10_TIMER_LED_PORT, &GPIO_InitStruct);
 
-    HAL_GPIO_WritePin(LED1_Port,LED1_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED1_Port, LED1_Pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = LED1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LED1_Port, &GPIO_InitStruct);
 
-    HAL_GPIO_WritePin(LED2_Port,LED2_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED2_Port, LED2_Pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = LED2_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LED2_Port, &GPIO_InitStruct);
 
-    HAL_GPIO_WritePin(LED3_Port,LED3_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED3_Port, LED3_Pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = LED3_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -348,19 +354,19 @@ static void MX_I2C1_Init()
 //     // HAL_UARTEx_ReceiveToIdle_IT(&huart1, rx_buff, 16);
 // }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     net_layer->RxEvent();
     rx_led.On();
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
     net_layer->TxEvent();
     tx_led.On();
 }
 
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
     screen.ReleaseSPI();
 }
@@ -383,8 +389,8 @@ static void KeyboardTimerInit()
         Error_Handler();
     }
 
-    TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-    TIM_MasterConfigTypeDef sMasterConfig = {0};
+    TIM_ClockConfigTypeDef sClockSourceConfig = { 0 };
+    TIM_MasterConfigTypeDef sMasterConfig = { 0 };
 
     // Set the timer callback function
     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
@@ -401,7 +407,7 @@ static void KeyboardTimerInit()
     }
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 {
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
@@ -483,11 +489,11 @@ void Error_Handler(void)
  * @param  line: assert_param error line source number
  * @retval None
  */
-void assert_failed(uint8_t *file, uint32_t line)
+void assert_failed(uint8_t* file, uint32_t line)
 {
     /* USER CODE BEGIN 6 */
     /* User can add his own implementation to report the file name and line number,
         ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-    /* USER CODE END 6 */
+        /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
