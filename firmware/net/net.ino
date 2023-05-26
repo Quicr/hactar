@@ -291,9 +291,13 @@ void loop()
     if (current_time > ping)
     {
         digitalWrite(LED_B_Pin, !digitalRead(LED_B_Pin));
-        Serial.println("Alive");
+        Serial.println("-- Alive --");
         ping = current_time + 10000;
+        Serial.print("-- Wifi status: ");
+        Serial.print(WiFi.status());
+        Serial.println(" --");
     }
+
 
 
     ui_layer->RxTx(current_time);
