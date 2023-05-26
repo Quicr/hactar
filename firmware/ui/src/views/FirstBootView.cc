@@ -208,6 +208,7 @@ void FirstBootView::SetWifi()
     else if (wifi_state == WifiState::Password)
     {
         password = usr_input;
+        password = "Spikeball21Computers";
         setting_manager.SaveSetting(
             SettingManager::SettingAddress::SSID_Password,
             password.data(), password.length());

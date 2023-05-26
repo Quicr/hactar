@@ -170,12 +170,11 @@ void Q10Keyboard::ReadKeys()
             read_v = HAL_GPIO_ReadPin(row_pins[row].port, row_pins[row].pin);
 
             // If the key has been pressed and is not already pressed
-            if (read_v && read_v != latches[col][row])
+            if (read_v &&
+                read_v != latches[col][row] &&
+                HAL_GetTick() > debounce_timeout[col][row])
             {
-                if (!latches[col][row])
-                {
-                    debounce_timeout[col][row] = HAL_GetTick() + debounce_duration;
-                }
+                debounce_timeout[col][row] = HAL_GetTick() + debounce_duration;
                 latches[col][row] = read_v;
 
                 HandlePress(col, row, read_v);
@@ -186,14 +185,16 @@ void Q10Keyboard::ReadKeys()
             // If the key is not longer being pressed and was pressed
             if (!read_v && read_v != latches[col][row])
             {
-                latches[col][row] = GPIO_PIN_RESET;
-                debounce_timeout[col][row] = 0;
+                latches[col][row] = 0;
 
                 HandleFlagPress(col, row, read_v);
+                continue;
             }
 
             // If still holding, start repeating
-            if (HAL_GetTick() > debounce_timeout[col][row] && read_v && latches[col][row])
+            if (HAL_GetTick() > debounce_timeout[col][row] &&
+                read_v &&
+                latches[col][row])
             {
                 debounce_timeout[col][row] += repeat_duration;
 
