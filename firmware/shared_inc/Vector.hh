@@ -13,6 +13,7 @@ public:
     }
     Vector(const Vector<T>& v)
     {
+        if (array) delete [] array;
         _max_size = v.max_size();
         _capacity = v.capacity();
         _size = v.size();
@@ -22,6 +23,7 @@ public:
     }
     Vector(Vector<T>&& v)
     {
+        if (array) delete [] array;
         _max_size = v.max_size();
         _capacity = v.capacity();
         _size = v.size();
@@ -31,8 +33,7 @@ public:
 
     virtual ~Vector()
     {
-        // TODO loop through the array and delete all of the items
-        // if they are pointers
+        delete_elements();
         delete [] array;
     }
 
@@ -110,7 +111,7 @@ public:
 
         // When the _size equals 1/4 of _capacity reduce _capacity by 1/2
         // Overwrite the whole array
-        if (_size-1 <= _capacity/4)
+        if (_size-1 <= _capacity/4 && _capacity > 1)
         {
             unsigned int new_capacity = _capacity/2;
             T* new_array = new T[new_capacity];
@@ -128,6 +129,7 @@ public:
         }
 
         _size--;
+        array[_size] = 0;
     }
 
     void resize(const unsigned int new_capacity)
@@ -304,7 +306,7 @@ protected:
     delete_move_or_copy(unsigned int deleted_idx)
     {
         // Move operation
-        for (unsigned int i = deleted_idx; i < _size; ++i)
+        for (unsigned int i = deleted_idx; i < _size-1; ++i)
         {
             array[i] = std::move(array[i+1]);
         }
@@ -316,10 +318,29 @@ protected:
     delete_move_or_copy(unsigned int deleted_idx)
     {
         // Copy operation
-        for (unsigned int i = deleted_idx; i < _size; ++i)
+        for (unsigned int i = deleted_idx; i < _size-1; ++i)
         {
             array[i] = array[i+1];
         }
+    }
+
+
+    // Delete array, only used in deconstructor
+    template<typename U = T>
+    typename std::enable_if<std::is_pointer<U>::value, void>::type
+    delete_elements()
+    {
+        for (unsigned int i = 0; i < _size; ++i)
+        {
+            delete array[i];
+        }
+    }
+
+    // Delete array, only used in deconstructor
+    template<typename U = T>
+    typename std::enable_if<!std::is_pointer<U>::value, void>::type
+    delete_elements()
+    {
     }
 
     unsigned int _max_size;

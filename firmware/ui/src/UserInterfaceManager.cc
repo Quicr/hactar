@@ -36,7 +36,6 @@ UserInterfaceManager::~UserInterfaceManager()
 {
     screen = nullptr;
     keyboard = nullptr;
-    net_layer = nullptr;
 }
 
 // TODO should update this to be a draw/update architecture
@@ -57,13 +56,13 @@ void UserInterfaceManager::Run()
     if (current_time > last_wifi_check)
     {
         // Check a check wifi status packet
-        Packet check_wifi;
-        check_wifi.SetData(Packet::Types::Command, 0, 6);
-        check_wifi.SetData(NextPacketId(), 6, 8);
-        check_wifi.SetData(1, 14, 10);
-        check_wifi.SetData(Packet::Commands::WifiStatus, 24, 8);
+        Packet* check_wifi;
+        check_wifi->SetData(Packet::Types::Command, 0, 6);
+        check_wifi->SetData(NextPacketId(), 6, 8);
+        check_wifi->SetData(1, 14, 10);
+        check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
 
-        EnqueuePacket(std::move(check_wifi));
+        EnqueuePacket(check_wifi);
         last_wifi_check = current_time + 5000;
     }
     // if (current_time > last_test_packet && is_connected_to_wifi)
@@ -98,10 +97,10 @@ void UserInterfaceManager::ClearMessages()
     received_messages.clear();
 }
 
-void UserInterfaceManager::EnqueuePacket(Packet&& packet)
+void UserInterfaceManager::EnqueuePacket(Packet* packet)
 {
     // TODO maybe make this into a linked list?
-    net_layer.EnqueuePacket(std::move(packet));
+    net_layer.EnqueuePacket(packet);
 }
 
 void UserInterfaceManager::ForceRedraw()
@@ -258,42 +257,42 @@ void UserInterfaceManager::ConnectToWifi()
         ssid_password_len)) return;
 
     // Create the packet
-    Packet connect_packet;
-    connect_packet.SetData(Packet::Types::Command, 0, 6);
-    connect_packet.SetData(UserInterfaceManager::NextPacketId(), 6, 8);
+    Packet* connect_packet;
+    connect_packet->SetData(Packet::Types::Command, 0, 6);
+    connect_packet->SetData(UserInterfaceManager::NextPacketId(), 6, 8);
     // THINK should these be separate packets?
     // +3 for the length of the ssid, length of the password
     uint16_t length = ssid_len + ssid_password_len + 3;
-    connect_packet.SetData(length, 14, 10);
+    connect_packet->SetData(length, 14, 10);
 
-    connect_packet.SetData(Packet::Commands::ConnectToSSID, 24, 8);
+    connect_packet->SetData(Packet::Commands::ConnectToSSID, 24, 8);
 
     // Set the length of the ssid
-    connect_packet.SetData(ssid_len, 32, 8);
+    connect_packet->SetData(ssid_len, 32, 8);
 
     // Populate with the ssid
     uint16_t i;
     uint16_t offset = 40;
     for (i = 0; i < ssid_len; ++i)
     {
-        connect_packet.SetData(ssid[i], offset, 8);
+        connect_packet->SetData(ssid[i], offset, 8);
         offset += 8;
     }
 
     // Set the length of the password
-    connect_packet.SetData(ssid_password_len, offset, 8);
+    connect_packet->SetData(ssid_password_len, offset, 8);
     offset += 8;
 
     // Populate with the password
     uint16_t j;
     for (j = 0; j < ssid_password_len; ++j)
     {
-        connect_packet.SetData(ssid_password[j], offset, 8);
+        connect_packet->SetData(ssid_password[j], offset, 8);
         offset += 8;
     }
 
     // Enqueue the message
-    EnqueuePacket(std::move(connect_packet));
+    EnqueuePacket(connect_packet);
 
     delete ssid;
     delete ssid_password;
@@ -323,16 +322,16 @@ const uint32_t UserInterfaceManager::GetStatusColour(
 
 const void UserInterfaceManager::SendTestPacket()
 {
-    Packet test_packet;
+    Packet* test_packet;
 
-    test_packet.SetData(Packet::Types::Message, 0, 6);
-    test_packet.SetData(NextPacketId(), 6, 8);
-    test_packet.SetData(5, 14, 10);
-    test_packet.SetData('H', 24, 8);
-    test_packet.SetData('e', 32, 8);
-    test_packet.SetData('l', 40, 8);
-    test_packet.SetData('l', 48, 8);
-    test_packet.SetData('o', 56, 8);
+    test_packet->SetData(Packet::Types::Message, 0, 6);
+    test_packet->SetData(NextPacketId(), 6, 8);
+    test_packet->SetData(5, 14, 10);
+    test_packet->SetData('H', 24, 8);
+    test_packet->SetData('e', 32, 8);
+    test_packet->SetData('l', 40, 8);
+    test_packet->SetData('l', 48, 8);
+    test_packet->SetData('o', 56, 8);
 
-    EnqueuePacket(std::move(test_packet));
+    EnqueuePacket(test_packet);
 }

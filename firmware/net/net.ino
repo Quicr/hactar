@@ -35,21 +35,21 @@ void HandleIncomingNetwork()
 {
 
     // Get the packet from the client
-    Packet recv_packet = client->GetMessage();
+    Packet* recv_packet = client->GetMessage();
 
-    if (recv_packet.GetSize() == 0) return;
+    if (recv_packet->GetSize() == 0) return;
 
     // Parse the packet, and either send it to the next layer or print it
     // to a serial
     unsigned int data_idx = 0;
 
     // Get packet type
-    unsigned char type = recv_packet.GetData(0, 6);
+    unsigned char type = recv_packet->GetData(0, 6);
 
-    unsigned char id = recv_packet.GetData(6, 8);
+    unsigned char id = recv_packet->GetData(6, 8);
 
     // Get the packet data size
-    unsigned short size = recv_packet.GetData(14, 10);
+    unsigned short size = recv_packet->GetData(14, 10);
 
     if (type == Packet::Types::LocalDebug)
     {
@@ -57,9 +57,10 @@ void HandleIncomingNetwork()
         Serial.print("Network debug message ");
         for (unsigned short i = 0; i < size; ++i)
         {
-            Serial.print((char)recv_packet.GetData(24 + (i * Byte_Size), Byte_Size));
+            Serial.print((char)recv_packet->GetData(24 + (i * Byte_Size), Byte_Size));
         }
         Serial.println("");
+        delete recv_packet;
     }
     else
     {
@@ -74,14 +75,16 @@ void HandleIncomingNetwork()
         Serial.print(" - ");
         for (unsigned short i = 0; i < size; ++i)
         {
-            Serial.print((int)recv_packet.GetData(24 + (i * Byte_Size), Byte_Size));
+            Serial.print((int)recv_packet->GetData(24 + (i * Byte_Size), Byte_Size));
             Serial.print(" ");
         }
         Serial.println("");
 
         // Enqueue the packet for serial transmission
-        ui_layer->EnqueuePacket(std::move(recv_packet));
+        ui_layer->EnqueuePacket(recv_packet);
     }
+
+    recv_packet = nullptr;
 }
 
 void HandleOutgoingNetwork()
@@ -105,16 +108,16 @@ void HandleIncomingSerial()
     while (rx_packets.size() > 0)
     {
         // Get the type
-        Packet& rx_packet = *rx_packets[0];
-        uint8_t packet_type = rx_packet.GetData(0, 6);
+        Packet* rx_packet = rx_packets[0];
+        uint8_t packet_type = rx_packet->GetData(0, 6);
 
         // message from stm
         Serial.println("Message from stm");
-        uint16_t data_len = rx_packet.GetData(14, 10);
+        uint16_t data_len = rx_packet->GetData(14, 10);
         unsigned char data;
         for (uint16_t i = 0; i < data_len; ++i)
         {
-            data = rx_packet.GetData(24 + (i * 8), 8);
+            data = rx_packet->GetData(24 + (i * 8), 8);
             if ((data >= '0' && data <= '9') || (data >= 'A' && data <= 'z'))
             {
                 Serial.print((char)data);
@@ -131,12 +134,12 @@ void HandleIncomingSerial()
         if (packet_type == Packet::Types::Message)
         {
             // Pass the message to the client
-            client->EnqueuePacket(std::move(rx_packet));
+            client->EnqueuePacket(rx_packet);
         }
         else if (packet_type == Packet::Types::Command)
         {
             // Get the command type
-            uint8_t command_type = rx_packet.GetData(24, 8);
+            uint8_t command_type = rx_packet->GetData(24, 8);
             if (command_type == Packet::Commands::SSIDs)
             {
                 // Get the ssids
@@ -168,35 +171,35 @@ void HandleIncomingSerial()
                     Serial.print(res.length());
                     Serial.print(" - ");
 
-                    Packet packet;
+                    Packet* packet;
                     // Set the type
-                    packet.SetData(Packet::Types::Command, 0, 6);
+                    packet->SetData(Packet::Types::Command, 0, 6);
 
                     // Set the packet id
-                    packet.SetData(1, 6, 8);
+                    packet->SetData(1, 6, 8);
 
                     // Add 1 for the command type
                     // Add 1 for the ssid id
-                    packet.SetData(res.length() + 2, 14, 10);
+                    packet->SetData(res.length() + 2, 14, 10);
 
                     // Set the first byte to the command type
-                    packet.SetData(Packet::Commands::SSIDs, 24, 8);
+                    packet->SetData(Packet::Commands::SSIDs, 24, 8);
 
                     // Set the ssid id
-                    packet.SetData(i+1, 32, 8);
+                    packet->SetData(i+1, 32, 8);
                     for (unsigned int j = 0; j < res.length(); j++)
                     {
-                        packet.SetData(res[j], 40 + (j * 8), 8);
+                        packet->SetData(res[j], 40 + (j * 8), 8);
                         Serial.print((char)res[j]);
                     }
                     Serial.println("");
-                    ui_layer->EnqueuePacket(std::move(packet));
+                    ui_layer->EnqueuePacket(packet);
                 }
             }
             else if (command_type == Packet::Commands::ConnectToSSID)
             {
                 // Get the ssid value, followed by the ssid_password
-                unsigned char ssid_len = rx_packet.GetData(32, 8);
+                unsigned char ssid_len = rx_packet->GetData(32, 8);
                 Serial.print("ssid length - ");
                 Serial.println(ssid_len);
 
@@ -207,13 +210,13 @@ void HandleIncomingSerial()
                 for (i = 0; i < ssid_len; ++i)
                 {
                     ssid += static_cast<char>(
-                        rx_packet.GetData(offset, 8));
+                        rx_packet->GetData(offset, 8));
                     offset += 8;
                 }
                 Serial.print("SSID - ");
                 Serial.println(ssid);
 
-                unsigned char ssid_password_len = rx_packet.GetData(offset, 8);
+                unsigned char ssid_password_len = rx_packet->GetData(offset, 8);
                 offset += 8;
                 Serial.print("password length - ");
                 Serial.println(ssid_password_len);
@@ -221,7 +224,7 @@ void HandleIncomingSerial()
                 String ssid_password;
                 for (unsigned char j = 0; j < ssid_password_len; ++j)
                 {
-                    ssid_password += static_cast<char>(rx_packet.GetData(
+                    ssid_password += static_cast<char>(rx_packet->GetData(
                         offset, 8));
                     offset += 8;
                 }
@@ -237,17 +240,19 @@ void HandleIncomingSerial()
                 Serial.println(WiFi.isConnected());
                 // Create a packet that tells the current status
 
-                Packet connected_packet;
-                connected_packet.SetData(Packet::Types::Command, 0, 6);
-                connected_packet.SetData(1, 6, 8);
-                connected_packet.SetData(2, 14, 10);
-                connected_packet.SetData(Packet::Commands::WifiStatus, 24, 8);
-                connected_packet.SetData(WiFi.isConnected(), 32, 8);
+                Packet* connected_packet;
+                connected_packet->SetData(Packet::Types::Command, 0, 6);
+                connected_packet->SetData(1, 6, 8);
+                connected_packet->SetData(2, 14, 10);
+                connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
+                connected_packet->SetData(WiFi.isConnected(), 32, 8);
 
-                ui_layer->EnqueuePacket(std::move(connected_packet));
+                ui_layer->EnqueuePacket(connected_packet);
             }
         }
 
+        // Set to nullptr and delete from vector
+        rx_packet = nullptr;
         rx_packets.erase(0);
     }
 
