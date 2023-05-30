@@ -9,16 +9,16 @@ public:
     ~ModuleClient();
 
     bool SendMessages();
-    void EnqueuePacket(Packet&& packet);
+    void EnqueuePacket(Packet* packet);
 
-    Packet GetMessage();
-    bool GetMessage(Packet& incoming_packet);
+    Packet* GetMessage();
+    bool GetMessage(Packet* incoming_packet);
     void SendSSIDs();
 private:
     bool Connect();
 
     WiFiClient client;
-    Vector<Packet> packets;
+    Vector<Packet*> packets;
     String host;
     unsigned int port;
 };

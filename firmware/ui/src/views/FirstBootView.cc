@@ -123,12 +123,12 @@ bool FirstBootView::HandleInput()
 
             request_message = "Please select SSID by number:";
 
-            Packet ssid_req_packet;
-            ssid_req_packet.SetData(Packet::Types::Command, 0, 6);
-            ssid_req_packet.SetData(manager.NextPacketId(), 6, 8);
-            ssid_req_packet.SetData(1, 14, 10);
-            ssid_req_packet.SetData(Packet::Commands::SSIDs, 24, 8);
-            manager.EnqueuePacket(std::move(ssid_req_packet));
+            Packet* ssid_req_packet = new Packet();
+            ssid_req_packet->SetData(Packet::Types::Command, 0, 6);
+            ssid_req_packet->SetData(manager.NextPacketId(), 6, 8);
+            ssid_req_packet->SetData(1, 14, 10);
+            ssid_req_packet->SetData(Packet::Commands::SSIDs, 24, 8);
+            manager.EnqueuePacket(ssid_req_packet);
             state = State::Wifi;
             break;
         }

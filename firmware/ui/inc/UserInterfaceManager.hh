@@ -32,7 +32,7 @@ public:
     bool HasMessages();
     Vector<Message>& GetMessages();
     void ClearMessages();
-    void EnqueuePacket(Packet&& msg);
+    void EnqueuePacket(Packet* packet);
     void ForceRedraw();
     bool RedrawForced();
     void ConnectToWifi();

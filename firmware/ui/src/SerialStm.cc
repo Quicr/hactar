@@ -4,10 +4,15 @@ SerialStm::SerialStm(UART_HandleTypeDef* uart_handler,
                      unsigned short rx_ring_sz) :
     uart(uart_handler),
     rx_ring(rx_ring_sz),
-    rx_buff(new unsigned char[1]),
+    rx_buff(new unsigned char[16]),
     tx_free(true)
 {
     StartRx();
+}
+
+SerialStm::~SerialStm()
+{
+    delete rx_buff;
 }
 
 unsigned long SerialStm::AvailableBytes()

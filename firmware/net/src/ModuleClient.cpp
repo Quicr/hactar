@@ -28,12 +28,12 @@ bool ModuleClient::SendMessages()
         // If the client disconnects stop the transmission
         if (!client.connected()) return messages_sent;
 
-        Packet& packet = packets[0];
+        Packet* packet = packets[0];
 
-        for (j = 0; j < packet.SizeInBytes(); j++)
+        for (j = 0; j < packet->SizeInBytes(); j++)
         {
             data = static_cast<unsigned char>(
-                packet.GetData(j*8, 8));
+                packet->GetData(j*8, 8));
 
             client.write(data);
             messages_sent = true;
@@ -48,9 +48,9 @@ bool ModuleClient::SendMessages()
     return messages_sent;
 }
 
-void ModuleClient::EnqueuePacket(Packet&& packet)
+void ModuleClient::EnqueuePacket(Packet* packet)
 {
-    packets.push_back(std::move(packet));
+    packets.push_back(packet);
 }
 
 // TODO test with Packet and Packet& because I had to add the constructor for
@@ -60,14 +60,15 @@ void ModuleClient::EnqueuePacket(Packet&& packet)
 
 // TODO this is improper, especially considering we should be able to
 // join a server and request certain things
-Packet ModuleClient::GetMessage()
+Packet* ModuleClient::GetMessage()
 {
-    Packet packet;
+    Packet* packet = new Packet();
     GetMessage(packet);
     return packet;
 }
 
-bool ModuleClient::GetMessage(Packet& incoming_packet)
+// TODO upgrade
+bool ModuleClient::GetMessage(Packet* incoming_packet)
 {
     // TODO get a message, put it on a vector
     // TODO a return messages function
@@ -84,7 +85,7 @@ bool ModuleClient::GetMessage(Packet& incoming_packet)
     while (client.available())
     {
         unsigned char in_byte = static_cast<unsigned char>(client.read());
-        incoming_packet.SetData(in_byte, bit_offset, Byte_Size);
+        incoming_packet->SetData(in_byte, bit_offset, Byte_Size);
         bit_offset += Byte_Size;
     }
     return true;

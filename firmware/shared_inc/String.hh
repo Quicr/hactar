@@ -9,18 +9,19 @@ class String : public Vector<char>
 public:
     String() {}
     String(const char ch) { SetString(ch); }
-    String(const char *c_str) { SetString(c_str); }
+    String(const char* c_str) { SetString(c_str); }
     String(const unsigned char ch) { SetString(ch); }
-    String(const unsigned char *c_str) { SetString(c_str); }
-    String(const String &str) { SetString(str); }
-    String(const String &&str) { SetString(str); }
+    String(const unsigned char* c_str) { SetString(c_str); }
+    String(const String& str) { SetString(str); }
+    String(const String&& str) { SetString(str); }
+    virtual ~String() {}
 
     String& operator=(const char ch) { return SetString(ch); }
-    String& operator=(const char *c_str) { return SetString(c_str); }
+    String& operator=(const char* c_str) { return SetString(c_str); }
     String& operator=(const unsigned char ch) { return SetString(ch); }
-    String& operator=(const unsigned char *c_str) { return SetString(c_str); }
-    String& operator=(const String &str) { return SetString(str); }
-    String& operator=(const String &&str) { return SetString(str); }
+    String& operator=(const unsigned char* c_str) { return SetString(c_str); }
+    String& operator=(const String& str) { return SetString(str); }
+    String& operator=(const String&& str) { return SetString(str); }
 
     String& operator+(const char ch)
     {
