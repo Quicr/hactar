@@ -77,7 +77,7 @@ public:
         tx_packets.push_back(packet);
     }
 
-    const bool HasRxPackets() const
+    bool HasRxPackets() const
     {
         return rx_packets.size();
     }
@@ -87,17 +87,17 @@ public:
         return rx_packets;
     }
 
-    const bool HasTxPackets() const
+    bool HasTxPackets() const
     {
         return tx_packets.size();
     }
 
-    const SerialStatus GetTxStatus() const
+    SerialStatus GetTxStatus() const
     {
         return tx_status;
     }
 
-    const SerialStatus GetRxStatus() const
+    SerialStatus GetRxStatus() const
     {
         return rx_status;
     }
@@ -214,7 +214,7 @@ private:
                     // for now, debug messages should go elsewhere (eeprom?)
 
                     // Now that we got this packet, we will respond
-                    Packet* ok_packet;
+                    Packet* ok_packet = new Packet();
                     ok_packet->SetData(Packet::Types::Ok, 0, 6);
                     ok_packet->SetData(NextPacketId(), 6, 8); // Id here doesn't matter
                     ok_packet->SetData(1, 14, 10);

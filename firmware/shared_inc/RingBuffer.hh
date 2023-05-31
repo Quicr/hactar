@@ -48,12 +48,12 @@ public:
         is_end = read_idx == write_idx;
     }
 
-    const unsigned int AvailableBytes() const
+    unsigned int AvailableBytes() const
     {
         return available_bytes;
     }
 
-    const bool IsFull() const
+    bool IsFull() const
     {
         return size == available_bytes;
     }

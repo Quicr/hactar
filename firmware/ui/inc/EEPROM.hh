@@ -30,7 +30,7 @@ public:
      * and writes it to the eeprom at the next available address
     */
     template<typename T>
-    const uint16_t Write(T* data, const int32_t sz=1)
+    uint16_t Write(T* data, const int32_t sz=1)
     {
         const uint16_t addr = next_address;
         const size_t data_size = sizeof(*data) * sz;
@@ -46,7 +46,7 @@ public:
     }
 
     template<typename T>
-    const int Write(T data, const int32_t sz=1)
+    uint16_t Write(T data, const int32_t sz=1)
     {
         const uint16_t addr = next_address;
         const size_t data_size = sizeof(data) * sz;
@@ -62,9 +62,7 @@ public:
     }
 
     template<typename T>
-    const HAL_StatusTypeDef Write(const int32_t address,
-                                  T& data,
-                                  const int32_t sz=1)
+    HAL_StatusTypeDef Write(const int32_t address, T& data, const int32_t sz=1)
     {
         const size_t data_size = sizeof(data) * sz;
         uint8_t* to_write = (uint8_t*)(void*)&data;
@@ -72,7 +70,7 @@ public:
         return PerformWrite(to_write, address, data_size);
     }
 
-    const HAL_StatusTypeDef WriteByte(const int32_t address,
+    HAL_StatusTypeDef WriteByte(const int32_t address,
                                       uint8_t data)
     {
         uint8_t write_byte[2];
@@ -160,17 +158,17 @@ public:
         return clear_res == HAL_OK;
     }
 
-    const int16_t Size() const
+    uint16_t Size() const
     {
         return max_sz;
     }
 
-    const int16_t NextAddress() const
+    uint16_t NextAddress() const
     {
         return next_address;
     }
 
-    const float Usage() const
+    float Usage() const
     {
         return next_address / max_sz;
     }

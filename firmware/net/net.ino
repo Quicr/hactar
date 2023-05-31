@@ -41,7 +41,7 @@ void HandleIncomingNetwork()
 
     // Parse the packet, and either send it to the next layer or print it
     // to a serial
-    unsigned int data_idx = 0;
+    // unsigned int data_idx = 0;
 
     // Get packet type
     unsigned char type = recv_packet->GetData(0, 6);
@@ -171,7 +171,7 @@ void HandleIncomingSerial()
                     Serial.print(res.length());
                     Serial.print(" - ");
 
-                    Packet* packet;
+                    Packet* packet = new Packet();
                     // Set the type
                     packet->SetData(Packet::Types::Command, 0, 6);
 
@@ -240,7 +240,7 @@ void HandleIncomingSerial()
                 Serial.println(WiFi.isConnected());
                 // Create a packet that tells the current status
 
-                Packet* connected_packet;
+                Packet* connected_packet = new Packet();
                 connected_packet->SetData(Packet::Types::Command, 0, 6);
                 connected_packet->SetData(1, 6, 8);
                 connected_packet->SetData(2, 14, 10);

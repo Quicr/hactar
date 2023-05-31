@@ -94,12 +94,12 @@ int main(void)
     MX_I2C1_Init();
 
     // TODO remove
-    const uint8_t sz = 2;
-    uint8_t audio_data[sz] = { 0x19, 0b00000010 };
-    const uint8_t write_condition = 0x34 + 0;
-    const uint8_t read_condition = 0x34 + 1;
-    HAL_StatusTypeDef audio_select = HAL_I2C_Master_Transmit(&hi2c1,
-        write_condition, audio_data, sz, HAL_MAX_DELAY);
+    // const uint8_t sz = 2;
+    // uint8_t audio_data[sz] = { 0x19, 0b00000010 };
+    // const uint8_t write_condition = 0x34 + 0;
+    // // const uint8_t read_condition = 0x34 + 1;
+    // HAL_StatusTypeDef audio_select = HAL_I2C_Master_Transmit(&hi2c1,
+    //     write_condition, audio_data, sz, HAL_MAX_DELAY);
     // TODO remove to here
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
@@ -158,8 +158,8 @@ int main(void)
  */
 void SystemClock_Config(void)
 {
-    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_OscInitTypeDef RCC_OscInitStruct = {};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {};
 
     /** Configure the main internal regulator output voltage
      */
@@ -190,8 +190,8 @@ void SystemClock_Config(void)
     {
         Error_Handler();
     }
-//   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-//   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+//   RCC_OscInitTypeDef RCC_OscInitStruct = {};
+//   RCC_ClkInitTypeDef RCC_ClkInitStruct = {};
 
 //   /** Configure the main internal regulator output voltage
 //   */
@@ -248,7 +248,7 @@ void SystemClock_Config(void)
  */
 static void MX_GPIO_Init(void)
 {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = {};
 
     /* GPIO Ports Clock Enable */
     __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -388,18 +388,22 @@ static void MX_I2C1_Init()
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
 {
+    UNUSED(huart);
+    UNUSED(size);
     net_layer->RxEvent();
     rx_led.On();
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
+    UNUSED(huart);
     net_layer->TxEvent();
     tx_led.On();
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
+    UNUSED(hspi);
     screen.ReleaseSPI();
 }
 
@@ -421,8 +425,8 @@ static void KeyboardTimerInit()
         Error_Handler();
     }
 
-    TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-    TIM_MasterConfigTypeDef sMasterConfig = {0};
+    TIM_ClockConfigTypeDef sClockSourceConfig = {};
+    TIM_MasterConfigTypeDef sMasterConfig = {};
 
     // Set the timer callback function
     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;

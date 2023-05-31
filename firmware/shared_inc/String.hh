@@ -8,12 +8,12 @@ class String : public Vector<char>
 {
 public:
     String() {}
-    String(const char ch) { SetString(ch); }
-    String(const char* c_str) { SetString(c_str); }
-    String(const unsigned char ch) { SetString(ch); }
-    String(const unsigned char* c_str) { SetString(c_str); }
-    String(const String& str) { SetString(str); }
-    String(const String&& str) { SetString(str); }
+    String(const char ch) : Vector<char>() { SetString(ch); }
+    String(const char* c_str) : Vector<char>() { SetString(c_str); }
+    String(const unsigned char ch) : Vector<char>() { SetString(ch); }
+    String(const unsigned char* c_str) : Vector<char>() { SetString(c_str); }
+    String(const String& str) : Vector<char>() { SetString(str); }
+    String(const String&& str) : Vector<char>() { SetString(str); }
     virtual ~String() {}
 
     String& operator=(const char ch) { return SetString(ch); }

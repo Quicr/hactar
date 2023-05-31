@@ -56,7 +56,7 @@ void UserInterfaceManager::Run()
     if (current_time > last_wifi_check)
     {
         // Check a check wifi status packet
-        Packet* check_wifi;
+        Packet* check_wifi = new Packet();
         check_wifi->SetData(Packet::Types::Command, 0, 6);
         check_wifi->SetData(NextPacketId(), 6, 8);
         check_wifi->SetData(1, 14, 10);
@@ -226,12 +226,12 @@ void UserInterfaceManager::HandleIncomingPackets()
     }
 }
 
-const uint32_t UserInterfaceManager::GetTxStatusColour() const
+uint32_t UserInterfaceManager::GetTxStatusColour() const
 {
     return GetStatusColour(net_layer.GetTxStatus());
 }
 
-const uint32_t UserInterfaceManager::GetRxStatusColour() const
+uint32_t UserInterfaceManager::GetRxStatusColour() const
 {
     return GetStatusColour(net_layer.GetRxStatus());
 }
@@ -257,7 +257,7 @@ void UserInterfaceManager::ConnectToWifi()
         ssid_password_len)) return;
 
     // Create the packet
-    Packet* connect_packet;
+    Packet* connect_packet = new Packet();
     connect_packet->SetData(Packet::Types::Command, 0, 6);
     connect_packet->SetData(UserInterfaceManager::NextPacketId(), 6, 8);
     // THINK should these be separate packets?
@@ -298,12 +298,12 @@ void UserInterfaceManager::ConnectToWifi()
     delete ssid_password;
 }
 
-const bool UserInterfaceManager::IsConnectedToWifi() const
+bool UserInterfaceManager::IsConnectedToWifi() const
 {
     return is_connected_to_wifi;
 }
 
-const uint32_t UserInterfaceManager::GetStatusColour(
+uint32_t UserInterfaceManager::GetStatusColour(
     const SerialManager::SerialStatus status) const
 {
     if (status == SerialManager::SerialStatus::OK)
@@ -320,9 +320,9 @@ const uint32_t UserInterfaceManager::GetStatusColour(
         return C_WHITE;
 }
 
-const void UserInterfaceManager::SendTestPacket()
+void UserInterfaceManager::SendTestPacket()
 {
-    Packet* test_packet;
+    Packet* test_packet = new Packet();
 
     test_packet->SetData(Packet::Types::Message, 0, 6);
     test_packet->SetData(NextPacketId(), 6, 8);
