@@ -37,11 +37,11 @@ public:
     bool RedrawForced();
     void ConnectToWifi();
 
-    const uint32_t GetTxStatusColour() const;
-    const uint32_t GetRxStatusColour() const;
+    uint32_t GetTxStatusColour() const;
+    uint32_t GetRxStatusColour() const;
 
     const std::map<uint8_t, String>& SSIDs() const;
-    const bool IsConnectedToWifi() const;
+    bool IsConnectedToWifi() const;
 
     uint8_t NextPacketId();
 
@@ -57,10 +57,10 @@ public:
 private:
     void HandleIncomingPackets();
     void TimeoutPackets();
-    const uint32_t GetStatusColour(
+    uint32_t GetStatusColour(
         const SerialManager::SerialStatus status) const;
 
-    const void SendTestPacket();
+    void SendTestPacket();
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
