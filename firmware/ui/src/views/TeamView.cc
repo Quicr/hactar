@@ -64,12 +64,7 @@ bool TeamView::HandleInput()
     {
         String command = usr_input.substring(1);
 
-        // Is there a better way of doing this?
-        if (command == "q")
-        {
-            manager.ChangeView<ChatView>();
-            return true;
-        }
+        command_handler->ChangeViewCommand(command);
     }
     else
     {

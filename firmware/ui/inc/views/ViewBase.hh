@@ -1,11 +1,14 @@
 #pragma once
 
+#include <functional>
+
 #include "UserInterfaceManager.hh"
 #include "Screen.hh"
 #include "Q10Keyboard.hh"
 #include "EEPROM.hh"
+#include "CommandHandler.hh"
 #include "String.hh"
-#include <functional>
+
 
 class UserInterfaceManager;
 
@@ -20,6 +23,7 @@ public:
         screen(screen),
         keyboard(keyboard),
         setting_manager(setting_manager),
+        command_handler(new CommandHandler(&manager)),
         first_load(true),
         redraw_menu(true),
         cursor_animate_timeout(0),
@@ -45,7 +49,7 @@ public:
     virtual void Run()
     {
         if (Update()) return; // TODO somehow need to return here so change views doesn't crash
-        if (HandleInput()) return;
+        if (ScanInput()) return;
         AnimatedDraw();
         Draw();
     }
@@ -65,7 +69,27 @@ protected:
     static constexpr uint16_t Cursor_Animate_Duration = 2500;
     static constexpr uint16_t Cursor_Hollow_Thickness = 1;
 
+    // TODO define some update function
     virtual bool Update() = 0;
+     // TODO put most of input base code here
+     // Need to think of a different way of changing views. Probably should be
+     // In update or something
+    virtual bool ScanInput()
+    {
+        GetInput();
+
+
+        if (!keyboard.EnterPressed()) return false;
+        if (!(usr_input.length() > 0)) return false;
+
+        // Acutal view code goes here
+        if (HandleInput()) return true;
+
+        ClearInput();
+
+        return false;
+    }
+
     virtual bool HandleInput() = 0;
     virtual void AnimatedDraw() = 0;
     virtual void Draw()
@@ -218,6 +242,7 @@ protected:
     Screen &screen;
     Q10Keyboard &keyboard;
     SettingManager& setting_manager;
+    CommandHandler* command_handler;
 
     // If this is the first load, then we should
     // Run the first load draw

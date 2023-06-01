@@ -65,7 +65,7 @@ public:
         return AppendString(*str);
     }
 
-    bool operator==(const char* c_str)
+    bool operator==(const char* c_str) const
     {
         // Assumed to be a c_str
 
@@ -92,7 +92,7 @@ public:
         return true;
     }
 
-    bool operator==(const String str)
+    bool operator==(const String str) const
     {
         if (_size != str.length()) return false;
 

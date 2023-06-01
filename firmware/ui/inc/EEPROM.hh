@@ -192,7 +192,7 @@ private:
             return len_write_res;
 
         // Write data
-        HAL_StatusTypeDef write_res;
+        HAL_StatusTypeDef write_res = HAL_ERROR;
         for (uint16_t i = 0; i < data_size; ++i)
         {
             write_bytes[0] = (address+1) + i;
