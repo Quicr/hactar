@@ -100,21 +100,7 @@ bool ChatView::HandleInput()
     {
         String command = usr_input.substring(1);
 
-        // TODO put a command "flag match" into each .hh file so that it can
-        // be registered instead of hardcoded.
-
-
-        // Is there a better way of doing this?
-        if (command == "t")
-        {
-            manager.ChangeView<TeamView>();
-            return true;
-        }
-        else if (command == "s")
-        {
-            manager.ChangeView<SettingsView>();
-            return true;
-        }
+        command_handler->ChangeViewCommand(command);
     }
     else
     {

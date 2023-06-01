@@ -46,13 +46,35 @@ public:
     uint8_t NextPacketId();
 
     template<typename T>
-    void ChangeView()
+    bool ChangeView()
     {
         if (view != nullptr)
+        {
+            if (dynamic_cast<T*>(view) != nullptr)
+            {
+                // Already the view T, don't change views
+                return false;
+            }
+
             delete view;
+        }
 
         view = new T(*this, *screen, *keyboard, setting_manager);
+
+        return true;
     }
+
+    // bool ChangeViewCommand(const String command)
+    // {
+    //     if (command == "t")
+    //         return ChangeView<TeamView>();
+    //     else if (command == "s")
+    //         return ChangeView<SettingsView>();
+    //     // else if (command == "wifi")
+    //         // return manager.ChangeView<
+
+    //     return false;
+    // }
 
 private:
     void HandleIncomingPackets();

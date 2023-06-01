@@ -63,9 +63,15 @@ bool SettingsView::HandleInput()
     GetInput();
 
     if (!keyboard.EnterPressed()) return false;
+    if (!(usr_input.length() > 0)) return false;
 
-    manager.ChangeView<ChatView>();
-    return true;
+    // Check if this is a command
+    if (usr_input[0] == '/')
+    {
+        String command = usr_input.substring(1);
+
+        command_handler->ChangeViewCommand(command);
+    }
 
     ClearInput();
 
