@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ViewBase.hh"
+#include "ViewInterface.hh"
 #include "String.hh"
 
-class FirstBootView : public ViewBase
+class FirstBootView : public ViewInterface
 {
 public:
     FirstBootView(UserInterfaceManager& manager,

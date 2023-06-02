@@ -1,8 +1,8 @@
 #pragma once
 
-#include "ViewBase.hh"
+#include "ViewInterface.hh"
 
-class SettingsView : public ViewBase
+class SettingsView : public ViewInterface
 {
 public:
     SettingsView(UserInterfaceManager& manager,

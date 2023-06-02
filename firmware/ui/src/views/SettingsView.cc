@@ -6,7 +6,7 @@ SettingsView::SettingsView(UserInterfaceManager& manager,
                            Screen& screen,
                            Q10Keyboard& keyboard,
                            SettingManager& setting_manager)
-    : ViewBase(manager, screen, keyboard, setting_manager)
+    : ViewInterface(manager, screen, keyboard, setting_manager)
 {
 }
 
@@ -22,7 +22,7 @@ void SettingsView::AnimatedDraw()
 
 void SettingsView::Draw()
 {
-    ViewBase::Draw();
+    ViewInterface::Draw();
 
     if (redraw_menu)
     {

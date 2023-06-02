@@ -12,10 +12,10 @@
 
 class UserInterfaceManager;
 
-class ViewBase
+class ViewInterface
 {
 public:
-    ViewBase(UserInterfaceManager &manager,
+    ViewInterface(UserInterfaceManager &manager,
              Screen &screen,
              Q10Keyboard &keyboard,
              SettingManager& setting_manager):
@@ -42,7 +42,7 @@ public:
         Clear();
     }
 
-    virtual ~ViewBase()
+    virtual ~ViewInterface()
     {
     }
 

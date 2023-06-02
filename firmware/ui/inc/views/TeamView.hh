@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ViewBase.hh"
+#include "ViewInterface.hh"
 #include "String.hh"
 
-class TeamView : public ViewBase
+class TeamView : public ViewInterface
 {
 public:
     TeamView(UserInterfaceManager& manager,

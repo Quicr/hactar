@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ViewBase.hh"
+#include "ViewInterface.hh"
 #include "String.hh"
 #include "Packet.hh"
 #include "Message.hh"
@@ -14,7 +14,7 @@
 
 #define Text_Draw_Speed 20
 
-class ChatView : public ViewBase
+class ChatView : public ViewInterface
 {
 public:
     ChatView(UserInterfaceManager& manager,
