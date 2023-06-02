@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ViewBase.hh"
+#include "ViewInterface.hh"
 #include "String.hh"
 
-class LoginView : public ViewBase
+class LoginView : public ViewInterface
 {
 public:
     LoginView(UserInterfaceManager& manager,

@@ -17,7 +17,7 @@
 #define FIRST_BOOT_STARTED 0x01
 #define FIRST_BOOT_DONE 0x02
 
-class ViewBase;
+class ViewInterface;
 
 class UserInterfaceManager
 {
@@ -90,7 +90,7 @@ private:
     Q10Keyboard* keyboard;
     SerialManager net_layer;
     SettingManager setting_manager;
-    ViewBase* view;
+    ViewInterface* view;
     Vector<Message> received_messages;
     bool force_redraw;
     uint32_t current_time;

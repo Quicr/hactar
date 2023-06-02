@@ -7,7 +7,7 @@ FirstBootView::FirstBootView(UserInterfaceManager& manager,
                              Screen& screen,
                              Q10Keyboard& keyboard,
                              SettingManager& setting_manager) :
-    ViewBase(manager, screen, keyboard, setting_manager),
+    ViewInterface(manager, screen, keyboard, setting_manager),
     state(State::Username),
     request_message("Please enter your name:"),
     wifi_state(WifiState::SSID),
@@ -49,7 +49,7 @@ void FirstBootView::AnimatedDraw()
 
 void FirstBootView::Draw()
 {
-    ViewBase::Draw();
+    ViewInterface::Draw();
 
     screen.DrawText(1,
         screen.ViewHeight() - (usr_font.height * 2), request_message,

@@ -6,7 +6,7 @@ LoginView::LoginView(UserInterfaceManager& manager,
                      Screen& screen,
                      Q10Keyboard& keyboard,
                      SettingManager& setting_manager) :
-    ViewBase(manager, screen, keyboard, setting_manager),
+    ViewInterface(manager, screen, keyboard, setting_manager),
     incorrect_passcode_entered(false)
 {
 }
@@ -65,7 +65,7 @@ void LoginView::AnimatedDraw()
 
 void LoginView::Draw()
 {
-    ViewBase::Draw();
+    ViewInterface::Draw();
 
     if ((usr_input.length() > last_drawn_idx || redraw_input))
     {

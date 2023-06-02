@@ -1,1 +1,1 @@
-#include "ViewBase.hh"
+#include "ViewInterface.hh"

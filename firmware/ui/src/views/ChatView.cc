@@ -7,7 +7,7 @@ ChatView::ChatView(UserInterfaceManager& manager,
                    Screen& screen,
                    Q10Keyboard& keyboard,
                    SettingManager& setting_manager) :
-    ViewBase(manager, screen, keyboard, setting_manager)
+    ViewInterface(manager, screen, keyboard, setting_manager)
 {
     // messages = new Vector<String>();
     // for (int i = 0; i < 15; i++)
@@ -51,7 +51,7 @@ void ChatView::AnimatedDraw()
 
 void ChatView::Draw()
 {
-    ViewBase::Draw();
+    ViewInterface::Draw();
 
     if (redraw_menu)
     {
@@ -63,7 +63,7 @@ void ChatView::Draw()
         }
     }
 
-    // TODO move into viewbase?
+    // TODO move into ViewInterface?
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
         // Shift over and draw the input that is currently in the buffer
