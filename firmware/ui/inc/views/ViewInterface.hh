@@ -36,22 +36,26 @@ public:
         tx_colour(0),
         rx_colour(0),
         tx_redraw_timeout(0),
-        rx_redraw_timeout(0)
+        rx_redraw_timeout(0),
+        general_refresh_timeout(0)
     {
+        // TODO load settings from eeprom
+
+
         ResetCursorPosition();
         Clear();
     }
 
     virtual ~ViewInterface()
     {
+        delete command_handler;
     }
 
     virtual void Run()
     {
-        if (Update()) return; // TODO somehow need to return here so change views doesn't crash
-        if (ScanInput()) return;
         AnimatedDraw();
         Draw();
+        BaseUpdate(); // TODO somehow need to return here so change views doesn't crash
     }
 
     void Clear()
@@ -69,28 +73,40 @@ protected:
     static constexpr uint16_t Cursor_Animate_Duration = 2500;
     static constexpr uint16_t Cursor_Hollow_Thickness = 1;
 
-    // TODO define some update function
-    virtual bool Update() = 0;
-     // TODO put most of input base code here
-     // Need to think of a different way of changing views. Probably should be
-     // In update or something
-    virtual bool ScanInput()
+    bool BaseUpdate()
     {
-        GetInput();
+        // Handle input updates
+        InputUpdate();
 
+        // Run defined view Update
+        Update();
 
-        if (!keyboard.EnterPressed()) return false;
-        if (!(usr_input.length() > 0)) return false;
-
-        // Acutal view code goes here
-        if (HandleInput()) return true;
-
-        ClearInput();
+        // Change view if set
+        if (command_handler->ChangeViewCommand(new_view)) return true;
+        // Clear the new_view string if it is not a view it should be blank
+        new_view.clear();
 
         return false;
     }
 
-    virtual bool HandleInput() = 0;
+     // TODO put most of input base code here
+     // Need to think of a different way of changing views. Probably should be
+     // In update or something
+    void InputUpdate()
+    {
+        GetInput();
+
+        if (!keyboard.EnterPressed()) return;
+        if (!(usr_input.length() > 0)) return;
+
+        // Actual view code goes here
+        HandleInput();
+
+        ClearInput();
+    }
+
+    virtual void Update() = 0;
+    virtual void HandleInput() = 0;
     virtual void AnimatedDraw() = 0;
     virtual void Draw()
     {
@@ -101,7 +117,7 @@ protected:
             HAL_GetTick() > tx_redraw_timeout)
         {
             tx_colour = manager.GetTxStatusColour();
-            screen.DrawText(WIDTH-32, 0, "tx", font5x8, tx_colour, bg);
+            screen.DrawText(screen.ViewWidth()-32, 0, "tx", font5x8, tx_colour, bg);
             tx_redraw_timeout = HAL_GetTick() + 200;
         }
 
@@ -109,8 +125,13 @@ protected:
             HAL_GetTick() > rx_redraw_timeout)
         {
             rx_colour = manager.GetRxStatusColour();
-            screen.DrawText(WIDTH-16, 0, "rx", font5x8, rx_colour, bg);
+            screen.DrawText(screen.ViewWidth()-16, 0, "rx", font5x8, rx_colour, bg);
             rx_redraw_timeout = HAL_GetTick() + 200;
+        }
+
+        if (HAL_GetTick() > general_refresh_timeout)
+        {
+            DrawWifiSymbol();
         }
     }
 
@@ -193,7 +214,6 @@ protected:
         redraw_input = false;
     }
 
-
     void GetInput()
     {
         // Get input
@@ -218,6 +238,16 @@ protected:
 
         // Draw the input
         DrawInput();
+    }
+
+    void ChangeView(const char* str)
+    {
+        new_view = str;
+    }
+
+    void ChangeView(const String& str)
+    {
+        new_view = str;
     }
 
     void ResetCursorPosition()
@@ -271,6 +301,8 @@ protected:
     uint32_t tx_redraw_timeout;
     uint32_t rx_redraw_timeout;
 
+    uint32_t general_refresh_timeout;
+
     // TODO EEPROM setting
     Font &menu_font = font11x16;
     // TODO EEPROM setting
@@ -279,4 +311,20 @@ protected:
     uint16_t fg = C_WHITE;
     // TODO EEPROM setting
     uint16_t bg = C_BLACK;
+private:
+    String new_view;
+
+    void DrawWifiSymbol()
+    {
+        uint16_t colour = C_GREY;
+        if (manager.IsConnectedToWifi())
+        {
+            colour = C_LIGHT_GREEN;
+        }
+
+        // Draw wifi symbol
+        screen.FillRectangle(screen.ViewWidth() - 50, 0, screen.ViewWidth() - 40, 1, colour);
+        screen.FillRectangle(screen.ViewWidth() - 48, 2, screen.ViewWidth() - 42, 3, colour);
+        screen.FillRectangle(screen.ViewWidth() - 46, 4, screen.ViewWidth() - 44, 5, colour);
+    }
 };

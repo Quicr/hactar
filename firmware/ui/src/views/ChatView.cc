@@ -22,10 +22,10 @@ ChatView::~ChatView()
 
 }
 
-bool ChatView::Update()
+void ChatView::Update()
 {
     // TODO move this into a function
-    if (!manager.HasMessages()) return false;
+    if (!manager.HasMessages()) return;
 
     Vector<Message>& msgs = manager.GetMessages();
 
@@ -34,14 +34,12 @@ bool ChatView::Update()
     // with the stack?
     for (uint16_t i = 0; i < msgs.size(); i++)
     {
-        messages.push_back(msgs[i]);
+        (void)messages.push_back(msgs[i]);
     }
 
     manager.ClearMessages();
 
     redraw_messages = true;
-
-    return false;
 }
 
 void ChatView::AnimatedDraw()
@@ -84,23 +82,12 @@ void ChatView::Draw()
     }
 }
 
-bool ChatView::HandleInput()
+void ChatView::HandleInput()
 {
-    // Handle the input from the user
-    // If they enter a command for going to settings then change views
-    GetInput();
-
-    if (!keyboard.EnterPressed()) return false;
-
-    // Parse commands
-    if (!(usr_input.length() > 0)) return false;
-
     // Check if this is a command
     if (usr_input[0] == '/')
     {
-        String command = usr_input.substring(1);
-
-        command_handler->ChangeViewCommand(command);
+        ChangeView(usr_input);
     }
     else
     {
@@ -139,10 +126,6 @@ bool ChatView::HandleInput()
         // Send message to sec layer
         // TODO
     }
-
-    ClearInput();
-    return false;
-
 }
 
 

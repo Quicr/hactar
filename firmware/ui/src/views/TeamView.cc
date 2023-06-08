@@ -15,10 +15,10 @@ TeamView::~TeamView()
 
 }
 
-bool TeamView::Update()
+void TeamView::Update()
 {
     // Periodically get the list of teams.
-    return false;
+    return;
 }
 
 void TeamView::AnimatedDraw()
@@ -50,30 +50,15 @@ void TeamView::Draw()
     }
 }
 
-bool TeamView::HandleInput()
+void TeamView::HandleInput()
 {
-    // Handle the input from the user
-    // If they enter a command for going to settings then change views
-    GetInput();
-    if (!keyboard.EnterPressed()) return false;
-
-    if (!(usr_input.length() > 0)) return false;
-
     // Parse commands
     if (usr_input[0] == '/')
     {
-        String command = usr_input.substring(1);
-
-        command_handler->ChangeViewCommand(command);
+        ChangeView(usr_input);
     }
     else
     {
-        //
 
-
-        // Send message to sec layer
     }
-
-    ClearInput();
-    return false;
 }

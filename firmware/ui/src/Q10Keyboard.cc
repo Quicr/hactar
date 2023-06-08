@@ -48,7 +48,7 @@ Q10Keyboard::~Q10Keyboard()
 // Assumed the required clocks are enabled
 void Q10Keyboard::Begin()
 {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = {};
 
     // Set all of the pins to output low and then switch to input
 

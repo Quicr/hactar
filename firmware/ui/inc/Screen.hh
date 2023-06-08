@@ -41,14 +41,16 @@
 #define MAD_CTL_MH  0x04
 
 // Some basic colours
-#define	C_BLACK   0x0000
-#define	C_BLUE    0x001F
-#define	C_RED     0xF800
-#define	C_GREEN   0x07E0
-#define C_CYAN    0x07FF
-#define C_MAGENTA 0xF81F
-#define C_YELLOW  0xFFE0
-#define C_WHITE   0xFFFF
+#define	C_BLACK         0x0000
+#define	C_BLUE          0x001F
+#define	C_RED           0xF800
+#define C_LIGHT_GREEN   0x3626
+#define	C_GREEN         0x07E0
+#define C_CYAN          0x07FF
+#define C_MAGENTA       0xF81F
+#define C_YELLOW        0xFFE0
+#define C_WHITE         0xFFFF
+#define C_GREY          0xEEEE
 
 // Default orientation
 #define WIDTH                240
@@ -75,6 +77,9 @@ public:
            Orientation orientation);
     ~Screen();
 
+    // TODO pg 129 add vertical scroll
+    //https://www.waveshare.com/w/upload/e/e3/ILI9341_DS.pdf
+
     void Begin();
     void Select();
     void Deselect();
@@ -90,6 +95,8 @@ public:
     void SetOrientation(Orientation orientation);
     void EnableBackLight();
     void DisableBackLight();
+    void Sleep();
+    void Wake();
 
     // void DrawLine(const uint16_t x_start, const uint16_t y_start,
     //               const uint16_t x_end, const uint16_t y_end,
@@ -145,8 +152,14 @@ public:
                        const Font &font,
                        const uint16_t fg,
                        const uint16_t bg);
+
+    uint16_t GetStringWidth(const uint16_t str_len, const Font& font) const;
+    uint16_t GetStringCenter(const uint16_t str_len, const Font& font) const;
+    uint16_t GetStringCenterMargin(const uint16_t str_len, const Font& font) const;
+    uint16_t GetStringLeftDistanceFromRightEdge(const uint16_t str_len, const Font& font) const;
 private:
     static constexpr uint32_t Max_Chunk_Size = 16384U;
+    static constexpr uint32_t Chunk_Buffer_Size = 256UL;
 
     void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
               uint16_t &y_end);
@@ -160,5 +173,6 @@ private:
     Orientation orientation;
     uint16_t view_height;
     uint16_t view_width;
+    uint8_t chunk_buffer[Chunk_Buffer_Size * 2];
     volatile uint8_t spi_busy = 0;
 };

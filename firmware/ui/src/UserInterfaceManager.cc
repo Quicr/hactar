@@ -53,6 +53,7 @@ void UserInterfaceManager::Run()
         return;
     }
 
+    // TODO move into some sort of update function
     if (current_time > last_wifi_check)
     {
         // Check a check wifi status packet
@@ -198,18 +199,12 @@ void UserInterfaceManager::HandleIncomingPackets()
                 }
                 else if (Packet::Commands::WifiStatus == command_type)
                 {
+                    // Response from the esp32 will invoke this
                     is_connected_to_wifi = rx_packet.GetData(32, 8);
-                    uint32_t colour = C_GREEN;
                     if (!is_connected_to_wifi)
                     {
-                        colour = C_WHITE;
                         ConnectToWifi();
                     }
-
-                    // TODO remove this..
-                    screen->FillRectangle(0, 0, 10, 2, colour);
-                    screen->FillRectangle(2, 4, 8, 6, colour);
-                    screen->FillRectangle(4, 8, 6, 10, colour);
                 }
 
                 break;

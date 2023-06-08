@@ -56,30 +56,28 @@ void SettingsView::Draw()
     }
 }
 
-bool SettingsView::HandleInput()
+void SettingsView::HandleInput()
 {
     // Handle the input from the user, if they get the correct passcode
     // Change to the chat view;
     GetInput();
 
-    if (!keyboard.EnterPressed()) return false;
-    if (!(usr_input.length() > 0)) return false;
+    if (!keyboard.EnterPressed()) return;
+    if (!(usr_input.length() > 0)) return;
 
     // Check if this is a command
     if (usr_input[0] == '/')
     {
         String command = usr_input.substring(1);
 
-        command_handler->ChangeViewCommand(command);
+        // command_handler->ChangeViewCommand(command);
     }
 
     ClearInput();
-
-    return false;
 }
 
-bool SettingsView::Update()
+void SettingsView::Update()
 {
-    return false;
+    return;
 }
 

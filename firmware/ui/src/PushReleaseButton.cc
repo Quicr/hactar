@@ -14,7 +14,7 @@ PushReleaseButton::PushReleaseButton(port_pin &group,
 
 void PushReleaseButton::Begin()
 {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = {};
 
     EnablePortIf(group.port);
 

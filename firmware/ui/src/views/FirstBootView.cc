@@ -92,12 +92,12 @@ void FirstBootView::Draw()
     }
 }
 
-bool FirstBootView::HandleInput()
+void FirstBootView::HandleInput()
 {
     // Handle the input from the user.
     GetInput();
 
-    if (!keyboard.EnterPressed()) return false;
+    if (!keyboard.EnterPressed()) return;
 
     // TODO error checking
     switch (state)
@@ -142,12 +142,9 @@ bool FirstBootView::HandleInput()
             state = State::Username;
         }
     }
-
-    ClearInput();
-    return false;
 }
 
-bool FirstBootView::Update()
+void FirstBootView::Update()
 {
     if (state == State::Wifi)
     {
@@ -163,13 +160,13 @@ bool FirstBootView::Update()
         {
             // FIX sometimes crashes here
             // because we need to return true all the way upwards
-            manager.ChangeView<LoginView>();
-            return true;
+            // manager.ChangeView<LoginView>();
+            return;
         }
     }
 
 
-    return false;
+    return;
 }
 
 void FirstBootView::SetWifi()

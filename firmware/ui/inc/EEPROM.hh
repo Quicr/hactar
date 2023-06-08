@@ -141,7 +141,7 @@ public:
         clear_byte[1] = 0xFF;
 
         // Write a bunch of 1s
-        HAL_StatusTypeDef clear_res;
+        HAL_StatusTypeDef clear_res = HAL_ERROR;
         for (int16_t i = 0; i < max_sz; i++)
         {
             clear_byte[0] = next_address++;
