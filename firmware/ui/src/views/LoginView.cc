@@ -3,9 +3,9 @@
 #include "ChatView.hh"
 
 LoginView::LoginView(UserInterfaceManager& manager,
-                     Screen& screen,
-                     Q10Keyboard& keyboard,
-                     SettingManager& setting_manager) :
+    Screen& screen,
+    Q10Keyboard& keyboard,
+    SettingManager& setting_manager) :
     ViewInterface(manager, screen, keyboard, setting_manager),
     incorrect_passcode_entered(false)
 {
@@ -29,14 +29,18 @@ void LoginView::AnimatedDraw()
 
     uint16_t speed = 10;
     String msg = "Welcome to Cisco";
-    screen.DrawBlockAnimateString(34, 6, msg, font11x16, fg, bg, speed);
+    screen.DrawBlockAnimateString(
+        screen.GetStringCenterMargin(msg.length(), font11x16), 6, msg,
+        font11x16, fg, bg, speed);
     msg = "Secure Messaging";
-    screen.DrawBlockAnimateString(34, 22, msg, font11x16, fg, bg, speed);
+    screen.DrawBlockAnimateString(
+        screen.GetStringCenterMargin(msg.length(), font11x16), 22, msg,
+        font11x16, fg, bg, speed);
 
     // TODO
 
     msg = "User: ";
-    screen.DrawBlockAnimateString(1, screen.ViewHeight()-(usr_font.height * 4),
+    screen.DrawBlockAnimateString(1, screen.ViewHeight() - (usr_font.height * 4),
         msg, usr_font, fg, bg, speed);
 
     // TODO make this better
@@ -53,11 +57,11 @@ void LoginView::AnimatedDraw()
     // ^^^ ugly chunk
 
     screen.DrawBlockAnimateString(
-        1 + usr_font.width * msg.length(), screen.ViewHeight()-(usr_font.height * 4),
+        1 + usr_font.width * msg.length(), screen.ViewHeight() - (usr_font.height * 4),
         user, usr_font, fg, bg, speed);
 
     msg = "Enter your passcode";
-    screen.DrawBlockAnimateString(1, screen.ViewHeight()-(usr_font.height * 2),
+    screen.DrawBlockAnimateString(1, screen.ViewHeight() - (usr_font.height * 2),
         msg, usr_font, fg, bg, speed);
 
     first_load = false;
@@ -92,13 +96,15 @@ void LoginView::Draw()
     }
 }
 
-bool LoginView::HandleInput()
+void LoginView::Update()
+{
+
+}
+
+void LoginView::HandleInput()
 {
     // Handle the input from the user, if they get the correct passcode
     // Change to the chat view;
-    GetInput();
-
-    if (!keyboard.EnterPressed()) return false;
 
     // TODO remove this is bad!
     char* eeprom_password;
@@ -106,7 +112,7 @@ bool LoginView::HandleInput()
     setting_manager.LoadSetting(SettingManager::SettingAddress::Password,
         &eeprom_password, eeprom_password_len);
     String password;
-    for (short i =0 ; i < eeprom_password_len; ++i)
+    for (short i = 0 ; i < eeprom_password_len; ++i)
     {
         password.push_back(eeprom_password[i]);
     }
@@ -115,8 +121,7 @@ bool LoginView::HandleInput()
 
     if (usr_input == password)
     {
-        manager.ChangeView<ChatView>();
-        return true;
+        ChangeView("/chat");
     }
     else
     {
@@ -126,14 +131,4 @@ bool LoginView::HandleInput()
             fg, bg);
 
     }
-
-
-    ClearInput();
-
-    return false;
-}
-
-bool LoginView::Update()
-{
-    return false;
 }

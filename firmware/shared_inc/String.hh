@@ -108,6 +108,7 @@ public:
         return _size;
     }
 
+    // FIX c string have a null terminated string
     const char* c_str() const
     {
         return array;

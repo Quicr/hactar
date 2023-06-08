@@ -12,8 +12,8 @@ public:
              SettingManager& setting_manager);
     ~TeamView();
 protected:
-    bool Update();
+    void Update();
     void AnimatedDraw();
     void Draw();
-    bool HandleInput();
+    void HandleInput();
 };

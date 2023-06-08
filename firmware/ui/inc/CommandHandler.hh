@@ -7,7 +7,7 @@
 
 #include "UserInterfaceManager.hh"
 
-
+// TODO rename to view changer
 class CommandHandler
 {
 public:

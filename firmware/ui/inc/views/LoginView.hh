@@ -14,8 +14,8 @@ public:
 protected:
     void AnimatedDraw();
     void Draw();
-    bool HandleInput();
-    bool Update();
+    void HandleInput();
+    void Update();
 
 private:
     void DrawFirstLoad();

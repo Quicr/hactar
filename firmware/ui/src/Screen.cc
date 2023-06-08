@@ -5,12 +5,12 @@
 
 #define DELAY HAL_MAX_DELAY
 
-Screen::Screen(SPI_HandleTypeDef &hspi,
-               port_pin cs,
-               port_pin dc,
-               port_pin rst,
-               port_pin bl,
-               Orientation orientation) :
+Screen::Screen(SPI_HandleTypeDef& hspi,
+    port_pin cs,
+    port_pin dc,
+    port_pin rst,
+    port_pin bl,
+    Orientation orientation) :
     spi_handle(&hspi),
     cs(cs),
     dc(dc),
@@ -19,6 +19,7 @@ Screen::Screen(SPI_HandleTypeDef &hspi,
     orientation(orientation),
     view_height(0),
     view_width(0),
+    chunk_buffer({0}),
     spi_busy(0)
 {
 }
@@ -33,7 +34,7 @@ void Screen::Begin()
     if (spi_handle == nullptr) return;
 
     // Setup GPIO for the screen.
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = {};
 
     EnablePortIf(cs.port);
     HAL_GPIO_WritePin(cs.port, cs.pin, GPIO_PIN_RESET);
@@ -72,32 +73,31 @@ void Screen::Begin()
     Reset();
 
     WriteCommand(SF_RST);
-    HAL_Delay(1000);
+    HAL_Delay(5); // wait 5ms
 
     // Set power control A
     WriteCommand(PWRC_A);
-    // TODO there are many memory leaks in this file
-    uint8_t power_a_data[5] = {0x39, 0x2C, 0x00, 0x34, 0x02};
+    uint8_t power_a_data[5] = { 0x39, 0x2C, 0x00, 0x34, 0x02 };
     WriteData(power_a_data, 5);
 
     // Set power control B
     WriteCommand(PWRC_B);
-    uint8_t power_b_data[3] = {0x00, 0xC1, 0x30};
+    uint8_t power_b_data[3] = { 0x00, 0xC1, 0x30 };
     WriteData(power_b_data, 3);
 
     // Driver timing control A
     WriteCommand(TIMC_A);
-    uint8_t timer_a_data[3] = {0x85, 0x00, 0x78};
+    uint8_t timer_a_data[3] = { 0x85, 0x00, 0x78 };
     WriteData(timer_a_data, 3);
 
     // Driver timing control B
     WriteCommand(TIMC_B);
-    uint8_t timer_b_data[2] = {0x00, 0x00};
+    uint8_t timer_b_data[2] = { 0x00, 0x00 };
     WriteData(timer_b_data, 2);
 
     // Power on sequence control
     WriteCommand(PWR_ON);
-    uint8_t power_data[4] = {0x64, 0x03, 0x12, 0x81};
+    uint8_t power_data[4] = { 0x64, 0x03, 0x12, 0x81 };
     WriteData(power_data, 4);
 
     // Pump ratio control
@@ -114,7 +114,7 @@ void Screen::Begin()
 
     // VCM Control 1
     WriteCommand(VCM_C1);
-    uint8_t vcm_control[2] = {0x3E, 0x28 };
+    uint8_t vcm_control[2] = { 0x3E, 0x28 };
     WriteData(vcm_control, 2);
 
     // VCM Control 2
@@ -131,12 +131,12 @@ void Screen::Begin()
 
     // Frame ratio control. RGB Color
     WriteCommand(FR_CTL); // 0xB1
-    uint8_t fr_control_data[2] = {0x00, 0x18};
+    uint8_t fr_control_data[2] = { 0x00, 0x18 };
     WriteData(fr_control_data, 2);
 
     // Display function control
     WriteCommand(DIS_CT); // 0xB6
-    uint8_t df_control_data[3] = {0x08, 0x82, 0x27};
+    uint8_t df_control_data[3] = { 0x08, 0x82, 0x27 };
     WriteData(df_control_data, 3);
 
     // 3Gamma function
@@ -149,13 +149,13 @@ void Screen::Begin()
 
     // Positive Gamma correction
     WriteCommand(GAM_PC); // 0xE0
-    uint8_t positive_gamma_correction_data[15] = {0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1,
-                              0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00};
+    uint8_t positive_gamma_correction_data[15] = { 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1,
+                              0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00 };
     WriteData(positive_gamma_correction_data, 15);
 
     // Negative gamma correction
     WriteCommand(GAM_NC);
-    uint8_t negative_gamma_correction_data[15] = {0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1,
+    uint8_t negative_gamma_correction_data[15] = { 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1,
                               0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F };
     WriteData(negative_gamma_correction_data, 15);
 
@@ -255,10 +255,10 @@ void Screen::WriteDataDMA(uint8_t* data, const uint32_t data_size)
  */
 void Screen::SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_end, uint16_t y_end)
 {
-    uint8_t col_data[] = { static_cast<uint8_t>(x_start >> 8), static_cast<uint8_t>(x_start),
-                           static_cast<uint8_t>(x_end   >> 8), static_cast<uint8_t>(x_end) };
-    uint8_t row_data[] = { static_cast<uint8_t>(y_start >> 8), static_cast<uint8_t>(y_start),
-                           static_cast<uint8_t>(y_end   >> 8), static_cast<uint8_t>(y_end) };
+    uint8_t col_data [] = { static_cast<uint8_t>(x_start >> 8), static_cast<uint8_t>(x_start),
+                           static_cast<uint8_t>(x_end >> 8), static_cast<uint8_t>(x_end) };
+    uint8_t row_data [] = { static_cast<uint8_t>(y_start >> 8), static_cast<uint8_t>(y_start),
+                           static_cast<uint8_t>(y_end >> 8), static_cast<uint8_t>(y_end) };
 
     // Set drawable column ILI9341 command
     WriteCommand(CA_SET);
@@ -274,9 +274,31 @@ void Screen::SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_en
     HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
 }
 
+void Screen::EnableBackLight()
+{
+    HAL_GPIO_WritePin(bl.port, bl.pin, GPIO_PIN_SET);
+}
+
+void Screen::DisableBackLight()
+{
+    HAL_GPIO_WritePin(bl.port, bl.pin, GPIO_PIN_RESET);
+}
+
+void Screen::Sleep()
+{
+    // TODO test
+    WriteCommand(0x10);
+}
+
+void Screen::Wake()
+{
+    // TODO test
+    WriteCommand(0x11);
+}
+
 void Screen::DrawRectangle(const uint16_t x_start, const uint16_t y_start,
-                           const uint16_t x_end, const uint16_t y_end,
-                           const uint16_t thickness, const uint16_t colour)
+    const uint16_t x_end, const uint16_t y_end,
+    const uint16_t thickness, const uint16_t colour)
 {
     // Fill top
     FillRectangle(x_start, y_start, x_end, y_start + thickness, colour);
@@ -307,9 +329,9 @@ void Screen::DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour
 
 // TODO consider adding x2 and y2 so it has a bounding box.
 void Screen::DrawBlockAnimateString(const uint16_t x, const uint16_t y,
-                                    const String &str, const Font &font,
-                                    const uint16_t fg, const uint16_t bg,
-                                    const uint16_t delay)
+    const String& str, const Font& font,
+    const uint16_t fg, const uint16_t bg,
+    const uint16_t delay)
 {
     // TODO word wrap..
     uint16_t x_pos = x;
@@ -333,8 +355,8 @@ void Screen::DrawBlockAnimateString(const uint16_t x, const uint16_t y,
     }
 }
 
-void Screen::DrawText(const uint16_t x, const uint16_t y, const String &str,
-    const Font &font, const uint16_t fg, const uint16_t bg,
+void Screen::DrawText(const uint16_t x, const uint16_t y, const String& str,
+    const Font& font, const uint16_t fg, const uint16_t bg,
     const bool wordwrap, uint32_t max_chunk_size)
 {
     // TODO clean up.
@@ -356,13 +378,13 @@ void Screen::DrawText(const uint16_t x, const uint16_t y, const String &str,
     // Get the chunk size
     const uint32_t chunk = std::min<uint32_t>(width * height, max_chunk_size);
     uint32_t data_idx = 0;
-    uint8_t* data = new uint8_t[chunk*2];
+    uint8_t* data = new uint8_t[chunk * 2];
 
     uint32_t ch_idx = 0;
     uint32_t ch_idx_offset = 0;
     char ch;
     const uint8_t* ch_ptr = nullptr;
-    uint32_t ptr_offset=0;
+    uint32_t ptr_offset = 0;
     uint8_t bits_read = 0;
     uint8_t bit_mask = 0;
     uint16_t num_chrs;
@@ -374,7 +396,7 @@ void Screen::DrawText(const uint16_t x, const uint16_t y, const String &str,
         width = num_chrs * font.width;
 
         SetWritablePixels(x, y + (font.height * i), x + width - 1,
-                          y + (font.height * i) + height - 1);
+            y + (font.height * i) + height - 1);
 
         for (uint32_t h_idx = 0; h_idx < height; h_idx++)
         {
@@ -392,8 +414,8 @@ void Screen::DrawText(const uint16_t x, const uint16_t y, const String &str,
                     * Then we need to account for what line we are currently
                     * reading from based on the font height and width.
                     */
-                    ptr_offset = ((ch - 32) * font.height * (font.width/8 + 1))
-                        + (h_idx % font.height * (font.width/8 + 1));
+                    ptr_offset = ((ch - 32) * font.height * (font.width / 8 + 1))
+                        + (h_idx % font.height * (font.width / 8 + 1));
 
                     // Get the pointer to the current row we are reading from
                     ch_ptr = &font.data[ptr_offset];
@@ -459,15 +481,15 @@ void Screen::DrawText(const uint16_t x, const uint16_t y, const String &str,
 
 // TODO update
 void Screen::DrawTextbox(uint16_t x_pos,
-                         uint16_t y_pos,
-                         const uint16_t x_window_start,
-                         const uint16_t y_window_start,
-                         const uint16_t x_window_end,
-                         const uint16_t y_window_end,
-                         const String &str,
-                         const Font &font,
-                         const uint16_t fg,
-                         const uint16_t bg)
+    uint16_t y_pos,
+    const uint16_t x_window_start,
+    const uint16_t y_window_start,
+    const uint16_t x_window_end,
+    const uint16_t y_window_end,
+    const String& str,
+    const Font& font,
+    const uint16_t fg,
+    const uint16_t bg)
 {
     Vector<String> words;
 
@@ -524,11 +546,11 @@ void Screen::DrawTextbox(uint16_t x_pos,
     Deselect();
 }
 void Screen::FillRectangle(const uint16_t x_start,
-                           const uint16_t y_start,
-                           uint16_t x_end,
-                           uint16_t y_end,
-                           const uint16_t colour,
-                           uint32_t max_chunk_size)
+    const uint16_t y_start,
+    uint16_t x_end,
+    uint16_t y_end,
+    const uint16_t colour,
+    uint32_t max_chunk_size)
 {
     // Clip to the size of the screen
     if (x_start >= view_width || y_start >= view_height) return;
@@ -548,26 +570,25 @@ void Screen::FillRectangle(const uint16_t x_start,
 
     uint32_t total_pixels = y_pixels * x_pixels;
 
-    uint32_t chunk = std::min<uint32_t>(total_pixels, max_chunk_size);
-    uint8_t* data = new uint8_t[chunk*2];
+    uint32_t chunk = std::min<uint32_t>(total_pixels, Chunk_Buffer_Size);
+    // uint8_t* data = new uint8_t[chunk * 2];
 
     // Copy colour to data
-    for (uint32_t i = 0; i < chunk*2; i+=2)
+    for (uint32_t i = 0; i < chunk * 2; i += 2)
     {
-        data[i] = static_cast<uint8_t>(colour >> 8);
-        data[i+1] = static_cast<uint8_t>(colour);
+        chunk_buffer[i] = static_cast<uint8_t>(colour >> 8);
+        chunk_buffer[i + 1] = static_cast<uint8_t>(colour);
     }
 
     while (total_pixels > 0)
     {
-        WriteDataDMA(data, chunk*2);
+        WriteDataDMA(chunk_buffer, chunk * 2);
 
         total_pixels -= chunk;
 
         // Get the size of data we are sending that is remaining
-        chunk = std::min<uint32_t>(total_pixels, max_chunk_size);
+        chunk = std::min<uint32_t>(total_pixels, Chunk_Buffer_Size);
     }
-    delete [] data;
 
     Deselect();
 }
@@ -608,51 +629,51 @@ void Screen::SetOrientation(Orientation orientation)
     }
 }
 
-void Screen::EnableBackLight()
-{
-    HAL_GPIO_WritePin(bl.port, bl.pin, GPIO_PIN_SET);
-}
-
-void Screen::DisableBackLight()
-{
-    HAL_GPIO_WritePin(bl.port, bl.pin, GPIO_PIN_RESET);
-}
-
 void Screen::ReleaseSPI()
 {
     spi_busy = 0;
 }
 
-/***** PRIVATE FUNCTIONS *****/
-
-void Screen::Clip(const uint16_t x_start,
-                  const uint16_t y_start,
-                  uint16_t &x_end,
-                  uint16_t &y_end)
+uint16_t Screen::GetStringWidth(const uint16_t str_len, const Font& font) const
 {
-    if (x_start + x_end - 1 >= view_width) x_end = view_width - x_start;
-    if (y_start + y_end - 1 >= view_height) y_end = view_height - y_start;
+    return str_len * font.width;
 }
 
-// Note - The select() and deselect() should be called before
-//        and after invoking this function, respectively.
-void Screen::DrawCharacter(uint16_t x_start,
-                           uint16_t y_start,
-                           const uint16_t x_window_begin,
-                           const uint16_t y_window_begin,
-                           const uint16_t x_window_end,
-                           const uint16_t y_window_end,
-                           const char ch,
-                           const Font &font,
-                           const uint16_t fg,
-                           const uint16_t bg)
+uint16_t Screen::GetStringCenter(const uint16_t str_len, const Font& font) const
+{
+    return GetStringWidth(str_len, font) / 2;
+}
+
+uint16_t Screen::GetStringCenterMargin(const uint16_t str_len, const Font& font) const
+{
+    return GetStringLeftDistanceFromRightEdge(str_len, font) / 2;
+}
+
+uint16_t Screen::GetStringLeftDistanceFromRightEdge(const uint16_t str_len,
+    const Font& font) const
+{
+    return ViewWidth() - GetStringWidth(str_len, font);
+}
+
+    // Note - The select() and deselect() should be called before
+    //        and after invoking this function, respectively.
+    void Screen::DrawCharacter(uint16_t x_start,
+        uint16_t y_start,
+        const uint16_t x_window_begin,
+        const uint16_t y_window_begin,
+        const uint16_t x_window_end,
+        const uint16_t y_window_end,
+        const char ch,
+        const Font& font,
+        const uint16_t fg,
+        const uint16_t bg)
 {
     // Clip to the window
     uint16_t x_end = x_start + font.width;
     uint16_t y_end = y_start + font.height;
 
-    if (x_start < x_window_begin) x_start = x_window_begin+1;
-    if (y_start < y_window_begin) y_start = y_window_begin+1;
+    if (x_start < x_window_begin) x_start = x_window_begin + 1;
+    if (y_start < y_window_begin) y_start = y_window_begin + 1;
     if (x_end > x_window_end) x_end = x_window_end;
     if (y_end > y_window_end) y_end = y_window_end;
 
@@ -660,10 +681,10 @@ void Screen::DrawCharacter(uint16_t x_start,
 
     // Get the offset based on the font height and width
     // If the width > 8 we need to account for the extra bytes
-    uint32_t offset = (ch-32) * font.height * (font.width/8 + 1);
+    uint32_t offset = (ch - 32) * font.height * (font.width / 8 + 1);
 
     // Get the address for the start of the character
-    const uint8_t *ch_ptr = &font.data[offset];
+    const uint8_t* ch_ptr = &font.data[offset];
 
     uint8_t data[2]; // The pixel data
     uint16_t idx_h;  // height index
@@ -722,6 +743,18 @@ void Screen::DrawCharacter(uint16_t x_start,
         // Slide the pointer over to the next byte
         ch_ptr++;
     }
+}
+
+
+/***** PRIVATE FUNCTIONS *****/
+
+void Screen::Clip(const uint16_t x_start,
+    const uint16_t y_start,
+    uint16_t& x_end,
+    uint16_t& y_end)
+{
+    if (x_start + x_end - 1 >= view_width) x_end = view_width - x_start;
+    if (y_start + y_end - 1 >= view_height) y_end = view_height - y_start;
 }
 
 uint16_t Screen::ViewWidth() const

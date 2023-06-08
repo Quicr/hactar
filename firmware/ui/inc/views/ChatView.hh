@@ -25,8 +25,8 @@ public:
 protected:
     void AnimatedDraw();
     void Draw();
-    bool Update();
-    bool HandleInput();
+    void Update();
+    void HandleInput();
 private:
     void DrawTitle();
     void DrawUsrInputSeperator();

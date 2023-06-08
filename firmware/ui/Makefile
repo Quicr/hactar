@@ -158,7 +158,8 @@ AS_INCLUDES =
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
-CFLAGS += $(MCU) $(C_DEFS) $(INCS) $(OPT) -Wall -Wpedantic -Wextra -fdata-sections -ffunction-sections
+CFLAGS 		+= $(MCU) $(C_DEFS) $(INCS) $(OPT) -Wall -Wpedantic -Wextra -fdata-sections -ffunction-sections
+HAL_CFLAGS 	+= $(MCU) $(C_DEFS) $(INCS) $(OPT) -Wall -fdata-sections -ffunction-sections
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
@@ -218,6 +219,11 @@ DEPS       = ${DEPS_C} ${DEPS_CC}
 all: info program
 
 -include $(DEPS)
+
+# So I can silence the warning from the HAL lib
+${OBJ_DIR}/stm32f4xx%.o : stm32f4xx%.c | ${DIRS}
+	@echo "[C]			$(notdir $<)"
+	@$(CC) $(HAL_CFLAGS) -c -o $@ $< -MMD -MF ${DEP_DIR}/$(*F).d
 
 ${OBJ_DIR}/%.o : %.c | ${DIRS}
 	@echo "[C]			$(notdir $<)"

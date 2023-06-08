@@ -58,7 +58,7 @@ port_pin dc = {LCD_DC_GPIO_Port, LCD_DC_Pin};
 port_pin rst = {LCD_RST_GPIO_Port, LCD_RST_Pin};
 port_pin bl = {LCD_BL_GPIO_Port, LCD_BL_Pin};
 
-Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::portrait);
+Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::left_landscape);
 Q10Keyboard *keyboard;
 SerialStm *net_layer = nullptr;
 UserInterfaceManager *ui_manager = nullptr;
