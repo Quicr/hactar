@@ -12,7 +12,7 @@ ModuleClient::~ModuleClient()
 bool ModuleClient::SendMessages()
 {
     bool messages_sent = false;
-    if (!packets.size() > 0)
+    if (!(packets.size() > 0))
         return messages_sent;
     if (!WiFi.isConnected())
         return messages_sent;
@@ -75,8 +75,8 @@ bool ModuleClient::GetMessage(Packet* incoming_packet)
     // TODO a "run module client function"
     constexpr unsigned int Byte_Size = 8;
 
-    unsigned long current_time = millis();
-    unsigned long timeout = current_time + 2000;
+    // unsigned long current_time = millis();
+    // unsigned long timeout = current_time + 2000;
 
     if (!client.available()) return false;
 
