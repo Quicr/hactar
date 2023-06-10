@@ -1,4 +1,4 @@
-PORT 				= COM11
+PORT 				= /dev/ttyUSB0
 CORE 				= esp32:esp32
 CHIP				= esp32s3
 BOARD				= ${CORE}:${CHIP}
@@ -9,9 +9,9 @@ SHARED_INC_DIR		= ../shared_inc
 INO_FILE			= net.ino
 
 ARDUINO_DIR			= /home/brett/.arduino15
-ARDUINO_DIR			= C:/Users/Brett/AppData/local/Arduino15
+# ARDUINO_DIR			= C:/Users/Brett/AppData/local/Arduino15
 ESP_VERSION			= 2.0.9
-ESP_VERSION			= 2.0.7
+# ESP_VERSION			= 2.0.7
 ESP_BOOT_APP_DIR 	= ${ARDUINO_DIR}/packages/esp32/hardware/esp32/${ESP_VERSION}/tools/partitions/boot_app0.bin
 
 UPLOAD_BAUD 		= 30000
@@ -39,7 +39,7 @@ upload:
 	if [ ${OS} == Windows_NT ] ; then \
 		python -m esptool ${ESP_TOOL_ARGS} ; \
 	else \
-		esptool ${ESP_TOOL_ARGS} ; \
+		esptool.py ${ESP_TOOL_ARGS} ; \
 	fi \
 
 # esptool --port=${PORT} --baud=${UPLOAD_BAUD} write_flash \

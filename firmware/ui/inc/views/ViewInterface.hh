@@ -323,6 +323,7 @@ private:
         }
 
         // Draw wifi symbol
+        const uint16_t y_start_offset = 1;
         screen.FillRectangle(screen.ViewWidth() - 50, 0, screen.ViewWidth() - 40, 1, colour);
         screen.FillRectangle(screen.ViewWidth() - 48, 2, screen.ViewWidth() - 42, 3, colour);
         screen.FillRectangle(screen.ViewWidth() - 46, 4, screen.ViewWidth() - 44, 5, colour);
