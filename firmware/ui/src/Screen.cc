@@ -286,14 +286,135 @@ void Screen::DisableBackLight()
 
 void Screen::Sleep()
 {
-    // TODO test
+    // TODO
     WriteCommand(0x10);
 }
 
 void Screen::Wake()
 {
-    // TODO test
+    // TODO
     WriteCommand(0x11);
+}
+
+void Screen::DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
+                       const uint16_t tip_width, const uint16_t tip_height,
+                       const uint8_t direction,
+                       const uint16_t thickness,
+                       const uint16_t length,
+                       const uint16_t colour)
+{
+    // Draw a triangle, with a line attached to it
+    int16_t x_direction = 0;
+    int16_t y_direction = 0;
+    if (direction == 0)
+    {
+        // Left
+
+    }
+    else if (direction == 1)
+    {
+        // Up
+        DrawTriangle(tip_x, tip_y,
+                    tip_x + tip_width / 2, tip_y + tip_height,
+                    tip_x - tip_width / 2, tip_y + tip_height, colour);
+        DrawRectangle(tip_x - thickness/2, tip_y + tip_height,
+                    tip_x + thickness/2, tip_y + tip_height + length,
+                    thickness, colour);
+    }
+    else if (direction == 2)
+    {
+        // Right
+    }
+    else if (direction == 3)
+    {
+        // Down
+    }
+}
+
+void Screen::DrawHorizontalLine(const uint16_t x1, const uint16_t x2,
+                                const uint16_t y, const uint16_t thickness,
+                                const uint16_t colour)
+{
+    if (x2 <= x1) return;
+    if (thickness == 0) return;
+
+    FillRectangle(x1, y, x2, y + thickness, colour);
+}
+
+void Screen::DrawLine(uint16_t x1, uint16_t y1,
+                      uint16_t x2, uint16_t y2,
+                      const uint16_t colour)
+{
+    // Get the absolute difference
+    int16_t diff_x = (x2 > x1) ? x2 - x1 : -(x2 - x1);
+    int16_t diff_y = (y2 > y1) ? y2 - y1 : -(y2 - y1);
+
+    // If x1 > x2 negative slope
+    int16_t direction_x = (x1 < x2) ? 1 : -1;
+
+    // If y2 > y1 negative slope
+    int16_t direction_y = (y1 < y2) ? 1 : -1;
+
+    // Get the error on our differences
+    int16_t error = diff_x - diff_y;
+
+
+    int16_t error_2;
+    // Error will hop back and forth until we hit our end points
+    while (x1 != x2 || y1 != y2)
+    {
+        DrawPixel(x1, y1, colour);
+
+        error_2 = error * 2;
+
+        // Move x position
+        if (error_2 > -diff_y)
+        {
+            error -= diff_y;
+            x1 += direction_x;
+        }
+
+        // Move y position
+        if (error_2 < diff_x)
+        {
+            error += diff_x;
+            y1 += direction_y;
+        }
+    }
+}
+
+void Screen::DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour)
+{
+    if (x >= view_width || y >= view_height) return;
+    Select();
+
+    SetWritablePixels(x, y, x, y);
+
+    // Draw pixel
+    WriteDataDMA(new uint8_t[2]{ static_cast<uint8_t>(colour >> 8),
+                                 static_cast<uint8_t>(colour) }, 2);
+
+    Deselect();
+}
+
+
+void Screen::DrawPolygon(int count, int points[][2], const uint16_t colour)
+{
+    if (count < 3)
+    {
+        // A polygon is defined by 3 points
+        return;
+    }
+
+    for (size_t i = 0; i < count-1; ++i)
+    {
+        DrawLine(points[i][0], points[i][1],
+                 points[i+1][0], points[i+1][1], colour);
+    }
+    // Connect the final line
+    DrawLine(points[count-1][0], points[count-1][1],
+             points[0][0], points[0][1], colour);
+
 }
 
 void Screen::DrawRectangle(const uint16_t x_start, const uint16_t y_start,
@@ -311,20 +432,6 @@ void Screen::DrawRectangle(const uint16_t x_start, const uint16_t y_start,
 
     // Fill bottom
     FillRectangle(x_start, y_end - thickness, x_end, y_end, colour);
-}
-
-void Screen::DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour)
-{
-    if (x >= view_width || y >= view_height) return;
-    Select();
-
-    SetWritablePixels(x, y, x, y);
-
-    // Draw pixel
-    WriteDataDMA(new uint8_t[2]{ static_cast<uint8_t>(colour >> 8),
-                                 static_cast<uint8_t>(colour) }, 2);
-
-    Deselect();
 }
 
 // TODO consider adding x2 and y2 so it has a bounding box.
@@ -545,6 +652,19 @@ void Screen::DrawTextbox(uint16_t x_pos,
 
     Deselect();
 }
+
+void Screen::DrawTriangle(const uint16_t x1, const uint16_t y1,
+                          const uint16_t x2, const uint16_t y2,
+                          const uint16_t x3, const uint16_t y3,
+                          const uint16_t colour)
+{
+    // TODO error checkign on x1 ....
+
+    DrawLine(x1, y1, x2, y2, colour);
+    DrawLine(x2, y2, x3, y3, colour);
+    DrawLine(x3, y3, x1, y1, colour);
+}
+
 void Screen::FillRectangle(const uint16_t x_start,
     const uint16_t y_start,
     uint16_t x_end,

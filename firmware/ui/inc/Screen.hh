@@ -50,7 +50,7 @@
 #define C_MAGENTA       0xF81F
 #define C_YELLOW        0xFFE0
 #define C_WHITE         0xFFFF
-#define C_GREY          0xEEEE
+#define C_GREY          0xCE59
 
 // Default orientation
 #define WIDTH                240
@@ -98,23 +98,42 @@ public:
     void Sleep();
     void Wake();
 
-    // void DrawLine(const uint16_t x_start, const uint16_t y_start,
-    //               const uint16_t x_end, const uint16_t y_end,
-    //               const uint16_t colour);
+
+    void DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
+                   const uint16_t tip_width, const uint16_t tip_height,
+                   const uint8_t direction,
+                   const uint16_t thickness, const uint16_t length,
+                   const uint16_t colour);
+
     void DrawCircle(const uint16_t x, const uint16_t y, const uint16_t r,
                     const uint16_t colour); // TODO
+
+    void DrawHorizontalLine(const uint16_t x1, const uint16_t x2,
+                            const uint16_t y, const uint16_t thickness,
+                            const uint16_t colour);
+
+    void DrawLine(uint16_t x1, uint16_t y1,
+                  uint16_t x2, uint16_t y2,
+                  const uint16_t colour);
+
     void DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour);
+
+    void DrawPolygon(int count, int points[][2], const uint16_t colour);
+
     void DrawRectangle(const uint16_t x_start, const uint16_t y_start,
                        const uint16_t x_end, const uint16_t y_end,
                        const uint16_t thickness, const uint16_t colour);
+
     void DrawBlockAnimateString(const uint16_t x, const uint16_t y,
                                 const String &str, const Font &font,
                                 const uint16_t fg, const uint16_t bg,
                                 const uint16_t delay);
+
     void DrawText(const uint16_t x, const uint16_t y, const String &str,
                     const Font &font, const uint16_t fg, const uint16_t bg,
                     const bool wordwrap = false,
                     uint32_t max_chunk_size=Max_Chunk_Size);
+
     void DrawTextbox(uint16_t x_pos,
                      uint16_t y_pos,
                      const uint16_t x_window_start,
@@ -125,8 +144,15 @@ public:
                      const Font &font,
                      const uint16_t fg,
                      const uint16_t bg);
+
+    void DrawTriangle(const uint16_t x1, const uint16_t y1,
+                      const uint16_t x2, const uint16_t y2,
+                      const uint16_t x3, const uint16_t y3,
+                      const uint16_t colour);
+
     void FillCircle(const uint16_t x, const uint16_t y, const uint16_t r,
                     const uint16_t colour); // TODO
+
     void FillRectangle(const uint16_t x_start,
                        const uint16_t y_start,
                        uint16_t x_end,
@@ -134,12 +160,11 @@ public:
                        const uint16_t colour,
                        uint32_t max_chunk_size=Max_Chunk_Size);
     void FillScreen(const uint16_t colour);
-    uint16_t ViewWidth() const;
-    uint16_t ViewHeight() const;
 
-    // TODO draw triangle
-
-    // TODO draw arrow
+    void FillTriangle(const uint16_t x1, const uint16_t y1,
+                      const uint16_t x2, const uint16_t y2,
+                      const uint16_t x3, const uint16_t y3,
+                      const uint16_t colour);
 
     void ReleaseSPI();
     void DrawCharacter(uint16_t x_start,
@@ -153,6 +178,8 @@ public:
                        const uint16_t fg,
                        const uint16_t bg);
 
+    uint16_t ViewWidth() const;
+    uint16_t ViewHeight() const;
     uint16_t GetStringWidth(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringCenter(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringCenterMargin(const uint16_t str_len, const Font& font) const;
@@ -173,6 +200,6 @@ private:
     Orientation orientation;
     uint16_t view_height;
     uint16_t view_width;
-    uint8_t chunk_buffer[Chunk_Buffer_Size * 2];
+    uint8_t chunk_buffer[Chunk_Buffer_Size * 2]; // TODO use this more
     volatile uint8_t spi_busy = 0;
 };

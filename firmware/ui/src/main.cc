@@ -143,6 +143,17 @@ int main(void)
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer, *eeprom);
 
+
+    screen.DrawLine(0, 50, 5, 60, C_GREEN);
+
+    screen.DrawHorizontalLine(10, 20, 80, 1, C_CYAN);
+
+    screen.DrawTriangle(5, 70, 11, 63, 15, 85, C_BLUE);
+
+    int vals[][2] = {{0, 100}, {6, 95}, {12, 100}, {8, 100}, {8, 110}, {4, 110}, {4, 100}};
+    screen.DrawPolygon(sizeof(vals) / sizeof(*vals), vals,
+                C_RED);
+
     while (1)
     {
         ui_manager->Run();
@@ -150,6 +161,8 @@ int main(void)
         rx_led.Timeout();
         tx_led.Timeout();
     }
+
+    return 0;
 }
 
 /**
