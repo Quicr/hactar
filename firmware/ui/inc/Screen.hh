@@ -68,6 +68,13 @@ public:
         right_landscape
     };
 
+    enum ArrowDirection {
+        Left,
+        Up,
+        Right,
+        Down
+    };
+
     // I will need each of the pins to be input
     Screen(SPI_HandleTypeDef &spi,
            port_pin cs,
@@ -100,10 +107,8 @@ public:
 
 
     void DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
-                   const uint16_t tip_width, const uint16_t tip_height,
-                   const uint8_t direction,
-                   const uint16_t thickness, const uint16_t length,
-                   const uint16_t colour);
+                   const uint16_t length, const uint16_t width,
+                   const ArrowDirection direction, const uint16_t colour);
 
     void DrawCircle(const uint16_t x, const uint16_t y, const uint16_t r,
                     const uint16_t colour); // TODO
@@ -118,7 +123,7 @@ public:
 
     void DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour);
 
-    void DrawPolygon(int count, int points[][2], const uint16_t colour);
+    void DrawPolygon(const size_t count, const uint16_t points[][2], const uint16_t colour);
 
     void DrawRectangle(const uint16_t x_start, const uint16_t y_start,
                        const uint16_t x_end, const uint16_t y_end,
@@ -150,8 +155,16 @@ public:
                       const uint16_t x3, const uint16_t y3,
                       const uint16_t colour);
 
+    void FillArrow(const uint16_t tip_x, const uint16_t tip_y,
+                   const uint16_t length, const uint16_t width,
+                   const ArrowDirection direction, const uint16_t colour);
+
     void FillCircle(const uint16_t x, const uint16_t y, const uint16_t r,
                     const uint16_t colour); // TODO
+
+    void FillPolygon(const size_t count,
+                     const int16_t points [][2],
+                     const uint16_t colour);
 
     void FillRectangle(const uint16_t x_start,
                        const uint16_t y_start,

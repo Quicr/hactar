@@ -144,16 +144,30 @@ int main(void)
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer, *eeprom);
 
 
-    screen.DrawLine(0, 50, 5, 60, C_GREEN);
+    // screen.DrawLine(0, 50, 5, 60, C_GREEN);
 
-    screen.DrawHorizontalLine(10, 20, 80, 1, C_CYAN);
+    // screen.DrawHorizontalLine(10, 20, 80, 1, C_CYAN);
 
-    screen.DrawTriangle(5, 70, 11, 63, 15, 85, C_BLUE);
+    // screen.DrawTriangle(5, 70, 11, 63, 15, 85, C_BLUE);
 
-    int vals[][2] = {{0, 100}, {6, 95}, {12, 100}, {8, 100}, {8, 110}, {4, 110}, {4, 100}};
-    screen.DrawPolygon(sizeof(vals) / sizeof(*vals), vals,
-                C_RED);
+    // uint16_t vals[][2] = {{0, 100}, {6, 95}, {12, 100}, {8, 100}, {8, 110}, {4, 110}, {4, 100}};
+    // screen.DrawPolygon(sizeof(vals) / sizeof(*vals), vals,
+    //             C_RED);
 
+    screen.DrawArrow(50, 50, 20, 8, Screen::ArrowDirection::Left, C_GREEN);
+    screen.DrawArrow(50, 50, 20, 8, Screen::ArrowDirection::Up, C_BLUE);
+    screen.DrawArrow(50, 50, 20, 8, Screen::ArrowDirection::Right, C_MAGENTA);
+    screen.DrawArrow(50, 50, 20, 8, Screen::ArrowDirection::Down, C_RED);
+
+
+    screen.FillArrow(50, 100, 20, 8, Screen::ArrowDirection::Left, C_GREEN);
+    screen.FillArrow(50, 100, 20, 8, Screen::ArrowDirection::Up, C_BLUE);
+    screen.FillArrow(50, 100, 20, 8, Screen::ArrowDirection::Right, C_MAGENTA);
+    screen.FillArrow(50, 100, 20, 8, Screen::ArrowDirection::Down, C_RED);
+
+
+
+    screen.FillArrow(100, 150, 50, 50, Screen::ArrowDirection::Down, C_RED);
     while (1)
     {
         ui_manager->Run();
