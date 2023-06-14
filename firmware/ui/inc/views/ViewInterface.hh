@@ -113,11 +113,12 @@ protected:
         DrawInput();
 
         // Draw Tx and Rx
+
         if (tx_colour != manager.GetTxStatusColour() &&
             HAL_GetTick() > tx_redraw_timeout)
         {
             tx_colour = manager.GetTxStatusColour();
-            screen.DrawText(screen.ViewWidth()-32, 0, "tx", font5x8, tx_colour, bg);
+            screen.FillArrow(screen.ViewWidth() - 12, 0, 10, 4, Screen::ArrowDirection::Up, tx_colour);
             tx_redraw_timeout = HAL_GetTick() + 200;
         }
 
@@ -125,7 +126,7 @@ protected:
             HAL_GetTick() > rx_redraw_timeout)
         {
             rx_colour = manager.GetRxStatusColour();
-            screen.DrawText(screen.ViewWidth()-16, 0, "rx", font5x8, rx_colour, bg);
+            screen.FillArrow(screen.ViewWidth() - 6, 10, 10, 4, Screen::ArrowDirection::Down, rx_colour);
             rx_redraw_timeout = HAL_GetTick() + 200;
         }
 
@@ -323,9 +324,9 @@ private:
         }
 
         // Draw wifi symbol
-        const uint16_t y_start_offset = 1;
-        screen.FillRectangle(screen.ViewWidth() - 50, 0, screen.ViewWidth() - 40, 1, colour);
-        screen.FillRectangle(screen.ViewWidth() - 48, 2, screen.ViewWidth() - 42, 3, colour);
-        screen.FillRectangle(screen.ViewWidth() - 46, 4, screen.ViewWidth() - 44, 5, colour);
+        const uint16_t y_start_offset = 3;
+        screen.FillRectangle(screen.ViewWidth() - 30, y_start_offset + 0, screen.ViewWidth() - 20, y_start_offset + 1, colour);
+        screen.FillRectangle(screen.ViewWidth() - 28, y_start_offset + 2, screen.ViewWidth() - 22, y_start_offset + 3, colour);
+        screen.FillRectangle(screen.ViewWidth() - 26, y_start_offset + 4, screen.ViewWidth() - 24, y_start_offset + 5, colour);
     }
 };
