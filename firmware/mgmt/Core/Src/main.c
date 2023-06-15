@@ -239,19 +239,19 @@ static void InitBitBangPins()
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RTS_GPIO_Port, &GPIO_InitStruct);
 
-  // UI uart
+  // UI UART
   // Configure GPIO pins : PA2|PA3 tx/rx
-  GPIO_InitStruct.Pin = UI_TX2_MGMT_Pin;
+  GPIO_InitStruct.Pin = UI_RX1_MGMT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(UI_TX2_MGMT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(UI_RX1_MGMT_GPIO_Port, &GPIO_InitStruct);
 
-  GPIO_InitStruct.Pin = UI_RX2_MGMT_Pin;
+  GPIO_InitStruct.Pin = UI_TX1_MGMT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(UI_RX2_MGMT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(UI_TX1_MGMT_GPIO_Port, &GPIO_InitStruct);
 
   // UI reset and boot
   GPIO_InitStruct.Pin = UI_RST_Pin;
@@ -266,18 +266,19 @@ static void InitBitBangPins()
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(UI_BOOT_GPIO_Port, &GPIO_InitStruct);
 
-  // TODO future note, the tx and rx pins are reversed.
-  GPIO_InitStruct.Pin = NET_TX0_MGMT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(NET_TX0_MGMT_GPIO_Port, &GPIO_InitStruct);
-
+  // Net UART
+  // Configure GPIO pins : PB6|PB7 tx/rx
   GPIO_InitStruct.Pin = NET_RX0_MGMT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(NET_RX0_MGMT_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = NET_TX0_MGMT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(NET_TX0_MGMT_GPIO_Port, &GPIO_InitStruct);
 
   // Net reset and boot
   GPIO_InitStruct.Pin = NET_RST_Pin;
@@ -422,6 +423,19 @@ int main(void)
   HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
+  // while(1)
+  // {
+  //   // // Echo usb back
+  //   if (USB_PORT->IDR & USB_RX_Bit)
+  //   {
+  //     USB_PORT->ODR |= USB_TX_Bit_On;
+  //   }
+  //   else
+  //   {
+  //     USB_PORT->ODR &= USB_TX_Bit_Off;
+  //   }
+  // }
+
   while (1)
   {
     if (state == Reset)
@@ -459,6 +473,22 @@ int main(void)
 
     if (state == UI)
     {
+      // Bring the stm boot into bootloader mode (1) and send the reset
+      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+
+      // Bring the esp boot into normal mode (1)
+      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+
+      HAL_Delay(10);
+
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
+
+      // HAL_Delay(100);
+      // HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+
       // Set LEDS for ui
       HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
@@ -468,27 +498,11 @@ int main(void)
       HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
-
-      // Put esp and stm into reset
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
-
-      // Bring the boot high for stm
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
-
-      // Bring the boot high for esp, normal boot (1)
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
-
-      // Release the stm reset
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
-      // Release the esp reset
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-
+      uploading = 0;
       while (state == UI)
       {
-        // Copy from net chip
-        if (NET_PORT->IDR & NET_RX_Bit)
+        // Copy from UI chip
+        if (UI_PORT->IDR & UI_RX_Bit)
         {
           USB_PORT->ODR |= USB_TX_Bit_On;
         }
@@ -500,11 +514,11 @@ int main(void)
         // Check the usb uart bit for input
         if (USB_PORT->IDR & USB_RX_Bit)
         {
-          NET_PORT->ODR |= NET_TX_Bit_On;
+          UI_PORT->ODR |= UI_TX_Bit_On;
         }
         else
         {
-          NET_PORT->ODR &= NET_TX_Bit_Off;
+          UI_PORT->ODR &= UI_TX_Bit_Off;
         }
       }
     }
@@ -630,7 +644,7 @@ int main(void)
       // HAL_Delay(100);
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
 
-      while (state == UI)
+      while (state == NetDebug)
       {
         // Copy from net chip
         if (UI_PORT->IDR & UI_RX_Bit)
@@ -759,7 +773,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, UI_RX2_MGMT_Pin | LEDB_R_Pin | LEDA_R_Pin | LEDA_G_Pin
+  HAL_GPIO_WritePin(GPIOA, UI_RX1_MGMT_Pin | LEDB_R_Pin | LEDA_R_Pin | LEDA_G_Pin
     | MGMT_DBG7_Pin | UI_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -778,19 +792,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : UI_TX2_MGMT_Pin */
-  GPIO_InitStruct.Pin = UI_TX2_MGMT_Pin;
+  /*Configure GPIO pin : UI_TX1_MGMT_Pin */
+  GPIO_InitStruct.Pin = UI_TX1_MGMT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(UI_TX2_MGMT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(UI_TX1_MGMT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : UI_RX2_MGMT_Pin */
-  GPIO_InitStruct.Pin = UI_RX2_MGMT_Pin;
+  /*Configure GPIO pin : UI_RX1_MGMT_Pin */
+  GPIO_InitStruct.Pin = UI_RX1_MGMT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(UI_RX2_MGMT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(UI_RX1_MGMT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LEDB_R_Pin LEDA_R_Pin LEDA_G_Pin MGMT_DBG7_Pin
                            UI_RST_Pin */
