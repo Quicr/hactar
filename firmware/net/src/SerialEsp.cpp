@@ -28,6 +28,8 @@ bool SerialEsp::ReadyToWrite()
 
 void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
 {
+    digitalWrite(5, LOW);
     uart->write(0xFF);
     uart->write(buff, buff_size);
+    digitalWrite(5, HIGH);
 }

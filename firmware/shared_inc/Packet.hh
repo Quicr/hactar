@@ -66,7 +66,7 @@ public:
 
     ~Packet()
     {
-        if (data) delete [] data;
+        delete [] data;
     }
 
     Packet& operator=(const Packet &other)
@@ -114,7 +114,7 @@ public:
                  unsigned int bits)
     {
         // If the data is outside of the range, resize it
-        if (offset_bits + bits > size * 32)
+        if (offset_bits + bits > size * 32U)
         {
             if (!dynamic) return;
 
@@ -122,6 +122,8 @@ public:
 
             SetSize(new_size);
         }
+
+        if (data == nullptr) return;
 
 
         // Get the pointer of the current bits we are manipulating
@@ -204,6 +206,7 @@ public:
     // TODO template with type T
     unsigned int GetData(unsigned int offset_bits, unsigned char bits) const
     {
+        if (data == nullptr) return 0;
         if (offset_bits + bits > size * 32)
             return 0;
 
@@ -361,6 +364,7 @@ private:
         if (start > end) return;
         if (start > size) return;
         if (end > size) return;
+        if (data == nullptr) return;
         for (unsigned int i = 0; i < end; i++)
             data[i] = 0;
     }

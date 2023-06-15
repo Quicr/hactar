@@ -444,7 +444,7 @@ void Screen::DrawPolygon(const size_t count,
 }
 
 void Screen::FillPolygon(const size_t count,
-    const int16_t points[][2],
+    const int16_t points [][2],
     const uint16_t colour)
 {
     if (count < 3)
@@ -555,7 +555,7 @@ void Screen::FillPolygon(const size_t count,
         for (i = 0; i < num_intersect; i += 2)
         {
             DrawHorizontalLine(intersections[i],
-                intersections[i+1], pix_y, 1, colour);
+                intersections[i + 1], pix_y, 1, colour);
         }
     }
 }
@@ -801,7 +801,7 @@ void Screen::DrawTriangle(const uint16_t x1, const uint16_t y1,
     const uint16_t x3, const uint16_t y3,
     const uint16_t colour)
 {
-    uint16_t points[3][2] = {{ x1, y1 }, {x2, y2}, {x3, y3}};
+    uint16_t points[3][2] = { { x1, y1 }, {x2, y2}, {x3, y3} };
     DrawPolygon(3, points, colour);
 }
 
@@ -816,50 +816,62 @@ void Screen::FillArrow(const uint16_t tip_x, const uint16_t tip_y,
     if (direction == ArrowDirection::Left)
     {
         // Left
-        int16_t points[7][2] = { {tip_x, tip_y},
-                                 {tip_x + tip_len, tip_y - half_width},
-                                 {tip_x + tip_len, tip_y - quar_width},
-                                 {tip_x + length, tip_y - quar_width},
-                                 {tip_x + length, tip_y + quar_width},
-                                 {tip_x + tip_len, tip_y + quar_width},
-                                 {tip_x + tip_len, tip_y + half_width} };
+        int16_t points[7][2] =
+        {
+            {(int16_t)tip_x, (int16_t)tip_y},
+            {(int16_t)(tip_x + tip_len), (int16_t)(tip_y - half_width)},
+            {(int16_t)(tip_x + tip_len), (int16_t)(tip_y - quar_width)},
+            {(int16_t)(tip_x + length),  (int16_t)(tip_y - quar_width)},
+            {(int16_t)(tip_x + length),  (int16_t)(tip_y + quar_width)},
+            {(int16_t)(tip_x + tip_len), (int16_t)(tip_y + quar_width)},
+            {(int16_t)(tip_x + tip_len), (int16_t)(tip_y + half_width)}
+        };
         FillPolygon(7, points, colour);
 
     }
     else if (direction == ArrowDirection::Up)
     {
         // Up
-        int16_t points[7][2] = { {tip_x, tip_y},
-                                 {tip_x + half_width, tip_y + tip_len},
-                                 {tip_x + quar_width, tip_y + tip_len},
-                                 {tip_x + quar_width, tip_y + length},
-                                 {tip_x - quar_width, tip_y + length},
-                                 {tip_x - quar_width, tip_y + tip_len},
-                                 {tip_x - half_width, tip_y + tip_len} };
+        int16_t points[7][2] =
+        {
+            {(int16_t)tip_x, (int16_t)tip_y},
+            {(int16_t)(tip_x + half_width), (int16_t)(tip_y + tip_len)},
+            {(int16_t)(tip_x + quar_width), (int16_t)(tip_y + tip_len)},
+            {(int16_t)(tip_x + quar_width), (int16_t)(tip_y + length)},
+            {(int16_t)(tip_x - quar_width), (int16_t)(tip_y + length)},
+            {(int16_t)(tip_x - quar_width), (int16_t)(tip_y + tip_len)},
+            {(int16_t)(tip_x - half_width), (int16_t)(tip_y + tip_len)}
+        };
         FillPolygon(7, points, colour);
     }
     else if (direction == ArrowDirection::Right)
     {
         // Right
-        int16_t points[7][2] = { {tip_x, tip_y},
-                                 {tip_x - tip_len, tip_y - half_width},
-                                 {tip_x - tip_len, tip_y - quar_width},
-                                 {tip_x - length, tip_y - quar_width},
-                                 {tip_x - length, tip_y + quar_width},
-                                 {tip_x - tip_len, tip_y + quar_width},
-                                 {tip_x - tip_len, tip_y + half_width} };
+        int16_t points[7][2] =
+        {
+            {(int16_t)tip_x, (int16_t)tip_y},
+            {(int16_t)(tip_x - tip_len), (int16_t)(tip_y - half_width)},
+            {(int16_t)(tip_x - tip_len), (int16_t)(tip_y - quar_width)},
+            {(int16_t)(tip_x - length),  (int16_t)(tip_y - quar_width)},
+            {(int16_t)(tip_x - length),  (int16_t)(tip_y + quar_width)},
+            {(int16_t)(tip_x - tip_len), (int16_t)(tip_y + quar_width)},
+            {(int16_t)(tip_x - tip_len), (int16_t)(tip_y + half_width)}
+        };
         FillPolygon(7, points, colour);
     }
     else if (direction == ArrowDirection::Down)
     {
         // Down
-        int16_t points[7][2] = { {tip_x, tip_y},
-                                 {tip_x - half_width, tip_y - tip_len},
-                                 {tip_x - quar_width, tip_y - tip_len},
-                                 {tip_x - quar_width, tip_y - length},
-                                 {tip_x + quar_width, tip_y - length},
-                                 {tip_x + quar_width, tip_y - tip_len},
-                                 {tip_x + half_width, tip_y - tip_len} };
+        int16_t points[7][2] =
+        {
+            {(int16_t)tip_x, (int16_t)tip_y},
+            {(int16_t)(tip_x - half_width), (int16_t)(tip_y - tip_len)},
+            {(int16_t)(tip_x - quar_width), (int16_t)(tip_y - tip_len)},
+            {(int16_t)(tip_x - quar_width), (int16_t)(tip_y - length)},
+            {(int16_t)(tip_x + quar_width), (int16_t)(tip_y - length)},
+            {(int16_t)(tip_x + quar_width), (int16_t)(tip_y - tip_len)},
+            {(int16_t)(tip_x + half_width), (int16_t)(tip_y - tip_len)}
+        };
         FillPolygon(7, points, colour);
     }
 }
@@ -917,7 +929,7 @@ void Screen::FillTriangle(const uint16_t x1, const uint16_t y1,
     const uint16_t x3, const uint16_t y3,
     const uint16_t colour)
 {
-    int16_t points[3][2] = {{ x1, y1 }, {x2, y2}, {x3, y3}};
+    int16_t points[3][2] = { { x1, y1 }, {x2, y2}, {x3, y3} };
     FillPolygon(3, points, colour);
 }
 
