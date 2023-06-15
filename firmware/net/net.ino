@@ -37,7 +37,11 @@ void HandleIncomingNetwork()
     // Get the packet from the client
     Packet* recv_packet = client->GetMessage();
 
-    if (recv_packet->GetSize() == 0) return;
+    if (recv_packet->GetSize() == 0)
+    {
+        delete recv_packet;
+        return;
+    }
 
     // Parse the packet, and either send it to the next layer or print it
     // to a serial
@@ -295,7 +299,6 @@ void loop()
 
     if (current_time > ping)
     {
-        digitalWrite(LED_B_Pin, !digitalRead(LED_B_Pin));
         Serial.println("-- Alive --");
         ping = current_time + 10000;
         Serial.print("-- Wifi status: ");
@@ -303,37 +306,10 @@ void loop()
         Serial.println(" --");
     }
 
-
-
     ui_layer->RxTx(current_time);
     HandleIncomingSerial();
-    digitalWrite(LED_R_Pin, (ui_layer->HasTxPackets()));
     HandleOutgoingNetwork();
     HandleIncomingNetwork();
 
     yield();
 }
-
-// #include <Arduino.h>
-// void setup()
-// {
-//     pinMode(5, OUTPUT);
-//     pinMode(6, OUTPUT);
-//     pinMode(7, OUTPUT);
-
-//     digitalWrite(5, LOW);
-//     digitalWrite(6, HIGH);
-//     digitalWrite(7, HIGH);
-//     Serial.begin(115200);
-// }
-
-// unsigned long long timeout = 0;
-// void loop()
-// {
-//     if (millis() > timeout)
-//     {
-//         digitalWrite(5, !digitalRead(5));
-//         Serial.println("Hello from esp");
-//         timeout = millis() + 5000;
-//     }
-// }

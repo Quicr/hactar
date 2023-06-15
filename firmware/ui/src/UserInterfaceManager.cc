@@ -132,8 +132,8 @@ void UserInterfaceManager::HandleIncomingPackets()
     while (packets.size() > 0)
     {
         // Get the type
-        Packet& rx_packet = *packets[0];
-        uint8_t p_type = rx_packet.GetData(0, 6);
+        Packet* rx_packet = packets[0];
+        uint8_t p_type = rx_packet->GetData(0, 6);
         switch (p_type)
         {
             // P_type will only be message or debug by this point
@@ -148,10 +148,10 @@ void UserInterfaceManager::HandleIncomingPackets()
                 String body;
 
                 // Skip the type and length, add the whole message
-                uint16_t packet_len = rx_packet.GetData(14, 10);
+                uint16_t packet_len = rx_packet->GetData(14, 10);
                 for (uint32_t j = 0; j < packet_len; ++j)
                 {
-                    body.push_back((char)rx_packet.GetData(24 + (j * 8), 8));
+                    body.push_back((char)rx_packet->GetData(24 + (j * 8), 8));
                 }
 
                 in_msg.Body(body);
@@ -163,14 +163,14 @@ void UserInterfaceManager::HandleIncomingPackets()
                 // TODO Set the setting
 
                 // For settings we expect the data to dedicate 16 bits to the id
-                // uint16_t packet_len = rx_packet.GetData(14, 10);
+                // uint16_t packet_len = rx_packet->GetData(14, 10);
 
                 // Get the setting id
-                // uint16_t setting_id = rx_packet.GetData(24, 16);
+                // uint16_t setting_id = rx_packet->GetData(24, 16);
 
                 // Get the data from the packet and set the setting
                 // for now we expect a 32 bit value for each setting
-                // uint32_t setting_data = rx_packet.GetData(40, 32);
+                // uint32_t setting_data = rx_packet->GetData(40, 32);
 
                 break;
             }
@@ -178,21 +178,21 @@ void UserInterfaceManager::HandleIncomingPackets()
             {
                 // TODO move to a parse command function
                 // TODO switch statement
-                uint8_t command_type = rx_packet.GetData(24, 8);
+                uint8_t command_type = rx_packet->GetData(24, 8);
                 if (Packet::Commands::SSIDs == command_type)
                 {
                     // Get the packet len
-                    uint16_t len = rx_packet.GetData(14, 10);
+                    uint16_t len = rx_packet->GetData(14, 10);
 
                     // Get the ssid id
-                    uint8_t ssid_id = rx_packet.GetData(32, 8);
+                    uint8_t ssid_id = rx_packet->GetData(32, 8);
 
                     // Build the string
                     String str;
                     for (uint8_t i = 0; i < len - 2; ++i)
                     {
                         str.push_back(static_cast<char>(
-                            rx_packet.GetData(40 + i * 8, 8)));
+                            rx_packet->GetData(40 + i * 8, 8)));
                     }
 
                     ssids[ssid_id] = std::move(str);
@@ -200,7 +200,7 @@ void UserInterfaceManager::HandleIncomingPackets()
                 else if (Packet::Commands::WifiStatus == command_type)
                 {
                     // Response from the esp32 will invoke this
-                    is_connected_to_wifi = rx_packet.GetData(32, 8);
+                    is_connected_to_wifi = rx_packet->GetData(32, 8);
                     if (!is_connected_to_wifi)
                     {
                         ConnectToWifi();
@@ -216,7 +216,7 @@ void UserInterfaceManager::HandleIncomingPackets()
         }
 
         // TODO this should be automatic when the vector erases it?
-        delete packets[0];
+        delete rx_packet;
         packets.erase(0);
     }
 }
