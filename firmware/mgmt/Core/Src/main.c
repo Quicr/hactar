@@ -436,6 +436,7 @@ int main(void)
   //   }
   // }
 
+  state = Reset;
   while (1)
   {
     if (state == Reset)
@@ -456,53 +457,20 @@ int main(void)
       // HAL_Delay(100);
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
 
-      // Release the LEDs
-      // Loop in here forever while running
-      state = Running;
-      while (state == Running)
-      {
-        HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
-
-        HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
-      }
-    }
-
-    if (state == UI)
-    {
-      // Bring the stm boot into bootloader mode (1) and send the reset
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
-
-      // Bring the esp boot into normal mode (1)
-      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
-
-      HAL_Delay(10);
-
-      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
-
-      // HAL_Delay(100);
-      // HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-
-      // Set LEDS for ui
-      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
 
       HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
-
-      uploading = 0;
-      while (state == UI)
+      // Release the LEDs
+      // Loop in here forever while running
+      state = Running;
+      while (state == Running)
       {
-        // Copy from UI chip
-        if (UI_PORT->IDR & UI_RX_Bit)
+        // Check the usb uart bit for input
+        if (USB_PORT->IDR & USB_RX_Bit)
         {
           USB_PORT->ODR |= USB_TX_Bit_On;
         }
@@ -510,6 +478,33 @@ int main(void)
         {
           USB_PORT->ODR &= USB_TX_Bit_Off;
         }
+      }
+    }
+
+    if (state == UI)
+    {
+      USB_PORT->ODR |= USB_TX_Bit_Off;
+      UI_PORT->ODR  |= UI_TX_Bit_Off;
+
+      // Bring the esp boot into normal mode (1)
+      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+      HAL_Delay(1);
+
+      // Set LEDS for ui
+      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET);
+
+      // Bring the stm boot into bootloader mode (1) and send the reset
+      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
+
+      while (state == UI)
+      {
 
         // Check the usb uart bit for input
         if (USB_PORT->IDR & USB_RX_Bit)
@@ -519,6 +514,15 @@ int main(void)
         else
         {
           UI_PORT->ODR &= UI_TX_Bit_Off;
+        }
+        // Copy from UI chip
+        if (UI_PORT->IDR & UI_RX_Bit)
+        {
+          USB_PORT->ODR |= USB_TX_Bit_On;
+        }
+        else
+        {
+          USB_PORT->ODR &= USB_TX_Bit_Off;
         }
       }
     }
@@ -647,7 +651,7 @@ int main(void)
       while (state == NetDebug)
       {
         // Copy from net chip
-        if (UI_PORT->IDR & UI_RX_Bit)
+        if (NET_PORT->IDR & NET_RX_Bit)
         {
           USB_PORT->ODR |= USB_TX_Bit_On;
         }
@@ -659,11 +663,11 @@ int main(void)
         // Check the usb uart bit for input
         if (USB_PORT->IDR & USB_RX_Bit)
         {
-          UI_PORT->ODR |= UI_TX_Bit_On;
+          NET_PORT->ODR |= NET_TX_Bit_On;
         }
         else
         {
-          UI_PORT->ODR &= UI_TX_Bit_Off;
+          NET_PORT->ODR &= NET_TX_Bit_Off;
         }
       }
     }

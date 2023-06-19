@@ -23,7 +23,8 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     current_time(HAL_GetTick()),
     ssids(),
     last_wifi_check(0),
-    is_connected_to_wifi(false)
+    is_connected_to_wifi(false),
+    attempt_to_connect_timeout(0)
 {
     if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
         == FIRST_BOOT_DONE)
@@ -54,6 +55,7 @@ void UserInterfaceManager::Run()
     }
 
     // TODO move into some sort of update function
+    // This dynamic cast might be a little slow
     if (current_time > last_wifi_check)
     {
         // Check a check wifi status packet
@@ -64,7 +66,7 @@ void UserInterfaceManager::Run()
         check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
 
         EnqueuePacket(check_wifi);
-        last_wifi_check = current_time + 5000;
+        last_wifi_check = current_time + 10000;
     }
     // if (current_time > last_test_packet && is_connected_to_wifi)
     // {
@@ -201,9 +203,12 @@ void UserInterfaceManager::HandleIncomingPackets()
                 {
                     // Response from the esp32 will invoke this
                     is_connected_to_wifi = rx_packet->GetData(32, 8);
-                    if (!is_connected_to_wifi)
+                    if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
                     {
                         ConnectToWifi();
+
+                        // Wait a long time before trying to connect again
+                        attempt_to_connect_timeout = HAL_GetTick() + 50000;
                     }
                 }
 

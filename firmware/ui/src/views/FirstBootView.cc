@@ -40,9 +40,13 @@ void FirstBootView::AnimatedDraw()
 
     uint16_t speed = 10;
     String msg = "Welcome to Cisco";
-    screen.DrawBlockAnimateString(34, 6, msg, font11x16, fg, bg, speed);
+    screen.DrawBlockAnimateString(
+        screen.GetStringCenterMargin(msg.length(), font11x16), 6,
+        msg, font11x16, fg, bg, speed);
     msg = "Secure Messaging";
-    screen.DrawBlockAnimateString(34, 22, msg, font11x16, fg, bg, speed);
+    screen.DrawBlockAnimateString(
+        screen.GetStringCenterMargin(msg.length(), font11x16), 22,
+        msg, font11x16, fg, bg, speed);
 
     first_load = false;
 }
@@ -95,9 +99,6 @@ void FirstBootView::Draw()
 void FirstBootView::HandleInput()
 {
     // Handle the input from the user.
-    GetInput();
-
-    if (!keyboard.EnterPressed()) return;
 
     // TODO error checking
     switch (state)
@@ -161,12 +162,9 @@ void FirstBootView::Update()
             // FIX sometimes crashes here
             // because we need to return true all the way upwards
             // manager.ChangeView<LoginView>();
-            return;
+            ChangeView("/login");
         }
     }
-
-
-    return;
 }
 
 void FirstBootView::SetWifi()
@@ -205,7 +203,6 @@ void FirstBootView::SetWifi()
     else if (wifi_state == WifiState::Password)
     {
         password = usr_input;
-        password = "";
         setting_manager.SaveSetting(
             SettingManager::SettingAddress::SSID_Password,
             password.data(), password.length());
