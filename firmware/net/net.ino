@@ -304,6 +304,7 @@ void loop()
         Serial.print("-- Wifi status: ");
         Serial.print(WiFi.status());
         Serial.println(" --");
+        digitalWrite(LED_G_Pin, !digitalRead(LED_G_Pin));
     }
 
     ui_layer->RxTx(current_time);
@@ -313,3 +314,22 @@ void loop()
 
     yield();
 }
+
+
+// #include <Arduino.h>
+
+// void setup()
+// {
+//     Serial.begin(115200);
+//     pinMode(5, OUTPUT);
+// }
+
+// unsigned long long timeout = 0;
+// void loop()
+// {
+//     if (millis() > timeout)
+//     {
+//         digitalWrite(5, !digitalRead(5));
+//         timeout = millis() + 1000;
+//     }
+// }

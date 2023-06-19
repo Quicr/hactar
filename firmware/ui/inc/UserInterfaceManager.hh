@@ -99,6 +99,7 @@ private:
     std::map<uint8_t, String> ssids;
     uint32_t last_wifi_check;
     bool is_connected_to_wifi;
+    uint32_t attempt_to_connect_timeout;
 
     uint32_t last_test_packet = 0;
 };
