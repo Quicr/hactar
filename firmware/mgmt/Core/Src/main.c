@@ -269,7 +269,7 @@ static void InitBitBangPins()
   // Net UART
   // Configure GPIO pins : PB6|PB7 tx/rx
   GPIO_InitStruct.Pin = NET_RX0_MGMT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(NET_RX0_MGMT_GPIO_Port, &GPIO_InitStruct);
@@ -505,7 +505,6 @@ int main(void)
 
       while (state == UI)
       {
-
         // Check the usb uart bit for input
         if (USB_PORT->IDR & USB_RX_Bit)
         {
@@ -542,11 +541,11 @@ int main(void)
       HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
       // Wait for the start bit from esptool
-      while ((USB_PORT->IDR & USB_RX_Bit) && (state == Net))
-      {
-        USB_PORT->ODR |= NET_TX_Bit_On;
-      }
-      USB_PORT->ODR &= NET_TX_Bit_Off;
+      // while ((USB_PORT->IDR & USB_RX_Bit) && (state == Net))
+      // {
+      //   USB_PORT->ODR |= NET_TX_Bit_On;
+      // }
+      // USB_PORT->ODR &= NET_TX_Bit_Off;
 
       if (state != Net)
         continue;
@@ -562,32 +561,32 @@ int main(void)
       // Bring the boot low for esp, bootloader mode (0)
       HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
 
-      // Pretty much ignore a bunch of bits
-      while (bits_copied++ < 0x100000 && state == Net)
-      {
-        // Copy from network
-        if (NET_PORT->IDR & NET_RX_Bit)
-        {
-          USB_PORT->ODR |= USB_TX_Bit_On;
-        }
-        else
-        {
-          USB_PORT->ODR &= USB_TX_Bit_Off;
-        }
+      // // Pretty much ignore a bunch of bits
+      // while (bits_copied++ < 0x100000 && state == Net)
+      // {
+      //   // Copy from network
+      //   if (NET_PORT->IDR & NET_RX_Bit)
+      //   {
+      //     USB_PORT->ODR |= USB_TX_Bit_On;
+      //   }
+      //   else
+      //   {
+      //     USB_PORT->ODR &= USB_TX_Bit_Off;
+      //   }
 
-        // Check the usb uart bit
-        if (USB_PORT->IDR & USB_RX_Bit)
-        {
-          NET_PORT->ODR |= NET_TX_Bit_On;
-        }
-        else
-        {
-          NET_PORT->ODR &= NET_TX_Bit_Off;
-        }
-      }
+      //   // Check the usb uart bit
+      //   if (USB_PORT->IDR & USB_RX_Bit)
+      //   {
+      //     NET_PORT->ODR |= NET_TX_Bit_On;
+      //   }
+      //   else
+      //   {
+      //     NET_PORT->ODR &= NET_TX_Bit_Off;
+      //   }
+      // }
 
-      if (state != Net)
-        continue;
+      // if (state != Net)
+      //   continue;
 
       uploading = 1;
 
@@ -597,27 +596,27 @@ int main(void)
       while (uploading)
       {
         // Copy from net chip
-        if (NET_PORT->IDR & NET_RX_Bit)
-        {
-          USB_PORT->ODR |= USB_TX_Bit_On;
-        }
-        else
-        {
-          USB_PORT->ODR &= USB_TX_Bit_Off;
-        }
+      //   if (NET_PORT->IDR & NET_RX_Bit)
+      //   {
+      //     USB_PORT->ODR |= USB_TX_Bit_On;
+      //   }
+      //   else
+      //   {
+      //     USB_PORT->ODR &= USB_TX_Bit_Off;
+      //   }
 
-        // Check the usb uart bit for input
-        if (USB_PORT->IDR & USB_RX_Bit)
-        {
-          NET_PORT->ODR |= NET_TX_Bit_On;
-        }
-        else
-        {
-          NET_PORT->ODR &= NET_TX_Bit_Off;
-        }
+      //   // Check the usb uart bit for input
+      //   if (USB_PORT->IDR & USB_RX_Bit)
+      //   {
+      //     NET_PORT->ODR |= NET_TX_Bit_On;
+      //   }
+      //   else
+      //   {
+      //     NET_PORT->ODR &= NET_TX_Bit_Off;
+      //   }
       }
-      USB_PORT->ODR &= USB_TX_Bit_Off;
-      NET_PORT->ODR &= NET_TX_Bit_Off;
+      // USB_PORT->ODR &= USB_TX_Bit_Off;
+      // NET_PORT->ODR &= NET_TX_Bit_Off;
     } // end if state == net
 
     if (state == NetDebug)
@@ -651,24 +650,24 @@ int main(void)
       while (state == NetDebug)
       {
         // Copy from net chip
-        if (NET_PORT->IDR & NET_RX_Bit)
-        {
-          USB_PORT->ODR |= USB_TX_Bit_On;
-        }
-        else
-        {
-          USB_PORT->ODR &= USB_TX_Bit_Off;
-        }
+        // if (NET_PORT->IDR & NET_RX_Bit)
+        // {
+        //   USB_PORT->ODR |= USB_TX_Bit_On;
+        // }
+        // else
+        // {
+        //   USB_PORT->ODR &= USB_TX_Bit_Off;
+        // }
 
-        // Check the usb uart bit for input
-        if (USB_PORT->IDR & USB_RX_Bit)
-        {
-          NET_PORT->ODR |= NET_TX_Bit_On;
-        }
-        else
-        {
-          NET_PORT->ODR &= NET_TX_Bit_Off;
-        }
+        // // Check the usb uart bit for input
+        // if (USB_PORT->IDR & USB_RX_Bit)
+        // {
+        //   NET_PORT->ODR |= NET_TX_Bit_On;
+        // }
+        // else
+        // {
+        //   NET_PORT->ODR &= NET_TX_Bit_Off;
+        // }
       }
     }
   }
