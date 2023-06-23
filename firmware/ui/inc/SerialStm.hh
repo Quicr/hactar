@@ -18,7 +18,7 @@ public:
     void Write(unsigned char* buff, const unsigned short buff_sz) override;
 
     // un-inherited functions
-    void RxEvent();
+    void RxEvent(void* pv_parameters);
     void TxEvent();
 private:
     void StartRx();
