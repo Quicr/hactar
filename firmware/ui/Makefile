@@ -28,7 +28,7 @@ OPT = -Og
 # paths
 #######################################
 # Build path
-BUILD_DIR = ../build/ui
+BUILD_DIR = ./build
 OBJ_DIR = ${BUILD_DIR}/obj
 BIN_DIR = ${BUILD_DIR}/bin
 DEP_DIR = ${BUILD_DIR}/dep
