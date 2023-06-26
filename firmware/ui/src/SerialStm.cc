@@ -15,12 +15,12 @@ SerialStm::~SerialStm()
     delete rx_buff;
 }
 
-unsigned long SerialStm::AvailableBytes()
+size_t SerialStm::AvailableBytes()
 {
     return rx_ring.AvailableBytes();
 }
 
-unsigned long SerialStm::Read()
+unsigned char SerialStm::Read()
 {
     return rx_ring.Read();
 }

@@ -18,8 +18,8 @@ SerialEsp(uart_port_t uart,
           size_t ring_buffer_size);
     ~SerialEsp();
 
-    unsigned long AvailableBytes() override;
-    unsigned long Read() override;
+    size_t AvailableBytes() override;
+    unsigned char Read() override;
     bool ReadyToWrite() override;
     void Write(unsigned char* buff, const unsigned short buff_size) override;
 
@@ -29,7 +29,7 @@ SerialEsp(uart_port_t uart,
 private:
     uart_port_t uart;
     RingBuffer<unsigned char> rx_ring;
+    bool tx_free;
 
-    unsigned char rx_buff[BUFFER_SIZE];
     QueueHandle_t uart_queue;
 };

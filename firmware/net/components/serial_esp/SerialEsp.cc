@@ -1,4 +1,5 @@
 #include "SerialEsp.hh"
+#include "../../core/Error.h"
 
 SerialEsp::SerialEsp(uart_port_t uart,
                      unsigned long long tx_pin,
@@ -8,7 +9,9 @@ SerialEsp::SerialEsp(uart_port_t uart,
                      uart_config_t uart_config,
                      size_t ring_buff_size) :
     uart(uart),
-    rx_ring(ring_buff_size)
+    rx_ring(ring_buff_size),
+    tx_free(true),
+    uart_queue(nullptr)
 {
     esp_err_t res;
     // NOTE rx buff is MINIMUM 128
@@ -23,33 +26,36 @@ SerialEsp::SerialEsp(uart_port_t uart,
 
 SerialEsp::~SerialEsp()
 {
+
 }
 
-unsigned long SerialEsp::AvailableBytes()
+size_t SerialEsp::AvailableBytes()
 {
-    // return uart->available();
-    return 0;
+    return rx_ring.AvailableBytes();
 }
 
-unsigned long SerialEsp::Read()
+unsigned char SerialEsp::Read()
 {
-    // Read from the uart
-    return 0;
+    return rx_ring.Read();
 }
 
 bool SerialEsp::ReadyToWrite()
 {
-    // return uart->availableForWrite();
-
-    return 0;
+    return tx_free;
 }
 
 void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
 {
-    // digitalWrite(5, LOW);
-    // uart->write(0xFF);
-    // uart->write(buff, buff_size);
-    // digitalWrite(5, HIGH);
+    uart_write_bytes(uart, (void*)0xFF, 1);
+
+    // Wait until the previous essage is sent
+    while (uart_wait_tx_done(uart, 100));
+    {
+        vTaskDelay(1 / portTICK_PERIOD_MS);
+    }
+
+    // Send the whole message
+    uart_write_bytes(uart, buff, buff_size);
 }
 
 // UART Events
@@ -59,9 +65,7 @@ void SerialEsp::RxEvent(void* parameter)
     printf("Serial %d\n", serial->uart);
 
     uart_event_t event;
-    size_t num_buffered;
-    // TODO use ring buff
-    unsigned char* buff = new unsigned char[BUFFER_SIZE];
+    unsigned char buff[BUFFER_SIZE];
 
     while (true)
     {
@@ -72,33 +76,85 @@ void SerialEsp::RxEvent(void* parameter)
 
         printf("uart[%d] event size: %d\n", serial->uart, event.size);
 
+        // for (int i = 0; i < event.size; i++)
+        // {
+        //     printf("buffer[%d] = %d", i, (int)buff[i]);
+        // }
+        // printf("\nMessage: ");
 
-        uart_read_bytes(serial->uart, buff, event.size, 0xFF);
-
-        for (int i = 0; i < event.size; i++)
-        {
-            printf("buffer[%d] = %d", i, (int)buff[i]);
-        }
-        printf("\nMessage: ");
-
-        for (int i = 0; i < event.size; i++)
-        {
-            printf("%c", buff[i]);
-        }
-        printf("\n");
+        // for (int i = 0; i < event.size; i++)
+        // {
+        //     printf("%c", buff[i]);
+        // }
+        // printf("\n");
 
         switch (event.type)
         {
-            default:
-                break;
-        }
+            case UART_DATA:
+            {
+                uart_read_bytes(serial->uart, buff, event.size, portMAX_DELAY);
 
+                for (size_t i = 0; i < event.size; ++i)
+                {
+                    serial->rx_ring.Write(buff[i]);
+                }
+
+                break;
+            }
+            case UART_FIFO_OVF:
+            {
+                // Fifo overflow. If this happens we should add flow control
+                uart_flush_input(serial->uart);
+                vTaskDelete(NULL);
+                ErrorState("Hardware FIFO overflow", 0, 0, 1);
+                break;
+            }
+            case UART_BUFFER_FULL:
+            {
+                // Some how we got full before we read, we should probably
+                // read more often OR increase the buffer size
+                uart_flush_input(serial->uart);
+                vTaskDelete(NULL);
+                ErrorState("UART Buffer full", 0, 1, 1);
+                break;
+            }
+            case UART_BREAK:
+            {
+                vTaskDelete(NULL);
+                ErrorState("UART rx break detected", 1, 0, 1);
+                break;
+            }
+            case UART_PARITY_ERR:
+            {
+                vTaskDelete(NULL);
+                ErrorState("UART parity error", 1, 1,0);
+                break;
+            }
+            case UART_FRAME_ERR:
+            {
+                vTaskDelete(NULL);
+                ErrorState("UART parity error", 1, 0, 0);
+                break;
+            }
+            case UART_PATTERN_DET:
+            {
+                vTaskDelete(NULL);
+                ErrorState("UART pattern detected somehow", 1, 1, 1);
+                break;
+            }
+            default:
+            {
+                vTaskDelete(NULL);
+                ErrorState("Unhandled event detected", 1, 1, 1);
+                break;
+            }
+        }
     }
 
-    delete buff;
+    vTaskDelete(NULL);
 }
 
 void SerialEsp::TxEvent(void* parameter)
 {
-
+    ((SerialEsp*)parameter)->tx_free = true;
 }

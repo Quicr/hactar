@@ -48,7 +48,7 @@ public:
         is_end = read_idx == write_idx;
     }
 
-    size_t AvailableBytes() const
+    unsigned int AvailableBytes() const
     {
         return available_bytes;
     }
@@ -62,6 +62,6 @@ private:
     unsigned short size;
     unsigned short read_idx; // start
     unsigned short write_idx; // end
-    size_t available_bytes;
+    unsigned int available_bytes;
     T* buffer;
 };
