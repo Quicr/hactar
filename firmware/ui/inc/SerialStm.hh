@@ -12,13 +12,13 @@ public:
               unsigned short rx_ring_sz=256);
     ~SerialStm();
 
-    unsigned long AvailableBytes() override;
-    unsigned long Read() override;
+    size_t AvailableBytes() override;
+    unsigned char Read() override;
     bool ReadyToWrite() override;
     void Write(unsigned char* buff, const unsigned short buff_sz) override;
 
     // un-inherited functions
-    void RxEvent(void* pv_parameters);
+    void RxEvent();
     void TxEvent();
 private:
     void StartRx();

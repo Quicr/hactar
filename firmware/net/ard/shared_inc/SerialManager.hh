@@ -300,6 +300,7 @@ private:
         // Wait until the last transmission was sent
         if (!uart->ReadyToWrite()) return SerialStatus::BUSY;
 
+
         // If tx buffer is allocated delete it
         if (tx_buffer) delete tx_buffer;
 
