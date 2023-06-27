@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    stm32f072xb.h
+  * @file    stm32f078xx.h
   * @author  MCD Application Team
   * @brief   CMSIS Cortex-M0 Device Peripheral Access Layer Header File.
   *          This file contains all the peripheral register's definitions, bits
@@ -27,12 +27,12 @@
   * @{
   */
 
-/** @addtogroup stm32f072xb
+/** @addtogroup stm32f078xx
   * @{
   */
 
-#ifndef __STM32F072xB_H
-#define __STM32F072xB_H
+#ifndef __STM32F078xx_H
+#define __STM32F078xx_H
 
 #ifdef __cplusplus
  extern "C" {
@@ -74,7 +74,7 @@ typedef enum
 
 /******  STM32F0 specific Interrupt Numbers ******************************************************************/
   WWDG_IRQn                   = 0,      /*!< Window WatchDog Interrupt                               */
-  PVD_VDDIO2_IRQn             = 1,      /*!< PVD & VDDIO2 Interrupt through EXTI Lines 16 and 31             */
+  VDDIO2_IRQn                 = 1,      /*!< VDDIO2 Interrupt through EXTI Line 31                           */
   RTC_IRQn                    = 2,      /*!< RTC Interrupt through EXTI Lines 17, 19 and 20                  */
   FLASH_IRQn                  = 3,      /*!< FLASH global Interrupt                                          */
   RCC_CRS_IRQn                = 4,      /*!< RCC & CRS global Interrupt                                      */
@@ -7378,7 +7378,7 @@ typedef struct
 /*                                                                           */
 /*****************************************************************************/
 
-#define PWR_PVD_SUPPORT                       /*!< PWR feature available only on specific devices: Power Voltage Detection feature */
+/* Note: No specific macro feature on this device */
 
 
 /********************  Bit definition for PWR_CR register  *******************/
@@ -7394,27 +7394,6 @@ typedef struct
 #define PWR_CR_CSBF_Pos            (3U)
 #define PWR_CR_CSBF_Msk            (0x1UL << PWR_CR_CSBF_Pos)                   /*!< 0x00000008 */
 #define PWR_CR_CSBF                PWR_CR_CSBF_Msk                             /*!< Clear Standby Flag */
-#define PWR_CR_PVDE_Pos            (4U)
-#define PWR_CR_PVDE_Msk            (0x1UL << PWR_CR_PVDE_Pos)                   /*!< 0x00000010 */
-#define PWR_CR_PVDE                PWR_CR_PVDE_Msk                             /*!< Power Voltage Detector Enable */
-
-#define PWR_CR_PLS_Pos             (5U)
-#define PWR_CR_PLS_Msk             (0x7UL << PWR_CR_PLS_Pos)                    /*!< 0x000000E0 */
-#define PWR_CR_PLS                 PWR_CR_PLS_Msk                              /*!< PLS[2:0] bits (PVD Level Selection) */
-#define PWR_CR_PLS_0               (0x1UL << PWR_CR_PLS_Pos)                    /*!< 0x00000020 */
-#define PWR_CR_PLS_1               (0x2UL << PWR_CR_PLS_Pos)                    /*!< 0x00000040 */
-#define PWR_CR_PLS_2               (0x4UL << PWR_CR_PLS_Pos)                    /*!< 0x00000080 */
-
-/*!< PVD level configuration */
-#define PWR_CR_PLS_LEV0            (0x00000000U)                               /*!< PVD level 0 */
-#define PWR_CR_PLS_LEV1            (0x00000020U)                               /*!< PVD level 1 */
-#define PWR_CR_PLS_LEV2            (0x00000040U)                               /*!< PVD level 2 */
-#define PWR_CR_PLS_LEV3            (0x00000060U)                               /*!< PVD level 3 */
-#define PWR_CR_PLS_LEV4            (0x00000080U)                               /*!< PVD level 4 */
-#define PWR_CR_PLS_LEV5            (0x000000A0U)                               /*!< PVD level 5 */
-#define PWR_CR_PLS_LEV6            (0x000000C0U)                               /*!< PVD level 6 */
-#define PWR_CR_PLS_LEV7            (0x000000E0U)                               /*!< PVD level 7 */
-
 #define PWR_CR_DBP_Pos             (8U)
 #define PWR_CR_DBP_Msk             (0x1UL << PWR_CR_DBP_Pos)                    /*!< 0x00000100 */
 #define PWR_CR_DBP                 PWR_CR_DBP_Msk                              /*!< Disable Backup Domain write protection */
@@ -7426,9 +7405,6 @@ typedef struct
 #define PWR_CSR_SBF_Pos            (1U)
 #define PWR_CSR_SBF_Msk            (0x1UL << PWR_CSR_SBF_Pos)                   /*!< 0x00000002 */
 #define PWR_CSR_SBF                PWR_CSR_SBF_Msk                             /*!< Standby Flag */
-#define PWR_CSR_PVDO_Pos           (2U)
-#define PWR_CSR_PVDO_Msk           (0x1UL << PWR_CSR_PVDO_Pos)                  /*!< 0x00000004 */
-#define PWR_CSR_PVDO               PWR_CSR_PVDO_Msk                            /*!< PVD Output */
 #define PWR_CSR_VREFINTRDYF_Pos    (3U)
 #define PWR_CSR_VREFINTRDYF_Msk    (0x1UL << PWR_CSR_VREFINTRDYF_Pos)           /*!< 0x00000008 */
 #define PWR_CSR_VREFINTRDYF        PWR_CSR_VREFINTRDYF_Msk                     /*!< Internal voltage reference (VREFINT) ready flag */
@@ -8016,9 +7992,6 @@ typedef struct
 #define RCC_CSR_LSIRDY_Pos                       (1U)
 #define RCC_CSR_LSIRDY_Msk                       (0x1UL << RCC_CSR_LSIRDY_Pos)  /*!< 0x00000002 */
 #define RCC_CSR_LSIRDY                           RCC_CSR_LSIRDY_Msk            /*!< Internal Low Speed oscillator Ready */
-#define RCC_CSR_V18PWRRSTF_Pos                   (23U)
-#define RCC_CSR_V18PWRRSTF_Msk                   (0x1UL << RCC_CSR_V18PWRRSTF_Pos) /*!< 0x00800000 */
-#define RCC_CSR_V18PWRRSTF                       RCC_CSR_V18PWRRSTF_Msk        /*!< V1.8 power domain reset flag */
 #define RCC_CSR_RMVF_Pos                         (24U)
 #define RCC_CSR_RMVF_Msk                         (0x1UL << RCC_CSR_RMVF_Pos)    /*!< 0x01000000 */
 #define RCC_CSR_RMVF                             RCC_CSR_RMVF_Msk              /*!< Remove reset flag */
@@ -9200,9 +9173,6 @@ typedef struct
 #define SYSCFG_CFGR2_SRAM_PARITY_LOCK_Pos    (1U)
 #define SYSCFG_CFGR2_SRAM_PARITY_LOCK_Msk    (0x1UL << SYSCFG_CFGR2_SRAM_PARITY_LOCK_Pos) /*!< 0x00000002 */
 #define SYSCFG_CFGR2_SRAM_PARITY_LOCK        SYSCFG_CFGR2_SRAM_PARITY_LOCK_Msk /*!< Enables and locks the SRAM_PARITY error signal with Break Input of TIMER1 */
-#define SYSCFG_CFGR2_PVD_LOCK_Pos            (2U)
-#define SYSCFG_CFGR2_PVD_LOCK_Msk            (0x1UL << SYSCFG_CFGR2_PVD_LOCK_Pos) /*!< 0x00000004 */
-#define SYSCFG_CFGR2_PVD_LOCK                SYSCFG_CFGR2_PVD_LOCK_Msk         /*!< Enables and locks the PVD connection with Timer1 Break Input and also the PVD_EN and PVDSEL[2:0] bits of the Power Control Interface */
 #define SYSCFG_CFGR2_SRAM_PEF_Pos            (8U)
 #define SYSCFG_CFGR2_SRAM_PEF_Msk            (0x1UL << SYSCFG_CFGR2_SRAM_PEF_Pos) /*!< 0x00000100 */
 #define SYSCFG_CFGR2_SRAM_PEF                SYSCFG_CFGR2_SRAM_PEF_Msk         /*!< SRAM Parity error flag */
@@ -11267,14 +11237,14 @@ typedef struct
 #define ADC1_IRQn                  ADC1_COMP_IRQn
 #define DMA1_Ch1_IRQn              DMA1_Channel1_IRQn
 #define DMA1_Ch2_3_DMA2_Ch1_2_IRQn DMA1_Channel2_3_IRQn
-#define DMA1_Ch4_7_DMA2_Ch3_5_IRQn DMA1_Channel4_5_6_7_IRQn
 #define DMA1_Channel4_5_IRQn       DMA1_Channel4_5_6_7_IRQn
-#define PVD_IRQn                   PVD_VDDIO2_IRQn
-#define VDDIO2_IRQn                PVD_VDDIO2_IRQn
+#define DMA1_Ch4_7_DMA2_Ch3_5_IRQn DMA1_Channel4_5_6_7_IRQn
 #define RCC_IRQn                   RCC_CRS_IRQn
 #define TIM6_IRQn                  TIM6_DAC_IRQn
 #define USART3_6_IRQn              USART3_4_IRQn
 #define USART3_8_IRQn              USART3_4_IRQn
+#define PVD_IRQn                   VDDIO2_IRQn
+#define PVD_VDDIO2_IRQn            VDDIO2_IRQn
 
 #define SVC_IRQn                   SVCall_IRQn
 
@@ -11282,20 +11252,20 @@ typedef struct
 #define ADC1_IRQHandler                  ADC1_COMP_IRQHandler
 #define DMA1_Ch1_IRQHandler              DMA1_Channel1_IRQHandler
 #define DMA1_Ch2_3_DMA2_Ch1_2_IRQHandler DMA1_Channel2_3_IRQHandler
-#define DMA1_Ch4_7_DMA2_Ch3_5_IRQHandler DMA1_Channel4_5_6_7_IRQHandler
 #define DMA1_Channel4_5_IRQHandler       DMA1_Channel4_5_6_7_IRQHandler
-#define PVD_IRQHandler                   PVD_VDDIO2_IRQHandler
-#define VDDIO2_IRQHandler                PVD_VDDIO2_IRQHandler
+#define DMA1_Ch4_7_DMA2_Ch3_5_IRQHandler DMA1_Channel4_5_6_7_IRQHandler
 #define RCC_IRQHandler                   RCC_CRS_IRQHandler
 #define TIM6_IRQHandler                  TIM6_DAC_IRQHandler
 #define USART3_6_IRQHandler              USART3_4_IRQHandler
 #define USART3_8_IRQHandler              USART3_4_IRQHandler
+#define PVD_IRQHandler                   VDDIO2_IRQHandler
+#define PVD_VDDIO2_IRQHandler            VDDIO2_IRQHandler
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif /* __STM32F072xB_H */
+#endif /* __STM32F078xx_H */
 
 /**
   * @}
