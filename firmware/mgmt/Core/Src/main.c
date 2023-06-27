@@ -40,9 +40,31 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
+TIM_HandleTypeDef htim3;
+
+UART_HandleTypeDef  usb_uart3;
+DMA_HandleTypeDef   usb_dma6_rx;
+DMA_HandleTypeDef   usb_dma7_tx;
+
+UART_HandleTypeDef  ui_uart2;
+DMA_HandleTypeDef   ui_dma5_rx;
+DMA_HandleTypeDef   ui_dma4_tx;
+
+UART_HandleTypeDef  net_uart1;
+DMA_HandleTypeDef   net_dma3_rx;
+DMA_HandleTypeDef   net_dma2_tx;
+
+#define Buff_Size 256
+uint8_t usb_buff[2][Buff_Size];
+uint8_t usb_buff_idx = 0;
+uint8_t* usb_buff_transmit_ptr = NULL;
+uint8_t* usb_buff_receive_ptr = NULL;
+uint8_t ui_net_buff[2][Buff_Size];
+uint8_t ui_net_buff_idx = 0;
+uint8_t* ui_net_buff_transmit_ptr = NULL;
+uint8_t* ui_net_buff_receive_ptr = NULL;
 
 /* USER CODE END PV */
 
@@ -260,11 +282,17 @@ static void InitBitBangPins()
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(UI_RST_GPIO_Port, &GPIO_InitStruct);
 
-  GPIO_InitStruct.Pin = UI_BOOT_Pin;
+  GPIO_InitStruct.Pin = UI_BOOT0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(UI_BOOT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(UI_BOOT0_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = UI_BOOT1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(UI_BOOT1_GPIO_Port, &GPIO_InitStruct);
 
   // Net UART
   // Configure GPIO pins : PB6|PB7 tx/rx
@@ -373,6 +401,115 @@ static void TransmitReceive()
   //   }
   // }
 }
+#define BAUD 9600
+static void InitUSBUart()
+{
+  usb_uart3.Instance = USART3;
+  usb_uart3.Init.BaudRate = BAUD;
+  usb_uart3.Init.WordLength = UART_WORDLENGTH_9B;
+  usb_uart3.Init.StopBits = UART_STOPBITS_1;
+  usb_uart3.Init.Parity = UART_PARITY_EVEN;
+  usb_uart3.Init.Mode = UART_MODE_TX_RX;
+  usb_uart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  usb_uart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  usb_uart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  usb_uart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&usb_uart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+static void InitUIUart()
+{
+  ui_uart2.Instance = USART2;
+  ui_uart2.Init.BaudRate = BAUD*2;
+  ui_uart2.Init.WordLength = UART_WORDLENGTH_9B;
+  ui_uart2.Init.StopBits = UART_STOPBITS_1;
+  ui_uart2.Init.Parity = UART_PARITY_EVEN;
+  ui_uart2.Init.Mode = UART_MODE_TX_RX;
+  ui_uart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  ui_uart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  ui_uart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  ui_uart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&ui_uart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+static void InitNetUart()
+{
+  net_uart1.Instance = USART1;
+  net_uart1.Init.BaudRate = BAUD;
+  net_uart1.Init.WordLength = UART_WORDLENGTH_8B;
+  net_uart1.Init.StopBits = UART_STOPBITS_1;
+  net_uart1.Init.Parity = UART_PARITY_NONE;
+  net_uart1.Init.Mode = UART_MODE_TX_RX;
+  net_uart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  net_uart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  net_uart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  net_uart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&net_uart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+static void UartDMA()
+{
+  __HAL_RCC_DMA1_CLK_ENABLE();
+  HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
+  HAL_NVIC_SetPriority(DMA1_Channel4_5_6_7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_5_6_7_IRQn);
+}
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
+{
+  if (huart->Instance == USART3)
+  {
+    // USB
+    // Got some data send it to programmed chip
+    usb_buff_transmit_ptr = usb_buff_receive_ptr;
+    HAL_UART_Transmit_DMA(&ui_uart2, usb_buff_receive_ptr, Buff_Size);
+
+    usb_buff_receive_ptr = usb_buff[usb_buff_idx];
+    usb_buff_idx = !usb_buff_idx;
+    HAL_UARTEx_ReceiveToIdle_DMA(&usb_uart3, usb_buff_receive_ptr, Buff_Size);
+  }
+  else if (huart->Instance == USART2)
+  {
+    // UI
+    ui_net_buff_transmit_ptr = ui_net_buff_receive_ptr;
+    HAL_UART_Transmit_DMA(&usb_uart3, ui_net_buff_receive_ptr, Buff_Size);
+
+    ui_net_buff_receive_ptr = ui_net_buff[ui_net_buff_idx];
+    ui_net_buff_idx = !ui_net_buff_idx;
+    HAL_UARTEx_ReceiveToIdle_DMA(&ui_uart2, ui_net_buff_receive_ptr, Buff_Size);
+  }
+  else if (huart->Instance == USART1)
+  {
+    // Net
+  }
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart->Instance == USART3)
+  {
+    // USB
+
+  }
+  else if (huart->Instance == USART2)
+  {
+    // UI
+  }
+  else if (huart->Instance == USART1)
+  {
+    // Net
+  }
+}
 
 /* USER CODE END 0 */
 
@@ -408,7 +545,12 @@ int main(void)
   InitButtons();
   InitIRQ();
   InitLEDs();
-  InitBitBangPins();
+  // InitBitBangPins();
+
+  UartDMA();
+  InitUSBUart();
+  InitUIUart();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -423,6 +565,43 @@ int main(void)
   HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
+
+
+      // Bring the esp boot into normal mode (1)
+      HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+      HAL_Delay(50);
+
+      // Set LEDS for ui
+      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET);
+
+      // Bring the stm boot into bootloader mode (1) and send the reset
+      HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_SET);
+
+      // Bring BOOT1 to low and leave it?
+      HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+
+      HAL_Delay(10);
+      HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+
+
+  usb_buff_idx = 0;
+  usb_buff_receive_ptr = usb_buff[usb_buff_idx];
+  usb_buff_idx = !usb_buff_idx;
+  HAL_UARTEx_ReceiveToIdle_DMA(&usb_uart3, usb_buff_receive_ptr, Buff_Size);
+
+  ui_net_buff_idx = 0;
+  ui_net_buff_receive_ptr = ui_net_buff[ui_net_buff_idx];
+  ui_net_buff_idx = !ui_net_buff_idx;
+  HAL_UARTEx_ReceiveToIdle_DMA(&ui_uart2, ui_net_buff_receive_ptr, Buff_Size);
+
+  while (1)
+  {
+
+  }
   // while(1)
   // {
   //   // // Echo usb back
@@ -442,7 +621,8 @@ int main(void)
     if (state == Reset)
     {
       // Bring the stm boot into normal mode (0) and send the reset
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
 
       // Bring the esp boot into normal mode (1)
@@ -450,9 +630,11 @@ int main(void)
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
 
       // Wait a moment
-      HAL_Delay(500);
+      HAL_Delay(5);
 
       HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+      // Set back to low so that it doesn't short the ui pins?
+      HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_RESET);
 
       // HAL_Delay(100);
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
@@ -497,11 +679,14 @@ int main(void)
       HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET);
 
       // Bring the stm boot into bootloader mode (1) and send the reset
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_SET);
+
+      // Bring BOOT1 to low and leave it?
+      HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
 
       HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_SET);
 
       while (state == UI)
       {
@@ -557,7 +742,7 @@ int main(void)
       HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
 
       // Bring the boot for ui low (normal)
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_RESET);
 
       // Bring the boot low for esp, bootloader mode (0)
       HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
@@ -633,7 +818,7 @@ int main(void)
 
 
       // Bring the stm boot into normal mode (0) and send the reset
-      HAL_GPIO_WritePin(UI_BOOT_GPIO_Port, UI_BOOT_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
 
       // Bring the esp boot into normal mode (1)
@@ -782,7 +967,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin | USB_RX1_MGMT_Pin | LEDB_G_Pin | LEDB_B_Pin
-    | UI_BOOT_Pin | NET_RST_Pin | NET_BOOT_Pin | NET_RX0_MGMT_Pin, GPIO_PIN_RESET);
+    | UI_BOOT0_Pin | NET_RST_Pin | NET_BOOT_Pin | NET_RX0_MGMT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : BTN_RST_Pin BTN_UI_Pin BTN_NET_Pin */
   GPIO_InitStruct.Pin = BTN_RST_Pin | BTN_UI_Pin | BTN_NET_Pin;
@@ -819,9 +1004,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDA_B_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT_Pin
+  /*Configure GPIO pins : LEDA_B_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT0_Pin
                            NET_RST_Pin NET_BOOT_Pin */
-  GPIO_InitStruct.Pin = LEDA_B_Pin | LEDB_G_Pin | LEDB_B_Pin | UI_BOOT_Pin
+  GPIO_InitStruct.Pin = LEDA_B_Pin | LEDB_G_Pin | LEDB_B_Pin | UI_BOOT0_Pin
     | NET_RST_Pin | NET_BOOT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;

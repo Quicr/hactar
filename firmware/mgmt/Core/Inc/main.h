@@ -103,8 +103,10 @@ void Error_Handler(void);
 #define UI_STAT_GPIO_Port GPIOA
 #define UI_RST_Pin GPIO_PIN_15
 #define UI_RST_GPIO_Port GPIOA
-#define UI_BOOT_Pin GPIO_PIN_3
-#define UI_BOOT_GPIO_Port GPIOB
+#define UI_BOOT0_Pin GPIO_PIN_3
+#define UI_BOOT0_GPIO_Port GPIOB
+#define UI_BOOT1_Pin GPIO_PIN_11
+#define UI_BOOT1_GPIO_Port GPIOA
 #define NET_RST_Pin GPIO_PIN_4
 #define NET_RST_GPIO_Port GPIOB
 #define NET_BOOT_Pin GPIO_PIN_5
