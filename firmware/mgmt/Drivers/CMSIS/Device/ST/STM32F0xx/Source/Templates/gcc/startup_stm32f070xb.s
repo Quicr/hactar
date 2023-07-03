@@ -50,7 +50,7 @@ defined in linker script */
 Reset_Handler:
   ldr   r0, =_estack
   mov   sp, r0          /* set stack pointer */
-
+  
 /* Call the clock system initialization function.*/
   bl  SystemInit
 
@@ -70,7 +70,7 @@ LoopCopyDataInit:
   adds r4, r0, r3
   cmp r4, r1
   bcc CopyDataInit
-
+  
 /* Zero fill the bss segment. */
   ldr r2, =_sbss
   ldr r4, =_ebss
@@ -149,7 +149,7 @@ g_pfnVectors:
   .word  0                                 /* Reserved                     */
   .word  DMA1_Channel1_IRQHandler          /* DMA1 Channel 1               */
   .word  DMA1_Channel2_3_IRQHandler        /* DMA1 Channel 2 and Channel 3 */
-  .word  DMA1_Channel4_5_6_7_IRQHandler        /* DMA1 Channel 4 and Channel 5 */
+  .word  DMA1_Channel4_5_IRQHandler        /* DMA1 Channel 4 and Channel 5 */
   .word  ADC1_IRQHandler                   /* ADC1                         */
   .word  TIM1_BRK_UP_TRG_COM_IRQHandler    /* TIM1 Break, Update, Trigger and Commutation */
   .word  TIM1_CC_IRQHandler                /* TIM1 Capture Compare         */
@@ -221,8 +221,8 @@ g_pfnVectors:
   .weak      DMA1_Channel2_3_IRQHandler
   .thumb_set DMA1_Channel2_3_IRQHandler,Default_Handler
 
-  .weak      DMA1_Channel4_5_6_7_IRQHandler
-  .thumb_set DMA1_Channel4_5_6_7_IRQHandler,Default_Handler
+  .weak      DMA1_Channel4_5_IRQHandler
+  .thumb_set DMA1_Channel4_5_IRQHandler,Default_Handler
 
   .weak      ADC1_IRQHandler
   .thumb_set ADC1_IRQHandler,Default_Handler
