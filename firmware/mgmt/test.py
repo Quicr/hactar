@@ -1,5 +1,7 @@
 import serial
-import threading;
+import threading
+import random
+import time
 
 port = "COM11"
 baud = 115200
@@ -34,16 +36,19 @@ def ReadSerial():
             print(f"Total received {num_recv}")
             has_received = True
         if has_received:
+
             # print(f"sent data {send_data}")
             # print(f"recv data {recv_data}")
 
             if num_recv == len(send_data):
+                # print(f"Total received {num_recv}")
                 # Compare the data
                 is_good = True
                 for i in range(num_recv):
                     if (send_data[i] != recv_data[i]):
                         is_good = False
-                        break
+                        print(f"send data{i}={send_data[i]} != recv data{i}={recv_data[i]}")
+                        # break
                 if (is_good):
                     print("Passed!")
                 else:
@@ -60,18 +65,35 @@ def WriteSerial():
         while True:
             user_input = input()
             num_recv = 0
-            idx = 0
-            value = 63
             send_data = []
             recv_data = []
-            while idx < int(user_input):
+            value = 0
+            for _ in range(int(user_input)):
+                value = random.randint(1, 254)
+                # value = (value + 1) % 256
                 send_data.append(value)
-                value += 1
-                value %= 256
-                idx += 1
             # send_data = b"Hello, world!"
             # uart.write(send_data)
-            uart.write(bytes(send_data))
+            num_chunks = len(send_data) // 1024
+
+            start = 0
+            end = 0
+            for _ in range(num_chunks):
+                start = end
+                end += 1024
+                chunk = send_data[start:end]
+                uart.write(bytes(chunk))
+                time.sleep(1)
+
+                # print(len(chunk))
+
+            # Send remaining chunk
+            chunk = send_data[end:]
+            uart.write(bytes(chunk))
+
+
+            # Send the whole data
+            # uart.write(bytes(send_data))
     except KeyboardInterrupt:
         running = False
 
