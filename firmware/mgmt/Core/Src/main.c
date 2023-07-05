@@ -46,12 +46,13 @@ static void MX_USART3_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define BAUD 115200
 #define RECEIVE_BUFF_SZ 1024
 #define TRANSMIT_BUFF_SZ RECEIVE_BUFF_SZ * 2
-volatile uint8_t usb_rx_buffer[RECEIVE_BUFF_SZ];
-volatile uint8_t periph_rx_buffer[RECEIVE_BUFF_SZ];
-volatile uint8_t usb_tx_buffer[TRANSMIT_BUFF_SZ];
-volatile uint8_t periph_tx_buffer[TRANSMIT_BUFF_SZ];
+uint8_t usb_rx_buffer[RECEIVE_BUFF_SZ];
+uint8_t periph_rx_buffer[RECEIVE_BUFF_SZ];
+uint8_t usb_tx_buffer[TRANSMIT_BUFF_SZ];
+uint8_t periph_tx_buffer[TRANSMIT_BUFF_SZ];
 
 volatile uint16_t periph_rx_buffer_idx = 0;
 volatile uint16_t usb_rx_buffer_idx = 0;
@@ -74,6 +75,7 @@ volatile uint16_t remaining_space = 0;
 
 volatile uint16_t last_size = 0;
 volatile uint8_t was_full = 0;
+volatile uint32_t last_send = 0;
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
 {
@@ -108,16 +110,13 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
     // if another is sent with that size then it fails to send copy and send.
     // with the last byte always being the incorrect value. Close, but wrong.
 
-    if (last_size == size && huart->RxEventType == HAL_UART_RXEVENT_IDLE)
-    {
-      // HAL_GPIO_TogglePin(LEDA_R_GPIO_Port, LEDA_R_Pin);
-
-      return;
-    }
-    last_size = size;
+    // The reason the above bug is happening is because we receive 1025 normally
+    // then the rx buff has 1 byte sitting in it by itself, using the circular buffer
+    // it would continue, and then we get a full event, which sets the buffer pointer
+    // back to 0, and continues for 1 byte, where it gets a idle event, and sets the copy back
+    // to 1, followed by another idle event which overwrite the last byte again
 
     num_bytes = size - periph_rx_buffer_idx;
-    tx_periph_unsent_bytes += num_bytes;
 
     if (periph_copy_idx + num_bytes > TRANSMIT_BUFF_SZ)
     {
@@ -150,10 +149,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
       // TODO move out of loop
     }
 
-    if (huart->RxEventType == HAL_UART_RXEVENT_TC)
+    if (huart->RxEventType == HAL_UART_RXEVENT_TC || periph_rx_buffer_idx == RECEIVE_BUFF_SZ)
     {
       periph_rx_buffer_idx = 0;
     }
+
     // else if (huart->RxEventType == HAL_UART_RXEVENT_HT)
     // {
     //   periph_rx_buffer_idx = RECEIVE_BUFF_SZ / 2;
@@ -163,11 +163,13 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
       HAL_GPIO_TogglePin(LEDA_G_GPIO_Port, LEDA_G_Pin);
 
       usb_idle_receive = 1;
+      // idle_bytes = tx_periph_unsent_bytes;
       // periph_rx_buffer_idx = 0;
-      periph_copy_idx = 0;
+      // periph_copy_idx = 0;
       // TODO reset everything when an idle comes in
       // What happens is that then everything after the first set of bytes that lead to an idle is wrong
     }
+    tx_periph_unsent_bytes += num_bytes;
 
 
 
@@ -324,6 +326,7 @@ int main(void)
   // HAL_UARTEx_ReceiveToIdle_DMA
   uint32_t blink = 0;
   uint8_t count = 0;
+  uint16_t send_bytes = 0;
   while (1)
   {
     if (HAL_GetTick() > blink)
@@ -354,34 +357,78 @@ int main(void)
 
     if (tx_periph_unsent_bytes > 0 && to_periph_tx_free)
     {
-      if (tx_periph_unsent_bytes >= RECEIVE_BUFF_SZ)
+      if (tx_periph_unsent_bytes >= RECEIVE_BUFF_SZ || usb_idle_receive)
       {
-      HAL_GPIO_TogglePin(LEDA_R_GPIO_Port, LEDA_R_Pin);
+        send_bytes = RECEIVE_BUFF_SZ;
 
-        // Send RECEIVE_BUFF_SZ num of bytes
-        to_periph_tx_free = 0;
-        HAL_UART_Transmit_DMA(&huart3, (periph_tx_buffer + periph_tx_buffer_idx), RECEIVE_BUFF_SZ);
-
-        tx_periph_unsent_bytes -= RECEIVE_BUFF_SZ;
-        periph_tx_buffer_idx += RECEIVE_BUFF_SZ;
-
-        if (periph_tx_buffer_idx >= TRANSMIT_BUFF_SZ)
+        // Should only occur on an idle
+        if (usb_idle_receive)
         {
-          periph_tx_buffer_idx = 0;
+          send_bytes = tx_periph_unsent_bytes;
+          usb_idle_transmit = 1;
         }
-    // HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET);
 
-      }
-      else if (usb_idle_receive)
-      {
+        if (send_bytes > TRANSMIT_BUFF_SZ - periph_tx_buffer_idx)
+        {
+          send_bytes = TRANSMIT_BUFF_SZ - periph_tx_buffer_idx;
+        }
+        else if (send_bytes > tx_periph_unsent_bytes)
+        {
+          send_bytes = tx_periph_unsent_bytes;
+        }
+
         to_periph_tx_free = 0;
-        usb_idle_transmit = 1;
-        uint16_t bytes_to_send = tx_periph_unsent_bytes;
-        HAL_UART_Transmit_DMA(&huart3, (periph_tx_buffer + periph_tx_buffer_idx), bytes_to_send);
+        HAL_UART_Transmit_DMA(&huart3, (periph_tx_buffer + periph_tx_buffer_idx), send_bytes);
+        tx_periph_unsent_bytes -= send_bytes;
+        periph_tx_buffer_idx += send_bytes;
 
-        // HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_RESET);
+        last_send = HAL_GetTick();
+      }
+
+      // if (tx_periph_unsent_bytes >= RECEIVE_BUFF_SZ)
+      // {
+        // TODO this is not working
+        // Find the difference between the start and finish of the tx buffer
+      //   if (periph_tx_buffer_idx + RECEIVE_BUFF_SZ > TRANSMIT_BUFF_SZ)
+      //   {
+      //     // 9 + 8 > 16
+      //     send_bytes = TRANSMIT_BUFF_SZ - periph_tx_buffer_idx;
+      //   }
+      //   else
+      //   {
+      //     send_bytes = RECEIVE_BUFF_SZ;
+      //   }
+
+      //   if (send_bytes == 7)
+      //   {
+      //     volatile x = 1;
+      //   }
+
+      //   HAL_GPIO_TogglePin(LEDA_R_GPIO_Port, LEDA_R_Pin);
+
+      //   // Send RECEIVE_BUFF_SZ num of bytes
+      //   to_periph_tx_free = 0;
+      //   HAL_UART_Transmit_DMA(&huart3, (periph_tx_buffer + periph_tx_buffer_idx), send_bytes);
+
+      //   tx_periph_unsent_bytes -= send_bytes;
+      //   periph_tx_buffer_idx += send_bytes;
+      //   // HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET);
+      // }
+      // else if (usb_idle_receive)
+      // {
+      //   to_periph_tx_free = 0;
+      //   usb_idle_transmit = 1;
+      //   send_bytes = tx_periph_unsent_bytes;
+      //   HAL_UART_Transmit_DMA(&huart3, (periph_tx_buffer + periph_tx_buffer_idx), send_bytes);
+
+      //   // HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_RESET);
+      //   tx_periph_unsent_bytes -= send_bytes;
+      //   periph_tx_buffer_idx += send_bytes;
+      // }
+
+      if (periph_tx_buffer_idx >= TRANSMIT_BUFF_SZ)
+      {
         periph_tx_buffer_idx = 0;
-        tx_periph_unsent_bytes -= bytes_to_send;
       }
     }
   }

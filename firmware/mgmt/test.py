@@ -3,8 +3,14 @@ import threading
 import random
 import time
 
+# First  17 bytes, periph_copy_idx = 1
+# periph_tx_buffer_idx = 1
+# Second periph_copy = 9, periph_copy = 16 periph_copy = 2
+# periph_tx_buffer_idx = 9, 16, 2
+
 port = "COM11"
 baud = 115200
+chunk_size = 16384
 
 uart = serial.Serial(
     port=port,
@@ -20,6 +26,7 @@ num_recv = 0
 
 send_data = []
 recv_data = []
+
 
 def ReadSerial():
     global num_recv
@@ -61,6 +68,7 @@ def WriteSerial():
     global num_recv
     global send_data
     global recv_data
+    global chunk_size
     try:
         while True:
             user_input = input()
@@ -74,16 +82,16 @@ def WriteSerial():
                 send_data.append(value)
             # send_data = b"Hello, world!"
             # uart.write(send_data)
-            num_chunks = len(send_data) // 1024
+            num_chunks = len(send_data) // chunk_size
 
             start = 0
             end = 0
             for _ in range(num_chunks):
                 start = end
-                end += 1024
+                end += chunk_size
                 chunk = send_data[start:end]
                 uart.write(bytes(chunk))
-                time.sleep(1)
+                time.sleep(0.1)
 
                 # print(len(chunk))
 
