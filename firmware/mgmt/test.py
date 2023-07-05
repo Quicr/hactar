@@ -91,7 +91,7 @@ def WriteSerial():
                 end += chunk_size
                 chunk = send_data[start:end]
                 uart.write(bytes(chunk))
-                time.sleep(0.1)
+                time.sleep(0.2)
 
                 # print(len(chunk))
 
