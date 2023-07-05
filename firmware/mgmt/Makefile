@@ -29,7 +29,7 @@ OPT = -O0
 #######################################
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
-CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.elf ${WRITE_START} -v -g
 
 
 
@@ -38,7 +38,7 @@ CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w 
 # paths
 #######################################
 # Build path
-BUILD_DIR = ./build/mgmt
+BUILD_DIR = ./build
 
 ######################################
 # source
