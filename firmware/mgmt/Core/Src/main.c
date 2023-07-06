@@ -7,16 +7,28 @@
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
 
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-#define BAUD 115200
-#define RECEIVE_BUFF_SZ 64
-#define TRANSMIT_BUFF_SZ RECEIVE_BUFF_SZ * 2
-#define TRANSMISSION_TIMEOUT 5000
-/* USER CODE END PD */
-
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+
+// TODO dynamically adjust the receive buff sz
+// what I could do is have a large buffer, but depending on if the upload
+// is ui or net I can choose to use a small or large send and restart the
+// transmission on the DMA.
+
+// TODO Similarily I need to adjust the parity and the data bits to account for
+// different expected input and output for the ui and net chips
+
+// TODO I also need to dynamically change the "to_uart on the uart streams"
+
+#define BAUD 115200
+#define RECEIVE_BUFF_SZ 1024
+#define TRANSMIT_BUFF_SZ RECEIVE_BUFF_SZ * 2
+#define TRANSMISSION_TIMEOUT 5000
+
 // Structure for uart copy
 typedef struct {
   UART_HandleTypeDef* from_uart;
@@ -33,7 +45,7 @@ typedef struct {
   uint32_t last_transmission_time;
   uint8_t has_received;
 } uart_stream_t;
-/* USER CODE END PTD */
+/* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
@@ -45,6 +57,8 @@ TIM_HandleTypeDef htim3;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 DMA_HandleTypeDef hdma_usart3_rx;
@@ -284,23 +298,20 @@ int main(void)
   HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_SET);
 
-  // Put esp and stm into reset
-  // HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
-  // HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
-  // HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
 
-  // // Bring the boot low for esp, bootloader mode (0)
-  // // HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
-  // HAL_Delay(10);
-  // HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+  // Bring the boot low for esp, bootloader mode (0)
+  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
 
   // TODO move these into functions for starting ui/net upload
   // Init uart structures
   usb_stream.from_uart = &huart3;
-  usb_stream.to_uart = &huart2;
+  usb_stream.to_uart = &huart1;
   InitUartStreamParameters(&usb_stream);
 
-  periph_stream.from_uart = &huart2;
+  periph_stream.from_uart = &huart1;
   periph_stream.to_uart = &huart3;
   InitUartStreamParameters(&periph_stream);
 
@@ -427,7 +438,7 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE BEGIN USART1_Init 1 */
   /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = BAUD;
+  huart1.Init.BaudRate = 115200;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
@@ -459,7 +470,7 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 1 */
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = BAUD;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_9B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_EVEN;
@@ -491,10 +502,10 @@ static void MX_USART3_UART_Init(void)
   /* USER CODE BEGIN USART3_Init 1 */
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = BAUD;
-  huart3.Init.WordLength = UART_WORDLENGTH_9B;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
-  huart3.Init.Parity = UART_PARITY_EVEN;
+  huart3.Init.Parity = UART_PARITY_NONE;
   huart3.Init.Mode = UART_MODE_TX_RX;
   huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
