@@ -16,7 +16,7 @@ uart = serial.Serial(
     port=port,
     baudrate=baud,
     bytesize=serial.EIGHTBITS,
-    parity=serial.PARITY_NONE,
+    parity=serial.PARITY_EVEN,
     stopbits=serial.STOPBITS_ONE
 )
 
@@ -91,7 +91,7 @@ def WriteSerial():
                 end += chunk_size
                 chunk = send_data[start:end]
                 uart.write(bytes(chunk))
-                time.sleep(0.2)
+                time.sleep(0.5)
 
                 # print(len(chunk))
 
