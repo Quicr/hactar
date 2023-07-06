@@ -41,7 +41,7 @@ DIRS = ${OBJ_DIR} ${BIN_DIR} ${DEP_DIR}
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
 # CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=hotplug ap=0 speed=Reliable -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
-CUBE_PROGRAMMER_ARGS = -c port=/dev/ttyUSB0 br=57600 P=even db=8 -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS = -c port=COM11 br=115200 P=even db=8 -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
 
 
 ######################################
