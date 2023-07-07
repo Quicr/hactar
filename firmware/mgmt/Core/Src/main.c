@@ -32,6 +32,10 @@
 #define NET_TRANSMIT_BUFF_SZ NET_RECEIVE_BUFF_SZ * 2
 #define TRANSMISSION_TIMEOUT 5000
 
+#define BTN_PRESS_TIMEOUT 1000
+#define BTN_DEBOUNCE_TIMEOUT 50
+#define BTN_WAIT_TIMEOUT 1000
+
 // Structure for uart copy
 typedef struct {
   UART_HandleTypeDef* from_uart;
@@ -50,6 +54,24 @@ typedef struct {
   uint32_t last_transmission_time;
   uint8_t has_received;
 } uart_stream_t;
+
+typedef struct {
+  uint16_t pin;
+  uint32_t pressed_timeout;
+  uint32_t debounce_timeout;
+} button_it_t;
+
+enum State
+{
+  Waiting,
+  Reset,
+  Running,
+  UI_Upload_Reset,
+  UI_Upload,
+  Net_Upload_Reset,
+  Net_Upload,
+  Debug
+};
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -62,6 +84,10 @@ TIM_HandleTypeDef htim3;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
+UART_HandleTypeDef huart2_normal;
+UART_HandleTypeDef huart3_normal;
+UART_HandleTypeDef huart2_upload;
+UART_HandleTypeDef huart3_upload;
 DMA_HandleTypeDef hdma_usart1_rx;
 DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_rx;
@@ -94,27 +120,55 @@ uart_stream_t net_stream;
 uart_stream_t ui_stream;
 
 uint16_t send_bytes = 0;
-uint32_t btn_debounce_timeout = 0;
+
+button_it_t rst_btn;
+button_it_t ui_btn;
+button_it_t net_btn;
+
+enum State state;
+enum State next_state;
+uint32_t wait_timeout = 0;
+
+uint8_t CheckForDebugMode()
+{
+  uint32_t current_tick = HAL_GetTick();
+    if (HAL_GetTick() < rst_btn.pressed_timeout &&
+        HAL_GetTick() < ui_btn.pressed_timeout &&
+        HAL_GetTick() < net_btn.pressed_timeout)
+    {
+      state = Debug;
+      return 1;
+    }
+
+    return 0;
+}
 
 void HAL_GPIO_EXTI_Callback(uint16_t gpio_pin)
 {
-  if (HAL_GetTick() < btn_debounce_timeout)
-    return;
-  btn_debounce_timeout = HAL_GetTick() + 50;
-
-  if (gpio_pin == BTN_RST_Pin)
+  if (gpio_pin == rst_btn.pin && HAL_GetTick() > rst_btn.debounce_timeout)
   {
-
+    rst_btn.debounce_timeout = HAL_GetTick() + BTN_DEBOUNCE_TIMEOUT;
+    rst_btn.pressed_timeout = HAL_GetTick() + BTN_PRESS_TIMEOUT;
+    if (CheckForDebugMode()) return;
+    next_state = Reset;
   }
-  else if (gpio_pin == BTN_UI_Pin)
+  else if (gpio_pin == ui_btn.pin && HAL_GetTick() > ui_btn.debounce_timeout)
   {
-
+    ui_btn.debounce_timeout = HAL_GetTick() + BTN_DEBOUNCE_TIMEOUT;
+    ui_btn.pressed_timeout = HAL_GetTick() + BTN_PRESS_TIMEOUT;
+    if (CheckForDebugMode()) return;
+    next_state = UI_Upload_Reset;
   }
-  else if (gpio_pin == BTN_NET_Pin)
+  else if (gpio_pin == net_btn.pin && HAL_GetTick() > net_btn.debounce_timeout)
   {
-
+    net_btn.debounce_timeout = HAL_GetTick() + BTN_DEBOUNCE_TIMEOUT;
+    net_btn.pressed_timeout = HAL_GetTick() + BTN_PRESS_TIMEOUT;
+    if (CheckForDebugMode()) return;
+    next_state = Net_Upload_Reset;
   }
-
+  // Gets here then then it was a button that was pressed
+  state = Waiting;
+  wait_timeout = HAL_GetTick() + BTN_WAIT_TIMEOUT;
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
@@ -274,6 +328,13 @@ extern inline void InitUartStreamParameters(uart_stream_t* uart_stream)
   HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->from_uart, uart_stream->rx_buffer, uart_stream->rx_buffer_size);
 }
 
+void InitBtnStruct(button_it_t* btn, uint16_t pin)
+{
+  btn->pin = pin;
+  btn->debounce_timeout = 0;
+  btn->pressed_timeout = 0;
+}
+
 void NetBootloaderMode()
 {
   // Bring the boot low for esp, bootloader mode (0)
@@ -324,16 +385,42 @@ void UIHoldInReset()
   HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
 }
 
-void NetUploadInit()
+void NetUpload()
 {
   UIHoldInReset();
   NetBootloaderMode();
+
+  // TODO add an LED
+
+  // TODO de-init and re-init the huart3 to be suitable for esp32
+
+  state = Net_Upload;
+
+  while (state == Net_Upload)
+  {
+    HandleTx(&usb_stream);
+    HandleTx(&net_stream);
+  }
 }
 
-void UIUploadInit()
+void UIUpload()
 {
   NetHoldInReset();
   UIBootloaderMode();
+
+  // TODO add an LED
+
+  // TODO de-init and re-init the huart3 to be suitable for stm32
+
+  // TODO note, we need huart3 to be standardized for normal functioning
+
+  state = UI_Upload;
+
+  while (state == UI_Upload)
+  {
+    HandleTx(&usb_stream);
+    HandleTx(&ui_stream);
+  }
 }
 
 /* USER CODE END 0 */
@@ -420,6 +507,12 @@ int main(void)
   ui_stream.to_uart = &huart3;
   InitUartStreamParameters(&ui_stream);
 
+  InitBtnStruct(&rst_btn, BTN_RST_Pin);
+  InitBtnStruct(&ui_btn, BTN_UI_Pin);
+  InitBtnStruct(&net_btn, BTN_NET_Pin);
+
+  state = Reset;
+
   uint32_t blink = 0;
   while (1)
   {
@@ -430,9 +523,37 @@ int main(void)
       blink = HAL_GetTick() + 1000;
     }
 
-    // Constantly check for transmissions
-    HandleTx(&usb_stream);
-    HandleTx(&net_stream);
+    while (state == Waiting)
+    {
+      if (HAL_GetTick() > wait_timeout)
+      {
+        state = next_state;
+        next_state = Waiting;
+      }
+    }
+
+    if (state == Reset)
+    {
+      UINormalMode();
+      NetNormalMode();
+      state = Running;
+    }
+    else if (state == Running)
+    {
+      // TODO
+    }
+    else if (state == Debug)
+    {
+      // TODO
+    }
+    else if (state == UI_Upload_Reset)
+    {
+      UIUpload();
+    }
+    else if (state == Net_Upload_Reset)
+    {
+      NetUpload();
+    }
   }
     /* USER CODE END WHILE */
 
