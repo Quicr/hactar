@@ -24,17 +24,22 @@
 
 // TODO I also need to dynamically change the "to_uart on the uart streams"
 
+
 #define BAUD 115200
-#define RECEIVE_BUFF_SZ 1024
-#define TRANSMIT_BUFF_SZ RECEIVE_BUFF_SZ * 2
+#define UI_RECEIVE_BUFF_SZ 32
+#define UI_TRANSMIT_BUFF_SZ UI_RECEIVE_BUFF_SZ * 2
+#define NET_RECEIVE_BUFF_SZ 1024
+#define NET_TRANSMIT_BUFF_SZ NET_RECEIVE_BUFF_SZ * 2
 #define TRANSMISSION_TIMEOUT 5000
 
 // Structure for uart copy
 typedef struct {
   UART_HandleTypeDef* from_uart;
   UART_HandleTypeDef* to_uart;
-  uint8_t rx_buffer[RECEIVE_BUFF_SZ];
-  uint8_t tx_buffer[TRANSMIT_BUFF_SZ];
+  uint8_t* rx_buffer;
+  uint16_t rx_buffer_size;
+  uint8_t* tx_buffer;
+  uint16_t tx_buffer_size;
   uint16_t rx_read;
   uint16_t tx_write;
   uint16_t tx_read;
@@ -85,9 +90,32 @@ extern inline void InitUartStreamParameters(uart_stream_t* uart_stream);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 uart_stream_t usb_stream;
-uart_stream_t periph_stream;
+uart_stream_t net_stream;
+uart_stream_t ui_stream;
 
 uint16_t send_bytes = 0;
+uint32_t btn_debounce_timeout = 0;
+
+void HAL_GPIO_EXTI_Callback(uint16_t gpio_pin)
+{
+  if (HAL_GetTick() < btn_debounce_timeout)
+    return;
+  btn_debounce_timeout = HAL_GetTick() + 50;
+
+  if (gpio_pin == BTN_RST_Pin)
+  {
+
+  }
+  else if (gpio_pin == BTN_UI_Pin)
+  {
+
+  }
+  else if (gpio_pin == BTN_NET_Pin)
+  {
+
+  }
+
+}
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
 {
@@ -98,9 +126,14 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
   // 3. idle  -- Nothing has been received in awhile
 
   // Need to have as separate if statements so we can loop back properly
-  if (huart->Instance == periph_stream.from_uart->Instance)
+  if (huart->Instance == net_stream.from_uart->Instance)
   {
-    HandleRx(&periph_stream, size);
+    HandleRx(&net_stream, size);
+  }
+
+  if (huart->Instance == ui_stream.from_uart->Instance)
+  {
+    HandleRx(&ui_stream, size);
   }
 
   if (huart->Instance == usb_stream.from_uart->Instance)
@@ -112,10 +145,15 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
   // Need to have as separate if statements so we can loop back properly
-  if (huart->Instance == periph_stream.to_uart->Instance)
+  if (huart->Instance == net_stream.to_uart->Instance)
   {
-    periph_stream.tx_free = 1;
-    periph_stream.last_transmission_time = HAL_GetTick();
+    net_stream.tx_free = 1;
+    net_stream.last_transmission_time = HAL_GetTick();
+  }
+  if (huart->Instance == ui_stream.to_uart->Instance)
+  {
+    ui_stream.tx_free = 1;
+    ui_stream.last_transmission_time = HAL_GetTick();
   }
 
   if (huart->Instance == usb_stream.to_uart->Instance)
@@ -132,10 +170,10 @@ extern inline void HandleRx(uart_stream_t* rx_stream, uint16_t num_received)
 
     // Faster than putting a check inside of the copy loop since this is only
     // checked once per rx event.
-    if (rx_stream->tx_write + num_bytes > TRANSMIT_BUFF_SZ)
+    if (rx_stream->tx_write + num_bytes > rx_stream->tx_buffer_size)
     {
       // Fill in the remaining space and circle around
-      while (rx_stream->rx_read < num_received && rx_stream->tx_write < TRANSMIT_BUFF_SZ)
+      while (rx_stream->rx_read < num_received && rx_stream->tx_write < rx_stream->tx_buffer_size)
       {
         rx_stream->tx_buffer[rx_stream->tx_write++] = rx_stream->rx_buffer[rx_stream->rx_read++];
       }
@@ -150,7 +188,7 @@ extern inline void HandleRx(uart_stream_t* rx_stream, uint16_t num_received)
     }
 
     // rx read head is at the end
-    if(rx_stream->rx_read == RECEIVE_BUFF_SZ)
+    if(rx_stream->rx_read == rx_stream->rx_buffer_size)
     {
       rx_stream->rx_read = 0;
     }
@@ -172,9 +210,9 @@ extern inline void HandleTx(uart_stream_t* uart_stream)
 {
   if (uart_stream->pending_bytes > 0 && uart_stream->tx_free)
   {
-    if (uart_stream->pending_bytes >= RECEIVE_BUFF_SZ || uart_stream->idle_receive || uart_stream->tx_read_overflow)
+    if (uart_stream->pending_bytes >= uart_stream->rx_buffer_size || uart_stream->idle_receive || uart_stream->tx_read_overflow)
     {
-      send_bytes = RECEIVE_BUFF_SZ;
+      send_bytes = uart_stream->rx_buffer_size;
 
       // Should only occur on an idle
       if (uart_stream->idle_receive || uart_stream->tx_read_overflow)
@@ -183,9 +221,9 @@ extern inline void HandleTx(uart_stream_t* uart_stream)
         uart_stream->tx_read_overflow = 0;
       }
 
-      if (send_bytes > TRANSMIT_BUFF_SZ - uart_stream->tx_read)
+      if (send_bytes > uart_stream->tx_buffer_size - uart_stream->tx_read)
       {
-        send_bytes = TRANSMIT_BUFF_SZ - uart_stream->tx_read;
+        send_bytes = uart_stream->tx_buffer_size - uart_stream->tx_read;
         uart_stream->tx_read_overflow = 1;
       }
       else if (send_bytes > uart_stream->pending_bytes)
@@ -205,7 +243,7 @@ extern inline void HandleTx(uart_stream_t* uart_stream)
       HAL_GPIO_TogglePin(LEDA_B_GPIO_Port, LEDA_B_Pin);
     }
 
-    if (uart_stream->tx_read >= TRANSMIT_BUFF_SZ)
+    if (uart_stream->tx_read >= uart_stream->tx_buffer_size)
     {
       uart_stream->tx_read = 0;
     }
@@ -233,7 +271,69 @@ extern inline void InitUartStreamParameters(uart_stream_t* uart_stream)
   uart_stream->has_received = 0;
 
   // Restart the uart stream
-  HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->from_uart, uart_stream->rx_buffer, RECEIVE_BUFF_SZ);
+  HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->from_uart, uart_stream->rx_buffer, uart_stream->rx_buffer_size);
+}
+
+void NetBootloaderMode()
+{
+  // Bring the boot low for esp, bootloader mode (0)
+  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+}
+
+void NetNormalMode()
+{
+  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
+
+  // Power cycle
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+}
+
+void NetHoldInReset()
+{
+  // Reset
+  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
+}
+
+void UIBootloaderMode()
+{
+  // Normal boot mode (boot0 = 1 and boot1 = 0)
+  HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_RESET);
+
+  // Power cycle
+  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+}
+
+void UINormalMode()
+{
+  // Normal boot mode (boot0 = 0 and boot1 = 1)
+  HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_SET);
+
+  // Power cycle
+  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
+}
+
+void UIHoldInReset()
+{
+  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+}
+
+void NetUploadInit()
+{
+  UIHoldInReset();
+  NetBootloaderMode();
+}
+
+void UIUploadInit()
+{
+  NetHoldInReset();
+  UIBootloaderMode();
 }
 
 /* USER CODE END 0 */
@@ -285,35 +385,40 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  // Put the stm into reset
-  HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_SET);
-
-  // Bring BOOT1 to low and leave it?
-  HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
-
-  HAL_Delay(10);
-  HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
-  HAL_Delay(10);
-  HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_SET);
-
-  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
-
-  // Bring the boot low for esp, bootloader mode (0)
-  HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
+  NetBootloaderMode();
 
   // TODO move these into functions for starting ui/net upload
   // Init uart structures
+
+  usb_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
+  usb_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
+
+  usb_stream.rx_buffer = (uint8_t*)malloc(usb_stream.rx_buffer_size*sizeof(uint8_t));
+  usb_stream.tx_buffer = (uint8_t*)malloc(usb_stream.tx_buffer_size*sizeof(uint8_t));
+
+  net_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
+  net_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
+
+  net_stream.rx_buffer = (uint8_t*)malloc(net_stream.rx_buffer_size*sizeof(uint8_t));
+  net_stream.tx_buffer = (uint8_t*)malloc(net_stream.tx_buffer_size*sizeof(uint8_t));
+
+  ui_stream.rx_buffer_size = UI_RECEIVE_BUFF_SZ;
+  ui_stream.tx_buffer_size = UI_TRANSMIT_BUFF_SZ;
+
+  ui_stream.rx_buffer = (uint8_t*)malloc(ui_stream.rx_buffer_size*sizeof(uint8_t));
+  ui_stream.tx_buffer = (uint8_t*)malloc(ui_stream.tx_buffer_size*sizeof(uint8_t));
+
   usb_stream.from_uart = &huart3;
   usb_stream.to_uart = &huart1;
   InitUartStreamParameters(&usb_stream);
 
-  periph_stream.from_uart = &huart1;
-  periph_stream.to_uart = &huart3;
-  InitUartStreamParameters(&periph_stream);
+  net_stream.from_uart = &huart1;
+  net_stream.to_uart = &huart3;
+  InitUartStreamParameters(&net_stream);
+
+  ui_stream.from_uart = &huart2;
+  ui_stream.to_uart = &huart3;
+  InitUartStreamParameters(&ui_stream);
 
   uint32_t blink = 0;
   while (1)
@@ -327,7 +432,7 @@ int main(void)
 
     // Constantly check for transmissions
     HandleTx(&usb_stream);
-    HandleTx(&periph_stream);
+    HandleTx(&net_stream);
   }
     /* USER CODE END WHILE */
 
