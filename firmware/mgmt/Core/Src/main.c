@@ -5,6 +5,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -26,7 +27,7 @@
 
 
 #define BAUD 115200
-#define UI_RECEIVE_BUFF_SZ 32
+#define UI_RECEIVE_BUFF_SZ 20
 #define UI_TRANSMIT_BUFF_SZ UI_RECEIVE_BUFF_SZ * 2
 #define NET_RECEIVE_BUFF_SZ 1024
 #define NET_TRANSMIT_BUFF_SZ NET_RECEIVE_BUFF_SZ * 2
@@ -53,6 +54,7 @@ typedef struct {
   uint8_t idle_receive;
   uint32_t last_transmission_time;
   uint8_t has_received;
+  uint8_t is_listening;
 } uart_stream_t;
 
 typedef struct {
@@ -106,8 +108,9 @@ static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART1_UART_Init(void);
-static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
+static void Usart3_Net_Upload_Debug_Init(void);
+static void Usart3_UI_Upload_Init(void);
 extern inline void HandleRx(uart_stream_t* uart_stream, uint16_t num_received);
 extern inline void HandleTx(uart_stream_t* uart_stream);
 extern inline void InitUartStreamParameters(uart_stream_t* uart_stream);
@@ -132,9 +135,9 @@ uint32_t wait_timeout = 0;
 uint8_t CheckForDebugMode()
 {
   uint32_t current_tick = HAL_GetTick();
-    if (HAL_GetTick() < rst_btn.pressed_timeout &&
-        HAL_GetTick() < ui_btn.pressed_timeout &&
-        HAL_GetTick() < net_btn.pressed_timeout)
+    if (current_tick < rst_btn.pressed_timeout &&
+        current_tick < ui_btn.pressed_timeout &&
+        current_tick < net_btn.pressed_timeout)
     {
       state = Debug;
       return 1;
@@ -257,7 +260,6 @@ extern inline void HandleRx(uart_stream_t* rx_stream, uint16_t num_received)
     rx_stream->pending_bytes += num_bytes;
     rx_stream->has_received = 1;
     rx_stream->last_transmission_time = HAL_GetTick();
-    HAL_GPIO_TogglePin(LEDA_G_GPIO_Port, LEDA_G_Pin);
 }
 
 extern inline void HandleTx(uart_stream_t* uart_stream)
@@ -294,7 +296,6 @@ extern inline void HandleTx(uart_stream_t* uart_stream)
       HAL_UART_Transmit_DMA(uart_stream->to_uart, (uart_stream->tx_buffer + uart_stream->tx_read), send_bytes);
       uart_stream->pending_bytes -= send_bytes;
       uart_stream->tx_read += send_bytes;
-      HAL_GPIO_TogglePin(LEDA_B_GPIO_Port, LEDA_B_Pin);
     }
 
     if (uart_stream->tx_read >= uart_stream->tx_buffer_size)
@@ -306,14 +307,14 @@ extern inline void HandleTx(uart_stream_t* uart_stream)
   if (uart_stream->has_received && HAL_GetTick() > uart_stream->last_transmission_time + TRANSMISSION_TIMEOUT)
   {
     // Clean up and reset all params
+    CancelUartReceive(uart_stream);
     InitUartStreamParameters(uart_stream);
-    HAL_GPIO_TogglePin(LEDA_R_GPIO_Port, LEDA_R_Pin);
+    StartUartReceive(uart_stream);
   }
 }
 
 extern inline void InitUartStreamParameters(uart_stream_t* uart_stream)
 {
-  HAL_UART_AbortReceive_IT(uart_stream->from_uart);
   uart_stream->rx_read = 0;
   uart_stream->tx_write = 0;
   uart_stream->tx_read = 0;
@@ -323,9 +324,6 @@ extern inline void InitUartStreamParameters(uart_stream_t* uart_stream)
   uart_stream->idle_receive = 0;
   uart_stream->last_transmission_time = 0;
   uart_stream->has_received = 0;
-
-  // Restart the uart stream
-  HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->from_uart, uart_stream->rx_buffer, uart_stream->rx_buffer_size);
 }
 
 void InitBtnStruct(button_it_t* btn, uint16_t pin)
@@ -335,10 +333,36 @@ void InitBtnStruct(button_it_t* btn, uint16_t pin)
   btn->pressed_timeout = 0;
 }
 
+extern inline void CancelUartReceive(uart_stream_t* uart_stream)
+{
+  if (!uart_stream->is_listening) return;
+
+  HAL_UART_AbortReceive_IT(uart_stream->from_uart);
+  uart_stream->is_listening = 0;
+}
+
+extern inline void StartUartReceive(uart_stream_t* uart_stream)
+{
+  if (uart_stream->is_listening)
+  {
+    // If this occurs we have a bug
+    Error_Handler();
+  }
+
+  if (HAL_OK != HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->from_uart, uart_stream->rx_buffer, uart_stream->rx_buffer_size))
+  {
+    Error_Handler();
+  }
+
+  uart_stream->is_listening = 1;
+}
+
 void NetBootloaderMode()
 {
   // Bring the boot low for esp, bootloader mode (0)
   HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
+
+  // Power cycle
   HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
 }
@@ -387,12 +411,46 @@ void UIHoldInReset()
 
 void NetUpload()
 {
+  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
+
+  // Cancel all uart receives
+  CancelUartReceive(&ui_stream);
+  CancelUartReceive(&net_stream);
+  CancelUartReceive(&usb_stream);
+
+  // Deinit usb
+  HAL_UART_DeInit(usb_stream.from_uart);
+
+  // Init huart3
+  Usart3_Net_Upload_Debug_Init();
+
+  usb_stream.to_uart = &huart1;
+  usb_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
+  usb_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
+
+  InitUartStreamParameters(&usb_stream);
+  InitUartStreamParameters(&net_stream);
+
+  StartUartReceive(&usb_stream);
+  StartUartReceive(&net_stream);
+
+  // Put net into bootloader mode
   UIHoldInReset();
   NetBootloaderMode();
 
-  // TODO add an LED
+  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
 
-  // TODO de-init and re-init the huart3 to be suitable for esp32
+  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
   state = Net_Upload;
 
@@ -405,14 +463,45 @@ void NetUpload()
 
 void UIUpload()
 {
+  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+
+  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+  // De-init huart3
+  CancelUartReceive(&ui_stream);
+  CancelUartReceive(&net_stream);
+  CancelUartReceive(&usb_stream);
+
+  // Init uart3 for UI upload
+  HAL_UART_DeInit(usb_stream.from_uart);
+
+  // Init huart3
+  Usart3_UI_Upload_Init();
+
+  usb_stream.to_uart = &huart2;
+  usb_stream.rx_buffer_size = UI_RECEIVE_BUFF_SZ;
+  usb_stream.tx_buffer_size = UI_TRANSMIT_BUFF_SZ;
+
+  InitUartStreamParameters(&usb_stream);
+  InitUartStreamParameters(&ui_stream);
+
+  StartUartReceive(&usb_stream);
+  StartUartReceive(&ui_stream);
+
   NetHoldInReset();
   UIBootloaderMode();
 
-  // TODO add an LED
+  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
-  // TODO de-init and re-init the huart3 to be suitable for stm32
-
-  // TODO note, we need huart3 to be standardized for normal functioning
+  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
 
   state = UI_Upload;
 
@@ -454,7 +543,7 @@ int main(void)
   MX_TIM3_Init();
   MX_USART2_UART_Init();
   MX_USART1_UART_Init();
-  MX_USART3_UART_Init();
+  Usart3_Net_Upload_Debug_Init();
   /* USER CODE BEGIN 2 */
 
   // Set LEDS for ui
@@ -471,8 +560,6 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
-  NetBootloaderMode();
 
   // TODO move these into functions for starting ui/net upload
   // Init uart structures
@@ -507,21 +594,21 @@ int main(void)
   ui_stream.to_uart = &huart3;
   InitUartStreamParameters(&ui_stream);
 
+  // NOTE these need to be set to 1 so when we choose a mode
+  // It can properly de-init and re-init the huart modes
+  // Its weird but hey, its what works with HAL
+  usb_stream.is_listening = 1;
+  net_stream.is_listening = 1;
+  ui_stream.is_listening = 1;
+
+
   InitBtnStruct(&rst_btn, BTN_RST_Pin);
   InitBtnStruct(&ui_btn, BTN_UI_Pin);
   InitBtnStruct(&net_btn, BTN_NET_Pin);
 
   state = Reset;
-
-  uint32_t blink = 0;
   while (1)
   {
-    if (HAL_GetTick() > blink)
-    {
-      // Blink for alive!
-      HAL_GPIO_TogglePin(LEDB_B_GPIO_Port, LEDB_B_Pin);
-      blink = HAL_GetTick() + 1000;
-    }
 
     while (state == Waiting)
     {
@@ -534,6 +621,16 @@ int main(void)
 
     if (state == Reset)
     {
+      // Set LEDS for ui
+      HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+
+      // Set LEDS for net
+      HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
       UINormalMode();
       NetNormalMode();
       state = Running;
@@ -719,7 +816,7 @@ static void MX_USART2_UART_Init(void)
   * @param None
   * @retval None
   */
-static void MX_USART3_UART_Init(void)
+static void Usart3_Net_Upload_Debug_Init(void)
 {
 
   /* USER CODE BEGIN USART3_Init 0 */
@@ -732,6 +829,38 @@ static void MX_USART3_UART_Init(void)
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+  /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void Usart3_UI_Upload_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_9B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_EVEN;
   huart3.Init.Mode = UART_MODE_TX_RX;
   huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
@@ -852,6 +981,25 @@ static void MX_GPIO_Init(void)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
+    // Set LEDS for ui
+    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+
+    // Set LEDS for net
+    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+    uint32_t blink_r = 0;
+  while (1)
+  {
+    if (HAL_GetTick() > blink_r)
+    {
+      HAL_GPIO_TogglePin(LEDA_R_GPIO_Port, LEDA_R_Pin);
+      HAL_GPIO_TogglePin(LEDB_R_GPIO_Port, LEDB_R_Pin);
+      blink_r = HAL_GetTick() + 200;
+    }
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 
