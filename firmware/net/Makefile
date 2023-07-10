@@ -1,4 +1,4 @@
-PORT 				= /dev/ttyUSB0
+PORT 				= COM11
 CORE 				= esp32:esp32
 CHIP				= esp32s3
 BOARD				= ${CORE}:${CHIP}
@@ -10,8 +10,8 @@ INO_FILE			= net.ino
 
 ARDUINO_DIR			= /home/brett/.arduino15
 ESP_VERSION			= 2.0.9
-# ARDUINO_DIR			= C:/Users/Brett/AppData/local/Arduino15
-# ESP_VERSION			= 2.0.7
+ARDUINO_DIR			= C:/Users/Brett/AppData/local/Arduino15
+ESP_VERSION			= 2.0.7
 ESP_BOOT_APP_DIR 	= ${ARDUINO_DIR}/packages/esp32/hardware/esp32/${ESP_VERSION}/tools/partitions/boot_app0.bin
 
 UPLOAD_BAUD 		= 115200
@@ -35,6 +35,7 @@ compile: copy
 	arduino-cli compile --warnings all --build-path ${BUILD_PATH} --build-cache-path ${CACHE_PATH} --fqbn ${BOARD}
 
 upload:
+	python ../tools/command_sender.py ${PORT} net_upload
 	if [ ${OS} == Windows_NT ] ; then \
 		python -m esptool ${ESP_TOOL_ARGS} ; \
 	else \

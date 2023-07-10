@@ -1,12 +1,13 @@
+# This is a testing program to determine if the stm32 mgmt chip could
+# keep up with transmitting large quantities of bytes at once.
+# Given a large enough buffer of 1024 rx and 2048 tx it can
+# handle 1,000,000 bytes without error.
+
+
 import serial
 import threading
 import random
 import time
-
-# First  17 bytes, periph_copy_idx = 1
-# periph_tx_buffer_idx = 1
-# Second periph_copy = 9, periph_copy = 16 periph_copy = 2
-# periph_tx_buffer_idx = 9, 16, 2
 
 port = "COM11"
 baud = 115200
@@ -16,7 +17,7 @@ uart = serial.Serial(
     port=port,
     baudrate=baud,
     bytesize=serial.EIGHTBITS,
-    parity=serial.PARITY_EVEN,
+    parity=serial.PARITY_NONE,
     stopbits=serial.STOPBITS_ONE
 )
 
@@ -105,11 +106,55 @@ def WriteSerial():
     except KeyboardInterrupt:
         running = False
 
+def WriteCommandSerial():
+    global running
+    global num_recv
+    global send_data
+    global recv_data
+    global chunk_size
+    try:
+        while True:
+            user_input = input("Enter a command\n> ")
+            num_recv = 0
+            send_data = []
+            recv_data = []
+            value = 0
+
+            send_data = [ch for ch in bytes(user_input, "UTF-8")]
+            send_data.append(0)
+
+            # send_data = b"Hello, world!"
+            # uart.write(send_data)
+            num_chunks = len(send_data) // chunk_size
+
+            start = 0
+            end = 0
+            for _ in range(num_chunks):
+                start = end
+                end += chunk_size
+                chunk = send_data[start:end]
+                uart.write(bytes(chunk))
+                time.sleep(0.5)
+
+                # print(len(chunk))
+
+            # Send remaining chunk
+            chunk = send_data[end:]
+            print(chunk)
+            uart.write(bytes(chunk))
+
+
+            # Send the whole data
+            # uart.write(bytes(send_data))
+    except KeyboardInterrupt:
+        running = False
+
+
 rx_thread = threading.Thread(target=ReadSerial)
 rx_thread.daemon = True
 rx_thread.start()
 
-WriteSerial()
+WriteCommandSerial()
 
 while running:
     pass
