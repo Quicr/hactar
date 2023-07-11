@@ -38,6 +38,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init();
 static void MX_SPI1_Init();
 static void MX_DMA_Init();
+static void MX_USART1_Init();
 static void MX_USART2_Init();
 static void MX_I2C1_Init();
 static void KeyboardTimerInit();
@@ -46,6 +47,7 @@ static void KeyboardTimerInit();
 // void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 // Handlers
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
@@ -83,6 +85,7 @@ int main(void)
     // Not in use
     // IRQInit();
 
+    MX_USART1_Init();
     MX_USART2_Init();
 
     // Init DMA for SPI1, NOTE- This MUST come before SPI1
@@ -142,12 +145,21 @@ int main(void)
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer, *eeprom);
 
+
+    uint32_t blink = 0;
+    uint8_t test_message[] = "UI: Test";
     while (1)
     {
         ui_manager->Run();
 
         rx_led.Timeout();
         tx_led.Timeout();
+
+        if (HAL_GetTick() > blink)
+        {
+            blink = HAL_GetTick() + 1000;
+            HAL_UART_Transmit(&huart1, test_message, 9, HAL_MAX_DELAY);
+        }
     }
 
     return 0;
@@ -334,6 +346,22 @@ static void MX_DMA_Init()
 
     HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
+}
+
+static void MX_USART1_Init(void)
+{
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 static void MX_USART2_Init()

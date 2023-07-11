@@ -315,7 +315,6 @@ void loop()
     yield();
 }
 
-
 // #include <Arduino.h>
 
 // void setup()
@@ -331,5 +330,6 @@ void loop()
 //     {
 //         digitalWrite(5, !digitalRead(5));
 //         timeout = millis() + 1000;
+//         // Serial.println("NET: test");
 //     }
 // }
