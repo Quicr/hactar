@@ -14,13 +14,13 @@ ARDUINO_DIR			= C:/Users/Brett/AppData/local/Arduino15
 ESP_VERSION			= 2.0.7
 ESP_BOOT_APP_DIR 	= ${ARDUINO_DIR}/packages/esp32/hardware/esp32/${ESP_VERSION}/tools/partitions/boot_app0.bin
 
-UPLOAD_BAUD 		= 115200
+BAUD		 		= 115200
 BOOTLOADER_ADDR		= 0x00000
 PARITIONS_ADDR		= 0x08000
 BOOT_APP_ADDR		= 0x0e000
 PROG_ADDR			= 0x10000
 
-ESP_TOOL_ARGS 		= --port=${PORT} --baud=${UPLOAD_BAUD} write_flash \
+ESP_TOOL_ARGS 		= --port=${PORT} --baud=${BAUD} write_flash \
 	${BOOTLOADER_ADDR} ${BUILD_PATH}/net.ino.bootloader.bin \
 	${PARITIONS_ADDR} ${BUILD_PATH}/net.ino.partitions.bin \
 	${BOOT_APP_ADDR} ${ESP_BOOT_APP_DIR} \
@@ -35,14 +35,14 @@ compile: copy
 	arduino-cli compile --warnings all --build-path ${BUILD_PATH} --build-cache-path ${CACHE_PATH} --fqbn ${BOARD}
 
 upload:
-	python ../tools/command_sender.py ${PORT} net_upload
+	python ../tools/command_sender.py ${PORT} ${BAUD} net_upload
 	if [ ${OS} == Windows_NT ] ; then \
 		python -m esptool ${ESP_TOOL_ARGS} ; \
 	else \
 		esptool.py ${ESP_TOOL_ARGS} ; \
 	fi \
 
-# esptool --port=${PORT} --baud=${UPLOAD_BAUD} write_flash \
+# esptool --port=${PORT} --baud=${BAUD} write_flash \
 # 	${BOOTLOADER_ADDR} ${BUILD_PATH}/net.ino.bootloader.bin \
 # 	${PARITIONS_ADDR} ${BUILD_PATH}/net.ino.partitions.bin \
 # 	${BOOT_APP_ADDR} ${ESP_BOOT_APP_DIR} \
