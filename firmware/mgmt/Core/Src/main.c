@@ -19,7 +19,7 @@
 /* USER CODE BEGIN PD */
 
 #define BAUD 115200
-#define UI_RECEIVE_BUFF_SZ 32
+#define UI_RECEIVE_BUFF_SZ 20
 #define UI_TRANSMIT_BUFF_SZ UI_RECEIVE_BUFF_SZ * 2
 #define NET_RECEIVE_BUFF_SZ 1024
 #define NET_TRANSMIT_BUFF_SZ NET_RECEIVE_BUFF_SZ * 2
@@ -587,6 +587,15 @@ void UIUpload()
 
   CancelAllUartReceive();
 
+  NetHoldInReset();
+  UIBootloaderMode();
+
+  // Clean up whatever data is still on the uart lines
+  const uint16_t preemptive_read_time = 10;
+  HAL_UARTEx_ReceiveToIdle(ui_stream.from_uart,
+    ui_stream.rx_buffer, 16, 16, preemptive_read_time);
+  HAL_Delay(preemptive_read_time);
+
   // Init uart3 for UI upload
   HAL_UART_DeInit(usb_stream.from_uart);
 
@@ -602,9 +611,6 @@ void UIUpload()
 
   StartUartReceive(&usb_stream);
   StartUartReceive(&ui_stream);
-
-  NetHoldInReset();
-  UIBootloaderMode();
 
   HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
@@ -637,8 +643,6 @@ void RunningMode()
 
   CancelAllUartReceive();
 
-  HAL_Delay(1000);
-
   // Init uart3 for UI upload
   HAL_UART_DeInit(usb_stream.from_uart);
 
@@ -653,6 +657,7 @@ void RunningMode()
   StartUartReceive(&usb_stream);
 
   UINormalMode();
+  HAL_Delay(1000);
   NetNormalMode();
 
   state = Running;
@@ -685,8 +690,8 @@ void DebugMode()
   // usb_stream.to_uart = &huart3;
   usb_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
   usb_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
-  ui_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
-  ui_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
+  ui_stream.rx_buffer_size = UI_RECEIVE_BUFF_SZ;
+  ui_stream.tx_buffer_size = UI_TRANSMIT_BUFF_SZ;
   net_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
   net_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
 
@@ -698,6 +703,7 @@ void DebugMode()
   StartUartReceive(&net_stream);
 
   UINormalMode();
+  HAL_Delay(1000);
   NetNormalMode();
 
   state = Debug_Running;

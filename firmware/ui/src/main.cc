@@ -49,21 +49,24 @@ static void KeyboardTimerInit();
 // Handlers
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart1_tx;
+DMA_HandleTypeDef hdma_usart1_rx;
+
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim2;
 
 
-port_pin cs = {LCD_CS_GPIO_Port, LCD_CS_Pin};
-port_pin dc = {LCD_DC_GPIO_Port, LCD_DC_Pin};
-port_pin rst = {LCD_RST_GPIO_Port, LCD_RST_Pin};
-port_pin bl = {LCD_BL_GPIO_Port, LCD_BL_Pin};
+port_pin cs = { LCD_CS_GPIO_Port, LCD_CS_Pin };
+port_pin dc = { LCD_DC_GPIO_Port, LCD_DC_Pin };
+port_pin rst = { LCD_RST_GPIO_Port, LCD_RST_Pin };
+port_pin bl = { LCD_BL_GPIO_Port, LCD_BL_Pin };
 
 Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::left_landscape);
-Q10Keyboard *keyboard;
-SerialStm *net_layer = nullptr;
-UserInterfaceManager *ui_manager = nullptr;
+Q10Keyboard* keyboard;
+SerialStm* net_layer = nullptr;
+UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
 
 Led rx_led(LED1_Port, LED1_Pin, 10);
@@ -85,11 +88,11 @@ int main(void)
     // Not in use
     // IRQInit();
 
-    MX_USART1_Init();
-    MX_USART2_Init();
-
     // Init DMA for SPI1, NOTE- This MUST come before SPI1
     MX_DMA_Init();
+
+    MX_USART1_Init();
+    MX_USART2_Init();
 
     // Init the SPI for the screen
     MX_SPI1_Init();
@@ -147,7 +150,7 @@ int main(void)
 
 
     uint32_t blink = 0;
-    uint8_t test_message[] = "UI: Test";
+    uint8_t test_message [] = "UI: Test\n";
     while (1)
     {
         ui_manager->Run();
@@ -158,7 +161,8 @@ int main(void)
         if (HAL_GetTick() > blink)
         {
             blink = HAL_GetTick() + 1000;
-            HAL_UART_Transmit(&huart1, test_message, 9, HAL_MAX_DELAY);
+            HAL_GPIO_TogglePin(LED1_Port, LED1_Pin);
+            HAL_UART_Transmit(&huart1, test_message, 10, 1000);
         }
     }
 
@@ -203,55 +207,55 @@ void SystemClock_Config(void)
     {
         Error_Handler();
     }
-//   RCC_OscInitTypeDef RCC_OscInitStruct = {};
-//   RCC_ClkInitTypeDef RCC_ClkInitStruct = {};
+    //   RCC_OscInitTypeDef RCC_OscInitStruct = {};
+    //   RCC_ClkInitTypeDef RCC_ClkInitStruct = {};
 
-//   /** Configure the main internal regulator output voltage
-//   */
-//   __HAL_RCC_PWR_CLK_ENABLE();
-//   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+    //   /** Configure the main internal regulator output voltage
+    //   */
+    //   __HAL_RCC_PWR_CLK_ENABLE();
+    //   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-//   /** Initializes the RCC Oscillators according to the specified parameters
-//   * in the RCC_OscInitTypeDef structure.
-//   */
-//   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-//   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-//   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-//   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-//   RCC_OscInitStruct.PLL.PLLM = 25;
-//   RCC_OscInitStruct.PLL.PLLN = 192;
-//   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-//   RCC_OscInitStruct.PLL.PLLQ = 4;
-//   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-//   {
-//     Error_Handler();
-//   }
+    //   /** Initializes the RCC Oscillators according to the specified parameters
+    //   * in the RCC_OscInitTypeDef structure.
+    //   */
+    //   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    //   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    //   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    //   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    //   RCC_OscInitStruct.PLL.PLLM = 25;
+    //   RCC_OscInitStruct.PLL.PLLN = 192;
+    //   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+    //   RCC_OscInitStruct.PLL.PLLQ = 4;
+    //   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+    //   {
+    //     Error_Handler();
+    //   }
 
-//   /** Initializes the CPU, AHB and APB buses clocks
-//   */
-//   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-//                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-//   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-//   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
-//   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-//   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    //   /** Initializes the CPU, AHB and APB buses clocks
+    //   */
+    //   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+    //                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+    //   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    //   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
+    //   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+    //   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-//   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
-//   {
-//     Error_Handler();
-//   }
-//   __HAL_RCC_GPIOH_CLK_ENABLE();
+    //   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+    //   {
+    //     Error_Handler();
+    //   }
+    //   __HAL_RCC_GPIOH_CLK_ENABLE();
 
-    /**Configure the Systick interrupt time
-     */
-    // HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / 1000);
+        /**Configure the Systick interrupt time
+         */
+         // HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / 1000);
 
-    // /**Configure the Systick
-    //  */
-    // HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+         // /**Configure the Systick
+         //  */
+         // HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
-    // /* SysTick_IRQn interrupt configuration */
-    // HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+         // /* SysTick_IRQn interrupt configuration */
+         // HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
 /**
@@ -276,26 +280,26 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(Q10_TIMER_LED_PORT, &GPIO_InitStruct);
 
-    HAL_GPIO_WritePin(LED1_Port,LED1_Pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = LED1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LED1_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED1_Port, LED1_Pin, GPIO_PIN_SET);
 
-    HAL_GPIO_WritePin(LED2_Port,LED2_Pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = LED2_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LED2_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED2_Port, LED2_Pin, GPIO_PIN_SET);
 
-    HAL_GPIO_WritePin(LED3_Port,LED3_Pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = LED3_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LED3_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED3_Port, LED3_Pin, GPIO_PIN_SET);
 
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = GPIO_PIN_1;
@@ -346,22 +350,30 @@ static void MX_DMA_Init()
 
     HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
+
+    /* DMA interrupt init */
+    /* DMA2_Stream5_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA2_Stream5_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA2_Stream5_IRQn);
+    /* DMA2_Stream7_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
 }
 
 static void MX_USART1_Init(void)
 {
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    huart1.Instance = USART1;
+    huart1.Init.BaudRate = 115200;
+    huart1.Init.WordLength = UART_WORDLENGTH_9B;
+    huart1.Init.StopBits = UART_STOPBITS_1;
+    huart1.Init.Parity = UART_PARITY_EVEN;
+    huart1.Init.Mode = UART_MODE_TX_RX;
+    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+    if (HAL_UART_Init(&huart1) != HAL_OK)
+    {
+        Error_Handler();
+    }
 }
 
 static void MX_USART2_Init()
@@ -408,7 +420,7 @@ static void MX_I2C1_Init()
 //     // HAL_UARTEx_ReceiveToIdle_IT(&huart2, rx_buff, 16);
 // }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     UNUSED(huart);
     UNUSED(size);
@@ -416,14 +428,14 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
     rx_led.On();
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
     UNUSED(huart);
     net_layer->TxEvent();
     tx_led.On();
 }
 
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
     UNUSED(hspi);
     screen.ReleaseSPI();
@@ -465,15 +477,13 @@ static void KeyboardTimerInit()
     }
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 {
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        // TODO remove
-        HAL_GPIO_TogglePin(Q10_TIMER_LED_PORT, Q10_TIMER_LED_PIN);
         // Poll the keyboard and have the keys saved in the internal rx_buffer
-        keyboard->Read();
+        // keyboard->Read();
     }
 }
 
@@ -547,11 +557,11 @@ void Error_Handler(void)
  * @param  line: assert_param error line source number
  * @retval None
  */
-void assert_failed(uint8_t *file, uint32_t line)
+void assert_failed(uint8_t* file, uint32_t line)
 {
     /* USER CODE BEGIN 6 */
     /* User can add his own implementation to report the file name and line number,
         ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-    /* USER CODE END 6 */
+        /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
