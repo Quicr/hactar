@@ -7,6 +7,8 @@
 
 #include "SettingManager.hh"
 
+#include "main.hh"
+
 // Init the static var
 
 UserInterfaceManager::UserInterfaceManager(Screen &screen,
@@ -66,7 +68,10 @@ void UserInterfaceManager::Run()
         check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
 
         EnqueuePacket(check_wifi);
+
         last_wifi_check = current_time + 10000;
+        uint8_t message[] = "UI: Send check wifi to esp\n\r";
+        HAL_UART_Transmit(&huart1, message, sizeof(message)/sizeof(char), 1000);
     }
     // if (current_time > last_test_packet && is_connected_to_wifi)
     // {
