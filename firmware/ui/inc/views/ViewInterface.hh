@@ -218,15 +218,15 @@ protected:
     void GetInput()
     {
         // Get input
-        redraw_input = keyboard.Read(usr_input);
+        // redraw_input = keyboard.Read(usr_input);
 
-        // If the back button is pressed anda there is characters in the buffer
-        if (keyboard.BackPressed() && usr_input.length())
-        {
-            usr_input.pop_back();
-            redraw_cursor = true;
-            backspace_count += 1;
-        }
+        // // If the back button is pressed anda there is characters in the buffer
+        // if (keyboard.BackPressed() && usr_input.length())
+        // {
+        //     usr_input.pop_back();
+        //     redraw_cursor = true;
+        //     backspace_count += 1;
+        // }
     }
 
     void ClearInput()

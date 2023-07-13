@@ -40,8 +40,10 @@ DIRS = ${OBJ_DIR} ${BIN_DIR} ${DEP_DIR}
 #######################################
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
+PORT = COM11
+BAUD = 115200
 # CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=hotplug ap=0 speed=Reliable -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
-CUBE_PROGRAMMER_ARGS = -c port=/dev/ttyUSB0 br=57600 P=even db=8 -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
 
 
 ######################################
@@ -256,6 +258,7 @@ $(BIN_DIR)/%.bin: $(BIN_DIR)/%.elf | $(DIRS)
 compile: $(BIN_DIR)/$(TARGET).bin $(BIN_DIR)/$(TARGET).hex
 
 upload:
+	python ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
 	fi \
