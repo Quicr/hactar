@@ -2,12 +2,12 @@
 #include "../../core/Error.h"
 
 SerialEsp::SerialEsp(uart_port_t uart,
-                     unsigned long long tx_pin,
-                     unsigned long long rx_pin,
-                     unsigned long long rts_pin,
-                     unsigned long long cts_pin,
-                     uart_config_t uart_config,
-                     size_t ring_buff_size) :
+    unsigned long long tx_pin,
+    unsigned long long rx_pin,
+    unsigned long long rts_pin,
+    unsigned long long cts_pin,
+    uart_config_t uart_config,
+    size_t ring_buff_size) :
     uart(uart),
     rx_ring(ring_buff_size),
     tx_free(true),
@@ -48,8 +48,8 @@ void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
 {
     uart_write_bytes(uart, (void*)0xFF, 1);
 
-    // Wait until the previous essage is sent
-    while (uart_wait_tx_done(uart, 100));
+    // Wait until the previous message is sent
+    while (uart_wait_tx_done(uart, 100))
     {
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
@@ -98,6 +98,7 @@ void SerialEsp::RxEvent(void* parameter)
                 {
                     serial->rx_ring.Write(buff[i]);
                 }
+                printf("NET: available bytes=%d\n", serial->AvailableBytes());
 
                 break;
             }
@@ -127,7 +128,7 @@ void SerialEsp::RxEvent(void* parameter)
             case UART_PARITY_ERR:
             {
                 vTaskDelete(NULL);
-                ErrorState("UART parity error", 1, 1,0);
+                ErrorState("UART parity error", 1, 1, 0);
                 break;
             }
             case UART_FRAME_ERR:

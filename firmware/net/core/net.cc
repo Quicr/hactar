@@ -20,11 +20,10 @@
 #include "SerialEsp.hh"
 #include "SerialManager.hh"
 
-// #include "SerialEsp.hh"
-
 #include "NetPins.h"
 
 static const char* TAG = "net-main";
+
 
 // Defines
 #define LEDS_OUTPUT_SEL     1 << LED_B_Pin | 1 << LED_G_Pin | 1 << LED_R_Pin
@@ -38,15 +37,15 @@ static const char* TAG = "net-main";
 static SerialEsp* ui_uart1;
 static SerialManager* ui_layer;
 
-static void HandleIncomingSerial()
-{
-    ui_layer->Tx(0);
-}
+// static void HandleIncomingSerial()
+// {
+//     ui_layer->Tx(0);
+// }
 
-static void HandleOutGoingSerial()
-{
-    ui_layer->Rx(0);
-}
+// static void HandleOutGoingSerial()
+// {
+//     ui_layer->Rx(0);
+// }
 
 // static void IRAM_ATTR gpio_isr_handler(void* arg)
 // {
@@ -68,6 +67,7 @@ static void HandleOutGoingSerial()
 extern "C" void app_main(void)
 {
     esp_log_level_set(TAG, ESP_LOG_INFO);
+    // vTaskDelay(10000 / portTICK_PERIOD_MS);
 
     // Configure the uart
     uart_config_t uart_config = {
@@ -77,10 +77,21 @@ extern "C" void app_main(void)
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_MAX,
-        .source_clk = UART_SCLK_APB // UART_SCLK_DEFAULT
+        .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
     };
 
-    ui_uart1 = new SerialEsp(UART1, GPIO_NUM_11, GPIO_NUM_10, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 32);
+    // const int uart_buffer_size = (1024 * 2);
+    // QueueHandle_t uart_queue;
+
+    // ESP_ERROR_CHECK(uart_param_config(UART1, &uart_config));
+    // ESP_ERROR_CHECK(uart_set_pin(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    // ESP_ERROR_CHECK(uart_driver_install(UART1, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
+
+
+
+
+
+    ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 32);
     ui_layer = new SerialManager(ui_uart1);
 
     //zero-initialize the config structure.
@@ -98,14 +109,27 @@ extern "C" void app_main(void)
     //configure GPIO with the given settings
     gpio_config(&io_conf);
 
-    printf("Minimum free heap size: %"PRIu32" bytes\n", esp_get_minimum_free_heap_size());
+    gpio_set_level(LED_R_Pin, 1);
+    gpio_set_level(LED_G_Pin, 1);
+    gpio_set_level(LED_B_Pin, 1);
+    int next = 0;
+    gpio_set_level(LED_R_Pin, 0);
+    const char buff[] = "Net: Message\n\r";
     while (1)
     {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        gpio_set_level(LED_G_Pin, !gpio_get_level(LED_G_Pin));
+        gpio_set_level(LED_R_Pin, next);
+        printf("Net: Message - led %d\n\r", next);
+        next = next ? 0 : 1;
 
+        ui_layer->Rx(xTaskGetTickCount());
+
+        if (ui_layer->GetRxPackets().size() > 0)
+        {
+            gpio_set_level(LED_G_Pin, 0);
+        }
 
 
         // Handle receiving and transmitting
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }

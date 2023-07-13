@@ -69,8 +69,8 @@ SerialStm* net_layer = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
 
-Led rx_led(LED1_Port, LED1_Pin, 10);
-Led tx_led(LED2_Port, LED2_Pin, 10);
+Led rx_led(LED_R_Port, LED_R_Pin, 10);
+Led tx_led(LED_G_Port, LED_G_Pin, 10);
 
 int main(void)
 {
@@ -150,7 +150,10 @@ int main(void)
 
 
     uint32_t blink = 0;
-    uint8_t test_message [] = "UI: Test\n";
+    uint8_t test_message [] = "UI: Test\n\r";
+    HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_G_Port, LED_G_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_B_Port, LED_B_Pin, GPIO_PIN_SET);
     while (1)
     {
         ui_manager->Run();
@@ -160,8 +163,7 @@ int main(void)
 
         if (HAL_GetTick() > blink)
         {
-            blink = HAL_GetTick() + 1000;
-            HAL_GPIO_TogglePin(LED1_Port, LED1_Pin);
+            blink = HAL_GetTick() + 5000;
             HAL_UART_Transmit(&huart1, test_message, 10, 1000);
         }
     }
@@ -280,26 +282,26 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(Q10_TIMER_LED_PORT, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = LED1_Pin;
+    GPIO_InitStruct.Pin = LED_R_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(LED1_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(LED1_Port, LED1_Pin, GPIO_PIN_SET);
+    HAL_GPIO_Init(LED_R_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_SET);
 
-    GPIO_InitStruct.Pin = LED2_Pin;
+    GPIO_InitStruct.Pin = LED_G_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(LED2_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(LED2_Port, LED2_Pin, GPIO_PIN_SET);
+    HAL_GPIO_Init(LED_G_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED_G_Port, LED_G_Pin, GPIO_PIN_SET);
 
-    GPIO_InitStruct.Pin = LED3_Pin;
+    GPIO_InitStruct.Pin = LED_B_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(LED3_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(LED3_Port, LED3_Pin, GPIO_PIN_SET);
+    HAL_GPIO_Init(LED_B_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED_B_Port, LED_B_Pin, GPIO_PIN_SET);
 
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = GPIO_PIN_1;

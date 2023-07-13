@@ -1,6 +1,7 @@
 #ifndef __ERROR_NET__
 #define __ERROR_NET__
 
+#include "freertos/task.h"
 #include "NetPins.h"
 
 static void ErrorState(const char* caller,
@@ -11,7 +12,6 @@ static void ErrorState(const char* caller,
     gpio_set_level(LED_R_Pin, LED_R_State);
     gpio_set_level(LED_G_Pin, LED_G_State);
     gpio_set_level(LED_B_Pin, LED_B_State);
-
 
     while (true)
     {
