@@ -30,6 +30,7 @@ compile:
 # arduino-cli compile --warnings all --build-path ${BUILD_PATH} --build-cache-path ${CACHE_PATH} --fqbn ${BOARD}
 
 upload:
+	python ../tools/command_sender.py ${PORT} ${BAUD} net_upload
 	if [ ${OS} == Windows_NT ] ; then \
 		python -m esptool ${ESP_TOOL_ARGS} ; \
 	else \

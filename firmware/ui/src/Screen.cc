@@ -901,7 +901,7 @@ void Screen::FillRectangle(const uint16_t x_start,
 
     uint32_t total_pixels = y_pixels * x_pixels;
 
-    uint32_t chunk = std::min<uint32_t>(total_pixels, Chunk_Buffer_Size);
+    uint32_t chunk = std::min<uint32_t>(total_pixels, 128);
     // uint8_t* data = new uint8_t[chunk * 2];
 
     // Copy colour to data
@@ -918,7 +918,7 @@ void Screen::FillRectangle(const uint16_t x_start,
         total_pixels -= chunk;
 
         // Get the size of data we are sending that is remaining
-        chunk = std::min<uint32_t>(total_pixels, Chunk_Buffer_Size);
+        chunk = std::min<uint32_t>(total_pixels, 128);
     }
 
     Deselect();
