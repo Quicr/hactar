@@ -41,7 +41,7 @@ public:
 
     ~SerialManager()
     {
-        if (rx_packet) delete rx_packet;
+        if (rx_packet != nullptr) delete rx_packet;
         for (unsigned long i = 0; i < rx_packets.size(); ++i)
         {
             delete rx_packets[i];
@@ -63,7 +63,7 @@ public:
     {
         // Don't try to send if we are reading
         if (uart->AvailableBytes() >= 4) return;
-        if (rx_packet) return;
+        if (rx_packet != nullptr) return;
 
         // Check pending tx packets
         HandlePendingTx(current_time);
@@ -194,12 +194,13 @@ private:
                     Packet* failed_packet = tx_pending_packets[failed_id];
                     EnqueuePacket(failed_packet);
                     tx_pending_packets.erase(failed_id);
+                    failed_packet = nullptr;
 
                     delete rx_packet;
                     status = SerialStatus::ERROR;
                     break;
                 }
-                case Packet::Types::Busy:
+                case (unsigned char)Packet::Types::Busy:
                 {
                     // TODO resend our message
 
@@ -224,6 +225,7 @@ private:
 
                     // Push the ok packet
                     EnqueuePacket(ok_packet);
+                    ok_packet = nullptr;
 
                     rx_packets.push_back(rx_packet);
                     status = SerialStatus::OK;
@@ -301,7 +303,7 @@ private:
         if (!uart->ReadyToWrite()) return SerialStatus::BUSY;
 
         // If tx buffer is allocated delete it
-        if (tx_buffer) delete tx_buffer;
+        if (tx_buffer != nullptr) delete tx_buffer;
 
         Packet* tx_packet = tx_packets.front();
 
@@ -323,10 +325,11 @@ private:
             packet_type != Packet::Types::LocalDebug)
         {
             // Get the packet id
-            unsigned char packet_id = tx_packet->GetData(6, 8);
+            // unsigned char packet_id = tx_packet->GetData(6, 8);
 
             // Move the tx packet to the sent packets
-            tx_pending_packets[packet_id] = tx_packet;
+            // tx_pending_packets[packet_id] = tx_packet;
+            delete tx_packet;
         }
         else
         {

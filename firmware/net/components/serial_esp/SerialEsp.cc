@@ -46,7 +46,8 @@ bool SerialEsp::ReadyToWrite()
 
 void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
 {
-    uart_write_bytes(uart, (void*)0xFF, 1);
+    uint8_t start[] = {0xFF};
+    uart_write_bytes(uart, start, 1);
 
     // Wait until the previous message is sent
     while (uart_wait_tx_done(uart, 100))
@@ -96,9 +97,11 @@ void SerialEsp::RxEvent(void* parameter)
 
                 for (size_t i = 0; i < event.size; ++i)
                 {
+                    printf("%d ", buff[i]);
                     serial->rx_ring.Write(buff[i]);
                 }
-                printf("NET: available bytes=%d\n", serial->AvailableBytes());
+                printf("\n\r");
+                printf("NET: available bytes=%d\n\r", serial->AvailableBytes());
 
                 break;
             }

@@ -115,18 +115,47 @@ extern "C" void app_main(void)
     int next = 0;
     gpio_set_level(LED_R_Pin, 0);
     const char buff[] = "Net: Message\n\r";
+
+
+        Packet* connected_packet = new Packet(xTaskGetTickCount());
+        connected_packet->SetData(Packet::Types::Command, 0, 6);
+        connected_packet->SetData(1, 6, 8);
+        connected_packet->SetData(2, 14, 10);
+        connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
+        connected_packet->SetData(1, 32, 8);
+
+        ui_layer->EnqueuePacket(connected_packet);
     while (1)
     {
         gpio_set_level(LED_R_Pin, next);
-        printf("Net: Message - led %d\n\r", next);
+        // printf("Net: Message - led %d\n\r", next);
         next = next ? 0 : 1;
 
-        ui_layer->Rx(xTaskGetTickCount());
 
-        if (ui_layer->GetRxPackets().size() > 0)
+
+
+        Packet* connected_packet = new Packet(xTaskGetTickCount());
+        connected_packet->SetData(Packet::Types::Command, 0, 6);
+        connected_packet->SetData(1, 6, 8);
+        connected_packet->SetData(2, 14, 10);
+        connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
+        connected_packet->SetData(1, 32, 8);
+
+        ui_layer->EnqueuePacket(connected_packet);
+        connected_packet = nullptr;
+        ui_layer->Rx(xTaskGetTickCount());
+        Vector<Packet *>& packets = ui_layer->GetRxPackets();
+        // printf("Net: Num packets = %d\n\r", packets.size());
+
+
+        while (packets.size() > 0)
         {
-            gpio_set_level(LED_G_Pin, 0);
+            printf("Net: Num packets = %d\n\r", packets.size());
+            packets.erase(0);
         }
+
+        // printf("Before tx");
+        ui_layer->Tx(xTaskGetTickCount());
 
 
         // Handle receiving and transmitting

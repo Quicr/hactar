@@ -13,7 +13,7 @@ public:
     }
     Vector(const Vector<T>& v)
     {
-        if (array) delete [] array;
+        if (array != nullptr) delete [] array;
         _max_size = v.max_size();
         _capacity = v.capacity();
         _size = v.size();
@@ -23,7 +23,7 @@ public:
     }
     Vector(Vector<T>&& v)
     {
-        if (array) delete [] array;
+        if (array != nullptr) delete [] array;
         _max_size = v.max_size();
         _capacity = v.capacity();
         _size = v.size();
@@ -346,5 +346,5 @@ protected:
     unsigned int _max_size;
     unsigned int _capacity;
     unsigned int _size;
-    T *array;
+    T *array = nullptr;
 };
