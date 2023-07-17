@@ -65,7 +65,7 @@ port_pin bl = { LCD_BL_GPIO_Port, LCD_BL_Pin };
 
 Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::left_landscape);
 Q10Keyboard* keyboard;
-SerialStm* net_layer = nullptr;
+SerialStm* net_serial_interface = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
 
@@ -144,10 +144,11 @@ int main(void)
     // Initialize the keyboard
     keyboard->Begin();
 
-    net_layer = new SerialStm(&huart2);
+    net_serial_interface = new SerialStm(&huart2);
 
-    ui_manager = new UserInterfaceManager(screen, *keyboard, *net_layer, *eeprom);
+    ui_manager = new UserInterfaceManager(screen, *keyboard, *net_serial_interface, *eeprom);
 
+    SerialManager serial(net_serial_interface);
 
     uint32_t blink = 0;
     uint8_t test_message [] = "UI: Test\n\r";
@@ -164,6 +165,7 @@ int main(void)
         if (HAL_GetTick() > blink)
         {
             blink = HAL_GetTick() + 5000;
+            HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
             HAL_UART_Transmit(&huart1, test_message, 10, 1000);
         }
     }
@@ -382,9 +384,9 @@ static void MX_USART2_Init()
 {
     huart2.Instance = USART2;
     huart2.Init.BaudRate = 115200;
-    huart2.Init.WordLength = UART_WORDLENGTH_8B;
+    huart2.Init.WordLength = UART_WORDLENGTH_9B;
     huart2.Init.StopBits = UART_STOPBITS_1;
-    huart2.Init.Parity = UART_PARITY_NONE;
+    huart2.Init.Parity = UART_PARITY_EVEN;
     huart2.Init.Mode = UART_MODE_TX_RX;
     huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     huart2.Init.OverSampling = UART_OVERSAMPLING_16;
@@ -416,7 +418,7 @@ static void MX_I2C1_Init()
 // {
 //     if (huart->Instance == huart2.Instance)
 //     {
-//         net_layer->SetRxFlag();
+//         net_serial_interface->SetRxFlag();
 //         // HAL_GPIO_TogglePin(USART2_RX_LED_PORT, USART2_RX_LED_PIN);
 //     }
 //     // HAL_UARTEx_ReceiveToIdle_IT(&huart2, rx_buff, 16);
@@ -426,14 +428,14 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     UNUSED(huart);
     UNUSED(size);
-    net_layer->RxEvent();
+    net_serial_interface->RxEvent(size);
     rx_led.On();
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
     UNUSED(huart);
-    net_layer->TxEvent();
+    net_serial_interface->TxEvent();
     tx_led.On();
 }
 
