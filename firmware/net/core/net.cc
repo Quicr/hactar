@@ -73,7 +73,7 @@ extern "C" void app_main(void)
     uart_config_t uart_config = {
         .baud_rate = 115200,
         .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
+        .parity = UART_PARITY_EVEN,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_MAX,
@@ -117,14 +117,16 @@ extern "C" void app_main(void)
     const char buff[] = "Net: Message\n\r";
 
 
-        Packet* connected_packet = new Packet(xTaskGetTickCount());
-        connected_packet->SetData(Packet::Types::Command, 0, 6);
-        connected_packet->SetData(1, 6, 8);
-        connected_packet->SetData(2, 14, 10);
-        connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
-        connected_packet->SetData(1, 32, 8);
+        // Packet* connected_packet = new Packet(xTaskGetTickCount());
+        // connected_packet->SetData(Packet::Types::Command, 0, 6);
+        // connected_packet->SetData(1, 6, 8);
+        // connected_packet->SetData(2, 14, 10);
+        // connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
+        // connected_packet->SetData(1, 32, 8);
 
-        ui_layer->EnqueuePacket(connected_packet);
+        // ui_layer->EnqueuePacket(connected_packet);
+    int32_t count = 0;
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
     while (1)
     {
         gpio_set_level(LED_R_Pin, next);
@@ -136,21 +138,36 @@ extern "C" void app_main(void)
 
         Packet* connected_packet = new Packet(xTaskGetTickCount());
         connected_packet->SetData(Packet::Types::Command, 0, 6);
-        connected_packet->SetData(1, 6, 8);
+        connected_packet->SetData(ui_layer->NextPacketId(), 6, 8);
         connected_packet->SetData(2, 14, 10);
         connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
         connected_packet->SetData(1, 32, 8);
 
         ui_layer->EnqueuePacket(connected_packet);
         connected_packet = nullptr;
+
+
+        // uint8_t msg[] = "server - hello";
+
+        // Packet* message_packet = new Packet(xTaskGetTickCount());
+        // message_packet->SetData(Packet::Types::Message, 0, 6);
+        // message_packet->SetData(ui_layer->NextPacketId(), 6, 8);
+        // message_packet->SetData(14, 14, 10);
+
+        // for (uint16_t i = 0; i < 15; ++i)
+        // {
+        //     message_packet->SetData(msg[i], 24 + i * 8, 8);
+        // }
+
+        // ui_layer->EnqueuePacket(message_packet);
+        // message_packet = nullptr;
+
         ui_layer->Rx(xTaskGetTickCount());
         Vector<Packet *>& packets = ui_layer->GetRxPackets();
         // printf("Net: Num packets = %d\n\r", packets.size());
-
-
+        printf("Net: sent %ld packets\n\r", count++);
         while (packets.size() > 0)
         {
-            printf("Net: Num packets = %d\n\r", packets.size());
             packets.erase(0);
         }
 

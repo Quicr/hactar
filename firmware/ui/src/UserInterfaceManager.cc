@@ -28,11 +28,13 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     is_connected_to_wifi(false),
     attempt_to_connect_timeout(0)
 {
-    if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
-        == FIRST_BOOT_DONE)
-        ChangeView<LoginView>();
-    else
-        ChangeView<FirstBootView>();
+    // if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
+    //     == FIRST_BOOT_DONE)
+    //     ChangeView<LoginView>();
+    // else
+    //     ChangeView<FirstBootView>();
+
+    ChangeView<ChatView>();
 }
 
 UserInterfaceManager::~UserInterfaceManager()
@@ -44,8 +46,6 @@ UserInterfaceManager::~UserInterfaceManager()
 // TODO should update this to be a draw/update architecture
 void UserInterfaceManager::Run()
 {
-
-
     current_time = HAL_GetTick();
 
     view->Run();
@@ -57,7 +57,6 @@ void UserInterfaceManager::Run()
     }
 
     // TODO move into some sort of update function
-    // This dynamic cast might be a little slow
     if (current_time > last_wifi_check)
     {
         // Check a check wifi status packet
@@ -210,7 +209,7 @@ void UserInterfaceManager::HandleIncomingPackets()
                     is_connected_to_wifi = rx_packet->GetData(32, 8);
                     if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
                     {
-                        ConnectToWifi();
+                        // ConnectToWifi();
 
                         // Wait a long time before trying to connect again
                         attempt_to_connect_timeout = HAL_GetTick() + 50000;
@@ -222,10 +221,10 @@ void UserInterfaceManager::HandleIncomingPackets()
             default:
             {
                 // We'll do nothing if it doesn't fit these types
+                break;
             }
         }
 
-        // TODO this should be automatic when the vector erases it?
         delete rx_packet;
         packets.erase(0);
     }
@@ -321,6 +320,8 @@ uint32_t UserInterfaceManager::GetStatusColour(
         return C_YELLOW;
     else if (status == SerialManager::SerialStatus::ERROR)
         return C_RED;
+    else if (status == SerialManager::SerialStatus::CRITICAL_ERROR)
+        return C_BLUE;
     else
         return C_WHITE;
 }

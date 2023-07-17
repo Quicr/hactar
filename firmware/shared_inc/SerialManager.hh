@@ -22,6 +22,7 @@ public:
         OK,
         PARTIAL,
         BUSY,
+        CRITICAL_ERROR,
         ERROR,
         TIMEOUT
     } SerialStatus;
@@ -102,7 +103,7 @@ public:
         return rx_status;
     }
 
-    uint8_t NextPacketId()
+    unsigned char NextPacketId()
     {
         if (next_packet_id == 0xFE)
             next_packet_id = 1;
@@ -125,12 +126,16 @@ private:
         {
             // Enough bytes to determine the start of a packet and
             // packet id, type, and length
-            if (uart->AvailableBytes() < 4) return SerialStatus::EMPTY;
+            if (uart->AvailableBytes() < Start_Bytes) return SerialStatus::EMPTY;
 
             // Read the next byte if it is the start of a packet then continue on
             // TODO enqueue an error response?
             // This is not necessarily an error.. see the THINK below
-            if (uart->Read() != 0xFF) return SerialStatus::ERROR;
+            if (uart->Read() != 0xFF)
+            {
+                // Error_Handler();
+                return SerialStatus::CRITICAL_ERROR;
+            }
 
             // Found the start, so create a packet
             rx_packet = new Packet(current_time);

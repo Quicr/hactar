@@ -1,10 +1,13 @@
 #include "SerialStm.hh"
+#include "main.hh"
+#include "String.hh"
 
 SerialStm::SerialStm(UART_HandleTypeDef* uart_handler,
                      unsigned short rx_ring_sz) :
     uart(uart_handler),
     rx_ring(rx_ring_sz),
-    rx_buff(new unsigned char[16]),
+    rx_buff(new unsigned char[Rx_Buff_Size]),
+    rx_buff_idx(0),
     tx_free(true)
 {
     StartRx();
@@ -12,7 +15,7 @@ SerialStm::SerialStm(UART_HandleTypeDef* uart_handler,
 
 SerialStm::~SerialStm()
 {
-    delete rx_buff;
+    delete [] rx_buff;
 }
 
 size_t SerialStm::AvailableBytes()
@@ -40,10 +43,14 @@ void SerialStm::Write(unsigned char* buff, const unsigned short buff_sz)
 }
 
 // un-inherited functions
-void SerialStm::RxEvent()
+void SerialStm::RxEvent(uint16_t size)
 {
-    // Buffer only has one byte
-    rx_ring.Write(rx_buff[0]);
+    uint16_t next_bytes = size - rx_buff_idx;
+
+    for (uint16_t i = 0; i < size; ++i)
+    {
+        rx_ring.Write(rx_buff[i]);
+    }
 
     if (rx_ring.IsFull())
     {
@@ -56,11 +63,8 @@ void SerialStm::RxEvent()
 
 void SerialStm::StartRx()
 {
-    // Zero the buffer
-    rx_buff[0] = 0;
-
     // Begin the receive IT
-    HAL_UARTEx_ReceiveToIdle_IT(uart, rx_buff, 1);
+    HAL_UARTEx_ReceiveToIdle_IT(uart, rx_buff, Rx_Buff_Size);
 }
 
 void SerialStm::TxEvent()

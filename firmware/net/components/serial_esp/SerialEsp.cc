@@ -46,6 +46,13 @@ bool SerialEsp::ReadyToWrite()
 
 void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
 {
+    // Wait until the previous message is sent
+    while (uart_wait_tx_done(uart, 100))
+    {
+        vTaskDelay(1 / portTICK_PERIOD_MS);
+    }
+
+    printf("Net: Send to ui\n\r");
     uint8_t start[] = {0xFF};
     uart_write_bytes(uart, start, 1);
 

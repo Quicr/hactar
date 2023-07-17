@@ -18,16 +18,20 @@ public:
     void Write(unsigned char* buff, const unsigned short buff_sz) override;
 
     // un-inherited functions
-    void RxEvent();
+    void RxEvent(uint16_t size);
     void TxEvent();
 private:
     void StartRx();
+
+    // Constant variables
+    const uint16_t Rx_Buff_Size = 32;
 
     UART_HandleTypeDef* uart;
 
     // rx
     RingBuffer<unsigned char> rx_ring;
-    unsigned char* rx_buff;
+    uint8_t* rx_buff;
+    uint16_t rx_buff_idx;
 
     // tx
     volatile bool tx_free;

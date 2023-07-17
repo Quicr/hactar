@@ -660,7 +660,7 @@ void RunningMode()
   StartUartReceive(&usb_stream);
 
   UINormalMode();
-  HAL_Delay(1000);
+  HAL_Delay(2000);
   NetNormalMode();
 
   state = Running;
@@ -706,7 +706,7 @@ void DebugMode()
   StartUartReceive(&net_stream);
 
   UINormalMode();
-  HAL_Delay(1000);
+  HAL_Delay(5000);
   NetNormalMode();
 
   state = Debug_Running;
