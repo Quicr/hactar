@@ -77,7 +77,6 @@ void SerialEsp::RxEvent(void* parameter)
 
     while (true)
     {
-
         // TODO move to ISR
         if (!xQueueReceive(serial->uart_queue, (void*)&event, 0xFF))
             continue;

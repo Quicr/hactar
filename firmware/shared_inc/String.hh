@@ -108,7 +108,18 @@ public:
         return _size;
     }
 
-    // FIX c string have a null terminated string
+    bool push_back(const char &data)
+    {
+        if (_size >= _max_size) return false;
+
+        perform_push_back_resize();
+
+        array[_size++] = data;
+        array[_size] = '\0';
+
+        return true;
+    }
+
     const char* c_str() const
     {
         return array;
@@ -210,8 +221,27 @@ public:
 
     unsigned int size() = delete;
 
-private:
+protected:
+    inline void perform_push_back_resize()
+    {
+        if (_size == _capacity)
+        {
+            unsigned int new_capacity = _capacity == 0 ? 1 : _capacity << 1;
 
+            // create a new pointer of double _capacity and copy
+            char* new_array = new char[new_capacity+1];
+
+            // Copies or Moves the previous elements to the new array
+            move_or_copy(new_array, _capacity);
+
+            delete [] array;
+            array = new_array;
+            _capacity = new_capacity;
+        }
+
+    }
+
+private:
     inline String& SetString(const char ch)
     {
         this->clear();

@@ -19,6 +19,7 @@
 
 #include "SerialEsp.hh"
 #include "SerialManager.hh"
+#include "NetManager.hh"
 
 #include "NetPins.h"
 
@@ -26,21 +27,13 @@ static const char* TAG = "net-main";
 
 
 // Defines
-#define LEDS_OUTPUT_SEL     1 << LED_B_Pin | 1 << LED_G_Pin | 1 << LED_R_Pin
-
-#define UART1 UART_NUM_1
-#define PATTERN_CHR_NUM (3) // Number of consecutive bytes that define a pattern
 
 // #define BUFFER_SIZE (128)
 
 // static QueueHandle_t uart1_queue;
+static NetManager* manager;
 static SerialEsp* ui_uart1;
 static SerialManager* ui_layer;
-
-// static void HandleIncomingSerial()
-// {
-//     ui_layer->Tx(0);
-// }
 
 // static void HandleOutGoingSerial()
 // {
@@ -80,6 +73,32 @@ extern "C" void app_main(void)
         .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
     };
 
+    gpio_config_t io_conf = {};
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = NET_STAT_SEL;
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+    gpio_config(&io_conf);
+
+    gpio_set_level(NET_STAT_Pin, 0);
+
+    // LED init
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = LEDS_OUTPUT_SEL;
+    io_conf.pull_down_en = (gpio_pulldown_t)0;
+    io_conf.pull_up_en = (gpio_pullup_t)0;
+    gpio_config(&io_conf);
+
+    // Debug init
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = NET_DBG_SEL;
+    io_conf.pull_down_en = (gpio_pulldown_t)0;
+    io_conf.pull_up_en = (gpio_pullup_t)0;
+    gpio_config(&io_conf);
+
     // const int uart_buffer_size = (1024 * 2);
     // QueueHandle_t uart_queue;
 
@@ -87,31 +106,17 @@ extern "C" void app_main(void)
     // ESP_ERROR_CHECK(uart_set_pin(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     // ESP_ERROR_CHECK(uart_driver_install(UART1, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
 
-
-
-
-
+    // TODO put somewhere else?
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 32);
     ui_layer = new SerialManager(ui_uart1);
-
-    //zero-initialize the config structure.
-    gpio_config_t io_conf = {};
-    //disable interrupt
-    io_conf.intr_type = GPIO_INTR_DISABLE;
-    //set as output mode
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    //bit mask of the pins that you want to set,e.g.GPIO18/19
-    io_conf.pin_bit_mask = LEDS_OUTPUT_SEL;
-    //disable pull-down mode
-    io_conf.pull_down_en = (gpio_pulldown_t)0;
-    //disable pull-up mode
-    io_conf.pull_up_en = (gpio_pullup_t)0;
-    //configure GPIO with the given settings
-    gpio_config(&io_conf);
+    manager = new NetManager(ui_layer);
 
     gpio_set_level(LED_R_Pin, 1);
     gpio_set_level(LED_G_Pin, 1);
     gpio_set_level(LED_B_Pin, 1);
+    gpio_set_level(NET_DBG5_Pin, 0);
+    gpio_set_level(NET_DBG6_Pin, 0);
+
     int next = 0;
     gpio_set_level(LED_R_Pin, 0);
     const char buff[] = "Net: Message\n\r";
@@ -125,29 +130,24 @@ extern "C" void app_main(void)
         // connected_packet->SetData(1, 32, 8);
 
         // ui_layer->EnqueuePacket(connected_packet);
+
+    // Ready for normal operations
+    gpio_set_level(NET_STAT_Pin, 1);
+
     int32_t count = 0;
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
     while (1)
     {
         gpio_set_level(LED_R_Pin, next);
-        // printf("Net: Message - led %d\n\r", next);
         next = next ? 0 : 1;
 
-
-
-
-        Packet* connected_packet = new Packet(xTaskGetTickCount());
-        connected_packet->SetData(Packet::Types::Command, 0, 6);
-        connected_packet->SetData(ui_layer->NextPacketId(), 6, 8);
-        connected_packet->SetData(2, 14, 10);
-        connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
-        connected_packet->SetData(1, 32, 8);
-
-        ui_layer->EnqueuePacket(connected_packet);
-        connected_packet = nullptr;
-
-
-        // uint8_t msg[] = "server - hello";
+        // Packet* connected_packet = new Packet(xTaskGetTickCount());
+        // connected_packet->SetData(Packet::Types::Command, 0, 6);
+        // connected_packet->SetData(ui_layer->NextPacketId(), 6, 8);
+        // connected_packet->SetData(2, 14, 10);
+        // connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
+        // connected_packet->SetData(1, 32, 8);
+        // ui_layer->EnqueuePacket(connected_packet);
+        // connected_packet = nullptr;
 
         // Packet* message_packet = new Packet(xTaskGetTickCount());
         // message_packet->SetData(Packet::Types::Message, 0, 6);
@@ -161,18 +161,6 @@ extern "C" void app_main(void)
 
         // ui_layer->EnqueuePacket(message_packet);
         // message_packet = nullptr;
-
-        ui_layer->Rx(xTaskGetTickCount());
-        Vector<Packet *>& packets = ui_layer->GetRxPackets();
-        // printf("Net: Num packets = %d\n\r", packets.size());
-        printf("Net: sent %ld packets\n\r", count++);
-        while (packets.size() > 0)
-        {
-            packets.erase(0);
-        }
-
-        // printf("Before tx");
-        ui_layer->Tx(xTaskGetTickCount());
 
 
         // Handle receiving and transmitting

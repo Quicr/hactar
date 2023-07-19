@@ -113,6 +113,8 @@ void Error_Handler(void);
 #define NET_RX0_MGMT_GPIO_Port GPIOB
 #define NET_TX0_MGMT_Pin GPIO_PIN_7
 #define NET_TX0_MGMT_GPIO_Port GPIOB
+#define MGMT_DBG7_Pin GPIO_PIN_11
+#define MGMT_DBG7_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

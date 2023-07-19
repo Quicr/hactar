@@ -31,7 +31,13 @@ WRITE_START = 0x08000000
 PROGRAMMER = CUBE
 CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.elf ${WRITE_START} -v -g
 
-
+ifeq (${PROGRAMMER}, CUBE)
+	ifeq (${OS}, WINDOWS_NT)
+		EXT = .exe
+	else
+		EXT =
+	endif
+endif
 
 
 #######################################

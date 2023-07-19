@@ -103,6 +103,18 @@ extern TIM_HandleTypeDef htim2;
 #define LED_B_Pin            GPIO_PIN_2
 #define LED_B_Port           GPIOD
 
+#define UI_STAT_Pin          GPIO_PIN_8
+#define UI_STAT_Port         GPIOA
+
+#define UI_DBG1_Pin          GPIO_PIN_4
+#define UI_DBG1_Port         GPIOC
+#define UI_DBG2_Pin          GPIO_PIN_5
+#define UI_DBG2_Port         GPIOC
+#define UI_DBG3_Pin          GPIO_PIN_6
+#define UI_DBG3_Port         GPIOC
+#define UI_DBG4_Pin          GPIO_PIN_7
+#define UI_DBG4_Port         GPIOC
+
 #define EEPROM_SCL_PORT     GPIOB
 #define EEPROM_SCL_PIN      GPIO_PIN_6
 #define EEPROM_SDA_PORT     GPIOB
