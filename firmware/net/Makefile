@@ -31,5 +31,8 @@ monitor:
 	python ../tools/command_sender.py ${PORT} ${BAUD} debug
 	screen ${PORT} ${BAUD}
 
+py_monitor:
+	python ../tools/monitor.py ${PORT} ${BAUD}
+
 clean:
 	rm -rf ${BUILD_PATH}

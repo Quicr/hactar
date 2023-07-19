@@ -75,6 +75,13 @@ public:
 
     void EnqueuePacket(Packet* packet)
     {
+        if (tx_packets.size() >= 10)
+        {
+            delete packet;
+            packet = nullptr;
+            return;
+        }
+
         tx_packets.push_back(packet);
     }
 
@@ -343,8 +350,8 @@ private:
         }
 
         // Remove the packet from tx_packets
-        tx_packets.erase(0);
         tx_packet = nullptr;
+        tx_packets.erase(0);
 
         return SerialStatus::OK;
     }

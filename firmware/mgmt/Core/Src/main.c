@@ -26,7 +26,7 @@
 #define TRANSMISSION_TIMEOUT 5000
 #define COMMAND_BUFF_SZ 16
 
-#define BTN_PRESS_TIMEOUT 1000
+#define BTN_PRESS_TIMEOUT 5000
 #define BTN_DEBOUNCE_TIMEOUT 50
 #define BTN_WAIT_TIMEOUT 1000
 
@@ -660,8 +660,25 @@ void RunningMode()
   StartUartReceive(&usb_stream);
 
   UINormalMode();
-  HAL_Delay(2000);
+
+  uint32_t timeout = HAL_GetTick() + 10000;
+  while (HAL_GetTick() < timeout &&
+         HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
+  {
+    // Stay here until the UI is finished booting
+    HAL_Delay(10);
+  }
+
   NetNormalMode();
+
+  // Refresh the timeout
+  timeout = HAL_GetTick() + 10000;
+  while (HAL_GetTick() < timeout &&
+         HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+  {
+    // Stay here until the Net is done booting
+    HAL_Delay(10);
+  }
 
   state = Running;
   while (state == Running)
@@ -706,8 +723,25 @@ void DebugMode()
   StartUartReceive(&net_stream);
 
   UINormalMode();
-  HAL_Delay(5000);
+
+  uint32_t timeout = HAL_GetTick() + 10000;
+  while (HAL_GetTick() < timeout &&
+         HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
+  {
+    // Stay here until the UI is finished booting
+    HAL_Delay(10);
+  }
+
   NetNormalMode();
+
+  // Refresh the timeout
+  timeout = HAL_GetTick() + 10000;
+  while (HAL_GetTick() < timeout &&
+         HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+  {
+    // Stay here until the Net is done booting
+    HAL_Delay(10);
+  }
 
   state = Debug_Running;
   while (state == Debug_Running)
@@ -817,12 +851,12 @@ int main(void)
   {
     if (state == Waiting)
     {
+      state = next_state;
+      next_state = Waiting;
       while (HAL_GetTick() < wait_timeout)
       {
         __NOP();
       }
-      state = next_state;
-      next_state = Waiting;
     }
     else if (state == Reset)
     {
@@ -1150,7 +1184,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(CTS_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : CTS_Pin */
+  GPIO_InitStruct.Pin = MGMT_DBG7_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(MGMT_DBG7_GPIO_Port, &GPIO_InitStruct);
 
+
+  // Clock
   /*Configure GPIO pin : PA8 */
   GPIO_InitStruct.Pin = GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;

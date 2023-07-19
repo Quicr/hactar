@@ -150,11 +150,21 @@ int main(void)
 
     SerialManager serial(net_serial_interface);
 
+    // Run once before entering the Main loop
+    ui_manager->Run();
+
     uint32_t blink = 0;
     uint8_t test_message [] = "UI: Test\n\r";
     HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_G_Port, LED_G_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_B_Port, LED_B_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(UI_STAT_Port, UI_STAT_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(UI_DBG1_Port, UI_DBG1_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(UI_DBG2_Port, UI_DBG2_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(UI_DBG3_Port, UI_DBG3_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(UI_DBG4_Port, UI_DBG4_Pin, GPIO_PIN_SET);
+
+
     while (1)
     {
         ui_manager->Run();
@@ -305,26 +315,39 @@ static void MX_GPIO_Init(void)
     HAL_GPIO_Init(LED_B_Port, &GPIO_InitStruct);
     HAL_GPIO_WritePin(LED_B_Port, LED_B_Pin, GPIO_PIN_SET);
 
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
-    GPIO_InitStruct.Pin = GPIO_PIN_1;
+    HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = LED_R_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(LED_R_Port, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(LED_G_Port, LED_G_Pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = LED_G_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(LED_G_Port, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(LED_B_Port, LED_B_Pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = LED_B_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(LED_B_Port, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(UI_STAT_Port, UI_STAT_Pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = UI_STAT_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(UI_STAT_Port, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = UI_DBG1_Pin | UI_DBG2_Pin | UI_DBG3_Pin | UI_DBG4_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
-    GPIO_InitStruct.Pin = GPIO_PIN_0;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_RESET);
-    GPIO_InitStruct.Pin = GPIO_PIN_2;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 }
 
 static void MX_SPI1_Init(void)
@@ -380,6 +403,7 @@ static void MX_USART1_Init(void)
     }
 }
 
+// TODO move to DMA circular buffer
 static void MX_USART2_Init()
 {
     huart2.Instance = USART2;
