@@ -10,13 +10,13 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     port_pin dc,
     port_pin rst,
     port_pin bl,
-    Orientation orientation) :
+    Orientation _orientation) :
     spi_handle(&hspi),
     cs(cs),
     dc(dc),
     rst(rst),
     bl(bl),
-    orientation(orientation),
+    orientation(_orientation),
     view_height(0),
     view_width(0),
     chunk_buffer({ 0 }),
@@ -938,9 +938,9 @@ void Screen::FillScreen(const uint16_t colour)
     FillRectangle(0, 0, view_width, view_height, colour);
 }
 
-void Screen::SetOrientation(Orientation orientation)
+void Screen::SetOrientation(Orientation _orientation)
 {
-    switch (orientation)
+    switch (_orientation)
     {
         case Orientation::portrait:
             view_width = WIDTH;
@@ -967,6 +967,7 @@ void Screen::SetOrientation(Orientation orientation)
             // Do nothing
             break;
     }
+    orientation = orientation;
 }
 
 void Screen::ReleaseSPI()

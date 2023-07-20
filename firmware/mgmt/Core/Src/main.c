@@ -346,78 +346,84 @@ extern inline void HandleTx(uart_stream_t* uart_stream)
 
 extern inline void HandleCommands(uart_stream_t* uart_stream)
 {
-    if (uart_stream->pending_bytes > 0)
+  if (uart_stream->pending_bytes > 0)
+  {
+    if (uart_stream->pending_bytes >= uart_stream->rx_buffer_size || uart_stream->idle_receive || uart_stream->tx_read_overflow)
     {
-      if (uart_stream->pending_bytes >= uart_stream->rx_buffer_size || uart_stream->idle_receive || uart_stream->tx_read_overflow)
+      send_bytes = uart_stream->rx_buffer_size;
+
+      // Should only occur on an idle
+      if (uart_stream->idle_receive || uart_stream->tx_read_overflow)
       {
-        send_bytes = uart_stream->rx_buffer_size;
-
-        // Should only occur on an idle
-        if (uart_stream->idle_receive || uart_stream->tx_read_overflow)
-        {
-          send_bytes = uart_stream->pending_bytes;
-          uart_stream->tx_read_overflow = 0;
-        }
-
-        if (send_bytes > uart_stream->tx_buffer_size - uart_stream->tx_read)
-        {
-          send_bytes = uart_stream->tx_buffer_size - uart_stream->tx_read;
-          uart_stream->tx_read_overflow = 1;
-        }
-        else if (send_bytes > uart_stream->pending_bytes)
-        {
-          send_bytes = uart_stream->pending_bytes;
-        }
-
-        uart_stream->pending_bytes -= send_bytes;
-        uart_stream->tx_read += send_bytes;
-
-        if (uart_stream->idle_receive && uart_stream->pending_bytes == 0)
-        {
-          // End of transmission
-          uart_stream->idle_receive = 0;
-          uart_stream->command_complete = 1;
-        }
+        send_bytes = uart_stream->pending_bytes;
+        uart_stream->tx_read_overflow = 0;
       }
 
-      if (uart_stream->tx_read >= uart_stream->tx_buffer_size)
+      if (send_bytes > uart_stream->tx_buffer_size - uart_stream->tx_read)
       {
-        uart_stream->tx_read = 0;
+        send_bytes = uart_stream->tx_buffer_size - uart_stream->tx_read;
+        uart_stream->tx_read_overflow = 1;
+      }
+      else if (send_bytes > uart_stream->pending_bytes)
+      {
+        send_bytes = uart_stream->pending_bytes;
+      }
+
+      uart_stream->pending_bytes -= send_bytes;
+      uart_stream->tx_read += send_bytes;
+
+      if (uart_stream->idle_receive || uart_stream->pending_bytes == 0)
+      {
+        // End of transmission
+        uart_stream->idle_receive = 0;
+        uart_stream->command_complete = 1;
       }
     }
 
-    if (uart_stream->command_complete)
+    if (uart_stream->tx_read >= uart_stream->tx_buffer_size)
     {
-      if (strcmp((const char*)uart_stream->tx_buffer, ui_upload_cmd) == 0)
-      {
-        state = UI_Upload_Reset;
-        ui_stream.is_listening = 1;
-      }
-      else if (strcmp((const char*)uart_stream->tx_buffer, net_upload_cmd) == 0)
-      {
-        state = Net_Upload_Reset;
-
-        // NOTE do not remove, for reasons that are beyond me, we need to
-        // set this to is_listening so that the we can call
-        // HAL_UART_AbortReceive_IT in the CancelUart.
-        // I honestly don't understand why this is required only on net
-        // but I am positive there is some wonky stuff happening in the HAL lib
-        net_stream.is_listening = 1;
-      }
-      else if (strcmp((const char*)uart_stream->tx_buffer, debug_cmd) == 0)
-      {
-        state = Debug_Reset;
-        net_stream.is_listening = 1;
-      }
-      else if (strcmp((const char*)uart_stream->tx_buffer, reset_cmd) == 0)
-      {
-        state = Reset;
-        net_stream.is_listening = 1;
-      }
-
-      uart_stream->tx_write = 0;
-      uart_stream->command_complete = 0;
+      uart_stream->tx_read = 0;
     }
+  }
+
+  // BUG, sometimes this gets stuck because some bytes come in that make
+  // an improper message and it doesn't reset or something.
+  // Need to try with debugger
+  if (uart_stream->command_complete)
+  {
+    // Safety measure to ensure we don't read illegal memory
+    uart_stream->tx_buffer[uart_stream->tx_buffer_size-1] = '\0';
+
+    if (strcmp((const char*)uart_stream->tx_buffer, ui_upload_cmd) == 0)
+    {
+      state = UI_Upload_Reset;
+      ui_stream.is_listening = 1;
+    }
+    else if (strcmp((const char*)uart_stream->tx_buffer, net_upload_cmd) == 0)
+    {
+      state = Net_Upload_Reset;
+
+      // NOTE do not remove, for reasons that are beyond me, we need to
+      // set this to is_listening so that the we can call
+      // HAL_UART_AbortReceive_IT in the CancelUart.
+      // I honestly don't understand why this is required only on net
+      // but I am positive there is some wonky stuff happening in the HAL lib
+      net_stream.is_listening = 1;
+    }
+    else if (strcmp((const char*)uart_stream->tx_buffer, debug_cmd) == 0)
+    {
+      state = Debug_Reset;
+      net_stream.is_listening = 1;
+    }
+    else if (strcmp((const char*)uart_stream->tx_buffer, reset_cmd) == 0)
+    {
+      state = Reset;
+      net_stream.is_listening = 1;
+    }
+
+    uart_stream->tx_write = 0;
+    uart_stream->command_complete = 0;
+  }
 }
 
 extern inline void InitUartStreamParameters(uart_stream_t* uart_stream)

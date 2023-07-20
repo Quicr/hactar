@@ -81,7 +81,7 @@ public:
            port_pin dc,
            port_pin rst,
            port_pin bl,
-           Orientation orientation);
+           Orientation _orientation);
     ~Screen();
 
     // TODO pg 129 add vertical scroll
@@ -99,7 +99,7 @@ public:
     void WriteDataDMA(uint8_t* data, const uint32_t data_size);
     void SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_end,
                            uint16_t y_end);
-    void SetOrientation(Orientation orientation);
+    void SetOrientation(Orientation _orientation);
     void EnableBackLight();
     void DisableBackLight();
     void Sleep();

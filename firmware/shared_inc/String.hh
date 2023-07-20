@@ -158,7 +158,7 @@ public:
     {
         for (unsigned int i = 0; i < _size; i++)
         {
-            if (ch == array[i]) return i;
+            if (ch == array[i]) return (long)i;
         }
 
         return -1;
@@ -205,7 +205,7 @@ public:
         do
         {
             mod = value % 10;
-            str[sz-1] = '0' + mod;
+            str[sz-1] = '0' + (char)mod;
             sz--;
             value = value / 10;
         } while (value > 0);

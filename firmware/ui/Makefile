@@ -161,6 +161,19 @@ AS_INCLUDES =
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
 CFLAGS 		+= $(MCU) $(C_DEFS) $(INCS) $(OPT) -Wall -Wpedantic -Wextra -fdata-sections -ffunction-sections
+        # -Wshadow \
+        # -Wnon-virtual-dtor \
+        # -Wcast-align \
+        # -Wunused \
+        # -Woverloaded-virtual \
+        # -Wpedantic \
+        # -Wconversion \
+        # -Wsign-conversion \
+        # -Wnull-dereference \
+        # -Wdouble-promotion \
+        # -Wformat=2 \
+        # -Wimplicit-fallthrough
+
 HAL_CFLAGS 	+= $(MCU) $(C_DEFS) $(INCS) $(OPT) -Wall -fdata-sections -ffunction-sections
 
 ifeq ($(DEBUG), 1)
@@ -223,7 +236,7 @@ all: info program
 -include $(DEPS)
 
 # So I can silence the warning from the HAL lib
-${OBJ_DIR}/stm32f4xx%.o : stm32f4xx%.c | ${DIRS}
+${OBJ_DIR}/stm32f4%.o : stm32f4%.c | ${DIRS}
 	@echo "[C]			$(notdir $<)"
 	@$(CC) $(HAL_CFLAGS) -c -o $@ $< -MMD -MF ${DEP_DIR}/$(*F).d
 

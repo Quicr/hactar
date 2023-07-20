@@ -12,7 +12,7 @@ NetManager::NetManager(SerialManager* serial)
 {
     // Start tasks??
 
-    xTaskCreate(HandleSerial, "handle_serial_task", 1024, (void*)this, 13, NULL);
+    xTaskCreate(HandleSerial, "handle_serial_task", 2048, (void*)this, 13, NULL);
 }
 
 void NetManager::HandleSerial(void* param)
@@ -26,17 +26,19 @@ void NetManager::HandleSerial(void* param)
         // Delay at the start
         vTaskDelay(50 / portTICK_PERIOD_MS);
 
+        // _this->serial->Rx(xTaskGetTickCount() / portTICK_PERIOD_MS);
+        // printf("Afer rx\n\r");
         _this->serial->RxTx(xTaskGetTickCount() / portTICK_PERIOD_MS);
 
         if (!_this->serial->HasRxPackets()) continue;
 
         rx_packets = &_this->serial->GetRxPackets();
-        uint32_t timeout = xTaskGetTickCount() / portTICK_PERIOD_MS;
+        uint32_t timeout = (xTaskGetTickCount() / portTICK_PERIOD_MS) + 10000;
 
         while (rx_packets->size() > 0 &&
             xTaskGetTickCount() / portTICK_PERIOD_MS < timeout)
         {
-            printf("Net: Message from ui chip - ");
+            printf("Net: Message from ui chip - \n\r");
             Packet* rx_packet = (*rx_packets)[0];
             uint8_t packet_type = rx_packet->GetData(0, 6);
             uint16_t data_len = rx_packet->GetData(14, 10);
@@ -158,7 +160,7 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
 
         unsigned char ssid_password_len = rx_packet->GetData(offset, 8);
         offset += 8;
-        printf("password length - %d", ssid_password_len);
+        printf("password length - %d\n\r", ssid_password_len);
 
         String ssid_password;
         for (unsigned char j = 0; j < ssid_password_len; ++j)
@@ -167,7 +169,7 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
                 offset, 8));
             offset += 8;
         }
-        printf("SSID Password - %s", ssid_password.c_str());
+        printf("SSID Password - %s\n\r", ssid_password.c_str());
 
         // TODO
         // WiFi.begin(ssid.c_str(), ssid_password.c_str());
@@ -175,7 +177,7 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
     else if (command_type == Packet::Commands::WifiStatus)
     {
         // TODO get wifi connection status
-        printf("Connection status - %d", 0);
+        printf("Connection status FAKE - %d\n\r", 1);
 
         // Create a packet that tells the current status
         Packet* connected_packet = new Packet();
@@ -184,7 +186,7 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
         connected_packet->SetData(2, 14, 10);
         connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
         // connected_packet->SetData(WiFi.isConnected(), 32, 8);
-        connected_packet->SetData(0, 32, 8);
+        connected_packet->SetData(1, 32, 8);
 
         serial->EnqueuePacket(connected_packet);
     }
