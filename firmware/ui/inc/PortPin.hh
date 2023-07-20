@@ -6,7 +6,7 @@
 typedef struct port_pin_t
 {
     GPIO_TypeDef *port;
-    uint32_t pin;
+    uint16_t pin;
 } port_pin;
 
 #endif

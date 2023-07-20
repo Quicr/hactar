@@ -6,7 +6,7 @@
 class ErrorManager
 {
 public:
-    ErrorManager(Screen& screen);
+    ErrorManager(Screen& _screen);
     ~ErrorManager();
     void RaiseError(const uint32_t error_code);
     Vector<uint32_t>& GetErrors();

@@ -99,13 +99,6 @@ extern "C" void app_main(void)
     io_conf.pull_up_en = (gpio_pullup_t)0;
     gpio_config(&io_conf);
 
-    // const int uart_buffer_size = (1024 * 2);
-    // QueueHandle_t uart_queue;
-
-    // ESP_ERROR_CHECK(uart_param_config(UART1, &uart_config));
-    // ESP_ERROR_CHECK(uart_set_pin(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
-    // ESP_ERROR_CHECK(uart_driver_install(UART1, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
-
     // TODO put somewhere else?
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 32);
     ui_layer = new SerialManager(ui_uart1);
@@ -119,17 +112,6 @@ extern "C" void app_main(void)
 
     int next = 0;
     gpio_set_level(LED_R_Pin, 0);
-    const char buff[] = "Net: Message\n\r";
-
-
-        // Packet* connected_packet = new Packet(xTaskGetTickCount());
-        // connected_packet->SetData(Packet::Types::Command, 0, 6);
-        // connected_packet->SetData(1, 6, 8);
-        // connected_packet->SetData(2, 14, 10);
-        // connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
-        // connected_packet->SetData(1, 32, 8);
-
-        // ui_layer->EnqueuePacket(connected_packet);
 
     // Ready for normal operations
     gpio_set_level(NET_STAT_Pin, 1);
@@ -139,31 +121,6 @@ extern "C" void app_main(void)
     {
         gpio_set_level(LED_R_Pin, next);
         next = next ? 0 : 1;
-
-        // Packet* connected_packet = new Packet(xTaskGetTickCount());
-        // connected_packet->SetData(Packet::Types::Command, 0, 6);
-        // connected_packet->SetData(ui_layer->NextPacketId(), 6, 8);
-        // connected_packet->SetData(2, 14, 10);
-        // connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
-        // connected_packet->SetData(1, 32, 8);
-        // ui_layer->EnqueuePacket(connected_packet);
-        // connected_packet = nullptr;
-
-        // Packet* message_packet = new Packet(xTaskGetTickCount());
-        // message_packet->SetData(Packet::Types::Message, 0, 6);
-        // message_packet->SetData(ui_layer->NextPacketId(), 6, 8);
-        // message_packet->SetData(14, 14, 10);
-
-        // for (uint16_t i = 0; i < 15; ++i)
-        // {
-        //     message_packet->SetData(msg[i], 24 + i * 8, 8);
-        // }
-
-        // ui_layer->EnqueuePacket(message_packet);
-        // message_packet = nullptr;
-
-
-        // Handle receiving and transmitting
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }

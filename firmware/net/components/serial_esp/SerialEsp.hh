@@ -9,13 +9,13 @@
 class SerialEsp : public SerialInterface
 {
 public:
-SerialEsp(uart_port_t uart,
-          unsigned long long tx_pin,
-          unsigned long long rx_pin,
-          unsigned long long rts_pin,
-          unsigned long long cts_pin,
-          uart_config_t uart_config,
-          size_t ring_buffer_size);
+    SerialEsp(uart_port_t uart,
+        unsigned long long tx_pin,
+        unsigned long long rx_pin,
+        unsigned long long rts_pin,
+        unsigned long long cts_pin,
+        uart_config_t uart_config,
+        size_t ring_buffer_size);
     ~SerialEsp();
 
     size_t AvailableBytes() override;
