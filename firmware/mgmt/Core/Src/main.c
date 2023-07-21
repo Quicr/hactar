@@ -31,7 +31,8 @@
 #define BTN_WAIT_TIMEOUT 1000
 
 // Structure for uart copy
-typedef struct {
+typedef struct
+{
   UART_HandleTypeDef* from_uart;
   UART_HandleTypeDef* to_uart;
   uint8_t* rx_buffer;
@@ -51,7 +52,8 @@ typedef struct {
   uint8_t command_complete;
 } uart_stream_t;
 
-typedef struct {
+typedef struct
+{
   uint16_t pin;
   uint32_t pressed_timeout;
   uint32_t debounce_timeout;
@@ -147,23 +149,23 @@ enum State next_state;
 uint32_t wait_timeout = 0;
 
 // Commands
-const char ui_upload_cmd[] = "ui_upload";
-const char net_upload_cmd[] = "net_upload";
-const char debug_cmd[] = "debug";
-const char reset_cmd[] = "reset";
+const char ui_upload_cmd [] = "ui_upload";
+const char net_upload_cmd [] = "net_upload";
+const char debug_cmd [] = "debug";
+const char reset_cmd [] = "reset";
 
 uint8_t CheckForDebugMode()
 {
   uint32_t current_tick = HAL_GetTick();
-    if (current_tick < rst_btn.pressed_timeout &&
-        current_tick < ui_btn.pressed_timeout &&
-        current_tick < net_btn.pressed_timeout)
-    {
-      state = Debug_Reset;
-      return 1;
-    }
+  if (current_tick < rst_btn.pressed_timeout &&
+    current_tick < ui_btn.pressed_timeout &&
+    current_tick < net_btn.pressed_timeout)
+  {
+    state = Debug_Reset;
+    return 1;
+  }
 
-    return 0;
+  return 0;
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t gpio_pin)
@@ -202,7 +204,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t gpio_pin)
   wait_timeout = HAL_GetTick() + BTN_WAIT_TIMEOUT;
 }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
   // There are 3 conditions that call this function.
 
@@ -227,7 +229,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
   }
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
   // Need to have as separate if statements so we can loop back properly
   if (huart->Instance == net_stream.to_uart->Instance)
@@ -250,44 +252,44 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 
 extern inline void HandleRx(uart_stream_t* rx_stream, uint16_t num_received)
 {
-    // Calculate the number of bytes have occurred since the last event
-    uint16_t num_bytes = num_received - rx_stream->rx_read;
+  // Calculate the number of bytes have occurred since the last event
+  uint16_t num_bytes = num_received - rx_stream->rx_read;
 
-    // Faster than putting a check inside of the copy loop since this is only
-    // checked once per rx event.
-    if (rx_stream->tx_write + num_bytes > rx_stream->tx_buffer_size)
-    {
-      // Fill in the remaining space and circle around
-      while (rx_stream->rx_read < num_received && rx_stream->tx_write < rx_stream->tx_buffer_size)
-      {
-        rx_stream->tx_buffer[rx_stream->tx_write++] = rx_stream->rx_buffer[rx_stream->rx_read++];
-      }
-
-      rx_stream->tx_write = 0;
-    }
-
-    // Copy bytes to tx buffer
-    while (rx_stream->rx_read < num_received)
+  // Faster than putting a check inside of the copy loop since this is only
+  // checked once per rx event.
+  if (rx_stream->tx_write + num_bytes > rx_stream->tx_buffer_size)
+  {
+    // Fill in the remaining space and circle around
+    while (rx_stream->rx_read < num_received && rx_stream->tx_write < rx_stream->tx_buffer_size)
     {
       rx_stream->tx_buffer[rx_stream->tx_write++] = rx_stream->rx_buffer[rx_stream->rx_read++];
     }
 
-    // rx read head is at the end
-    if(rx_stream->rx_read == rx_stream->rx_buffer_size)
-    {
-      rx_stream->rx_read = 0;
-    }
+    rx_stream->tx_write = 0;
+  }
 
-    if (rx_stream->from_uart->RxEventType == HAL_UART_RXEVENT_IDLE)
-    {
-      // Set the idle receive flag
-      rx_stream->idle_receive = 1;
-    }
+  // Copy bytes to tx buffer
+  while (rx_stream->rx_read < num_received)
+  {
+    rx_stream->tx_buffer[rx_stream->tx_write++] = rx_stream->rx_buffer[rx_stream->rx_read++];
+  }
 
-    // Update the number of pending bytes
-    rx_stream->pending_bytes += num_bytes;
-    rx_stream->has_received = 1;
-    rx_stream->last_transmission_time = HAL_GetTick();
+  // rx read head is at the end
+  if (rx_stream->rx_read == rx_stream->rx_buffer_size)
+  {
+    rx_stream->rx_read = 0;
+  }
+
+  if (rx_stream->from_uart->RxEventType == HAL_UART_RXEVENT_IDLE)
+  {
+    // Set the idle receive flag
+    rx_stream->idle_receive = 1;
+  }
+
+  // Update the number of pending bytes
+  rx_stream->pending_bytes += num_bytes;
+  rx_stream->has_received = 1;
+  rx_stream->last_transmission_time = HAL_GetTick();
 }
 
 extern inline void HandleTx(uart_stream_t* uart_stream)
@@ -335,9 +337,9 @@ extern inline void HandleTx(uart_stream_t* uart_stream)
   }
 
   if (HAL_GetTick() > uart_stream->last_transmission_time + TRANSMISSION_TIMEOUT &&
-      state != Debug_Running &&
-      state != Reset &&
-      state != Running)
+    state != Debug_Running &&
+    state != Reset &&
+    state != Running)
   {
     // Clean up and return to reset mode
     state = Reset;
@@ -350,6 +352,7 @@ extern inline void HandleCommands(uart_stream_t* uart_stream)
   {
     if (uart_stream->pending_bytes >= uart_stream->rx_buffer_size || uart_stream->idle_receive || uart_stream->tx_read_overflow)
     {
+      uart_stream->has_received = 1;
       send_bytes = uart_stream->rx_buffer_size;
 
       // Should only occur on an idle
@@ -389,10 +392,12 @@ extern inline void HandleCommands(uart_stream_t* uart_stream)
   // BUG, sometimes this gets stuck because some bytes come in that make
   // an improper message and it doesn't reset or something.
   // Need to try with debugger
-  if (uart_stream->command_complete)
+  if (uart_stream->command_complete ||
+    (HAL_GetTick() > uart_stream->last_transmission_time + TRANSMISSION_TIMEOUT
+      && uart_stream->has_received))
   {
     // Safety measure to ensure we don't read illegal memory
-    uart_stream->tx_buffer[uart_stream->tx_buffer_size-1] = '\0';
+    uart_stream->tx_buffer[uart_stream->tx_buffer_size - 1] = '\0';
 
     if (strcmp((const char*)uart_stream->tx_buffer, ui_upload_cmd) == 0)
     {
@@ -423,6 +428,7 @@ extern inline void HandleCommands(uart_stream_t* uart_stream)
 
     uart_stream->tx_write = 0;
     uart_stream->command_complete = 0;
+    uart_stream->has_received = 0;
   }
 }
 
@@ -669,7 +675,7 @@ void RunningMode()
 
   uint32_t timeout = HAL_GetTick() + 10000;
   while (HAL_GetTick() < timeout &&
-         HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
+    HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
   {
     // Stay here until the UI is finished booting
     HAL_Delay(10);
@@ -680,7 +686,7 @@ void RunningMode()
   // Refresh the timeout
   timeout = HAL_GetTick() + 10000;
   while (HAL_GetTick() < timeout &&
-         HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+    HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
   {
     // Stay here until the Net is done booting
     HAL_Delay(10);
@@ -732,7 +738,7 @@ void DebugMode()
 
   uint32_t timeout = HAL_GetTick() + 10000;
   while (HAL_GetTick() < timeout &&
-         HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
+    HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
   {
     // Stay here until the UI is finished booting
     HAL_Delay(10);
@@ -743,7 +749,7 @@ void DebugMode()
   // Refresh the timeout
   timeout = HAL_GetTick() + 10000;
   while (HAL_GetTick() < timeout &&
-         HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+    HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
   {
     // Stay here until the Net is done booting
     HAL_Delay(10);
@@ -813,20 +819,20 @@ int main(void)
   usb_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
   usb_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
 
-  usb_stream.rx_buffer = (uint8_t*)malloc(usb_stream.rx_buffer_size*sizeof(uint8_t));
-  usb_stream.tx_buffer = (uint8_t*)malloc(usb_stream.tx_buffer_size*sizeof(uint8_t));
+  usb_stream.rx_buffer = (uint8_t*)malloc(usb_stream.rx_buffer_size * sizeof(uint8_t));
+  usb_stream.tx_buffer = (uint8_t*)malloc(usb_stream.tx_buffer_size * sizeof(uint8_t));
 
   net_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
   net_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
 
-  net_stream.rx_buffer = (uint8_t*)malloc(net_stream.rx_buffer_size*sizeof(uint8_t));
-  net_stream.tx_buffer = (uint8_t*)malloc(net_stream.tx_buffer_size*sizeof(uint8_t));
+  net_stream.rx_buffer = (uint8_t*)malloc(net_stream.rx_buffer_size * sizeof(uint8_t));
+  net_stream.tx_buffer = (uint8_t*)malloc(net_stream.tx_buffer_size * sizeof(uint8_t));
 
   ui_stream.rx_buffer_size = UI_RECEIVE_BUFF_SZ;
   ui_stream.tx_buffer_size = UI_TRANSMIT_BUFF_SZ;
 
-  ui_stream.rx_buffer = (uint8_t*)malloc(ui_stream.rx_buffer_size*sizeof(uint8_t));
-  ui_stream.tx_buffer = (uint8_t*)malloc(ui_stream.tx_buffer_size*sizeof(uint8_t));
+  ui_stream.rx_buffer = (uint8_t*)malloc(ui_stream.rx_buffer_size * sizeof(uint8_t));
+  ui_stream.tx_buffer = (uint8_t*)malloc(ui_stream.tx_buffer_size * sizeof(uint8_t));
 
   usb_stream.from_uart = &huart3;
   usb_stream.to_uart = &huart1;
@@ -881,10 +887,10 @@ int main(void)
       NetUpload();
     }
   }
-    /* USER CODE END WHILE */
+  /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
-  /* USER CODE END 3 */
+  /* USER CODE BEGIN 3 */
+/* USER CODE END 3 */
 }
 
 /**
@@ -893,9 +899,9 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+  RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = { 0 };
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -913,8 +919,8 @@ void SystemClock_Config(void)
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+    | RCC_CLOCKTYPE_PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -923,7 +929,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_USART2;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1 | RCC_PERIPHCLK_USART2;
   PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK1;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
@@ -944,8 +950,8 @@ static void MX_TIM3_Init(void)
   /* USER CODE BEGIN TIM3_Init 0 */
   /* USER CODE END TIM3_Init 0 */
 
-  TIM_SlaveConfigTypeDef sSlaveConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_SlaveConfigTypeDef sSlaveConfig = { 0 };
+  TIM_MasterConfigTypeDef sMasterConfig = { 0 };
 
   /* USER CODE BEGIN TIM3_Init 1 */
   /* USER CODE END TIM3_Init 1 */
@@ -1130,40 +1136,40 @@ static void MX_DMA_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
-  /* GPIO Ports Clock Enable */
+    /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin|UI_BOOT1_Pin
-                          |UI_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin | LEDA_R_Pin | LEDA_G_Pin | UI_BOOT1_Pin
+    | UI_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT0_Pin
-                          |NET_RST_Pin|NET_BOOT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin | LEDB_G_Pin | LEDB_B_Pin | UI_BOOT0_Pin
+    | NET_RST_Pin | NET_BOOT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : BTN_RST_Pin BTN_UI_Pin BTN_NET_Pin */
-  GPIO_InitStruct.Pin = BTN_RST_Pin|BTN_UI_Pin|BTN_NET_Pin;
+  GPIO_InitStruct.Pin = BTN_RST_Pin | BTN_UI_Pin | BTN_NET_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : ADC_UI_STAT_Pin ADC_NET_STAT_Pin UI_STAT_Pin NET_STAT_Pin */
-  GPIO_InitStruct.Pin = ADC_UI_STAT_Pin|ADC_NET_STAT_Pin|UI_STAT_Pin|NET_STAT_Pin;
+  GPIO_InitStruct.Pin = ADC_UI_STAT_Pin | ADC_NET_STAT_Pin | UI_STAT_Pin | NET_STAT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LEDB_R_Pin LEDA_R_Pin LEDA_G_Pin UI_BOOT1_Pin
                            UI_RST_Pin */
-  GPIO_InitStruct.Pin = LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin|UI_BOOT1_Pin
-                          |UI_RST_Pin;
+  GPIO_InitStruct.Pin = LEDB_R_Pin | LEDA_R_Pin | LEDA_G_Pin | UI_BOOT1_Pin
+    | UI_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1171,8 +1177,8 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : LEDA_B_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT0_Pin
                            NET_RST_Pin NET_BOOT_Pin */
-  GPIO_InitStruct.Pin = LEDA_B_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT0_Pin
-                          |NET_RST_Pin|NET_BOOT_Pin;
+  GPIO_InitStruct.Pin = LEDA_B_Pin | LEDB_G_Pin | LEDB_B_Pin | UI_BOOT0_Pin
+    | NET_RST_Pin | NET_BOOT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1212,8 +1218,8 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -1257,7 +1263,7 @@ void Error_Handler(void)
   * @param  line: assert_param error line source number
   * @retval None
   */
-void assert_failed(uint8_t *file, uint32_t line)
+void assert_failed(uint8_t* file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
   /* USER CODE END 6 */
