@@ -69,8 +69,8 @@ SerialStm* net_serial_interface = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
 
-Led rx_led(LED_R_Port, LED_R_Pin, 10);
-Led tx_led(LED_G_Port, LED_G_Pin, 10);
+Led rx_led(LED_R_Port, LED_R_Pin, 0, 1, 10);
+Led tx_led(LED_G_Port, LED_G_Pin, 0, 1, 10);
 
 int main(void)
 {
