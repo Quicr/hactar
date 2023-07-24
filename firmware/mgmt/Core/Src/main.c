@@ -389,9 +389,6 @@ extern inline void HandleCommands(uart_stream_t* uart_stream)
     }
   }
 
-  // BUG, sometimes this gets stuck because some bytes come in that make
-  // an improper message and it doesn't reset or something.
-  // Need to try with debugger
   if (uart_stream->command_complete ||
     (HAL_GetTick() > uart_stream->last_transmission_time + TRANSMISSION_TIMEOUT
       && uart_stream->has_received))

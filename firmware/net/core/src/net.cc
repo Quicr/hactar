@@ -16,12 +16,19 @@
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
+#include "nvs_flash.h"
+#include "esp_event.h"
 
+#include "Wifi.hh"
+#include "Logging.hh"
+#include "SerialLogger.hh"
 #include "SerialEsp.hh"
 #include "SerialManager.hh"
 #include "NetManager.hh"
 
-#include "NetPins.h"
+#include "NetPins.hh"
+
+
 
 static const char* TAG = "net-main";
 
@@ -31,9 +38,16 @@ static const char* TAG = "net-main";
 // #define BUFFER_SIZE (128)
 
 // static QueueHandle_t uart1_queue;
+static hactar_utils::LogManager* logger;
+static hactar_utils::Wifi wifi;
+
 static NetManager* manager;
 static SerialEsp* ui_uart1;
 static SerialManager* ui_layer;
+
+// Forward declare functions
+void Setup();
+void Run();
 
 // static void HandleOutGoingSerial()
 // {
@@ -123,4 +137,35 @@ extern "C" void app_main(void)
         next = next ? 0 : 1;
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
+}
+
+void Setup()
+{
+    logger = hactar_utils::LogManager::GetInstance();
+    logger->add_logger(new hactar_utils::ESP32SerialLogger());
+    logger->info(TAG, "Net app_main start");
+
+    esp_event_loop_create_default();
+
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
+        logger->warn(TAG, "net - nvs_flash_init - no free-pages/version issue");
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+
+    ESP_ERROR_CHECK(err);
+
+    // Wifi setup
+    hactar_utils::Wifi::State wifi_state = { hactar_utils::Wifi::State::NotInitialized };
+
+    wifi.init();
+    // TODO wifi messages from the serial manager
+}
+
+void Run()
+{
+    static bool subscribed = false;
+    // wifi_monitor();
 }
