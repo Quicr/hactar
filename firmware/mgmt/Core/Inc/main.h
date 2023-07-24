@@ -99,8 +99,8 @@ void Error_Handler(void);
 #define UI_STAT_GPIO_Port GPIOA
 #define NET_STAT_Pin GPIO_PIN_10
 #define NET_STAT_GPIO_Port GPIOA
-#define UI_BOOT1_Pin GPIO_PIN_11
-#define UI_BOOT1_GPIO_Port GPIOA
+#define UI_BOOT1_Pin GPIO_PIN_8
+#define UI_BOOT1_GPIO_Port GPIOB
 #define UI_RST_Pin GPIO_PIN_15
 #define UI_RST_GPIO_Port GPIOA
 #define UI_BOOT0_Pin GPIO_PIN_3

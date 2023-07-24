@@ -25,4 +25,4 @@ print(f"Port: {port}, Baud: {baud}, Command: {command}" )
 uart.write(bytes(send_data))
 uart.close()
 
-time.sleep(2)
+time.sleep(1)
