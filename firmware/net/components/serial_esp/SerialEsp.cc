@@ -1,5 +1,5 @@
 #include "SerialEsp.hh"
-#include "../../core/Error.h"
+// #include "Error.hh"
 
 SerialEsp::SerialEsp(uart_port_t uart,
     unsigned long long tx_pin,
@@ -21,7 +21,7 @@ SerialEsp::SerialEsp(uart_port_t uart,
     printf("uart set pin res=%d\n", res);
     res = uart_param_config(uart, &uart_config);
     printf("install res=%d\n", res);
-    xTaskCreate(RxEvent, "uart_event_task", 2048, (void*)this, 12, NULL);
+    xTaskCreate(RxEvent, "uart_event_task", 4096, (void*)this, 12, NULL);
 }
 
 SerialEsp::~SerialEsp()
@@ -78,10 +78,10 @@ void SerialEsp::RxEvent(void* parameter)
     while (true)
     {
         // TODO move to ISR
-        if (!xQueueReceive(serial->uart_queue, (void*)&event, 0xFF))
+        if (!xQueueReceive(serial->uart_queue, (void*)&event, portMAX_DELAY))
             continue;
 
-        printf("uart[%d] event size: %d\n", serial->uart, event.size);
+        printf("NET: uart[%d] event size: %d\n", serial->uart, event.size);
 
         // for (int i = 0; i < event.size; i++)
         // {
@@ -101,6 +101,7 @@ void SerialEsp::RxEvent(void* parameter)
             {
                 uart_read_bytes(serial->uart, buff, event.size, portMAX_DELAY);
 
+                printf("NET: UART Bytes - ");
                 for (size_t i = 0; i < event.size; ++i)
                 {
                     printf("%d ", buff[i]);
@@ -116,7 +117,7 @@ void SerialEsp::RxEvent(void* parameter)
                 // Fifo overflow. If this happens we should add flow control
                 uart_flush_input(serial->uart);
                 vTaskDelete(NULL);
-                ErrorState("Hardware FIFO overflow", 0, 0, 1);
+                // ErrorState("Hardware FIFO overflow", 0, 0, 1);
                 break;
             }
             case UART_BUFFER_FULL:
@@ -125,37 +126,37 @@ void SerialEsp::RxEvent(void* parameter)
                 // read more often OR increase the buffer size
                 uart_flush_input(serial->uart);
                 vTaskDelete(NULL);
-                ErrorState("UART Buffer full", 0, 1, 1);
+                // ErrorState("UART Buffer full", 0, 1, 1);
                 break;
             }
             case UART_BREAK:
             {
                 vTaskDelete(NULL);
-                ErrorState("UART rx break detected", 1, 0, 1);
+                // ErrorState("UART rx break detected", 1, 0, 1);
                 break;
             }
             case UART_PARITY_ERR:
             {
                 vTaskDelete(NULL);
-                ErrorState("UART parity error", 1, 1, 0);
+                // ErrorState("UART parity error", 1, 1, 0);
                 break;
             }
             case UART_FRAME_ERR:
             {
                 vTaskDelete(NULL);
-                ErrorState("UART parity error", 1, 0, 0);
+                // ErrorState("UART parity error", 1, 0, 0);
                 break;
             }
             case UART_PATTERN_DET:
             {
                 vTaskDelete(NULL);
-                ErrorState("UART pattern detected somehow", 1, 1, 1);
+                // ErrorState("UART pattern detected somehow", 1, 1, 1);
                 break;
             }
             default:
             {
                 vTaskDelete(NULL);
-                ErrorState("Unhandled event detected", 1, 1, 1);
+                // ErrorState("Unhandled event detected", 1, 1, 1);
                 break;
             }
         }

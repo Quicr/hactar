@@ -19,7 +19,6 @@ uart = serial.Serial(
 )
 
 send_data = [ch for ch in bytes(command, "UTF-8")]
-send_data.append(0)
 
 print(f"Port: {port}, Baud: {baud}, Command: {command}" )
 uart.write(bytes(send_data))

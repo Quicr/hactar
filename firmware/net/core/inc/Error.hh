@@ -2,7 +2,7 @@
 #define __ERROR_NET__
 
 #include "freertos/task.h"
-#include "NetPins.h"
+#include "NetPins.hh"
 
 static void ErrorState(const char* caller,
                        const unsigned long LED_R_State,

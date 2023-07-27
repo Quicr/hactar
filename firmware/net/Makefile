@@ -31,6 +31,7 @@ monitor:
 	python ../tools/command_sender.py ${PORT} ${BAUD} debug
 	screen ${PORT} ${BAUD}
 
+# python ../tools/command_sender.py ${PORT} ${BAUD} debug
 py_monitor:
 	python ../tools/monitor.py ${PORT} ${BAUD}
 

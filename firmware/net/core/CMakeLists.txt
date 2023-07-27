@@ -1,5 +1,5 @@
-set(SOURCE ./src/TestLogger.cc ./src/net.cc)
+set(SOURCE ./src/net.cc)
 
 idf_component_register(SRCS ${SOURCE}
-    INCLUDE_DIRS .
-    REQUIRES driver serial_esp net_manager)
+    INCLUDE_DIRS inc
+    REQUIRES driver serial_esp net_manager logging)
