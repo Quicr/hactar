@@ -39,7 +39,6 @@ static const char* TAG = "net-main";
 
 // static QueueHandle_t uart1_queue;
 static hactar_utils::LogManager* logger;
-static hactar_utils::Wifi wifi;
 
 static NetManager* manager;
 static SerialEsp* ui_uart1;
@@ -114,7 +113,7 @@ extern "C" void app_main(void)
     gpio_config(&io_conf);
 
     // TODO put somewhere else?
-    ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 32);
+    ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 256);
     ui_layer = new SerialManager(ui_uart1);
     manager = new NetManager(ui_layer);
 
@@ -158,9 +157,7 @@ void Setup()
     ESP_ERROR_CHECK(err);
 
     // Wifi setup
-    hactar_utils::Wifi::State wifi_state = { hactar_utils::Wifi::State::NotInitialized };
-
-    wifi.init();
+    // wifi.init();
     // TODO wifi messages from the serial manager
 }
 

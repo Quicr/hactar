@@ -28,13 +28,12 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
     is_connected_to_wifi(false),
     attempt_to_connect_timeout(0)
 {
-    // if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
-    //     == FIRST_BOOT_DONE)
-    //     ChangeView<LoginView>();
-    // else
-    //     ChangeView<FirstBootView>();
+    if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
+        == FIRST_BOOT_DONE)
+        ChangeView<LoginView>();
+    else
+        ChangeView<FirstBootView>();
 
-    ChangeView<ChatView>();
 }
 
 UserInterfaceManager::~UserInterfaceManager()
@@ -209,7 +208,7 @@ void UserInterfaceManager::HandleIncomingPackets()
                     is_connected_to_wifi = rx_packet->GetData(32, 8);
                     if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
                     {
-                        // ConnectToWifi();
+                        ConnectToWifi();
 
                         // Wait a long time before trying to connect again
                         attempt_to_connect_timeout = HAL_GetTick() + 50000;

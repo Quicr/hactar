@@ -168,7 +168,6 @@ private:
                 rx_packet = nullptr;
                 return SerialStatus::TIMEOUT;
             }
-
             rx_packet->AppendData(uart->Read(), 8U);
 
             if (data_length+3U != (rx_packet->BitsUsed() / 8U)) continue;

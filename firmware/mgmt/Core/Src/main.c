@@ -393,8 +393,8 @@ extern inline void HandleCommands(uart_stream_t* uart_stream)
     (HAL_GetTick() > uart_stream->last_transmission_time + TRANSMISSION_TIMEOUT
       && uart_stream->has_received))
   {
-    // Safety measure to ensure we don't read illegal memory
-    uart_stream->tx_buffer[uart_stream->tx_buffer_size - 1] = '\0';
+    // Add a null terminator to the end of the string for strcmp
+    uart_stream->tx_buffer[uart_stream->tx_read] = '\0';
 
     if (strcmp((const char*)uart_stream->tx_buffer, ui_upload_cmd) == 0)
     {
@@ -730,6 +730,8 @@ void DebugMode()
   StartUartReceive(&usb_stream);
   StartUartReceive(&ui_stream);
   StartUartReceive(&net_stream);
+
+  HAL_Delay(100);
 
   UINormalMode();
 

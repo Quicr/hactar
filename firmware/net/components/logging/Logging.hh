@@ -2,6 +2,7 @@
 
 #include <stdarg.h>
 #include <list>
+#include <mutex>
 
 namespace hactar_utils
 {
@@ -30,6 +31,7 @@ class LogManager
 public:
     LogManager(LogManager& other) = delete;
     void operator=(const LogManager& other) = delete;
+    static LogManager* GetInstance();
 
     void add_logger(LogHandler* handler);
     void remove_logger(LogHandler* handler);
@@ -40,10 +42,21 @@ public:
     void warn(const char* tag, const char* fmt, ...);
     void error(const char* tag, const char* fmt, ...);
 
-    static LogManager* GetInstance();
+protected:
+    LogManager()
+    {
+
+    }
+
+    ~LogManager()
+    {
+
+    }
+
+
 private:
-    LogManager() = default;
     void log_message(const char* tag, const LogLevel, const char* fmt, va_list args);
+    static std::mutex mutex;
     static LogManager* instance;
     std::list<LogHandler*> handlers;
 };
