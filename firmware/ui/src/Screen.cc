@@ -20,7 +20,9 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     view_height(0),
     view_width(0),
     chunk_buffer({ 0 }),
-    spi_busy(0)
+    spi_busy(0),
+    draw_free(0),
+    Drawing_Function(nullptr)
 {
 }
 
@@ -973,6 +975,11 @@ void Screen::SetOrientation(Orientation _orientation)
 void Screen::ReleaseSPI()
 {
     spi_busy = 0;
+
+    if (draw_free)
+    {
+        DrawNext();
+    }
 }
 
 uint16_t Screen::GetStringWidth(const uint16_t str_len, const Font& font) const
@@ -1106,4 +1113,125 @@ uint16_t Screen::ViewWidth() const
 uint16_t Screen::ViewHeight() const
 {
     return view_height;
+}
+
+
+void Screen::FillRectangleFree(const uint16_t x_start,
+    const uint16_t y_start,
+    uint16_t x_end,
+    uint16_t y_end,
+    const uint16_t colour)
+{
+    // Clip to the size of the screen
+    if (x_start >= view_width || y_start >= view_height) return;
+
+    if (x_end >= view_width) x_end = view_width;
+    if (y_end >= view_height) y_end = view_height;
+
+    PushVariable((void*)&x_start, 0, 2);
+    PushVariable((void*)&y_start, 2, 2);
+    PushVariable((void*)&x_end, 4, 2);
+    PushVariable((void*)&y_end, 6, 2);
+    PushVariable((void*)&colour, 8, 2);
+    PushVariable((void*)&x_start, 10, 2);
+    PushVariable((void*)&y_start, 12, 2);
+
+    Drawing_Function = (void*)&FillRectangleProcedure;
+    draw_free = 1;
+
+    DrawNext();
+}
+
+void Screen::PushVariable(const void* data,
+    const uint16_t idx,
+    const uint16_t sz)
+{
+    uint8_t* in = (uint8_t*)data;
+
+    uint16_t write = idx;
+    uint16_t read = 0;
+    while (write < 128 && read < sz)
+    {
+        data_buffer[write++] = in[read++];
+    }
+}
+
+void Screen::DrawNext()
+{
+    ((void(*)())Drawing_Function)();
+}
+
+void* Screen::GetVariable(const uint16_t start_idx, const uint16_t sz)
+{
+    uint8_t* data = new uint8_t[sz];
+
+    uint16_t read = start_idx;
+    uint16_t write = 0;
+    while (write < sz && read < 128)
+    {
+        data[write++] = data_buffer[read++];
+    }
+
+    return (void*)data;
+}
+
+void Screen::WriteDataDMAFree(uint8_t* data, const uint32_t data_size)
+{
+    HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
+}
+
+
+// TODO pixel data bug somewhere in here
+void Screen::FillRectangleProcedure(Screen* screen)
+{
+    uint16_t x_end = *(uint16_t*)screen->GetVariable(4, 2);
+    uint16_t y_end = *(uint16_t*)screen->GetVariable(6, 2);
+
+    uint16_t colour = *(uint16_t*)screen->GetVariable(8, 2);
+
+    uint16_t x_current = *(uint16_t*)screen->GetVariable(10, 2);
+    uint16_t y_current = *(uint16_t*)screen->GetVariable(12, 2);
+
+    uint16_t x_width = x_current + 16;
+    uint16_t y_height = y_current + 16;
+    if (x_width > x_end)
+        x_width = x_end;
+
+    if (y_height > y_end)
+        y_height = y_end;
+
+    // Select the writable pixels
+    screen->Select();
+    screen->SetWritablePixels(x_current, y_current, x_width-1, y_height-1);
+
+    uint16_t num_pixels = (x_width - x_current) * (y_height - y_current);
+
+    for (uint16_t i = 0; i < num_pixels; ++i)
+    {
+        screen->chunk_buffer[i] = static_cast<uint8_t>(colour >> 8);
+        screen->chunk_buffer[i + 1] = static_cast<uint8_t>(colour);
+    }
+
+    // TODO remove the need to pass a buffer in and just send the num pixels
+    screen->WriteDataDMAFree(screen->chunk_buffer, num_pixels);
+
+    x_current += (x_width - x_current);
+    if (x_current >= x_end)
+    {
+        x_current = *(uint16_t*)screen->GetVariable(0, 2);
+        y_current += (y_height - y_current);
+        screen->PushVariable((void*)&y_current, 12, 2);
+    }
+
+    if (x_current >= x_end && y_current >= y_end)
+    {
+        // Stop
+        screen->draw_free = 0;
+        screen->Deselect();
+    }
+    else
+    {
+        // Push data back onto the buffer
+        screen->PushVariable((void*)&x_current, 10, 2);
+    }
 }

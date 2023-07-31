@@ -3,6 +3,8 @@ import serial
 import threading
 import random
 import time
+import signal
+import sys
 
 port = "/dev/ttyUSB0"
 baud = 115200
@@ -23,7 +25,7 @@ running = True
 def ReadSerial():
     has_received = False
     erase = '\x1b[1A\x1b[2K'
-    while True:
+    while running:
         try:
             if uart.in_waiting:
                 data = uart.readline()
@@ -49,8 +51,26 @@ def WriteCommand():
     except Exception as ex:
         print(ex)
 
+def Close():
+    global rx_thread
+    global uart
+
+    rx_thread.join()
+    uart.close()
+
+    sys.exit(0)
+
+def SignalHandler(sig, frame):
+    global running
+    running = False
+    Close()
+
+# Set up signal handler
+signal.signal(signal.SIGINT, SignalHandler)
+# signal.pause()
+
 print("\033[1m\033[92mEnter a command:\033[0m")
 while running:
     WriteCommand()
 
-uart.close()
+Close()

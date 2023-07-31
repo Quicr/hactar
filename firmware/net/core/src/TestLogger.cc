@@ -6,6 +6,15 @@
 
 namespace hactar_net
 {
+TestLogger::TestLogger()
+{
+
+}
+
+TestLogger::~TestLogger()
+{
+
+}
 
 void TestLogger::log(qtransport::LogLevel level, const std::string& string)
 {

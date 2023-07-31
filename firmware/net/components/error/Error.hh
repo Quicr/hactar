@@ -1,8 +1,10 @@
-#ifndef __ERROR_NET__
-#define __ERROR_NET__
+#pragma once
 
+#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "NetPins.hh"
+#include "driver/gpio.h"
+
+#include "../../core/inc/NetPins.hh"
 
 static void ErrorState(const char* caller,
                        const unsigned long LED_R_State,
@@ -23,4 +25,3 @@ static void ErrorState(const char* caller,
     }
 }
 
-#endif

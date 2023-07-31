@@ -10,6 +10,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <iostream>
+
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -28,7 +30,10 @@
 
 #include "NetPins.hh"
 
-
+#include "TestLogger.hh"
+#include "quicr/quicr_client.h"
+#include "quicr/quicr_client_delegate.h"
+#include "quicr/quicr_name.h"
 
 static const char* TAG = "net-main";
 
@@ -39,36 +44,95 @@ static const char* TAG = "net-main";
 
 // static QueueHandle_t uart1_queue;
 static hactar_utils::LogManager* logger;
+hactar_net::TestLogger test_logger;
 
-static NetManager* manager;
-static SerialEsp* ui_uart1;
-static SerialManager* ui_layer;
+static NetManager* manager = nullptr;
+static SerialEsp* ui_uart1 = nullptr;
+static SerialManager* ui_layer = nullptr;
+static quicr::QuicRClient* qclient = nullptr;
+
+// quicr helper
+class SubDelegate : public quicr::SubscriberDelegate
+{
+public:
+    SubDelegate(hactar_net::TestLogger& logger)
+        : logger(logger)
+    {
+    }
+
+    void onSubscribeResponse(
+        [[maybe_unused]] const quicr::Namespace& quicr_namespace,
+        [[maybe_unused]] const quicr::SubscribeResult& result) override
+    {
+        printf("onsubres\n\r");
+        std::cout << "onSubscriptionResponse: name: " << quicr_namespace.to_hex()
+            << " status: " << int(static_cast<uint8_t>(result.status))
+            << std::endl;
+
+    }
+
+    void onSubscriptionEnded(
+        [[maybe_unused]] const quicr::Namespace& quicr_namespace,
+        [[maybe_unused]] const quicr::SubscribeResult::SubscribeStatus& reason)
+        override
+    {
+        printf("subended\n\r");
+    }
+
+    void onSubscribedObject([[maybe_unused]] const quicr::Name& quicr_name,
+        [[maybe_unused]] uint8_t priority,
+        [[maybe_unused]] uint16_t expiry_age_ms,
+        [[maybe_unused]] bool use_reliable_transport,
+        [[maybe_unused]] quicr::bytes&& data) override
+    {
+        printf("onsubobj\n\r");
+
+        std::cout << "onSubscribedObject:  Name: " << quicr_name.to_hex()
+            << " data sz: " << data.size() << std::endl;
+    }
+
+    void onSubscribedObjectFragment(
+        [[maybe_unused]] const quicr::Name& quicr_name,
+        [[maybe_unused]] uint8_t priority,
+        [[maybe_unused]] uint16_t expiry_age_ms,
+        [[maybe_unused]] bool use_reliable_transport,
+        [[maybe_unused]] const uint64_t& offset,
+        [[maybe_unused]] bool is_last_fragment,
+        [[maybe_unused]] quicr::bytes&& data) override
+    {
+        printf("onsubresfrag\n\r");
+    }
+
+private:
+    hactar_net::TestLogger& logger;
+};
+std::shared_ptr<SubDelegate> sub_delegate = nullptr;
+
+class PubDelegate : public quicr::PublisherDelegate
+{
+public:
+    PubDelegate(hactar_net::TestLogger& logger)
+        : logger(logger)
+    {
+    }
+    void onPublishIntentResponse(
+        [[maybe_unused]] const quicr::Namespace& quicr_namespace,
+        [[maybe_unused]] const quicr::PublishIntentResult& result) override
+    {
+        printf("NET - Received publish for %s", quicr_namespace.to_hex().c_str());
+    }
+
+private:
+    hactar_net::TestLogger& logger;
+};
+std::shared_ptr<PubDelegate> pub_delegate = nullptr;
+
+auto name = quicr::Name("abcd");
+
 
 // Forward declare functions
 void Setup();
 void Run();
-
-// static void HandleOutGoingSerial()
-// {
-//     ui_layer->Rx(0);
-// }
-
-// static void IRAM_ATTR gpio_isr_handler(void* arg)
-// {
-//     uint32_t gpio_num = (uint32_t) arg;
-//     xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
-// }
-
-// static void gpio_task_example(void* arg)
-// {
-//     uint32_t io_num;
-//     for(;;) {
-//         if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
-//             printf("GPIO[%"PRIu32"] intr, val: %d\n", io_num, gpio_get_level((gpio_num_t)io_num));
-//         }
-//     }
-// }
-
 
 extern "C" void app_main(void)
 {
@@ -129,11 +193,20 @@ extern "C" void app_main(void)
     // Ready for normal operations
     gpio_set_level(NET_STAT_Pin, 1);
 
+
+    logger = hactar_utils::LogManager::GetInstance();
+    logger->add_logger(new hactar_utils::ESP32SerialLogger());
+    logger->info(TAG, "Net app_main start");
+    sub_delegate = std::make_shared<SubDelegate>(test_logger);
+    pub_delegate = std::make_shared<PubDelegate>(test_logger);
+
     int32_t count = 0;
     while (1)
     {
         gpio_set_level(LED_R_Pin, next);
         next = next ? 0 : 1;
+        Run();
+
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
@@ -143,26 +216,46 @@ void Setup()
     logger = hactar_utils::LogManager::GetInstance();
     logger->add_logger(new hactar_utils::ESP32SerialLogger());
     logger->info(TAG, "Net app_main start");
-
-    esp_event_loop_create_default();
-
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
-    {
-        logger->warn(TAG, "net - nvs_flash_init - no free-pages/version issue");
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        err = nvs_flash_init();
-    }
-
-    ESP_ERROR_CHECK(err);
-
-    // Wifi setup
-    // wifi.init();
-    // TODO wifi messages from the serial manager
 }
 
 void Run()
 {
     static bool subscribed = false;
-    // wifi_monitor();
+    auto state = hactar_utils::Wifi::GetInstance()->GetState();
+
+    if (state != hactar_utils::Wifi::State::Connected)
+        return;
+
+    if (qclient == nullptr)
+    {
+        char default_relay [] = "192.168.50.19";
+        auto relay_name = default_relay;
+        uint16_t port = 33434;
+
+        quicr::RelayInfo relay{
+            .hostname = relay_name,
+                .port = port,
+                .proto = quicr::RelayInfo::Protocol::UDP
+        };
+        qclient = new quicr::QuicRClient(relay, {}, test_logger);
+    }
+    else
+    {
+        quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);
+        if (subscribed)
+        {
+            qclient->publishNamedObject(nspace.name(), 0, 10000, false, {'h', 'e', 'l', 'l', 'o', '!'});
+            return;
+        }
+
+        qclient->publishIntent(pub_delegate, nspace, "origin_url", "auth_token", {});
+
+        logger->info(TAG, "Subscribe\n");
+        std::cout << "Subscribe to " << nspace.to_hex() << std::endl;
+        quicr::SubscribeIntent intent = quicr::SubscribeIntent::immediate;
+        quicr::bytes empty;
+        qclient->subscribe(
+            sub_delegate, nspace, intent, "origin_url", false, "auth_token", std::move(empty));
+        subscribed = true;
+    }
 }
