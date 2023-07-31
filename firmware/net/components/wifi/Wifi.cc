@@ -89,20 +89,15 @@ esp_err_t Wifi::ScanNetworks(Vector<String>* ssids)
         .show_hidden = true
     };
 
-    printf("Net - Before scanning network\r\n");
     esp_err_t res = esp_wifi_scan_start(NULL, true);
-    printf("Net - After scanning network\r\n");
     if (res != ESP_OK) return res;
 
     wifi_ap_record_t wifi_records[MAX_AP];
     uint16_t num_aps = MAX_AP;
 
-    printf("Net - Before get ap records\r\n");
     res = esp_wifi_scan_get_ap_records(&num_aps, wifi_records);
-    printf("Net - After get ap records, %d\r\n", num_aps);
     for (uint16_t i = 0; i < num_aps; ++i)
     {
-        printf("Net - create ap string");
         String str;
         char* ch = (char*)wifi_records[i].ssid;
         while (*ch != '\0')
@@ -131,11 +126,8 @@ esp_err_t Wifi::Initialize()
         status = nvs_flash_init();
     }
 
-    printf("here1\n\r");
     status = esp_netif_init();
-    printf("here2\n\r");
     status = esp_event_loop_create_default();
-    printf("here3\n\r");
 
     if (status == ESP_OK)
     {
@@ -143,13 +135,11 @@ esp_err_t Wifi::Initialize()
         {
             status = ESP_FAIL;
         }
-        printf("here4\n\r");
     }
 
     if (status == ESP_OK)
     {
         status = esp_wifi_init(&wifi_init_cfg);
-        printf("here5\n\r");
     }
 
     if (status == ESP_OK)
@@ -159,7 +149,6 @@ esp_err_t Wifi::Initialize()
             &EventHandler,
             nullptr,
             nullptr);
-        printf("here5\n\r");
     }
 
     if (status == ESP_OK)
@@ -169,15 +158,11 @@ esp_err_t Wifi::Initialize()
             &EventHandler,
             nullptr,
             nullptr);
-        printf("here7\n\r");
-
     }
 
     if (status == ESP_OK)
     {
         status = esp_wifi_set_mode(WIFI_MODE_STA);
-        printf("here8\n\r");
-
     }
 
     if (status == ESP_OK)
@@ -187,19 +172,16 @@ esp_err_t Wifi::Initialize()
         wifi_cfg.sta.pmf_cfg.required = false;
 
         status = esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg);
-        printf("here9\n\r");
     }
 
     if (status == ESP_OK)
     {
         status = esp_wifi_start();
-        printf("here10\n\r");
     }
 
     if (ESP_OK == status)
     {
         state = State::Initialized;
-        printf("here11\n\r");
     }
 
     return status;

@@ -164,20 +164,24 @@ int main(void)
     HAL_GPIO_WritePin(UI_DBG3_Port, UI_DBG3_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_DBG4_Port, UI_DBG4_Pin, GPIO_PIN_SET);
 
+    screen.FillScreen(C_BLACK);
+
+    screen.FillRectangle(50, 0, 58, 8, C_WHITE);
+    screen.FillRectangleFree(0, 0, 8, 8, C_WHITE);
 
     while (1)
     {
-        ui_manager->Run();
+        // ui_manager->Run();
 
-        rx_led.Timeout();
-        tx_led.Timeout();
+        // rx_led.Timeout();
+        // tx_led.Timeout();
 
-        if (HAL_GetTick() > blink)
-        {
-            blink = HAL_GetTick() + 5000;
-            HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
-            HAL_UART_Transmit(&huart1, test_message, 10, 1000);
-        }
+        // if (HAL_GetTick() > blink)
+        // {
+        //     blink = HAL_GetTick() + 5000;
+        //     HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
+        //     HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+        // }
     }
 
     return 0;

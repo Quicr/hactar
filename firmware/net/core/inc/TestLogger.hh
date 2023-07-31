@@ -8,6 +8,8 @@ namespace hactar_net
 class TestLogger : public qtransport::LogHandler
 {
 public:
+  TestLogger();
+  ~TestLogger();
   void log(qtransport::LogLevel level, const std::string& string) override;
 
 private:

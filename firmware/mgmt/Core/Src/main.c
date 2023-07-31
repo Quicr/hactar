@@ -18,6 +18,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+// TODO add messages that to the monitor
+
 #define BAUD 115200
 #define UI_RECEIVE_BUFF_SZ 20
 #define UI_TRANSMIT_BUFF_SZ UI_RECEIVE_BUFF_SZ * 2

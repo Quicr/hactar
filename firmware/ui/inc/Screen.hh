@@ -97,6 +97,7 @@ public:
     void WriteData(uint8_t* data, uint32_t data_size);
     void WriteData(uint8_t data);
     void WriteDataDMA(uint8_t* data, const uint32_t data_size);
+    void WriteDataDMAFree(uint8_t* data, const uint32_t data_size);
     void SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_end,
                            uint16_t y_end);
     void SetOrientation(Orientation _orientation);
@@ -172,6 +173,13 @@ public:
                        uint16_t y_end,
                        const uint16_t colour,
                        uint32_t max_chunk_size=Max_Chunk_Size);
+
+    void FillRectangleFree(const uint16_t x_start,
+                       const uint16_t y_start,
+                       uint16_t x_end,
+                       uint16_t y_end,
+                       const uint16_t colour);
+
     void FillScreen(const uint16_t colour);
 
     void FillTriangle(const uint16_t x1, const uint16_t y1,
@@ -197,7 +205,13 @@ public:
     uint16_t GetStringCenter(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringCenterMargin(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringLeftDistanceFromRightEdge(const uint16_t str_len, const Font& font) const;
+
+    void DrawNext();
 private:
+    void PushVariable(const void* data, const uint16_t idx, const uint16_t sz);
+    void* GetVariable(const uint16_t start_idx, const uint16_t sz);
+    static void FillRectangleProcedure(Screen* screen);
+
     static constexpr uint32_t Max_Chunk_Size = 16384U;
     static constexpr uint32_t Chunk_Buffer_Size = 256UL;
 
@@ -214,5 +228,8 @@ private:
     uint16_t view_height;
     uint16_t view_width;
     uint8_t chunk_buffer[Chunk_Buffer_Size * 2]; // TODO use this more
-    volatile uint8_t spi_busy = 0;
+    uint8_t data_buffer[128];
+    volatile bool spi_busy;
+    volatile bool draw_free;
+    void* Drawing_Function;
 };
