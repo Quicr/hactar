@@ -166,8 +166,7 @@ int main(void)
 
     screen.FillScreen(C_BLACK);
 
-    screen.FillRectangle(50, 0, 58, 8, C_WHITE);
-    screen.FillRectangleFree(0, 0, 8, 8, C_WHITE);
+    screen.FillRectangleFree(0, 0, screen.ViewWidth(), screen.ViewHeight(), C_WHITE);
 
     while (1)
     {

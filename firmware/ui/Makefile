@@ -21,7 +21,7 @@ TARGET = firmware
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Og
+OPT = -O0
 # OPT = -O3
 
 #######################################
@@ -40,7 +40,7 @@ WRITE_START = 0x08000000
 PROGRAMMER = CUBE
 PORT = /dev/ttyUSB0
 BAUD = 115200
-# CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=hotplug ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=hotplug ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
 CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
 
 
@@ -274,6 +274,11 @@ upload:
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
 	fi \
 
+upload_swd:
+	if [ ${PROGRAMMER} = CUBE ] ; then \
+		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS_SWD} ; \
+	fi \
+
 program: compile upload
 
 info:
@@ -294,6 +299,9 @@ openocd:
 monitor:
 	python ../tools/command_sender.py ${PORT} ${BAUD} debug
 	screen ${PORT} ${BAUD}
+
+py_monitor:
+	python ../tools/monitor.py ${PORT} ${BAUD}
 
 #######################################
 # clean up
