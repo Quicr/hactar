@@ -2,6 +2,7 @@
 #include "Helper.h"
 #include "Screen.hh"
 #include "RingBuffer.hh"
+#include "main.hh"
 
 #define DELAY HAL_MAX_DELAY
 
@@ -22,6 +23,7 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     chunk_buffer({ 0 }),
     spi_busy(0),
     draw_free(0),
+    draw_stop(0),
     Drawing_Function(nullptr)
 {
 }
@@ -980,6 +982,14 @@ void Screen::ReleaseSPI()
     {
         DrawNext();
     }
+
+    if (!draw_free && draw_stop)
+    {
+        // Give time for the ili9341 to finish drawing
+        HAL_Delay(1);
+        Deselect();
+        draw_stop = 0;
+    }
 }
 
 uint16_t Screen::GetStringWidth(const uint16_t str_len, const Font& font) const
@@ -1138,6 +1148,7 @@ void Screen::FillRectangleFree(const uint16_t x_start,
 
     Drawing_Function = (void*)&FillRectangleProcedure;
     draw_free = 1;
+    Select();
 
     DrawNext();
 }
@@ -1192,8 +1203,8 @@ void Screen::FillRectangleProcedure(Screen* screen)
     uint16_t x_current = *(uint16_t*)screen->GetVariable(10, 2);
     uint16_t y_current = *(uint16_t*)screen->GetVariable(12, 2);
 
-    uint16_t x_width = x_current + 16;
-    uint16_t y_height = y_current + 16;
+    uint16_t x_width = x_current + 32;
+    uint16_t y_height = y_current + 32;
     if (x_width > x_end)
         x_width = x_end;
 
@@ -1201,12 +1212,11 @@ void Screen::FillRectangleProcedure(Screen* screen)
         y_height = y_end;
 
     // Select the writable pixels
-    screen->Select();
-    screen->SetWritablePixels(x_current, y_current, x_width-1, y_height-1);
+    screen->SetWritablePixels(x_current, y_current, x_width - 1, y_height - 1);
 
-    uint16_t num_pixels = (x_width - x_current) * (y_height - y_current);
+    uint16_t num_pixels = ((x_width - x_current) * (y_height - y_current)) * 2;
 
-    for (uint16_t i = 0; i < num_pixels; ++i)
+    for (uint16_t i = 0; i < num_pixels; i+=2)
     {
         screen->chunk_buffer[i] = static_cast<uint8_t>(colour >> 8);
         screen->chunk_buffer[i + 1] = static_cast<uint8_t>(colour);
@@ -1218,20 +1228,21 @@ void Screen::FillRectangleProcedure(Screen* screen)
     x_current += (x_width - x_current);
     if (x_current >= x_end)
     {
-        x_current = *(uint16_t*)screen->GetVariable(0, 2);
         y_current += (y_height - y_current);
+
+        if (y_current >= y_end)
+        {
+            // Stop
+            screen->draw_free = 0;
+            screen->draw_stop = 1;
+            return;
+        }
         screen->PushVariable((void*)&y_current, 12, 2);
+
+        // Reset to the original x position
+        x_current = *(uint16_t*)screen->GetVariable(0, 2);
     }
 
-    if (x_current >= x_end && y_current >= y_end)
-    {
-        // Stop
-        screen->draw_free = 0;
-        screen->Deselect();
-    }
-    else
-    {
-        // Push data back onto the buffer
-        screen->PushVariable((void*)&x_current, 10, 2);
-    }
+    // Push data back onto the buffer
+    screen->PushVariable((void*)&x_current, 10, 2);
 }

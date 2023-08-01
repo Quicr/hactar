@@ -213,7 +213,7 @@ private:
     static void FillRectangleProcedure(Screen* screen);
 
     static constexpr uint32_t Max_Chunk_Size = 16384U;
-    static constexpr uint32_t Chunk_Buffer_Size = 256UL;
+    static constexpr uint32_t Chunk_Buffer_Size = 2048UL;
 
     void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
               uint16_t &y_end);
@@ -231,5 +231,6 @@ private:
     uint8_t data_buffer[128];
     volatile bool spi_busy;
     volatile bool draw_free;
+    volatile bool draw_stop;
     void* Drawing_Function;
 };
