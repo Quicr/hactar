@@ -167,20 +167,27 @@ int main(void)
     screen.FillScreen(C_BLACK);
 
     screen.FillRectangleFree(0, 0, screen.ViewWidth(), screen.ViewHeight(), C_WHITE);
+    screen.FillRectangleFree(50, 50, 100, 100, C_GREEN);
+    screen.FillRectangleFree(100, 100, screen.ViewWidth(), screen.ViewHeight(), C_BLACK);
+    screen.FillRectangleFree(30, 10, 50, 15, C_RED);
+    screen.FillRectangleFree(200, 10, 220, 30, C_BLUE);
+    screen.FillRectangleFree(0, 0, 20, 10, C_CYAN);
 
     while (1)
     {
+        // TODO put this into a timer?
+        screen.Loop();
         // ui_manager->Run();
 
         // rx_led.Timeout();
         // tx_led.Timeout();
 
-        // if (HAL_GetTick() > blink)
-        // {
-        //     blink = HAL_GetTick() + 5000;
-        //     HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
-        //     HAL_UART_Transmit(&huart1, test_message, 10, 1000);
-        // }
+        if (HAL_GetTick() > blink)
+        {
+            blink = HAL_GetTick() + 1000;
+            HAL_GPIO_TogglePin(LED_R_Port, LED_R_Pin);
+            // HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+        }
     }
 
     return 0;

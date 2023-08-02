@@ -4,6 +4,7 @@
 #include "PortPin.hh"
 #include "Font.hh"
 #include "String.hh"
+#include "RingMatrix.hh"
 
 #define SF_RST 0x01 // Software reset
 #define PWRC_A 0xCB // Power control A
@@ -91,6 +92,7 @@ public:
     void Select();
     void Deselect();
     void Reset();
+    void Loop();
 
     // TODO move these to private?
     void WriteCommand(uint8_t command);
@@ -206,14 +208,20 @@ public:
     uint16_t GetStringCenterMargin(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringLeftDistanceFromRightEdge(const uint16_t str_len, const Font& font) const;
 
-    void DrawNext();
+    inline void DrawNext();
 private:
+    void PushDrawingFunction(void* func);
+    void UpdateDrawingFunction(void* func);
+    void PopDrawingFunction();
+
     void PushVariable(const void* data, const uint16_t idx, const uint16_t sz);
-    void* GetVariable(const uint16_t start_idx, const uint16_t sz);
+    void* PopVariable(const uint16_t start_idx, const uint16_t sz);
+    static void FillRectangleStart(Screen* screen);
     static void FillRectangleProcedure(Screen* screen);
 
+
     static constexpr uint32_t Max_Chunk_Size = 16384U;
-    static constexpr uint32_t Chunk_Buffer_Size = 2048UL;
+    static constexpr uint32_t Chunk_Buffer_Size = 1024UL;
 
     void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
               uint16_t &y_end);
@@ -232,5 +240,11 @@ private:
     volatile bool spi_busy;
     volatile bool draw_free;
     volatile bool draw_stop;
+
+    RingMatrix draw_matrix;
+    uint32_t drawing_func_read = 0;
+    uint32_t drawing_func_write = 0;
+    bool ready = 0;
+    void** Drawing_Func_Ring;
     void* Drawing_Function;
 };

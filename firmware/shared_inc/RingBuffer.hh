@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 template <typename T>
 class RingBuffer
 {
