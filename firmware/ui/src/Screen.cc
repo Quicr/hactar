@@ -24,6 +24,7 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     spi_busy(0),
     draw_free(0),
     draw_stop(0),
+    Drawing_Func_Ring(new void* [8]),
     Drawing_Function(nullptr)
 {
 }
@@ -980,15 +981,28 @@ void Screen::ReleaseSPI()
 
     if (draw_free)
     {
-        DrawNext();
+        ready = 1;
     }
 
-    if (!draw_free && draw_stop)
+    if (draw_stop)
     {
         // Give time for the ili9341 to finish drawing
-        HAL_Delay(1);
-        Deselect();
+        draw_matrix.Swap();
         draw_stop = 0;
+        if (++drawing_func_read >= 8)
+        {
+            drawing_func_read = 0;
+        }
+
+        if (Drawing_Func_Ring[drawing_func_read] != nullptr)
+        {
+            ready = 1;
+        }
+        else
+        {
+            ready = 0;
+            Deselect();
+        }
     }
 }
 
@@ -1138,19 +1152,36 @@ void Screen::FillRectangleFree(const uint16_t x_start,
     if (x_end >= view_width) x_end = view_width;
     if (y_end >= view_height) y_end = view_height;
 
-    PushVariable((void*)&x_start, 0, 2);
-    PushVariable((void*)&y_start, 2, 2);
-    PushVariable((void*)&x_end, 4, 2);
-    PushVariable((void*)&y_end, 6, 2);
-    PushVariable((void*)&colour, 8, 2);
-    PushVariable((void*)&x_start, 10, 2);
-    PushVariable((void*)&y_start, 12, 2);
+    uint32_t num_pixels = (x_end - x_start) * (y_end - y_start);
 
-    Drawing_Function = (void*)&FillRectangleProcedure;
+    draw_matrix.Allocate(15);
+
+    draw_matrix.Push(colour);
+    draw_matrix.Push(x_start);
+    draw_matrix.Push(y_start);
+    draw_matrix.Push(x_end);
+    draw_matrix.Push(y_end);
+    draw_matrix.Push(num_pixels);
+    draw_matrix.Push((uint8_t)0); // initialized = 0;
+
+    PushDrawingFunction((void*)&FillRectangleProcedure);
     draw_free = 1;
-    Select();
+    ready = 1;
+}
 
-    DrawNext();
+void Screen::PushDrawingFunction(void* func)
+{
+    Drawing_Func_Ring[drawing_func_write++] = func;
+
+    if (drawing_func_write >= 8)
+    {
+        drawing_func_write = 0;
+    }
+}
+
+void Screen::UpdateDrawingFunction(void* func)
+{
+    Drawing_Func_Ring[drawing_func_read] = func;
 }
 
 void Screen::PushVariable(const void* data,
@@ -1167,12 +1198,13 @@ void Screen::PushVariable(const void* data,
     }
 }
 
-void Screen::DrawNext()
+inline void Screen::DrawNext()
 {
-    ((void(*)())Drawing_Function)();
+    if (Drawing_Func_Ring[drawing_func_read] != nullptr)
+        ((void(*)(Screen*))Drawing_Func_Ring[drawing_func_read])(this);
 }
 
-void* Screen::GetVariable(const uint16_t start_idx, const uint16_t sz)
+void* Screen::PopVariable(const uint16_t start_idx, const uint16_t sz)
 {
     uint8_t* data = new uint8_t[sz];
 
@@ -1191,58 +1223,95 @@ void Screen::WriteDataDMAFree(uint8_t* data, const uint32_t data_size)
     HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
 }
 
-
-// TODO pixel data bug somewhere in here
-void Screen::FillRectangleProcedure(Screen* screen)
+void Screen::FillRectangleStart(Screen* screen)
 {
-    uint16_t x_end = *(uint16_t*)screen->GetVariable(4, 2);
-    uint16_t y_end = *(uint16_t*)screen->GetVariable(6, 2);
+    // uint16_t colour = *(uint16_t*)screen->PopVariable(0, 2);
+    uint16_t colour = screen->draw_matrix.Read<uint16_t>(0);
 
-    uint16_t colour = *(uint16_t*)screen->GetVariable(8, 2);
-
-    uint16_t x_current = *(uint16_t*)screen->GetVariable(10, 2);
-    uint16_t y_current = *(uint16_t*)screen->GetVariable(12, 2);
-
-    uint16_t x_width = x_current + 32;
-    uint16_t y_height = y_current + 32;
-    if (x_width > x_end)
-        x_width = x_end;
-
-    if (y_height > y_end)
-        y_height = y_end;
-
-    // Select the writable pixels
-    screen->SetWritablePixels(x_current, y_current, x_width - 1, y_height - 1);
-
-    uint16_t num_pixels = ((x_width - x_current) * (y_height - y_current)) * 2;
-
-    for (uint16_t i = 0; i < num_pixels; i+=2)
+    // Filled rectangles always use the same colour, so we can
+    // just fill the buffer now and reuse it.
+    for (uint32_t i = 0; i < 256; i += 2)
     {
         screen->chunk_buffer[i] = static_cast<uint8_t>(colour >> 8);
         screen->chunk_buffer[i + 1] = static_cast<uint8_t>(colour);
     }
 
-    // TODO remove the need to pass a buffer in and just send the num pixels
-    screen->WriteDataDMAFree(screen->chunk_buffer, num_pixels);
+    uint16_t x_start = screen->draw_matrix.Read<uint16_t>(2);
+    uint16_t y_start = screen->draw_matrix.Read<uint16_t>(4);
+    uint16_t x_end = screen->draw_matrix.Read<uint16_t>(6);
+    uint16_t y_end = screen->draw_matrix.Read<uint16_t>(8);
+    // uint16_t x_start = *(uint16_t*)screen->PopVariable(6, 2);
+    // uint16_t y_start = *(uint16_t*)screen->PopVariable(8, 2);
+    // uint16_t x_end = *(uint16_t*)screen->PopVariable(10, 2);
+    // uint16_t y_end = *(uint16_t*)screen->PopVariable(12, 2);
 
-    x_current += (x_width - x_current);
-    if (x_current >= x_end)
+    screen->Select();
+    screen->SetWritablePixels(x_start, y_start, x_end - 1, y_end - 1);
+
+    screen->ready = 1;
+    screen->UpdateDrawingFunction((void*)&FillRectangleProcedure);
+}
+
+void Screen::FillRectangleProcedure(Screen* screen)
+{
+    if (!screen->draw_matrix.Read<uint8_t>(14))
     {
-        y_current += (y_height - y_current);
+        // uint16_t colour = *(uint16_t*)screen->PopVariable(0, 2);
+        uint16_t colour = screen->draw_matrix.Read<uint16_t>(0);
 
-        if (y_current >= y_end)
+        // Filled rectangles always use the same colour, so we can
+        // just fill the buffer now and reuse it.
+        for (uint32_t i = 0; i < 256; i += 2)
         {
-            // Stop
-            screen->draw_free = 0;
-            screen->draw_stop = 1;
-            return;
+            screen->chunk_buffer[i] = static_cast<uint8_t>(colour >> 8);
+            screen->chunk_buffer[i + 1] = static_cast<uint8_t>(colour);
         }
-        screen->PushVariable((void*)&y_current, 12, 2);
 
-        // Reset to the original x position
-        x_current = *(uint16_t*)screen->GetVariable(0, 2);
+        uint16_t x_start = screen->draw_matrix.Read<uint16_t>(2);
+        uint16_t y_start = screen->draw_matrix.Read<uint16_t>(4);
+        uint16_t x_end = screen->draw_matrix.Read<uint16_t>(6);
+        uint16_t y_end = screen->draw_matrix.Read<uint16_t>(8);
+        // uint16_t x_start = *(uint16_t*)screen->PopVariable(6, 2);
+        // uint16_t y_start = *(uint16_t*)screen->PopVariable(8, 2);
+        // uint16_t x_end = *(uint16_t*)screen->PopVariable(10, 2);
+        // uint16_t y_end = *(uint16_t*)screen->PopVariable(12, 2);
+
+        screen->Select();
+        screen->SetWritablePixels(x_start, y_start, x_end - 1, y_end - 1);
+
+        screen->draw_matrix.Write<uint8_t>((uint8_t)1, 14);
+        screen->ready = 1;
+        // screen->UpdateDrawingFunction((void*)&FillRectangleProcedure);
     }
+    else
+    {
+        // uint32_t remaining_pixels = *(uint32_t*)screen->PopVariable(2, 4);
+        uint32_t remaining_pixels = screen->draw_matrix.Read<uint32_t>(10);
 
-    // Push data back onto the buffer
-    screen->PushVariable((void*)&x_current, 10, 2);
+        uint32_t num_pixels = 128;
+        if (num_pixels > remaining_pixels)
+            num_pixels = remaining_pixels;
+
+        // TODO remove the need to pass a buffer in and just send the num pixels
+
+
+        remaining_pixels -= num_pixels;
+        if (remaining_pixels == 0)
+        {
+            screen->draw_stop = 1;
+        }
+        screen->WriteDataDMAFree(screen->chunk_buffer, num_pixels * 2);
+        screen->draw_matrix.Write(remaining_pixels, 10);
+        // screen->PushVariable((void*)&remaining_pixels, 2, 4);
+    }
+}
+
+void Screen::Loop()
+{
+    if (ready)
+    {
+        ready = 0;
+
+        DrawNext();
+    }
 }
