@@ -89,8 +89,8 @@ public:
     //https://www.waveshare.com/w/upload/e/e3/ILI9341_DS.pdf
 
     void Begin();
-    void Select();
-    void Deselect();
+    inline void Select();
+    inline void Deselect();
     void Reset();
     void Loop();
 
@@ -214,9 +214,6 @@ private:
     void UpdateDrawingFunction(void* func);
     void PopDrawingFunction();
 
-    void PushVariable(const void* data, const uint16_t idx, const uint16_t sz);
-    void* PopVariable(const uint16_t start_idx, const uint16_t sz);
-    static void FillRectangleStart(Screen* screen);
     static void FillRectangleProcedure(Screen* screen);
 
 
@@ -225,6 +222,8 @@ private:
 
     void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
               uint16_t &y_end);
+
+    inline void WaitUntilSPIFree();
 
     // Variables
     SPI_HandleTypeDef *spi_handle = nullptr;
@@ -236,15 +235,13 @@ private:
     uint16_t view_height;
     uint16_t view_width;
     uint8_t chunk_buffer[Chunk_Buffer_Size * 2]; // TODO use this more
-    uint8_t data_buffer[128];
     volatile bool spi_busy;
-    volatile bool draw_free;
-    volatile bool draw_stop;
-
+    volatile bool draw_async;
+    volatile bool draw_async_stop;
+    bool buffer_overwritten_by_sync;
+    uint32_t drawing_func_read;
+    uint32_t drawing_func_write;
+    bool async_draw_ready;
     RingMatrix draw_matrix;
-    uint32_t drawing_func_read = 0;
-    uint32_t drawing_func_write = 0;
-    bool ready = 0;
     void** Drawing_Func_Ring;
-    void* Drawing_Function;
 };

@@ -177,13 +177,17 @@ int main(void)
     {
         // TODO put this into a timer?
         screen.Loop();
+
+        //
         // ui_manager->Run();
 
         // rx_led.Timeout();
         // tx_led.Timeout();
 
+        screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
+            // screen.FillScreen(C_BLACK);
             blink = HAL_GetTick() + 1000;
             HAL_GPIO_TogglePin(LED_R_Port, LED_R_Pin);
             // HAL_UART_Transmit(&huart1, test_message, 10, 1000);

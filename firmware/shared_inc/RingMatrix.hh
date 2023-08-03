@@ -56,7 +56,7 @@ public:
     void Push(T input)
     {
         // Get the size of the input data_arr
-        size_t data_size = sizeof(input);
+        size_t data_size = sizeof(T);
 
         // Cast the data into bytes
         uint8_t* byte_input = (uint8_t*)(void*)&input;
@@ -88,7 +88,7 @@ public:
     {
         // TODO error checking
 
-        uint16_t data_size = sizeof(*data_arr);
+        uint16_t data_size = sizeof(T);
 
         // Cast the data into bytes
         uint8_t* byte_input = (uint8_t*)(void*)&input;
