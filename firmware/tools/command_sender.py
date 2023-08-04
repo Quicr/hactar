@@ -2,7 +2,7 @@ import serial
 import time
 import sys
 
-if (len(sys.argv) < 3):
+if (len(sys.argv) < 4):
     print("Error. Need port followed by command")
     exit()
 
