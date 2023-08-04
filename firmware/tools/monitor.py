@@ -6,9 +6,12 @@ import time
 import signal
 import sys
 
-port = "/dev/ttyUSB0"
-baud = 115200
-command = "debug"
+if (len(sys.argv) < 3):
+    print("Error. Need port followed by baudrate")
+    exit()
+
+port = sys.argv[1]
+baud = sys.argv[2]
 
 uart = serial.Serial(
     port=port,

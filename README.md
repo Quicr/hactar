@@ -11,23 +11,26 @@ Hardware design for test device
     3. [Network](#network)
     4. [Security](#security_layer)
     5. [Echo Server](#echo_server)
+    6. [Python Serial Monitor](#serial_monitor)
 4. [Installation - STM32 Toolchain](#stm_installation)
 5. [Installation - ESP32 Toolchain](#esp_installation)
 
 <h2 id="where">Where To Find Things</h2>
 
-- datasheets has all the datasheets for parts us
+- datasheets - all the datasheets for parts used
 
-- docs has documents about this project
+- docs - documents about this project
 
-- hardware has the schematics and PCB designs
+- firmware - the code for testing and supporting the hardware
 
-- productions has files used for manufacturing that are generated from the
+- hardware - the schematics and PCB designs
+
+- models - Contains 3D models for project
+
+- photos - image from the project as it progresses
+
+- productions - files used for manufacturing that are generated from the
 stuff in hardware
-
-- photos has image from the project as it progresses
-
-- firmware has the code for testing and supporting the hardware
 
 <h2 id="hardware">Hardware</h2>
 
@@ -40,12 +43,25 @@ stuff in hardware
 The Firmware is split into 4 categories. Management, User Interface, Security, and Network.
 - Management - STM32F072
 - User Interface - STM32F405
-- Security - STM32F405?
 - Network - ESP32S3
 
 <h3 id="management"><b>Management</b></h3>
 
-WIP
+The management chip is responsible for uploading firmware to the stm32 - main chip and the esp32 network chip using a ch340 usb chip.
+
+The management chip receives commands from the usb communication that informs it what chip we are currently uploading.
+
+<h4 id="management_commands">Commands</h4>
+
+- **reset** - Resets `ui` chip and then `net` chip. Accepts commands.
+- **ui_upload** - Puts the management chip into `ui` chip upload mode. (STM32f05)
+- **net_upload** - Puts the management chip into `net` chip upload mode. (ESP32S3)
+- **debug** - Puts the management chip into debugging mode where serial messages from both `ui` and network chips are transmitted back to the usb interface. This is uni-directional from the management chip to the computer. However, all commands work during this mode. In the future sending messages to the `ui` and `net` chip will be supported
+- **debug_ui** (future feature) - Only reads serial messages from the `ui` chip.
+- **debug_net** (future feature) - Only reads serial messages from the `net` chip.
+- **debug_ui_only** (future feature) - Puts the `ui` chip into normal mode, holds the `net` chip in reset mode, and allows for serial communication to the `ui` chip.
+- **debug_net_only** (future feature) - Puts the `net` chip into normal mode, holds the `ui` chip in reset mode, and allows for serial communication to the `net` chip.
+
 
 <h3 id="ui"><b>User Interface</b></h3>
 
@@ -57,9 +73,15 @@ The User Interface chip is where most of the processing takes place. It utilizes
 
 - `compile` - Builds the target bin, elf, and binary. Output firmware/build/ui
 
-- `upload` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
+- `upload` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI with serial usb-c uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
+
+- `upload_swd` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI with swd uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
 
 - `program` - Runs the compile target, then the upload target.
+
+- `monitor` - Opens a serial communication line with the management chip in debug mode using screen.
+
+- `py_monitor` - Opens a serial communication line with the management chip with a python script that allows for sending of commands.
 
 - `openocd` - Opens a openocd debugging instance. See [Installation](#stm_installation) for instructions on installing openocd.
 
@@ -83,39 +105,48 @@ Additionally, any new Assembly source files need to be added to the ASM sources 
 
 The network chip is responsible for all communications between servers and the entire board. The network chip communicates with the UI chip via UART serial communication.
 
-You must run the `make install_board` prior to trying to run `compile`, `upload`, or `program` targets.
+We are leveraging the **esp-idf** framework.
 
 <b>Target Overview</b>
 
 - `all` - Runs the `compile` and `upload` targets.
 
-- `copy` - Copies the shared includes from `firmware/shared_inc` to `firmware/net/shared_inc` to appease Arduino's rigid source file locations rules.
+- `compile` - Compiles the net code using the command `idf.py compile`
 
-- `compile` - Executes the `copy` target and then builds the Arduino target ino file with `Arduino-cli`. Output: `firmware/build/net`
-
-- `upload` - Uploads the Arduino target to the Network chip using the Arduino-cli. See [installation](#esp_installation) for instructions on installing the `Arduino-cli`.
+- `upload` - Uploads the net code by first sending a command to the mgmt chip to put the board into **net upload** mode. Then uses `esptool.py upload`
 
 - `program` - Runs the compile target, then the upload target.
 
-- `monitor` - Opens a serial monitor using `Arduino-cli`
+- `monitor` - Opens a serial communication line with the management chip in debug mode using screen.
 
-- `install_board` - Updates the arduino core index specified by the arduino-cli.yaml file and installs the specified Arduino-core files for the given core.
+- `py_monitor` - Opens a serial communication line with the management chip with a python script that allows for sending of commands.
 
-- `clean` - Deletes the firmware/build/net directory.
+- `clean` - Deletes the firmware/net/build directory.
 
 <b>Source code</b>
 
 All source code for the network chip can be found in `firmware/net` and `firmware/shared_inc`.
-
-<b>Important Note</b> -- Do not add any additional files to `firmware/net/shared_inc` this is an important distinction, as those files are copied from `firmware/shared_inc` as to adhere to Arduino's rigid source file locations.
-
-Adding a C/C++ file to firmware/net/inc and firmware/net/src does not require any additional changes to the `firmware/net/Makefile`. Similarly, any files added to `firmware/shared_inc` will be copied when the `copy` target is executed in the `firmware/net/makefile`.
 
 <h3 id="security"><b>Security</b></h3>
 
 WIP
 
 <h3 id="echo_server"><b>Echo Server</b></h3>
+    Very basic server that echo's the message it receives.
+
+<h3 id="serial_monitor"><b>Python Serial Monitor</b></h3>
+
+Located in firmware/tools
+
+Requirements
+- py_serial - ```pip install py_serial```
+
+This monitor can be used by the following command:
+`python monitor.py \[port] \[baudrate]`
+
+ex.
+
+`python monitor.py /dev/ttyUSB0 115200`
 
 <h2 id="stm_installation">Installation - STM32 Toolchain</h2>
 
@@ -261,7 +292,7 @@ This project leverages the usage of the Arduino Library for the network chip.
 
 The following tools are used for the Network.
 - [Make](net_make) \[required]
-- [Arduino CLI](arduino_cli) \[required]
+- [esp-idf](esp_idf) \[required]
 
 <b id="net_make">Make \[required]</b>
 
@@ -296,23 +327,17 @@ sudo apt install make
 brew install make
 ```
 
-<b id="arduino_cli">Arduino CLI \[required]</b>
+<b id="esp_idf">esp-idf \[required]</b>
 
 <i>Debian</i>
-```bash
-curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/local/bin sh
-```
 
-<b>Note</b> - You can change the installation directory by changing the `BINDIR`
+- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html
 
 <i>Windows</i>
 
-- Download and install the arduino-cli from https://arduino.github.io/arduino-cli/0.31/installation/
+- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html
 
 
 <i>MacOS</i>
 
-```brew
-brew update
-brew install arduino-cli
-```
+- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html
