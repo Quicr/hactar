@@ -16,4 +16,10 @@ protected:
     void AnimatedDraw();
     void Draw();
     void HandleInput();
+
+private:
+    void SendGetSSIDPacket();
+
+    uint8_t last_num_ssids;
+    uint32_t next_get_ssid_timeout;
 };

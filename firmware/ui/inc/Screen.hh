@@ -176,13 +176,13 @@ public:
                        const uint16_t colour,
                        uint32_t max_chunk_size=Max_Chunk_Size);
 
-    void FillRectangleFree(const uint16_t x_start,
-                       const uint16_t y_start,
-                       uint16_t x_end,
-                       uint16_t y_end,
-                       const uint16_t colour);
+    void FillRectangleAsync(const uint16_t x_start,
+                            const uint16_t y_start,
+                            uint16_t x_end,
+                            uint16_t y_end,
+                            const uint16_t colour);
 
-    void FillScreen(const uint16_t colour);
+    void FillScreen(const uint16_t colour, bool async=false);
 
     void FillTriangle(const uint16_t x1, const uint16_t y1,
                       const uint16_t x2, const uint16_t y2,
@@ -214,7 +214,7 @@ private:
     void UpdateDrawingFunction(void* func);
     void PopDrawingFunction();
 
-    static void FillRectangleProcedure(Screen* screen);
+    static void FillRectangleAsyncProcedure(Screen* screen);
 
 
     static constexpr uint32_t Max_Chunk_Size = 16384U;

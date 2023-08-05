@@ -5,6 +5,7 @@
 #include "LoginView.hh"
 #include "TeamView.hh"
 #include "SettingsView.hh"
+#include "WifiView.hh"
 
 CommandHandler::CommandHandler(UserInterfaceManager* manager) :
     manager(manager)
@@ -24,6 +25,8 @@ bool CommandHandler::ChangeViewCommand(const String& command)
         return manager->ChangeView<TeamView>();
     else if (command == "/s")
         return manager->ChangeView<SettingsView>();
+    else if (command == "/wifi")
+        return manager->ChangeView<WifiView>();
 
     return false;
 }

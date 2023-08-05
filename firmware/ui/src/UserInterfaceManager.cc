@@ -11,10 +11,10 @@
 
 // Init the static var
 
-UserInterfaceManager::UserInterfaceManager(Screen &screen,
-                                           Q10Keyboard &keyboard,
-                                           SerialInterface &net_interface,
-                                           EEPROM& eeprom) :
+UserInterfaceManager::UserInterfaceManager(Screen& screen,
+    Q10Keyboard& keyboard,
+    SerialInterface& net_interface,
+    EEPROM& eeprom) :
     screen(&screen),
     keyboard(&keyboard),
     net_layer(&net_interface),
@@ -56,21 +56,6 @@ void UserInterfaceManager::Run()
     }
 
     // TODO move into some sort of update function
-    if (current_time > last_wifi_check)
-    {
-        // Check a check wifi status packet
-        Packet* check_wifi = new Packet();
-        check_wifi->SetData(Packet::Types::Command, 0, 6);
-        check_wifi->SetData(NextPacketId(), 6, 8);
-        check_wifi->SetData(1, 14, 10);
-        check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
-
-        EnqueuePacket(check_wifi);
-
-        last_wifi_check = current_time + 10000;
-        uint8_t message[] = "UI: Send check wifi to esp\n\r";
-        HAL_UART_Transmit(&huart1, message, sizeof(message)/sizeof(char), 1000);
-    }
     // if (current_time > last_test_packet && is_connected_to_wifi)
     // {
     //     SendTestPacket();
@@ -339,4 +324,22 @@ void UserInterfaceManager::SendTestPacket()
     test_packet->SetData('o', 56, 8);
 
     EnqueuePacket(test_packet);
+}
+
+void UserInterfaceManager::SendCheckWifiPacket()
+{
+    if (current_time < last_wifi_check) return;
+
+    // Check a check wifi status packet
+    Packet* check_wifi = new Packet();
+    check_wifi->SetData(Packet::Types::Command, 0, 6);
+    check_wifi->SetData(NextPacketId(), 6, 8);
+    check_wifi->SetData(1, 14, 10);
+    check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
+
+    EnqueuePacket(check_wifi);
+
+    last_wifi_check = current_time + 10000;
+    uint8_t message [] = "UI: Send check wifi to esp\n\r";
+    HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);
 }
