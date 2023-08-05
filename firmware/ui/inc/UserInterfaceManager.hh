@@ -83,6 +83,7 @@ private:
         const SerialManager::SerialStatus status) const;
 
     void SendTestPacket();
+    void SendCheckWifiPacket();
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 

@@ -164,30 +164,20 @@ int main(void)
     HAL_GPIO_WritePin(UI_DBG3_Port, UI_DBG3_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_DBG4_Port, UI_DBG4_Pin, GPIO_PIN_SET);
 
-    screen.FillScreen(C_BLACK);
-
-    screen.FillRectangleFree(0, 0, screen.ViewWidth(), screen.ViewHeight(), C_WHITE);
-    screen.FillRectangleFree(50, 50, 100, 100, C_GREEN);
-    screen.FillRectangleFree(100, 100, screen.ViewWidth(), screen.ViewHeight(), C_BLACK);
-    screen.FillRectangleFree(30, 10, 50, 15, C_RED);
-    screen.FillRectangleFree(200, 10, 220, 30, C_BLUE);
-    screen.FillRectangleFree(0, 0, 20, 10, C_CYAN);
-
     while (1)
     {
         // TODO put this into a timer?
-        screen.Loop();
 
         //
-        // ui_manager->Run();
+        ui_manager->Run();
 
-        // rx_led.Timeout();
-        // tx_led.Timeout();
+        rx_led.Timeout();
+        tx_led.Timeout();
 
-        screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
+        // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
-            // screen.FillScreen(C_BLACK);
+            // screen.FillScreen(C_BLACKx`);
             blink = HAL_GetTick() + 1000;
             HAL_GPIO_TogglePin(LED_R_Port, LED_R_Pin);
             // HAL_UART_Transmit(&huart1, test_message, 10, 1000);
@@ -492,7 +482,7 @@ static void KeyboardTimerInit()
     htim2.Instance = TIM2;
     htim2.Init.Prescaler = 1600;
     htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim2.Init.Period = 1000;
+    htim2.Init.Period = 100;
     htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 
@@ -524,8 +514,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
+        // screen.Loop();
+
         // Poll the keyboard and have the keys saved in the internal rx_buffer
-        // keyboard->Read();
+        // TODO why was this commented out??
+        keyboard->Read();
     }
 }
 

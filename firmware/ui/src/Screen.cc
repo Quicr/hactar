@@ -937,9 +937,16 @@ void Screen::FillTriangle(const uint16_t x1, const uint16_t y1,
     FillPolygon(3, points, colour);
 }
 
-void Screen::FillScreen(const uint16_t colour)
+void Screen::FillScreen(const uint16_t colour, bool async)
 {
-    FillRectangle(0, 0, view_width, view_height, colour);
+    if (async)
+    {
+        FillRectangleAsync(0, 0, view_width, view_height, colour);
+    }
+    else
+    {
+        FillRectangle(0, 0, view_width, view_height, colour);
+    }
 }
 
 void Screen::SetOrientation(Orientation _orientation)
@@ -1142,7 +1149,7 @@ uint16_t Screen::ViewHeight() const
 }
 
 
-void Screen::FillRectangleFree(const uint16_t x_start,
+void Screen::FillRectangleAsync(const uint16_t x_start,
     const uint16_t y_start,
     uint16_t x_end,
     uint16_t y_end,
@@ -1168,7 +1175,7 @@ void Screen::FillRectangleFree(const uint16_t x_start,
     draw_matrix.Push(num_pixels);
     draw_matrix.Push((uint8_t)0); // initialized = 0;
 
-    PushDrawingFunction((void*)&FillRectangleProcedure);
+    PushDrawingFunction((void*)&FillRectangleAsyncProcedure);
     draw_async = 1;
     async_draw_ready = 1;
 }
@@ -1199,7 +1206,7 @@ void Screen::WriteDataDMAFree(uint8_t* data, const uint32_t data_size)
     HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
 }
 
-void Screen::FillRectangleProcedure(Screen* screen)
+void Screen::FillRectangleAsyncProcedure(Screen* screen)
 {
     screen->draw_async = 1;
     uint16_t x_end = screen->draw_matrix.Read<uint16_t>(6);
