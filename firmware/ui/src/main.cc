@@ -139,7 +139,7 @@ int main(void)
     KeyboardTimerInit();
 
     // Create the keyboard object
-    keyboard = new Q10Keyboard(col_pins, row_pins, 500, 100, &htim2);
+    keyboard = new Q10Keyboard(col_pins, row_pins, 200, 100, &htim2);
 
     // Initialize the keyboard
     keyboard->Begin();
@@ -150,7 +150,6 @@ int main(void)
 
     SerialManager serial(net_serial_interface);
 
-    // Run once before entering the Main loop
     ui_manager->Run();
 
     uint32_t blink = 0;
@@ -457,7 +456,8 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
     UNUSED(huart);
     UNUSED(size);
     net_serial_interface->RxEvent(size);
-    rx_led.On();
+    HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
+    // rx_led.On();
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)

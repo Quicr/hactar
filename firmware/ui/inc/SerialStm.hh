@@ -24,7 +24,7 @@ private:
     void StartRx();
 
     // Constant variables
-    const uint16_t Rx_Buff_Size = 32;
+    const uint16_t Rx_Buff_Size = 128;
 
     UART_HandleTypeDef* uart;
 
