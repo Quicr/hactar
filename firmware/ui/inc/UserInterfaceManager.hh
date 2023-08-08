@@ -41,6 +41,7 @@ public:
     uint32_t GetRxStatusColour() const;
 
     const std::map<uint8_t, String>& SSIDs() const;
+    void ClearSSIDs();
     bool IsConnectedToWifi() const;
 
     uint8_t NextPacketId();

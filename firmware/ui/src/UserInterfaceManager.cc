@@ -55,6 +55,8 @@ void UserInterfaceManager::Run()
         return;
     }
 
+    SendCheckWifiPacket();
+
     // TODO move into some sort of update function
     // if (current_time > last_test_packet && is_connected_to_wifi)
     // {
@@ -227,6 +229,11 @@ uint32_t UserInterfaceManager::GetRxStatusColour() const
 const std::map<uint8_t, String>& UserInterfaceManager::SSIDs() const
 {
     return ssids;
+}
+
+void UserInterfaceManager::ClearSSIDs()
+{
+    ssids.clear();
 }
 
 void UserInterfaceManager::ConnectToWifi()

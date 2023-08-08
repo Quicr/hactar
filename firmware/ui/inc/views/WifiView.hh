@@ -20,6 +20,16 @@ protected:
 private:
     void SendGetSSIDPacket();
 
-    uint8_t last_num_ssids;
+    enum WifiState {
+        SSID,
+        Password
+    };
+
+
+    int8_t last_num_ssids;
     uint32_t next_get_ssid_timeout;
+    WifiState state;
+    String request_msg;
+    String ssid;
+    String password;
 };
