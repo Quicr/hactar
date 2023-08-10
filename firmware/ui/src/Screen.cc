@@ -35,6 +35,7 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
 
 Screen::~Screen()
 {
+    delete [] Drawing_Func_Ring;
 }
 
 void Screen::Begin()
@@ -415,9 +416,11 @@ void Screen::DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour
 
     SetWritablePixels(x, y, x, y);
 
+    uint8_t data[2] = { static_cast<uint8_t>(colour>>8),
+                        static_cast<uint8_t>(colour)};
+
     // Draw pixel
-    WriteDataDMA(new uint8_t[2]{ static_cast<uint8_t>(colour >> 8),
-                                 static_cast<uint8_t>(colour) }, 2);
+    WriteDataDMA(data, 2);
 
     Deselect();
 }
@@ -627,6 +630,8 @@ void Screen::DrawText(const uint16_t x, const uint16_t y, const String& str,
     const uint32_t height = font.height;
     const uint32_t lines = 1 + ((font.width * str.length()) / (view_width - x));
 
+    // TODO move to using the chunk buffer instead of creating an array
+    // during runtime.
     // Get the chunk size
     const uint32_t chunk = std::min<uint32_t>(width * height, max_chunk_size);
     uint32_t data_idx = 0;
@@ -906,7 +911,6 @@ void Screen::FillRectangle(const uint16_t x_start,
     uint32_t total_pixels = y_pixels * x_pixels;
 
     uint32_t chunk = std::min<uint32_t>(total_pixels, 128);
-    // uint8_t* data = new uint8_t[chunk * 2];
 
     // Copy colour to data
     for (uint32_t i = 0; i < chunk * 2; i += 2)

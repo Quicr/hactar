@@ -90,8 +90,11 @@ void SerialEsp::RxEvent(void* parameter)
 
                 for (size_t i = 0; i < event.size; ++i)
                 {
+                    printf("%d ", (int)buff[i]);
                     serial->rx_ring.Write(buff[i]);
                 }
+                printf("\n\r");
+
 
                 break;
             }

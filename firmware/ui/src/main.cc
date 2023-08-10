@@ -49,8 +49,10 @@ static void KeyboardTimerInit();
 // Handlers
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef hdma_usart1_tx;
+DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart2_tx;
 
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
@@ -176,10 +178,9 @@ int main(void)
         // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
-            // screen.FillScreen(C_BLACKx`);
             blink = HAL_GetTick() + 1000;
-            HAL_GPIO_TogglePin(LED_R_Port, LED_R_Pin);
-            // HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+            HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+            HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
         }
     }
 
@@ -376,8 +377,18 @@ static void MX_SPI1_Init(void)
 
 static void MX_DMA_Init()
 {
+    __HAL_RCC_DMA1_CLK_ENABLE();
     __HAL_RCC_DMA2_CLK_ENABLE();
 
+    // uart2 rx
+    HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+
+    // uart2 tx
+    HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+
+    // SPI
     HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 
@@ -453,18 +464,20 @@ static void MX_I2C1_Init()
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
-    UNUSED(huart);
-    UNUSED(size);
-    net_serial_interface->RxEvent(size);
-    HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
-    // rx_led.On();
+    if (huart->Instance == USART2)
+    {
+        net_serial_interface->RxEvent(size);
+        rx_led.Toggle();
+    }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-    UNUSED(huart);
-    net_serial_interface->TxEvent();
-    tx_led.On();
+    if (huart->Instance == USART2)
+    {
+        net_serial_interface->TxEvent();
+        tx_led.Toggle();
+    }
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)

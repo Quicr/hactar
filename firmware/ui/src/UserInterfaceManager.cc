@@ -57,13 +57,6 @@ void UserInterfaceManager::Run()
 
     SendCheckWifiPacket();
 
-    // TODO move into some sort of update function
-    // if (current_time > last_test_packet && is_connected_to_wifi)
-    // {
-    //     SendTestPacket();
-    //     last_test_packet = current_time + 7000;
-    // }
-
     // Run the receive and transmit
     net_layer.RxTx(current_time);
 
@@ -71,7 +64,6 @@ void UserInterfaceManager::Run()
     //      in the user interface manager instead of chat view
     //      otherwise it will be bizarre having to get all of the old messages.
     // TODO this should only occur in the chat view mode?
-
     HandleIncomingPackets();
 }
 

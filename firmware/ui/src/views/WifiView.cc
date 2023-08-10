@@ -28,7 +28,7 @@ WifiView::~WifiView()
 void WifiView::Update()
 {
     // Periodically get the list of teams.
-    if (HAL_GetTick() < next_get_ssid_timeout)
+    if (HAL_GetTick() > next_get_ssid_timeout)
     {
         SendGetSSIDPacket();
 
@@ -55,7 +55,7 @@ void WifiView::Draw()
             first_load = false;
         }
 
-        screen.DrawText(1, screen.ViewHeight() - (usr_font.height * 4),
+        screen.DrawText(1, screen.ViewHeight() - (usr_font.height * 3),
             request_msg, usr_font, fg, bg);
         redraw_menu = false;
     }
@@ -63,6 +63,8 @@ void WifiView::Draw()
     auto ssids = manager.SSIDs();
     if (last_num_ssids != ssids.size())
     {
+        // Clear the area for wifi
+
         uint16_t idx = 0;
         for (auto ssid : ssids)
         {
@@ -71,10 +73,10 @@ void WifiView::Draw()
             // convert the ssid int val to a string
             const String ssid_id_str = String::int_to_string(ssid.first);
 
-            screen.FillRectangle(1 + usr_font.width * ssid_id_str.length(),
-                y_start + (idx * usr_font.height),
-                1 + usr_font.width * 3,
-                y_start + ((idx + 1) * usr_font.height), C_BLACK);
+            screen.FillRectangle(0, y_start + (idx * usr_font.height),
+                screen.ViewWidth(),
+                y_start + ((idx + 1) * usr_font.height),
+                C_BLACK);
 
             screen.DrawText(1, y_start + (idx * usr_font.height),
                 ssid_id_str, usr_font, C_WHITE, C_BLACK);
@@ -89,11 +91,21 @@ void WifiView::Draw()
 
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
-        // Shift over and draw the input that is currently in the buffer
         String draw_str;
-        draw_str = usr_input.substring(last_drawn_idx);
+        if (state == SSID)
+        {
+            // Shift over and draw the input that is currently in the buffer
+            draw_str = usr_input.substring(last_drawn_idx);
+        }
+        else if (state == Password)
+        {
+            for (uint16_t i = last_drawn_idx; i < usr_input.length(); ++i)
+            {
+                draw_str += '*';
+            }
+        }
         last_drawn_idx = usr_input.length();
-        DrawInputString(draw_str);
+        ViewInterface::DrawInputString(draw_str);
     }
 }
 
@@ -104,7 +116,7 @@ void WifiView::HandleInput()
     {
         ChangeView(usr_input);
 
-        if (usr_input == "/refresh")
+        if (usr_input == "/refresh" || usr_input == "/r")
         {
             manager.ClearSSIDs();
             last_num_ssids = -1;
