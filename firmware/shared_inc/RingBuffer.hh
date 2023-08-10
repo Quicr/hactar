@@ -7,12 +7,16 @@ class RingBuffer
 {
 public:
     RingBuffer(const unsigned short size) :
-        size(size), read_idx(0), write_idx(0), available_bytes(0), buffer(nullptr)
+        size(size),
+        read_idx(0),
+        write_idx(0),
+        available_bytes(0),
+        buffer(nullptr)
     {
         // Don't allow a zero for buffer size
         if (this->size == 0) this->size = 1;
 
-        buffer = new T[this->size]{0};
+        buffer = new T[this->size]{ 0 };
     }
 
     ~RingBuffer()
@@ -23,14 +27,20 @@ public:
     void Write(const T d_in)
     {
         buffer[write_idx++] = d_in;
-        write_idx %= size;
+
+        if (write_idx >= size)
+            write_idx = 0;
+
         available_bytes++;
     }
 
     void Write(const T&& d_in)
     {
         buffer[write_idx++] = d_in;
-        write_idx %= size;
+
+        if (write_idx >= size)
+            write_idx = 0;
+
         available_bytes++;
     }
 
@@ -38,7 +48,10 @@ public:
     {
         if (available_bytes > 0) available_bytes--;
         T d_out = buffer[read_idx++];
-        read_idx %= size;
+
+        if (read_idx >= size)
+            read_idx = 0;
+
         return d_out;
     }
 
@@ -46,7 +59,10 @@ public:
     {
         if (available_bytes > 0) available_bytes--;
         d_out = buffer[read_idx++];
-        read_idx %= size;
+
+        if (read_idx >= size)
+            read_idx = 0;
+
         is_end = read_idx == write_idx;
     }
 
@@ -58,6 +74,39 @@ public:
     bool IsFull() const
     {
         return size == available_bytes;
+    }
+
+    T* Buffer()
+    {
+        return buffer;
+    }
+
+    inline unsigned short Size() const
+    {
+        return size;
+    }
+
+    void MoveWriteHead(unsigned short idx)
+    {
+        // TODO put into some error state so that programmer knows of the error
+        if (idx > size)
+        {
+            return;
+        }
+
+        write_idx = idx;
+    }
+
+    inline void UpdateWriteHead(unsigned short num_received)
+    {
+        uint16_t delta_bytes = num_received - write_idx;
+        write_idx += delta_bytes;
+        available_bytes += delta_bytes;
+
+        if (write_idx >= size)
+        {
+            write_idx = 0;
+        }
     }
 
 private:

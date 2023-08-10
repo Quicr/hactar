@@ -679,15 +679,14 @@ void RunningMode()
   }
 
   NetNormalMode();
-
   // Refresh the timeout
-  // timeout = HAL_GetTick() + 10000;
-  // while (HAL_GetTick() < timeout &&
-  //   HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
-  // {
-  //   // Stay here until the Net is done booting
-  //   HAL_Delay(10);
-  // }
+  timeout = HAL_GetTick() + 3000;
+  while (HAL_GetTick() < timeout &&
+    HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+  {
+    // Stay here until the Net is done booting
+    HAL_Delay(10);
+  }
 
   state = Running;
   while (state == Running)
@@ -744,15 +743,14 @@ void DebugMode()
   }
 
   NetNormalMode();
-
   // Refresh the timeout
-  // timeout = HAL_GetTick() + 10000;
-  // while (HAL_GetTick() < timeout &&
-  //   HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
-  // {
-  //   // Stay here until the Net is done booting
-  //   HAL_Delay(10);
-  // }
+  timeout = HAL_GetTick() + 3000;
+  while (HAL_GetTick() < timeout &&
+    HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+  {
+    // Stay here until the Net is done booting
+    HAL_Delay(10);
+  }
 
   state = Debug_Running;
   while (state == Debug_Running)

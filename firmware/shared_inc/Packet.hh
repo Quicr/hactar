@@ -340,6 +340,20 @@ public:
         return bytes;
     }
 
+    unsigned char* ToBytes(unsigned char start_byte) const
+    {
+        unsigned int sz = SizeInBytes();
+        unsigned char* bytes = new unsigned char[sz+1];
+        bytes[0] = start_byte;
+
+        for (unsigned int i = 0; i < sz; ++i)
+        {
+            bytes[i+1] = static_cast<unsigned char>(GetData(i*8, 8));
+        }
+
+        return bytes;
+    }
+
     unsigned int GetCreatedAt() const
     {
         return created_at;
@@ -360,7 +374,7 @@ public:
         retries++;
     }
 
-private:
+protected:
     void InitializeToZero(unsigned int start, unsigned int end)
     {
         if (start > end) return;

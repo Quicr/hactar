@@ -318,7 +318,7 @@ private:
 
         Packet* tx_packet = tx_packets.front();
 
-        // Get the buffer
+        // Get the buffer, with a start byte of 0xFF
         tx_buffer = tx_packet->ToBytes();
 
         // Get the size
