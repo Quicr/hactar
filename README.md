@@ -10,10 +10,20 @@ Hardware design for test device
     2. [User Interface](#ui)
     3. [Network](#network)
     4. [Security](#security_layer)
-    5. [Echo Server](#echo_server)
-    6. [Python Serial Monitor](#serial_monitor)
-4. [Installation - STM32 Toolchain](#stm_installation)
-5. [Installation - ESP32 Toolchain](#esp_installation)
+4. [Tools](#tools)
+    1. [Echo Server](#echo_server)
+    2. [Python Serial Monitor](#serial_monitor)
+5. [STM32 Toolchain](#stm_installation)
+6. [ESP32 Toolchain](#esp_installation)
+7. [Hactar Installation](#hactar_installation)
+    1. [EV1](#ev1) - WIP
+    2. [EV2](#ev2) - WIP
+    3. [EV3](#ev3) - WIP
+    4. [EV4](#ev4) - WIP
+    5. [EV5](#ev5) - WIP
+    6. [EV6](#ev6) - WIP
+    7. [EV7](#ev7) - WIP
+    8. [EV8](#ev8) - Current
 
 <h2 id="where">Where To Find Things</h2>
 
@@ -130,6 +140,9 @@ All source code for the network chip can be found in `firmware/net` and `firmwar
 <h3 id="security"><b>Security</b></h3>
 
 WIP
+
+
+<h2 id="tools">Tools</h2>
 
 <h3 id="echo_server"><b>Echo Server</b></h3>
     Very basic server that echo's the message it receives.
@@ -341,3 +354,96 @@ brew install make
 <i>MacOS</i>
 
 - https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html
+
+
+<h2 id="hactar_installation">Hactar Installation</h2>
+
+<h3 id="EV1">EV1</h2>
+
+WIP
+
+<h3 id="EV2">EV2</h2>
+
+WIP
+
+<h3 id="EV3">EV3</h2>
+
+WIP
+
+<h3 id="EV4">EV4</h2>
+
+WIP
+
+<h3 id="EV5">EV5</h2>
+
+WIP
+
+<h3 id="EV6">EV6</h2>
+
+WIP
+
+<h3 id="EV7">EV7</h2>
+
+WIP
+
+<h3 id="EV8">EV8 - Current</h2>
+
+<i>Management Chip</i>
+
+- Prerequisites
+    - Stlink-v2
+    - STM32 Cube Programmer CLI
+    - arm-none-eabi-g++
+    - make
+- Hook up the stlink-v2 to the connector beside the usb-c connector.
+    - Note, you will probably want to make a connector that has female dupoint headers on one end and a PH 2.0 connector on the other end.
+- Build the mgmt code by navigating to `hactar/firmware/mgmt` and entering `make compile`
+- Upload the mgmt code by entering `make upload`
+- After this you should see a couple of LED's light up
+
+<i>Userinterface Chip</i>
+
+- Prerequisites
+    - A programmed `management chip`
+    - USB-C Cable
+    - STM32 Cube Programmer CLI
+    - arm-none-eabi-g++
+    - make
+- Plug in the USB-C cable to the Hactar board.
+- Build the ui code by navigating to the `hactar/firmware/ui` folder and entering `make compile`
+- Upload the ui code by entering `make upload`
+    - **NOTE** - Update your the `port` variable, based on your OS and usb input, in the `hactar/firmware/ui/makefile`
+    - Once the process begins, a python script is called to send the command `ui_upload` to the management chip, turns off other LED's and turns on the third LED from the left, and puts the ui chip into bootloader mode.
+    - Then the stm32 cube programmer cli is called to upload the firmware.
+- After finishing uploading the firmware to the ui chip, it will return to running mode after 5 seconds.
+
+<i>Network Chip</i>
+
+- Prerequisites
+    - A programmed `management chip`
+    - USB-C Cable
+    - esp-idf - must be on your path
+    - make
+- Plug in the USB-C cable to the Hactar board.
+- Build the net code by navigating to the `hactar/firmware/net` folder and entering `make compile`
+- Upload the net code by entering `make upload`
+    - **NOTE** - Update your the `port` variable, based on your OS and usb input, in the `hactar/firmware/net/makefile`
+    - Once the process begins, a python script is called to send the command `net_upload` to the management chip, turns off other LED's and turns on the first LED from the left, and puts the net chip into bootloader mode.
+    - Then the stm32 cube programmer cli is called to upload the firmware.
+- After finishing uploading the firmware to the net chip, the management chip will return to running mode.
+
+<i>Debug mode example</i>
+
+- Prerequisites
+    - Python3
+        - **pyserial** - download using `pip3 install pyserial`
+    - make
+    - USB-C Cable
+- Have your hactar board programmed and plugged in using a USB-C cable
+- Navigate to either `hactar/firmware/ui` or `hactar/firmware/net`
+    - **NOTE** - Update your ports appropriately in the makefile
+- Enter `make py_monitor` into your terminal
+- You should see a serial monitor open in your terminal requesting a command. Enter `debug` to put the hactar board into debugging mode.
+    - See [Management Commands](#management_commands) for more commands that can be sent to the hactar board.
+- The first and third LED from the left will turn blue indicating debug mode and your console will receive serial debug messages from the UI and Net chips.
+- Enter `exit` to leave the monitor
