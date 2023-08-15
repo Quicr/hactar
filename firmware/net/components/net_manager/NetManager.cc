@@ -15,7 +15,7 @@ NetManager::NetManager(SerialManager* _ui_layer)
     esp_err_t res = wifi->Initialize();
     ESP_ERROR_CHECK(res);
 
-    xTaskCreate(HandleSerial, "handle_serial_task", 2048, (void*)this, 13, NULL);
+    xTaskCreate(HandleSerial, "handle_serial_task", 4096, (void*)this, 13, NULL);
 }
 
 void NetManager::HandleSerial(void* param)

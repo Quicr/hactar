@@ -152,8 +152,6 @@ int main(void)
 
     SerialManager serial(net_serial_interface);
 
-    ui_manager->Run();
-
     uint32_t blink = 0;
     uint8_t test_message [] = "UI: Test\n\r";
     HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_SET);
@@ -167,9 +165,6 @@ int main(void)
 
     while (1)
     {
-        // TODO put this into a timer?
-
-        //
         ui_manager->Run();
 
         rx_led.Timeout();
@@ -179,7 +174,7 @@ int main(void)
         if (HAL_GetTick() > blink)
         {
             blink = HAL_GetTick() + 1000;
-            HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+            // HAL_UART_Transmit(&huart1, test_message, 10, 1000);
             HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
         }
     }

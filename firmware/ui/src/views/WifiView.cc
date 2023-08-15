@@ -16,7 +16,10 @@ WifiView::WifiView(UserInterfaceManager& manager,
     state(SSID),
     request_msg("Select an ssid number:"),
     ssid(),
-    password()
+    password(),
+    state_update_timeout(0),
+    num_connection_checks(0),
+    connecting_done(false)
 {
 }
 
@@ -27,13 +30,72 @@ WifiView::~WifiView()
 
 void WifiView::Update()
 {
+    uint32_t current_tick = HAL_GetTick();
     // Periodically get the list of teams.
-    if (HAL_GetTick() > next_get_ssid_timeout)
+    if (current_tick > next_get_ssid_timeout && state == WifiState::SSID)
     {
+        manager.ClearSSIDs();
         SendGetSSIDPacket();
 
         // Get the list again after 30 seconds
-        next_get_ssid_timeout = HAL_GetTick() + 30000;
+        next_get_ssid_timeout = current_tick + 30000;
+    }
+
+    // TODO clean up below
+    if (state == WifiState::SSID && current_tick > state_update_timeout)
+    {
+        // TODO this should do nothing until we've sent a new request
+        ssids = manager.SSIDs();
+
+        state_update_timeout = current_tick + 1000;
+    }
+    else if (state == WifiState::Connecting && current_tick > state_update_timeout)
+    {
+        if (connecting_done)
+        {
+            state = WifiState::SSID;
+            request_msg = "Select an ssid number:";
+            connecting_done = false;
+            redraw_menu = true;
+            return;
+        }
+
+        if (manager.IsConnectedToWifi())
+        {
+            request_msg = "Connected to ";
+            request_msg += ssid;
+            num_connection_checks = 0;
+
+            // Save the new ssid and password
+            setting_manager.SaveSetting(
+                SettingManager::SettingAddress::SSID,
+                ssid.data(), ssid.length());
+            setting_manager.SaveSetting(
+                SettingManager::SettingAddress::SSID_Password,
+                password.data(), password.length());
+
+            redraw_menu = true;
+            connecting_done = true;
+        }
+
+        if (++num_connection_checks > 30)
+        {
+            // Failed to connect to the internet repeat connecting to ssid
+            state = WifiState::SSID;
+            request_msg = "Failed to connect. Select SSID";
+            num_connection_checks = 0;
+            redraw_menu = true;
+            return;
+        }
+
+        request_msg += ".";
+
+        if (request_msg.length() > 13)
+        {
+            request_msg = "Connecting";
+        }
+        redraw_menu = true;
+        state_update_timeout = current_tick + 1000;
     }
 }
 
@@ -55,28 +117,34 @@ void WifiView::Draw()
             first_load = false;
         }
 
+
+        screen.FillRectangle(1,
+            screen.ViewHeight() - (usr_font.height * 3), screen.ViewWidth(), screen.ViewHeight() - (usr_font.height * 2), bg);
         screen.DrawText(1, screen.ViewHeight() - (usr_font.height * 3),
             request_msg, usr_font, fg, bg);
         redraw_menu = false;
+
+        screen.DrawText(80, 20, String::int_to_string(ssid.length()), font5x8, C_WHITE, C_BLACK);
+        screen.DrawText(80, 28, String::int_to_string(password.length()), font5x8, C_WHITE, C_BLACK);
+        screen.DrawText(100, 20, ssid, font5x8, C_WHITE, C_BLACK);
+        screen.DrawText(100, 28, password, font5x8, C_WHITE, C_BLACK);
+
     }
 
-    auto ssids = manager.SSIDs();
-    if (last_num_ssids != ssids.size())
+    if (state == WifiState::SSID && last_num_ssids != ssids.size())
     {
+        const uint16_t y_start = 50;
         // Clear the area for wifi
+        screen.FillRectangle(0, y_start, screen.ViewWidth(),
+            screen.ViewHeight() - 100,
+            C_BLACK);
 
         uint16_t idx = 0;
         for (auto ssid : ssids)
         {
-            const uint16_t y_start = 50;
 
             // convert the ssid int val to a string
             const String ssid_id_str = String::int_to_string(ssid.first);
-
-            screen.FillRectangle(0, y_start + (idx * usr_font.height),
-                screen.ViewWidth(),
-                y_start + ((idx + 1) * usr_font.height),
-                C_BLACK);
 
             screen.DrawText(1, y_start + (idx * usr_font.height),
                 ssid_id_str, usr_font, C_WHITE, C_BLACK);
@@ -92,12 +160,12 @@ void WifiView::Draw()
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
         String draw_str;
-        if (state == SSID)
+        if (state != WifiState::Password)
         {
             // Shift over and draw the input that is currently in the buffer
             draw_str = usr_input.substring(last_drawn_idx);
         }
-        else if (state == Password)
+        else if (state == WifiState::Password)
         {
             for (uint16_t i = last_drawn_idx; i < usr_input.length(); ++i)
             {
@@ -122,12 +190,19 @@ void WifiView::HandleInput()
             last_num_ssids = -1;
             SendGetSSIDPacket();
             String msg = "UI: Refresh ssids\n\r";
-            HAL_UART_Transmit(&huart1, (const uint8_t *)msg.c_str(), msg.length(), HAL_MAX_DELAY);
+            HAL_UART_Transmit(&huart1, (const uint8_t*)msg.c_str(), msg.length(), HAL_MAX_DELAY);
         }
 
         return;
     }
 
+    HandleWifiInput();
+}
+
+void WifiView::HandleWifiInput()
+{
+    const uint16_t x_start = 1;
+    const uint16_t y_start = 50;
     if (state == WifiState::SSID)
     {
         int32_t ssid_id = usr_input.ToNumber();
@@ -147,11 +222,12 @@ void WifiView::HandleInput()
             return;
         }
 
-        ssid = ssid.at(ssid_id);
+        ssid = ssids.at(ssid_id);
+        setting_manager.SaveSetting(
+            SettingManager::SettingAddress::SSID,
+            ssid.data(), ssid.length());
 
-        const uint16_t x_start = 1;
-        const uint16_t y_start = 50;
-
+        // Clear user input
         screen.FillRectangle(x_start, y_start, screen.ViewWidth(), screen.ViewHeight(), C_BLACK);
 
         request_msg = "Please enter the wifi password";
@@ -160,7 +236,20 @@ void WifiView::HandleInput()
     }
     else if (state == WifiState::Password)
     {
-        // TODO hide password input
+        password = usr_input;
+        state = WifiState::Connecting;
+
+        setting_manager.SaveSetting(
+            SettingManager::SettingAddress::SSID_Password,
+            password.data(), password.length());
+
+        // Clear user input
+        screen.FillRectangle(x_start, y_start, screen.ViewWidth(), screen.ViewHeight(), C_BLACK);
+
+        request_msg = "Connecting";
+        redraw_menu = true;
+
+        manager.ConnectToWifi();
     }
 }
 
