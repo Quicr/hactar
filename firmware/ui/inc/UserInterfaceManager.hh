@@ -36,6 +36,7 @@ public:
     void ForceRedraw();
     bool RedrawForced();
     void ConnectToWifi();
+    void ConnectToWifi(const String& ssid, const String& password);
 
     uint32_t GetTxStatusColour() const;
     uint32_t GetRxStatusColour() const;

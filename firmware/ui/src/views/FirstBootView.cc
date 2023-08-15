@@ -1,5 +1,6 @@
 #include "FirstBootView.hh"
 #include "LoginView.hh"
+#include "fonts/Font.hh"
 
 // TODO make sure the usr input is not empty
 
@@ -20,6 +21,12 @@ FirstBootView::FirstBootView(UserInterfaceManager& manager,
     setting_manager.ClearEeprom();
     setting_manager.SaveSetting(SettingManager::SettingAddress::Firstboot,
         (uint8_t)FIRST_BOOT_STARTED);
+    setting_manager.SaveSetting(SettingManager::SettingAddress::Usr_Font,
+        (uint8_t)Fonts::_7x12);
+    setting_manager.SaveSetting(SettingManager::SettingAddress::Fg,
+        (uint16_t)C_WHITE);
+    setting_manager.SaveSetting(SettingManager::SettingAddress::Bg,
+        (uint16_t)C_BLACK);
 }
 
 FirstBootView::~FirstBootView()
@@ -172,6 +179,19 @@ void FirstBootView::SetWifi()
     if (wifi_state == SSID)
     {
         // Get the ssid selection
+        if (usr_input == "skip")
+        {
+            setting_manager.SaveSetting(
+                SettingManager::SettingAddress::SSID,
+                "1", 1);
+            setting_manager.SaveSetting(
+                SettingManager::SettingAddress::SSID_Password,
+                "1", 1);
+
+            state = State::Final;
+            return;
+        }
+
         int32_t ssid_id = usr_input.ToNumber();
         if (ssid_id == -1)
         {

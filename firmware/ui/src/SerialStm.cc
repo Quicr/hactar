@@ -45,6 +45,8 @@ void SerialStm::Write(unsigned char* buff, const unsigned short buff_sz)
 void SerialStm::RxEvent(uint16_t num_received)
 {
     rx_ring.UpdateWriteHead(num_received);
+    uint8_t recv_msg[] = "UI: Received from ESP\n\r";
+    HAL_UART_Transmit(&huart1, recv_msg, sizeof(recv_msg)/sizeof(*recv_msg), HAL_MAX_DELAY);
 }
 
 void SerialStm::StartRx()

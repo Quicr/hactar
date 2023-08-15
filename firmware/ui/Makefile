@@ -14,6 +14,7 @@
 # target
 ######################################
 TARGET = ui
+FIRMWARE = ${TARGET}.elf
 
 ######################################
 # building variables
@@ -40,8 +41,8 @@ WRITE_START = 0x08000000
 PROGRAMMER = CUBE
 PORT = /dev/ttyUSB0
 BAUD = 115200
-CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
-CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
 
 
 ######################################
@@ -205,7 +206,7 @@ LDSCRIPT = STM32F405RGTx_FLASH.ld
 # libraries
 LIBS = -lc -lm -lnosys -lrdimon
 LIBDIR =
-LDFLAGS = $(MCU) --specs=rdimon.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LDFLAGS = $(MCU) --specs=rdimon.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/${TARGET}.map,--cref -Wl,--gc-sections
 
 #######################################
 # build the application
@@ -250,23 +251,23 @@ $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
 	@echo "[S]			$(notdir $<)"
 	@$(AS) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/$(TARGET).elf: ${OBJECTS} | ${BUILD_DIR}
-	@echo "[LD]			$(TARGET).elf"
+$(BUILD_DIR)/${TARGET}.elf: ${OBJECTS} | ${BUILD_DIR}
+	@echo "[LD]			${TARGET}.elf"
 	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-	@$(DP) -St $@ >$(BUILD_DIR)/$(TARGET).lst
+	@$(DP) -St $@ >$(BUILD_DIR)/${TARGET}.lst
 	$(SZ) $@
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	@echo "[LD]			$(TARGET).hex"
+	@echo "[LD]			${TARGET}.hex"
 	@$(HEX) $< $@
 	$(SZ) $@
 
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	@echo "[LD]			$(TARGET).bin"
+	@echo "[LD]			${TARGET}.bin"
 	@$(BIN) $< $@
 	@echo "*******SUCCESS*******"
 
-compile: $(BUILD_DIR)/$(TARGET).bin $(BUILD_DIR)/$(TARGET).hex
+compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
 
 upload:
 	python ../tools/command_sender.py ${PORT} ${BAUD} ui_upload

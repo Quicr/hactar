@@ -24,7 +24,7 @@ UserInterfaceManager::UserInterfaceManager(Screen& screen,
     force_redraw(false),
     current_time(HAL_GetTick()),
     ssids(),
-    last_wifi_check(0),
+    last_wifi_check(10000),
     is_connected_to_wifi(false),
     attempt_to_connect_timeout(0)
 {
@@ -33,7 +33,6 @@ UserInterfaceManager::UserInterfaceManager(Screen& screen,
         ChangeView<LoginView>();
     else
         ChangeView<FirstBootView>();
-
 }
 
 UserInterfaceManager::~UserInterfaceManager()
@@ -190,7 +189,7 @@ void UserInterfaceManager::HandleIncomingPackets()
                         ConnectToWifi();
 
                         // Wait a long time before trying to connect again
-                        attempt_to_connect_timeout = HAL_GetTick() + 50000;
+                        attempt_to_connect_timeout = HAL_GetTick() + 10000;
                     }
                 }
 
@@ -243,6 +242,13 @@ void UserInterfaceManager::ConnectToWifi()
         SettingManager::SettingAddress::SSID_Password, &ssid_password,
         ssid_password_len)) return;
 
+    String ssid_str;
+    for (int i  =0 ; i < ssid_len; i++)
+        ssid_str += ssid[i];
+    String password_str;
+    for (int i  =0 ; i < ssid_password_len; i++)
+        password_str += ssid_password[i];
+
     // Create the packet
     Packet* connect_packet = new Packet();
     connect_packet->SetData(Packet::Types::Command, 0, 6);
@@ -283,6 +289,48 @@ void UserInterfaceManager::ConnectToWifi()
 
     delete ssid;
     delete ssid_password;
+}
+
+void UserInterfaceManager::ConnectToWifi(const String& ssid,
+    const String& password)
+{
+    Packet* connect_packet = new Packet();
+    connect_packet->SetData(Packet::Types::Command, 0, 6);
+    connect_packet->SetData(UserInterfaceManager::NextPacketId(), 6, 8);
+
+    uint16_t ssid_len = ssid.length();
+    uint16_t ssid_password_len = password.length();
+    uint16_t length = ssid_len + ssid_password_len + 3;
+    connect_packet->SetData(length, 14, 10);
+
+    connect_packet->SetData(Packet::Commands::ConnectToSSID, 24, 8);
+
+    // Set the length of the ssid
+    connect_packet->SetData(ssid_len, 32, 8);
+
+    // Populate with the ssid
+    uint16_t i;
+    uint16_t offset = 40;
+    for (i = 0; i < ssid_len; ++i)
+    {
+        connect_packet->SetData(ssid[i], offset, 8);
+        offset += 8;
+    }
+
+    // Set the length of the password
+    connect_packet->SetData(ssid_password_len, offset, 8);
+    offset += 8;
+
+    // Populate with the password
+    uint16_t j;
+    for (j = 0; j < ssid_password_len; ++j)
+    {
+        connect_packet->SetData(password[j], offset, 8);
+        offset += 8;
+    }
+
+    // Enqueue the message
+    EnqueuePacket(connect_packet);
 }
 
 bool UserInterfaceManager::IsConnectedToWifi() const
