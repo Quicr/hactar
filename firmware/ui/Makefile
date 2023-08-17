@@ -39,7 +39,7 @@ BUILD_DIR = ./build
 #######################################
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
-PORT = /dev/ttyUSB0
+PORT = /dev/ttyUSB1
 BAUD = 115200
 CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
 CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
@@ -269,8 +269,8 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 
 compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
 
+# python ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
 upload:
-	python ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
 	fi \
