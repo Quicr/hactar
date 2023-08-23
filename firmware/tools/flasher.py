@@ -151,7 +151,7 @@ def SendUploadSelectionCommand(uart: serial.Serial, command: str):
         uart.open()
 
 
-def WriteSync(uart: serial.Serial, retry_num: int):
+def WriteSync(uart: serial.Serial, retry_num: int = 5):
     """ Sends the sync byte 0x7F and waits for an ACK from the device.
     """
 
@@ -160,6 +160,9 @@ def WriteSync(uart: serial.Serial, retry_num: int):
     # Check if ack or nack
     if (reply == NACK):
         print(f"Activating device: {B_RED}FAILED{N_WHITE}")
+        raise Exception("Failed to Activate device")
+    elif (reply == -1):
+        print(f"Activating device: {B_YELLOW}NO REPLY{N_WHITE}")
         raise Exception("Failed to Activate device")
 
     print(f"Activating device: {B_GREEN}SUCCESS{N_WHITE}")
@@ -253,29 +256,86 @@ def WriteReadMemory(uart: serial.Serial, read_from: [int], num_bytes: int,
     if (reply == NACK):
         raise Exception("NACK was received during Read Memory command")
 
-    # Write the memory we want to read from ahd the checksum
+    # Calculate the checksum
     checksum = functools.reduce(lambda a, b: a ^ b, read_from)
 
     memory_addr = read_from
     memory_addr.append(checksum)
 
+    # Write the memory we want to read from and the checksum
     reply = WriteBytesWaitForACK(uart, memory_addr, 1)
     if (reply == NACK):
         raise Exception("NACK was received after sending memory address to \
                          read")
 
-    reply = WriteByteWaitForACK(uart, num_bytes, 1)
+    reply = WriteByteWaitForACK(uart, num_bytes-1, 1)
     if (reply == NACK):
         raise Exception("NACK was received after sending how many bytes to \
                          read")
 
     recv_data = WaitForBytesExcept(uart, num_bytes)
+    if type(recv_data) is int:
+        recv_data = [recv_data]
 
     print(f"Reading memory: {B_GREEN}SUCCESSFUL{N_WHITE}")
     print(f"Number of bytes read from memory: {B_MAGENTA}{len(recv_data)}\
         {N_WHITE}")
 
     return recv_data
+
+
+def WriteExtendedEraseMemory(uart: serial.Serial, sectors: [int],
+                             special: bool, retry_num: int = 5):
+    """ Sends the Erase memory command and it's compliment.
+        Command = 0x11
+        Compliment = 0xEE = 0x11 ^ 0xFF
+
+        returns ACK/NACK/0
+    """
+    reply = WriteByteWaitForACK(uart, Commands.extended_erase, 5)
+    if (reply == NACK):
+        raise Exception("NACK was received after sending erase command")
+
+    data = []
+
+    # Number of sectors starts at 0x00 0x00. So 0x00 0x00 means delete 1 sector
+    # An exception is thrown if the number is bigger than 2 bytes
+    num_sectors = (len(sectors) - 1).to_bytes(2, "big")
+
+    # Turn the sectors received into two byte elements
+    byte_sectors = [x.to_bytes(2, "big") for x in sectors]
+
+    # Join the num sectors and the byte sectors into one list
+    data = b''.join([num_sectors] + byte_sectors)
+
+    # byte_sectors = b''.join(byte_sectors)
+
+    # Calculate the checksum
+    checksum = functools.reduce(lambda a, b: a ^ b, data)
+    print([num_sectors])
+    print(byte_sectors)
+    print([checksum])
+    data = b''.join([num_sectors] + byte_sectors + [checksum.to_bytes(1, "big")])
+
+    print(f"Erase: {B_BLUE}STARTED{N_WHITE}")
+
+    reply = WriteBytesWaitForACK(uart, data, 1)
+    print(reply)
+    if (reply == -1):
+        raise Exception("Failed to erase, no reply received")
+    elif (reply == NACK):
+        raise Exception("Failed to erase")
+
+    mem_bytes_sz = 256
+    expected_mem = [255] * mem_bytes_sz
+    mem = [0] * mem_bytes_sz
+    read_count = 0
+    while (mem != expected_mem) and read_count != 5:
+        mem = WriteReadMemory(uart, [0x08, 0x00, 0x00, 0x00], mem_bytes_sz)
+        time.sleep(0.5)
+
+    print(f"Erase: {B_CYAN}COMPLETE{N_WHITE}")
+    return True
 
 
 def ProgramSTM():
@@ -291,19 +351,29 @@ def ProgramSTM():
         timeout=2
     )
 
-    print(f"\033[92mOpened port: {port}, baudrate={baud}\033[0m")
+    print(f"Opened port: {B_GREEN}{port}{N_WHITE}, baudrate: {B_BLUE}{baud}{N_WHITE}")
 
     # Send the command to the mgmt chip that we want to program the UI chip
     SendUploadSelectionCommand(uart, "ui_upload")
-    # TODO wait for reply from mgmt chip
+    # # TODO wait for reply from mgmt chip
 
     WriteSync(uart)
+
+    # Sometimes a small delay is required otherwise it won't continue on correctly
 
     WriteGetID(uart)
 
     WriteGet(uart)
 
-    WriteReadMemory(uart, [0x08, 0x00, 0x00, 0x00], 255)
+    WriteReadMemory(uart, [0x08, 0x00, 0x00, 0x00], 1)
+
+    sectors = [x for x in range(2)]
+    WriteExtendedEraseMemory(uart,
+                             sectors, False)
+
+    # Need to wait before continuing on.
+    time.sleep(2)
+
 
     # Close the uart
     uart.close()
