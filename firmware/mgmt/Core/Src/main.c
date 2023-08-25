@@ -330,6 +330,7 @@ extern inline void HandleTx(uart_stream_t* tx_stream)
 
       tx_stream->tx_free = 0;
       HAL_UART_Transmit_DMA(tx_stream->to_uart, (tx_stream->tx_buffer + tx_stream->tx_read), send_bytes);
+      tx_stream->last_transmission_time = HAL_GetTick();
       tx_stream->pending_bytes -= send_bytes;
       tx_stream->tx_read += send_bytes;
     }
@@ -441,7 +442,7 @@ extern inline void InitUartStreamParameters(uart_stream_t* uart_stream)
   uart_stream->tx_free = 1;
   uart_stream->pending_bytes = 0;
   uart_stream->idle_receive = 0;
-  uart_stream->last_transmission_time = HAL_GetTick();
+  uart_stream->last_transmission_time = HAL_GetTick() + 1000;
   uart_stream->has_received = 0;
   uart_stream->command_complete = 0;
 }

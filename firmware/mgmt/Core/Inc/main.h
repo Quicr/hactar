@@ -16,6 +16,15 @@
   *
   ******************************************************************************
   */
+
+// To appease the vscode c++ intellisense
+#ifdef __cplusplus
+#undef __cplusplus
+#endif
+
+#ifndef STM32F072xB
+#define STM32F072xB
+#endif
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
