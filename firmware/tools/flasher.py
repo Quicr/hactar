@@ -100,9 +100,15 @@ def WriteReadBytes(uart: serial.Serial, write_buff: bytes, read_num: int,
         return reply
 
 
+def WriteByte(uart: serial.Serial, _byte: int, compliment: bool = True):
+    data = [_byte]
+    if (compliment):
+        data.append(_byte ^ 0xFF)
+    uart.write(bytes(data))
+
+
 def WriteByteWaitForACK(uart: serial.Serial, _bytes: int,
                         retry_num: int = 5, compliment: bool = True):
-
     while (retry_num > 0):
         retry_num -= 1
 
@@ -185,11 +191,10 @@ def SendUploadSelectionCommand(uart: serial.Serial, command: str):
         # TODO get a reply from the mgmt chip for changing to ui_mode/net_mode
         print(f"Activating UI Upload Mode: {B_GREEN}SUCCESS{N_WHITE}")
         print(f"Update uart to parity: {B_BLUE}EVEN{N_WHITE}")
-        # uart.close()
-        # time.sleep(0.1)
+        uart.close()
         uart.parity = serial.PARITY_EVEN
-        # uart.open()
-        # time.sleep(0.1)
+        uart.open()
+        time.sleep(0.1)
 
 
 def SendSync(uart: serial.Serial, retry_num: int = 5):
@@ -216,23 +221,36 @@ def SendGetID(uart: serial.Serial, retry_num: int = 5):
 
         returns pid
     """
-    res = WriteByteWaitForACK(uart, Commands.get_id, 5)
+    res = WriteByteWaitForACK(uart, Commands.get_id, 1)
 
     if res == NACK:
         raise Exception("NACK was received during GetID")
+    elif res == -1:
+        raise Exception("No reply was received during GetID")
 
     # Read the next byte which should be the num of bytes - 1
-    #  for some reason they minus off one even tho 2 bytes come in
-    num_bytes = WaitForBytesExcept(uart, 1) + 1
 
-    # Get the pid which should be 2 bytes
-    pid = WaitForBytesExcept(uart, num_bytes)
+    num_bytes = WaitForBytesExcept(uart, 1)
+
+    # NOTE there is a bug in the bootloader for stm, or there is a
+    # inaccuracy in the an3155 datasheet that says that a single ACK
+    # is sent after receiving the get_id command.
+    # But in reality 90% of the time two ACK bytes are sent
+    if (num_bytes == ACK):
+        num_bytes = WaitForBytesExcept(uart, 1)
+    elif (num_bytes == NACK):
+        raise Exception("NACK was received while trying to get the num bytes "
+                        "in GetID")
+
+    # Get the pid which should be N+1 bytes
+    pid = WaitForBytesExcept(uart, num_bytes+1)
 
     # Wait for an ack
     res = WaitForBytesExcept(uart, 1)
-
     if (res == NACK):
         raise Exception("A NACK was received at the end of GetID")
+    elif res == -1:
+        raise Exception("No reply was received during GetID")
 
     h_pid = hex(int.from_bytes(bytes(pid), "big"))
     print(f"Chip ID: {B_CYAN}{h_pid}{N_WHITE}")
@@ -291,7 +309,8 @@ def SendReadMemory(uart: serial.Serial, address: bytes, num_bytes: int,
         Command = 0x11
         Compliment = 0xEE = 0x11 ^ 0xFF
 
-        returns ACK/NACK/0
+        returns [bytes] contents of memory [address:address + num_bytes]
+
     """
     reply = WriteByteWaitForACK(uart, Commands.read_memory, retry_num)
     if (reply == NACK):
@@ -372,9 +391,7 @@ def SendExtendedEraseMemory(uart: serial.Serial, sectors: [int],
         total_bytes_to_verify += Sectors[sector].size
     percent_verified = int((bytes_verified / total_bytes_to_verify)*100)
 
-    print(f"Verifying: {percent_verified:2}% verified", end="\r")
     for sector in sectors:
-
         memory_address = Sectors[sector].addr
         end_of_sector = Sectors[sector].addr + Sectors[sector].size
         read_count = 0
@@ -382,7 +399,8 @@ def SendExtendedEraseMemory(uart: serial.Serial, sectors: [int],
         while (memory_address != end_of_sector):
             percent_verified = int(
                 (bytes_verified / total_bytes_to_verify)*100)
-            print(f"Verifying: {percent_verified:2}% verified", end="\r")
+            print(f"Verifying erase: {B_GREEN}{percent_verified:2}{N_WHITE}"
+                  f"% verified", end="\r")
             while (mem != expected_mem) and read_count != 5:
                 mem = SendReadMemory(uart, memory_address.to_bytes(4, "big"),
                                      mem_bytes_sz)
@@ -399,64 +417,66 @@ def SendExtendedEraseMemory(uart: serial.Serial, sectors: [int],
             time.sleep(0.001)
 
     # Don't actually need to do the math here
-    print("Verifying: 100% verified")
+    print(f"Verifying erase: {B_GREEN}100{N_WHITE}% verified")
     print(f"Erase: {B_GREEN}COMPLETE{N_WHITE}")
     return True
 
 
-def WriteFirmware(uart: serial.Serial, file_name: str, start_addr: int,
-                  num_retry: int = 5):
+def SendWriteMemory(uart: serial.Serial, data: bytes, address: int,
+                    num_retry: int = 5):
     """ Sends the Write memory command and it's compliment.
-        Then writes the entire bin file to it
+        Then writes the address bytes and its checksum
+        Then writes the entire data stream
         Command = 0x31
         Compliment = 0xCE = 0x31 ^ 0xFF
 
-        returns ACK/NACK/0
+        returns ACK if successful
     """
 
     Max_Num_Bytes = 256
 
     # Send the address and the checksum
-    address = start_addr
-    in_file = open(file_name, "rb")
-    firmware = in_file.read()
+    addr = address
     file_addr = 0
 
-    print("Writing firmware")
-    while file_addr < len(firmware):
+    percent_flashed = 0
+
+    total_bytes = len(data)
+
+    print(f"Write to Memory: {B_BLUE}STARTED{N_WHITE}")
+    print(f"Address: {B_WHITE}{address:04x}{N_WHITE}")
+    print(f"Byte Stream Size: {B_WHITE}{total_bytes}{N_WHITE}")
+
+    while file_addr < total_bytes:
+        percent_flashed = int((file_addr / total_bytes) * 100)
+
+        print(f"Flashing: {B_GREEN}{percent_flashed:2}{N_WHITE}%", end="\r")
         reply = WriteByteWaitForACK(uart, Commands.write_memory, 5)
         if (reply == NACK):
             raise Exception("NACK was received after sending write command")
         elif (reply == -1):
-            raise Exception("No reply was received after sending write command")
+            raise Exception("No reply was received after sending write "
+                            "command")
 
-        print("Calculate checksum")
-        checksum = CalculateChecksum(address.to_bytes(4, "big"))
-        print("append checksum")
-        write_address_bytes = address.to_bytes(4, "big") + checksum
-        print("Write address", write_address_bytes)
-        [print(x) for x in write_address_bytes]
+        checksum = CalculateChecksum(addr.to_bytes(4, "big"))
+        write_address_bytes = addr.to_bytes(4, "big") + checksum
         reply = WriteBytesWaitForACK(uart, write_address_bytes, 1)
         if (reply == NACK):
             raise Exception("NACK was received after sending write command")
         elif (reply == -1):
-            raise Exception("No reply was received after sending write command")
+            raise Exception("No reply was received after sending write"
+                            "command")
 
-        print("Get chunk")
         # Get the contents of the binary
-        chunk = firmware[file_addr:file_addr+Max_Num_Bytes]
+        chunk = data[file_addr:file_addr+Max_Num_Bytes]
         # Chunk size before extra bytes are appended
         chunk_size = len(chunk)
-        print(chunk_size)
 
-        # Get how many bytes we need to append to chunk to make it a multiple
-        # of 4 bytes
+        # Pad the chunk to be a multiple of 4 bytes
         if (len(chunk) % 4 != 0):
-            print("pad chunk")
             chunk = chunk + bytes([0xFF] * (4 - (len(chunk) % 4)))
 
-        # Add the number of bytes to be received. 0 start
-        print("Add len", len(chunk))
+        # Front append the number of bytes to be received. 0 start
         chunk = (len(chunk) - 1).to_bytes(1, "big") + chunk
 
         # Add the checksum
@@ -465,12 +485,42 @@ def WriteFirmware(uart: serial.Serial, file_name: str, start_addr: int,
         # Write the chunk to the chip
         reply = WriteBytesWaitForACK(uart, chunk, 1)
         if (reply == NACK):
-            raise Exception(f"NACK was received while writing to address: {address}")
+            raise Exception(f"NACK was received while writing to "
+                            f"addr: {addr}")
         elif (reply == -1):
-            raise Exception(f"No reply was received while writing to address: {address}")
+            raise Exception(f"No reply was received while writing to "
+                            f"addr: {addr}")
 
+        # Shift over by the amount of byte stream bytes were sent
         file_addr += chunk_size
-        address += chunk_size
+        addr += chunk_size
+
+    # Don't need to calculate it here it finished
+    print(f"Flashing: {B_GREEN}100{N_WHITE}%")
+
+    # Verify the written memory by reading the size of the file
+    addr = address
+    file_addr = 0
+
+    while file_addr < total_bytes:
+        percent_verified = int(
+            (file_addr / total_bytes)*100)
+        print(f"Verifying write: {B_GREEN}{percent_verified:2}{N_WHITE}"
+              f"% verified", end="\r")
+
+        chunk = data[file_addr:file_addr+Max_Num_Bytes]
+        mem = bytes(SendReadMemory(uart, addr.to_bytes(4, "big"), len(chunk)))
+
+        if chunk != mem:
+            raise Exception(f"Failed to verify at memory address {addr}")
+
+        addr += len(mem)
+        file_addr += len(chunk)
+
+    print(f"Verifying write: {B_GREEN}100{N_WHITE}% verified")
+    print(f"Write: {B_GREEN}COMPLETE{N_WHITE}")
+
+    return ACK
 
 
 def ProgramSTM():
@@ -497,7 +547,7 @@ def ProgramSTM():
     # Sometimes a small delay is required otherwise it won't
     # continue on correctly
 
-    SendGetID(uart)
+    SendGetID(uart, 1)
 
     SendGet(uart)
 
@@ -508,15 +558,16 @@ def ProgramSTM():
 
     time.sleep(1)
 
-    # TODO get the size of our binary file and erase the sectors that it would fit into
+    # TODO get the size of our binary file and erase the
+    # sectors that it would fit into
     sectors = [x for x in range(6)]
     SendExtendedEraseMemory(uart, sectors, False)
 
-    WriteFirmware(uart, "../ui/build/ui.bin", User_Sector_Start_Address, 1)
+    firmware = open("../ui/build/ui.bin", "rb").read()
+    SendWriteMemory(uart, firmware, User_Sector_Start_Address, 1)
 
     # Need to wait before continuing on.
     time.sleep(2)
-
 
     # Close the uart
     uart.close()
