@@ -239,6 +239,23 @@ https://www.st.com/en/development-tools/stm32cubeprog.html
     export PATH="$PATH:/path/to/stm_cube_programmer/bin"
     ```
 
+- NOTE - If you are getting an error saying that libusb needs permission to write usb, then you'll need to do an additional step.
+    - Navigate to
+        ```bash
+        /path/to/stm_cube_programmer/Drivers/rules
+        ```
+    - Edit 49-stlinkv2.rules
+        - Add the following to the bottom of the file
+            ```
+            SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", SYSFS{idVendor}=="3748", \
+                MODE="0666", \
+                GROUP="plugdev"
+            ```
+    - Copy all of the rules to /etc/udev/rules.d/
+        - `cp /path/to/stm_cube_programmer/Drivers/rules/*.* /etc/udev/rules.d/`
+    - Unplug then plug in your device and STMCubeProgrammerCLI should work.
+
+
 <i>Windows</i>
 
 - Open the start search, and type `env`. Select `"Edit the system environment variables"`

@@ -617,14 +617,17 @@ void UIUpload()
   usb_stream.rx_buffer_size = UI_RECEIVE_BUFF_SZ;
   usb_stream.tx_buffer_size = UI_TRANSMIT_BUFF_SZ;
 
+  NetHoldInReset();
+  UIBootloaderMode();
+
+  HAL_Delay(1000);
+
   InitUartStreamParameters(&usb_stream);
   InitUartStreamParameters(&ui_stream);
 
   StartUartReceive(&usb_stream);
   StartUartReceive(&ui_stream);
-
-  NetHoldInReset();
-  UIBootloaderMode();
+  HAL_Delay(1000);
 
   HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
