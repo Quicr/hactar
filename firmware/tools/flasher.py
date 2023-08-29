@@ -184,17 +184,20 @@ def WaitForBytesExcept(uart: serial.Serial, num_bytes: int):
 
 def SendUploadSelectionCommand(uart: serial.Serial, command: str):
     send_data = [ch for ch in bytes(command, "UTF-8")]
-    uart.write(bytes(send_data))
-    time.sleep(2)
+    res = WriteBytesWaitForACK(uart, bytes(send_data), 5)
+    if res == -1:
+        raise Exception("Failed to move device into upload mode")
+
     if (command == "ui_upload"):
         #  Change to parity even
-        # TODO get a reply from the mgmt chip for changing to ui_mode/net_mode
         print(f"Activating UI Upload Mode: {B_GREEN}SUCCESS{N_WHITE}")
         print(f"Update uart to parity: {B_BLUE}EVEN{N_WHITE}")
-        uart.close()
         uart.parity = serial.PARITY_EVEN
-        uart.open()
-        time.sleep(0.1)
+        # Wait for a response
+        res = WaitForBytes(uart, 1)
+
+        # Give time for the hactar device to be prepared
+        time.sleep(0.6)
 
 
 def SendSync(uart: serial.Serial, retry_num: int = 5):
