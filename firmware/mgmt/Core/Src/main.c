@@ -157,6 +157,10 @@ const char net_upload_cmd [] = "net_upload";
 const char debug_cmd [] = "debug";
 const char reset_cmd [] = "reset";
 
+const uint8_t ACK[] = {0x79};
+const uint8_t READY[] = {0x80};
+const uint8_t NACK[] = {0x1F};
+
 uint8_t CheckForDebugMode()
 {
   uint32_t current_tick = HAL_GetTick();
@@ -330,7 +334,6 @@ extern inline void HandleTx(uart_stream_t* tx_stream)
 
       tx_stream->tx_free = 0;
       HAL_UART_Transmit_DMA(tx_stream->to_uart, (tx_stream->tx_buffer + tx_stream->tx_read), send_bytes);
-      tx_stream->last_transmission_time = HAL_GetTick();
       tx_stream->pending_bytes -= send_bytes;
       tx_stream->tx_read += send_bytes;
     }
@@ -403,6 +406,7 @@ extern inline void HandleCommands(uart_stream_t* uart_stream)
 
     if (strcmp((const char*)uart_stream->tx_buffer, ui_upload_cmd) == 0)
     {
+      HAL_UART_Transmit(&huart3, ACK, 1, HAL_MAX_DELAY);
       state = UI_Upload_Reset;
     }
     else if (strcmp((const char*)uart_stream->tx_buffer, net_upload_cmd) == 0)
@@ -442,7 +446,7 @@ extern inline void InitUartStreamParameters(uart_stream_t* uart_stream)
   uart_stream->tx_free = 1;
   uart_stream->pending_bytes = 0;
   uart_stream->idle_receive = 0;
-  uart_stream->last_transmission_time = HAL_GetTick() + 1000;
+  uart_stream->last_transmission_time = HAL_GetTick();
   uart_stream->has_received = 0;
   uart_stream->command_complete = 0;
 }
@@ -617,17 +621,14 @@ void UIUpload()
   usb_stream.rx_buffer_size = UI_RECEIVE_BUFF_SZ;
   usb_stream.tx_buffer_size = UI_TRANSMIT_BUFF_SZ;
 
-  NetHoldInReset();
-  UIBootloaderMode();
-
-  HAL_Delay(1000);
-
   InitUartStreamParameters(&usb_stream);
   InitUartStreamParameters(&ui_stream);
 
   StartUartReceive(&usb_stream);
   StartUartReceive(&ui_stream);
-  HAL_Delay(1000);
+
+  NetHoldInReset();
+  UIBootloaderMode();
 
   HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
@@ -638,6 +639,12 @@ void UIUpload()
   HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
 
   state = UI_Upload;
+
+  // Send a ready message
+  HAL_UART_Transmit(&huart3, READY, 1, HAL_MAX_DELAY);
+
+  usb_stream.last_transmission_time = HAL_GetTick();
+  ui_stream.last_transmission_time = HAL_GetTick();
 
   while (state == UI_Upload)
   {

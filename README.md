@@ -290,6 +290,13 @@ Run the following command:
 sudo apt install openocd gdb-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
 ```
 
+If you don't have python3.8 installed, which is used for arm-none-eabi-gdb, then you'll need to install it
+```bash
+sudo add-apt-repository ppa:deadsnakes/ppa
+apt update
+sudo apt install python3.8
+```
+
 <i>Windows</i>
 
 - Download the appropriate zip for your system https://openocd.org/pages/getting-openocd.html
