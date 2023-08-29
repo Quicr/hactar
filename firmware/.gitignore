@@ -5,4 +5,7 @@ build
 net/shared_inc
 wifi_creds.hh
 
-TODO
+
+
+node_modules
+package-lock.json
