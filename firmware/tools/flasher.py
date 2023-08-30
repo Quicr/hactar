@@ -6,6 +6,7 @@ from types import SimpleNamespace
 # https://www.manualslib.com/download/1764455/St-An3155.html
 
 ACK = 0x79
+READY = 0x80
 NACK = 0x1F
 
 Commands = SimpleNamespace(**{
@@ -59,23 +60,6 @@ N_BLUE = "\033[0;34m"
 N_MAGENTA = "\033[0;35m"
 N_CYAN = "\033[0;36m"
 N_WHITE = "\033[0;37m"
-
-# address = start_addr
-# in_file = open("test.txt", "rb")
-# firmware = in_file.read()
-# file_addr = 0
-# chunk = firmware[0:256]
-
-# chunk_pad = 4 - (len(chunk) % 4)
-# if (chunk_pad > 0):
-#     chunk = chunk + bytes([0xFF] * chunk_pad)
-
-# # Add the number of bytes to be received. 0 start
-# chunk = (len(chunk) - 1).to_bytes(1, "big") + chunk
-
-# print(chunk)
-# print(len(chunk))
-# exit()
 
 if (len(sys.argv) < 3):
     print("Error. Need port followed by baudrate")
