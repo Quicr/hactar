@@ -29,10 +29,10 @@ Commands = SimpleNamespace(**{
 User_Sector_Start_Address = 0x08000000
 
 Sectors = [
-    SimpleNamespace(**{"size": 0x4000, "addr": 0x08000000}),
-    SimpleNamespace(**{"size": 0x0400, "addr": 0x08004000}),
-    SimpleNamespace(**{"size": 0x0400, "addr": 0x08008000}),
-    SimpleNamespace(**{"size": 0x0400, "addr": 0x0800C000}),
+    SimpleNamespace(**{"size": 0x4000,   "addr": 0x08000000}),
+    SimpleNamespace(**{"size": 0x0400,   "addr": 0x08004000}),
+    SimpleNamespace(**{"size": 0x0400,   "addr": 0x08008000}),
+    SimpleNamespace(**{"size": 0x0400,   "addr": 0x0800C000}),
     SimpleNamespace(**{"size": 0x010000, "addr": 0x08010000}),
     SimpleNamespace(**{"size": 0x020000, "addr": 0x08020000}),
     SimpleNamespace(**{"size": 0x020000, "addr": 0x08040000}),
@@ -174,14 +174,17 @@ def SendUploadSelectionCommand(uart: serial.Serial, command: str):
 
     if (command == "ui_upload"):
         #  Change to parity even
-        print(f"Activating UI Upload Mode: {B_GREEN}SUCCESS{N_WHITE}")
         print(f"Update uart to parity: {B_BLUE}EVEN{N_WHITE}")
         uart.parity = serial.PARITY_EVEN
         # Wait for a response
         res = WaitForBytes(uart, 1)
+        print(res)
+        if (res != READY):
+            raise Exception("NO REPLY received after activating ui upload")
 
+        print(f"Activating UI Upload Mode: {B_GREEN}SUCCESS{N_WHITE}")
         # Give time for the hactar device to be prepared
-        time.sleep(0.6)
+        # time.sleep(0.6)
 
 
 def SendSync(uart: serial.Serial, retry_num: int = 5):
@@ -367,6 +370,7 @@ def SendExtendedEraseMemory(uart: serial.Serial, sectors: [int],
         raise Exception("Failed to erase, no reply received")
     elif (reply == NACK):
         raise Exception("Failed to erase")
+    print(f"Erase Verify: {B_BLUE}BEGIN{N_WHITE}")
 
     mem_bytes_sz = 256
     expected_mem = [255] * mem_bytes_sz
@@ -381,27 +385,27 @@ def SendExtendedEraseMemory(uart: serial.Serial, sectors: [int],
     for sector in sectors:
         memory_address = Sectors[sector].addr
         end_of_sector = Sectors[sector].addr + Sectors[sector].size
-        read_count = 0
-        mem = [0] * mem_bytes_sz
         while (memory_address != end_of_sector):
+            read_count = 0
+            mem = [0] * mem_bytes_sz
             percent_verified = int(
                 (bytes_verified / total_bytes_to_verify)*100)
             print(f"Verifying erase: {B_GREEN}{percent_verified:2}{N_WHITE}"
                   f"% verified", end="\r")
-            while (mem != expected_mem) and read_count != 5:
+            while (mem != expected_mem) and read_count != 10:
                 mem = SendReadMemory(uart, memory_address.to_bytes(4, "big"),
                                      mem_bytes_sz)
                 read_count += 1
-                time.sleep(0.5)
+                if (mem != expected_mem):
+                    print(f"Sector not verified {sector} retry {read_count}")
 
-            if (read_count == 5 and mem != expected_mem):
+            if (read_count == 10 and mem != expected_mem):
                 print(f"Verifying: {B_RED}Failed to verify sector [{sector}]\
                     {N_WHITE}")
                 return False
 
             memory_address += mem_bytes_sz
             bytes_verified += mem_bytes_sz
-            time.sleep(0.001)
 
     # Don't actually need to do the math here
     print(f"Verifying erase: {B_GREEN}100{N_WHITE}% verified")
