@@ -640,6 +640,8 @@ void UIUpload()
 
   state = UI_Upload;
 
+  HAL_Delay(500);
+
   // Send a ready message
   HAL_UART_Transmit(&huart3, READY, 1, HAL_MAX_DELAY);
 

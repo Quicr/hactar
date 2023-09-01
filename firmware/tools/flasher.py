@@ -29,10 +29,10 @@ Commands = SimpleNamespace(**{
 User_Sector_Start_Address = 0x08000000
 
 Sectors = [
-    SimpleNamespace(**{"size": 0x4000,   "addr": 0x08000000}),
-    SimpleNamespace(**{"size": 0x0400,   "addr": 0x08004000}),
-    SimpleNamespace(**{"size": 0x0400,   "addr": 0x08008000}),
-    SimpleNamespace(**{"size": 0x0400,   "addr": 0x0800C000}),
+    SimpleNamespace(**{"size": 0x004000,   "addr": 0x08000000}),
+    SimpleNamespace(**{"size": 0x004000,   "addr": 0x08004000}),
+    SimpleNamespace(**{"size": 0x004000,   "addr": 0x08008000}),
+    SimpleNamespace(**{"size": 0x004000,   "addr": 0x0800C000}),
     SimpleNamespace(**{"size": 0x010000, "addr": 0x08010000}),
     SimpleNamespace(**{"size": 0x020000, "addr": 0x08020000}),
     SimpleNamespace(**{"size": 0x020000, "addr": 0x08040000}),
