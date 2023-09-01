@@ -1,5 +1,10 @@
 <script setup lang="ts">
 
+// @ts-ignore
+import bin from "./ui_bin.js";
+
+const data: number[] = bin;
+
 const ACK: number = 0x79;
 const READY: number = 0x80;
 const NACK: number = 0x1F;
@@ -24,18 +29,18 @@ const Commands = {
 const User_Sector_Start_Address = 0x08000000;
 
 const Defined_Sectors = [
-    { "size": 0x4000, "addr": 0x08000000 },
-    { "size": 0x0400, "addr": 0x08004000 },
-    { "size": 0x0400, "addr": 0x08008000 },
-    { "size": 0x0400, "addr": 0x0800C000 },
-    { "size": 0x010000, "addr": 0x08010000 },
-    { "size": 0x020000, "addr": 0x08020000 },
-    { "size": 0x020000, "addr": 0x08040000 },
-    { "size": 0x020000, "addr": 0x08060000 },
-    { "size": 0x020000, "addr": 0x08080000 },
-    { "size": 0x020000, "addr": 0x080A0000 },
-    { "size": 0x020000, "addr": 0x080C0000 },
-    { "size": 0x020000, "addr": 0x080E0000 }
+    { "size": 0x00004000, "addr": 0x08000000 },
+    { "size": 0x00004000, "addr": 0x08004000 },
+    { "size": 0x00004000, "addr": 0x08008000 },
+    { "size": 0x00004000, "addr": 0x0800C000 },
+    { "size": 0x00010000, "addr": 0x08010000 },
+    { "size": 0x00020000, "addr": 0x08020000 },
+    { "size": 0x00020000, "addr": 0x08040000 },
+    { "size": 0x00020000, "addr": 0x08060000 },
+    { "size": 0x00020000, "addr": 0x08080000 },
+    { "size": 0x00020000, "addr": 0x080A0000 },
+    { "size": 0x00020000, "addr": 0x080C0000 },
+    { "size": 0x00020000, "addr": 0x080E0000 }
 ];
 
 var port: any = null;
@@ -159,7 +164,6 @@ async function ListenForBytes()
 
                 value.forEach((element: any) =>
                 {
-                    console.log(`recv ${element}`);
                     in_buffer.push(element);
                 });
             }
@@ -179,28 +183,19 @@ async function ReadBytes(num_bytes: number, timeout: number = 2000): Promise<num
 {
     let num = num_bytes
     let bytes: number[] = []
-    var cancel: boolean = false;
-    const timer = setTimeout(() =>
-    {
-        console.log("cancel")
-        cancel = true;
-    }, timeout);
 
-    while (num > 0 && !cancel)
+    let start_time = Date.now();
+    while (num > 0 && (Date.now() - start_time) < timeout)
     {
-        // Because js handles jobs weird, we need this timeout otherwise
-        // it will keep trying to run this while loop without breaking and
-        // allowing for the above timer to timeout.
-        await sleep(10);
         if (in_buffer.length == 0)
+        {
+            await sleep(0.00001)
             continue;
+        }
         bytes.push(in_buffer[0]);
         in_buffer.shift();
         num--;
     }
-
-    if (!cancel)
-        clearTimeout(timer);
 
     if (bytes.length < 1)
         return [NO_REPLY];
@@ -234,7 +229,7 @@ async function WriteBytes(bytes: Uint8Array)
 }
 
 async function WriteByteWaitForACK(byte: number, retry: number = 1,
-    compliment: boolean = true)
+    compliment: boolean = true, timeout = 2000)
 {
 
     let data: number[] = [byte];
@@ -244,10 +239,9 @@ async function WriteByteWaitForACK(byte: number, retry: number = 1,
     let num = retry;
     while (num--)
     {
-        console.log(data);
         await WriteBytes(new Uint8Array(data));
 
-        let reply = await ReadByte();
+        let reply = await ReadByte(timeout);
 
         if (reply == NO_REPLY)
             continue;
@@ -288,9 +282,13 @@ async function FlashFirmware()
 
         await sleep(200);
 
-        let addr = await ConvertToByteArray([User_Sector_Start_Address], 4);
-        let memory = await ReadMemory(addr, 1);
-        console.log(memory);
+        // let addr = await ConvertToByteArray([User_Sector_Start_Address], 4);
+        // let memory = await ReadMemory(addr, 1);
+        // console.log(memory);
+
+        // console.log(await ExtendedEraseMemory([0, 1, 2, 3, 4, 5]));
+
+        await WriteMemory(data, User_Sector_Start_Address);
 
         await ClosePortAndNull();
 
@@ -307,7 +305,7 @@ async function SendUploadSelectionCommand(command: string)
     let enc = new TextEncoder()
 
     // Get the response
-    let reply = await WriteBytesWaitForACK(enc.encode("ui_upload"));
+    let reply = await WriteBytesWaitForACK(enc.encode("ui_upload"), 4000);
     if (reply == NO_REPLY)
     {
         throw "Failed to move Hactar into upload mode";
@@ -346,7 +344,6 @@ async function SendSync(retry: number = 5)
 async function ReadMemory(address: number[], num_bytes: number,
     retry: number = 1)
 {
-    console.info("send read memory");
     let reply: number = await WriteByteWaitForACK(Commands.read_memory, retry);
     if (reply == NACK)
         throw "NACK was received during Read Memory";
@@ -354,8 +351,6 @@ async function ReadMemory(address: number[], num_bytes: number,
         throw "NO REPLY was received during Read Memory";
 
     address.push(await CalculateChecksum(address));
-
-    console.log(address);
 
     reply = await WriteBytesWaitForACK(new Uint8Array(address));
     if (reply == NACK)
@@ -369,11 +364,11 @@ async function ReadMemory(address: number[], num_bytes: number,
     else if (reply == NO_REPLY)
         throw "NO REPLY received after sending num bytes to receive";
 
-    let recv_data = ReadBytesExcept(num_bytes);
+    let recv_data = await ReadBytesExcept(num_bytes);
     return recv_data
 }
 
-async function SendExtendedEraseMemory(sectors: number[], special_erase = false)
+async function ExtendedEraseMemory(sectors: number[]): Promise<boolean>
 {
     let reply: number = await WriteByteWaitForACK(Commands.extended_erase);
     if (reply == NACK)
@@ -423,19 +418,26 @@ async function SendExtendedEraseMemory(sectors: number[], special_erase = false)
     let bytes_verified = 0;
     let total_bytes_to_verify = 0;
 
-    Defined_Sectors.forEach(sector =>
+    await sectors.forEach(sector_idx =>
     {
-        total_bytes_to_verify += sector.size;
+        total_bytes_to_verify += Defined_Sectors[sector_idx].size;
     });
 
+    console.log(`num bytes to verify = ${total_bytes_to_verify.toString(16)}`);
     let percent_verified =
         Math.floor((bytes_verified / total_bytes_to_verify) * 100);
 
-    sectors.forEach(async (sector_idx) =>
+    // sectors.forEach(async (sector_idx) =>
+    let sector_idx = -1;
+    for (let i = 0; i < sectors.length; ++i)
     {
+        sector_idx = sectors[i];
         let memory_address = Defined_Sectors[sector_idx].addr;
         let end_of_sector = Defined_Sectors[sector_idx].addr +
             Defined_Sectors[sector_idx].size;
+
+        console.log(`Verify sector [${sector_idx}] bytes verified: ${bytes_verified.toString(16)}`);
+        console.log(`Addr [${memory_address.toString(16)}] end of sector: ${end_of_sector.toString(16)}`);
 
         while (memory_address != end_of_sector)
         {
@@ -444,24 +446,22 @@ async function SendExtendedEraseMemory(sectors: number[], special_erase = false)
                 Math.floor((bytes_verified / total_bytes_to_verify) * 100);
             console.log(`Verifying erase: ${percent_verified}% verified`);
 
-            mem.fill(0);
-
-            // TODO array comparison doesn't work like this in js
-            // TODO make a function to compare them.
-
-            while ((mem != expected_mem) && read_count != Max_Attempts)
+            let compare = false;
+            do
             {
                 let memory_address_bytes = await ConvertToByteArray([memory_address], 4);
                 mem = await ReadMemory(memory_address_bytes, mem_bytes_sz);
                 read_count += 1;
 
-                if (mem != expected_mem)
+                compare = await MemoryCompare(mem, expected_mem);
+
+                if (compare)
                 {
                     console.log(`Sector [${sector_idx}] not verified. Retry: ${read_count}`);
                 }
-            }
+            } while ((compare) && read_count != Max_Attempts);
 
-            if (read_count != Max_Attempts && mem != expected_mem)
+            if (read_count != Max_Attempts && compare)
             {
                 throw `Verifying: Failed to verify sector [${sector_idx}]`;
             }
@@ -470,11 +470,108 @@ async function SendExtendedEraseMemory(sectors: number[], special_erase = false)
             bytes_verified += mem_bytes_sz;
 
         }
-    });
+    }
 
     // Don't actually need to do the math here
     console.log("Verifying erase: 100% verified");
     console.log("Erase: COMPLETE");
+    return true;
+}
+
+async function WriteMemory(data: number[], start_addr: number, retry: number = 1)
+{
+    const Max_Num_Bytes = 256;
+    let addr = start_addr;
+    let file_addr = 0;
+
+    let percent_flashed = 0;
+
+    const total_bytes = data.length;
+
+    console.log("Write to Memory: Started");
+    console.log(`Address: ${addr.toString(16)}`)
+    console.log(`Byte Stream Size: ${total_bytes.toString(16)}`);
+
+    let reply = -1;
+    while (file_addr < total_bytes)
+    {
+        percent_flashed = Math.floor((file_addr / total_bytes) * 100);
+        console.log(`Flashing: ${percent_flashed}%`);
+        reply = await WriteByteWaitForACK(Commands.write_memory);
+        if (reply == NACK)
+            throw "NACK was received after sending write command";
+        else if (reply == NO_REPLY)
+            throw "NO REPLY received after sending write command";
+
+        let write_address_bytes = await ConvertToByteArray([addr], 4);
+        let checksum = await CalculateChecksum(write_address_bytes);
+
+        write_address_bytes.push(checksum);
+        reply = await WriteBytesWaitForACK(new Uint8Array(write_address_bytes));
+        if (reply == NACK)
+            throw "NACK was received after sending write command";
+        else if (reply == NO_REPLY)
+            throw "NO REPLY received after sending write command";
+
+        // Get the contents of the binary
+        // Exclusive  slice
+        let chunk = data.slice(file_addr, file_addr + Max_Num_Bytes);
+        let chunk_size = chunk.length;
+
+        while (chunk.length % 4 != 0)
+            chunk.push(0);
+
+        chunk.unshift(chunk.length - 1);
+        chunk.push(await CalculateChecksum(chunk));
+
+        reply = await WriteBytesWaitForACK(new Uint8Array(chunk));
+        if (reply == NACK)
+            throw `NACK was received while writing to addr: ${addr}`;
+        else if (reply == NO_REPLY)
+            throw `NO REPLY was received while writing to addr: ${addr}`;
+
+        file_addr += chunk_size;
+        addr += chunk_size;
+    }
+
+    console.log(`Flashing: 100%`);
+
+    addr = start_addr;
+    file_addr = 0;
+
+    while (file_addr < total_bytes)
+    {
+        percent_flashed = Math.floor((file_addr / total_bytes) * 100);
+        console.log(`Verifying write: ${percent_flashed}%`);
+
+        const chunk = data.slice(file_addr, file_addr + Max_Num_Bytes);
+        const addr_bytes = await ConvertToByteArray([addr], 4);
+        const mem = await ReadMemory(addr_bytes, chunk.length);
+
+        const compare = MemoryCompare(mem, chunk);
+        if (!compare)
+            throw `Failed to verify at memory address ${addr}`;
+
+        addr += mem.length;
+        file_addr += chunk.length;
+    }
+
+    console.log("Verifying write: 100%");
+    console.log("Write: COMPLETE");
+
+    return ACK;
+}
+
+async function MemoryCompare(arr1: number[], arr2: number[]): Promise<boolean>
+{
+    if (arr1.length != arr2.length) return false;
+
+    for (let i = 0; i < arr1.length; ++i)
+    {
+        if (arr1[i] != arr2[i])
+            return false;
+    }
+
     return true;
 }
 
@@ -514,6 +611,11 @@ async function ConvertToByteArray(array: number[], bytes_per_element: number)
     return array_bytes;
 }
 
+async function test()
+{
+    console.log(bin[2]);
+}
+
 </script>
 
 <template>
@@ -521,6 +623,6 @@ async function ConvertToByteArray(array: number[], bytes_per_element: number)
         <button @click="ConnectToHactar()">Flash hactar app</button>
         <button @click="ClosePortAndNull()">Close port</button>
         <button @click="FlashFirmware()">Flash</button>
-        <button @click="ConvertToByteArray([0xff], 4)">test</button>
+        <button @click="test">test</button>
     </main>
 </template>
