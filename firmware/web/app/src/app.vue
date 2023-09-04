@@ -8,7 +8,9 @@ import { RouterLink, RouterView } from "vue-router";
     <h1 class="blue">Hactar Flasher</h1>
   </header>
 
-  <RouterView />
+  <main>
+    <RouterView />
+  </main>
 </template>
 
 <style scoped>
@@ -26,10 +28,8 @@ nav a:first-of-type {
     text-align: center;
   }
 
-  header .wrapper {
-  }
+  header .wrapper {}
 
-  nav {
-  }
+  nav {}
 }
 </style>
