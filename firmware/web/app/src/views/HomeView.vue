@@ -4,633 +4,93 @@ import { reactive, ref } from "vue";
 import axios from "axios";
 
 import LogItem from "@/components/LogItem.vue";
-let logs: any = reactive([]);
 
-// @ts-ignore
-// import bin from "./ui_bin.js";
-// const data: number[] = bin;
+import HactarFlasher from "@/classes/hactar_flasher";
+let logs: any = reactive([]);
+let log_idx = 0;
+let progress = "";
+let progress_display = "";
+let progress_dot_last_time = 0;
+let Progress_Dot_Interval = 1000;
 
 const log_list = ref(null);
 const log_container = ref(null);
 let auto_scroll = true;
 
-let user_info = reactive({text:""});
+let user_info = reactive({ text: "" });
+
+let flasher: HactarFlasher = new HactarFlasher();
 
 
-const ACK: number = 0x79;
-const READY: number = 0x80;
-const NACK: number = 0x1F;
-const NO_REPLY: number = -1;
-
-const Commands = {
-    "sync": 0x7F,
-    "get": 0x00,
-    "get_version_and_read_protection_status": 0x01,
-    "get_id": 0x02,
-    "read_memory": 0x11,
-    "go": 0x21,
-    "write_memory": 0x31,
-    "erase": 0x43,
-    "extended_erase": 0x44,
-    "write_protect": 0x63,
-    "write_unprotect": 0x73,
-    "readout_protect": 0x82,
-    "readout_unprotect": 0x92
-};
-
-const User_Sector_Start_Address = 0x08000000;
-
-const Defined_Sectors = [
-    { "size": 0x00004000, "addr": 0x08000000 },
-    { "size": 0x00004000, "addr": 0x08004000 },
-    { "size": 0x00004000, "addr": 0x08008000 },
-    { "size": 0x00004000, "addr": 0x0800C000 },
-    { "size": 0x00010000, "addr": 0x08010000 },
-    { "size": 0x00020000, "addr": 0x08020000 },
-    { "size": 0x00020000, "addr": 0x08040000 },
-    { "size": 0x00020000, "addr": 0x08060000 },
-    { "size": 0x00020000, "addr": 0x08080000 },
-    { "size": 0x00020000, "addr": 0x080A0000 },
-    { "size": 0x00020000, "addr": 0x080C0000 },
-    { "size": 0x00020000, "addr": 0x080E0000 }
-];
-
-var port: any = null;
-var stop = false;
-var open = false;
-var in_buffer: number[] = [];
-var out_buffer = [];
-
-let reader_promise: Promise<void>;
-let reader: any;
-let released_reader = true;
-let writer: any;
-
-async function CalculateChecksum(array: number[]): Promise<number>
+async function FlashHactar()
 {
-    return array.reduce((a, b) => a ^ b);
-}
 
-async function sleep(delay: number)
-{
-    await new Promise(r => setTimeout(r, delay));
-}
-
-async function ClosePort()
-{
-    if (!open)
+    try
     {
-        Log("Port not open");
-        return;
-    }
-
-    stop = true;
-    reader.cancel();
-
-    await reader_promise;
-    await port.close();
-    open = false;
-
-    Log("Close hacatar");
-}
-
-async function ClosePortAndNull()
-{
-    await ClosePort();
-    port = null;
-}
-
-async function OpenPort(parity: string)
-{
-    Log("Open port");
-    const options = {
-        baudRate: 115200,
-        dataBits: 8,
-        stopBits: 1,
-        parity: parity
-    };
-
-    await ClosePort();
-
-    stop = false;
-    released_reader = true;
-    in_buffer = [];
-
-    await port.open(options);
-
-    open = true;
-
-    // Start listening
-    reader_promise = ListenForBytes()
-}
-
-async function ConnectToHactar()
-{
-
-    if ('serial' in navigator)
-    {
-        if (port) return;
         const filters = [
             { usbVendorId: 6790, usbProductId: 29987 }
         ];
-        port = await (navigator as any).serial.requestPort({ filters });
 
-        if (!port) return
+        log_idx = 0;
 
-        await OpenPort("none");
-    }
-    else
-    {
-        Log("Web serial is not enabled in your browser");
-    }
-}
-
-async function ListenForBytes()
-{
-    released_reader = false;
-    Log(`port readable: ${port.readable}, stop: ${stop}`)
-    while (port.readable && !stop)
-    {
-        Log("start reading");
-        reader = port.readable.getReader();
-        try
+        if (await flasher.ConnectToHactar(filters))
         {
-
-            while (!stop)
-            {
-                const { value, done } = await reader.read()
-
-                if (done)
-                {
-                    break;
-                }
-
-                value.forEach((element: any) =>
-                {
-                    in_buffer.push(element);
-                });
-            }
-        } catch (error)
-        {
-            Log(error);
-            return;
-        } finally
-        {
-            reader.releaseLock();
-            released_reader = true;
         }
-    }
-}
 
-async function ReadBytes(num_bytes: number, timeout: number = 2000): Promise<number[]>
-{
-    let num = num_bytes
-    let bytes: number[] = []
-
-    let start_time = Date.now();
-    while (num > 0 && (Date.now() - start_time) < timeout)
-    {
-        if (in_buffer.length == 0)
+        const log_progress_interval = setInterval(() =>
         {
-            await sleep(0.001)
-            continue;
-        }
-        bytes.push(in_buffer[0]);
-        in_buffer.shift();
-        num--;
-    }
+            GetProgressUpdate();
+            GetLogs();
+        }, 5);
 
-    if (bytes.length < 1)
-        return [NO_REPLY];
-
-    return bytes;
-}
-
-async function ReadBytesExcept(num_bytes: number, timeout: number = 2000): Promise<number[]>
-{
-    let result: number[] = await ReadBytes(num_bytes, timeout);
-    if (result[0] == NO_REPLY)
-    {
-        throw "Error, didn't receive any bytes";
-    }
-
-    return result;
-}
-
-async function ReadByte(timeout: number = 2000): Promise<number>
-{
-    let res = await ReadBytes(1, timeout)
-
-    return res[0];
-}
-
-async function WriteBytes(bytes: Uint8Array)
-{
-    const writer = port.writable.getWriter();
-    await writer.write(bytes);
-    writer.releaseLock();
-}
-
-async function WriteByteWaitForACK(byte: number, retry: number = 1,
-    compliment: boolean = true, timeout = 2000)
-{
-
-    let data: number[] = [byte];
-    if (compliment)
-        data.push(byte ^ 0xFF)
-
-    let num = retry;
-    while (num--)
-    {
-        await WriteBytes(new Uint8Array(data));
-
-        let reply = await ReadByte(timeout);
-
-        if (reply == NO_REPLY)
-            continue;
-
-        return reply;
-    }
-
-    return NO_REPLY;
-}
-
-async function WriteBytesWaitForACK(bytes: Uint8Array, timeout: number = 2000,
-    retry: number = 1)
-{
-    let num = retry;
-    while (num--)
-    {
-        await WriteBytes(bytes);
-
-        let reply = await ReadByte(timeout);
-
-        if (reply == NO_REPLY)
-            continue;
-
-        return reply;
-    }
-
-    return NO_REPLY;
-}
-
-async function FlashFirmware()
-{
-    try
-    {
         // Get the ui bin from the server
         let res = await axios.get("http://localhost:7775/");
         let data = res.data.data;
 
-        user_info.text = "Activating upload mode";
-        await SendUploadSelectionCommand("ui_upload");
+        await flasher.FlashUI(data);
 
-        await SendSync();
+        clearInterval(log_progress_interval);
 
-        await sleep(200);
-
-        user_info.text = "Preparing Hactar";
-        await ExtendedEraseMemory([0, 1, 2, 3, 4, 5]);
-
-        await WriteMemory(data, User_Sector_Start_Address);
-
-        await ClosePortAndNull();
-
-        Log("done");
+        user_info.text = "Update complete";
     }
     catch (exception)
     {
-        await ClosePortAndNull();
         console.error(exception);
+        await flasher.ClosePortAndNull();
     }
 }
 
-async function SendUploadSelectionCommand(command: string)
+function GetProgressUpdate()
 {
-    let enc = new TextEncoder()
-
-    // Get the response
-    let reply = await WriteBytesWaitForACK(enc.encode("ui_upload"), 4000);
-    if (reply == NO_REPLY)
+    if (progress != flasher.progress)
     {
-        throw "Failed to move Hactar into upload mode";
+        progress = flasher.progress;
+        progress_display = flasher.progress;
+        progress_dot_last_time = Date.now();
     }
-
-    if (command == "ui_upload")
+    else if (Date.now() - progress_dot_last_time > Progress_Dot_Interval)
     {
-        // ChangeParity("even");
-        await OpenPort("even");
-        Log("Activating UI Upload Mode: SUCCESS");
-        Log("Update uart to parity: EVEN");
+        progress_display += ".";
+        progress_dot_last_time = Date.now();
 
-        reply = await ReadByte(5000);
-
-        if (reply != READY)
-            throw "Hactar took too long to get ready";
-    }
-
-}
-
-async function SendSync(retry: number = 5)
-{
-    let reply: number = await WriteByteWaitForACK(Commands.sync, retry, false);
-
-    if (reply == NACK)
-        throw "Activating device: FAILED";
-    else if (reply == NO_REPLY)
-        throw "Activating device: NO REPLY";
-
-    Log("Activating device: SUCCESS");
-}
-
-async function ReadMemory(address: number[], num_bytes: number,
-    retry: number = 1)
-{
-    let reply: number = await WriteByteWaitForACK(Commands.read_memory, retry);
-    if (reply == NACK)
-        throw "NACK was received during Read Memory";
-    else if (reply == NO_REPLY)
-        throw "NO REPLY was received during Read Memory";
-
-    address.push(await CalculateChecksum(address));
-
-    reply = await WriteBytesWaitForACK(new Uint8Array(address));
-    if (reply == NACK)
-        throw "NACK was received after sending memory address";
-    else if (reply == NO_REPLY)
-        throw "NO REPLY received after sending memory address";
-
-    reply = await WriteByteWaitForACK(num_bytes - 1);
-    if (reply == NACK)
-        throw "NACK was received after sending num bytes to receive";
-    else if (reply == NO_REPLY)
-        throw "NO REPLY received after sending num bytes to receive";
-
-    let recv_data = await ReadBytesExcept(num_bytes);
-    return recv_data
-}
-
-async function ExtendedEraseMemory(sectors: number[]): Promise<boolean>
-{
-    let reply: number = await WriteByteWaitForACK(Commands.extended_erase);
-    if (reply == NACK)
-        throw "NACK was received after sending erase command";
-    else if (reply == -1)
-        throw "No reply was received after sending erase command";
-
-    // TODO error check sectors
-
-    // Number of sectors starts at 0x00 0x00. So 0x00 0x00 means delete
-    // 1 sector.
-    let num_sectors = await ConvertToByteArray([sectors.length - 1], 2);
-
-    // Convert sectors into bytes
-    let byte_sectors = await ConvertToByteArray(sectors, 2);
-
-    // Await the two and join them together
-    let data = num_sectors.concat(byte_sectors);
-
-    let checksum = [await CalculateChecksum(data)];
-
-    // Concat the checksum to data
-    data = data.concat(checksum);
-
-    Log(`Erase: Sectors ${sectors}`);
-    Log(`Erase: STARTED`);
-
-    reply = await WriteBytesWaitForACK(new Uint8Array(data), 10000);
-    if (reply == -1)
-    {
-        throw "Failed to erase, no reply received";
-    }
-    else if (reply == NACK)
-    {
-        throw "Failed to erase";
-    }
-
-    const Max_Attempts = 15;
-    const mem_bytes_sz = 256;
-    const expected_mem: number[] = Array(mem_bytes_sz - 1);
-    expected_mem.fill(255);
-
-    let mem: number[] = Array(mem_bytes_sz - 1);
-    let read_count = 0;
-    let bytes_verified = 0;
-    let total_bytes_to_verify = 0;
-
-    await sectors.forEach(sector_idx =>
-    {
-        total_bytes_to_verify += Defined_Sectors[sector_idx].size;
-    });
-
-
-    let percent_verified =
-        Math.floor((bytes_verified / total_bytes_to_verify) * 100);
-    Log(`Verifying erase: ${percent_verified}% verified`);
-
-    let sector_idx = -1;
-    for (let i = 0; i < sectors.length; ++i)
-    {
-        sector_idx = sectors[i];
-        let memory_address = Defined_Sectors[sector_idx].addr;
-        let end_of_sector = Defined_Sectors[sector_idx].addr +
-            Defined_Sectors[sector_idx].size;
-
-        while (memory_address != end_of_sector)
+        if (progress_display.slice(-4) == "....")
         {
-            read_count = 0;
-            percent_verified =
-                Math.floor((bytes_verified / total_bytes_to_verify) * 100);
-            Log(`Verifying erase: ${percent_verified}% verified`, true);
-
-            let compare = false;
-            do
-            {
-                let memory_address_bytes = await ConvertToByteArray([memory_address], 4);
-                mem = await ReadMemory(memory_address_bytes, mem_bytes_sz);
-                read_count += 1;
-
-                compare = await MemoryCompare(mem, expected_mem);
-
-                if (compare)
-                {
-                    Log(`Sector [${sector_idx}] not verified. Retry: ${read_count}`);
-                }
-            } while ((compare) && read_count != Max_Attempts);
-
-            if (read_count >= Max_Attempts && compare)
-            {
-                throw `Verifying: Failed to verify sector [${sector_idx}]`;
-            }
-
-            memory_address += mem_bytes_sz;
-            bytes_verified += mem_bytes_sz;
-
+            progress_display = progress;
         }
     }
 
-    // Don't actually need to do the math here
-    Log("Verifying erase: 100% verified", true);
-    Log("Erase: COMPLETE");
-    return true;
+    user_info.text = progress_display;
 }
 
-async function WriteMemory(data: number[], start_addr: number, retry: number = 1)
+function GetLogs()
 {
-    const Max_Num_Bytes = 256;
-    let addr = start_addr;
-    let file_addr = 0;
+    if (flasher.logs.length == log_idx)
+        return;
 
-    let percent_flashed = 0;
-
-    const total_bytes = data.length;
-
-    Log("Write to Memory: Started");
-    Log(`Address: ${addr.toString(16)}`)
-    Log(`Byte Stream Size: ${total_bytes.toString(16)}`);
-
-    Log(`Flashing: ${percent_flashed}%`);
-    user_info.text = `Updating... ${percent_flashed}%`;
-
-    let reply = -1;
-    while (file_addr < total_bytes)
-    {
-        percent_flashed = Math.floor((file_addr / total_bytes) * 100);
-
-        Log(`Flashing: ${percent_flashed}%`, true);
-        user_info.text = `Updating... ${percent_flashed}%`;
-
-        reply = await WriteByteWaitForACK(Commands.write_memory);
-        if (reply == NACK)
-            throw "NACK was received after sending write command";
-        else if (reply == NO_REPLY)
-            throw "NO REPLY received after sending write command";
-
-        let write_address_bytes = await ConvertToByteArray([addr], 4);
-        let checksum = await CalculateChecksum(write_address_bytes);
-
-        write_address_bytes.push(checksum);
-        reply = await WriteBytesWaitForACK(new Uint8Array(write_address_bytes));
-        if (reply == NACK)
-            throw "NACK was received after sending write command";
-        else if (reply == NO_REPLY)
-            throw "NO REPLY received after sending write command";
-
-        // Get the contents of the binary
-        // Exclusive  slice
-        let chunk = data.slice(file_addr, file_addr + Max_Num_Bytes);
-        let chunk_size = chunk.length;
-
-        while (chunk.length % 4 != 0)
-            chunk.push(0);
-
-        chunk.unshift(chunk.length - 1);
-        chunk.push(await CalculateChecksum(chunk));
-
-        reply = await WriteBytesWaitForACK(new Uint8Array(chunk));
-        if (reply == NACK)
-            throw `NACK was received while writing to addr: ${addr}`;
-        else if (reply == NO_REPLY)
-            throw `NO REPLY was received while writing to addr: ${addr}`;
-
-        file_addr += chunk_size;
-        addr += chunk_size;
-    }
-
-    Log(`Flashing: 100%`, true);
-
-    addr = start_addr;
-    file_addr = 0;
-
-    Log(`Verifying write: 0%`);
-    user_info.text = `Verifying Update... ${percent_flashed}%`;
-
-    while (file_addr < total_bytes)
-    {
-        percent_flashed = Math.floor((file_addr / total_bytes) * 100);
-        Log(`Verifying write: ${percent_flashed}%`, true);
-        user_info.text = `Verifying Update... ${percent_flashed}%`;
-
-        const chunk = data.slice(file_addr, file_addr + Max_Num_Bytes);
-        const addr_bytes = await ConvertToByteArray([addr], 4);
-        const mem = await ReadMemory(addr_bytes, chunk.length);
-
-        const compare = MemoryCompare(mem, chunk);
-        if (!compare)
-            throw `Failed to verify at memory address ${addr}`;
-
-        addr += mem.length;
-        file_addr += chunk.length;
-    }
-
-    Log("Verifying write: 100%", true);
-    user_info.text = `Verifying Update... 100%`;
-    Log("Write: COMPLETE");
-
-    return ACK;
-}
-
-async function MemoryCompare(arr1: number[], arr2: number[]): Promise<boolean>
-{
-    if (arr1.length != arr2.length) return false;
-
-    for (let i = 0; i < arr1.length; ++i)
-    {
-        if (arr1[i] != arr2[i])
-            return false;
-    }
-
-    return true;
-}
-
-async function ConvertToByteArray(array: number[], bytes_per_element: number)
-{
-    if (bytes_per_element > 4)
-        throw "JS can't handle more than like 6 byte integers because \
-                precision";
-
-    let array_bytes = []
-    let byte_count = 0;
-    let value = 0;
-    let mask = 0;
-    let bits = 0;
-    let byte = 0;
-
-    for (let i = 0; i < array.length; ++i)
-    {
-        byte_count = bytes_per_element;
-        value = array[i];
-
-
-        mask = (0x100 ** (bytes_per_element)) - 1;
-        while (byte_count > 0)
-        {
-            bits = (byte_count - 1) * 8;
-            byte = (value & mask) >>> bits;
-            mask = mask >>> 8;
-            value = value & mask;
-
-            array_bytes.push(byte);
-
-            byte_count--;
-        }
-    }
-
-    return array_bytes;
-}
-
-async function ConnectToHactarAndUpdate()
-{
-    await ConnectToHactar();
-    await FlashFirmware();
-}
-
-async function Log(text: any, replace_previous: boolean = false)
-{
-    console.log(text);
-    if (replace_previous)
+    let log = flasher.logs[log_idx++];
+    if (log["replace_previous"])
         logs.splice(logs.length - 1, 1);
-    logs.push({ text });
+    logs.push(log);
 
     if (auto_scroll && log_list.value)
     {
@@ -650,19 +110,16 @@ async function ToggleLogConsole()
 <template>
     <div class="user_info__container">
         <div class="user_info">
-            <button @click="ConnectToHactarAndUpdate()">Update Hactar</button>
+            <button @click="FlashHactar()">Update Hactar</button>
             <p>{{ user_info.text }}</p>
         </div>
     </div>
     <div class="adv_button__container">
-        <div class="step2">
-            <p>Step 2: Update Hactar device</p>
-            <button @click="FlashFirmware()">Update Hactar</button>
-        </div>
-        <button @click="ToggleLogConsole()">Toggle Log Console</button>
-        <!-- <button @click="test()">Test</button> -->
-        <!-- <button @click="ClosePortAndNull()">Close port</button> -->
+        <div class="adv_info">
+            <p>Advanced info</p>
 
+            <button @click="ToggleLogConsole()">Toggle Log Console</button>
+        </div>
     </div>
     <div ref="log_container" class="log__container hide">
         <ul ref="log_list" class="log__list">
