@@ -11,14 +11,13 @@ class HactarFlasher
         {
             let sectors_to_erase = this.SectorsToErase(ui_bin.length);
 
-            this.progress = "Preparing";
+            this.progress = "Starting";
             await this.SendUploadSelectionCommand("ui_upload");
 
             await this.Sync();
 
             await this.Sleep(200);
 
-            this.progress = "Cleaning";
             await this.ExtendedEraseMemory(sectors_to_erase);
 
             await this.WriteMemory(ui_bin, this.User_Sector_Start_Address);
@@ -48,7 +47,6 @@ class HactarFlasher
 
         // We already have a port, do nothing.
         if (this.port) return false;
-
 
         this.port = await (navigator as any).serial.requestPort({ filters });
 
@@ -193,6 +191,7 @@ class HactarFlasher
         let percent_verified =
             Math.floor((bytes_verified / total_bytes_to_verify) * 100);
         this.Log(`Verifying erase: ${percent_verified}% verified`);
+        this.progress = `Preparing: ${percent_verified}%`;
 
         let sector_idx = -1;
         for (let i = 0; i < sectors.length; ++i)
@@ -208,6 +207,7 @@ class HactarFlasher
                 percent_verified =
                     Math.floor((bytes_verified / total_bytes_to_verify) * 100);
                 this.Log(`Verifying erase: ${percent_verified}% verified`, true);
+                this.progress = `Preparing: ${percent_verified}%`;
 
                 let compare = false;
                 do
@@ -236,6 +236,7 @@ class HactarFlasher
         }
 
         // Don't actually need to do the math here
+        this.progress = `Preparing: 100%`;
         this.Log("Verifying erase: 100% verified", true);
         this.Log("Erase: COMPLETE");
         return true;
