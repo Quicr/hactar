@@ -30,10 +30,11 @@
 
 #include "NetPins.hh"
 
-#include "TestLogger.hh"
-#include "quicr/quicr_client.h"
-#include "quicr/quicr_client_delegate.h"
-#include "quicr/quicr_name.h"
+#include <cantina/logger.h>
+#include <transport/transport.h>
+#include <quicr/quicr_client.h>
+#include <quicr/quicr_client_delegate.h>
+#include <quicr/name.h>
 
 static const char* TAG = "net-main";
 
@@ -44,19 +45,19 @@ static const char* TAG = "net-main";
 
 // static QueueHandle_t uart1_queue;
 static hactar_utils::LogManager* logger;
-hactar_net::TestLogger test_logger;
 
 static NetManager* manager = nullptr;
 static SerialEsp* ui_uart1 = nullptr;
 static SerialManager* ui_layer = nullptr;
 static quicr::QuicRClient* qclient = nullptr;
+cantina::LoggerPointer qlogger =
+    std::make_shared<cantina::Logger>("quicr_logger");
 
 // quicr helper
 class SubDelegate : public quicr::SubscriberDelegate
 {
 public:
-    SubDelegate(hactar_net::TestLogger& logger)
-        : logger(logger)
+    SubDelegate()
     {
     }
 
@@ -65,7 +66,7 @@ public:
         [[maybe_unused]] const quicr::SubscribeResult& result) override
     {
         printf("onsubres\n\r");
-        std::cout << "onSubscriptionResponse: name: " << quicr_namespace.to_hex()
+        std::cout << "onSubscriptionResponse: name: " << quicr_namespace
             << " status: " << int(static_cast<uint8_t>(result.status))
             << std::endl;
 
@@ -87,8 +88,7 @@ public:
     {
         printf("onsubobj\n\r");
 
-        std::cout << "onSubscribedObject:  Name: " << quicr_name.to_hex()
-            << " data sz: " << data.size() << std::endl;
+        std::cout << "onSubscribedObject:  Name: " << quicr_name << " data sz: " << data.size() << std::endl;
     }
 
     void onSubscribedObjectFragment(
@@ -103,16 +103,13 @@ public:
         printf("onsubresfrag\n\r");
     }
 
-private:
-    hactar_net::TestLogger& logger;
 };
 std::shared_ptr<SubDelegate> sub_delegate = nullptr;
 
 class PubDelegate : public quicr::PublisherDelegate
 {
 public:
-    PubDelegate(hactar_net::TestLogger& logger)
-        : logger(logger)
+    PubDelegate()
     {
     }
     void onPublishIntentResponse(
@@ -122,12 +119,10 @@ public:
         printf("NET - Received publish for %s", quicr_namespace.to_hex().c_str());
     }
 
-private:
-    hactar_net::TestLogger& logger;
 };
 std::shared_ptr<PubDelegate> pub_delegate = nullptr;
 
-auto name = quicr::Name("abcd");
+auto name = quicr::Name(std::string("abcd"));
 
 
 // Forward declare functions
@@ -197,8 +192,8 @@ extern "C" void app_main(void)
     logger = hactar_utils::LogManager::GetInstance();
     logger->add_logger(new hactar_utils::ESP32SerialLogger());
     logger->info(TAG, "Net app_main start");
-    sub_delegate = std::make_shared<SubDelegate>(test_logger);
-    pub_delegate = std::make_shared<PubDelegate>(test_logger);
+    sub_delegate = std::make_shared<SubDelegate>();
+    pub_delegate = std::make_shared<PubDelegate>();
 
     int32_t count = 0;
     while (1)
@@ -237,7 +232,7 @@ void Run()
                 .port = port,
                 .proto = quicr::RelayInfo::Protocol::UDP
         };
-        qclient = new quicr::QuicRClient(relay, {}, test_logger);
+        qclient = new quicr::QuicRClient(relay, {}, qlogger);
     }
     else
     {

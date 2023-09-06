@@ -5,7 +5,7 @@ TARGET				= net
 
 BOOTLOADER_ADDR		= 0x00000
 PARITIONS_ADDR		= 0x08000
-PROG_ADDR			= 0x10000
+PROG_ADDR		= 0x10000
 
 ESP_TOOL_ARGS 		= --port=${PORT} --baud=${BAUD} write_flash \
 	${BOOTLOADER_ADDR} ${BUILD_PATH}/bootloader/bootloader.bin \
@@ -13,6 +13,9 @@ ESP_TOOL_ARGS 		= --port=${PORT} --baud=${BAUD} write_flash \
 	${PROG_ADDR} ${BUILD_PATH}/${TARGET}.bin
 
 all: compile upload
+
+idf-clean:
+	idf.py fullclean
 
 compile:
 	idf.py build

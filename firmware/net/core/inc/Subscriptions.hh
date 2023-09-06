@@ -5,8 +5,8 @@
 #include <optional>
 
 #include <transport/transport.h>
-#include <quicr/quicr_name.h>
-#include <quicr/quicr_namespace.h>
+#include <quicr/name.h>
+#include <quicr/namespace.h>
 
 class Subscriptions
 {
