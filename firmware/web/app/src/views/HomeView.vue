@@ -33,8 +33,10 @@ async function FlashHactar()
 
         log_idx = 0;
 
-        if (await flasher.ConnectToHactar(filters))
+        if (!await flasher.ConnectToHactar(filters))
         {
+            user_info.text = "Failed to find Hactar";
+            return;
         }
 
         const log_progress_interval = setInterval(() =>
