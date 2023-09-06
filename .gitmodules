@@ -1,0 +1,3 @@
+[submodule "firmware/net/components/quicr/lib"]
+	path = firmware/net/components/quicr/lib
+	url = git@github.com:Quicr/libquicr.git
