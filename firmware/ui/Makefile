@@ -270,9 +270,10 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
 
 upload:
-	python ../tools/flasher.py ${PORT} ${BAUD} ui_upload
+	python ../flasher/flasher.py ${PORT} ${BAUD} ui_upload
 
 upload_prog:
+	python ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
 	fi \
