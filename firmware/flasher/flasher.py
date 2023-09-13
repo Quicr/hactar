@@ -1,7 +1,26 @@
 import sys
-import stm32
 import serial
-import slip_packet
+import uart_utils
+import stm32
+import esp32
+
+BGY = "\033[1;30m"
+BR = "\033[1;31m"
+BG = "\033[1;32m"
+BY = "\033[1;33m"
+BB = "\033[1;34m"
+BM = "\033[1;35m"
+BC = "\033[1;36m"
+BW = "\033[1;37m"
+
+NGY = "\033[0;30m"
+NR = "\033[0;31m"
+NG = "\033[0;32m"
+NY = "\033[0;33m"
+NB = "\033[0;34m"
+NM = "\033[0;35m"
+NC = "\033[0;36m"
+NW = "\033[0;37m"
 
 
 def main():
@@ -27,6 +46,8 @@ def main():
         # print(f"{B_WHITE}Starting{N_WHITE}")
         stm32_flasher = stm32.stm32_flasher(uart)
         stm32_flasher.ProgramSTM()
+
+        # esp32_flasher = esp32.esp32_flasher(uart)
 
         uart.close()
     except Exception as ex:

@@ -2,6 +2,8 @@ import serial
 import time
 import functools
 from types import SimpleNamespace
+import uart_utils
+
 # https://www.manualslib.com/download/1764455/St-An3155.html
 
 
@@ -69,122 +71,12 @@ class stm32_flasher:
     def CalculateChecksum(self, arr: [int]):
         return functools.reduce(lambda a, b: a ^ b, arr).to_bytes(1, "big")
 
-    def WriteReadBytes(self, write_buff: bytes,
-                       read_num: int, retry_num=5):
-        while (retry_num > 0):
-            retry_num -= 1
-            self.uart.write(write_buff)
-
-            reply = self.WaitForBytesExcept(read_num)
-
-            if (len(reply) < 1):
-                continue
-
-            return reply
-
-    def WriteByte(self, _byte: int,
-                  compliment: bool = True):
-        data = [_byte]
-        if (compliment):
-            data.append(_byte ^ 0xFF)
-        self.uart.write(bytes(data))
-
-    def WriteByteWaitForACK(self, _bytes: int,
-                            retry_num: int = 5, compliment: bool = True):
-        while (retry_num > 0):
-            retry_num -= 1
-
-            data = [_bytes]
-            if (compliment):
-                data.append(_bytes ^ 0xFF)
-            self.uart.write(bytes(data))
-
-            reply = self.WaitForBytes(1)
-
-            if (reply == -1):
-                continue
-
-            return reply
-
-        return -1
-
-    def WriteBytesWaitForACK(self, _bytes: bytes,
-                             retry_num: int = 5):
-        """ Assumes the data it receives is complete """
-
-        while (retry_num > 0):
-            retry_num -= 1
-
-            self.uart.write(_bytes)
-
-            reply = self.WaitForBytes(1)
-
-            if (reply == -1):
-                continue
-
-            return reply
-
-        return -1
-
-    def WaitForBytes(self, num_bytes: int):
-        """ Sits and waits for a response on the serial line.
-            If no reply is received then return -1
-
-            Note - Passing num_bytes <= 1 returns an int
-                - Passing num_bytes >  1 returns an int array
-        """
-        rx_byte = self.uart.read(num_bytes)
-        if (len(rx_byte) < 1):
-            return -1
-
-        if (num_bytes <= 1):
-            return int.from_bytes(rx_byte, "big")
-
-        # Convert to ints
-        return [x for x in rx_byte]
-
-    def WaitForBytesExcept(self, num_bytes: int):
-        """ Sits and waits for a response on the serial line
-            if no reply is received raise an exception.
-
-            Note - Passing num_bytes <= 1 returns an int
-                - Passing num_bytes >  1 returns an int array
-        """
-        rx_byte = self.uart.read(num_bytes)
-        if (len(rx_byte) < 1):
-            raise Exception("Error. No reply")
-
-        if (num_bytes <= 1):
-            return int.from_bytes(rx_byte, "big")
-
-        # Convert to ints
-        return [x for x in rx_byte]
-
-    def SendUploadSelectionCommand(self, command: str):
-        send_data = [ch for ch in bytes(command, "UTF-8")]
-        res = self.WriteBytesWaitForACK(bytes(send_data), 5)
-        if res == -1:
-            raise Exception("Failed to move device into upload mode")
-
-        if (command == "ui_upload"):
-            #  Change to parity even
-            print(f"Update uart to parity: {self.BB}EVEN{self.NW}")
-            self.uart.parity = serial.PARITY_EVEN
-            # Wait for a response
-            res = self.WaitForBytes(1)
-            if (res != self.READY):
-                raise Exception("NO REPLY received after activating ui upload")
-
-            print(f"Activating UI Upload Mode: {self.BG}SUCCESS{self.NW}")
-            # Give time for the hactar device to be prepared
-            # time.sleep(0.6)
-
     def SendSync(self, retry_num: int = 5):
         """ Sends the sync byte 0x7F and waits for an self.ACK from the device.
         """
 
-        reply = self.WriteByteWaitForACK(self.Commands.sync,
-                                         retry_num, False)
+        reply = uart_utils.WriteByteWaitForACK(self.uart, self.Commands.sync,
+                                               retry_num, False)
 
         # Check if ack or self.nack
         if (reply == self.NACK):
@@ -203,7 +95,8 @@ class stm32_flasher:
 
             returns pid
         """
-        res = self.WriteByteWaitForACK(self.Commands.get_id, 1)
+        res = uart_utils.WriteByteWaitForACK(
+            self.uart, self.Commands.get_id, 1)
 
         if res == self.NACK:
             raise Exception("NACK was received during GetID")
@@ -212,23 +105,23 @@ class stm32_flasher:
 
         # Read the next byte which should be the num of bytes - 1
 
-        num_bytes = self.WaitForBytesExcept(1)
+        num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
 
         # NOTE there is a bug in the bootloader for stm, or there is a
         # inaccuracy in the an3155 datasheet that says that a single self.ACK
         # is sent after receiving the get_id command.
         # But in reality 90% of the time two self.ACK bytes are sent
         if (num_bytes == self.ACK):
-            num_bytes = self.WaitForBytesExcept(1)
+            num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
         elif (num_bytes == self.NACK):
             raise Exception("NACK was received while trying to get the "
                             "num bytes in GetID")
 
         # Get the pid which should be N+1 bytes
-        pid = self.WaitForBytesExcept(num_bytes+1)
+        pid = uart_utils.WaitForBytesExcept(self.uart, num_bytes+1)
 
         # Wait for an ack
-        res = self.WaitForBytesExcept(1)
+        res = uart_utils.WaitForBytesExcept(self.uart, 1)
         if (res == self.NACK):
             raise Exception("A self.NACK was received at the end of GetID")
         elif res == -1:
@@ -246,21 +139,22 @@ class stm32_flasher:
 
             returns all available commands
         """
-        reply = self.WriteByteWaitForACK(self.Commands.get, retry_num)
+        reply = uart_utils.WriteByteWaitForACK(
+            self.uart, self.Commands.get, retry_num)
         if (reply == self.NACK):
             raise Exception("NACK was received during Get Commands")
 
         # Read the next byte which should be the num of bytes - 1
         #  for some reason they minus off one even tho 2 bytes come in
-        num_bytes = self.WaitForBytesExcept(1)
+        num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
 
-        bootloader_verison = self.WaitForBytesExcept(1)
+        bootloader_verison = uart_utils.WaitForBytesExcept(self.uart, 1)
 
         # Get all of the available commands
-        recv_commands = self.WaitForBytesExcept(num_bytes)
+        recv_commands = uart_utils.WaitForBytesExcept(self.uart, num_bytes)
 
         # Wait for an ack
-        reply = self.WaitForBytesExcept(1)
+        reply = uart_utils.WaitForBytesExcept(self.uart, 1)
 
         # Parse the commands
         available_commands = []
@@ -292,25 +186,26 @@ class stm32_flasher:
             returns [bytes] contents of memory [address:address + num_bytes]
 
         """
-        reply = self.WriteByteWaitForACK(self.Commands.read_memory,
-                                         retry_num)
+        reply = uart_utils.WriteByteWaitForACK(self.uart,
+                                               self.Commands.read_memory,
+                                               retry_num)
         if (reply == self.NACK):
             raise Exception("NACK was received during Read Memory command")
 
         memory_addr = address + self.CalculateChecksum(address)
 
         # Write the memory we want to read from and the checksum
-        reply = self.WriteBytesWaitForACK(memory_addr, 1)
+        reply = uart_utils.WriteBytesWaitForACK(self.uart, memory_addr, 1)
         if (reply == self.NACK):
             raise Exception("NACK was received after sending memory address to"
                             " read")
 
-        reply = self.WriteByteWaitForACK(num_bytes-1, 1)
+        reply = uart_utils.WriteByteWaitForACK(self.uart, num_bytes-1, 1)
         if (reply == self.NACK):
             raise Exception("NACK was received after sending how many bytes to"
                             " read")
 
-        recv_data = self.WaitForBytesExcept(num_bytes)
+        recv_data = uart_utils.WaitForBytesExcept(self.uart, num_bytes)
         if type(recv_data) is int:
             recv_data = [recv_data]
 
@@ -324,7 +219,8 @@ class stm32_flasher:
 
             returns self.ACK/self.NACK/0
         """
-        reply = self.WriteByteWaitForACK(self.Commands.extended_erase, 5)
+        reply = uart_utils.WriteByteWaitForACK(
+            self.uart, self.Commands.extended_erase, 5)
         if (reply == self.NACK):
             raise Exception("NACK was received after sending erase command")
         elif (reply == self.NO_REPLY):
@@ -355,7 +251,7 @@ class stm32_flasher:
 
         # Give more time to reply with the deleted sectors
         self.uart.timeout = 10
-        reply = self.WriteBytesWaitForACK(data, 1)
+        reply = uart_utils.WriteBytesWaitForACK(self.uart, data, 1)
         # Revert the change back to two seconds
         self.uart.timeout = 2
         if (reply == -1):
@@ -387,8 +283,8 @@ class stm32_flasher:
                       f"{self.NW}% verified", end="\r")
                 while (mem != expected_mem) and read_count != 10:
                     mem = self.SendReadMemory(memory_address.to_bytes(
-                                                4, "big"),
-                                              mem_bytes_sz)
+                        4, "big"),
+                        mem_bytes_sz)
                     read_count += 1
                     if (mem != expected_mem):
                         print(f"Sector not verified {sector} retry"
@@ -437,7 +333,8 @@ class stm32_flasher:
 
             print(f"Flashing: {self.BG}{percent_flashed:2}{self.NW}%",
                   end="\r")
-            reply = self.WriteByteWaitForACK(self.Commands.write_memory, 5)
+            reply = uart_utils.WriteByteWaitForACK(
+                self.uart, self.Commands.write_memory, 5)
             if (reply == self.NACK):
                 raise Exception("NACK was received after sending write "
                                 "command")
@@ -447,7 +344,8 @@ class stm32_flasher:
 
             checksum = self.CalculateChecksum(addr.to_bytes(4, "big"))
             write_address_bytes = addr.to_bytes(4, "big") + checksum
-            reply = self.WriteBytesWaitForACK(write_address_bytes, 1)
+            reply = uart_utils.WriteBytesWaitForACK(self.uart,
+                                                    write_address_bytes, 1)
             if (reply == self.NACK):
                 raise Exception("NACK was received after sending write "
                                 "command")
@@ -471,7 +369,7 @@ class stm32_flasher:
             chunk = chunk + self.CalculateChecksum(chunk)
 
             # Write the chunk to the chip
-            reply = self.WriteBytesWaitForACK(chunk, 1)
+            reply = uart_utils.WriteBytesWaitForACK(self.uart, chunk, 1)
             if (reply == self.NACK):
                 raise Exception(f"NACK was received while writing to "
                                 f"addr: {addr}")
@@ -514,7 +412,7 @@ class stm32_flasher:
     def ProgramSTM(self):
 
         # Send the command to the mgmt chip that we want to program the UI chip
-        self.SendUploadSelectionCommand("ui_upload")
+        uart_utils.SendUploadSelectionCommand(self.uart, "ui_upload")
 
         self.SendSync()
         # Sometimes a small delay is required otherwise it won't
@@ -538,4 +436,3 @@ class stm32_flasher:
 
         firmware = open("../ui/build/ui.bin", "rb").read()
         self.SendWriteMemory(firmware, self.User_Sector_Start_Address, 1)
-
