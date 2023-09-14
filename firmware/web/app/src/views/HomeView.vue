@@ -21,6 +21,9 @@ let user_info = reactive({ text: "" });
 
 let flasher: HactarFlasher = new HactarFlasher();
 
+// TODO Serial monitor
+// TODO serial commands to ui and net
+// TODO set configurations for each chip
 
 async function FlashHactar()
 {

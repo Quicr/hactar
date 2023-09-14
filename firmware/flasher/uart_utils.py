@@ -19,13 +19,14 @@ NM = "\033[0;35m"
 NC = "\033[0;36m"
 NW = "\033[0;37m"
 
+ACK = 0x79
 READY = 0x80
 
 
 def SendUploadSelectionCommand(uart: serial.Serial, command: str):
     send_data = [ch for ch in bytes(command, "UTF-8")]
     res = WriteBytesWaitForACK(uart, bytes(send_data), 5)
-    if res == -1:
+    if res != ACK:
         raise Exception("Failed to move device into upload mode")
 
     if (command == "ui_upload"):
@@ -48,6 +49,8 @@ def SendUploadSelectionCommand(uart: serial.Serial, command: str):
         res = WaitForBytes(uart, 1)
         if (res != READY):
             raise Exception("NO REPLY received after activating net upload")
+
+        print(f"Activating NET Upload Mode: {BG}SUCCESS{NW}")
 
 
 def WriteReadBytes(uart: serial.Serial, write_buff: bytes,
