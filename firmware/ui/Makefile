@@ -273,6 +273,7 @@ upload:
 	python ../tools/flasher.py ${PORT} ${BAUD} ui_upload
 
 upload_prog:
+	python ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
 	fi \

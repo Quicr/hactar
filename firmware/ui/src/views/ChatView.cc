@@ -4,9 +4,9 @@
 #include "SettingsView.hh"
 
 ChatView::ChatView(UserInterfaceManager& manager,
-                   Screen& screen,
-                   Q10Keyboard& keyboard,
-                   SettingManager& setting_manager) :
+    Screen& screen,
+    Q10Keyboard& keyboard,
+    SettingManager& setting_manager):
     ViewInterface(manager, screen, keyboard, setting_manager)
 {
     // messages = new Vector<String>();
@@ -97,7 +97,7 @@ void ChatView::HandleInput()
         msg.Timestamp("00:00");
 
         // TODO get from EEPROM
-        msg.Sender("Brett");
+        msg.Sender(manager.GetUsername());
         msg.Body(usr_input);
 
         messages.push_back(msg);
@@ -111,12 +111,33 @@ void ChatView::HandleInput()
         packet->SetData(manager.NextPacketId(), 6, 8);
 
         // Set the data length
-        packet->SetData(msg.Length(), 14, 10);
+        // TODO note I think there is a bug in msg.length(). (String class)
+        packet->SetData(27 + msg.Length() - 2, 14, 10);
 
-        // Append the data
+        packet->SetData(Packet::MessageTypes::Ascii, 24, 8);
+
+        // REMOVE - hardcoded publish
+        // Publish 0x000001010100100CB5CAFE0000100001
+        uint8_t publish_arr [] = { 0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x1,0x0,0x1,0x0,
+            0x0,0x1,0x0,0x0,0xC,0xB,0x5,0xC,0xA,0xF,0xE,0x0,0x0,0x0,0x0,0x1,
+            0x0,0x0,0x0,0x0,0x1 };
+        int offset = 32;
+        for (int i = 0; i < 32; i++)
+        {
+            packet->SetData(publish_arr[i], offset, 4);
+            offset += 4;
+        }
+
+        // Expiry time
+        packet->SetData(0xFFFFFFFF, 160, 32);
+
+        // Creation time
+        packet->SetData(0, 192, 32);
+
+        // Append the message
         // TODO update the packet arr to take unsigned char and signed char
         packet->SetDataArray(reinterpret_cast<const unsigned char*>(
-            msg.Concatenate().c_str()), msg.Length(), 24);
+            msg.Concatenate().c_str()), msg.Length(), 224);
 
         manager.EnqueuePacket(packet);
 
@@ -189,7 +210,7 @@ void ChatView::DrawMessages()
         {
             // Calculate the amount of space based on the number of characters
             // used
-            next_used_x_space = x_pos + (messages[msg_idx-1].Length() +
+            next_used_x_space = x_pos + (messages[msg_idx - 1].Length() +
                 name_seperator.length()) * usr_font.width;
 
             if (next_used_x_space > screen.ViewWidth())

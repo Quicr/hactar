@@ -66,17 +66,7 @@ public:
         return true;
     }
 
-    // bool ChangeViewCommand(const String command)
-    // {
-    //     if (command == "t")
-    //         return ChangeView<TeamView>();
-    //     else if (command == "s")
-    //         return ChangeView<SettingsView>();
-    //     // else if (command == "wifi")
-    //         // return manager.ChangeView<
-
-    //     return false;
-    // }
+    const String& GetUsername();
 
 private:
     void HandleIncomingPackets();
@@ -86,6 +76,8 @@ private:
 
     void SendTestPacket();
     void SendCheckWifiPacket();
+    void LoadSettings();
+    void LoadUsername();
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
@@ -105,4 +97,6 @@ private:
     uint32_t attempt_to_connect_timeout;
 
     uint32_t last_test_packet = 0;
+
+    String username;
 };
