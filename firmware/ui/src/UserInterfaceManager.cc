@@ -14,7 +14,7 @@
 UserInterfaceManager::UserInterfaceManager(Screen& screen,
     Q10Keyboard& keyboard,
     SerialInterface& net_interface,
-    EEPROM& eeprom) :
+    EEPROM& eeprom):
     screen(&screen),
     keyboard(&keyboard),
     net_layer(&net_interface),
@@ -26,13 +26,19 @@ UserInterfaceManager::UserInterfaceManager(Screen& screen,
     ssids(),
     last_wifi_check(10000),
     is_connected_to_wifi(false),
-    attempt_to_connect_timeout(0)
+    attempt_to_connect_timeout(0),
+    username("")
 {
     if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
         == FIRST_BOOT_DONE)
+    {
+        LoadSettings();
         ChangeView<LoginView>();
+    }
     else
+    {
         ChangeView<FirstBootView>();
+    }
 }
 
 UserInterfaceManager::~UserInterfaceManager()
@@ -102,6 +108,16 @@ bool UserInterfaceManager::RedrawForced()
 uint8_t UserInterfaceManager::NextPacketId()
 {
     return net_layer.NextPacketId();
+}
+
+const String& UserInterfaceManager::GetUsername()
+{
+    if (username == "")
+    {
+        LoadUsername();
+    }
+
+    return username;
 }
 
 void UserInterfaceManager::HandleIncomingPackets()
@@ -179,6 +195,7 @@ void UserInterfaceManager::HandleIncomingPackets()
                     }
 
                     ssids[ssid_id] = std::move(str);
+                    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_RESET);
                 }
                 else if (Packet::Commands::WifiStatus == command_type)
                 {
@@ -243,10 +260,10 @@ void UserInterfaceManager::ConnectToWifi()
         ssid_password_len)) return;
 
     String ssid_str;
-    for (int i  =0 ; i < ssid_len; i++)
+    for (int i = 0 ; i < ssid_len; i++)
         ssid_str += ssid[i];
     String password_str;
-    for (int i  =0 ; i < ssid_password_len; i++)
+    for (int i = 0 ; i < ssid_password_len; i++)
         password_str += ssid_password[i];
 
     // Create the packet
@@ -389,4 +406,24 @@ void UserInterfaceManager::SendCheckWifiPacket()
     last_wifi_check = current_time + 10000;
     uint8_t message [] = "UI: Send check wifi to esp\n\r";
     HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);
+}
+
+void UserInterfaceManager::LoadSettings()
+{
+    LoadUsername();
+}
+
+void UserInterfaceManager::LoadUsername()
+{
+    // TODO make this better
+    char* username;
+    short len;
+    setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
+        &username, len);
+    for (short i = 0; i < len; i++)
+    {
+        this->username.push_back(username[i]);
+    }
+    delete username;
+    // ^^^ ugly chunk
 }

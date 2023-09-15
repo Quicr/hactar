@@ -5,7 +5,7 @@
 
 #include <utility>
 
-/*
+/* Standard Packet
 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |  type   |      id      |       len        |.......data........|
@@ -13,6 +13,14 @@
 |                          data                                 |
 |                          ....                                 |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*/
+
+/* Message packet
+len above = 27 bytes + data length
+m_type = 1 byte
+publish_uri = 16 bytes
+expiry_time = 4 bytes
+creation_time = 6 bytes
 */
 
 // TODO add start patterns
@@ -32,11 +40,23 @@ public:
         Command,
     };
 
+    enum Settings
+    {
+        // TODO
+    };
+
     enum Commands
     {
         SSIDs = 1,
         ConnectToSSID,
         WifiStatus
+    };
+
+    enum MessageTypes
+    {
+        Ascii = 1,
+        Watch,
+        Unwatch
     };
 
     // TODO important to have different data lengths for each type..
