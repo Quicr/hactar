@@ -72,8 +72,6 @@ class esp32_flasher:
 
         self.WritePacketWaitForResponsePacket(packet, 5)
 
-        self
-
     def ProgramESP(self):
         uart_utils.SendUploadSelectionCommand(self.uart, "net_upload")
 

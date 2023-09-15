@@ -2,10 +2,23 @@ import functools
 from copy import deepcopy
 
 # TODO decide on if I want to represent the data in big endian and then
-# encode it into big endian, or just have it little endian from the start???
+# encode it into little endian, or just have it little endian from the start???
 #
 
+
 class esp32_slip_packet:
+    """Slip packet for esp32 bootloader.
+        |-------------------|
+        |Byte    name       |
+        |-------------------|
+        |0       Direction  |
+        |1       Command    |
+        |2-3     Size       |
+        |4-7     Checksum   |
+        |8..n    Data       |
+        |-------------------|
+        - NOTE: Data is stored in little endian format for multi-byte fields
+    """
     END = 0xC0
     ESC = 0xDB
     ESC_END = 0xDC
@@ -15,10 +28,10 @@ class esp32_slip_packet:
     data = [0] * 8
     data_length = 0
 
-    def __init__(self, request_response: int = 0, command: int = 0,
+    def __init__(self, direction: int = 0, command: int = 0,
                  size: int = 0):
         # self.data[0] = self.END
-        self.SetHeader(request_response, command, size)
+        self.SetHeader(direction, command, size)
 
     def __getitem__(self, key):
         # -2 for the end byte
@@ -28,8 +41,13 @@ class esp32_slip_packet:
         return self.data[key-1]
 
     def FromBytes(self, data: bytes):
+        """
+        Takes a little endian byte stream and inputs it into the data field
+        """
+
         if (data[0] != self.END and data[-1] != self.END):
             raise Exception("Error. Start and end bytes missing")
+
         idx = 1
         # Remove slip encapsulation
         cleaned_data = []
@@ -61,24 +79,38 @@ class esp32_slip_packet:
             print(i)
             self.data[i] = cleaned_data[i]
 
-        self.PushData(cleaned_data[8:8])
+        length = self.GetSize()
+        self.PushDataArray(cleaned_data[8:8+length], "little")
 
-    def SetHeader(self, request_response: int, command: int, size: int = 0):
-        # TODO error checking
-        self.data[0] = int(request_response).to_bytes(1, "little")[0]
-        self.data[1] = command.to_bytes(1, "little")[0]
+    def SetHeader(self, direction: int, command: int, size: int = 0):
+        self.SetDirection(direction)
+        self.SetCommand(command)
         self.SetSize(size)
 
+    def SetDirection(self, direction: int):
+        if (direction != 0 and direction != 1):
+            raise Exception("Direction must be either 0 or 1")
+        self.data[0] = direction
+
+    def SetCommand(self, command: int):
+        if (command.bit_length() > 8):
+            raise Exception("Command should not be larger than 1 byte")
+        self.data[1] = command
+
     def SetSize(self, size: int):
+        if (size.bit_length() > 16):
+            raise Exception("Size should not be larger than 2 bytes")
         data = size.to_bytes(2, "little")
         self.data[2] = data[0]
         self.data[3] = data[1]
 
     def GetSize(self):
-        []
+        return int.from_bytes(bytes(self.data[2:3]), "little")
 
     def PushData(self, ele: int):
-        # Convert to bytes and then append all of the bytes
+        """ Pushes an element into the data, if the element is > 1 byte it
+            will be stored in little endian format.
+        """
         ele_bytes = ele.to_bytes((max(ele.bit_length(), 1) + 7) // 8, "little")
 
         for ele in ele_bytes:
@@ -86,9 +118,16 @@ class esp32_slip_packet:
 
         self.data_length += len(ele_bytes)
 
-    def PushDataArray(self, data_in: []):
-        for ele in data_in:
-            self.PushData(ele)
+    def PushDataArray(self, data_in: [], endian: str):
+        """ Pushes an array of data into the data array
+            - Expects data in big endian format
+        """
+        if (endian == "little"):
+            for ele in reversed(data_in):
+                self.PushData(ele)
+        else:
+            for ele in data_in:
+                self.PushData(ele)
 
     def Length(self):
         return self.data_length
@@ -112,14 +151,14 @@ class esp32_slip_packet:
         self.data[7] = checksum_bytes[3]
 
     def SLIPEncode(self, checksum: bool = False):
-        # First check if there is END
-
         # Set the checksum
         # Sometimes it is ignored, but we will just set it anyways
         self.SetChecksum()
+        print("Here")
 
         # Set the current size
         self.SetSize(self.data_length)
+        print("here2")
 
         # TODO might change?
         # encoded_data = deepcopy(self.data)
@@ -129,18 +168,19 @@ class esp32_slip_packet:
         # Skip the first byte
         idx = 1
         while (idx < len(self.data)):
-            if self.END == encoded_data[idx]:
-                encoded_data[idx] = self.ESC
-                encoded_data.insert(idx+1, self.ESC_END)
-                idx += 1
-            elif self.ESC == encoded_data[idx]:
-                encoded_data.insert(idx+1, self.ESC_ESC)
-                idx += 1
-            encoded_data.append(self.data[idx])
+            if self.END == self.data[idx]:
+                encoded_data.append(self.ESC)
+                encoded_data.append(self.ESC_END)
+            elif self.ESC == self.data[idx]:
+                encoded_data.append(self.ESC)
+                encoded_data.append(self.ESC_ESC)
+            else:
+                encoded_data.append(self.data[idx])
             idx += 1
 
         # Put on the final end byte
         encoded_data.append(self.END)
+        print(encoded_data)
 
         return bytes(encoded_data)
 
