@@ -222,3 +222,5 @@ These messages are used to listen to and stop listening for messages from a give
 
 ## TODO
 Once we have a basic prototype, work on v0.2
+- State persistence across reboots and network connectivity issues
+- 
