@@ -413,8 +413,8 @@ class stm32_flasher:
 
         # Send the command to the mgmt chip that we want to program the UI chip
         uart_utils.SendUploadSelectionCommand(self.uart, "ui_upload")
-
-        self.SendSync()
+        time.sleep(0.5)
+        self.SendSync(2)
         # Sometimes a small delay is required otherwise it won't
         # continue on correctly
 

@@ -44,16 +44,18 @@ def main():
 
         print(f"Opened port: {port} baudrate: {baud}")
 
-        # print(f"{B_WHITE}Starting{N_WHITE}")
-        # stm32_flasher = stm32.stm32_flasher(uart)
-        # stm32_flasher.ProgramSTM()
+        print(f"{BW}Starting{NW}")
+        stm32_flasher = stm32.stm32_flasher(uart)
+        stm32_flasher.ProgramSTM()
 
         # esp32_flasher = esp32.esp32_flasher(uart)
         # esp32_flasher.ProgramESP()
 
-        data = bytes([0xc0, 0xdb, 0xdc, 0xdb, 0xdc, 0xdb, 0xdd, 0xdd, 0x00, 0x00, 0x00, 0x00, 0xc0])
-        packet = esp32_slip_packet.esp32_slip_packet()
-        packet.FromBytes(data)
+        # data = bytes([0xc0, 0xdb, 0xdc, 0xdb, 0xdc, 0xdb, 0xdd, 0xdd, 0x00, 0x00, 0x00, 0x00, 0xc0])
+        # packet = esp32_slip_packet.esp32_slip_packet()
+        # packet.FromBytes(data)
+
+        # print(packet.SLIPEncode())
 
         uart.close()
     except Exception as ex:
