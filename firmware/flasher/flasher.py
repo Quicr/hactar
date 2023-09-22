@@ -26,12 +26,13 @@ NW = "\033[0;37m"
 
 def main():
     try:
-        if (len(sys.argv) < 3):
-            print("Error. Need port followed by baudrate")
+        if (len(sys.argv) < 4):
+            print("Error. Need args as follows: port baudrate build_path")
             exit()
 
         port = sys.argv[1]
         baud = sys.argv[2]
+        build_path = sys.argv[3]
 
         uart = serial.Serial(
             port=port,
@@ -44,12 +45,12 @@ def main():
 
         print(f"Opened port: {port} baudrate: {baud}")
 
-        print(f"{BW}Starting{NW}")
-        stm32_flasher = stm32.stm32_flasher(uart)
-        stm32_flasher.ProgramSTM()
+        # print(f"{BW}Starting{NW}")
+        # stm32_flasher = stm32.stm32_flasher(uart)
+        # stm32_flasher.ProgramSTM()
 
-        # esp32_flasher = esp32.esp32_flasher(uart)
-        # esp32_flasher.ProgramESP()
+        esp32_flasher = esp32.esp32_flasher(uart)
+        esp32_flasher.ProgramESP(build_path)
 
         # data = bytes([0xc0, 0xdb, 0xdc, 0xdb, 0xdc, 0xdb, 0xdd, 0xdd, 0x00, 0x00, 0x00, 0x00, 0xc0])
         # packet = esp32_slip_packet.esp32_slip_packet()
