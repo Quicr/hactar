@@ -3,6 +3,7 @@ import time
 import functools
 from types import SimpleNamespace
 import uart_utils
+from ansi_colours import BW, BC, BG, BR, BB, BY, BM, NW, NY
 
 # https://www.manualslib.com/download/1764455/St-An3155.html
 
@@ -33,10 +34,10 @@ class stm32_flasher:
     User_Sector_Start_Address = 0x08000000
 
     Sectors = [
-        SimpleNamespace(**{"size": 0x004000,   "addr": 0x08000000}),
-        SimpleNamespace(**{"size": 0x004000,   "addr": 0x08004000}),
-        SimpleNamespace(**{"size": 0x004000,   "addr": 0x08008000}),
-        SimpleNamespace(**{"size": 0x004000,   "addr": 0x0800C000}),
+        SimpleNamespace(**{"size": 0x004000, "addr": 0x08000000}),
+        SimpleNamespace(**{"size": 0x004000, "addr": 0x08004000}),
+        SimpleNamespace(**{"size": 0x004000, "addr": 0x08008000}),
+        SimpleNamespace(**{"size": 0x004000, "addr": 0x0800C000}),
         SimpleNamespace(**{"size": 0x010000, "addr": 0x08010000}),
         SimpleNamespace(**{"size": 0x020000, "addr": 0x08020000}),
         SimpleNamespace(**{"size": 0x020000, "addr": 0x08040000}),
@@ -46,24 +47,6 @@ class stm32_flasher:
         SimpleNamespace(**{"size": 0x020000, "addr": 0x080C0000}),
         SimpleNamespace(**{"size": 0x020000, "addr": 0x080E0000}),
     ]
-
-    BGY = "\033[1;30m"
-    BR = "\033[1;31m"
-    BG = "\033[1;32m"
-    BY = "\033[1;33m"
-    BB = "\033[1;34m"
-    BM = "\033[1;35m"
-    BC = "\033[1;36m"
-    BW = "\033[1;37m"
-
-    NGY = "\033[0;30m"
-    NR = "\033[0;31m"
-    NG = "\033[0;32m"
-    NY = "\033[0;33m"
-    NB = "\033[0;34m"
-    NM = "\033[0;35m"
-    NC = "\033[0;36m"
-    NW = "\033[0;37m"
 
     def __init__(self, uart: serial.Serial):
         self.uart = uart
@@ -80,13 +63,13 @@ class stm32_flasher:
 
         # Check if ack or self.nack
         if (reply == self.NACK):
-            print(f"Activating device: {self.BR}FAILED{self.NW}")
+            print(f"Activating device: {BR}FAILED{NW}")
             raise Exception("Failed to Activate device")
         elif (reply == -1):
-            print(f"Activating device: {self.BY}NO REPLY{self.NW}")
+            print(f"Activating device: {BY}NO REPLY{NW}")
             raise Exception("Failed to Activate device")
 
-        print(f"Activating device: {self.BG}SUCCESS{self.NW}")
+        print(f"Activating device: {BG}SUCCESS{NW}")
 
     def SendGetID(self, retry_num: int = 5):
         """ Sends the GetID command and it's compliment.
@@ -128,7 +111,7 @@ class stm32_flasher:
             raise Exception("No reply was received during GetID")
 
         h_pid = hex(int.from_bytes(bytes(pid), "big"))
-        print(f"Chip ID: {self.BC}{h_pid}{self.NW}")
+        print(f"Chip ID: {BC}{h_pid}{NW}")
 
         return pid
 
@@ -166,7 +149,7 @@ class stm32_flasher:
         if (reply == self.NACK):
             raise Exception("A self.NACK was received at the end of GetID")
 
-        print(f"Bootloader version: {self.BM}{bootloader_verison}{self.NW}")
+        print(f"Bootloader version: {BM}{bootloader_verison}{NW}")
 
         print(f"{num_bytes} available commands: ", end="")
         for i, cmd in enumerate(available_commands):
@@ -246,8 +229,8 @@ class stm32_flasher:
         # Join all the data together
         data = b''.join(num_sectors + byte_sectors + checksum)
 
-        print(f"Erase: Sectors {self.NY}{sectors}{self.NW}")
-        print(f"Erase: {self.BB}STARTED{self.NW}")
+        print(f"Erase: Sectors {NY}{sectors}{NW}")
+        print(f"Erase: {BB}STARTED{NW}")
 
         # Give more time to reply with the deleted sectors
         self.uart.timeout = 10
@@ -258,7 +241,7 @@ class stm32_flasher:
             raise Exception("Failed to erase, no reply received")
         elif (reply == self.NACK):
             raise Exception("Failed to erase")
-        print(f"Erase Verify: {self.BB}BEGIN{self.NW}")
+        print(f"Erase Verify: {BB}BEGIN{NW}")
 
         mem_bytes_sz = 256
         expected_mem = [255] * mem_bytes_sz
@@ -279,8 +262,8 @@ class stm32_flasher:
                 mem = [0] * mem_bytes_sz
                 percent_verified = int(
                     (bytes_verified / total_bytes_to_verify)*100)
-                print(f"Verifying erase: {self.BG}{percent_verified:2}"
-                      f"{self.NW}% verified", end="\r")
+                print(f"Verifying erase: {BG}{percent_verified:2}"
+                      f"{NW}% verified", end="\r")
                 while (mem != expected_mem) and read_count != 10:
                     mem = self.SendReadMemory(memory_address.to_bytes(
                         4, "big"),
@@ -291,16 +274,16 @@ class stm32_flasher:
                               f" {read_count}")
 
                 if (read_count == 10 and mem != expected_mem):
-                    print(f"Verifying: {self.BR}Failed to verify sector "
-                          f"[{sector}]{self.NW}")
+                    print(f"Verifying: {BR}Failed to verify sector "
+                          f"[{sector}]{NW}")
                     return False
 
                 memory_address += mem_bytes_sz
                 bytes_verified += mem_bytes_sz
 
         # Don't actually need to do the math here
-        print(f"Verifying erase: {self.BG}100{self.NW}% verified")
-        print(f"Erase: {self.BG}COMPLETE{self.NW}")
+        print(f"Verifying erase: {BG}100{NW}% verified")
+        print(f"Erase: {BG}COMPLETE{NW}")
         return True
 
     def SendWriteMemory(self, data: bytes, address: int,
@@ -324,14 +307,14 @@ class stm32_flasher:
 
         total_bytes = len(data)
 
-        print(f"Write to Memory: {self.BB}STARTED{self.NW}")
-        print(f"Address: {self.BW}{address:04x}{self.NW}")
-        print(f"Byte Stream Size: {self.BW}{total_bytes}{self.NW}")
+        print(f"Write to Memory: {BB}STARTED{NW}")
+        print(f"Address: {BW}{address:04x}{NW}")
+        print(f"Byte Stream Size: {BW}{total_bytes}{NW}")
 
         while file_addr < total_bytes:
             percent_flashed = int((file_addr / total_bytes) * 100)
 
-            print(f"Flashing: {self.BG}{percent_flashed:2}{self.NW}%",
+            print(f"Flashing: {BG}{percent_flashed:2}{NW}%",
                   end="\r")
             reply = uart_utils.WriteByteWaitForACK(
                 self.uart, self.Commands.write_memory, 5)
@@ -382,7 +365,7 @@ class stm32_flasher:
             addr += chunk_size
 
         # Don't need to calculate it here it finished
-        print(f"Flashing: {self.BG}100{self.NW}%")
+        print(f"Flashing: {BG}100{NW}%")
 
         # Verify the written memory by reading the size of the file
         addr = address
@@ -391,7 +374,7 @@ class stm32_flasher:
         while file_addr < total_bytes:
             percent_verified = int(
                 (file_addr / total_bytes)*100)
-            print(f"Verifying write: {self.BG}{percent_verified:2}{self.NW}"
+            print(f"Verifying write: {BG}{percent_verified:2}{NW}"
                   f"% verified", end="\r")
 
             chunk = data[file_addr:file_addr+Max_Num_Bytes]
@@ -404,8 +387,8 @@ class stm32_flasher:
             addr += len(mem)
             file_addr += len(chunk)
 
-        print(f"Verifying write: {self.BG}100{self.NW}% verified")
-        print(f"Write: {self.BG}COMPLETE{self.NW}")
+        print(f"Verifying write: {BG}100{NW}% verified")
+        print(f"Write: {BG}COMPLETE{NW}")
 
         return self.ACK
 
@@ -423,9 +406,9 @@ class stm32_flasher:
         self.SendGet()
 
         mem = self.SendReadMemory(bytes([0x08, 0x00, 0x00, 0x00]), 256)
-        print(f"Reading memory: {self.BG}SUCCESSFUL{self.NW}")
-        print(f"Number of bytes read from memory: {self.BM}{len(mem)}\
-            {self.NW}")
+        print(f"Reading memory: {BG}SUCCESSFUL{NW}")
+        print(f"Number of bytes read from memory: {BM}{len(mem)}\
+            {NW}")
 
         time.sleep(1)
 
