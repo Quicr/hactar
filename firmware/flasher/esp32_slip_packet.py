@@ -108,6 +108,15 @@ class esp32_slip_packet:
 
         return int.from_bytes(data, "little")
 
+    def GetDirection(self):
+        return self.data[0]
+
+    def GetCommand(self):
+        return self.data[1]
+
+    def GetDataField(self):
+        return self.data[8:8+self.data_length]
+
     def GetSize(self):
         return int.from_bytes(bytes(self.data[2:3]), "little")
 
@@ -145,11 +154,14 @@ class esp32_slip_packet:
     def SetChecksum(self):
         # Checksum seed
         checksum = 0xEF
-        idx = 8
-        while (idx < self.data_length):
-
+        idx = 16
+        # print(f"checksum: {hex(checksum)}, idx: {idx}")
+        while (idx < len(self.data)):
             checksum ^= self.data[idx]
+            # print(f"checksum: {hex(checksum)}, v: {hex(self.data[idx])}, idx: {idx}")
             idx += 1
+
+        # print(f"checksum: {hex(checksum)}, idx: {idx}")
 
         # checksum = functools.reduce(lambda a, b: a ^ b, self.data)
         # checksum ^ self.CHECKSUM_SEED
@@ -163,6 +175,7 @@ class esp32_slip_packet:
     def SLIPEncode(self, checksum: bool = False):
         # Set the checksum
         # Sometimes it is ignored, but we will just set it anyways
+        # TODO only use checksum with certain types
         if checksum:
             self.SetChecksum()
 
@@ -191,6 +204,22 @@ class esp32_slip_packet:
         encoded_data.append(self.END)
 
         return bytes(encoded_data)
+
+    def __str__(self):
+        # Print the encoded version
+        to_print = self.SLIPEncode(True)
+
+        s_out = ""
+        idx = 1
+        for b in to_print:
+            s_out += "%0.2X" % b
+            if (idx % 8 == 0):
+                s_out += " "
+            if (idx % 16 == 0):
+                s_out += "\n"
+            idx += 1
+
+        return s_out
 
     def Data():
         return
