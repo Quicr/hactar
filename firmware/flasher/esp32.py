@@ -1,6 +1,6 @@
 import serial
-import time
 import json
+import hashlib
 
 from esp32_slip_packet import esp32_slip_packet
 import uart_utils
@@ -112,10 +112,11 @@ class esp32_flasher:
             num_blocks = (size + self.Block_Size - 1) // self.Block_Size
 
             print(f"Flashing: {BY}{binary['name']}{NW}, size: {size}, "
-                  "start_addr: {offset}")
+                  f"start_addr: {offset}")
 
             self.StartFlash(size, num_blocks, offset)
             self.WriteFlash(binary['file'], data, num_blocks)
+            self.FlashMD5(data, offset, size)
 
         self.EndFlash()
 
@@ -139,7 +140,7 @@ class esp32_flasher:
         # Check for error
         if (reply.data[-1] == 1):
             print(reply)
-            raise Exception("Error occured when starting flashing")
+            raise Exception("Error occurred when starting flashing")
 
     def WriteFlash(self, file, data, num_blocks):
         data_ptr = 0
@@ -175,9 +176,6 @@ class esp32_flasher:
                                                           self.FLASH_DATA,
                                                           checksum=True)
 
-            # print("data len", len(bin_packet.data))
-            # print("encoded len", len(bin_packet.SLIPEncode(True)))
-            # print(bin_packet)
             if (reply.GetCommand() != self.FLASH_DATA):
                 print(reply)
                 print(
@@ -206,12 +204,42 @@ class esp32_flasher:
 
         print(f"Flashing: {BG}COMPLETE{NW}")
 
+    def FlashMD5(self, data, address, size):
+        packet = esp32_slip_packet(0, self.SPI_FLASH_MD5)
+        packet.PushData(address, 4)
+        packet.PushData(size, 4)
+        packet.PushData(0, 4)
+        packet.PushData(0, 4)
+
+        reply = self.WritePacketWaitForResponsePacket(
+            packet, self.SPI_FLASH_MD5)
+
+        if (reply.data[-1] == 1):
+            print(f"Error occurred during flash. Reply dump: {reply}")
+            raise Exception("Error")
+
+        # Get the MD5 from the response
+        res_md5 = reply.GetBytes(12, 36)
+        res_md5.reverse()
+
+        # Get the MD5
+        # Calculate the MD5 for this data
+        md5_hash = hashlib.md5(data).hexdigest()
+
+        loc_md5 = []
+
+        for h in md5_hash:
+            loc_md5.append(ord(h))
+
+        for i in range(len(loc_md5)):
+            if (res_md5[i] != loc_md5[i]):
+                raise Exception("MD5 hashes did not match."
+                                f"\n\rReceived: {res_md5}"
+                                f"\n\rCalculated: {loc_md5}")
+
     def AttachSPI(self):
         packet = esp32_slip_packet(0, self.SPI_ATTACH)
         packet.PushDataArray([0]*8)
-
-        print(packet.SLIPEncode())
-        print("attach spi")
 
         reply = self.WritePacketWaitForResponsePacket(packet, self.SPI_ATTACH)
 
@@ -254,22 +282,12 @@ class esp32_flasher:
         if (reply == -1):
             print(f"Activating device: {BY}NO REPLY{NW}")
             raise Exception("Failed to Activate device")
-        # reply = self.WaitForResponsePacket()
-        # time.sleep(1)
-        # reply = self.WaitForResponsePacket()
-
-        if (type(reply) is list):
-            for r in reply:
-                print(r.ToEncodedBytes())
-        else:
-            print(reply.ToEncodedBytes())
 
         print(f"Activating device: {BG}SUCCESS{NW}")
 
     def ProgramESP(self, build_path: str):
         uart_utils.SendUploadSelectionCommand(self.uart, "net_upload")
 
-        # time.sleep(2)
         self.Sync()
 
         self.AttachSPI()

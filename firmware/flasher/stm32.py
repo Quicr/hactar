@@ -392,7 +392,7 @@ class stm32_flasher:
 
         return self.ACK
 
-    def ProgramSTM(self):
+    def ProgramSTM(self, build_path):
 
         # Send the command to the mgmt chip that we want to program the UI chip
         uart_utils.SendUploadSelectionCommand(self.uart, "ui_upload")

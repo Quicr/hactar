@@ -1,67 +1,76 @@
 import sys
+import argparse
 import serial
-import uart_utils
 import stm32
 import esp32
-import esp32_slip_packet
+from ansi_colours import BB, BG, BR, BW, NW
 
-BGY = "\033[1;30m"
-BR = "\033[1;31m"
-BG = "\033[1;32m"
-BY = "\033[1;33m"
-BB = "\033[1;34m"
-BM = "\033[1;35m"
-BC = "\033[1;36m"
-BW = "\033[1;37m"
-
-NGY = "\033[0;30m"
-NR = "\033[0;31m"
-NG = "\033[0;32m"
-NY = "\033[0;33m"
-NB = "\033[0;34m"
-NM = "\033[0;35m"
-NC = "\033[0;36m"
-NW = "\033[0;37m"
+# TODO serial port prober that will send a hello command to each com port
+# until one replies with an ACK + details
 
 
 def main():
     try:
-        if (len(sys.argv) < 4):
-            print("Error. Need args as follows: port baudrate build_path")
-            exit()
+        parser = argparse.ArgumentParser()
 
-        port = sys.argv[1]
-        baud = sys.argv[2]
-        build_path = sys.argv[3]
+        parser.add_argument("-p", "--port",
+                            help="COM/Serial Port that Hactar is on",
+                            default="/dev/ttyUSB0",
+                            required=False)
+        parser.add_argument("-b", "--baud", help="Baudrate to communicate at",
+                            default=115200,
+                            type=int,
+                            required=False)
+        parser.add_argument("-c", "--chip",
+                            help="Chips that are to be flashed to. "
+                                 "Available values: ui, net, mgmt. "
+                                 "Multiple chips: ui+net, or ui+net+mgmt, etc",
+                                 default="",
+                                 required=True)
+        parser.add_argument("--mgmt_binary_path",
+                            help="Path to the mgmt binary",
+                            default="")
+        parser.add_argument("--ui_binary_path",
+                            help="Path to where the ui binary",
+                            default="")
+        parser.add_argument("--net_build_path",
+                            help="Path to where the net binaries can be found",
+                            default="")
+
+        args = parser.parse_args()
 
         uart = serial.Serial(
-            port=port,
-            baudrate=baud,
+            port=args.port,
+            baudrate=args.baud,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             timeout=2
         )
 
-        print(f"Opened port: {port} baudrate: {baud}")
+        print(f"Opened port: {BB}{args.port}{NW} "
+              f"baudrate: {BG}{args.baud}{NW}")
 
-        # print(f"{BW}Starting{NW}")
-        # stm32_flasher = stm32.stm32_flasher(uart)
-        # stm32_flasher.ProgramSTM()
+        if ("mgmt" in args.chip and args.mgmt_binary_path != ""):
+            print(f"{BW}Starting UI Upload{NW}")
+            stm32_flasher = stm32.stm32_flasher(uart)
+            stm32_flasher.ProgramSTM(args.mgmt_binary_path)
 
-        esp32_flasher = esp32.esp32_flasher(uart)
-        esp32_flasher.ProgramESP(build_path)
+        if ("ui" in args.chip and args.ui_binary_path != ""):
+            print(f"{BW}Starting UI Upload{NW}")
+            stm32_flasher = stm32.stm32_flasher(uart)
+            stm32_flasher.ProgramSTM(args.ui_binary_path)
 
-        # data = bytes([0xc0, 0xdb, 0xdc, 0xdb, 0xdc, 0xdb, 0xdd, 0xdd, 0x00, 0x00, 0x00, 0x00, 0xc0])
-        # packet = esp32_slip_packet.esp32_slip_packet()
-        # packet.FromBytes(data)
+        if ("net" in args.chip and args.net_build_path != ""):
+            print(f"{BW}Starting Net Upload{NW}")
+            esp32_flasher = esp32.esp32_flasher(uart)
+            esp32_flasher.ProgramESP(args.net_build_path)
 
-        # print(packet.SLIPEncode())
+        print(f"Done flashing {BR}GOODBYE{NW}")
 
         uart.close()
     except Exception as ex:
-        print(f"{ex}")
-        # print(f"{B_RED}{ex}{N_WHITE}")
+        print(f"{BR}{ex}{NW}")
 
 
 main()
