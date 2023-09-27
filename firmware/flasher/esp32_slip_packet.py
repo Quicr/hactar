@@ -1,11 +1,3 @@
-import functools
-from copy import deepcopy
-
-# TODO decide on if I want to represent the data in big endian and then
-# encode it into little endian, or just have it little endian from the start???
-#
-
-
 class esp32_slip_packet:
     """Slip packet for esp32 bootloader.
         |-------------------|
@@ -108,6 +100,11 @@ class esp32_slip_packet:
 
         return int.from_bytes(data, "little")
 
+    def GetBytes(self, start_idx: int, num_bytes: int):
+        data = self.data[start_idx:start_idx+num_bytes]
+
+        return data
+
     def GetDirection(self):
         return self.data[0]
 
@@ -128,8 +125,6 @@ class esp32_slip_packet:
         if (num_bytes == -1):
             num_bytes = (max(ele.bit_length(), 1) + 7) // 8
         ele_bytes = ele.to_bytes(num_bytes, "little")
-        if (ele == 0x4000):
-            print(ele_bytes)
 
         for ele in ele_bytes:
             self.data.append(ele)
@@ -155,16 +150,10 @@ class esp32_slip_packet:
         # Checksum seed
         checksum = 0xEF
         idx = 16
-        # print(f"checksum: {hex(checksum)}, idx: {idx}")
         while (idx < len(self.data)):
             checksum ^= self.data[idx]
-            # print(f"checksum: {hex(checksum)}, v: {hex(self.data[idx])}, idx: {idx}")
             idx += 1
 
-        # print(f"checksum: {hex(checksum)}, idx: {idx}")
-
-        # checksum = functools.reduce(lambda a, b: a ^ b, self.data)
-        # checksum ^ self.CHECKSUM_SEED
         checksum_bytes = checksum.to_bytes(4, "little")
 
         self.data[4] = checksum_bytes[0]
@@ -182,8 +171,6 @@ class esp32_slip_packet:
         # Set the current size
         self.SetSize(self.data_length)
 
-        # TODO might change?
-        # encoded_data = deepcopy(self.data)
         encoded_data = []
         encoded_data.append(self.END)
 
