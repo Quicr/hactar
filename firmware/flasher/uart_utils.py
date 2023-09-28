@@ -1,4 +1,5 @@
 import serial
+import time
 
 from ansi_colours import BG, NW, BR, BB
 
@@ -16,6 +17,7 @@ def SendUploadSelectionCommand(uart: serial.Serial, command: str):
         # Change to parity even
         print(f"Update uart to parity: {BB}EVEN{NW}")
         uart.parity = serial.PARITY_EVEN
+        time.sleep(0.1)
 
         # Wait for a response
         res = WaitForBytes(uart, 1)

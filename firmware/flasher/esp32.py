@@ -147,7 +147,7 @@ class esp32_flasher:
         size = len(data)
         packet_idx = 0
 
-        print(f"Flashing: {BG}0{NW}%", end="\r")
+        print(f"Flashing: {BG}00.00{NW}%", end="\r")
 
         while (data_ptr < size):
             bin_packet = esp32_slip_packet(0, self.FLASH_DATA)
@@ -182,7 +182,7 @@ class esp32_flasher:
                     f"Error ocured when writing address {data_ptr} of {file}")
                 raise Exception("Error. Failed to write")
 
-            print(f"Flashing: {BG}{int((data_ptr/size) * 100)}{NW}%", end="\r")
+            print(f"Flashing: {BG}{(data_ptr/size) * 100:2.2f}{NW}%", end="\r")
 
             # Move the file pointer
             data_ptr += self.Block_Size
@@ -190,7 +190,7 @@ class esp32_flasher:
             # Increment the sequence number
             packet_idx += 1
 
-        print(f"Flashing: {BG}100{NW}%")
+        print(f"Flashing: {BG}100.00{NW}%")
 
     def EndFlash(self):
         packet = esp32_slip_packet(0, self.FLASH_END)
