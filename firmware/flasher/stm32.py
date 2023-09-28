@@ -306,15 +306,16 @@ class stm32_flasher:
         percent_flashed = 0
 
         total_bytes = len(data)
+        self.uart.timeout = 5
 
         print(f"Write to Memory: {BB}STARTED{NW}")
         print(f"Address: {BW}{address:04x}{NW}")
         print(f"Byte Stream Size: {BW}{total_bytes}{NW}")
 
         while file_addr < total_bytes:
-            percent_flashed = int((file_addr / total_bytes) * 100)
+            percent_flashed = (file_addr / total_bytes) * 100
 
-            print(f"Flashing: {BG}{percent_flashed:2}{NW}%",
+            print(f"Flashing: {BG}{percent_flashed:2.2f}{NW}%",
                   end="\r")
             reply = uart_utils.WriteByteWaitForACK(
                 self.uart, self.Commands.write_memory, 5)
@@ -365,16 +366,15 @@ class stm32_flasher:
             addr += chunk_size
 
         # Don't need to calculate it here it finished
-        print(f"Flashing: {BG}100{NW}%")
+        print(f"Flashing: {BG}100.00{NW}%")
 
         # Verify the written memory by reading the size of the file
         addr = address
         file_addr = 0
 
         while file_addr < total_bytes:
-            percent_verified = int(
-                (file_addr / total_bytes)*100)
-            print(f"Verifying write: {BG}{percent_verified:2}{NW}"
+            percent_verified = (file_addr / total_bytes)*100
+            print(f"Verifying write: {BG}{percent_verified:2.2f}{NW}"
                   f"% verified", end="\r")
 
             chunk = data[file_addr:file_addr+Max_Num_Bytes]
@@ -387,12 +387,12 @@ class stm32_flasher:
             addr += len(mem)
             file_addr += len(chunk)
 
-        print(f"Verifying write: {BG}100{NW}% verified")
+        print(f"Verifying write: {BG}100.00{NW}% verified")
         print(f"Write: {BG}COMPLETE{NW}")
 
         return self.ACK
 
-    def ProgramSTM(self, build_path):
+    def ProgramSTM(self, binary_path):
 
         # Send the command to the mgmt chip that we want to program the UI chip
         uart_utils.SendUploadSelectionCommand(self.uart, "ui_upload")
@@ -417,5 +417,5 @@ class stm32_flasher:
         sectors = [x for x in range(6)]
         self.SendExtendedEraseMemory(sectors, False)
 
-        firmware = open("../ui/build/ui.bin", "rb").read()
-        self.SendWriteMemory(firmware, self.User_Sector_Start_Address, 1)
+        firmware = open(binary_path, "rb").read()
+        self.SendWriteMemory(firmware, self.User_Sector_Start_Address, 5)

@@ -160,6 +160,8 @@ const char reset_cmd [] = "reset";
 const uint8_t ACK [] = { 0x79 };
 const uint8_t READY [] = { 0x80 };
 const uint8_t NACK [] = { 0x1F };
+const uint8_t HELLO [] = "WHO ARE YOU?";
+const uint8_t HELLO_RES [] = "HELLO, I AM A HACTAR DEVICE";
 
 uint8_t CheckForDebugMode()
 {
@@ -422,6 +424,10 @@ extern inline void HandleCommands(uart_stream_t* uart_stream)
         {
             state = Reset;
         }
+        else if (strcmp((const char*)uart_stream->tx_buffer, HELLO) == 0)
+        {
+            HAL_UART_Transmit(&huart3, HELLO_RES, 28, HAL_MAX_DELAY);
+        }
 
         // Invalidate the command
         uart_stream->tx_buffer[0] = 0;
@@ -657,7 +663,6 @@ void UIUpload()
 
     usb_stream.last_transmission_time = HAL_GetTick();
     ui_stream.last_transmission_time = HAL_GetTick();
-    HAL_Delay(500);
 
     while (state == UI_Upload)
     {
@@ -754,7 +759,7 @@ void DebugMode()
     StartUartReceive(&ui_stream);
     StartUartReceive(&net_stream);
 
-    // HAL_Delay(100);
+    HAL_Delay(100);
 
     UINormalMode();
 
