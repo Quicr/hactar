@@ -1,5 +1,4 @@
 import serial
-import time
 
 from ansi_colours import BG, NW, BR, BB
 
@@ -9,15 +8,16 @@ READY = 0x80
 
 def SendUploadSelectionCommand(uart: serial.Serial, command: str):
     send_data = [ch for ch in bytes(command, "UTF-8")]
-    res = WriteBytesWaitForACK(uart, bytes(send_data), 5)
+    res = WriteBytesWaitForACK(uart, bytes(send_data))
     if res != ACK:
         raise Exception("Failed to move device into upload mode")
 
     if (command == "ui_upload"):
         # Change to parity even
         print(f"Update uart to parity: {BB}EVEN{NW}")
+        uart.close()
         uart.parity = serial.PARITY_EVEN
-        time.sleep(0.1)
+        uart.open()
 
         # Wait for a response
         res = WaitForBytes(uart, 1)

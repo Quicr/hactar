@@ -5,7 +5,7 @@ import axios from "axios";
 
 import LogItem from "@/components/LogItem.vue";
 
-import HactarFlasher from "@/classes/hactar_flasher";
+import HactarFlasher from "@/classes/flasher";
 let logs: any = reactive([]);
 let log_idx = 0;
 let progress = "";
@@ -48,11 +48,7 @@ async function FlashHactar()
             GetLogs();
         }, 5);
 
-        // Get the ui bin from the server
-        let res = await axios.get("http://localhost:7775/");
-        let data = res.data.data;
-
-        await flasher.FlashUI(data);
+        await flasher.Flash("ui");
 
         clearInterval(log_progress_interval);
 
@@ -67,24 +63,24 @@ async function FlashHactar()
 
 function GetProgressUpdate()
 {
-    if (progress != flasher.progress)
-    {
-        progress = flasher.progress;
-        progress_display = flasher.progress;
-        progress_dot_last_time = Date.now();
-    }
-    else if (Date.now() - progress_dot_last_time > Progress_Dot_Interval)
-    {
-        progress_display += ".";
-        progress_dot_last_time = Date.now();
+    // if (progress != flasher.progress)
+    // {
+    //     progress = flasher.progress;
+    //     progress_display = flasher.progress;
+    //     progress_dot_last_time = Date.now();
+    // }
+    // else if (Date.now() - progress_dot_last_time > Progress_Dot_Interval)
+    // {
+    //     progress_display += ".";
+    //     progress_dot_last_time = Date.now();
 
-        if (progress_display.slice(-4) == "....")
-        {
-            progress_display = progress;
-        }
-    }
+    //     if (progress_display.slice(-4) == "....")
+    //     {
+    //         progress_display = progress;
+    //     }
+    // }
 
-    user_info.text = progress_display;
+    // user_info.text = progress_display;
 }
 
 function GetLogs()

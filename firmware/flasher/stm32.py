@@ -314,11 +314,10 @@ class stm32_flasher:
 
         while file_addr < total_bytes:
             percent_flashed = (file_addr / total_bytes) * 100
+            print(f"Flashing: {BG}{percent_flashed:2.2f}{NW}%", end="\r")
 
-            print(f"Flashing: {BG}{percent_flashed:2.2f}{NW}%",
-                  end="\r")
             reply = uart_utils.WriteByteWaitForACK(
-                self.uart, self.Commands.write_memory, 5)
+                self.uart, self.Commands.write_memory, 1)
             if (reply == self.NACK):
                 raise Exception("NACK was received after sending write "
                                 "command")
@@ -330,12 +329,18 @@ class stm32_flasher:
             write_address_bytes = addr.to_bytes(4, "big") + checksum
             reply = uart_utils.WriteBytesWaitForACK(self.uart,
                                                     write_address_bytes, 1)
+
             if (reply == self.NACK):
-                raise Exception("NACK was received after sending write "
-                                "command")
+                print("")
+                for b in write_address_bytes:
+                    print(b)
+                raise Exception("NACK was received after sending write"
+                                f"address bytes command for address"
+                                f"{addr:04x}")
             elif (reply == -1):
-                raise Exception("No reply was received after sending write "
-                                "command")
+                raise Exception("No reply was received after sending write"
+                                f"address bytes command for address"
+                                f"{addr:04x}")
 
             # Get the contents of the binary
             chunk = data[file_addr:file_addr+Max_Num_Bytes]
@@ -343,8 +348,8 @@ class stm32_flasher:
             chunk_size = len(chunk)
 
             # Pad the chunk to be a multiple of 4 bytes
-            if (len(chunk) % 4 != 0):
-                chunk = chunk + bytes([0xFF] * (4 - (len(chunk) % 4)))
+            while len(chunk) % 4 != 0:
+                chunk += bytes([0xFF])
 
             # Front append the number of bytes to be received. 0 start
             chunk = (len(chunk) - 1).to_bytes(1, "big") + chunk
@@ -382,7 +387,8 @@ class stm32_flasher:
                         len(chunk)))
 
             if chunk != mem:
-                raise Exception(f"Failed to verify at memory address {addr}")
+                raise Exception(
+                    f"Failed to verify at memory address {hex(addr)}")
 
             addr += len(mem)
             file_addr += len(chunk)
