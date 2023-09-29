@@ -111,8 +111,8 @@ class esp32_flasher:
             offset = int(binary["offset"], 16)
             num_blocks = (size + self.Block_Size - 1) // self.Block_Size
 
-            print(f"Flashing: {BY}{binary['name']}{NW}, size: {size}, "
-                  f"start_addr: {offset}")
+            print(f"Flashing: {BY}{binary['name']}{NW}, size: {hex(size)}, "
+                  f"start_addr: {hex(offset)}")
 
             self.StartFlash(size, num_blocks, offset)
             self.WriteFlash(binary['file'], data, num_blocks)
@@ -178,8 +178,8 @@ class esp32_flasher:
 
             if (reply.GetCommand() != self.FLASH_DATA):
                 print(reply)
-                print(
-                    f"Error ocured when writing address {data_ptr} of {file}")
+                print(f"Error occurred when writing address {data_ptr}"
+                      f" of {file}")
                 raise Exception("Error. Failed to write")
 
             print(f"Flashing: {BG}{(data_ptr/size) * 100:2.2f}{NW}%", end="\r")
@@ -254,11 +254,11 @@ class esp32_flasher:
         packet.PushData(0, 4)
         # total size (4MB)
         packet.PushData(0x400000, 4)
-        # block size
+        # esp32s3 block size
         packet.PushData(64*1024, 4)
-        # sector size
+        # esp32s3 sector size
         packet.PushData(4*1024, 4)
-        # Page size
+        # esp32s3 Page size
         packet.PushData(256, 4)
         # status mask
         packet.PushData(0xffff, 4)

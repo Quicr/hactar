@@ -1,146 +1,81 @@
-class HactarFlasher
+import Sleep from "./sleep";
+import { ACK, READY, NACK, NO_REPLY } from "./uart_utils"
+import Serial from "./serial"
+
+class STM32Flasher
 {
-    constructor()
+    async FlashSTM(serial: Serial, ui_bin: number[])
     {
+        let sectors_to_erase = this.SectorsToErase(ui_bin.length);
 
+        this.progress = "Starting";
+        console.log("Here")
+
+        await this.Sync(serial);
+
+        await Sleep(200);
+
+        await this.ExtendedEraseMemory(serial, sectors_to_erase);
+
+        await this.WriteMemory(serial, ui_bin, this.User_Sector_Start_Address);
+
+        this.Log("Update Complete.");
+        this.progress = "Update complete";
     }
 
-    async FlashUI(ui_bin: number[])
+    async Sync(serial: Serial, retry: number = 5)
     {
-        try
-        {
-            let sectors_to_erase = this.SectorsToErase(ui_bin.length);
-
-            this.progress = "Starting";
-            await this.SendUploadSelectionCommand("ui_upload");
-
-            await this.Sync();
-
-            await this.Sleep(200);
-
-            await this.ExtendedEraseMemory(sectors_to_erase);
-
-            await this.WriteMemory(ui_bin, this.User_Sector_Start_Address);
-
-            await this.ClosePortAndNull();
-
-            this.Log("Update Complete.");
-            this.progress = "Update complete";
-        }
-        catch (exception)
-        {
-            await this.ClosePortAndNull();
-
-            console.error(exception);
-        }
-    }
-
-    FlashNet(net_bin: number[])
-    {
-        this.mode = "net_upload";
-    }
-
-    async ConnectToHactar(filters: Object[]): Promise<boolean>
-    {
-        if (!('serial' in navigator))
-            return false;
-
-        // We already have a port, do nothing.
-        if (this.port) return false;
-
-        this.port = await (navigator as any).serial.requestPort({ filters });
-
-        // No port was selected
-        if (!this.port) return false;
-
-        await this.OpenPort("none");
-
-        return true;
-    }
-
-    async SendUploadSelectionCommand(command: String)
-    {
-        if (command != 'ui_upload' && command != 'net_upload')
-            throw `Error. ${command} is an invalid command`;
-
-        this.mode = command;
-        let enc = new TextEncoder()
-
-        // Get the response
-        let reply = await this.WriteBytesWaitForACK(enc.encode("ui_upload"), 4000);
-        if (reply == this.NO_REPLY)
-        {
-            throw "Failed to move Hactar into upload mode";
-        }
-
-        if (command == "ui_upload")
-        {
-            // ChangeParity("even");
-            await this.OpenPort("even");
-            this.Log("Activating UI Upload Mode: SUCCESS");
-            this.Log("Update uart to parity: EVEN");
-
-            reply = await this.ReadByte(5000);
-
-            if (reply != this.READY)
-                throw "Hactar took too long to get ready";
-        }
-
-    }
-
-    async Sync(retry: number = 5)
-    {
-        let reply: number = await this.WriteByteWaitForACK(
+        let reply: number = await serial.WriteByteWaitForACK(
             this.Commands.sync, retry, false);
 
-        if (reply == this.NACK)
+        if (reply == NACK)
             throw "Activating device: FAILED";
-        else if (reply == this.NO_REPLY)
+        else if (reply == NO_REPLY)
             throw "Activating device: NO REPLY";
 
         this.Log("Activating device: SUCCESS");
     }
 
 
-    async ReadMemory(address: number[], num_bytes: number,
+    async ReadMemory(serial: Serial, address: number[], num_bytes: number,
         retry: number = 1)
     {
-        let reply: number = await this.WriteByteWaitForACK(
+        let reply: number = await serial.WriteByteWaitForACK(
             this.Commands.read_memory, retry);
 
-        if (reply == this.NACK)
+        if (reply == NACK)
             throw "NACK was received during Read Memory";
-        else if (reply == this.NO_REPLY)
+        else if (reply == NO_REPLY)
             throw "NO REPLY was received during Read Memory";
 
         address.push(this.CalculateChecksum(address));
 
-        reply = await this.WriteBytesWaitForACK(new Uint8Array(address));
-        if (reply == this.NACK)
+        reply = await serial.WriteBytesWaitForACK(new Uint8Array(address));
+        if (reply == NACK)
             throw "NACK was received after sending memory address";
-        else if (reply == this.NO_REPLY)
+        else if (reply == NO_REPLY)
             throw "NO REPLY received after sending memory address";
 
-        reply = await this.WriteByteWaitForACK(num_bytes - 1);
-        if (reply == this.NACK)
+        reply = await serial.WriteByteWaitForACK(num_bytes - 1);
+        if (reply == NACK)
             throw "NACK was received after sending num bytes to receive";
-        else if (reply == this.NO_REPLY)
+        else if (reply == NO_REPLY)
             throw "NO REPLY received after sending num bytes to receive";
 
-        let recv_data = await this.ReadBytesExcept(num_bytes);
+        let recv_data = await serial.ReadBytesExcept(num_bytes);
         return recv_data
     }
 
 
-    async ExtendedEraseMemory(sectors: number[]): Promise<boolean>
+    async ExtendedEraseMemory(serial: Serial, sectors: number[]): Promise<boolean>
     {
         this.Log(`Erase: Sectors ${sectors}`);
 
-        let reply: number = await this.WriteByteWaitForACK(
+        let reply: number = await serial.WriteByteWaitForACK(
             this.Commands.extended_erase);
-        if (reply == this.NACK)
+        if (reply == NACK)
             throw "NACK was received after sending erase command";
-        else if (reply == this.NO_REPLY)
+        else if (reply == NO_REPLY)
             throw "No reply was received after sending erase command";
 
         // TODO error check sectors
@@ -162,12 +97,12 @@ class HactarFlasher
 
         this.Log(`Erase: STARTED`);
 
-        reply = await this.WriteBytesWaitForACK(new Uint8Array(data), 10000);
-        if (reply == this.NACK)
+        reply = await serial.WriteBytesWaitForACK(new Uint8Array(data), 10000);
+        if (reply == NACK)
         {
             throw "Failed to erase";
         }
-        else if (reply == this.NO_REPLY)
+        else if (reply == NO_REPLY)
         {
             throw "Failed to erase, no reply received";
         }
@@ -213,7 +148,7 @@ class HactarFlasher
                 do
                 {
                     let memory_address_bytes = this.ConvertToByteArray([memory_address], 4);
-                    mem = await this.ReadMemory(memory_address_bytes, mem_bytes_sz);
+                    mem = await this.ReadMemory(serial, memory_address_bytes, mem_bytes_sz);
                     read_count += 1;
 
                     compare = this.MemoryCompare(mem, expected_mem);
@@ -242,7 +177,7 @@ class HactarFlasher
         return true;
     }
 
-    async WriteMemory(data: number[], start_addr: number, retry: number = 1)
+    async WriteMemory(serial: Serial, data: number[], start_addr: number, retry: number = 1)
     {
         const Max_Num_Bytes = 256;
         let addr = start_addr;
@@ -264,24 +199,26 @@ class HactarFlasher
         {
             percent_flashed = (file_addr / total_bytes);
 
-            this.Log(`Flashing: ${Math.floor(percent_flashed*100)}%`, true);
-            this.progress = `Updating: ${Math.floor(percent_flashed*50)}%`;
+            this.progress = `Updating: ${Math.floor(percent_flashed * 50)}%`;
 
-            reply = await this.WriteByteWaitForACK(this.Commands.write_memory);
-            if (reply == this.NACK)
+            reply = await serial.WriteByteWaitForACK(this.Commands.write_memory);
+            if (reply == NACK)
                 throw "NACK was received after sending write command";
-            else if (reply == this.NO_REPLY)
+            else if (reply == NO_REPLY)
                 throw "NO REPLY received after sending write command";
 
             let write_address_bytes = this.ConvertToByteArray([addr], 4);
             let checksum = this.CalculateChecksum(write_address_bytes);
 
             write_address_bytes.push(checksum);
-            reply = await this.WriteBytesWaitForACK(new Uint8Array(write_address_bytes));
-            if (reply == this.NACK)
+
+            this.Log(`Flashing: ${Math.floor(percent_flashed * 100)}%  file_addr: ${file_addr.toString(16)}, addr: ${addr.toString(16)}, data: ${new Uint8Array(write_address_bytes)}`, true);
+            reply = await serial.WriteBytesWaitForACK(new Uint8Array(write_address_bytes));
+            if (reply == NACK)
                 throw "NACK was received after sending write command";
-            else if (reply == this.NO_REPLY)
+            else if (reply == NO_REPLY)
                 throw "NO REPLY received after sending write command";
+
 
             // Get the contents of the binary
             // Exclusive  slice
@@ -289,19 +226,21 @@ class HactarFlasher
             let chunk_size = chunk.length;
 
             while (chunk.length % 4 != 0)
-                chunk.push(0);
+                chunk.push(255);
 
+            // Push the length of the chunk onto the bytes
             chunk.unshift(chunk.length - 1);
             chunk.push(this.CalculateChecksum(chunk));
 
-            reply = await this.WriteBytesWaitForACK(new Uint8Array(chunk));
-            if (reply == this.NACK)
+            reply = await serial.WriteBytesWaitForACK(new Uint8Array(chunk));
+            if (reply == NACK)
                 throw `NACK was received while writing to addr: ${addr}`;
-            else if (reply == this.NO_REPLY)
+            else if (reply == NO_REPLY)
                 throw `NO REPLY was received while writing to addr: ${addr}`;
 
             file_addr += chunk_size;
             addr += chunk_size;
+
         }
 
         this.Log(`Flashing: 100%`, true);
@@ -315,12 +254,12 @@ class HactarFlasher
         while (file_addr < total_bytes)
         {
             percent_flashed = (file_addr / total_bytes);
-            this.Log(`Verifying write: ${Math.floor(percent_flashed*100)}%`, true);
-            this.progress = `Updating: ${(Math.floor(percent_flashed*50)) + 50}%`;
+            this.Log(`Verifying write: ${Math.floor(percent_flashed * 100)}%`, true);
+            this.progress = `Updating: ${(Math.floor(percent_flashed * 50)) + 50}%`;
 
             const chunk = data.slice(file_addr, file_addr + Max_Num_Bytes);
             const addr_bytes = this.ConvertToByteArray([addr], 4);
-            const mem = await this.ReadMemory(addr_bytes, chunk.length);
+            const mem = await this.ReadMemory(serial, addr_bytes, chunk.length);
 
             const compare = this.MemoryCompare(mem, chunk);
             if (!compare)
@@ -333,7 +272,7 @@ class HactarFlasher
         this.Log("Verifying write: 100%", true);
         this.Log("Write: COMPLETE");
 
-        return this.ACK;
+        return ACK;
     }
 
     // Helper functions
@@ -392,159 +331,6 @@ class HactarFlasher
         return true;
     }
 
-    async ListenForBytes()
-    {
-        this.released_reader = false;
-        this.Log(`Port readable: ${this.port.readable}, Stop: ${this.stop}`)
-        while (this.port.readable && !this.stop)
-        {
-            this.Log("Listening to bytes on serial port");
-            this.reader = this.port.readable.getReader();
-            try
-            {
-
-                while (!this.stop)
-                {
-                    const { value, done } = await this.reader.read()
-
-                    if (done)
-                    {
-                        break;
-                    }
-
-                    value.forEach((element: any) =>
-                    {
-                        this.in_buffer.push(element);
-                    });
-                }
-            } catch (error)
-            {
-                this.Log(error);
-                return;
-            } finally
-            {
-                this.reader.releaseLock();
-                this.released_reader = true;
-            }
-        }
-    }
-
-    async ReadBytes(num_bytes: number, timeout: number = 2000): Promise<number[]>
-    {
-        let num = num_bytes
-        let bytes: number[] = []
-
-        let start_time = Date.now();
-        while (num > 0 && (Date.now() - start_time) < timeout)
-        {
-            if (this.in_buffer.length == 0)
-            {
-                await this.Sleep(0.001)
-                continue;
-            }
-            bytes.push(this.in_buffer[0]);
-            this.in_buffer.shift();
-            num--;
-        }
-
-        if (bytes.length < 1)
-            return [this.NO_REPLY];
-
-        return bytes;
-    }
-
-    async ReadBytesExcept(num_bytes: number, timeout: number = 2000): Promise<number[]>
-    {
-        let result: number[] = await this.ReadBytes(num_bytes, timeout);
-        if (result[0] == this.NO_REPLY)
-        {
-            throw "Error, didn't receive any bytes";
-        }
-
-        return result;
-    }
-
-    async ReadByte(timeout: number = 2000): Promise<number>
-    {
-        let res = await this.ReadBytes(1, timeout)
-
-        return res[0];
-    }
-
-    async WriteBytes(bytes: Uint8Array)
-    {
-        const writer = this.port.writable.getWriter();
-        await writer.write(bytes);
-        writer.releaseLock();
-    }
-
-    async WriteByteWaitForACK(byte: number, retry: number = 1,
-        compliment: boolean = true, timeout = 2000)
-    {
-
-        let data: number[] = [byte];
-        if (compliment)
-            data.push(byte ^ 0xFF)
-
-        let num = retry;
-        while (num--)
-        {
-            await this.WriteBytes(new Uint8Array(data));
-
-            let reply = await this.ReadByte(timeout);
-
-            if (reply == this.NO_REPLY)
-                continue;
-
-            return reply;
-        }
-
-        return this.NO_REPLY;
-    }
-
-    async WriteBytesWaitForACK(bytes: Uint8Array, timeout: number = 2000,
-        retry: number = 1)
-    {
-        let num = retry;
-        while (num--)
-        {
-            await this.WriteBytes(bytes);
-
-            let reply = await this.ReadByte(timeout);
-
-            if (reply == this.NO_REPLY)
-                continue;
-
-            return reply;
-        }
-
-        return this.NO_REPLY;
-    }
-
-    async ClosePort()
-    {
-        if (!this.open)
-        {
-            this.Log("Port not open");
-            return;
-        }
-
-        this.stop = true;
-        this.reader.cancel();
-
-        await this.reader_promise;
-        await this.port.close();
-        this.open = false;
-
-        this.Log("Close hacatar");
-    }
-
-    async ClosePortAndNull()
-    {
-        await this.ClosePort();
-        this.port = null;
-    }
-
     Log(text: any, replace_previous: boolean = false)
     {
         console.log(`replace: ${replace_previous}: ${text}`);
@@ -565,40 +351,6 @@ class HactarFlasher
 
         return sectors;
     }
-
-    async OpenPort(parity: string)
-    {
-        this.Log("Open port");
-        const options = {
-            baudRate: 115200,
-            dataBits: 8,
-            stopBits: 1,
-            parity: parity
-        };
-
-        await this.ClosePort();
-
-        this.stop = false;
-        this.released_reader = true;
-        this.in_buffer = [];
-
-        await this.port.open(options);
-
-        this.open = true;
-
-        // Start listening
-        this.reader_promise = this.ListenForBytes()
-    }
-
-    async Sleep(delay: number)
-    {
-        await new Promise(r => setTimeout(r, delay));
-    }
-
-    ACK: number = 0x79;
-    READY: number = 0x80;
-    NACK: number = 0x1F;
-    NO_REPLY: number = -1;
 
     Commands = {
         "sync": 0x7F,
@@ -640,13 +392,7 @@ class HactarFlasher
     mode: String = ""
     logs: any = [];
     progress: any = [];
-    port: any = null;
-    reader: any = null;
-    released_reader: boolean = true;
-    in_buffer: number[] = [];
-    stop: boolean = false;
-    open: boolean = false;
-    reader_promise: any = null;
 };
 
-export default HactarFlasher;
+// TODO return a static flasher?
+export default STM32Flasher;

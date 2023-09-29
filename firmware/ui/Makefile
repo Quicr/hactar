@@ -14,7 +14,7 @@
 # target
 ######################################
 TARGET = ui
-FIRMWARE = ${TARGET}.elf
+FIRMWARE = ${TARGET}.bin
 
 ######################################
 # building variables

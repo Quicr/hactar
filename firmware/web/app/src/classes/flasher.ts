@@ -1,0 +1,114 @@
+import axios from "axios"
+import { ACK, READY, NACK, NO_REPLY } from "./uart_utils"
+import Serial from "@/classes/serial"
+import STM32Flasher from "./stm32_flasher";
+
+class HactarFlasher
+{
+    logs: any;
+    serial: Serial;
+    stm_flasher: STM32Flasher;
+
+    constructor()
+    {
+        this.logs = [];
+        this.serial = new Serial();
+        this.stm_flasher = new STM32Flasher();
+    }
+
+    async ConnectToHactar(filters: Object[])
+    {
+        return await this.serial.ConnectToDevice(filters);
+    }
+
+    async ClosePortAndNull()
+    {
+        await this.serial.ClosePortAndNull();
+    }
+
+    async GetBinary(mode: string)
+    {
+        // TODO use mode
+        // Get the ui bin from the server
+        let res = await axios.get("http://localhost:7775/");
+        return res.data.data;
+    }
+
+    // TODO
+    async Flash(mode: string = "ui+net")
+    {
+        try
+        {
+            if (mode.includes("mgmt"))
+            {
+
+            }
+
+            if (mode.includes("ui"))
+            {
+                let binary = await this.GetBinary(mode)
+                await this.SendUploadSelectionCommand("ui_upload");
+                await this.stm_flasher.FlashSTM(this.serial, binary);
+            }
+
+            if (mode.includes("net"))
+            {
+
+            }
+
+            await this.ClosePortAndNull();
+        }
+        catch (exception)
+        {
+            await this.ClosePortAndNull();
+
+            console.error(exception);
+        }
+    }
+
+    FlashNet(net_bin: number[])
+    {
+
+    }
+
+    async SendUploadSelectionCommand(command: string)
+    {
+        if (command != 'ui_upload' && command != 'net_upload')
+            throw `Error. ${command} is an invalid command`;
+
+        let enc = new TextEncoder()
+
+        // Get the response
+        let reply = await this.serial.WriteBytesWaitForACK(enc.encode(command), 4000);
+        console.log("reply " + reply);
+        if (reply == NO_REPLY)
+        {
+            throw "Failed to move Hactar into upload mode";
+        }
+
+        if (command == "ui_upload")
+        {
+            await this.serial.OpenPort("even");
+
+            reply = await this.serial.ReadByte(5000);
+            console.log("is hactar ready?: " + reply)
+
+            if (reply != READY)
+            {
+                throw "Hactar took too long to get ready";
+            }
+
+            this.Log("Activating UI Upload Mode: SUCCESS");
+            this.Log("Update uart to parity: EVEN");
+        }
+    }
+
+    Log(text: any, replace_previous: boolean = false)
+    {
+        console.log(`replace: ${replace_previous}: ${text}`);
+        this.logs.push({ text, replace_previous });
+    }
+
+};
+
+export default HactarFlasher;
