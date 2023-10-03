@@ -131,12 +131,12 @@ class esp32_slip_packet:
 
         self.data_length += len(ele_bytes)
 
-    def PushDataArray(self, data_in: [], endian: str = "little",
+    def PushDataArray(self, data_in: [], endian_format: str = "little",
                       size: int = -1):
         """ Pushes an array of data into the data array
             - Expects data in big endian format
         """
-        if (endian == "little"):
+        if (endian_format == "little"):
             for ele in reversed(data_in):
                 self.PushData(ele, size)
         else:

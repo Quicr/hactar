@@ -1,5 +1,5 @@
 import Sleep from "./sleep";
-import { ACK, READY, NACK, NO_REPLY } from "./uart_utils"
+import { ACK, READY, NACK, NO_REPLY, MemoryCompare, ToByteArray } from "./uart_utils"
 import Serial from "./serial"
 
 class STM32Flasher
@@ -82,10 +82,10 @@ class STM32Flasher
 
         // Number of sectors starts at 0x00 0x00. So 0x00 0x00 means delete
         // 1 sector.
-        let num_sectors = this.ConvertToByteArray([sectors.length - 1], 2);
+        let num_sectors = ToByteArray([sectors.length - 1], 2);
 
         // Convert sectors into bytes
-        let byte_sectors = this.ConvertToByteArray(sectors, 2);
+        let byte_sectors = ToByteArray(sectors, 2);
 
         // Await the two and join them together
         let data = num_sectors.concat(byte_sectors);
@@ -147,11 +147,11 @@ class STM32Flasher
                 let compare = false;
                 do
                 {
-                    let memory_address_bytes = this.ConvertToByteArray([memory_address], 4);
+                    let memory_address_bytes = ToByteArray([memory_address], 4);
                     mem = await this.ReadMemory(serial, memory_address_bytes, mem_bytes_sz);
                     read_count += 1;
 
-                    compare = this.MemoryCompare(mem, expected_mem);
+                    compare = MemoryCompare(mem, expected_mem);
 
                     if (compare)
                     {
@@ -207,7 +207,7 @@ class STM32Flasher
             else if (reply == NO_REPLY)
                 throw "NO REPLY received after sending write command";
 
-            let write_address_bytes = this.ConvertToByteArray([addr], 4);
+            let write_address_bytes = ToByteArray([addr], 4);
             let checksum = this.CalculateChecksum(write_address_bytes);
 
             write_address_bytes.push(checksum);
@@ -258,10 +258,10 @@ class STM32Flasher
             this.progress = `Updating: ${(Math.floor(percent_flashed * 50)) + 50}%`;
 
             const chunk = data.slice(file_addr, file_addr + Max_Num_Bytes);
-            const addr_bytes = this.ConvertToByteArray([addr], 4);
+            const addr_bytes = ToByteArray([addr], 4);
             const mem = await this.ReadMemory(serial, addr_bytes, chunk.length);
 
-            const compare = this.MemoryCompare(mem, chunk);
+            const compare = MemoryCompare(mem, chunk);
             if (!compare)
                 throw `Failed to verify at memory address ${addr}`;
 
@@ -279,56 +279,6 @@ class STM32Flasher
     CalculateChecksum(array: number[]): number
     {
         return array.reduce((a, b) => a ^ b);
-    }
-
-    ConvertToByteArray(array: number[], bytes_per_element: number)
-    {
-        if (bytes_per_element > 4)
-            throw "JS can't handle more than like 6 byte integers because \
-                    precision";
-
-        let array_bytes = []
-        let byte_count = 0;
-        let value = 0;
-        let mask = 0;
-        let bits = 0;
-        let byte = 0;
-
-        for (let i = 0; i < array.length; ++i)
-        {
-            byte_count = bytes_per_element;
-            value = array[i];
-
-
-            mask = (0x100 ** (bytes_per_element)) - 1;
-            while (byte_count > 0)
-            {
-                bits = (byte_count - 1) * 8;
-                byte = (value & mask) >>> bits;
-                mask = mask >>> 8;
-                value = value & mask;
-
-                array_bytes.push(byte);
-
-                byte_count--;
-            }
-        }
-
-        return array_bytes;
-    }
-
-
-    MemoryCompare(arr1: number[], arr2: number[]): boolean
-    {
-        if (arr1.length != arr2.length) return false;
-
-        for (let i = 0; i < arr1.length; ++i)
-        {
-            if (arr1[i] != arr2[i])
-                return false;
-        }
-
-        return true;
     }
 
     Log(text: any, replace_previous: boolean = false)

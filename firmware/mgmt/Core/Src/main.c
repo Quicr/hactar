@@ -5,7 +5,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdint-gcc.h>
 #include <stdlib.h>
 #include <string.h>
 #include "stm32f0xx_hal_def.h"
