@@ -141,7 +141,7 @@ class Serial
         {
             if (this.in_buffer.length == 0)
             {
-                await Sleep(0.001)
+                await Sleep(0.0001)
                 continue;
             }
             bytes.push(this.in_buffer[0]);

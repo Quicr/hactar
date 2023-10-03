@@ -1,11 +1,19 @@
 <script setup lang="ts">
 
 import { reactive, ref } from "vue";
-import axios from "axios";
 
 import LogItem from "@/components/LogItem.vue";
 
 import HactarFlasher from "@/classes/flasher";
+
+import ESP32SlipPacket from "@/classes/esp32_slip_packet";
+
+console.log("Start!");
+let packet = new ESP32SlipPacket();
+packet.SetSize(258);
+console.log("packet size")
+console.log(packet.GetSize());
+
 let logs: any = reactive([]);
 let log_idx = 0;
 let progress = "";
