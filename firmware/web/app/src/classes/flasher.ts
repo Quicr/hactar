@@ -80,7 +80,6 @@ class HactarFlasher
 
         // Get the response
         let reply = await this.serial.WriteBytesWaitForACK(enc.encode(command), 4000);
-        console.log("reply " + reply);
         if (reply == NO_REPLY)
         {
             throw "Failed to move Hactar into upload mode";
@@ -91,7 +90,6 @@ class HactarFlasher
             await this.serial.OpenPort("even");
 
             reply = await this.serial.ReadByte(5000);
-            console.log("is hactar ready?: " + reply)
 
             if (reply != READY)
             {
@@ -100,6 +98,20 @@ class HactarFlasher
 
             this.Log("Activating UI Upload Mode: SUCCESS");
             this.Log("Update uart to parity: EVEN");
+        }
+        else if (command == "net_upload")
+        {
+            await this.serial.OpenPort("none");
+
+            reply = await this.serial.ReadByte(5000);
+
+            if (reply != READY)
+            {
+                throw "Hactar took too long to get ready";
+            }
+
+            this.Log("Activating NET Upload Mode: SUCCESS");
+            this.Log("Update uart to parity: NONE");
         }
     }
 

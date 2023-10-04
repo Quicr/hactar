@@ -1,4 +1,4 @@
-class esp32_slip_packet:
+class ESP32SlipPacket:
     """Slip packet for esp32 bootloader.
         |-------------------|
         |Byte    name       |
@@ -40,19 +40,19 @@ class esp32_slip_packet:
         for d in data:
             array.append(int.from_bytes(d, "little"))
 
-        if (array[0] != self.END and array[-1] != self.END):
+        if (array[0] != self.END or array[-1] != self.END):
             raise Exception("Error. Start and end bytes missing")
 
         idx = 1
         # Remove slip encapsulation
-        cleaned_data = []
+        decoded_bytes = []
         while idx < len(array):
             if array[idx] == self.ESC:
                 if array[idx+1] == self.ESC_END:
-                    cleaned_data.append(self.END)
+                    decoded_bytes.append(self.END)
                 elif array[idx+1] == self.ESC_ESC:
                     # following byte is not an escape
-                    cleaned_data.append(self.ESC)
+                    decoded_bytes.append(self.ESC)
                 else:
                     raise Exception(f"{array[idx]} not properly escaped" +
                                     f" at idx {idx}")
@@ -60,18 +60,18 @@ class esp32_slip_packet:
             elif array[idx] == self.END:
                 break
             else:
-                cleaned_data.append(array[idx])
+                decoded_bytes.append(array[idx])
 
             idx += 1
 
-        if (len(cleaned_data) < 8):
+        if (len(decoded_bytes) < 8):
             raise Exception("Error. Data needs to be at least 8 bytes")
 
         for i in range(8):
-            self.data[i] = cleaned_data[i]
+            self.data[i] = decoded_bytes[i]
 
         length = self.GetSize()
-        self.PushDataArray(cleaned_data[8:8+length], "little")
+        self.PushDataArray(decoded_bytes[8:8+length], "little")
 
     def SetHeader(self, direction: int, command: int, size: int = 0):
         self.SetDirection(direction)
@@ -174,7 +174,6 @@ class esp32_slip_packet:
         encoded_data = []
         encoded_data.append(self.END)
 
-        # Skip the first byte
         idx = 0
         while (idx < len(self.data)):
             if self.END == self.data[idx]:

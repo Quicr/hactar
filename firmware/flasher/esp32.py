@@ -2,7 +2,7 @@ import serial
 import json
 import hashlib
 
-from esp32_slip_packet import esp32_slip_packet
+from esp32_slip_packet import ESP32SlipPacket
 import uart_utils
 from ansi_colours import NW, BG, BY
 
@@ -29,7 +29,7 @@ class esp32_flasher:
     def __init__(self, uart: serial.Serial):
         self.uart = uart
 
-    def WritePacketWaitForResponsePacket(self, packet: esp32_slip_packet,
+    def WritePacketWaitForResponsePacket(self, packet: ESP32SlipPacket,
                                          packet_type: int = -1,
                                          checksum: bool = False,
                                          retry_num: int = 5):
@@ -46,7 +46,7 @@ class esp32_flasher:
 
         return -1
 
-    def WritePacket(self, packet: esp32_slip_packet, checksum: bool = False):
+    def WritePacket(self, packet: ESP32SlipPacket, checksum: bool = False):
         data = packet.SLIPEncode(checksum)
         self.uart.write(data)
 
@@ -59,9 +59,9 @@ class esp32_flasher:
 
         # Loop until we get no reply, or we get the packet type we want
         while True:
-            packet = esp32_slip_packet()
+            packet = ESP32SlipPacket()
             # Wait for start byte
-            while rx_byte[0] != esp32_slip_packet.END:
+            while rx_byte[0] != ESP32SlipPacket.END:
                 rx_byte = self.uart.read(1)
                 if (len(rx_byte) < 1):
                     if len(packets) > 0:
@@ -74,7 +74,7 @@ class esp32_flasher:
 
             # Reset rx_byte
             rx_byte = bytes(1)
-            while rx_byte[0] != esp32_slip_packet.END:
+            while rx_byte[0] != ESP32SlipPacket.END:
                 rx_byte = self.uart.read(1)
                 if (len(rx_byte) < 1):
                     if len(packets) > 0:
@@ -124,7 +124,7 @@ class esp32_flasher:
         # Get the size to erase
         size_to_erase = size
 
-        packet = esp32_slip_packet(0x00, self.FLASH_BEGIN)
+        packet = ESP32SlipPacket(0x00, self.FLASH_BEGIN)
 
         packet.PushData(size_to_erase, 4)
         packet.PushData(num_blocks, 4)
@@ -150,7 +150,7 @@ class esp32_flasher:
         print(f"Flashing: {BG}00.00{NW}%", end="\r")
 
         while (data_ptr < size):
-            bin_packet = esp32_slip_packet(0, self.FLASH_DATA)
+            bin_packet = ESP32SlipPacket(0, self.FLASH_DATA)
 
             # Push on the data size which will be the block size
             bin_packet.PushData(self.Block_Size, 4)
@@ -193,7 +193,7 @@ class esp32_flasher:
         print(f"Flashing: {BG}100.00{NW}%")
 
     def EndFlash(self):
-        packet = esp32_slip_packet(0, self.FLASH_END)
+        packet = ESP32SlipPacket(0, self.FLASH_END)
 
         packet.PushData(0x1, 4)
 
@@ -205,7 +205,7 @@ class esp32_flasher:
         print(f"Flashing: {BG}COMPLETE{NW}")
 
     def FlashMD5(self, data, address, size):
-        packet = esp32_slip_packet(0, self.SPI_FLASH_MD5)
+        packet = ESP32SlipPacket(0, self.SPI_FLASH_MD5)
         packet.PushData(address, 4)
         packet.PushData(size, 4)
         packet.PushData(0, 4)
@@ -238,7 +238,7 @@ class esp32_flasher:
                                 f"\n\rCalculated: {loc_md5}")
 
     def AttachSPI(self):
-        packet = esp32_slip_packet(0, self.SPI_ATTACH)
+        packet = ESP32SlipPacket(0, self.SPI_ATTACH)
         packet.PushDataArray([0]*8)
 
         reply = self.WritePacketWaitForResponsePacket(packet, self.SPI_ATTACH)
@@ -249,7 +249,7 @@ class esp32_flasher:
     def SetSPIParameters(self):
         # This is all hardcoded...
 
-        packet = esp32_slip_packet(0, self.SPI_SET_PARAMS)
+        packet = ESP32SlipPacket(0, self.SPI_SET_PARAMS)
         # ID
         packet.PushData(0, 4)
         # total size (4MB)
@@ -270,7 +270,7 @@ class esp32_flasher:
             print(f"Error occurred in spi set params. Reply dump: {reply}")
 
     def Sync(self):
-        packet = esp32_slip_packet(0x00, self.SYNC)
+        packet = ESP32SlipPacket(0x00, self.SYNC)
 
         packet.PushDataArray([0x07, 0x07, 0x012, 0x20], "big")
         packet.PushDataArray([0x55] * 32, "big")
