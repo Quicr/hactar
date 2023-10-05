@@ -10,9 +10,11 @@ import ESP32SlipPacket from "@/classes/esp32_slip_packet";
 
 console.log("Start!");
 let packet = new ESP32SlipPacket();
-packet.SetSize(258);
+packet.PushData(1);
 console.log("packet size")
 console.log(packet.GetSize());
+console.log(packet.Data());
+console.log(packet.End());
 
 let logs: any = reactive([]);
 let log_idx = 0;
@@ -56,7 +58,7 @@ async function FlashHactar()
             GetLogs();
         }, 5);
 
-        await flasher.Flash("ui");
+        await flasher.Flash("net");
 
         clearInterval(log_progress_interval);
 

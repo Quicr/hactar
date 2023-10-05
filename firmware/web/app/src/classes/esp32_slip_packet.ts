@@ -154,6 +154,12 @@ class ESP32SlipPacket
             "little");
     }
 
+    End()
+    {
+        return FromByteArray(this.data.slice(this.data.length - 1,
+            this.data.length), "little");
+    }
+
     GetDirection()
     {
         return this.data[0];
@@ -231,7 +237,7 @@ class ESP32SlipPacket
         let bits = 0;
         while (v > 0)
         {
-            v = v << 1;
+            v = v >>> 1;
             bits++;
         }
 
@@ -328,6 +334,11 @@ class ESP32SlipPacket
         this.update_encoding = false;
 
         return this.encoded_data;
+    }
+
+    Data()
+    {
+        return this.data;
     }
 
 
