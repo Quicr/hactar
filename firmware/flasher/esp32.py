@@ -121,18 +121,21 @@ class esp32_flasher:
         self.EndFlash()
 
     def StartFlash(self, size: int, num_blocks: int, offset: int):
-        # Get the size to erase
-        size_to_erase = size
-
         packet = ESP32SlipPacket(0x00, self.FLASH_BEGIN)
 
-        packet.PushData(size_to_erase, 4)
+        # Size to erase
+        packet.PushData(size, 4)
+
+        # Number of incoming packets (blocks)
         packet.PushData(num_blocks, 4)
 
+        # How big each packet will be
         packet.PushData(self.Block_Size, 4)
 
+        # Where to begin writing for the incoming data
         packet.PushData(offset, 4)
 
+        # Just some zeroes
         packet.PushData(0, 4)
 
         reply = self.WritePacketWaitForResponsePacket(packet, self.FLASH_BEGIN)
@@ -142,7 +145,7 @@ class esp32_flasher:
             print(reply)
             raise Exception("Error occurred when starting flashing")
 
-    def WriteFlash(self, file, data, num_blocks):
+    def WriteFlash(self, file: str, data: bytes, num_blocks: int):
         data_ptr = 0
         size = len(data)
         packet_idx = 0
@@ -204,7 +207,7 @@ class esp32_flasher:
 
         print(f"Flashing: {BG}COMPLETE{NW}")
 
-    def FlashMD5(self, data, address, size):
+    def FlashMD5(self, data: bytes, address: int, size: int):
         packet = ESP32SlipPacket(0, self.SPI_FLASH_MD5)
         packet.PushData(address, 4)
         packet.PushData(size, 4)
@@ -244,7 +247,8 @@ class esp32_flasher:
         reply = self.WritePacketWaitForResponsePacket(packet, self.SPI_ATTACH)
 
         if (reply.data[-1] == 1):
-            print(f"Error occurred in attach spi. Reply dump: {reply}")
+            raise Exception(
+                f"Error occurred in attach spi. Reply dump: {reply}")
 
     def SetSPIParameters(self):
         # This is all hardcoded...

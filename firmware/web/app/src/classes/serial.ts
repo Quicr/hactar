@@ -136,12 +136,17 @@ class Serial
         let num = num_bytes
         let bytes: number[] = []
 
-        let start_time = Date.now();
-        while (num > 0 && (Date.now() - start_time) < timeout)
+        var run = true;
+        const clock:any = setTimeout(() => {
+            run = false;
+        }, timeout);
+
+        // let start_time = Date.now();
+        while (num > 0 && run)
         {
             if (this.in_buffer.length == 0)
             {
-                await Sleep(0.0001)
+                await Sleep(0.001)
                 continue;
             }
             bytes.push(this.in_buffer[0]);
@@ -149,8 +154,11 @@ class Serial
             num--;
         }
 
+        clearTimeout(clock);
+
         if (bytes.length < 1)
             return [NO_REPLY];
+
 
         return bytes;
     }

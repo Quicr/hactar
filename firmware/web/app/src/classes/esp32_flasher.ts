@@ -16,14 +16,15 @@ class ESP32Flasher
     // Block size (1k)
     static Block_Size = 0x400
 
-    async FlashESP(serial: Serial, net_bins: number[][])
+    async FlashESP(serial: Serial, net_bins: [])
     {
-        this.Sync(serial);
+        console.log(net_bins);
+        await this.Sync(serial);
 
-        this.AttachSPI(serial);
-        this.SetSPIParameters(serial);
+        await this.AttachSPI(serial);
+        await this.SetSPIParameters(serial);
 
-        this.Flash(serial, net_bins);
+        await this.Flash(serial, net_bins);
     }
 
     async Sync(serial: Serial)
@@ -48,15 +49,182 @@ class ESP32Flasher
 
     async AttachSPI(serial: Serial)
     {
+        const packet = new ESP32SlipPacket(ESP32SlipPacket.OUTGOING,
+            ESP32Flasher.SPI_ATTACH);
 
+        packet.PushDataArray(Array(8).fill(0));
+
+        const reply = await this.WritePacketWaitForResponsePacket(serial,
+            packet, ESP32Flasher.SPI_ATTACH);
+
+        if (reply.End() == 1)
+        {
+            console.log("[ESP32Flasher.AttachSPI(...)] Error. "
+                + "Failed to set spi parameters. Reply dump: ");
+            console.log(reply.Data());
+
+            throw "[ESP32Flasher.AttachSPI(...)] Attach SPI: FAILED";
+        }
+
+        console.log("Attach SPI: SUCCESS");
     }
 
     async SetSPIParameters(serial: Serial)
     {
+        const packet = new ESP32SlipPacket(ESP32SlipPacket.OUTGOING,
+            ESP32Flasher.SPI_SET_PARAMS);
+
+        // ID
+        packet.PushData(0, 4);
+
+        // Total size (4MB)
+        packet.PushData(0x400000, 4);
+
+        // esp32s3 block Size
+        packet.PushData(64 * 1024, 4);
+
+        // esp32s3 sector size
+        packet.PushData(4 * 1024, 4);
+
+        // esp32s3 page size
+        packet.PushData(256, 4);
+
+        // Status mask
+        packet.PushData(0xffff, 4);
+
+        const reply = await this.WritePacketWaitForResponsePacket(serial,
+            packet, ESP32Flasher.SPI_SET_PARAMS);
+
+        if (reply.End() == 1)
+        {
+            console.log("[ESP32Flasher.SetSPIParamters(...)] Error. "
+                + "Failed to set spi parameters. Reply dump: ");
+            console.log(reply.Data());
+
+            throw "[ESP32Flasher.SetSPIParamters(...)] Set SPI Parameters: failed";
+        }
+
+        console.log("Set SPI Parameters: SUCCESS");
+    }
+
+    async Flash(serial: Serial, net_bins: [])
+    {
+        for (const bin of net_bins)
+        {
+            const num_blocks = Math.floor((bin['size'] +
+                ESP32Flasher.Block_Size - 1) / ESP32Flasher.Block_Size);
+
+            this.FlashBegin(serial, bin['size'], num_blocks, bin['offset']);
+        }
+    }
+
+    async FlashBegin(serial: Serial, size: number, num_blocks: number,
+        offset: number)
+    {
+        const packet = new ESP32SlipPacket(ESP32SlipPacket.OUTGOING,
+            ESP32Flasher.FLASH_BEGIN);
+
+        // Size to erase
+        packet.PushData(size, 4);
+
+        // Number of incoming packets (blocks)
+        packet.PushData(num_blocks, 4);
+
+        // How big each packet will be
+        packet.PushData(ESP32Flasher.Block_Size, 4);
+
+        // Where to begin writing for the incoming data
+        packet.PushData(offset, 4);
+
+        // Just some zeroes
+        packet.PushData(0, 4);
+
+        const reply = await this.WritePacketWaitForResponsePacket(serial,
+            packet, ESP32Flasher.FLASH_BEGIN);
+
+        // Check for error
+        if (reply.End() == 1)
+        {
+            console.log("[ESP32Flasher.FlashBegin(...)] Error. Failed to " +
+                "start flash. Packet dump: ");
+            console.log(reply.Data());
+
+            throw "[ESP32Flasher.FlashBegin(...)] Flash Begin: FAILED";
+        }
+
+        console.log("Flash Begin: SUCCESS");
+    }
+
+    async FlashData(serial: Serial, bin_name: string, data: number[],
+        size: number, num_blocks: number)
+    {
+        let data_ptr = 0;
+        let sz = size;
+        let packet_idx = 0;
+
+        console.log(`Flashing: 00.00%`);
+
+        let bin_packet;
+        let data_bytes;
+        while (data_ptr < size)
+        {
+            bin_packet = new ESP32SlipPacket(ESP32SlipPacket.OUTGOING,
+                ESP32Flasher.FLASH_DATA);
+
+            // Push the data size aka block size
+            bin_packet.PushData(ESP32Flasher.Block_Size, 4);
+
+            // Push the current packet number aka seq
+            bin_packet.PushData(packet_idx, 4);
+
+            // Push some zeroes (32 *2 bits of zeroes)
+            bin_packet.PushData(0, 4);
+            bin_packet.PushData(0, 4);
+
+            // Get a data slice
+            data_bytes = data.slice(data_ptr,
+                data_ptr + ESP32Flasher.Block_Size);
+
+            while (data_bytes.length < ESP32Flasher.Block_Size)
+            {
+                data_bytes.push(0xFF);
+            }
+
+            // Push it all into the packet
+            bin_packet.PushDataArray(data_bytes, "big");
+
+            const reply = await this.WritePacketWaitForResponsePacket(serial,
+                bin_packet, ESP32Flasher.FLASH_DATA, true);
+
+            // Check for error
+            if (reply.End() == 1)
+            {
+                console.log("[ESP32Flasher.FlashWrite(...)] Error. Failed to " +
+                    `write flash for ${data_ptr} for file ${bin_name}. Dump: `);
+                console.log(reply.Data());
+
+                throw "[ESP32Flasher.FlashWrite(...)] Flash Write: FAILED";
+            }
+
+            console.log(`Flashing: ${((data_ptr/size) * 100).toFixed(2)}%`);
+
+            // Slide the file pointer idx over
+            data_ptr += ESP32Flasher.Block_Size;
+
+            // Increment the sequence number
+            packet_idx++;
+        }
+
+        console.log("Flashing: 100.00%");
+    }
+
+    async FlashEnd(serial: Serial)
+    {
 
     }
 
-    async Flash(serial: Serial, net_bins: number[][])
+    async FlashMD5(serial: Serial, data: number[], address: number,
+        size: number)
     {
 
     }
@@ -112,7 +280,7 @@ class ESP32Flasher
                 bytes.push(byte);
             } while (byte != ESP32SlipPacket.END);
 
-            let packet = ESP32SlipPacket.FromBytes(bytes);
+            packet = ESP32SlipPacket.FromBytes(bytes);
 
             if (packet.GetCommand() == packet_type)
             {

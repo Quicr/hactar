@@ -2,18 +2,22 @@ import axios from "axios"
 import { ACK, READY, NACK, NO_REPLY } from "./uart_utils"
 import Serial from "@/classes/serial"
 import STM32Flasher from "./stm32_flasher";
+// TODO export types
+import esp32_flasher from "./esp32_flasher";
 
 class HactarFlasher
 {
     logs: any;
     serial: Serial;
     stm_flasher: STM32Flasher;
+    esp_flasher: any;
 
     constructor()
     {
         this.logs = [];
         this.serial = new Serial();
         this.stm_flasher = new STM32Flasher();
+        this.esp_flasher = esp32_flasher;
     }
 
     async ConnectToHactar(filters: Object[])
@@ -26,12 +30,11 @@ class HactarFlasher
         await this.serial.ClosePortAndNull();
     }
 
-    async GetBinary(mode: string)
+    async GetBinary(url: string)
     {
-        // TODO use mode
-        // Get the ui bin from the server
-        let res = await axios.get("http://localhost:7775/");
-        return res.data.data;
+        // Get a binary from the server
+        let res = await axios.get(`http://localhost:7775/${url}`);
+        return res.data;
     }
 
     // TODO
@@ -46,14 +49,18 @@ class HactarFlasher
 
             if (mode.includes("ui"))
             {
-                let binary = await this.GetBinary(mode)
+                console.log("Hello")
+                const binary = await this.GetBinary("get_ui_bins");
+                console.log(binary);
                 await this.SendUploadSelectionCommand("ui_upload");
                 await this.stm_flasher.FlashSTM(this.serial, binary);
             }
 
             if (mode.includes("net"))
             {
-
+                let binary = await this.GetBinary("get_net_bins");
+                await this.SendUploadSelectionCommand("net_upload");
+                await this.esp_flasher.FlashESP(this.serial, binary);
             }
 
             await this.ClosePortAndNull();
@@ -90,6 +97,7 @@ class HactarFlasher
             await this.serial.OpenPort("even");
 
             reply = await this.serial.ReadByte(5000);
+            console.log(reply);
 
             if (reply != READY)
             {
