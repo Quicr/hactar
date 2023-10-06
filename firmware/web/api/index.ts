@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from "express";
 import dotenv from "dotenv";
 import fs from "fs"
 
+import crypto from "crypto";
 import cors from "cors";
 
 dotenv.config();
@@ -9,9 +10,7 @@ dotenv.config();
 const app: Express = express();
 const port = process.env.PORT;
 
-app.use(cors());
-
-app.get('/get_net_bins', (req: Request, res: Response) =>
+function GetFiles()
 {
     const build_dir = "../../net/build"
     const files:any = [];
@@ -22,35 +21,36 @@ app.get('/get_net_bins', (req: Request, res: Response) =>
     const flash_files_by_offset = flasher_args["flash_files"];
 
     // Get keys and values
-    console.log(flasher_args);
-    console.log(flash_files_by_offset);
     for (let key in flash_files_by_offset)
     {
         const file = flash_files_by_offset[key];
         const name = file.substring(file.indexOf("/")+1, file.indexOf(".bin"))
         const binary = fs.readFileSync(`${build_dir}/${file}`).toJSON().data;
 
+        // Convert int array in 8 bit array
+        let t:any = Uint8Array.from(binary);
+        const hash = crypto.createHash('md5').update(t).digest("hex").toString();
+
+
         files.push({
             "name": name,
             "offset": Number(key),
-            "binary": binary
+            "binary": binary,
+            "md5": hash,
         })
     }
 
-    console.log(files);
+    return files;
+}
 
-    //
+GetFiles();
 
-    // files['bootloader'] = fs.readFileSync(`${build_dir}/bootloader/bootloader.bin`,
-    //     null);
-    // files['partition_table'] = fs.readFileSync(`${build_dir}/partition_table/partition-table.bin`,
-    //     null);
-    // files['binary'] = fs.readFileSync(`${build_dir}/net.bin`);
+app.use(cors());
 
-
-    // console.log(files);
-
-    res.json(files)
+app.get('/get_net_bins', (req: Request, res: Response) =>
+{
+    const files = GetFiles();
+    res.json(files);
 });
 
 app.get('/get_ui_bins', (req: Request, res: Response) =>

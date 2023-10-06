@@ -37,30 +37,22 @@ class HactarFlasher
         return res.data;
     }
 
-    // TODO
     async Flash(mode: string = "ui+net")
     {
         try
         {
-            if (mode.includes("mgmt"))
-            {
-
-            }
-
             if (mode.includes("ui"))
             {
-                console.log("Hello")
                 const binary = await this.GetBinary("get_ui_bins");
-                console.log(binary);
                 await this.SendUploadSelectionCommand("ui_upload");
                 await this.stm_flasher.FlashSTM(this.serial, binary);
             }
 
             if (mode.includes("net"))
             {
-                let binary = await this.GetBinary("get_net_bins");
+                const binaries = await this.GetBinary("get_net_bins");
                 await this.SendUploadSelectionCommand("net_upload");
-                await this.esp_flasher.FlashESP(this.serial, binary);
+                await this.esp_flasher.FlashESP(this.serial, binaries);
             }
 
             await this.ClosePortAndNull();
@@ -73,13 +65,12 @@ class HactarFlasher
         }
     }
 
-    FlashNet(net_bin: number[])
-    {
-
-    }
-
     async SendUploadSelectionCommand(command: string)
     {
+        // Ensure that the port is opened with the right parity for send
+        // commands to the mgmt
+        await this.serial.OpenPort("none");
+
         if (command != 'ui_upload' && command != 'net_upload')
             throw `Error. ${command} is an invalid command`;
 
@@ -96,13 +87,19 @@ class HactarFlasher
         {
             await this.serial.OpenPort("even");
 
-            reply = await this.serial.ReadByte(5000);
-            console.log(reply);
-
-            if (reply != READY)
+            for (let i = 0; i < 5; i++)
             {
-                throw "Hactar took too long to get ready";
+                reply = await this.serial.ReadByte(5000);
+
+                if (reply == READY)
+                {
+                    break;
+                }
             }
+
+            if (reply == NO_REPLY)
+                throw "Hactar took too long to get ready";
+
 
             this.Log("Activating UI Upload Mode: SUCCESS");
             this.Log("Update uart to parity: EVEN");
@@ -111,12 +108,18 @@ class HactarFlasher
         {
             await this.serial.OpenPort("none");
 
-            reply = await this.serial.ReadByte(5000);
-
-            if (reply != READY)
+            for (let i = 0; i < 5; i++)
             {
-                throw "Hactar took too long to get ready";
+                reply = await this.serial.ReadByte(5000);
+
+                if (reply == READY)
+                {
+                    break;
+                }
             }
+
+            if (reply == NO_REPLY)
+                throw "Hactar took too long to get ready";
 
             this.Log("Activating NET Upload Mode: SUCCESS");
             this.Log("Update uart to parity: NONE");

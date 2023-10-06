@@ -107,15 +107,21 @@ class ESP32Flasher
         console.log("Set SPI Parameters: SUCCESS");
     }
 
-    async Flash(serial: Serial, net_bins: [])
+    async Flash(serial: Serial, net_bins: any[])
     {
+
         for (const bin of net_bins)
         {
-            const num_blocks = Math.floor((bin['size'] +
+            const size = bin['binary'].length;
+            const num_blocks = Math.floor((size +
                 ESP32Flasher.Block_Size - 1) / ESP32Flasher.Block_Size);
 
-            this.FlashBegin(serial, bin['size'], num_blocks, bin['offset']);
+            await this.FlashBegin(serial, size, num_blocks, bin['offset']);
+            await this.FlashData(serial, bin['name'], bin['binary'], size, num_blocks);
+            await this.FlashMD5(serial, bin['md5'], bin['offset'], size);
         }
+
+        await this.FlashEnd(serial);
     }
 
     async FlashBegin(serial: Serial, size: number, num_blocks: number,
@@ -159,9 +165,9 @@ class ESP32Flasher
         size: number, num_blocks: number)
     {
         let data_ptr = 0;
-        let sz = size;
         let packet_idx = 0;
 
+        console.log(`Flashing binary ${bin_name}, Blocks: ${num_blocks}, Size ${size}`);
         console.log(`Flashing: 00.00%`);
 
         let bin_packet;
@@ -206,7 +212,7 @@ class ESP32Flasher
                 throw "[ESP32Flasher.FlashWrite(...)] Flash Write: FAILED";
             }
 
-            console.log(`Flashing: ${((data_ptr/size) * 100).toFixed(2)}%`);
+            console.log(`Flashing: ${((data_ptr / size) * 100).toFixed(2)}%`);
 
             // Slide the file pointer idx over
             data_ptr += ESP32Flasher.Block_Size;
@@ -220,13 +226,59 @@ class ESP32Flasher
 
     async FlashEnd(serial: Serial)
     {
+        const packet = new ESP32SlipPacket(ESP32SlipPacket.OUTGOING,
+            ESP32Flasher.FLASH_END);
 
+        packet.PushData(0x1, 4);
+
+        const reply = await this.WritePacketWaitForResponsePacket(serial,
+            packet, ESP32Flasher.FLASH_END);
+
+        if (reply.End() == 1)
+        {
+            console.log("[ESP32Flasher.FlashEnd(...)] Error. Failed to send " +
+                "flash end command.");
+            throw "[ESP32Flasher.FlashEnd(...)] Flash End: FAILED";
+        }
+
+        console.log("Flashing Complete");
     }
 
-    async FlashMD5(serial: Serial, data: number[], address: number,
+    async FlashMD5(serial: Serial, hash: string, address: number,
         size: number)
     {
+        console.log("Verify: STARTED");
+        const packet = new ESP32SlipPacket(ESP32SlipPacket.OUTGOING,
+            ESP32Flasher.SPI_FLASH_MD5);
 
+        packet.PushData(address, 4);
+        packet.PushData(size, 4);
+        packet.PushData(0, 4);
+        packet.PushData(0, 4);
+
+        const reply = await this.WritePacketWaitForResponsePacket(serial,
+            packet, ESP32Flasher.SPI_FLASH_MD5);
+
+        if (reply.End() == 1)
+        {
+            console.log("[ESP32Flasher.FlashMD5(...)] Error. Got an error " +
+                " response");
+            throw "[ESP32Flasher.FlashMD5(...)] Error. Failed to verify";
+        }
+
+        // Get the md5 from the response
+        const esp_md5 = reply.GetBytes(8, 32);
+        for (let i = 0; i < esp_md5.length && i < hash.length; ++i)
+        {
+            if (hash.charCodeAt(i) != esp_md5[i])
+            {
+                console.log("Verify: FAILED. MD5 hashes did not match");
+                throw "[ESP32Flasher.FlashMD5(...)] Error. Failed to verify";
+            }
+            i++;
+        }
+
+        console.log("Verify: COMPLETE");
     }
 
     async WaitForResponsePacket(serial: Serial, packet_type: number = -1)

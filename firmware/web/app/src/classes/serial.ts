@@ -17,6 +17,7 @@ class Serial
         this.in_buffer = [];
     }
 
+    // TODO clean up by keeping track of the parity for hactar
     async ConnectToDevice(filters: Object[]): Promise<boolean>
     {
         if (!('serial' in navigator))
@@ -37,22 +38,21 @@ class Serial
 
     async ClosePort()
     {
-        console.log("close port");
+        console.log("[ClosePort(...)] Start");
         if (!this.open)
         {
-            console.log("Port not open");
+            console.log("[ClosePort(...)] Port not open, so return");
             return;
         }
 
         this.stop = true;
         this.reader.cancel();
 
-        console.log(this.reader_promise);
         await this.reader_promise;
         await this.port.close();
         this.open = false;
 
-        console.log("Close hactar");
+        console.log("[ClosePort(...)] Closed Port for Hactar");
     }
 
     async ClosePortAndNull()
@@ -63,7 +63,7 @@ class Serial
 
     async OpenPort(parity: string)
     {
-        console.log("Open port");
+        console.log(`[OpenPort(...)] Start with parity: ${parity}`);
         const options = {
             baudRate: 115200,
             dataBits: 8,
@@ -87,12 +87,12 @@ class Serial
 
     async ListenForBytes()
     {
+        console.log("[ListenForBytes(...)] Start");
         this.released_reader = false;
-        console.log(`Port readable: ${this.port.readable}, Stop: ${this.stop}`)
+        console.log(`[ListenForBytes(...)]. Port readable: ${this.port.readable}, Stop: ${this.stop}`)
 
         while (this.port.readable && !this.stop)
         {
-            console.log("Listening to bytes on serial port");
             this.reader = this.port.readable.getReader();
             try
             {
@@ -122,6 +122,8 @@ class Serial
                 this.released_reader = true;
             }
         }
+
+        console.log("[ListenForBytes(...)] Stop");
     }
 
     async ReadByte(timeout: number = 2000): Promise<number>
