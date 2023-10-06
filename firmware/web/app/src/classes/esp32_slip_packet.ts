@@ -98,7 +98,7 @@ class ESP32SlipPacket
             packet.Set(i, decoded_bytes[i]);
         }
 
-        let data_len = packet.GetDataLength();
+        let data_len = packet.GetSize();
 
         packet.PushDataArray(decoded_bytes.slice(8, 8 + data_len), "little");
 
@@ -150,8 +150,12 @@ class ESP32SlipPacket
 
     Get(start_idx: number, num_bytes: number)
     {
-        return FromByteArray(this.data.slice(start_idx, start_idx + num_bytes),
-            "little");
+        return FromByteArray(this.GetBytes(start_idx, num_bytes), "little");
+    }
+
+    GetBytes(start_idx: number, num_bytes: number)
+    {
+        return this.data.slice(start_idx, start_idx + num_bytes);
     }
 
     End()

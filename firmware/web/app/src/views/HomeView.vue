@@ -6,16 +6,6 @@ import LogItem from "@/components/LogItem.vue";
 
 import HactarFlasher from "@/classes/flasher";
 
-import ESP32SlipPacket from "@/classes/esp32_slip_packet";
-
-console.log("Start!");
-let packet = new ESP32SlipPacket();
-packet.PushData(1);
-console.log("packet size")
-console.log(packet.GetSize());
-console.log(packet.Data());
-console.log(packet.End());
-
 let logs: any = reactive([]);
 let log_idx = 0;
 let progress = "";
@@ -58,7 +48,7 @@ async function FlashHactar()
             GetLogs();
         }, 5);
 
-        await flasher.Flash("net");
+        await flasher.Flash("ui+net");
 
         clearInterval(log_progress_interval);
 

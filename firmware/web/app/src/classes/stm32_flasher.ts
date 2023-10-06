@@ -9,7 +9,6 @@ class STM32Flasher
         let sectors_to_erase = this.SectorsToErase(ui_bin.length);
 
         this.progress = "Starting";
-        console.log("Here")
 
         await this.Sync(serial);
 
@@ -212,7 +211,7 @@ class STM32Flasher
 
             write_address_bytes.push(checksum);
 
-            this.Log(`Flashing: ${Math.floor(percent_flashed * 100)}%  file_addr: ${file_addr.toString(16)}, addr: ${addr.toString(16)}, data: ${new Uint8Array(write_address_bytes)}`, true);
+            this.Log(`Flashing: ${Math.floor(percent_flashed * 100)}%`);
             reply = await serial.WriteBytesWaitForACK(new Uint8Array(write_address_bytes));
             if (reply == NACK)
                 throw "NACK was received after sending write command";
