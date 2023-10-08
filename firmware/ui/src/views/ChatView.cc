@@ -3,12 +3,30 @@
 #include "TeamView.hh"
 #include "SettingsView.hh"
 
+////
+/// Model Helpers (to be moved to a better place)
+////
+// TODO: This must come from config and deleted
+static Room create_default_room() {
+    return Room {
+        .is_default =  true,
+        .room_uri = "quicr://origin/1/version/1/appId/1/org/1/channel/CB5/room/CAFE/",
+        .room_id_hex = "0x000001010100100CB5CAFE0000000000/88",
+        .root_channel_uri = "0x000001010100100CB500000000000000/72"
+    };
+}
+
+
 ChatView::ChatView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
     SettingManager& setting_manager):
     ViewInterface(manager, screen, keyboard, setting_manager)
 {
+    // TODO: This is added as a placeholder and should be removed from 
+    // the constructor and set via the api for active_room.
+    active_room = create_default_room();
+    
     // messages = new Vector<String>();
     // for (int i = 0; i < 15; i++)
     // {

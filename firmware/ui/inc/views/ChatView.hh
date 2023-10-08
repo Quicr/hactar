@@ -14,6 +14,23 @@
 
 #define Text_Draw_Speed 20
 
+// TODO : Move this out of view and move into model
+
+struct Room {
+    bool is_default {false};
+    String room_uri; //quicr namespace as URI
+    String room_id_hex;  // quicr namespace for the room
+    String root_channel_id_hex; // Owner of this room
+};
+
+struct Channel {
+    bool is_default {false};
+    String channel_uri; //quicr namespace as URI
+    String channel_id_hex;  // quicr namespace for the channel
+    Vector<Room> rooms {};
+     // TODO: a map may be more useful here
+};
+
 class ChatView : public ViewInterface
 {
 public:
@@ -22,6 +39,9 @@ public:
              Q10Keyboard& keyboard,
              SettingManager& setting_manager);
     ~ChatView();
+
+    void SetActiveRoom(const Room &room);
+
 protected:
     void AnimatedDraw();
     void Draw();
@@ -46,4 +66,6 @@ private:
         uint16_t name_colour = C_BLUE;
         uint16_t body_colour = C_WHITE;
     } settings;
+
+    Room active_room;
 };

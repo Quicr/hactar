@@ -30,6 +30,7 @@
 
 #include "NetPins.hh"
 
+#include "qsession.h"
 #include <cantina/logger.h>
 #include <transport/transport.h>
 #include <quicr/quicr_client.h>
@@ -221,6 +222,10 @@ void Run()
     if (state != hactar_utils::Wifi::State::Connected)
         return;
 
+    /*
+       Setup a QSession
+        auto qSession = QSession(relay_info)
+    */
     if (qclient == nullptr)
     {
         char default_relay [] = "192.168.50.19";
@@ -232,7 +237,8 @@ void Run()
                 .port = port,
                 .proto = quicr::RelayInfo::Protocol::UDP
         };
-        qclient = new quicr::QuicRClient(relay, {}, qlogger);
+        //auto qsession = new QSession(relay);
+        //qclient = new quicr::QuicRClient(relay, {}, qlogger);
     }
     else
     {
