@@ -1,58 +1,130 @@
 <script setup lang="ts">
-import { defineComponent } from 'vue';
 
-var port:any = null;
+import { reactive, ref } from "vue";
 
-function mounted()
+import LogItem from "@/components/LogItem.vue";
+
+import HactarFlasher from "@/classes/flasher";
+
+let logs: any = reactive([]);
+let log_idx = 0;
+let progress = "";
+let progress_display = "";
+let progress_dot_last_time = 0;
+let Progress_Dot_Interval = 1000;
+
+const log_list = ref(null);
+const log_container = ref(null);
+let auto_scroll = true;
+
+let user_info = reactive({ text: "" });
+
+let flasher: HactarFlasher = new HactarFlasher();
+
+// TODO Serial monitor
+// TODO serial commands to ui and net
+// TODO set configurations for each chip
+
+async function FlashHactar()
 {
-  console.log("hello");
+
+    try
+    {
+        const filters = [
+            { usbVendorId: 6790, usbProductId: 29987 }
+        ];
+
+        log_idx = 0;
+
+        if (!await flasher.ConnectToHactar(filters))
+        {
+            user_info.text = "Failed to find Hactar";
+            return;
+        }
+
+        const log_progress_interval = setInterval(() =>
+        {
+            GetProgressUpdate();
+            GetLogs();
+        }, 5);
+
+        await flasher.Flash("ui+net");
+
+        clearInterval(log_progress_interval);
+
+        user_info.text = "Update complete";
+    }
+    catch (exception)
+    {
+        console.error(exception);
+        await flasher.ClosePortAndNull();
+    }
 }
 
-async function FlashFirmware()
+function GetProgressUpdate()
 {
+    // if (progress != flasher.progress)
+    // {
+    //     progress = flasher.progress;
+    //     progress_display = flasher.progress;
+    //     progress_dot_last_time = Date.now();
+    // }
+    // else if (Date.now() - progress_dot_last_time > Progress_Dot_Interval)
+    // {
+    //     progress_display += ".";
+    //     progress_dot_last_time = Date.now();
 
-  if ('serial' in navigator)
-  {
-    const filters = [
-      { usbVendorId: 6790, usbProductId: 29987 }
-    ];
-    port = await (navigator as any).serial.requestPort({ filters });
-    await port.open({ baudRate: 115200, bufferSize:1024});
-    const writer = port.writable.getWriter();
-    const data = new Uint8Array([117, 105, 95, 117, 112, 108, 111, 97, 100])
+    //     if (progress_display.slice(-4) == "....")
+    //     {
+    //         progress_display = progress;
+    //     }
+    // }
 
-    await writer.write(data);
-
-    writer.releaseLock();
-
-  }
-  else
-  {
-    alert("Web serial is not enabled in your browser");
-  }
-  // Send off request to server for the latest file
-
-  // Save it locally on the web browser
-
-  //
-
-  // Delete the hactar code
-  console.log("hello")
+    // user_info.text = progress_display;
 }
 
-async function ClosePort()
+function GetLogs()
 {
-  if (port != null)
-  {
-    await port.close()
-  }
+    if (flasher.logs.length == log_idx)
+        return;
+
+    let log = flasher.logs[log_idx++];
+    if (log["replace_previous"])
+        logs.splice(logs.length - 1, 1);
+    logs.push(log);
+
+    if (auto_scroll && log_list.value)
+    {
+        (log_list.value as any).scrollTop =
+            (log_list.value as any).scrollHeight + 19;
+    }
+}
+
+async function ToggleLogConsole()
+{
+    if (log_container.value != null)
+        (log_container.value as any).classList.toggle("hide");
 }
 
 </script>
 
 <template>
-  <main>
-    <button @click="FlashFirmware()">Flash hactar app</button>
-    <button @click="ClosePort()">Close port</button>
-  </main>
+    <div class="user_info__container">
+        <div class="user_info">
+            <button @click="FlashHactar()">Update Hactar</button>
+            <p>{{ user_info.text }}</p>
+        </div>
+    </div>
+    <div class="adv_button__container">
+        <div class="adv_info">
+            <p>Advanced info</p>
+
+            <button @click="ToggleLogConsole()">Toggle Log Console</button>
+        </div>
+    </div>
+    <div ref="log_container" class="log__container hide">
+        <ul ref="log_list" class="log__list">
+            <LogItem v-for="log in logs" :text="log.text"></LogItem>
+        </ul>
+    </div>
 </template>
