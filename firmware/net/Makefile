@@ -7,7 +7,7 @@ BOOTLOADER_ADDR		= 0x00000
 PARITIONS_ADDR		= 0x08000
 PROG_ADDR		= 0x10000
 
-ESP_TOOL_ARGS 		= --port=${PORT} --baud=${BAUD} write_flash \
+ESP_TOOL_ARGS 		= --trace --no-stub --port=${PORT} --baud=${BAUD} write_flash --no-compress \
 	${BOOTLOADER_ADDR} ${BUILD_PATH}/bootloader/bootloader.bin \
 	${PARITIONS_ADDR} ${BUILD_PATH}/partition_table/partition-table.bin \
 	${PROG_ADDR} ${BUILD_PATH}/${TARGET}.bin
@@ -21,6 +21,10 @@ compile:
 	idf.py build
 
 upload:
+	python ../flasher/flasher.py --baud=${BAUD} --chip="net" \
+								 --net_build_path=${BUILD_PATH}
+
+upload_esptool:
 	python ../tools/command_sender.py ${PORT} ${BAUD} net_upload
 	if [ ${OS} == Windows_NT ] ; then \
 		python -m esptool ${ESP_TOOL_ARGS} ; \
