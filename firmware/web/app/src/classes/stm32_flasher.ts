@@ -2,6 +2,8 @@ import Sleep from "./sleep";
 import { ACK, READY, NACK, NO_REPLY, MemoryCompare, ToByteArray } from "./uart_utils"
 import Serial from "./serial"
 
+import logger from "./logger";
+
 class STM32Flasher
 {
     async FlashSTM(serial: Serial, ui_bin: number[])
@@ -18,7 +20,7 @@ class STM32Flasher
 
         await this.WriteMemory(serial, ui_bin, this.User_Sector_Start_Address);
 
-        this.Log("Update Complete.");
+        logger.Info("Update Complete.");
         this.progress = "Update complete";
     }
 
@@ -28,11 +30,17 @@ class STM32Flasher
             this.Commands.sync, retry, false);
 
         if (reply == NACK)
+        {
+            logger.Error("Activating device: FAILED");
             throw "Activating device: FAILED";
+        }
         else if (reply == NO_REPLY)
+        {
+            logger.Error("Activating device: NO REPLY");
             throw "Activating device: NO REPLY";
+        }
 
-        this.Log("Activating device: SUCCESS");
+        logger.Info("Activating device: SUCCESS");
     }
 
 
@@ -43,23 +51,41 @@ class STM32Flasher
             this.Commands.read_memory, retry);
 
         if (reply == NACK)
+        {
+            logger.Error("NACK was received during Read Memory");
             throw "NACK was received during Read Memory";
+        }
         else if (reply == NO_REPLY)
+        {
+            logger.Error("NO REPLY was received during Read Memory");
             throw "NO REPLY was received during Read Memory";
+        }
 
         address.push(this.CalculateChecksum(address));
 
         reply = await serial.WriteBytesWaitForACK(new Uint8Array(address));
         if (reply == NACK)
+        {
+            logger.Error("NACK was received after sending memory address");
             throw "NACK was received after sending memory address";
+        }
         else if (reply == NO_REPLY)
+        {
+            logger.Error("NO REPLY received after sending memory address");
             throw "NO REPLY received after sending memory address";
+        }
 
         reply = await serial.WriteByteWaitForACK(num_bytes - 1);
         if (reply == NACK)
+        {
+            logger.Error("NACK was received after sending num bytes to receive");
             throw "NACK was received after sending num bytes to receive";
+        }
         else if (reply == NO_REPLY)
+        {
+            logger.Error("NO REPLY received after sending num bytes to receive");
             throw "NO REPLY received after sending num bytes to receive";
+        }
 
         let recv_data = await serial.ReadBytesExcept(num_bytes);
         return recv_data
@@ -68,16 +94,20 @@ class STM32Flasher
 
     async ExtendedEraseMemory(serial: Serial, sectors: number[]): Promise<boolean>
     {
-        this.Log(`Erase: Sectors ${sectors}`);
+        logger.Info(`Erase: Sectors ${sectors}`);
 
         let reply: number = await serial.WriteByteWaitForACK(
             this.Commands.extended_erase);
         if (reply == NACK)
+        {
+            logger.Error("NACK was received after sending erase command");
             throw "NACK was received after sending erase command";
+        }
         else if (reply == NO_REPLY)
-            throw "No reply was received after sending erase command";
-
-        // TODO error check sectors
+        {
+            logger.Error("NO REPLY was received after sending erase command");
+            throw "NO REPLY was received after sending erase command";
+        }
 
         // Number of sectors starts at 0x00 0x00. So 0x00 0x00 means delete
         // 1 sector.
@@ -94,16 +124,18 @@ class STM32Flasher
         // Concat the checksum to data
         data = data.concat(checksum);
 
-        this.Log(`Erase: STARTED`);
+        logger.Info(`Erase: STARTED`);
 
         reply = await serial.WriteBytesWaitForACK(new Uint8Array(data), 10000);
         if (reply == NACK)
         {
+            logger.Error("Failed to erase");
             throw "Failed to erase";
         }
         else if (reply == NO_REPLY)
         {
-            throw "Failed to erase, no reply received";
+            logger.Error("Failed to erase, NO REPLY received");
+            throw "Failed to erase, NO REPLY received";
         }
 
         const Max_Attempts = 15;
@@ -124,7 +156,7 @@ class STM32Flasher
 
         let percent_verified =
             Math.floor((bytes_verified / total_bytes_to_verify) * 100);
-        this.Log(`Verifying erase: ${percent_verified}% verified`);
+        logger.Info(`Verifying erase: ${percent_verified}% verified`);
         this.progress = `Preparing: ${percent_verified}%`;
 
         let sector_idx = -1;
@@ -140,7 +172,7 @@ class STM32Flasher
                 read_count = 0;
                 percent_verified =
                     Math.floor((bytes_verified / total_bytes_to_verify) * 100);
-                this.Log(`Verifying erase: ${percent_verified}% verified`, true);
+                logger.Info(`Verifying erase: ${percent_verified}% verified`, true);
                 this.progress = `Preparing: ${percent_verified}%`;
 
                 let compare = false;
@@ -154,12 +186,13 @@ class STM32Flasher
 
                     if (compare)
                     {
-                        this.Log(`Sector [${sector_idx}] not verified. Retry: ${read_count}`);
+                        logger.Info(`Sector [${sector_idx}] not verified. Retry: ${read_count}`);
                     }
                 } while ((compare) && read_count != Max_Attempts);
 
                 if (read_count >= Max_Attempts && compare)
                 {
+                    logger.Error(`Verifying: Failed to verify sector [${sector_idx}]`);
                     throw `Verifying: Failed to verify sector [${sector_idx}]`;
                 }
 
@@ -171,12 +204,12 @@ class STM32Flasher
 
         // Don't actually need to do the math here
         this.progress = `Preparing: 100%`;
-        this.Log("Verifying erase: 100% verified", true);
-        this.Log("Erase: COMPLETE");
+        logger.Info("Verifying erase: 100% verified", true);
+        logger.Info("Erase: COMPLETE");
         return true;
     }
 
-    async WriteMemory(serial: Serial, data: number[], start_addr: number, retry: number = 1)
+    async WriteMemory(serial: Serial, data: number[], start_addr: number)
     {
         const Max_Num_Bytes = 256;
         let addr = start_addr;
@@ -186,11 +219,11 @@ class STM32Flasher
 
         const total_bytes = data.length;
 
-        this.Log("Write to Memory: Started");
-        this.Log(`Address: ${addr.toString(16)}`)
-        this.Log(`Byte Stream Size: ${total_bytes.toString(16)}`);
+        logger.Info("Write to Memory: Started");
+        logger.Info(`Address: ${addr.toString(16)}`)
+        logger.Info(`Byte Stream Size: ${total_bytes.toString(16)}`);
 
-        this.Log(`Flashing: ${percent_flashed}%`);
+        logger.Info(`Flashing: ${percent_flashed}%`);
         this.progress = `Updating: ${percent_flashed}%`;
 
         let reply = -1;
@@ -202,21 +235,34 @@ class STM32Flasher
 
             reply = await serial.WriteByteWaitForACK(this.Commands.write_memory);
             if (reply == NACK)
+            {
+                logger.Error("NACK was received after sending write command");
                 throw "NACK was received after sending write command";
+            }
             else if (reply == NO_REPLY)
+            {
+                logger.Error("NO REPLY received after sending write command");
                 throw "NO REPLY received after sending write command";
+            }
 
             let write_address_bytes = ToByteArray([addr], 4);
             let checksum = this.CalculateChecksum(write_address_bytes);
 
             write_address_bytes.push(checksum);
 
-            this.Log(`Flashing: ${Math.floor(percent_flashed * 100)}%`);
+            logger.Info(`Flashing: ${Math.floor(percent_flashed * 100)}%`,
+                true);
             reply = await serial.WriteBytesWaitForACK(new Uint8Array(write_address_bytes));
             if (reply == NACK)
+            {
+                logger.Error("NACK was received after sending write command");
                 throw "NACK was received after sending write command";
+            }
             else if (reply == NO_REPLY)
+            {
+                logger.Error("NO REPLY received after sending write command");
                 throw "NO REPLY received after sending write command";
+            }
 
 
             // Get the contents of the binary
@@ -233,27 +279,33 @@ class STM32Flasher
 
             reply = await serial.WriteBytesWaitForACK(new Uint8Array(chunk));
             if (reply == NACK)
+            {
+                logger.Error(`NACK was received while writing to addr: ${addr}`);
                 throw `NACK was received while writing to addr: ${addr}`;
+            }
             else if (reply == NO_REPLY)
+            {
+                logger.Error(`NO REPLY was received while writing to addr: ${addr}`);
                 throw `NO REPLY was received while writing to addr: ${addr}`;
+            }
 
             file_addr += chunk_size;
             addr += chunk_size;
 
         }
 
-        this.Log(`Flashing: 100%`, true);
+        logger.Info(`Flashing: 100%`, true);
 
         addr = start_addr;
         file_addr = 0;
 
-        this.Log(`Verifying write: 0%`);
+        logger.Info(`Verifying write: 0%`);
         this.progress = `Updating: 50%`;
 
         while (file_addr < total_bytes)
         {
             percent_flashed = (file_addr / total_bytes);
-            this.Log(`Verifying write: ${Math.floor(percent_flashed * 100)}%`, true);
+            logger.Info(`Verifying write: ${Math.floor(percent_flashed * 100)}%`, true);
             this.progress = `Updating: ${(Math.floor(percent_flashed * 50)) + 50}%`;
 
             const chunk = data.slice(file_addr, file_addr + Max_Num_Bytes);
@@ -262,14 +314,17 @@ class STM32Flasher
 
             const compare = MemoryCompare(mem, chunk);
             if (!compare)
+            {
+                logger.Error(`Failed to verify at memory address ${addr}`);
                 throw `Failed to verify at memory address ${addr}`;
+            }
 
             addr += mem.length;
             file_addr += chunk.length;
         }
 
-        this.Log("Verifying write: 100%", true);
-        this.Log("Write: COMPLETE");
+        logger.Info("Verifying write: 100%", true);
+        logger.Info("Write: COMPLETE");
 
         return ACK;
     }
@@ -278,12 +333,6 @@ class STM32Flasher
     CalculateChecksum(array: number[]): number
     {
         return array.reduce((a, b) => a ^ b);
-    }
-
-    Log(text: any, replace_previous: boolean = false)
-    {
-        console.log(`replace: ${replace_previous}: ${text}`);
-        this.logs.push({ text, replace_previous });
     }
 
     SectorsToErase(data_len: number): number[]
@@ -343,5 +392,5 @@ class STM32Flasher
     progress: any = [];
 };
 
-// TODO return a static flasher?
-export default STM32Flasher;
+const stm32_flasher = new STM32Flasher();
+export default stm32_flasher;

@@ -1,6 +1,8 @@
 import Sleep from "./sleep"
 import {ACK, NACK, READY, NO_REPLY} from "./uart_utils"
 
+import logger from "./logger";
+
 class Serial
 {
 
@@ -38,10 +40,10 @@ class Serial
 
     async ClosePort()
     {
-        console.log("[ClosePort(...)] Start");
+        logger.Debug("[ClosePort(...)] Start");
         if (!this.open)
         {
-            console.log("[ClosePort(...)] Port not open, so return");
+            logger.Debug("[ClosePort(...)] Port not open, so return");
             return;
         }
 
@@ -52,7 +54,7 @@ class Serial
         await this.port.close();
         this.open = false;
 
-        console.log("[ClosePort(...)] Closed Port for Hactar");
+        logger.Debug("[ClosePort(...)] Closed Port for Hactar");
     }
 
     async ClosePortAndNull()
@@ -63,7 +65,7 @@ class Serial
 
     async OpenPort(parity: string)
     {
-        console.log(`[OpenPort(...)] Start with parity: ${parity}`);
+        logger.Debug(`[OpenPort(...)] Start with parity: ${parity}`);
         const options = {
             baudRate: 115200,
             dataBits: 8,
@@ -87,9 +89,9 @@ class Serial
 
     async ListenForBytes()
     {
-        console.log("[ListenForBytes(...)] Start");
+        logger.Debug("[ListenForBytes(...)] Start");
+        logger.Debug(`[ListenForBytes(...)] Port readable: ${this.port.readable}, Stop: ${this.stop}`)
         this.released_reader = false;
-        console.log(`[ListenForBytes(...)]. Port readable: ${this.port.readable}, Stop: ${this.stop}`)
 
         while (this.port.readable && !this.stop)
         {
@@ -113,7 +115,7 @@ class Serial
             }
             catch (error)
             {
-                console.log(error);
+                logger.Debug(error);
                 return;
             }
             finally
@@ -123,7 +125,7 @@ class Serial
             }
         }
 
-        console.log("[ListenForBytes(...)] Stop");
+        logger.Debug("[ListenForBytes(...)] Stop");
     }
 
     async ReadByte(timeout: number = 2000): Promise<number>
@@ -143,7 +145,6 @@ class Serial
             run = false;
         }, timeout);
 
-        // let start_time = Date.now();
         while (num > 0 && run)
         {
             if (this.in_buffer.length == 0)
@@ -170,7 +171,8 @@ class Serial
         let result: number[] = await this.ReadBytes(num_bytes, timeout);
         if (result[0] == NO_REPLY)
         {
-            throw "Error, didn't receive any bytes";
+            logger.Error("Error. Didn't receive any bytes");
+            throw "Error. Didn't receive any bytes";
         }
 
         return result;
@@ -201,7 +203,10 @@ class Serial
             let reply = await this.ReadByte(timeout);
 
             if (reply == NO_REPLY)
+            {
+                logger.Warning(`Received no reply for byte: ${byte}`)
                 continue;
+            }
 
             return reply;
         }

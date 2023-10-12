@@ -1,23 +1,21 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 
-import { reactive, ref } from "vue";
+import { defineComponent, getCurrentInstance, onUpdated, reactive, ref } from "vue";
 
 import LogItem from "@/components/LogItem.vue";
 
 import HactarFlasher from "@/classes/flasher";
 
-let logs: any = reactive([]);
-let log_idx = 0;
-let progress = "";
-let progress_display = "";
-let progress_dot_last_time = 0;
-let Progress_Dot_Interval = 1000;
+import logger from "@/classes/logger";
+import { LogLevel } from "@/classes/logger";
+
+let enabled_log_levels = LogLevel.Info | LogLevel.Warning | LogLevel.Error | LogLevel.Debug;
+logger.SetLogLevel(enabled_log_levels);
 
 const log_list = ref(null);
-const log_container = ref(null);
-let auto_scroll = true;
-
-let user_info = reactive({ text: "" });
+const adv_container = ref(null);
+const log_list_key = ref(0);
+let auto_scroll: number = 1;
 
 let flasher: HactarFlasher = new HactarFlasher();
 
@@ -34,77 +32,60 @@ async function FlashHactar()
             { usbVendorId: 6790, usbProductId: 29987 }
         ];
 
-        log_idx = 0;
 
         if (!await flasher.ConnectToHactar(filters))
         {
-            user_info.text = "Failed to find Hactar";
             return;
         }
 
-        const log_progress_interval = setInterval(() =>
-        {
-            GetProgressUpdate();
-            GetLogs();
-        }, 5);
-
-        await flasher.Flash("ui+net");
-
-        clearInterval(log_progress_interval);
-
-        user_info.text = "Update complete";
+        await flasher.Flash();
     }
     catch (exception)
     {
-        console.error(exception);
-        await flasher.ClosePortAndNull();
+        logger.Error(exception);
+        await flasher.serial.ClosePortAndNull();
     }
 }
 
-function GetProgressUpdate()
+async function ShowAdvancedOptions()
 {
-    // if (progress != flasher.progress)
-    // {
-    //     progress = flasher.progress;
-    //     progress_display = flasher.progress;
-    //     progress_dot_last_time = Date.now();
-    // }
-    // else if (Date.now() - progress_dot_last_time > Progress_Dot_Interval)
-    // {
-    //     progress_display += ".";
-    //     progress_dot_last_time = Date.now();
-
-    //     if (progress_display.slice(-4) == "....")
-    //     {
-    //         progress_display = progress;
-    //     }
-    // }
-
-    // user_info.text = progress_display;
-}
-
-function GetLogs()
-{
-    if (flasher.logs.length == log_idx)
-        return;
-
-    let log = flasher.logs[log_idx++];
-    if (log["replace_previous"])
-        logs.splice(logs.length - 1, 1);
-    logs.push(log);
-
-    if (auto_scroll && log_list.value)
+    if (adv_container.value == null)
     {
-        (log_list.value as any).scrollTop =
-            (log_list.value as any).scrollHeight + 19;
+        return;
     }
+
+    (adv_container.value as any).classList.toggle("hide");
+    (log_list.value as any).scrollTop = (log_list.value as any).scrollHeight;
 }
 
-async function ToggleLogConsole()
+async function TestLog()
 {
-    if (log_container.value != null)
-        (log_container.value as any).classList.toggle("hide");
+    logger.Warning("test");
+    logger.Debug("test");
 }
+
+function UpdateLogLevel(log_level: any)
+{
+    enabled_log_levels = enabled_log_levels ^ log_level.target.value;
+    log_list_key.value += 1;
+}
+
+function EnableAutoScroll(event: any)
+{
+    auto_scroll = auto_scroll ^ event.target.value;
+}
+
+function AutoScroll()
+{
+    if (!auto_scroll) return;
+    (log_list.value as any).scrollTop = (log_list.value as any).scrollHeight;
+}
+
+onUpdated(() =>
+{
+    AutoScroll();
+});
+
 
 </script>
 
@@ -112,19 +93,60 @@ async function ToggleLogConsole()
     <div class="user_info__container">
         <div class="user_info">
             <button @click="FlashHactar()">Update Hactar</button>
-            <p>{{ user_info.text }}</p>
+            <!-- <p>{{ user_info.text }}</p> -->
         </div>
     </div>
     <div class="adv_button__container">
-        <div class="adv_info">
-            <p>Advanced info</p>
+        <p>Advanced info</p>
 
-            <button @click="ToggleLogConsole()">Toggle Log Console</button>
-        </div>
+        <button @click="ShowAdvancedOptions()">Toggle Log Console</button>
+        <button @click="TestLog()">test log</button>
     </div>
-    <div ref="log_container" class="log__container hide">
-        <ul ref="log_list" class="log__list">
-            <LogItem v-for="log in logs" :text="log.text"></LogItem>
-        </ul>
+    <div ref="adv_container" class="adv__container">
+        <div class="adv__options">
+            <div class="adv__wrapper__checkbox">
+                <h4>Logging options:</h4>
+                <label>
+                    <input type="checkbox" class="adv__checkbox" name="log_info" @input="UpdateLogLevel"
+                        :value="LogLevel.Info" checked />
+                    Info
+                </label>
+                <label>
+                    <input type="checkbox" class="adv__checkbox" name="log_warning" @input="UpdateLogLevel"
+                        :value="LogLevel.Warning" checked />
+                    Warning
+                </label>
+                <label>
+                    <input type="checkbox" class="adv__checkbox" name="log_error" @input="UpdateLogLevel"
+                        :value="LogLevel.Error" checked />
+                    Error
+                </label>
+                <label>
+                    <input type="checkbox" class="adv__checkbox" name="log_debug" @input="UpdateLogLevel"
+                        :value="LogLevel.Debug" checked />
+                    Debug
+                </label>
+                <label>
+                    <input type="checkbox" class="adv__checkbox" name="log_autoscroll" @input="EnableAutoScroll" :value="1"
+                        checked />
+                    Auto scroll
+                </label>
+            </div>
+        </div>
+        <div ref="log_container" class="log__container">
+            <ul ref="log_list" class="log__list" :key="log_list_key">
+                <template v-for="log, idx in logger.logs" :key="'log' + idx">
+                    <LogItem v-if="!log['gui_overwrite'] && (log['log_level'] & enabled_log_levels) > 0" :log="log">
+                    </LogItem>
+                </template>
+            </ul>
+        </div>
+        <div class="adv__command_wrapper">
+            <p>
+                Command
+            </P>
+            <input type="input">
+            <button>Send</button>
+        </div>
     </div>
 </template>

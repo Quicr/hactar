@@ -1,33 +1,30 @@
 import axios from "axios"
 import { ACK, READY, NACK, NO_REPLY } from "./uart_utils"
 import Serial from "@/classes/serial"
-import STM32Flasher from "./stm32_flasher";
-// TODO export types
+
+import logger from "./logger";
+
+// TODO typescript types
+import stm32_flasher from "./stm32_flasher";
 import esp32_flasher from "./esp32_flasher";
+import Sleep from "./sleep";
 
 class HactarFlasher
 {
     logs: any;
     serial: Serial;
-    stm_flasher: STM32Flasher;
+    stm_flasher: any;
     esp_flasher: any;
 
     constructor()
     {
         this.logs = [];
         this.serial = new Serial();
-        this.stm_flasher = new STM32Flasher();
-        this.esp_flasher = esp32_flasher;
     }
 
     async ConnectToHactar(filters: Object[])
     {
         return await this.serial.ConnectToDevice(filters);
-    }
-
-    async ClosePortAndNull()
-    {
-        await this.serial.ClosePortAndNull();
     }
 
     async GetBinary(url: string)
@@ -41,25 +38,33 @@ class HactarFlasher
     {
         try
         {
+            let sleep_before_net_upload = false;
             if (mode.includes("ui"))
             {
                 const binary = await this.GetBinary("get_ui_bins");
                 await this.SendUploadSelectionCommand("ui_upload");
-                await this.stm_flasher.FlashSTM(this.serial, binary);
+                await stm32_flasher.FlashSTM(this.serial, binary);
+                await this.serial.ClosePort();
+                sleep_before_net_upload = true;
             }
 
             if (mode.includes("net"))
             {
+                if (sleep_before_net_upload)
+                {
+                    await Sleep(2000);
+                }
+
                 const binaries = await this.GetBinary("get_net_bins");
                 await this.SendUploadSelectionCommand("net_upload");
-                await this.esp_flasher.FlashESP(this.serial, binaries);
+                await esp32_flasher.FlashESP(this.serial, binaries);
             }
 
-            await this.ClosePortAndNull();
+            await this.serial.ClosePortAndNull();
         }
         catch (exception)
         {
-            await this.ClosePortAndNull();
+            await this.serial.ClosePortAndNull();
 
             console.error(exception);
         }
@@ -72,14 +77,18 @@ class HactarFlasher
         await this.serial.OpenPort("none");
 
         if (command != 'ui_upload' && command != 'net_upload')
+        {
+            logger.Error(`Error. ${command} is an invalid command`);
             throw `Error. ${command} is an invalid command`;
+        }
 
         let enc = new TextEncoder()
 
         // Get the response
-        let reply = await this.serial.WriteBytesWaitForACK(enc.encode(command), 4000);
+        let reply = await this.serial.WriteBytesWaitForACK(enc.encode(command), 4000, 5);
         if (reply == NO_REPLY)
         {
+            logger.Error("Failed to move Hactar into upload mode");
             throw "Failed to move Hactar into upload mode";
         }
 
@@ -95,18 +104,23 @@ class HactarFlasher
                 {
                     break;
                 }
+
+                logger.Warning("Failed to get Hactar into ui upload mode, retrying...");
             }
 
             if (reply == NO_REPLY)
+            {
+                logger.Error("Hactar took too long to get ready");
                 throw "Hactar took too long to get ready";
+            }
 
 
-            this.Log("Activating UI Upload Mode: SUCCESS");
-            this.Log("Update uart to parity: EVEN");
+            logger.Info("Activating UI Upload Mode: SUCCESS");
+            logger.Info("Update uart to parity: EVEN");
         }
         else if (command == "net_upload")
         {
-            await this.serial.OpenPort("none");
+            // await this.serial.OpenPort("none");
 
             for (let i = 0; i < 5; i++)
             {
@@ -116,20 +130,18 @@ class HactarFlasher
                 {
                     break;
                 }
+                logger.Warning("Failed to get Hactar into net upload mode, retrying...");
             }
 
             if (reply == NO_REPLY)
+            {
+                logger.Error("Hactar took too long to get ready");
                 throw "Hactar took too long to get ready";
+            }
 
-            this.Log("Activating NET Upload Mode: SUCCESS");
-            this.Log("Update uart to parity: NONE");
+            logger.Info("Activating NET Upload Mode: SUCCESS");
+            logger.Info("Update uart to parity: NONE");
         }
-    }
-
-    Log(text: any, replace_previous: boolean = false)
-    {
-        console.log(`replace: ${replace_previous}: ${text}`);
-        this.logs.push({ text, replace_previous });
     }
 
 };
