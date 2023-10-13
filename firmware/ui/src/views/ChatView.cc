@@ -9,12 +9,13 @@
 // Model Helpers (to be moved to a better place)
 // TODO: This must come from config and deleted
 // from here.
-static qchat::Room create_default_room(const std::string& user_name) {
-    return qchat::Room {
-        .is_default =  true,
+static qchat::Room create_default_room(const std::string& user_name)
+{
+    return qchat::Room{
+        .is_default = true,
         .friendly_name = "CAFE",
-        .publisher_uri = "quicr://origin/1/version/1/appId/1/org/1/channel/CB5/room/CAFE/" + user_name + "/",
         .room_uri = "quicr://origin/1/version/1/appId/1/org/1/channel/CB5/room/CAFE/",
+        .publisher_uri = "quicr://origin/1/version/1/appId/1/org/1/channel/CB5/room/CAFE/" + user_name + "/",
     };
 }
 
@@ -25,43 +26,32 @@ ChatView::ChatView(UserInterfaceManager& manager,
     SettingManager& setting_manager):
     ViewInterface(manager, screen, keyboard, setting_manager)
 {
-    // TODO: This is added as a placeholder and should be removed from 
+    // TODO: This is added as a placeholder and should be removed from
     // the constructor and set via the api for active_room.
     // Each chat-view represent UX state for a given QChat Room
-    std::string user_name { manager.GetUsername().c_str()};
+    std::string user_name{ manager.GetUsername().c_str() };
     active_room = create_default_room(user_name);
     // set watch on the room
-    qchat::WatchRoom watch = qchat::WatchRoom {
-        .room_uri = active_room.room_uri,
+    qchat::WatchRoom watch = qchat::WatchRoom{
         .publisher_uri = active_room.publisher_uri,
+        .room_uri = active_room.room_uri,
     };
 
-    std::string encoded = qchat::encode(watch);
-
-    // TODO : Can the below be simplified ?
-    Message msg;
-    msg.Timestamp("00:00");
-    msg.Sender(manager.GetUsername());
-    msg.Body(""); // Is this right ?        
     Packet* packet = new Packet(HAL_GetTick(), 1);
     packet->SetData(Packet::Types::Message, 0, 6);
     packet->SetData(manager.NextPacketId(), 6, 8);
-    packet->SetData(27 + msg.Length() - 2, 14, 10); // is this right ?
-    // add watch_room encoded bytes
-    packet->SetDataArray(reinterpret_cast<const unsigned char*>(encoded.c_str()), encoded.length(), 24);
-    uint64_t new_offset = encoded.length() + 24;
+
+    qchat::encode(packet, watch);
+
+    uint64_t new_offset = packet->BitsUsed();
     // Expiry time
     packet->SetData(0xFFFFFFFF, new_offset, 32);
     new_offset += 32;
     // Creation time
     packet->SetData(0, new_offset, 32);
     new_offset += 32;
-    
-    packet->SetDataArray(reinterpret_cast<const unsigned char*>(
-            msg.Concatenate().c_str()), msg.Length(), new_offset);
 
     manager.EnqueuePacket(packet);
-
 }
 
 ChatView::~ChatView()
@@ -139,8 +129,8 @@ void ChatView::HandleInput()
     else
     {
         // prepare ascii message, encode into Message + Packet
-        qchat::Ascii ascii = qchat::Ascii {
-          .message_uri =  active_room.publisher_uri + "msg/" + std::to_string(msg_id),
+        qchat::Ascii ascii = qchat::Ascii{
+          .message_uri = active_room.publisher_uri + "msg/" + std::to_string(msg_id),
           .message = {usr_input.c_str()},
         };
 
@@ -149,32 +139,36 @@ void ChatView::HandleInput()
         msg.Timestamp("00:00");
         // TODO get from EEPROM
         msg.Sender(manager.GetUsername());
-        msg.Body("");
-        //TODO:Suhas: Why are we adding this message to messages vector ?
-        messages.push_back(msg);
+
+
+        // TODO move into encode...
+        // TODO packet should maybe have a static next_packet_id?
         Packet* packet = new Packet(HAL_GetTick(), 1);
         packet->SetData(Packet::Types::Message, 0, 6);
         packet->SetData(manager.NextPacketId(), 6, 8);
-        // TODO:Suhas: why is this 27 ? and msg.Length() - 2 ?
-        packet->SetData(27 + msg.Length() - 2, 14, 10);
-        std::string encoded = encode(ascii);
-        packet->SetDataArray(reinterpret_cast<const unsigned char*>(encoded.c_str()), encoded.length(), 24);
-        uint64_t new_offset = 24 + encoded.length();
+
+        // The packet length is set in the encode function
+        // TODO encode probably could just generate a packet instead...
+        qchat::encode(packet, ascii);
+
+        uint64_t new_offset = packet->BitsUsed();
         // Expiry time
         packet->SetData(0xFFFFFFFF, new_offset, 32);
         new_offset += 32;
         // Creation time
         packet->SetData(0, new_offset, 32);
         new_offset += 32;
-       
-        //TODO(Suhas): Check with Brett, this wil double encoded user_input
-        packet->SetDataArray(reinterpret_cast<const unsigned char*>(
-            msg.Concatenate().c_str()), msg.Length(), new_offset);
 
         manager.EnqueuePacket(packet);
 
+
+        // TODO facelift
+        // Add message and the usr_input to the messages
+        msg.Body(usr_input);
+        messages.push_back(msg);
+
         redraw_messages = true;
-        
+
         msg_id++;
 
     }
