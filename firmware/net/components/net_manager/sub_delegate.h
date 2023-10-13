@@ -7,7 +7,6 @@
 
 #include <future>
 
-class MLSClient;
 
 struct QuicrObject
 {

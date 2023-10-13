@@ -30,7 +30,6 @@
 
 #include "NetPins.hh"
 
-#include "qsession.h"
 #include <cantina/logger.h>
 #include <transport/transport.h>
 #include <quicr/quicr_client.h>
@@ -117,7 +116,7 @@ public:
         [[maybe_unused]] const quicr::Namespace& quicr_namespace,
         [[maybe_unused]] const quicr::PublishIntentResult& result) override
     {
-        printf("NET - Received publish for %s", quicr_namespace.to_hex().c_str());
+        //printf("NET - Received publish for %s", quicr_namespace);
     }
 
 };
@@ -252,7 +251,7 @@ void Run()
         qclient->publishIntent(pub_delegate, nspace, "origin_url", "auth_token", {});
 
         logger->info(TAG, "Subscribe\n");
-        std::cout << "Subscribe to " << nspace.to_hex() << std::endl;
+        std::cout << "Subscribe to " << nspace << std::endl;
         quicr::SubscribeIntent intent = quicr::SubscribeIntent::immediate;
         quicr::bytes empty;
         qclient->subscribe(

@@ -3,6 +3,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include <condition_variable>
+#include <future>
+#include <map>
+#include <mutex>
+#include <memory>
+#include <thread>
+
 #include "qsession.h"
 #include "transport/transport.h"
 
@@ -26,7 +33,7 @@ QSession::QSession(quicr::RelayInfo relay)
               std::to_string(relay.port));
   qtransport::TransportConfig tcfg{ .tls_cert_filename = NULL,
                                     .tls_key_filename = NULL };
-  client = std::make_unique<quicr::Client>(relay_info, tcfg, logger);
+  client = std::make_unique<quicr::Client>(relay, tcfg, logger);
 
 }
 
@@ -55,7 +62,7 @@ QSession::connect() {
         continue;
       }
 
-      const auto _ = lock();
+      //const auto _ = std::lock();
       auto& obj = maybe_obj.value();
       handle(std::move(obj));
     }
@@ -63,6 +70,7 @@ QSession::connect() {
     logger->Log("Handler thread stopping");
   });
 
+  return true;
 }
 
 bool 
@@ -112,7 +120,7 @@ QSession::publish_intent(quicr::Namespace ns)
 void QSession::unsubscribe(quicr::Namespace nspace){}
 
 void
-QSession::publish(const quicr::Name& name, bytes&& data)
+QSession::publish(const quicr::Name& name, quicr::bytes&& data)
 {
   logger->Log("Publish, name=" + std::string(name) +
               " size=" + std::to_string(data.size()));
@@ -125,5 +133,3 @@ QSession::handle(QuicrObject&& obj)
 {
   // tie to the right delegate for further processing
 }
-
-void QSession::handle(const quicr::Name& name, quicr::bytes&& data) {}

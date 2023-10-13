@@ -8,7 +8,6 @@
 #include "String.hh"
 
 #include <transport/transport.h>
-#include <quicr/quicr_client_common.h>
 
 NetManager::NetManager(SerialManager* _ui_layer)
     : ui_layer(_ui_layer)
@@ -17,6 +16,7 @@ NetManager::NetManager(SerialManager* _ui_layer)
     wifi = hactar_utils::Wifi::GetInstance();
     esp_err_t res = wifi->Initialize();
     ESP_ERROR_CHECK(res);
+#if 0
     char default_relay [] = "192.168.50.19";
     auto relay_name = default_relay;
     uint16_t port = 33434;
@@ -26,7 +26,8 @@ NetManager::NetManager(SerialManager* _ui_layer)
             .port = port,
             .proto = quicr::RelayInfo::Protocol::UDP
     };
-    qsession = new QSession(relay);
+    //qsession = new QSession(relay);
+#endif
     xTaskCreate(HandleSerial, "handle_serial_task", 4096, (void*)this, 13, NULL);
 }
 
@@ -75,6 +76,9 @@ void NetManager::HandleSerial(void* param)
             if (packet_type == Packet::Types::Message)
             {
                 printf("%s\r\n", "I am here");
+                // decode into a qchat message
+                // write a generic handler for qcht_message
+                //   --> qsession to apply quicr api
                 // Pass the message to the next layer of processing...
                 // aka quicr
                 // 1. if it is watch message
@@ -176,6 +180,7 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
                 rx_packet->GetData(offset, 8));
             offset += 8;
         }
+        ssid = "ramanujan";
         printf("NET: SSID - %s\r\n", ssid.c_str());
 
         unsigned char ssid_password_len = rx_packet->GetData(offset, 8);
@@ -189,6 +194,7 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
                 offset, 8));
             offset += 8;
         }
+        ssid_password = "JaiGanesha!23";
         printf("NET: SSID Password - %s\n\r", ssid_password.c_str());
 
         wifi->Connect(ssid.c_str(), ssid_password.c_str());
