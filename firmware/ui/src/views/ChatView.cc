@@ -1,18 +1,20 @@
+
 #include "ChatView.hh"
 #include "UserInterfaceManager.hh"
 #include "TeamView.hh"
 #include "SettingsView.hh"
+#include "QChat.hh"
+#include <string>
 
-////
-/// Model Helpers (to be moved to a better place)
-////
+// Model Helpers (to be moved to a better place)
 // TODO: This must come from config and deleted
-static Room create_default_room() {
-    return Room {
+// from here.
+static qchat::Room create_default_room(const std::string& user_name) {
+    return qchat::Room {
         .is_default =  true,
+        .friendly_name = "CAFE",
+        .publisher_uri = "quicr://origin/1/version/1/appId/1/org/1/channel/CB5/room/CAFE/" + user_name + "/",
         .room_uri = "quicr://origin/1/version/1/appId/1/org/1/channel/CB5/room/CAFE/",
-        .room_id_hex = "0x000001010100100CB5CAFE0000000000/88",
-        .root_channel_uri = "0x000001010100100CB500000000000000/72"
     };
 }
 
@@ -25,14 +27,41 @@ ChatView::ChatView(UserInterfaceManager& manager,
 {
     // TODO: This is added as a placeholder and should be removed from 
     // the constructor and set via the api for active_room.
-    active_room = create_default_room();
+    // Each chat-view represent UX state for a given QChat Room
+    std::string user_name { manager.GetUsername().c_str()};
+    active_room = create_default_room(user_name);
+    // set watch on the room
+    qchat::WatchRoom watch = qchat::WatchRoom {
+        .room_uri = active_room.room_uri,
+        .publisher_uri = active_room.publisher_uri,
+    };
+
+    std::string encoded = qchat::encode(watch);
+
+    // TODO : Can the below be simplified ?
+    Message msg;
+    msg.Timestamp("00:00");
+    msg.Sender(manager.GetUsername());
+    msg.Body(""); // Is this right ?        
+    Packet* packet = new Packet(HAL_GetTick(), 1);
+    packet->SetData(Packet::Types::Message, 0, 6);
+    packet->SetData(manager.NextPacketId(), 6, 8);
+    packet->SetData(27 + msg.Length() - 2, 14, 10); // is this right ?
+    // add watch_room encoded bytes
+    packet->SetDataArray(reinterpret_cast<const unsigned char*>(encoded.c_str()), encoded.length(), 24);
+    uint64_t new_offset = encoded.length() + 24;
+    // Expiry time
+    packet->SetData(0xFFFFFFFF, new_offset, 32);
+    new_offset += 32;
+    // Creation time
+    packet->SetData(0, new_offset, 32);
+    new_offset += 32;
     
-    // messages = new Vector<String>();
-    // for (int i = 0; i < 15; i++)
-    // {
-    //     Message msg("00:00", "George", "Hello1 hello2 hello3 hello4"); //hello5 hello6 hello7 hello8 hello9 hello10 hello11 hello12 hello13 hello14 hello15");
-    //     messages.push_back(msg);
-    // }
+    packet->SetDataArray(reinterpret_cast<const unsigned char*>(
+            msg.Concatenate().c_str()), msg.Length(), new_offset);
+
+    manager.EnqueuePacket(packet);
+
 }
 
 ChatView::~ChatView()
@@ -109,61 +138,45 @@ void ChatView::HandleInput()
     }
     else
     {
-        Message msg;
+        // prepare ascii message, encode into Message + Packet
+        qchat::Ascii ascii = qchat::Ascii {
+          .message_uri =  active_room.publisher_uri + "msg/" + std::to_string(msg_id),
+          .message = {usr_input.c_str()},
+        };
 
+        Message msg;
         // TODO get from a RTC
         msg.Timestamp("00:00");
-
         // TODO get from EEPROM
         msg.Sender(manager.GetUsername());
-        msg.Body(usr_input);
-
+        msg.Body("");
+        //TODO:Suhas: Why are we adding this message to messages vector ?
         messages.push_back(msg);
-
         Packet* packet = new Packet(HAL_GetTick(), 1);
-
-        // Set the type
         packet->SetData(Packet::Types::Message, 0, 6);
-
-        // Set the id
         packet->SetData(manager.NextPacketId(), 6, 8);
-
-        // Set the data length
-        // TODO note I think there is a bug in msg.length(). (String class)
+        // TODO:Suhas: why is this 27 ? and msg.Length() - 2 ?
         packet->SetData(27 + msg.Length() - 2, 14, 10);
-
-        packet->SetData(Packet::MessageTypes::Ascii, 24, 8);
-
-        // REMOVE - hardcoded publish
-        // Publish 0x000001010100100CB5CAFE0000100001
-        uint8_t publish_arr [] = { 0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x1,0x0,0x1,0x0,
-            0x0,0x1,0x0,0x0,0xC,0xB,0x5,0xC,0xA,0xF,0xE,0x0,0x0,0x0,0x0,0x1,
-            0x0,0x0,0x0,0x0,0x1 };
-        int offset = 32;
-        for (int i = 0; i < 32; i++)
-        {
-            packet->SetData(publish_arr[i], offset, 4);
-            offset += 4;
-        }
-
+        std::string encoded = encode(ascii);
+        packet->SetDataArray(reinterpret_cast<const unsigned char*>(encoded.c_str()), encoded.length(), 24);
+        uint64_t new_offset = 24 + encoded.length();
         // Expiry time
-        packet->SetData(0xFFFFFFFF, 160, 32);
-
+        packet->SetData(0xFFFFFFFF, new_offset, 32);
+        new_offset += 32;
         // Creation time
-        packet->SetData(0, 192, 32);
-
-        // Append the message
-        // TODO update the packet arr to take unsigned char and signed char
+        packet->SetData(0, new_offset, 32);
+        new_offset += 32;
+       
+        //TODO(Suhas): Check with Brett, this wil double encoded user_input
         packet->SetDataArray(reinterpret_cast<const unsigned char*>(
-            msg.Concatenate().c_str()), msg.Length(), 224);
+            msg.Concatenate().c_str()), msg.Length(), new_offset);
 
         manager.EnqueuePacket(packet);
 
         redraw_messages = true;
+        
+        msg_id++;
 
-
-        // Send message to sec layer
-        // TODO
     }
 }
 
