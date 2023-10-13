@@ -176,7 +176,6 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
                 rx_packet->GetData(offset, 8));
             offset += 8;
         }
-        ssid = "ramanujan";
         printf("NET: SSID - %s\r\n", ssid.c_str());
 
         unsigned char ssid_password_len = rx_packet->GetData(offset, 8);
@@ -190,7 +189,6 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
                 offset, 8));
             offset += 8;
         }
-        ssid_password = "JaiGanesha!23";
         printf("NET: SSID Password - %s\n\r", ssid_password.c_str());
 
         wifi->Connect(ssid.c_str(), ssid_password.c_str());
