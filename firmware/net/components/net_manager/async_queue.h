@@ -2,6 +2,7 @@
 
 #include <condition_variable>
 #include <deque>
+#include <optional>
 
 template<typename T>
 struct AsyncQueue

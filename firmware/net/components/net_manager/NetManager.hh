@@ -2,7 +2,7 @@
 
 #include "SerialManager.hh"
 #include "Wifi.hh"
-#include "qsession.h"
+//#include "qsession.h"
 
 #define MAX_AP 10
 
@@ -18,5 +18,5 @@ private:
 
     SerialManager* ui_layer;
     hactar_utils::Wifi* wifi;
-    QSession* qsession;
+    //QSession* qsession;
 };

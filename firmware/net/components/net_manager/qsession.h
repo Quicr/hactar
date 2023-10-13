@@ -21,14 +21,15 @@ public:
   QSession(quicr::RelayInfo relay_info);
   ~QSession() = default;
   bool connect();
-  bool publishIntent(quicr::Namespace ns);
+  bool publish_intent(quicr::Namespace ns);
   bool subscribe(quicr::Namespace nspace);
   void unsubscribe(quicr::Namespace nspace);
   void publish(const quicr::Name& name, quicr::bytes&& data);
-  void handle(const quicr::Name& name, quicr::bytes&& data);
+  void handle(QuicrObject&& obj);
 
 
 private:
+  std::optional<std::thread> handler_thread;
   std::atomic_bool stop = false;
   static constexpr auto inbound_object_timeout = std::chrono::milliseconds(100);
   std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects;
