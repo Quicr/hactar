@@ -8,9 +8,13 @@
 #include <quicr/name.h>
 #include <cantina/logger.h>
 
-// TODO: Make it abstract class
+
+// Rough notes
+// watch a room --> publish_intent with publisher_uri for the room and subscribe for room_uri
+
 
 class QSession {
+
 public:
    QSession(quicr::RelayInfo relay_info);
    ~QSession() = default;
@@ -22,6 +26,6 @@ public:
 
 private:
   cantina::LoggerPointer qlogger;
-  quicr::QuicRClient qclient;;
+  quicr::QuicRClient qclient;
   
 };
