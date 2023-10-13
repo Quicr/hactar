@@ -697,25 +697,25 @@ void RunningMode()
     InitUartStreamParameters(&usb_stream);
     StartUartReceive(&usb_stream);
 
-    UINormalMode();
-    uint32_t timeout = HAL_GetTick() + 3000;
-    while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
-    {
-        // Stay here until the UI is finished booting
-        HAL_Delay(10);
-    }
+  uint32_t timeout = HAL_GetTick()  + 3000;
+  NetNormalMode();
+  while (HAL_GetTick() < timeout &&
+    HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+  {
+    // Stay here until the Net is done booting
+    HAL_Delay(10);
+  }
 
-    NetNormalMode();
-    // Refresh the timeout
-    timeout = HAL_GetTick() + 3000;
-    while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
-    {
-        // Stay here until the Net is done booting
-        HAL_Delay(10);
-    }
+  timeout = HAL_GetTick() + 3000;
+  UINormalMode();
+  while (HAL_GetTick() < timeout &&
+    HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
+  {
+    // Stay here until the UI is finished booting
+    HAL_Delay(10);
+  }
 
+  // Refresh the timeout
     state = Running;
     while (state == Running)
     {
@@ -759,34 +759,33 @@ void DebugMode()
     StartUartReceive(&net_stream);
 
     HAL_Delay(100);
+  NetNormalMode();
+  // Refresh the timeout
+  uint32_t timeout = HAL_GetTick() + 3000;
+  while (HAL_GetTick() < timeout &&
+    HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+  {
+    // Stay here until the Net is done booting
+    HAL_Delay(10);
+  }
 
-    UINormalMode();
+  UINormalMode();
 
-    uint32_t timeout = HAL_GetTick() + 3000;
-    while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
-    {
-        // Stay here until the UI is finished booting
-        HAL_Delay(10);
-    }
+  timeout = HAL_GetTick() + 3000;
+  while (HAL_GetTick() < timeout &&
+    HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
+  {
+    // Stay here until the UI is finished booting
+    HAL_Delay(10);
+  }
 
-    NetNormalMode();
-    // Refresh the timeout
-    timeout = HAL_GetTick() + 3000;
-    while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
-    {
-        // Stay here until the Net is done booting
-        HAL_Delay(10);
-    }
-
-    state = Debug_Running;
-    while (state == Debug_Running)
-    {
-        HandleCommands(&usb_stream);
-        HandleTx(&ui_stream);
-        HandleTx(&net_stream);
-    }
+  state = Debug_Running;
+  while (state == Debug_Running)
+  {
+    HandleCommands(&usb_stream);
+    HandleTx(&ui_stream);
+    HandleTx(&net_stream);
+  }
 }
 
 /* USER CODE END 0 */
@@ -924,9 +923,37 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-    RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
-    RCC_PeriphCLKInitTypeDef PeriphClkInit = { 0 };
+
+  // RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  // RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+  // /** Initializes the RCC Oscillators according to the specified parameters
+  // * in the RCC_OscInitTypeDef structure.
+  // */
+  // RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  // RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  // RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  // RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  // if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  // {
+  //   Error_Handler();
+  // }
+
+  // /** Initializes the CPU, AHB and APB buses clocks
+  // */
+  // RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+  //                             |RCC_CLOCKTYPE_PCLK1;
+  // RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  // RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  // RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+
+  // if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  // {
+  //   Error_Handler();
+  // }
+  RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = { 0 };
 
     /** Initializes the RCC Oscillators according to the specified parameters
     * in the RCC_OscInitTypeDef structure.
