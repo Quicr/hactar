@@ -9,25 +9,17 @@
 
 #include <transport/transport.h>
 
-NetManager::NetManager(SerialManager* _ui_layer)
-    : ui_layer(_ui_layer)
+NetManager::NetManager(SerialManager* _ui_layer, std::shared_ptr<QSession> qsession)
+  : ui_layer(_ui_layer),
+    quicr_session(qsession)
 {
     // Start tasks??
     wifi = hactar_utils::Wifi::GetInstance();
     esp_err_t res = wifi->Initialize();
     ESP_ERROR_CHECK(res);
-#if 0
-    char default_relay [] = "192.168.50.19";
-    auto relay_name = default_relay;
-    uint16_t port = 33434;
-
-    quicr::RelayInfo relay{
-        .hostname = relay_name,
-            .port = port,
-            .proto = quicr::RelayInfo::Protocol::UDP
-    };
-    //qsession = new QSession(relay);
-#endif
+    if (quicr_session != nullptr) {
+        quicr_session->connect();
+    }
     xTaskCreate(HandleSerial, "handle_serial_task", 4096, (void*)this, 13, NULL);
 }
 

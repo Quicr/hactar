@@ -2,14 +2,14 @@
 
 #include "SerialManager.hh"
 #include "Wifi.hh"
-//#include "qsession.h"
+#include "qsession.h"
 
 #define MAX_AP 10
 
 class NetManager
 {
 public:
-    NetManager(SerialManager* _ui_layer);
+    NetManager(SerialManager* _ui_layer, std::shared_ptr<QSession> qsession);
 
     static void HandleSerial(void* param);
     static void HandleNetwork(void* param);
@@ -18,5 +18,5 @@ private:
 
     SerialManager* ui_layer;
     hactar_utils::Wifi* wifi;
-    //QSession* qsession;
+    std::shared_ptr<QSession> quicr_session = nullptr;
 };
