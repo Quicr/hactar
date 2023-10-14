@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "Packet.hh"
+
 
 // Quicr based chat protocol
 namespace qchat {
@@ -11,9 +13,12 @@ namespace qchat {
 // Model
 //
 
+constexpr uint8_t Str_Len_Bits = 32U;
+constexpr uint8_t Str_Len_Bytes = Str_Len_Bits/8;
+
 // Channels are the top level construct is made up of
 // one or more rooms (see Room)
-// Channels are where the policies are applied, 
+// Channels are where the policies are applied,
 // advertisement of room status are done.
 struct Channel {
     bool is_default {false};
@@ -65,11 +70,11 @@ struct Ascii  {
 // Encode/Decode API
 //
 
-std::string encode(const WatchRoom& msg);
-std::string encode(const Ascii& msg);
+void encode(Packet* packet, const WatchRoom& msg);
+void encode(Packet* packet, const Ascii& msg);
 
-void decode(WatchRoom& msg, const std::string& encoded);
-void decode(Ascii& msg, const std::string& encoded);
+void decode(WatchRoom& msg, const Packet& encoded, const uint16_t start_addr);
+void decode(Ascii& msg, const Packet& encoded, const uint16_t start_addr);
 
 
 } //namespace
