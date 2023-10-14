@@ -40,9 +40,7 @@ ChatView::ChatView(UserInterfaceManager& manager,
     Packet* packet = new Packet(HAL_GetTick(), 1);
     packet->SetData(Packet::Types::Message, 0, 6);
     packet->SetData(manager.NextPacketId(), 6, 8);
-
     qchat::encode(packet, watch);
-
     uint64_t new_offset = packet->BitsUsed();
     // Expiry time
     packet->SetData(0xFFFFFFFF, new_offset, 32);
@@ -50,7 +48,6 @@ ChatView::ChatView(UserInterfaceManager& manager,
     // Creation time
     packet->SetData(0, new_offset, 32);
     new_offset += 32;
-
     manager.EnqueuePacket(packet);
 }
 

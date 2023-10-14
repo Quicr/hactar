@@ -151,16 +151,8 @@ void Run()
         return;
 
    
-    quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);
-    if (subscribed)
-    {
-        qsession->publish(nspace.name(),  {'h', 'e', 'l', 'l', 'o', '!'});
-        return;
-    }
-
-    qsession->publish_intent(nspace);
+    quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);   
     std::cout << "Subscribing to " << nspace << std::endl;
     qsession->subscribe(nspace);
-    subscribed = true;
     
 }
