@@ -22,8 +22,8 @@ public:
   ~QSession() = default;
   bool connect();
   bool publish_intent(quicr::Namespace ns);
-  bool subscribe(quicr::Namespace nspace);
-  void unsubscribe(quicr::Namespace nspace);
+  bool subscribe(quicr::Namespace ns);
+  void unsubscribe(quicr::Namespace ns);
   void publish(const quicr::Name& name, quicr::bytes&& data);
   void handle(QuicrObject&& obj);
 
