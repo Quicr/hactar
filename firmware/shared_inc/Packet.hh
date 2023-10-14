@@ -61,9 +61,9 @@ public:
 
     // TODO important to have different data lengths for each type..
 
-    Packet(const unsigned int created_at=0,
-           const unsigned int size=0,
-           const bool dynamic=true) :
+    Packet(const unsigned int created_at = 0,
+        const unsigned int size = 0,
+        const bool dynamic = true):
         created_at(created_at),
         size(size),
         dynamic(dynamic),
@@ -91,7 +91,7 @@ public:
         delete [] data;
     }
 
-    Packet& operator=(const Packet &other)
+    Packet& operator=(const Packet& other)
     {
         delete [] data;
         created_at = other.created_at;
@@ -109,7 +109,7 @@ public:
         return *this;
     }
 
-    Packet& operator=(Packet &&other)
+    Packet& operator=(Packet&& other)
     {
         // Move operator
         delete [] data;
@@ -133,14 +133,14 @@ public:
     }
 
     void SetData(const unsigned int val, unsigned int offset_bits,
-                 unsigned int bits)
+        unsigned int bits)
     {
         // If the data is outside of the range, resize it
         if (offset_bits + bits > size * 32U)
         {
             if (!dynamic) return;
 
-            unsigned int new_size = ((offset_bits + bits)/32U) + 1;
+            unsigned int new_size = ((offset_bits + bits) / 32U) + 1;
 
             SetSize(new_size);
         }
@@ -158,7 +158,7 @@ public:
         unsigned int in_mask;
         unsigned int iter;
 
-        // Append how many bits are being used
+        // Add how many bits are being used
         bits_in_use += bits;
 
         // While we still have bits to push onto the Packet
@@ -218,7 +218,9 @@ public:
     }
 
     // Note this function is dangerous to use and must be used
-    // exclusively
+    // carefully.
+    // If used in junction with SetData and SetDataArray, you have to keep
+    // track of what bits are in use.
     void AppendData(const unsigned int val, const unsigned int bits)
     {
         SetData(val, bits_in_use, bits);
@@ -244,7 +246,7 @@ public:
         while (bits > 0)
         {
             // Get the msb from the offset
-            msb_offset = 32 - (offset_bits%32);
+            msb_offset = 32 - (offset_bits % 32);
 
             // Get the mask from the msb
             data_mask = 1U << (msb_offset - 1);
@@ -312,7 +314,7 @@ public:
 
     unsigned int SizeInBytes() const
     {
-        return size*4;
+        return size * 4;
     }
 
     unsigned int BitsUsed() const
@@ -320,13 +322,28 @@ public:
         return bits_in_use;
     }
 
-// TODO use string
+    unsigned int BytesInUse() const
+    {
+        unsigned int bytes = bits_in_use / 8;
+
+        // ex 1 bit = 1 byte in use, 8 bits = 1 byte in use,
+        // and 9 bits = 2 bytes in use, 16 bits = 2 bytes in use etc.
+        unsigned int floating_bits = bits_in_use % 8;
+        if (floating_bits > 0)
+        {
+            bytes += 1;
+        }
+
+        return bytes;
+    }
+
+    // TODO use string
     const char* ToBinaryString() const
     {
         if (this->size == 0)
             return new char[1] { '\0' };
 
-        char *res = new char[(this->size * 32) + 1];
+        char* res = new char[(this->size * 32) + 1];
         unsigned int* data_ptr = data;
 
         unsigned int mask = 1 << 31;
@@ -354,7 +371,7 @@ public:
 
         for (unsigned int i = 0; i < sz; ++i)
         {
-            bytes[i] = static_cast<unsigned char>(GetData(i*8, 8));
+            bytes[i] = static_cast<unsigned char>(GetData(i * 8, 8));
         }
 
         return bytes;
@@ -363,12 +380,12 @@ public:
     unsigned char* ToBytes(unsigned char start_byte) const
     {
         unsigned int sz = SizeInBytes();
-        unsigned char* bytes = new unsigned char[sz+1];
+        unsigned char* bytes = new unsigned char[sz + 1];
         bytes[0] = start_byte;
 
         for (unsigned int i = 0; i < sz; ++i)
         {
-            bytes[i+1] = static_cast<unsigned char>(GetData(i*8, 8));
+            bytes[i + 1] = static_cast<unsigned char>(GetData(i * 8, 8));
         }
 
         return bytes;
