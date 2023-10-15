@@ -6,6 +6,7 @@
 #include "Packet.hh"
 #include "Vector.hh"
 #include "String.hh"
+#include "QChat.hh"
 
 #include <transport/transport.h>
 
@@ -47,36 +48,19 @@ void NetManager::HandleSerial(void* param)
             printf("NET: Message from ui chip - ");
             Packet* rx_packet = (*rx_packets)[0];
             uint8_t packet_type = rx_packet->GetData(0, 6);
-            uint16_t data_len = rx_packet->GetData(14, 10);
-
-            uint8_t data;
-            for (uint16_t i = 0; i < data_len; ++i)
-            {
-                // Get each data byte
-                data = rx_packet->GetData(24 + (i * 8), 8);
-                if ((data >= '0' && data <= '9') || (data >= 'A' && data <= 'z'))
-                {
-                    printf("%c", (char)data);
-                }
-                else
-                {
-                    printf("%d ", (int)data);
-                }
-            }
-            printf("\n\r");
-
+        
             if (packet_type == Packet::Types::Message)
             {
-                printf("%s\r\n", "I am here");
-                // decode into a qchat message
-                // write a generic handler for qcht_message
-                //   --> qsession to apply quicr api
-                // Pass the message to the next layer of processing...
-                // aka quicr
-                // 1. if it is watch message
-                //_this->qsession->subscribe(publish_uri, payload)
-                // ascii
-                //_this->qsession->publish(publish_ur, payload)
+                printf("%s\r\n", "NetManager: Handle for Packet:Type:Message");
+                // skip the packetId and go to the next part of the packet data
+                // 6 + 8 = 14, skip to 14,
+                // Mesages have sub-types whuch is encoded in the first byte
+                uint8_t sub_message_type = rx_packet->GetData(14, 8);
+                if (sub_message_type >= 0 && sub_message_type <= 2) {
+                  // qchat message handler
+                  //handle_qchat_message(sub_message_type, rx_packet);
+                  _this->HandleQChatMessages(sub_message_type, rx_packet, 22);
+                }
                 
             }
             else if (packet_type == Packet::Types::Command)
@@ -89,6 +73,36 @@ void NetManager::HandleSerial(void* param)
             rx_packets->erase(0);
         }
     }
+}
+
+void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, size_t offset) {
+    if(rx_packet == nullptr) {
+        return;
+    }
+
+    qchat::MessageTypes msg_type = static_cast<qchat::MessageTypes>(message_type);
+
+    switch (msg_type)
+    {
+    case qchat::MessageTypes::Watch: {
+            qchat::WatchRoom watch;
+            bool result = qchat::Codec::decode(watch, rx_packet, offset);
+            if (!result) {
+                printf("%s\r\n", "NetManager:QChatMessage: Decode WatchRoom Failed"); 
+                return;
+            }
+            //quicr_session->publish_intent(watch.publisher_uri);
+        }
+        break;
+    
+    
+    default:
+        printf("%s\r\n", "NetManager:QChatMessage: Unknown Message");        
+        break;
+    }
+
+
+
 }
 
 void NetManager::HandleNetwork(void* param)
