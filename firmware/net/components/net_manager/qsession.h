@@ -3,6 +3,8 @@
 #include <memory>
 #include <map>
 
+#include <UrlEncoder.h>
+
 #include <quicr/quicr_client.h>
 #include <quicr/quicr_client_delegate.h>
 #include <quicr/name.h>
@@ -36,4 +38,5 @@ private:
   cantina::LoggerPointer logger;
   std::unique_ptr<quicr::Client> client;
   std::map<quicr::Namespace, std::shared_ptr<SubDelegate>> sub_delegates{};
+  UrlEncoder url_encoder;
 };

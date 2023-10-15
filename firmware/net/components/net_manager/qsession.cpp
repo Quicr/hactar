@@ -8,6 +8,7 @@
 #include <map>
 #include <mutex>
 #include <memory>
+#include <set>
 #include <thread>
 
 #include "qsession.h"
@@ -26,9 +27,21 @@ static esp_pthread_cfg_t create_config(const char *name, int core_id, int stack,
     return cfg;
 }
 
+static std::set<std::string> url_templates {
+  "quicr://webex.cisco.com<pen=1>/version/<int8>/appId/<int8>/org/<int12>/channel/<int16>/room/<int16>/endpoint/<int16>"
+};
+
 QSession::QSession(quicr::RelayInfo relay)
 : inbound_objects(std::make_shared<AsyncQueue<QuicrObject>>()) {
   logger = std::make_shared<cantina::Logger>("qsession_logger");
+  // setup namespace encoder templates
+  // TODO (this should come config file passed from ui to net chip during boot)
+  // TODO harcoding for now
+  for (const std::string& url_template : url_templates)
+  {
+      url_encoder.AddTemplate(url_template, true);
+  }
+
   logger->Log("Connecting to " + relay.hostname + ":" +
               std::to_string(relay.port));
   qtransport::TransportConfig tcfg{ .tls_cert_filename = NULL,
