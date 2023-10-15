@@ -15,6 +15,7 @@ public:
     static void HandleNetwork(void* param);
 private:
     void HandleSerialCommands(Packet* rx_packet);
+    void HandleQChatMessages(uint8_t message_type, Packet* rx_packet, size_t offset);
 
     SerialManager* ui_layer;
     hactar_utils::Wifi* wifi;

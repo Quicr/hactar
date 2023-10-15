@@ -40,7 +40,7 @@ ChatView::ChatView(UserInterfaceManager& manager,
     Packet* packet = new Packet(HAL_GetTick(), 1);
     packet->SetData(Packet::Types::Message, 0, 6);
     packet->SetData(manager.NextPacketId(), 6, 8);
-    qchat::encode(packet, watch);
+    qchat::Codec::encode(packet, watch);
     uint64_t new_offset = packet->BitsUsed();
     // Expiry time
     packet->SetData(0xFFFFFFFF, new_offset, 32);
@@ -146,7 +146,7 @@ void ChatView::HandleInput()
 
         // The packet length is set in the encode function
         // TODO encode probably could just generate a packet instead...
-        qchat::encode(packet, ascii);
+        qchat::Codec::encode(packet, ascii);
 
         uint64_t new_offset = packet->BitsUsed();
         // Expiry time
