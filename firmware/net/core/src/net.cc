@@ -150,9 +150,9 @@ void Run()
     if (state != hactar_utils::Wifi::State::Connected)
         return;
 
-   
-    quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);   
-    std::cout << "Subscribing to " << nspace << std::endl;
-    qsession->subscribe(nspace);
+    quicr::Namespace ns = qsession->to_namespace("quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1");
+    //quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);   
+    std::cout << "Subscribing to " << ns << std::endl;
+    qsession->subscribe(ns);
     
 }
