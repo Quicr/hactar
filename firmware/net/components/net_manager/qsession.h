@@ -29,8 +29,12 @@ public:
   void publish(const quicr::Name& name, quicr::bytes&& data);
   void handle(QuicrObject&& obj);
 
-
+  quicr::Namespace to_namespace(const std::string& namespace_str);
+  
 private:
+
+  void add_uri_templates();
+  
   std::optional<std::thread> handler_thread;
   std::atomic_bool stop = false;
   static constexpr auto inbound_object_timeout = std::chrono::milliseconds(100);
