@@ -1,8 +1,11 @@
 import Sleep from "./sleep";
-import { ACK, READY, NACK, NO_REPLY, MemoryCompare, ToByteArray } from "./uart_utils"
 import Serial from "./serial"
-
 import logger from "./logger";
+import { WriteByteWaitForACK, WriteBytesWaitForACK } from "./stm32_serial";
+
+import { ACK, READY, NACK, NO_REPLY, MemoryCompare, ToByteArray } from "./uart_utils"
+
+
 
 class STM32Flasher
 {
@@ -26,7 +29,7 @@ class STM32Flasher
 
     async Sync(serial: Serial, retry: number = 5)
     {
-        let reply: number = await serial.WriteByteWaitForACK(
+        let reply: number = await WriteByteWaitForACK(serial,
             this.Commands.sync, retry, false);
 
         if (reply == NACK)
@@ -47,7 +50,7 @@ class STM32Flasher
     async ReadMemory(serial: Serial, address: number[], num_bytes: number,
         retry: number = 1)
     {
-        let reply: number = await serial.WriteByteWaitForACK(
+        let reply: number = await WriteByteWaitForACK(serial,
             this.Commands.read_memory, retry);
 
         if (reply == NACK)
@@ -63,7 +66,7 @@ class STM32Flasher
 
         address.push(this.CalculateChecksum(address));
 
-        reply = await serial.WriteBytesWaitForACK(new Uint8Array(address));
+        reply = await WriteBytesWaitForACK(serial,new Uint8Array(address));
         if (reply == NACK)
         {
             logger.Error("NACK was received after sending memory address");
@@ -75,7 +78,7 @@ class STM32Flasher
             throw "NO REPLY received after sending memory address";
         }
 
-        reply = await serial.WriteByteWaitForACK(num_bytes - 1);
+        reply = await WriteByteWaitForACK(serial,num_bytes - 1);
         if (reply == NACK)
         {
             logger.Error("NACK was received after sending num bytes to receive");
@@ -96,7 +99,7 @@ class STM32Flasher
     {
         logger.Info(`Erase: Sectors ${sectors}`);
 
-        let reply: number = await serial.WriteByteWaitForACK(
+        let reply: number = await WriteByteWaitForACK(serial,
             this.Commands.extended_erase);
         if (reply == NACK)
         {
@@ -126,7 +129,7 @@ class STM32Flasher
 
         logger.Info(`Erase: STARTED`);
 
-        reply = await serial.WriteBytesWaitForACK(new Uint8Array(data), 10000);
+        reply = await WriteBytesWaitForACK(serial,new Uint8Array(data), 10000);
         if (reply == NACK)
         {
             logger.Error("Failed to erase");
@@ -233,7 +236,7 @@ class STM32Flasher
 
             this.progress = `Updating: ${Math.floor(percent_flashed * 50)}%`;
 
-            reply = await serial.WriteByteWaitForACK(this.Commands.write_memory);
+            reply = await WriteByteWaitForACK(serial,this.Commands.write_memory);
             if (reply == NACK)
             {
                 logger.Error("NACK was received after sending write command");
@@ -252,7 +255,7 @@ class STM32Flasher
 
             logger.Info(`Flashing: ${Math.floor(percent_flashed * 100)}%`,
                 true);
-            reply = await serial.WriteBytesWaitForACK(new Uint8Array(write_address_bytes));
+            reply = await WriteBytesWaitForACK(serial,new Uint8Array(write_address_bytes));
             if (reply == NACK)
             {
                 logger.Error("NACK was received after sending write command");
@@ -277,7 +280,7 @@ class STM32Flasher
             chunk.unshift(chunk.length - 1);
             chunk.push(this.CalculateChecksum(chunk));
 
-            reply = await serial.WriteBytesWaitForACK(new Uint8Array(chunk));
+            reply = await WriteBytesWaitForACK(serial,new Uint8Array(chunk));
             if (reply == NACK)
             {
                 logger.Error(`NACK was received while writing to addr: ${addr}`);

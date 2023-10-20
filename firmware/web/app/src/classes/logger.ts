@@ -15,6 +15,34 @@ interface LogEntry
     log_level: LogLevel;
     gui_overwrite: boolean;
 };
+
+// Static functions
+function LogTime(entry: LogEntry)
+{
+    const hours = entry.timestamp.getHours();
+    const minutes = entry.timestamp.getMinutes();
+    const seconds = entry.timestamp.getSeconds();
+
+    return `${hours}:${minutes}:${seconds}`;
+}
+
+function LogLevelToString(log_level: LogLevel)
+{
+    switch (log_level)
+    {
+        case LogLevel.Info:
+            return 'INFO ';
+        case LogLevel.Warning:
+            return 'WARN ';
+        case LogLevel.Error:
+            return 'ERROR';
+        case LogLevel.Debug:
+            return 'DEBUG';
+        default:
+            return 'UNKNOWN';
+    }
+}
+
 class Logger
 {
     constructor(log_level: LogLevel = LogLevel.Info)
@@ -94,7 +122,7 @@ class Logger
 
         if ((log_level & this.log_level) > 0)
         {
-            const lvl_str = Logger.LogLevelToString(log_level);
+            const lvl_str = LogLevelToString(log_level);
             const date = `${entry.timestamp.getHours()}:` +
                 `${entry.timestamp.getMinutes()}:` +
                 `${entry.timestamp.getSeconds()}`;
@@ -128,32 +156,6 @@ class Logger
         }
     }
 
-    static LogTime(entry: LogEntry)
-    {
-        const hours = entry.timestamp.getHours();
-        const minutes = entry.timestamp.getMinutes();
-        const seconds = entry.timestamp.getSeconds();
-
-        return `${hours}:${minutes}:${seconds}`;
-    }
-
-    static LogLevelToString(log_level: LogLevel)
-    {
-        switch (log_level)
-        {
-            case LogLevel.Info:
-                return 'INFO ';
-            case LogLevel.Warning:
-                return 'WARN ';
-            case LogLevel.Error:
-                return 'ERROR';
-            case LogLevel.Debug:
-                return 'DEBUG';
-            default:
-                return 'UNKNOWN';
-        }
-    }
-
     log_level: LogLevel
     log_buffers: { [key in LogLevel]?: LogEntry[] };
     logs: LogEntry[];
@@ -163,7 +165,5 @@ class Logger
 const logger = new Logger();
 export default logger;
 
-const LogLevelToString = Logger.LogLevelToString;
-const LogTime = Logger.LogTime;
 export { LogLevel, LogLevelToString, LogTime };
 export type { LogEntry };

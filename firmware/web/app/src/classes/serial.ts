@@ -184,54 +184,6 @@ class Serial
         await writer.write(bytes);
         writer.releaseLock();
     }
-
-    async WriteByteWaitForACK(byte: number, retry: number = 1,
-        compliment: boolean = true, timeout = 2000)
-    {
-
-        let data: number[] = [byte];
-        if (compliment)
-        {
-            data.push(byte ^ 0xFF)
-        }
-
-        let num = retry;
-        while (num--)
-        {
-            await this.WriteBytes(new Uint8Array(data));
-
-            let reply = await this.ReadByte(timeout);
-
-            if (reply == NO_REPLY)
-            {
-                logger.Warning(`Received no reply for byte: ${byte}`)
-                continue;
-            }
-
-            return reply;
-        }
-
-        return NO_REPLY;
-    }
-
-    async WriteBytesWaitForACK(bytes: Uint8Array, timeout: number = 2000,
-        retry: number = 1)
-    {
-        let num = retry;
-        while (num--)
-        {
-            await this.WriteBytes(bytes);
-
-            let reply = await this.ReadByte(timeout);
-
-            if (reply == NO_REPLY)
-                continue;
-
-            return reply;
-        }
-
-        return NO_REPLY;
-    }
 }
 
 export default Serial;
