@@ -47,6 +47,11 @@ GetFiles();
 
 app.use(cors());
 
+app.all('/auth', (req: Request, res: Response) => 
+{
+    // TODO authentication
+});
+
 app.get('/get_net_bins', (req: Request, res: Response) =>
 {
     const files = GetFiles();
