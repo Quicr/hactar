@@ -6,6 +6,7 @@
 #include "TeamView.hh"
 
 #include "SettingManager.hh"
+#include "QChat.hh"
 
 #include "main.hh"
 
@@ -138,23 +139,25 @@ void UserInterfaceManager::HandleIncomingPackets()
             // P_type will only be message or debug by this point
             case (Packet::Types::Message):
             {
-                // Write a message to the screen
-                Message in_msg;
-                // TODO The message should be parsed some how here.
-                in_msg.Timestamp("00:00");
-                in_msg.Sender("Server");
+                HandleMessagePacket(rx_packet);
 
-                String body;
+                // // Write a message to the screen
+                // Message in_msg;
+                // // TODO The message should be parsed some how here.
+                // in_msg.Timestamp("00:00");
+                // in_msg.Sender("Server");
 
-                // Skip the type and length, add the whole message
-                uint16_t packet_len = rx_packet->GetData(14, 10);
-                for (uint32_t j = 0; j < packet_len; ++j)
-                {
-                    body.push_back((char)rx_packet->GetData(24 + (j * 8), 8));
-                }
+                // String body;
 
-                in_msg.Body(body);
-                received_messages.push_back(in_msg);
+                // // Skip the type and length, add the whole message
+                // uint16_t packet_len = rx_packet->GetData(14, 10);
+                // for (uint32_t j = 0; j < packet_len; ++j)
+                // {
+                //     body.push_back((char)rx_packet->GetData(24 + (j * 8), 8));
+                // }
+
+                // in_msg.Body(body);
+                // received_messages.push_back(in_msg);
                 break;
             }
             case (Packet::Types::Setting):
@@ -396,9 +399,17 @@ void UserInterfaceManager::SendCheckWifiPacket()
 
     // Check a check wifi status packet
     Packet* check_wifi = new Packet();
+
+    // Set the command
     check_wifi->SetData(Packet::Types::Command, 0, 6);
+
+    // Set the id
     check_wifi->SetData(NextPacketId(), 6, 8);
+
+    // Set the size
     check_wifi->SetData(1, 14, 10);
+
+    // Set the data
     check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
 
     EnqueuePacket(check_wifi);
@@ -406,6 +417,44 @@ void UserInterfaceManager::SendCheckWifiPacket()
     last_wifi_check = current_time + 10000;
     uint8_t message [] = "UI: Send check wifi to esp\n\r";
     HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);
+}
+
+void UserInterfaceManager::HandleMessagePacket(
+    Packet* packet)
+{
+    // TODO what do we do with it?
+    uint16_t sz = packet->GetData(14, 10);
+
+    // Get the message type
+    qchat::MessageTypes message_type = 
+        (qchat::MessageTypes)packet->GetData(24, 8);
+
+    // Check the message type
+    if (message_type == qchat::MessageTypes::Ascii)
+    {
+        qchat::Ascii ascii;
+
+        // Get the size of the publisher uri
+        uint16_t msg_uri_sz = packet->GetData(32, 16);
+        uint16_t i;
+        uint16_t offset = 48;
+        for (i = 0; i < msg_uri_sz; ++i)
+        {
+            ascii.message_uri += packet->GetData(offset, 8);
+            offset += 8;
+        }
+
+        uint16_t msg_sz = packet->GetData(offset, 16);
+        offset += 16;
+        for (i = 0; i < msg_uri_sz; ++i)
+        {
+            ascii.message += packet->GetData(offset, 8);
+            offset += 8;
+        }
+
+        // Do something with the ascii message
+
+    }
 }
 
 void UserInterfaceManager::LoadSettings()
