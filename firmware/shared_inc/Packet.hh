@@ -25,6 +25,8 @@ creation_time = 6 bytes
 
 // TODO add start patterns
 
+// TODO rewrite packet to use 8 bits instead of 32 bits
+
 class Packet
 {
 public:

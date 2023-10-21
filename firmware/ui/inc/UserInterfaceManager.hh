@@ -78,6 +78,7 @@ private:
     void SendCheckWifiPacket();
     void LoadSettings();
     void LoadUsername();
+    void HandleMessagePacket(Packet* packet);
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
