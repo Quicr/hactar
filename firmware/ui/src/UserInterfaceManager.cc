@@ -432,28 +432,28 @@ void UserInterfaceManager::HandleMessagePacket(
     // Check the message type
     if (message_type == qchat::MessageTypes::Ascii)
     {
-        qchat::Ascii ascii;
+        qchat::Ascii* ascii = new qchat::Ascii();
 
         // Get the size of the publisher uri
-        uint16_t msg_uri_sz = packet->GetData(32, 16);
+        uint16_t sz = packet->GetData(32, 16);
         uint16_t i;
         uint16_t offset = 48;
-        for (i = 0; i < msg_uri_sz; ++i)
+        for (i = 0; i < sz; ++i)
         {
-            ascii.message_uri += packet->GetData(offset, 8);
+            ascii->message_uri += packet->GetData(offset, 8);
             offset += 8;
         }
 
-        uint16_t msg_sz = packet->GetData(offset, 16);
+        sz = packet->GetData(offset, 16);
         offset += 16;
-        for (i = 0; i < msg_uri_sz; ++i)
+        for (i = 0; i < sz; ++i)
         {
-            ascii.message += packet->GetData(offset, 8);
+            ascii->message += packet->GetData(offset, 8);
             offset += 8;
         }
 
         // Do something with the ascii message
-
+        ascii_messages.push_back(ascii);
     }
 }
 

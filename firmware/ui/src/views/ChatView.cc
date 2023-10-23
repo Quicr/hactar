@@ -146,7 +146,7 @@ void ChatView::HandleInput()
 
         // The packet length is set in the encode function
         // TODO encode probably could just generate a packet instead...
-        qchat::Codec::encode(packet, ascii);
+        qchat::Codec::encode(packet, 14, ascii);
 
         uint64_t new_offset = packet->BitsUsed();
         // Expiry time
