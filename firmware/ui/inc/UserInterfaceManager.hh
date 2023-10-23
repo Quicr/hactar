@@ -13,6 +13,8 @@
 #include "SettingManager.hh"
 #include "Screen.hh"
 
+#include "QChat.hh"
+
 #define VIEW_ADDRESS 0x00
 #define FIRST_BOOT_STARTED 0x01
 #define FIRST_BOOT_DONE 0x02
@@ -88,6 +90,7 @@ private:
     SettingManager setting_manager;
     ViewInterface* view;
     Vector<Message> received_messages;
+    Vector<qchat::Ascii*> ascii_messages;
     bool force_redraw;
     uint32_t current_time;
 
