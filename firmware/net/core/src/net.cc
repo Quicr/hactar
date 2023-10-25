@@ -129,17 +129,18 @@ void Setup(const uart_config_t& uart_config)
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 256);
     ui_layer = new SerialManager(ui_uart1);
 
-    char default_relay [] = "192.168.50.19";
+    char default_relay [] = "10.0.0.229";
     auto relay_name = default_relay;
     uint16_t port = 33434;
     quicr::RelayInfo relay {
-        .hostname = relay_name,
+            .hostname = relay_name,
             .port = port,
             .proto = quicr::RelayInfo::Protocol::UDP
     };
     qsession = std::make_shared<QSession>(relay);
     manager = new NetManager(ui_layer, qsession);
-    
+    logger->info(TAG, "Net app_main Connecting to QSession\n");    
+    qsession->connect();
 }
 
 void Run()
@@ -150,9 +151,10 @@ void Run()
     if (state != hactar_utils::Wifi::State::Connected)
         return;
 
+    logger->info(TAG, "netcc: Subscribing to namespace");
+    
     quicr::Namespace ns = qsession->to_namespace("quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1");
-    //quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);   
+    quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);   
     std::cout << "Subscribing to " << ns << std::endl;
     qsession->subscribe(ns);
-    
 }

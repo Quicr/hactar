@@ -76,7 +76,14 @@ struct Ascii  {
 
 struct Codec {
 
-static void encode(Packet* packet, const WatchRoom& msg)
+static  std::vector<uint8_t>
+string_to_bytes(const std::string& str)
+{
+  return { str.begin(), str.end() };
+}
+
+static void 
+encode(Packet* packet, const WatchRoom& msg)
 {
     // [type][pub_uri_len][[pub_uri][room_uri_len][room_uri]
     packet->AppendData((unsigned int) MessageTypes::Watch, 8);
