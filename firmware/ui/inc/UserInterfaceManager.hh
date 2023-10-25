@@ -13,6 +13,8 @@
 #include "SettingManager.hh"
 #include "Screen.hh"
 
+#include "QChat.hh"
+
 #define VIEW_ADDRESS 0x00
 #define FIRST_BOOT_STARTED 0x01
 #define FIRST_BOOT_DONE 0x02
@@ -78,6 +80,7 @@ private:
     void SendCheckWifiPacket();
     void LoadSettings();
     void LoadUsername();
+    void HandleMessagePacket(Packet* packet);
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
@@ -87,6 +90,7 @@ private:
     SettingManager setting_manager;
     ViewInterface* view;
     Vector<Message> received_messages;
+    Vector<qchat::Ascii*> ascii_messages;
     bool force_redraw;
     uint32_t current_time;
 
