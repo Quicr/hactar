@@ -86,6 +86,8 @@ static void
 encode(Packet* packet, const WatchRoom& msg)
 {
     // [type][pub_uri_len][[pub_uri][room_uri_len][room_uri]
+
+    // Set the message type, starts at bit 24
     packet->AppendData((unsigned int) MessageTypes::Watch, 8);
     packet->AppendData(msg.publisher_uri.length(), uri_len_bits);
     for (size_t i = 0; i < msg.publisher_uri.length(); ++i)
@@ -100,10 +102,12 @@ encode(Packet* packet, const WatchRoom& msg)
     }
 }
 
-static void encode(Packet* packet, const uint16_t start_offset, const Ascii& msg)
+static void encode(Packet* packet, 
+    const uint16_t start_offset, 
+    const Ascii& msg)
 {
     // [type][msg_uri_len][[msg_uri][msg_len][msg]
-    packet->AppendData((unsigned int) MessageTypes::Ascii, 8);
+    packet->AppendData((unsigned int)MessageTypes::Ascii, 8);
     packet->AppendData(msg.message_uri.length(), uri_len_bits);
     for (size_t i = 0; i < msg.message_uri.length(); ++i)
     {

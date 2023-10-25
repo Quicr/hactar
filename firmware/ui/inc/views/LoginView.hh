@@ -18,7 +18,10 @@ protected:
     void Update();
 
 private:
+    /** Private functions **/
     void DrawFirstLoad();
     void DrawIncorrectPasscode();
+
+    /** Private variables **/
     bool incorrect_passcode_entered;
 };
