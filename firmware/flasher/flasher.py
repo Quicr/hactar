@@ -20,7 +20,7 @@ def SerialPorts(uart_config):
           sys.platform.startswith('cygwin')):
         ports = glob.glob('/dev/ttyUSB[0-9]*')
     elif sys.platform.startswith('darwin'):
-        ports = glob.glob('/dev/tty.*')
+        ports = glob.glob('/dev/cu.usbserial*')
     else:
         raise EnvironmentError("Unsupported platform")
 

@@ -23,24 +23,38 @@ public:
   QSession(quicr::RelayInfo relay_info);
   ~QSession() = default;
   bool connect();
+  // messaging.webex.com/v1/qchat/room/cafe/user/bret
+  // messaging.webex.com/v1/qchat/room/cafe/user/suhas
+  // messaging.webex.com/v1/qchat/room/cafe/user/fluffy
   bool publish_intent(quicr::Namespace ns);
+  
+  //messaging.webex.com/v1/qchat/room/cafe/*
   bool subscribe(quicr::Namespace ns);
   void unsubscribe(quicr::Namespace ns);
-  void publish(const quicr::Name& name, quicr::bytes&& data);
-  void handle(QuicrObject&& obj);
-
-  quicr::Namespace to_namespace(const std::string& namespace_str);
   
+  //messaging.webex.com/v1/qchat/room/cafe/user/bret/messageId/1 "hi Guys"
+  //messaging.webex.com/v1/qchat/room/cafe/user/bret/messageId/2 "how are you"
+  void publish(const quicr::Name& name, quicr::bytes&& data);
+
+  // helpers
+  quicr::Namespace to_namespace(const std::string& namespace_str);
+
 private:
 
   void add_uri_templates();
-  
-  std::optional<std::thread> handler_thread;
-  std::atomic_bool stop = false;
-  static constexpr auto inbound_object_timeout = std::chrono::milliseconds(100);
+  std::recursive_mutex self_mutex;
+  std::unique_lock<std::recursive_mutex> lock()
+  {
+    return std::unique_lock{ self_mutex };
+  }
+
   std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects;
-  cantina::LoggerPointer logger;
-  std::unique_ptr<quicr::Client> client;
+
+  std::atomic_bool stop = false;
+  void set_app_queue(std::shared_ptr<AsyncQueue<QuicrObject>> q);
+  static constexpr auto inbound_object_timeout = std::chrono::milliseconds(100);
+  cantina::LoggerPointer logger = nullptr;
+  std::unique_ptr<quicr::Client> client = nullptr;
   std::map<quicr::Namespace, std::shared_ptr<SubDelegate>> sub_delegates{};
   UrlEncoder url_encoder;
 };

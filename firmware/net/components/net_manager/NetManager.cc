@@ -12,16 +12,27 @@
 
 NetManager::NetManager(SerialManager* _ui_layer, std::shared_ptr<QSession> qsession)
   : ui_layer(_ui_layer),
+    //inbound_objects(std::make_shared<AsyncQueue<QuicrObject>>()),
     quicr_session(qsession)
 {
     // Start tasks??
     wifi = hactar_utils::Wifi::GetInstance();
     esp_err_t res = wifi->Initialize();
     ESP_ERROR_CHECK(res);
-    if (quicr_session != nullptr) {
-        quicr_session->connect();
-    }
+    
     xTaskCreate(HandleSerial, "handle_serial_task", 4096, (void*)this, 13, NULL);
+
+    //if (quicr_session != nullptr) {
+       // quicr_session->set_app_queue(inbound_objects);
+        //if (quicr_session->connect()) {
+            //auto cfg = create_config("QuicRMessageHandler", 1, 12 * 1024, 5);
+            //auto esp_err = esp_pthread_set_cfg(&cfg);
+            //if(esp_err != ESP_OK) {
+                
+       // }
+
+       // }
+    //}
 }
 
 void NetManager::HandleSerial(void* param)
@@ -48,7 +59,23 @@ void NetManager::HandleSerial(void* param)
             printf("NET: Message from ui chip - ");
             Packet* rx_packet = (*rx_packets)[0];
             uint8_t packet_type = rx_packet->GetData(0, 6);
-        
+            uint16_t data_len = rx_packet->GetData(14, 10);
+            uint8_t data;
+            for (uint16_t i = 0; i < data_len; ++i)
+            {
+                // Get each data byte
+                data = rx_packet->GetData(24 + (i * 8), 8);
+                if ((data >= '0' && data <= '9') || (data >= 'A' && data <= 'z'))
+                {
+                    printf("%c", (char)data);
+                }
+                else
+                {
+                    printf("%d ", (int)data);
+                }
+            }
+            printf("\n\r");
+
             if (packet_type == Packet::Types::Message)
             {
                 printf("%s\r\n", "NetManager: Handle for Packet:Type:Message");
@@ -84,17 +111,38 @@ void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, si
 
     switch (msg_type)
     {
-    case qchat::MessageTypes::Watch: {
+      case qchat::MessageTypes::Watch: {
             qchat::WatchRoom watch;
-            bool result = qchat::Codec::decode(watch, rx_packet, offset);
-            if (!result) {
-                printf("%s\r\n", "NetManager:QChatMessage: Decode WatchRoom Failed"); 
+            if (!qchat::Codec::decode(watch, rx_packet, offset)) {
+                printf("%s\r\n", "NetManager:QChatMessage:Watch Decode  Failed"); 
                 return;
             }
-            //quicr_session->publish_intent(watch.publisher_uri);
+
+            if (!quicr_session->subscribe(quicr_session->to_namespace(watch.room_uri))){
+                printf("%s\r\n", "NetManager:QChatMessage:Watch subscribe error "); 
+                return;
+            }
+
+            if (!quicr_session->publish_intent(quicr_session->to_namespace(watch.publisher_uri))){
+                printf("%s\r\n", "NetManager:QChatMessage:Watch publish_intent error "); 
+                return;
+            }
         }
         break;
-    
+#if 0
+        case qchat::MessageTypes::Ascii: {
+            qchat::Ascii ascii;
+            bool result = qchat::Codec::ascii(ascii, rx_packet, offset);
+            if (!qchat::Codec::ascii(ascii, rx_packet, offset);) {
+                printf("%s\r\n", "NetManager:QChatMessage: Decode Ascii Message Failed"); 
+                return;
+            }
+
+            quicr_session->publish(quicr_session->to_namespace(ascii.message_uri), 
+            qchat::Codec::string_to_bytes(acsii.message));
+        }
+#endif
+        break;
     
     default:
         printf("%s\r\n", "NetManager:QChatMessage: Unknown Message");        
@@ -107,7 +155,10 @@ void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, si
 
 void NetManager::HandleNetwork(void* param)
 {
-    // TODO
+    // part 1, parse quicr message
+
+    //Ascii ascii;
+    // part2 encode into qchat message and send to ui chip
 }
 
 /**                          Private Functions                               **/

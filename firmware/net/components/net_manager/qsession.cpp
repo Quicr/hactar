@@ -28,8 +28,7 @@ static esp_pthread_cfg_t create_config(const char *name, int core_id, int stack,
 }
 
 
-QSession::QSession(quicr::RelayInfo relay)
-: inbound_objects(std::make_shared<AsyncQueue<QuicrObject>>()) {
+QSession::QSession(quicr::RelayInfo relay) {
   logger = std::make_shared<cantina::Logger>("qsession_logger");
   add_uri_templates();
   logger->Log("Connecting to " + relay.hostname + ":" +
@@ -44,6 +43,10 @@ quicr::Namespace QSession::to_namespace(const std::string& ns_str) {
   return url_encoder.EncodeUrl(ns_str);
 }
 
+void QSession::set_app_queue(std::shared_ptr<AsyncQueue<QuicrObject>> q) {
+  inbound_objects = q;
+}
+  
 
 bool 
 QSession::connect() {
@@ -51,32 +54,6 @@ QSession::connect() {
   if (!client->connect()) {
     return false;
   }
-
-  auto cfg = create_config("QuicRMessageHandler", 1, 12 * 1024, 5);
-  auto esp_err = esp_pthread_set_cfg(&cfg);
-  if(esp_err != ESP_OK) {
-    std::stringstream s_log;
-    s_log << "esp_pthread_set_cfg failed " << esp_err_to_name(esp_err);
-    logger->Log(s_log.str());
-    return false;
-  }
-
-  // Start up a thread to handle incoming messages
-  handler_thread = std::thread([&]() {
-    while (!stop) {
-      auto maybe_obj = inbound_objects->pop(inbound_object_timeout);
-      if (!maybe_obj) {
-        continue;
-      }
-
-      //const auto _ = std::lock();
-      auto& obj = maybe_obj.value();
-      handle(std::move(obj));
-    }
-
-    logger->Log("Handler thread stopping");
-  });
-
   return true;
 }
 
@@ -134,12 +111,6 @@ QSession::publish(const quicr::Name& name, quicr::bytes&& data)
   client->publishNamedObject(name, 0, default_ttl_ms, false, std::move(data));
 }
 
-
-void
-QSession::handle(QuicrObject&& obj)
-{
-  // tie to the right delegate for further processing
-}
 
 
 //
