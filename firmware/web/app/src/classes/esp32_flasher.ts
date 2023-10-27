@@ -18,7 +18,6 @@ class ESP32Flasher
 
     async FlashESP(serial: Serial, net_bins: [])
     {
-        console.log(net_bins);
         await this.Sync(serial);
 
         await this.AttachSPI(serial);
