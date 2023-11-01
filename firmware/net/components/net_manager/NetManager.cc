@@ -10,18 +10,15 @@
 
 #include <transport/transport.h>
 
-NetManager::NetManager(SerialManager* _ui_layer, std::shared_ptr<QSession> qsession)
+NetManager::NetManager(SerialManager* _ui_layer, 
+                        std::shared_ptr<net_wifi::Wifi> wifi_in,
+                        std::shared_ptr<QSession> qsession)
   : ui_layer(_ui_layer),
     inbound_objects(std::make_shared<AsyncQueue<QuicrObject>>()),
+    wifi(wifi_in),
     quicr_session(qsession)
 {
     
-    //wifi = hactar_utils::Wifi::GetInstance();
-    //ESP_ERROR_CHECK(wifi->Initialize());
-
-    //wifi->Connect("ramanujan", "JaiGanesha123");
-
-
     xTaskCreate(HandleSerial, "handle_serial_task", 4096, (void*)this, 13, NULL);
 
     //if (quicr_session != nullptr) {
@@ -171,6 +168,7 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
     printf("NET: Packet command received - %d\n\r", (int)command_type);
     if (command_type == Packet::Commands::SSIDs)
     {
+#if 0        
         // Get the ssids
         Vector<String> ssids;
         esp_err_t res = wifi->ScanNetworks(&ssids);
@@ -222,9 +220,11 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
             }
             ui_layer->EnqueuePacket(packet);
         }
+#endif        
     }
     else if (command_type == Packet::Commands::ConnectToSSID)
     {
+#if 0        
         // Get the ssid value, followed by the ssid_password
         unsigned char ssid_len = rx_packet->GetData(32, 8);
         printf("NET SSID length - %d\n\r", ssid_len);
@@ -255,12 +255,14 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
         }
         ssid_password = "JaiGanesha!23";
         printf("NET: SSID Password - %s\n\r", ssid_password.c_str());
-
-        wifi->Connect(ssid.c_str(), ssid_password.c_str());
+        
+        wifi->connect(ssid.c_str(), ssid_password.c_str());
+#endif        
     }
     else if (command_type == Packet::Commands::WifiStatus)
     {
-        printf("NET: Connection status - %d\n\r", (int)wifi->IsConnected());
+
+        printf("NET: Connection status - %d\n\r", (int)wifi->get_state());
 
         // Create a packet that tells the current status
         Packet* connected_packet = new Packet();
@@ -268,7 +270,7 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
         connected_packet->SetData(1, 6, 8);
         connected_packet->SetData(2, 14, 10);
         connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
-        connected_packet->SetData(wifi->IsConnected(), 32, 8);
+        connected_packet->SetData(wifi->get_state() == net_wifi::Wifi::State::Connected, 32, 8);
 
         ui_layer->EnqueuePacket(connected_packet);
     }
