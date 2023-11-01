@@ -12,14 +12,16 @@
 
 NetManager::NetManager(SerialManager* _ui_layer, std::shared_ptr<QSession> qsession)
   : ui_layer(_ui_layer),
-    //inbound_objects(std::make_shared<AsyncQueue<QuicrObject>>()),
+    inbound_objects(std::make_shared<AsyncQueue<QuicrObject>>()),
     quicr_session(qsession)
 {
-    // Start tasks??
-    wifi = hactar_utils::Wifi::GetInstance();
-    esp_err_t res = wifi->Initialize();
-    ESP_ERROR_CHECK(res);
     
+    //wifi = hactar_utils::Wifi::GetInstance();
+    //ESP_ERROR_CHECK(wifi->Initialize());
+
+    //wifi->Connect("ramanujan", "JaiGanesha123");
+
+
     xTaskCreate(HandleSerial, "handle_serial_task", 4096, (void*)this, 13, NULL);
 
     //if (quicr_session != nullptr) {
