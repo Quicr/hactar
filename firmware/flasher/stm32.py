@@ -425,3 +425,5 @@ class stm32_flasher:
 
         firmware = open(binary_path, "rb").read()
         self.SendWriteMemory(firmware, self.User_Sector_Start_Address, 5)
+
+        return True

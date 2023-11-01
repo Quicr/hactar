@@ -96,36 +96,41 @@ def main():
         print(f"Uploading to {len(ports)} Hactar devices on ports: {ports}")
 
         for port in ports:
-            try:
-                uart = serial.Serial(
-                    port=port,
-                    **uart_config
-                )
+            programmed = False
+            while not programmed:
+                try:
+                    uart = serial.Serial(
+                        port=port,
+                        **uart_config
+                    )
 
-                print(f"Opened port: {BB}{port}{NW} "
-                      f"baudrate: {BG}{args.baud}{NW}")
+                    print(f"Opened port: {BB}{port}{NW} "
+                          f"baudrate: {BG}{args.baud}{NW}")
 
-                if ("mgmt" in args.chip and args.mgmt_binary_path != ""):
-                    print(f"{BW}Starting UI Upload{NW}")
-                    stm32_flasher = stm32.stm32_flasher(uart)
-                    stm32_flasher.ProgramSTM(args.mgmt_binary_path)
+                    if ("mgmt" in args.chip and args.mgmt_binary_path != ""):
+                        print(f"{BW}Starting UI Upload{NW}")
+                        stm32_flasher = stm32.stm32_flasher(uart)
+                        programmed = stm32_flasher.ProgramSTM(
+                            args.mgmt_binary_path)
 
-                if ("ui" in args.chip and args.ui_binary_path != ""):
-                    print(f"{BW}Starting UI Upload{NW}")
-                    stm32_flasher = stm32.stm32_flasher(uart)
-                    stm32_flasher.ProgramSTM(args.ui_binary_path)
+                    if ("ui" in args.chip and args.ui_binary_path != ""):
+                        print(f"{BW}Starting UI Upload{NW}")
+                        stm32_flasher = stm32.stm32_flasher(uart)
+                        programmed = stm32_flasher.ProgramSTM(
+                            args.ui_binary_path)
 
-                if ("net" in args.chip and args.net_build_path != ""):
-                    print(f"{BW}Starting Net Upload{NW}")
-                    esp32_flasher = esp32.esp32_flasher(uart)
-                    esp32_flasher.ProgramESP(args.net_build_path)
+                    if ("net" in args.chip and args.net_build_path != ""):
+                        print(f"{BW}Starting Net Upload{NW}")
+                        esp32_flasher = esp32.esp32_flasher(uart)
+                        programmed = esp32_flasher.ProgramESP(
+                            args.net_build_path)
 
-                print(f"Done flashing {BR}GOODBYE{NW}")
+                    print(f"Done flashing {BR}GOODBYE{NW}")
 
-                uart.close()
-            except Exception as ex:
-                print(f"{BR}{ex}{NW}")
-                uart.close()
+                    uart.close()
+                except Exception as ex:
+                    print(f"{BR}{ex}{NW}")
+                    uart.close()
     except Exception as ex:
         print(f"{BR}{ex}{NW}")
 

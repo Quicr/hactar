@@ -51,6 +51,12 @@ class HactarFlasher
             if (mode.includes("net"))
             {
                 const binaries = await this.GetBinary("get_net_bins");
+
+                if (binaries.length == 0)
+                {
+                    console.log("No net binaries received");
+                    return;
+                }
                 await this.SendUploadSelectionCommand("net_upload");
                 await this.esp_flasher.FlashESP(this.serial, binaries);
             }

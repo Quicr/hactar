@@ -94,6 +94,11 @@ void UserInterfaceManager::EnqueuePacket(Packet* packet)
     net_layer.EnqueuePacket(packet);
 }
 
+void UserInterfaceManager::LoopbackPacket(Packet* packet)
+{
+    net_layer.LoopbackRxPacket(packet);
+}
+
 void UserInterfaceManager::ForceRedraw()
 {
     force_redraw = true;
@@ -126,7 +131,7 @@ void UserInterfaceManager::HandleIncomingPackets()
     if (!net_layer.HasRxPackets()) return;
 
     // Get the packets
-    Vector<Packet*>& packets = net_layer.GetRxPackets();
+    const Vector<Packet*>& packets = net_layer.GetRxPackets();
 
     // Handle incoming packets
     while (packets.size() > 0)
@@ -141,7 +146,21 @@ void UserInterfaceManager::HandleIncomingPackets()
             {
                 HandleMessagePacket(rx_packet);
 
-                // // Write a message to the screen
+                // HACK remove later
+                qchat::Ascii* ascii = ascii_messages[0];
+
+                Message in_msg;
+                in_msg.Timestamp("00.00");
+                in_msg.Sender("Ascii");
+
+                in_msg.Body(ascii->message.c_str());
+
+                received_messages.push_back(in_msg);
+
+                delete ascii;
+                ascii_messages.erase(0);
+
+                // Write a message to the screen
                 // Message in_msg;
                 // // TODO The message should be parsed some how here.
                 // in_msg.Timestamp("00:00");
@@ -222,8 +241,10 @@ void UserInterfaceManager::HandleIncomingPackets()
             }
         }
 
-        delete rx_packet;
-        packets.erase(0);
+        // delete rx_packet;
+        // packets.erase(0);
+
+        net_layer.DestroyRxPacket(0);
     }
 }
 
@@ -422,34 +443,23 @@ void UserInterfaceManager::SendCheckWifiPacket()
 void UserInterfaceManager::HandleMessagePacket(
     Packet* packet)
 {
-    // TODO what do we do with it?
-    uint16_t sz = packet->GetData(14, 10);
-
     // Get the message type
-    qchat::MessageTypes message_type = 
+    qchat::MessageTypes message_type =
         (qchat::MessageTypes)packet->GetData(24, 8);
 
     // Check the message type
     if (message_type == qchat::MessageTypes::Ascii)
     {
+        // Make a new the ascii message pointer
         qchat::Ascii* ascii = new qchat::Ascii();
 
-        // Get the size of the publisher uri
-        uint16_t sz = packet->GetData(32, 16);
-        uint16_t i;
-        uint16_t offset = 48;
-        for (i = 0; i < sz; ++i)
-        {
-            ascii->message_uri += packet->GetData(offset, 8);
-            offset += 8;
-        }
+        // Decode the packet
+        const bool res = qchat::Codec::decode(*ascii, packet, 32);
 
-        sz = packet->GetData(offset, 16);
-        offset += 16;
-        for (i = 0; i < sz; ++i)
+        if (!res)
         {
-            ascii->message += packet->GetData(offset, 8);
-            offset += 8;
+            // TODO some error state
+            return;
         }
 
         // Do something with the ascii message
