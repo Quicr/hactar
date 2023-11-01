@@ -21,19 +21,21 @@
 #include "nvs_flash.h"
 #include "esp_event.h"
 
-#include "Wifi.hh"
 #include "Logging.hh"
 #include "SerialLogger.hh"
 #include "SerialEsp.hh"
 #include "SerialManager.hh"
 #include "NetManager.hh"
 
+#include "wifi.h"
 #include "NetPins.hh"
 
 #include <qsession.h>
 
-static const char* TAG = "net-main";
+static const char* TAG = "[Net-Main]";
 
+using namespace net_wifi;
+Wifi wifi;
 
 // Defines
 
@@ -50,6 +52,23 @@ static std::shared_ptr<QSession> qsession = nullptr;
 // Forward declare functions
 void Setup(const uart_config_t&);
 void Run();
+
+
+static void wifi_monitor() {
+
+    auto state = wifi.get_state();
+    switch (state)
+    {
+        case Wifi::State::ReadyToConnect:
+        case Wifi::State::Disconnected: {
+            logger->info(TAG, "Wifi : Ready to connect/Disconnected\n");
+            wifi.connect();
+        }
+        default:
+            break;
+    }
+
+}
 
 extern "C" void app_main(void)
 {
@@ -123,38 +142,64 @@ extern "C" void app_main(void)
 
 void Setup(const uart_config_t& uart_config)
 {
+    // setup logger
     logger = hactar_utils::LogManager::GetInstance();
     logger->add_logger(new hactar_utils::ESP32SerialLogger());
-    logger->info(TAG, "Net app_main start");
+    logger->info(TAG, "Net app_main start\r\n");
+     
+    
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 256);
     ui_layer = new SerialManager(ui_uart1);
 
-    char default_relay [] = "10.0.0.229";
-    auto relay_name = default_relay;
-    uint16_t port = 33434;
-    quicr::RelayInfo relay {
-            .hostname = relay_name,
-            .port = port,
-            .proto = quicr::RelayInfo::Protocol::UDP
-    };
-    qsession = std::make_shared<QSession>(relay);
-    manager = new NetManager(ui_layer, qsession);
-    logger->info(TAG, "Net app_main Connecting to QSession\n");    
-    qsession->connect();
+    esp_event_loop_create_default();
+    // Initialize NVS.
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        logger->warn(TAG, "nvs_flash_init - no free-pages/version issue ");
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+
+    ESP_ERROR_CHECK(err);
+
+     // Wifi setup
+    Wifi::State wifi_state { Wifi::State::NotInitialized };
+    wifi.SetCredentials("ramanujan", "JaiGanesha!23");
+    wifi.init();
+
+    manager = new NetManager(ui_layer, nullptr);
+     
 }
 
+static bool qsession_connected = false;
 void Run()
 {
     static bool subscribed = false;
-    auto state = hactar_utils::Wifi::GetInstance()->GetState();
-
-    if (state != hactar_utils::Wifi::State::Connected)
-        return;
-
-    logger->info(TAG, "netcc: Subscribing to namespace");
     
-    quicr::Namespace ns = qsession->to_namespace("quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1");
-    quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);   
-    std::cout << "Subscribing to " << ns << std::endl;
-    qsession->subscribe(ns);
+    wifi_monitor();
+    auto state = wifi.get_state();
+    if (state == Wifi::State::Connected && !qsession_connected ) {
+        logger->info(TAG, "Net app_main Connecting to QSession\n");       
+        char default_relay [] = "10.0.0.229";
+        auto relay_name = default_relay;
+        uint16_t port = 33434;
+        quicr::RelayInfo relay {
+            .hostname = relay_name,
+            .port = port,
+            .proto = quicr::RelayInfo::Protocol::UDP
+        };
+        qsession = std::make_shared<QSession>(relay);
+        qsession->connect();       
+        qsession_connected = true;
+        
+        logger->info(TAG, "netcc: Subscribing to namespace");
+        //quicr::Namespace ns = qsession->to_namespace("quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1");
+        quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);   
+        std::cout << "Subscribing to " << nspace << std::endl;
+        qsession->subscribe(nspace);
+    }    
+
+
+
+
 }
