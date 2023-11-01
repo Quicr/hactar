@@ -35,7 +35,7 @@
 static const char* TAG = "[Net-Main]";
 
 using namespace net_wifi;
-Wifi wifi;
+std::shared_ptr<Wifi> wifi;
 
 // Defines
 
@@ -56,13 +56,13 @@ void Run();
 
 static void wifi_monitor() {
 
-    auto state = wifi.get_state();
+    auto state = wifi->get_state();
     switch (state)
     {
         case Wifi::State::ReadyToConnect:
         case Wifi::State::Disconnected: {
             logger->info(TAG, "Wifi : Ready to connect/Disconnected\n");
-            wifi.connect();
+            wifi->connect();
         }
         default:
             break;
@@ -74,7 +74,7 @@ extern "C" void app_main(void)
 {
     esp_log_level_set(TAG, ESP_LOG_INFO);
     // vTaskDelay(10000 / portTICK_PERIOD_MS);
-
+    wifi = std::make_shared<Wifi>();
     // Configure the uart
     uart_config_t uart_config = {
         .baud_rate = 115200,
@@ -164,10 +164,10 @@ void Setup(const uart_config_t& uart_config)
 
      // Wifi setup
     Wifi::State wifi_state { Wifi::State::NotInitialized };
-    wifi.SetCredentials("ramanujan", "JaiGanesha!23");
-    wifi.init();
+    wifi->SetCredentials("ramanujan", "JaiGanesha!23");
+    wifi->init();
 
-    manager = new NetManager(ui_layer, nullptr);
+    manager = new NetManager(ui_layer, wifi, nullptr);
      
 }
 
@@ -177,7 +177,7 @@ void Run()
     static bool subscribed = false;
     
     wifi_monitor();
-    auto state = wifi.get_state();
+    auto state = wifi->get_state();
     if (state == Wifi::State::Connected && !qsession_connected ) {
         logger->info(TAG, "Net app_main Connecting to QSession\n");       
         char default_relay [] = "10.0.0.229";
