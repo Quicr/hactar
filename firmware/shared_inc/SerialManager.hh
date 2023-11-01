@@ -90,7 +90,7 @@ public:
         return rx_packets.size();
     }
 
-    Vector<Packet*>& GetRxPackets()
+    const Vector<Packet*>& GetRxPackets()
     {
         return rx_packets;
     }
@@ -115,6 +115,17 @@ public:
         if (next_packet_id == 0xFE)
             next_packet_id = 1;
         return next_packet_id++;
+    }
+
+    void LoopbackRxPacket(Packet* packet)
+    {
+        rx_packets.push_back(packet);
+    }
+
+    void DestroyRxPacket(unsigned int idx)
+    {
+        delete rx_packets[idx];
+        rx_packets.erase(idx);
     }
 
 private:

@@ -25,7 +25,7 @@ public:
              SettingManager& setting_manager);
     ~ChatView();
 
-    void SetActiveRoom(const Room &room);
+    void SetActiveRoom(const struct Room &room);
 
 protected:
     void AnimatedDraw();
@@ -54,5 +54,5 @@ private:
 
     // qchat room being displayed by this chat view
     qchat::Room active_room {};
-    uint64_t msg_id {0}
+    uint64_t msg_id {0};
 };

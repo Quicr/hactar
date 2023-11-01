@@ -15,7 +15,7 @@ namespace qchat {
 
 constexpr uint8_t uri_len_bits = 32U;
 constexpr uint8_t uri_len_bytes = uri_len_bits/8;
-constexpr uint8_t msg_len_bits = 32U; // 2^32 -1 
+constexpr uint8_t msg_len_bits = 32U; // 2^32 -1
 
 struct Room;
 
@@ -82,14 +82,14 @@ string_to_bytes(const std::string& str)
   return { str.begin(), str.end() };
 }
 
-static void 
+static void
 encode(Packet* packet, const WatchRoom& msg)
 {
-    // [type][pub_uri_len][[pub_uri][room_uri_len][room_uri]
-
+    // [total_len][type][pub_uri_len][[pub_uri][room_uri_len][room_uri]
+    packet->AppendData(msg.publisher_uri.length() + msg.room_uri.length() + 1, 10);
     // Set the message type, starts at bit 24
-    packet->AppendData((unsigned int) MessageTypes::Watch, 8);
     packet->AppendData(msg.publisher_uri.length(), uri_len_bits);
+    packet->AppendData((unsigned int) MessageTypes::Watch, 8);
     for (size_t i = 0; i < msg.publisher_uri.length(); ++i)
     {
         packet->AppendData(msg.publisher_uri[i], 8);
@@ -102,11 +102,16 @@ encode(Packet* packet, const WatchRoom& msg)
     }
 }
 
-static void encode(Packet* packet, 
-    const uint16_t start_offset, 
+static void encode(Packet* packet,
+    const uint16_t start_offset,
     const Ascii& msg)
 {
-    // [type][msg_uri_len][[msg_uri][msg_len][msg]
+    // [total_len][type][msg_uri_len][[msg_uri][msg_len][msg]
+
+    // +5 for the type byte and the 2 bytes of length
+    uint16_t extra_bytes = 1 + uri_len_bytes + uri_len_bytes;
+    packet->AppendData(msg.message_uri.length() + msg.message.length() + extra_bytes,
+        10);
     packet->AppendData((unsigned int)MessageTypes::Ascii, 8);
     packet->AppendData(msg.message_uri.length(), uri_len_bits);
     for (size_t i = 0; i < msg.message_uri.length(); ++i)
@@ -127,7 +132,7 @@ static bool decode(WatchRoom& msg, const Packet* encoded, size_t& current_offset
     }
     // type is already determined elswhere
     size_t offset = current_offset;
-    
+
     // Get the publisher_uri len
     size_t uri_len = encoded->GetData(offset, uri_len_bits);
     offset += uri_len_bits;
@@ -152,11 +157,11 @@ static bool decode(WatchRoom& msg, const Packet* encoded, size_t& current_offset
     return true;
 }
 
-static bool decode(Ascii& msg, const Packet* encoded, size_t& current_offset)
+static bool decode(Ascii& msg, const Packet* encoded, const size_t current_offset)
 {
     // type
     size_t offset = current_offset;
-    
+
     // message uri
     size_t uri_len = encoded->GetData(offset, uri_len_bits);
     offset += uri_len_bits;
@@ -177,8 +182,7 @@ static bool decode(Ascii& msg, const Packet* encoded, size_t& current_offset)
             encoded->GetData(offset, 8)));
         offset += 8;
     }
-    
-    current_offset = offset;
+
     return true;
 }
 

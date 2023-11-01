@@ -31,7 +31,8 @@ ChatView::ChatView(UserInterfaceManager& manager,
     // Each chat-view represent UX state for a given QChat Room
     std::string user_name{ manager.GetUsername().c_str() };
     active_room = create_default_room(user_name);
-    // set watch on the room
+
+    // Set watch on the room
     qchat::WatchRoom watch = qchat::WatchRoom{
         .publisher_uri = active_room.publisher_uri,
         .room_uri = active_room.room_uri,
@@ -40,14 +41,17 @@ ChatView::ChatView(UserInterfaceManager& manager,
     Packet* packet = new Packet(HAL_GetTick(), 1);
     packet->SetData(Packet::Types::Message, 0, 6);
     packet->SetData(manager.NextPacketId(), 6, 8);
+
     qchat::Codec::encode(packet, watch);
     uint64_t new_offset = packet->BitsUsed();
+
     // Expiry time
     packet->SetData(0xFFFFFFFF, new_offset, 32);
     new_offset += 32;
+
     // Creation time
     packet->SetData(0, new_offset, 32);
-    new_offset += 32;
+    // new_offset += 32;
     manager.EnqueuePacket(packet);
 }
 
@@ -156,8 +160,8 @@ void ChatView::HandleInput()
         packet->SetData(0, new_offset, 32);
         new_offset += 32;
 
+        // TODO ENABLE
         manager.EnqueuePacket(packet);
-
 
         // TODO facelift
         // Add message and the usr_input to the messages

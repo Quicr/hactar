@@ -35,6 +35,7 @@ public:
     Vector<Message>& GetMessages();
     void ClearMessages();
     void EnqueuePacket(Packet* packet);
+    void LoopbackPacket(Packet* packet);
     void ForceRedraw();
     bool RedrawForced();
     void ConnectToWifi();

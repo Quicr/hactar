@@ -298,3 +298,5 @@ class esp32_flasher:
         self.SetSPIParameters()
 
         self.Flash(build_path)
+
+        return True
