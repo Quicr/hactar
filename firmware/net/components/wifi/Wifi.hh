@@ -30,6 +30,9 @@ public:
         Error
     };
 
+    Wifi();
+    ~Wifi() = default;
+    
     Wifi(Wifi& other) = delete;
     void operator=(const Wifi& other) = delete;
     static Wifi* GetInstance();
@@ -45,18 +48,7 @@ public:
     State GetState() const;
     bool IsConnected() const;
 
-protected:
-    Wifi()
-    {
-        wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
-        wifi_cfg = {};
-        state = State::NotInitialized;
-    }
-
-    ~Wifi()
-    {
-
-    }
+    
 
 private:
 
