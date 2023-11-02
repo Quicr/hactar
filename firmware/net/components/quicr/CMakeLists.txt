@@ -11,5 +11,5 @@ idf_component_register(
 )
 
 add_subdirectory(lib)
-target_include_directories(quicr-transport PRIVATE "/Users/snk/esp/esp-idf/components/pthread/include")
+target_include_directories(quicr-transport PRIVATE ${IDF_PATH}/components/pthread/include)
 target_link_libraries(${COMPONENT_LIB} INTERFACE quicr)
