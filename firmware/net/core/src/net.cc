@@ -1,11 +1,4 @@
-/* GPIO Example
 
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -126,7 +119,7 @@ extern "C" void app_main(void)
     gpio_set_level(NET_STAT_Pin, 1);
 
 
-    // perform setup 
+    // perform setup
     Setup(uart_config);
 
     int32_t count = 0;
@@ -146,8 +139,8 @@ void Setup(const uart_config_t& uart_config)
     logger = hactar_utils::LogManager::GetInstance();
     logger->add_logger(new hactar_utils::ESP32SerialLogger());
     logger->info(TAG, "Net app_main start\r\n");
-     
-    
+
+
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 256);
     ui_layer = new SerialManager(ui_uart1);
 
@@ -168,18 +161,18 @@ void Setup(const uart_config_t& uart_config)
     wifi->init();
 
     manager = new NetManager(ui_layer, wifi, nullptr);
-     
+
 }
 
 static bool qsession_connected = false;
 void Run()
 {
     static bool subscribed = false;
-    
+
     wifi_monitor();
     auto state = wifi->get_state();
     if (state == Wifi::State::Connected && !qsession_connected ) {
-        logger->info(TAG, "Net app_main Connecting to QSession\n");       
+        logger->info(TAG, "Net app_main Connecting to QSession\n");
         char default_relay [] = "10.0.0.229";
         auto relay_name = default_relay;
         uint16_t port = 33434;
@@ -189,15 +182,15 @@ void Run()
             .proto = quicr::RelayInfo::Protocol::UDP
         };
         qsession = std::make_shared<QSession>(relay);
-        qsession->connect();       
+        qsession->connect();
         qsession_connected = true;
-        
+
         logger->info(TAG, "netcc: Subscribing to namespace");
         //quicr::Namespace ns = qsession->to_namespace("quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1");
-        quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);   
+        quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);
         std::cout << "Subscribing to " << nspace << std::endl;
         qsession->subscribe(nspace);
-    }    
+    }
 
 
 
