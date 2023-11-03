@@ -202,8 +202,8 @@ class esp32_flasher:
 
         reply = self.WritePacketWaitForResponsePacket(packet, self.FLASH_END)
 
-        if (reply.GetCommand() != self.FLASH_END):
-            raise Exception("Failed to restart board")
+        if (reply == self.NO_REPLY or reply.GetCommand() != self.FLASH_END):
+            print("Failed to restart board")
 
         print(f"Flashing: {BG}COMPLETE{NW}")
 

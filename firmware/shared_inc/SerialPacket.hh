@@ -1,9 +1,7 @@
 #pragma once
-
+#include <utility>
 // TODO function for is network, or is debug
 // TODO Make a inherited class that generally knows the data and type positions
-
-#include <utility>
 
 /* Standard SerialPacket
 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2
@@ -27,6 +25,8 @@ creation_time = 6 bytes
 
 // TODO rewrite SerialPacket to use 8 bits instead of 32 bits
 
+
+// @note This is assumed to be little endian architectures
 class SerialPacket
 {
 public:
@@ -64,16 +64,15 @@ public:
     // TODO important to have different data lengths for each type..
 
     SerialPacket(const unsigned int created_at = 0,
-        const unsigned int size = 0,
+        const unsigned int capacity = 8,
         const bool dynamic = true):
         created_at(created_at),
-        size(size),
+        capacity(capacity),
+        size(0),
         dynamic(dynamic),
-        bits_in_use(0),
         retries(0),
-        data(new unsigned char[size]())
+        data(new unsigned char[capacity]())
     {
-        InitializeToZero(0, this->size);
     }
 
     // Copy
@@ -97,15 +96,15 @@ public:
     {
         delete [] data;
         created_at = other.created_at;
+        capacity = other.capacity;
         size = other.size;
-        bits_in_use = other.bits_in_use;
         dynamic = other.dynamic;
         retries = other.retries;
 
-        data = new unsigned char[size];
+        data = new unsigned char[capacity];
 
         // Copy over the the data
-        for (unsigned int i = 0; i < size; i++)
+        for (unsigned int i = 0; i < capacity; i++)
             data[i] = other.data[i];
 
         return *this;
@@ -117,8 +116,8 @@ public:
         delete [] data;
 
         created_at = other.created_at;
+        capacity = other.capacity;
         size = other.size;
-        bits_in_use = other.bits_in_use;
         dynamic = other.dynamic;
         retries = other.retries;
 
@@ -127,46 +126,27 @@ public:
         return *this;
     }
 
-    // TODO only allow for integer bases
-    template<typename T, bool = std::is_arithmetic<T>::value>
-    T operator[](unsigned int idx)
+    unsigned char& operator[](unsigned int idx)
     {
-        // TODO
-        return static_cast<T>(GetData(idx, sizeof(T) * 4));
+        return data[idx];
     }
 
     template<typename T, bool = std::is_arithmetic<T>::value>
     inline void SetData(const T val,
         unsigned int& offset,
-        const unsigned int num_bytes)
+        const int num_bytes = -1)
     {
-        // Get the end of the offset + number of bytes are are adding
-        const unsigned int in_sz = sizeof(val);
-        const unsigned int end = in_sz + offset;
-        unsigned char* input = (unsigned char*)(void*)&val;
-
-        if (end > size)
-        {
-            // Resize
-            if (!dynamic) return;
-            SetSize(end);
-        }
-
-        unsigned int i_iter = 0;
-        while (offset < end && i_iter < in_sz)
-        {
-            data[offset++] = input[i_iter++];
-        }
+        offset += UpdateData(val, offset, num_bytes);
     }
 
 
-    template <typename T, typename K, bool = std::is_arithmetic<K>::value>
+    template <typename T, typename K, bool = std::is_integral<K>::value>
     typename std::enable_if<!std::is_lvalue_reference<K>::value, void>::type
         SetData(const T val,
-            unsigned int offset,
-            const unsigned int num_bytes)
+            K offset,
+            const int num_bytes)
     {
-        SetData(val, offset, num_bytes);
+        UpdateData(val, offset, num_bytes);
     }
 
     /**
@@ -181,27 +161,69 @@ public:
     {
         for (unsigned int i = 0; i < sz; ++i)
         {
-            SetData(val[i], offset, num_bytes);
+            offset += UpdateData(val[i], offset, num_bytes);
         }
     }
 
     template <typename T>
-    T GetData(unsigned int offset_bits, unsigned char bits) const
+    T GetData(const unsigned int offset, const int num_bytes) const
     {
+        size_t byte_width = sizeof(T);
+        if (num_bytes > 0)
+        {
+            byte_width = num_bytes;
+        }
 
+        T output = 0;
+        GetData(output, offset, num_bytes);
+
+        return output;
     }
 
-    void SetSize(unsigned int new_size)
+    template <typename T>
+    void GetData(T& output, const unsigned int offset, const int num_bytes) const
     {
-        if (new_size == 0)
-            new_size = 1;
+        output = 0;
+
+        size_t byte_width = sizeof(output);
+        if (num_bytes > 0)
+        {
+            byte_width = num_bytes;
+        }
+
+        unsigned char* output_ptr = (unsigned char*)(void*)&output;
+        unsigned char* data_ptr = data + offset;
+
+        for (unsigned int i = 0; i < byte_width && i < capacity; ++i)
+        {
+            *output_ptr = *data_ptr;
+            output_ptr++;
+            data_ptr++;
+        }
+    }
+
+    unsigned char* Buffer() const
+    {
+        unsigned char* buffer = new unsigned char[capacity];
+
+        for (int i = 0; i < capacity; ++i)
+        {
+            buffer[i] = data[i];
+        }
+        return buffer;
+    }
+
+    void SetCapacity(unsigned int new_capacity)
+    {
+        if (new_capacity == 0)
+            new_capacity = 1;
 
         // Make new data
-        unsigned char* new_data = new unsigned char[new_size] {};
+        unsigned char* new_data = new unsigned char[new_capacity] {};
 
         // Copy the data
         unsigned int iter = 0;
-        while (iter < new_size && iter < size)
+        while (iter < new_capacity && iter < capacity)
         {
             new_data[iter] = data[iter];
             iter++;
@@ -209,94 +231,22 @@ public:
 
         delete [] data;
         data = new_data;
-        size = new_size;
+        capacity = new_capacity;
     }
 
-    unsigned int GetSize() const
+    unsigned int Capacity() const
+    {
+        return capacity;
+    }
+
+    unsigned int NumBytes() const
     {
         return size;
     }
 
-    unsigned int SizeInBytes() const
+    unsigned int NumBits() const
     {
-        return size * 4;
-    }
-
-    unsigned int BitsUsed() const
-    {
-        return bits_in_use;
-    }
-
-    unsigned int BytesInUse() const
-    {
-        unsigned int bytes = bits_in_use / 8;
-
-        // ex 1 bit = 1 byte in use, 8 bits = 1 byte in use,
-        // and 9 bits = 2 bytes in use, 16 bits = 2 bytes in use etc.
-        unsigned int floating_bits = bits_in_use % 8;
-        if (floating_bits > 0)
-        {
-            bytes += 1;
-        }
-
-        return bytes;
-    }
-
-    // TODO use string
-    // TODO review
-    const char* ToBinaryString() const
-    {
-        if (this->size == 0)
-            return new char[1] { '\0' };
-
-        char* res = new char[(this->size * 32) + 1];
-        unsigned char* data_ptr = data;
-
-        unsigned int mask = 1 << 31;
-        for (unsigned int i = 0; i < (this->size * 32); ++i)
-        {
-            if (i % 32 == 0 && i != 0)
-            {
-                mask = 1 << 31;
-                data_ptr += 1;
-            }
-
-            res[i] = (*data_ptr & mask) ? '1' : '0';
-            mask = mask >> 1;
-        }
-
-        res[(this->size * 32) + 1] = '\0';
-
-        return res;
-    }
-
-    // TODO review
-    unsigned char* ToBytes() const
-    {
-        unsigned int sz = SizeInBytes();
-        unsigned char* bytes = new unsigned char[sz];
-
-        for (unsigned int i = 0; i < sz; ++i)
-        {
-            bytes[i] = static_cast<unsigned char>(GetData(i * 8, 8));
-        }
-
-        return bytes;
-    }
-
-    // TODO review
-    unsigned char* ToBytes(unsigned char start_byte) const
-    {
-        unsigned int sz = SizeInBytes();
-        unsigned char* bytes = new unsigned char[sz + 1];
-        bytes[0] = start_byte;
-
-        for (unsigned int i = 0; i < sz; ++i)
-        {
-            bytes[i + 1] = static_cast<unsigned char>(GetData(i * 8, 8));
-        }
-
-        return bytes;
+        return size * 8;
     }
 
     unsigned int GetCreatedAt() const
@@ -320,21 +270,61 @@ public:
     }
 
 protected:
-    void InitializeToZero(unsigned int start, unsigned int end)
+
+    template <typename T>
+    unsigned int inline UpdateData(const T val,
+        unsigned int offset,
+        const int num_bytes)
     {
-        if (start > end) return;
-        if (start > size) return;
-        if (end > size) return;
-        if (data == nullptr) return;
-        for (unsigned int i = 0; i < end; i++)
-            data[i] = 0;
+        unsigned int in_sz = sizeof(val);
+        if (num_bytes > 0)
+        {
+            in_sz = num_bytes;
+        }
+
+        if (offset + in_sz > capacity)
+        {
+            // Resize
+            if (!dynamic) return 0;
+            while (offset + in_sz > capacity)
+            {
+                // Double the size lazily
+                DoubleCapacity();
+            }
+        }
+
+        unsigned char* input_ptr = (unsigned char*)(void*)&val;
+        unsigned char* data_ptr = data + offset;
+        for (unsigned int i = 0; i < in_sz && i < capacity; ++i)
+        {
+            *data_ptr = *input_ptr;
+            data_ptr++;
+            input_ptr++;
+        }
+
+        // Only update the size if the offset bytes are greater than
+        // the current size. 3 Scenarios
+        // 1. You set a byte where: offset + 1 > size
+        // 2. You set a byte where: offset + 1 <= size and nothing happens
+        // 3. Append data where size + 1 > size
+        if (offset + num_bytes > size)
+        {
+            size = offset + num_bytes;
+        }
+
+        return in_sz;
+    }
+
+    void inline DoubleCapacity()
+    {
+        SetCapacity(capacity * 2);
     }
 
     // TODO rename created_at
     unsigned int created_at;
-    unsigned int size;
+    unsigned int capacity;
+    unsigned int size; // last byte used
     bool dynamic;
-    unsigned int bits_in_use;
     unsigned int retries;
     unsigned char* data;
 };

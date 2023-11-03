@@ -241,6 +241,10 @@ class stm32_flasher:
             raise Exception("Failed to erase, no reply received")
         elif (reply == self.NACK):
             raise Exception("Failed to erase")
+
+
+        # TODO verify erase but just check the first 256 bytes of each
+        # Sector
         print(f"Erase Verify: {BB}BEGIN{NW}")
 
         mem_bytes_sz = 256
@@ -402,8 +406,9 @@ class stm32_flasher:
 
         # Send the command to the mgmt chip that we want to program the UI chip
         uart_utils.SendUploadSelectionCommand(self.uart, "ui_upload")
-        time.sleep(0.5)
+        # time.sleep(0.5)
         self.SendSync(2)
+        time.sleep(0.5)
         # Sometimes a small delay is required otherwise it won't
         # continue on correctly
 
