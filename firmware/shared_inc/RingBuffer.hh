@@ -10,7 +10,7 @@ public:
         size(size),
         read_idx(0),
         write_idx(0),
-        available_bytes(0),
+        unread_values(0),
         buffer(nullptr)
     {
         // Don't allow a zero for buffer size
@@ -31,7 +31,7 @@ public:
         if (write_idx >= size)
             write_idx = 0;
 
-        available_bytes++;
+        unread_values++;
     }
 
     void Write(const T&& d_in)
@@ -41,12 +41,12 @@ public:
         if (write_idx >= size)
             write_idx = 0;
 
-        available_bytes++;
+        unread_values++;
     }
 
     T Read()
     {
-        if (available_bytes > 0) available_bytes--;
+        if (unread_values > 0) unread_values--;
         T d_out = buffer[read_idx++];
 
         if (read_idx >= size)
@@ -57,7 +57,7 @@ public:
 
     void Read(T& d_out, bool& is_end)
     {
-        if (available_bytes > 0) available_bytes--;
+        if (unread_values > 0) unread_values--;
         d_out = buffer[read_idx++];
 
         if (read_idx >= size)
@@ -68,12 +68,12 @@ public:
 
     size_t AvailableBytes() const
     {
-        return available_bytes;
+        return unread_values;
     }
 
     bool IsFull() const
     {
-        return size == available_bytes;
+        return size == unread_values;
     }
 
     T* Buffer()
@@ -101,7 +101,7 @@ public:
     {
         uint16_t delta_bytes = num_received - write_idx;
         write_idx += delta_bytes;
-        available_bytes += delta_bytes;
+        unread_values += delta_bytes;
 
         if (write_idx >= size)
         {
@@ -113,6 +113,6 @@ private:
     unsigned short size;
     unsigned short read_idx; // start
     unsigned short write_idx; // end
-    size_t available_bytes;
+    size_t unread_values;
     T* buffer;
 };
