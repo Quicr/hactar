@@ -1,31 +1,18 @@
 #include "Wifi.hh"
-#include "Logging.hh"
-#include "SerialLogger.hh"
 
 #include <mutex>
 #include <iostream>
 
-static const char* TAG = "[wifi]";
+#include "esp_log.h"
 
-namespace hactar_utils
-{
+static const char* TAG = "[Net Wifi]";
 
-static hactar_utils::LogManager* logger = nullptr;
-       
 Wifi* Wifi::instance;
-std::mutex Wifi::state_mutex;
+std::recursive_mutex Wifi::mux;
 
-Wifi::Wifi()
-{
-    logger = hactar_utils::LogManager::GetInstance();
-    logger->add_logger(new hactar_utils::ESP32SerialLogger());
-    state = State::NotInitialized;
-    wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
-}
-    
 Wifi* Wifi::GetInstance()
 {
-    std::lock_guard<std::mutex> lock(state_mutex);
+    std::lock_guard<std::recursive_mutex> lock(mux);
     if (instance == nullptr)
     {
         instance = new Wifi();
@@ -37,22 +24,25 @@ Wifi* Wifi::GetInstance()
 
 esp_err_t Wifi::Connect()
 {
-    
-    logger->info(TAG, "connect()\n");    
-    
-    // Disconnect has a lock guard
-    Disconnect();
-
-    std::lock_guard<std::mutex> connect_guard(state_mutex);
+    std::lock_guard<std::recursive_mutex> lock(mux);
+    logger->info(TAG, "connect()\n");
 
     // If the config has changed we should ensure that the config is updated
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
     esp_err_t status{ ESP_OK };
 
-    logger->info(TAG, "connect() state %d \n", state);    
-    
+    logger->info(TAG, "connect() state %d \n", state);
+
     switch (state)
     {
+        case State::Connecting:
+        case State::WaitingForIP:
+        case State::Connected:
+        {
+            // Disconnect and fall through
+            // status = Disconnect();
+            // ESP_ERROR_CHECK(status);
+            break;
+        }
         case State::ReadyToConnect:
         case State::Disconnected:
         {
@@ -62,14 +52,10 @@ esp_err_t Wifi::Connect()
             {
                 std::cout << "moving to connecting state " << std::endl;
                 state = State::Connecting;
-    
+
             }
             break;
         }
-        case State::Connecting:
-        case State::WaitingForIP:
-        case State::Connected:
-            break;
         case State::NotInitialized:
         case State::Initialized:
         case State::Error:
@@ -89,14 +75,14 @@ esp_err_t Wifi::Connect(const char* ssid, const char* password)
 
 esp_err_t Wifi::Deinitialize()
 {
-    std::lock_guard<std::mutex> mutex(state_mutex);
+    std::lock_guard<std::recursive_mutex> lock(mux);
     state = State::NotInitialized;
     return esp_wifi_deinit();
 }
 
 esp_err_t Wifi::Disconnect()
 {
-    std::lock_guard<std::mutex> mutex(state_mutex);
+    std::lock_guard<std::recursive_mutex> lock(mux);
 
     state = State::Disconnected;
     return esp_wifi_disconnect();
@@ -135,98 +121,84 @@ esp_err_t Wifi::ScanNetworks(Vector<String>* ssids)
 
 esp_err_t Wifi::Initialize()
 {
-    std::lock_guard<std::mutex> mutx_guard(state_mutex);
-    printf("Wifi::Initialize: State is %d", (int) state);
+    std::lock_guard<std::recursive_mutex> lock(mux);
+    ESP_LOGI(TAG, "begin initialization:");
 
-    if (state != State::NotInitialized) {
-        printf("Wifi::Initialize: WHATTTTTT");
+    if (state != State::NotInitialized)
+    {
+        ESP_LOGE(TAG, "Failed to initialized, not in state NotInitialized but in state: %d", (int)state);
         return ESP_ERR_INVALID_STATE;
     }
 
+    esp_err_t status = esp_event_loop_create_default();
+    ESP_ERROR_CHECK(status);
+
     // Init the nvs
-    esp_err_t status = nvs_flash_init();
+    ESP_LOGI(TAG, "Init the nvs");
+    status = nvs_flash_init();
     if (status == ESP_ERR_NVS_NO_FREE_PAGES || status == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
         ESP_ERROR_CHECK(nvs_flash_erase());
         status = nvs_flash_init();
+        ESP_ERROR_CHECK(status);
     }
 
+    ESP_LOGI(TAG, "Init netif");
     status = esp_netif_init();
-    status = esp_event_loop_create_default();
+    ESP_ERROR_CHECK(status);
 
-    if (status == ESP_OK)
+
+    if (!esp_netif_create_default_wifi_sta())
     {
-        if (!esp_netif_create_default_wifi_sta())
-        {
-            status = ESP_FAIL;
-        }
+        status = ESP_FAIL;
     }
-
-    if (status == ESP_OK)
-    {
-        status = esp_wifi_init(&wifi_init_cfg);
-        std::cout << "wifi::init:: esp_wifi_init done, status " << status << std::endl;
-
-    }
+    ESP_ERROR_CHECK(status);
 
 
-    if (status == ESP_OK)
-    {
-        status = esp_event_handler_instance_register(WIFI_EVENT,
-            ESP_EVENT_ANY_ID,
-            &EventHandler,
-            nullptr,
-            nullptr);
-    }
+    status = esp_wifi_init(&wifi_init_cfg);
+    ESP_ERROR_CHECK(status);
+    ESP_LOGI(TAG, "Init complete, status %d", (int)state);
 
-    if (status == ESP_OK)
-    {
-        status = esp_event_handler_instance_register(IP_EVENT,
-            IP_EVENT_STA_GOT_IP,
-            &EventHandler,
-            nullptr,
-            nullptr);
-    }
+    status = esp_event_handler_instance_register(WIFI_EVENT,
+        ESP_EVENT_ANY_ID,
+        &EventHandler,
+        nullptr,
+        nullptr);
+    ESP_ERROR_CHECK(status);
 
-    if (status == ESP_OK)
-    {
-        status = esp_wifi_set_mode(WIFI_MODE_STA);
-    }
+    status = esp_event_handler_instance_register(IP_EVENT,
+        IP_EVENT_STA_GOT_IP,
+        &EventHandler,
+        nullptr,
+        nullptr);
+    ESP_ERROR_CHECK(status);
 
-    if (status == ESP_OK)
-    {
-        wifi_cfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
-        wifi_cfg.sta.pmf_cfg.capable = true;
-        wifi_cfg.sta.pmf_cfg.required = false;
+    status = esp_wifi_set_mode(WIFI_MODE_STA);
+    ESP_ERROR_CHECK(status);
 
-        status = esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg);
-    }
+    wifi_cfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    wifi_cfg.sta.pmf_cfg.capable = true;
+    wifi_cfg.sta.pmf_cfg.required = false;
 
+    status = esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg);
+    ESP_ERROR_CHECK(status);
 
-    if (status == ESP_OK)
-    {
-        std::cout << "wifi::init:: doing esp_wifi_start now " << std::endl;
-        status = esp_wifi_start();
-    }
+    ESP_LOGI(TAG, "Start wifi");
+    status = esp_wifi_start();
+    ESP_ERROR_CHECK(status);
 
-    if (ESP_OK == status)
-    {
-        state = State::Initialized;
-    }
+    state = State::ReadyToConnect;
 
-    std::cout << "wifi::init:: final status " << status << std::endl;
-
+    ESP_LOGI(TAG, "Ready to connect");
     return status;
 }
 
 void Wifi::SetCredentials(const char* ssid, const char* password)
 {
-    std::string sssid = "ramanujan";
-    std::string spassword = "JaiGanesha!23";
-    memcpy(wifi_cfg.sta.ssid, sssid.c_str(), sssid.size());
-    memcpy(wifi_cfg.sta.password, spassword.c_str(), spassword.size()); 
-    state = State::ReadyToConnect;
-
+    // TODO error checking that returns an error if an ssid or password is too long
+    memcpy(wifi_cfg.sta.ssid, ssid, std::min(strlen(ssid), sizeof(wifi_cfg.sta.ssid)));
+    memcpy(wifi_cfg.sta.password, password, std::min(strlen(password), sizeof(wifi_cfg.sta.password)));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
 }
 
 Wifi::State Wifi::GetState() const
@@ -258,27 +230,28 @@ void Wifi::EventHandler(void* arg, esp_event_base_t event_base,
 
 inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
 {
-    //logger->info(TAG, "WifiEvents- event %d \n", event_id);    
-    
-    switch (event_id)
+    logger->info(TAG, "WifiEvents- event %d \n", event_id);
+    const wifi_event_t event_type{static_cast<wifi_event_t>(event_id)};
+
+    switch (event_type)
     {
         case WIFI_EVENT_STA_START:
         {
-            std::lock_guard<std::mutex> state_guard(state_mutex);
+            std::lock_guard<std::recursive_mutex> state_guard(mux);
             state = State::ReadyToConnect;
             std::cout << "Wifi Event - Ready to connect" << std::endl;
             break;
         }
         case WIFI_EVENT_STA_CONNECTED:
         {
-            std::lock_guard<std::mutex> state_guard(state_mutex);
+            std::lock_guard<std::recursive_mutex> state_guard(mux);
             state = State::WaitingForIP;
             std::cout << "Wifi Event - Waiting for IP" << std::endl;
             break;
         }
         case WIFI_EVENT_STA_DISCONNECTED:
         {
-            std::lock_guard<std::mutex> state_guard(state_mutex);
+            std::lock_guard<std::recursive_mutex> state_guard(mux);
             std::cout << "Wifi Event - Disconnected" << std::endl;
             state = State::Disconnected;
             break;
@@ -296,24 +269,22 @@ inline void Wifi::IpEvents(int32_t event_id)
     {
         case IP_EVENT_STA_GOT_IP:
         {
-            std::lock_guard<std::mutex> state_guard(state_mutex);
+            std::lock_guard<std::recursive_mutex> state_guard(mux);
             std::cout << "IP Event - Got IP" << std::endl;
             state = State::Connected;
             break;
         }
         case IP_EVENT_STA_LOST_IP:
         {
-            std::lock_guard<std::mutex> state_guard(state_mutex);
+            std::lock_guard<std::recursive_mutex> state_guard(mux);
             if (state != State::Disconnected)
             {
                 state = State::WaitingForIP;
             }
-            std::cout <<  "IP Event - Lost IP" << std::endl;
+            std::cout << "IP Event - Lost IP" << std::endl;
             break;
         }
         default:
             break;
     }
 }
-
-} // namespace hactar_utils
