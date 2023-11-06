@@ -217,7 +217,6 @@ void UserInterfaceManager::HandleIncomingPackets()
                     }
 
                     ssids[ssid_id] = std::move(str);
-                    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_RESET);
                 }
                 else if (Packet::Commands::WifiStatus == command_type)
                 {

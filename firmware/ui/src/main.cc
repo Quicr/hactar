@@ -167,15 +167,15 @@ int main(void)
     {
         ui_manager->Run();
 
-        rx_led.Timeout();
-        tx_led.Timeout();
+        // rx_led.Timeout();
+        // tx_led.Timeout();
 
         // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
-            blink = HAL_GetTick() + 1000;
-            // HAL_UART_Transmit(&huart1, test_message, 10, 1000);
-            HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
+            // blink = HAL_GetTick() + 1000;
+            // // HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+            // HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
         }
     }
 
@@ -419,7 +419,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
     if (huart->Instance == USART2)
     {
         net_serial_interface->RxEvent(size);
-        rx_led.Toggle();
+        // rx_led.Toggle();
     }
 }
 
@@ -428,7 +428,23 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     if (huart->Instance == USART2)
     {
         net_serial_interface->TxEvent();
-        tx_led.Toggle();
+        // tx_led.Toggle();
+    }
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
+{
+    uint16_t err;
+    if (huart->Instance == USART2)
+    {
+        net_serial_interface->Reset();
+        HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
+
+        // Read the err codes to clear them
+        err = huart->Instance->SR;
+
+        net_serial_interface->StartRx();
+
     }
 }
 
