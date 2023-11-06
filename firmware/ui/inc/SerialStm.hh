@@ -20,13 +20,15 @@ public:
     // un-inherited functions
     void RxEvent(uint16_t size);
     void TxEvent();
-private:
     void StartRx();
+    void Reset();
+private:
 
     UART_HandleTypeDef* uart;
 
     // rx
     RingBuffer<unsigned char> rx_ring;
+    bool rx_activated;
 
     // tx
     volatile bool tx_free;
