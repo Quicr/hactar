@@ -10,15 +10,13 @@
 
 #include <transport/transport.h>
 
-NetManager::NetManager(SerialManager* _ui_layer, 
-                        std::shared_ptr<net_wifi::Wifi> wifi_in,
+NetManager::NetManager(SerialManager* _ui_layer,
                         std::shared_ptr<QSession> qsession)
   : ui_layer(_ui_layer),
     inbound_objects(std::make_shared<AsyncQueue<QuicrObject>>()),
-    wifi(wifi_in),
     quicr_session(qsession)
 {
-    
+
     xTaskCreate(HandleSerial, "handle_serial_task", 4096, (void*)this, 13, NULL);
 
     //if (quicr_session != nullptr) {
@@ -27,7 +25,7 @@ NetManager::NetManager(SerialManager* _ui_layer,
             //auto cfg = create_config("QuicRMessageHandler", 1, 12 * 1024, 5);
             //auto esp_err = esp_pthread_set_cfg(&cfg);
             //if(esp_err != ESP_OK) {
-                
+
        // }
 
        // }
@@ -39,7 +37,7 @@ void NetManager::HandleSerial(void* param)
     // TODO add a mutex
     NetManager* _this = (NetManager*)param;
 
-    Vector<Packet*>* rx_packets = nullptr;
+    // Vector<Packet*>* rx_packets = nullptr;
     while (true)
     {
         // Delay at the start
@@ -49,14 +47,14 @@ void NetManager::HandleSerial(void* param)
 
         if (!_this->ui_layer->HasRxPackets()) continue;
 
-        rx_packets = &_this->ui_layer->GetRxPackets();
+        const Vector<Packet*>& rx_packets = _this->ui_layer->GetRxPackets();
         uint32_t timeout = (xTaskGetTickCount() / portTICK_PERIOD_MS) + 10000;
 
-        while (rx_packets->size() > 0 &&
+        while (rx_packets.size() > 0 &&
             xTaskGetTickCount() / portTICK_PERIOD_MS < timeout)
         {
             printf("NET: Message from ui chip - ");
-            Packet* rx_packet = (*rx_packets)[0];
+            Packet* rx_packet = rx_packets[0];
             uint8_t packet_type = rx_packet->GetData(0, 6);
             uint16_t data_len = rx_packet->GetData(14, 10);
             uint8_t data;
@@ -87,16 +85,14 @@ void NetManager::HandleSerial(void* param)
                   //handle_qchat_message(sub_message_type, rx_packet);
                   _this->HandleQChatMessages(sub_message_type, rx_packet, 22);
                 }
-                
+
             }
             else if (packet_type == Packet::Types::Command)
             {
                 _this->HandleSerialCommands(rx_packet);
             }
 
-            delete rx_packet;
-            rx_packet = nullptr;
-            rx_packets->erase(0);
+            _this->ui_layer->DestroyRxPacket(0);
         }
     }
 }
@@ -113,17 +109,17 @@ void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, si
       case qchat::MessageTypes::Watch: {
             qchat::WatchRoom watch;
             if (!qchat::Codec::decode(watch, rx_packet, offset)) {
-                printf("%s\r\n", "NetManager:QChatMessage:Watch Decode  Failed"); 
+                printf("%s\r\n", "NetManager:QChatMessage:Watch Decode  Failed");
                 return;
             }
 
             if (!quicr_session->subscribe(quicr_session->to_namespace(watch.room_uri))){
-                printf("%s\r\n", "NetManager:QChatMessage:Watch subscribe error "); 
+                printf("%s\r\n", "NetManager:QChatMessage:Watch subscribe error ");
                 return;
             }
 
             if (!quicr_session->publish_intent(quicr_session->to_namespace(watch.publisher_uri))){
-                printf("%s\r\n", "NetManager:QChatMessage:Watch publish_intent error "); 
+                printf("%s\r\n", "NetManager:QChatMessage:Watch publish_intent error ");
                 return;
             }
         }
@@ -133,18 +129,18 @@ void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, si
             qchat::Ascii ascii;
             bool result = qchat::Codec::ascii(ascii, rx_packet, offset);
             if (!qchat::Codec::ascii(ascii, rx_packet, offset);) {
-                printf("%s\r\n", "NetManager:QChatMessage: Decode Ascii Message Failed"); 
+                printf("%s\r\n", "NetManager:QChatMessage: Decode Ascii Message Failed");
                 return;
             }
 
-            quicr_session->publish(quicr_session->to_namespace(ascii.message_uri), 
+            quicr_session->publish(quicr_session->to_namespace(ascii.message_uri),
             qchat::Codec::string_to_bytes(acsii.message));
         }
 #endif
         break;
-    
+
     default:
-        printf("%s\r\n", "NetManager:QChatMessage: Unknown Message");        
+        printf("%s\r\n", "NetManager:QChatMessage: Unknown Message");
         break;
     }
 
@@ -168,10 +164,9 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
     printf("NET: Packet command received - %d\n\r", (int)command_type);
     if (command_type == Packet::Commands::SSIDs)
     {
-#if 0        
         // Get the ssids
         Vector<String> ssids;
-        esp_err_t res = wifi->ScanNetworks(&ssids);
+        esp_err_t res = Wifi::GetInstance()->ScanNetworks(&ssids);
 
         if (res != ESP_OK)
         {
@@ -220,11 +215,10 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
             }
             ui_layer->EnqueuePacket(packet);
         }
-#endif        
     }
     else if (command_type == Packet::Commands::ConnectToSSID)
     {
-#if 0        
+#if 0
         // Get the ssid value, followed by the ssid_password
         unsigned char ssid_len = rx_packet->GetData(32, 8);
         printf("NET SSID length - %d\n\r", ssid_len);
@@ -255,14 +249,14 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
         }
         ssid_password = "JaiGanesha!23";
         printf("NET: SSID Password - %s\n\r", ssid_password.c_str());
-        
+
         wifi->connect(ssid.c_str(), ssid_password.c_str());
-#endif        
+#endif
     }
     else if (command_type == Packet::Commands::WifiStatus)
     {
-
-        printf("NET: Connection status - %d\n\r", (int)wifi->get_state());
+        auto wifi = Wifi::GetInstance();
+        printf("NET: Connection status - %d\n\r", (int)wifi->GetState());
 
         // Create a packet that tells the current status
         Packet* connected_packet = new Packet();
@@ -270,7 +264,7 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
         connected_packet->SetData(1, 6, 8);
         connected_packet->SetData(2, 14, 10);
         connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
-        connected_packet->SetData(wifi->get_state() == net_wifi::Wifi::State::Connected, 32, 8);
+        connected_packet->SetData(wifi->GetState() == Wifi::State::Connected, 32, 8);
 
         ui_layer->EnqueuePacket(connected_packet);
     }
