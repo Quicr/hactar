@@ -7,14 +7,15 @@
 
 
 // Quicr based chat protocol
-namespace qchat {
+namespace qchat
+{
 
 //
 // Model
 //
 
 constexpr uint8_t uri_len_bits = 32U;
-constexpr uint8_t uri_len_bytes = uri_len_bits/8;
+constexpr uint8_t uri_len_bytes = uri_len_bits / 8;
 constexpr uint8_t msg_len_bits = 32U; // 2^32 -1
 
 struct Room;
@@ -23,18 +24,20 @@ struct Room;
 // one or more rooms (see Room)
 // Channels are where the policies are applied,
 // advertisement of room status are done.
-struct Channel {
-    bool is_default {false};
+struct Channel
+{
+    bool is_default{ false };
     std::string channel_uri; //quicr namespace as URI
     std::string channel_id_hex;  // quicr namespace for the channel
-    std::vector<Room> rooms {};
-     // TODO: a map may be more useful here
+    std::vector<Room> rooms{};
+    // TODO: a map may be more useful here
 };
 
 // Room represent the main handle for sending and receiving
 // user messages. Users are added to the rooms
-struct Room {
-    bool is_default {false};
+struct Room
+{
+    bool is_default{ false };
     std::string friendly_name;
     std::string room_uri; //quicr namespace as URI
     std::string publisher_uri;
@@ -46,26 +49,30 @@ struct Room {
 //
 
 // Message types 0 - 9 are for QChat Message Subtype
-enum struct MessageTypes: uint8_t {
+enum struct MessageTypes: uint8_t
+{
     Watch = 0,
     Unwatch,
     Ascii
 };
 
 // Watch messages from a given room
-struct WatchRoom {
-  std::string publisher_uri; // quicr namespacee matching the publisher
-  std::string room_uri; // matches quicr namespace for the room namespace
+struct WatchRoom
+{
+    std::string publisher_uri; // quicr namespacee matching the publisher
+    std::string room_uri; // matches quicr namespace for the room namespace
 };
 
 // Express no interest in receiving messages from a given room
-struct UnwatchRoom {
-  std::string room_uri;
+struct UnwatchRoom
+{
+    std::string room_uri;
 };
 
-struct Ascii  {
-  std::string message_uri; // matches quicr_name for the message sender
-  std::string message; // todo: make it vector of bytes
+struct Ascii
+{
+    std::string message_uri; // matches quicr_name for the message sender
+    std::string message; // todo: make it vector of bytes
 };
 
 
@@ -74,117 +81,122 @@ struct Ascii  {
 // Encode/Decode API
 //
 
-struct Codec {
-
-static  std::vector<uint8_t>
-string_to_bytes(const std::string& str)
+struct Codec
 {
-  return { str.begin(), str.end() };
-}
 
-static void
-encode(Packet* packet, const WatchRoom& msg)
-{
-    // [total_len][type][pub_uri_len][[pub_uri][room_uri_len][room_uri]
-    packet->AppendData(msg.publisher_uri.length() + msg.room_uri.length() + 1, 10);
-    // Set the message type, starts at bit 24
-    packet->AppendData(msg.publisher_uri.length(), uri_len_bits);
-    packet->AppendData((unsigned int) MessageTypes::Watch, 8);
-    for (size_t i = 0; i < msg.publisher_uri.length(); ++i)
+    static std::vector<uint8_t>
+        string_to_bytes(const std::string& str)
     {
-        packet->AppendData(msg.publisher_uri[i], 8);
+        return { str.begin(), str.end() };
     }
-
-    packet->AppendData(msg.room_uri.length(), uri_len_bits);
-    for (uint16_t i = 0; i < msg.room_uri.length(); ++i)
+    static void
+        encode(Packet* packet, const WatchRoom& msg)
     {
-        packet->AppendData(msg.room_uri[i], 8);
+        // [total_len][type][pub_uri_len][[pub_uri][room_uri_len][room_uri]
+        packet->AppendData(msg.publisher_uri.length() + msg.room_uri.length() + 1, 10);
+        // Set the message type, starts at bit 24
+        packet->AppendData(msg.publisher_uri.length(), uri_len_bits);
+        packet->AppendData((unsigned int)MessageTypes::Watch, 8);
+        for (size_t i = 0; i < msg.publisher_uri.length(); ++i)
+        {
+            packet->AppendData(msg.publisher_uri[i], 8);
+        }
+
+        packet->AppendData(msg.room_uri.length(), uri_len_bits);
+        for (uint16_t i = 0; i < msg.room_uri.length(); ++i)
+        {
+            packet->AppendData(msg.room_uri[i], 8);
+        }
     }
-}
 
-static void encode(Packet* packet,
-    const uint16_t start_offset,
-    const Ascii& msg)
-{
-    // [total_len][type][msg_uri_len][[msg_uri][msg_len][msg]
-
-    // +5 for the type byte and the 2 bytes of length
-    uint16_t extra_bytes = 1 + uri_len_bytes + uri_len_bytes;
-    packet->AppendData(msg.message_uri.length() + msg.message.length() + extra_bytes,
-        10);
-    packet->AppendData((unsigned int)MessageTypes::Ascii, 8);
-    packet->AppendData(msg.message_uri.length(), uri_len_bits);
-    for (size_t i = 0; i < msg.message_uri.length(); ++i)
+    static void encode(Packet* packet,
+        const uint16_t start_offset,
+        const Ascii& msg)
     {
-        packet->AppendData(msg.message_uri[i], 8);
+        // [total_len][type][msg_uri_len][[msg_uri][msg_len][msg]
+
+        // +9 for the type byte, 2 len bytes and the 8 bytes of length
+        uint16_t extra_bytes = 1 + uri_len_bytes + uri_len_bytes;
+        packet->AppendData(msg.message_uri.length()
+            + msg.message.length() + extra_bytes, 10);
+        packet->AppendData((unsigned int)MessageTypes::Ascii, 8);
+        packet->AppendData(msg.message_uri.length(), uri_len_bits);
+        for (size_t i = 0; i < msg.message_uri.length(); ++i)
+        {
+            packet->AppendData(msg.message_uri[i], 8);
+        }
+        packet->AppendData(msg.message.length(), msg_len_bits);
+        for (size_t i = 0; i < msg.message.length(); ++i)
+        {
+            packet->AppendData(msg.message[i], 8);
+        }
     }
-    packet->AppendData(msg.message.length(), msg_len_bits);
-    for (size_t i = 0; i < msg.message.length(); ++i)
+
+    static bool decode(WatchRoom& msg,
+        const Packet* encoded,
+        size_t& current_offset)
     {
-        packet->AppendData(msg.message[i], 8);
-    }
-}
+        if (encoded == nullptr)
+        {
+            return false;
+        }
+        // type is already determined elswhere
+        size_t offset = current_offset;
 
-static bool decode(WatchRoom& msg, const Packet* encoded, size_t& current_offset)
-{
-    if (encoded == nullptr) {
-      return false;
-    }
-    // type is already determined elswhere
-    size_t offset = current_offset;
+        // Get the publisher_uri len
+        size_t uri_len = encoded->GetData(offset, uri_len_bits);
+        offset += uri_len_bits;
+        for (size_t i = 0; i < uri_len; ++i)
+        {
+            msg.publisher_uri.push_back(static_cast<char>(
+                encoded->GetData(offset, 8)));
+            offset += 8;
+        }
 
-    // Get the publisher_uri len
-    size_t uri_len = encoded->GetData(offset, uri_len_bits);
-    offset += uri_len_bits;
-    for (size_t i = 0; i < uri_len; ++i)
+        // room_uri
+        uri_len = encoded->GetData(offset, uri_len_bits);
+        offset += uri_len_bits;
+        for (uint16_t i = 0; i < uri_len; ++i)
+        {
+            msg.room_uri.push_back(static_cast<char>(
+                encoded->GetData(offset, 8)));
+            offset += 8;
+        }
+
+        current_offset = offset;
+        return true;
+    }
+
+    static bool decode(Ascii& msg,
+        const Packet* encoded,
+        const size_t current_offset)
     {
-        msg.publisher_uri.push_back(static_cast<char>(
-            encoded->GetData(offset, 8)));
-        offset += 8;
+        // type
+        size_t offset = current_offset;
+
+        // message uri
+        size_t uri_len = encoded->GetData(offset, uri_len_bits);
+        offset += uri_len_bits;
+        for (uint16_t i = 0; i < uri_len; ++i)
+        {
+            msg.message_uri.push_back(static_cast<char>(
+                encoded->GetData(offset, 8)));
+            offset += 8;
+        }
+
+        // msg
+        size_t msg_len = encoded->GetData(offset, msg_len_bits);
+        offset += msg_len_bits;
+
+        for (uint16_t i = 0; i < msg_len; ++i)
+        {
+            msg.message.push_back(static_cast<char>(
+                encoded->GetData(offset, 8)));
+            offset += 8;
+        }
+
+        return true;
     }
-
-    // room_uri
-    uri_len = encoded->GetData(offset, uri_len_bits);
-    offset += uri_len_bits;
-    for (uint16_t i = 0; i < uri_len; ++i)
-    {
-        msg.room_uri.push_back(static_cast<char>(
-            encoded->GetData(offset, 8)));
-        offset += 8;
-    }
-
-    current_offset = offset;
-    return true;
-}
-
-static bool decode(Ascii& msg, const Packet* encoded, const size_t current_offset)
-{
-    // type
-    size_t offset = current_offset;
-
-    // message uri
-    size_t uri_len = encoded->GetData(offset, uri_len_bits);
-    offset += uri_len_bits;
-    for (uint16_t i = 0; i < uri_len; ++i)
-    {
-        msg.message_uri.push_back(static_cast<char>(
-            encoded->GetData(offset, 8)));
-        offset += 8;
-    }
-
-    // msg
-    size_t msg_len = encoded->GetData(offset, msg_len_bits);
-    offset += msg_len_bits;
-
-    for (uint16_t i = 0; i < msg_len; ++i)
-    {
-        msg.message.push_back(static_cast<char>(
-            encoded->GetData(offset, 8)));
-        offset += 8;
-    }
-
-    return true;
-}
 
 };
 

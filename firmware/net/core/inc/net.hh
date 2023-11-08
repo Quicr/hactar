@@ -25,6 +25,7 @@ static NetManager* manager = nullptr;
 static SerialEsp* ui_uart1 = nullptr;
 static SerialManager* ui_layer = nullptr;
 static std::shared_ptr<QSession> qsession = nullptr;
+static std::shared_ptr<AsyncQueue<QuicrObject>> inbound_queue;
 static Wifi* wifi = nullptr;
 
 static bool qsession_connected = false;

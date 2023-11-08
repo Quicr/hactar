@@ -21,6 +21,7 @@ struct AsyncQueue
     nonempty.notify_all();
   }
 
+  // Can we pass a pointer to save on cpu cycles of copy?
   T pop()
   {
     std::unique_lock<std::mutex> lock(mutex);

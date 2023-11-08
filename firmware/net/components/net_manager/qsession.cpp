@@ -17,49 +17,57 @@
 static const uint16_t default_ttl_ms = 1000;
 
 
-static esp_pthread_cfg_t create_config(const char *name, int core_id, int stack, int prio)
+static esp_pthread_cfg_t create_config(const char* name, int core_id, int stack, int prio)
 {
-    auto cfg = esp_pthread_get_default_config();
-    cfg.thread_name = name;
-    cfg.pin_to_core = core_id;
-    cfg.stack_size = stack;
-    cfg.prio = prio;
-    return cfg;
+  auto cfg = esp_pthread_get_default_config();
+  cfg.thread_name = name;
+  cfg.pin_to_core = core_id;
+  cfg.stack_size = stack;
+  cfg.prio = prio;
+  return cfg;
 }
 
 
-QSession::QSession(quicr::RelayInfo relay) {
+QSession::QSession(quicr::RelayInfo relay,
+  std::shared_ptr<AsyncQueue<QuicrObject>> app_queue) :
+  inbound_objects(app_queue)
+{
   logger = std::make_shared<cantina::Logger>("qsession_logger");
   add_uri_templates();
   logger->Log("Connecting to " + relay.hostname + ":" +
-              std::to_string(relay.port));
+    std::to_string(relay.port));
   qtransport::TransportConfig tcfg{ .tls_cert_filename = NULL,
                                     .tls_key_filename = NULL };
   client = std::make_unique<quicr::Client>(relay, tcfg, logger);
 
 }
 
-quicr::Namespace QSession::to_namespace(const std::string& ns_str) {
+quicr::Namespace QSession::to_namespace(const std::string& ns_str)
+{
   return url_encoder.EncodeUrl(ns_str);
 }
 
-void QSession::set_app_queue(std::shared_ptr<AsyncQueue<QuicrObject>> q) {
+void QSession::set_app_queue(std::shared_ptr<AsyncQueue<QuicrObject>> q)
+{
   inbound_objects = q;
 }
-  
 
-bool 
-QSession::connect() {
-   // Connect to the quicr relay
-  if (!client->connect()) {
+bool
+QSession::connect()
+{
+  // Connect to the quicr relay
+  if (!client->connect())
+  {
     return false;
   }
   return true;
 }
 
-bool 
-QSession::subscribe(quicr::Namespace ns) {
-  if (sub_delegates.count(ns)) {
+bool
+QSession::subscribe(quicr::Namespace ns)
+{
+  if (sub_delegates.count(ns))
+  {
     return true;
   }
 
@@ -72,15 +80,16 @@ QSession::subscribe(quicr::Namespace ns) {
   logger->Log("Subscribe to " + std::string(ns));
   quicr::bytes empty{};
   client->subscribe(delegate,
-                    ns,
-                    quicr::SubscribeIntent::immediate,
-                    "bogus_origin_url",
-                    false,
-                    "bogus_auth_token",
-                    std::move(empty));
+    ns,
+    quicr::SubscribeIntent::immediate,
+    "bogus_origin_url",
+    false,
+    "bogus_auth_token",
+    std::move(empty));
 
   const auto success = future.get();
-  if (success) {
+  if (success)
+  {
     sub_delegates.insert_or_assign(ns, delegate);
   }
 
@@ -101,13 +110,13 @@ QSession::publish_intent(quicr::Namespace ns)
   return future.get();
 }
 
-void QSession::unsubscribe(quicr::Namespace nspace){}
+void QSession::unsubscribe(quicr::Namespace nspace) {}
 
 void
-QSession::publish(const quicr::Name& name, quicr::bytes&& data)
+QSession::publish(const quicr::Name& name, quicr::bytes& data)
 {
-  logger->Log("Publish, name=" + std::string(name) +
-              " size=" + std::to_string(data.size()));
+  // logger->Log("Publish, name=" + std::string(name) +
+  //             " size=" + std::to_string(data.size()));
   client->publishNamedObject(name, 0, default_ttl_ms, false, std::move(data));
 }
 
@@ -117,16 +126,17 @@ QSession::publish(const quicr::Name& name, quicr::bytes&& data)
 // Private Implementation
 //
 
-void QSession::add_uri_templates() {
+void QSession::add_uri_templates()
+{
 
   // setup namespace encoder templates
   // TODO (this should come config file passed from ui to net chip during boot)
   // TODO harcoding for now
-  static std::set<std::string> url_templates {
+  static std::set<std::string> url_templates{
     "quicr://webex.cisco.com<pen=1>/version/<int8>/appId/<int8>/org/<int12>/channel/<int16>/room/<int16>/endpoint/<int16>",
     "quicr://webex.cisco.com<pen=1>/version/<int8>/appId/<int8>/org/<int12>/channel/<int16>/room/<int16>",
   };
-  
+
   for (const std::string& url_template : url_templates)
   {
     logger->Log("Add URL templates for " + url_template);

@@ -20,21 +20,22 @@
 class QSession {
 
 public:
-  QSession(quicr::RelayInfo relay_info);
+  QSession(quicr::RelayInfo relay_info,
+    std::shared_ptr<AsyncQueue<QuicrObject>> app_queue);
   ~QSession() = default;
   bool connect();
   // messaging.webex.com/v1/qchat/room/cafe/user/bret
   // messaging.webex.com/v1/qchat/room/cafe/user/suhas
   // messaging.webex.com/v1/qchat/room/cafe/user/fluffy
   bool publish_intent(quicr::Namespace ns);
-  
+
   //messaging.webex.com/v1/qchat/room/cafe/*
   bool subscribe(quicr::Namespace ns);
   void unsubscribe(quicr::Namespace ns);
-  
+
   //messaging.webex.com/v1/qchat/room/cafe/user/bret/messageId/1 "hi Guys"
   //messaging.webex.com/v1/qchat/room/cafe/user/bret/messageId/2 "how are you"
-  void publish(const quicr::Name& name, quicr::bytes&& data);
+  void publish(const quicr::Name& name, quicr::bytes& data);
 
   // helpers
   quicr::Namespace to_namespace(const std::string& namespace_str);

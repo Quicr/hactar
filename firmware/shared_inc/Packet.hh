@@ -54,13 +54,6 @@ public:
         WifiStatus
     };
 
-    enum MessageTypes
-    {
-        Ascii = 1,
-        Watch,
-        Unwatch
-    };
-
     // TODO important to have different data lengths for each type..
 
     Packet(const unsigned int created_at = 0,
