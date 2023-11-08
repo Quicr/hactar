@@ -146,19 +146,22 @@ void UserInterfaceManager::HandleIncomingPackets()
             {
                 HandleMessagePacket(rx_packet);
 
-                // HACK remove later
-                qchat::Ascii* ascii = ascii_messages[0];
+                if (ascii_messages.size() > 0)
+                {
+                    // HACK remove later
+                    qchat::Ascii* ascii = ascii_messages[0];
 
-                Message in_msg;
-                in_msg.Timestamp("00.00");
-                in_msg.Sender("Ascii");
+                    Message in_msg;
+                    in_msg.Timestamp("00.00");
+                    in_msg.Sender("Ascii");
 
-                in_msg.Body(ascii->message.c_str());
+                    in_msg.Body(ascii->message.c_str());
 
-                received_messages.push_back(in_msg);
+                    received_messages.push_back(in_msg);
 
-                delete ascii;
-                ascii_messages.erase(0);
+                    delete ascii;
+                    ascii_messages.erase(0);
+                }
 
                 // Write a message to the screen
                 // Message in_msg;
@@ -452,14 +455,36 @@ void UserInterfaceManager::HandleMessagePacket(
         // Make a new the ascii message pointer
         qchat::Ascii* ascii = new qchat::Ascii();
 
-        // Decode the packet
-        const bool res = qchat::Codec::decode(*ascii, packet, 32);
-
-        if (!res)
+        // message uri
+        size_t uri_len = packet->GetData(32, 32);
+        screen->DrawText(0, 100, String::int_to_string(uri_len), font5x8, C_WHITE, C_BLACK);
+        uint32_t offset = 64;
+        for (uint16_t i = 0; i < uri_len; ++i)
         {
-            // TODO some error state
-            return;
+            // ascii->message_uri.push_back(static_cast<char>(
+            //     packet->GetData(offset, 8)));
+            offset += 8;
         }
+
+        // ascii
+        size_t msg_len = packet->GetData(offset, 32);
+        offset += 32;
+
+        for (uint16_t i = 0; i < msg_len; ++i)
+        {
+            ascii->message.push_back(static_cast<char>(
+                packet->GetData(offset, 8)));
+            offset += 8;
+        }
+
+        // Decode the packet
+        // const bool res = qchat::Codec::decode(*ascii, packet, 32);
+
+        // if (!res)
+        // {
+        //     // TODO some error state
+        //     return;
+        // }
 
         // Do something with the ascii message
         ascii_messages.push_back(ascii);

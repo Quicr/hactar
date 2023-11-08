@@ -10,7 +10,8 @@ class NetManager
 {
 public:
     NetManager(SerialManager* _ui_layer,
-                std::shared_ptr<QSession> qsession);
+                std::shared_ptr<QSession> qsession,
+                std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects);
 
     static void HandleSerial(void* param);
     static void HandleNetwork(void* param);
@@ -23,6 +24,6 @@ private:
     SerialManager* ui_layer;
     std::optional<std::thread> handler_thread;
     static constexpr auto inbound_object_timeout = std::chrono::milliseconds(100);
+    std::shared_ptr<QSession> quicr_session;
     std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects;
-    std::shared_ptr<QSession> quicr_session = nullptr;
 };

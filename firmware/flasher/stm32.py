@@ -259,8 +259,7 @@ class stm32_flasher:
 
         for sector in sectors:
             memory_address = self.Sectors[sector].addr
-            end_of_sector = (self.Sectors[sector].addr +
-                             self.Sectors[sector].size)
+            end_of_sector = (self.Sectors[sector].addr + 1024)
             while (memory_address != end_of_sector):
                 read_count = 0
                 mem = [0] * mem_bytes_sz

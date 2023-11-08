@@ -14,8 +14,8 @@ static qchat::Room create_default_room(const std::string& user_name)
     return qchat::Room{
         .is_default = true,
         .friendly_name = "CAFE",
-        .room_uri = "quicr://origin/1/version/1/appId/1/org/1/channel/CB5/room/CAFE/",
-        .publisher_uri = "quicr://origin/1/version/1/appId/1/org/1/channel/CB5/room/CAFE/" + user_name + "/",
+        .room_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1/",
+        .publisher_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1" + user_name + "/",
     };
 }
 
