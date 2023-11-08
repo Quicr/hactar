@@ -43,22 +43,9 @@ void LoginView::AnimatedDraw()
     screen.DrawBlockAnimateString(1, screen.ViewHeight() - (usr_font.height * 4),
         msg, usr_font, fg, bg, speed);
 
-    // TODO make this better
-    char* username;
-    short len;
-    setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
-        &username, len);
-    String user;
-    for (short i = 0; i < len; i++)
-    {
-        user.push_back(username[i]);
-    }
-    delete username;
-    // ^^^ ugly chunk
-
     screen.DrawBlockAnimateString(
         1 + usr_font.width * msg.length(), screen.ViewHeight() - (usr_font.height * 4),
-        user, usr_font, fg, bg, speed);
+        manager.GetUsername(), usr_font, fg, bg, speed);
 
     msg = "Enter your passcode";
     screen.DrawBlockAnimateString(1, screen.ViewHeight() - (usr_font.height * 2),

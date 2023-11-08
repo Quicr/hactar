@@ -10,24 +10,37 @@ Hardware design for test device
     2. [User Interface](#ui)
     3. [Network](#network)
     4. [Security](#security_layer)
-    5. [Echo Server](#echo_server)
-4. [Installation - STM32 Toolchain](#stm_installation)
-5. [Installation - ESP32 Toolchain](#esp_installation)
+4. [Tools](#tools)
+    1. [Echo Server](#echo_server)
+    2. [Python Serial Monitor](#serial_monitor)
+5. [STM32 Toolchain](#stm_installation)
+6. [ESP32 Toolchain](#esp_installation)
+7. [Hactar Installation](#hactar_installation)
+    1. [EV1](#ev1) - WIP
+    2. [EV2](#ev2) - WIP
+    3. [EV3](#ev3) - WIP
+    4. [EV4](#ev4) - WIP
+    5. [EV5](#ev5) - WIP
+    6. [EV6](#ev6) - WIP
+    7. [EV7](#ev7) - WIP
+    8. [EV8](#ev8) - Current
 
 <h2 id="where">Where To Find Things</h2>
 
-- datasheets has all the datasheets for parts us
+- datasheets - all the datasheets for parts used
 
-- docs has documents about this project
+- docs - documents about this project
 
-- hardware has the schematics and PCB designs
+- firmware - the code for testing and supporting the hardware
 
-- productions has files used for manufacturing that are generated from the
+- hardware - the schematics and PCB designs
+
+- models - Contains 3D models for project
+
+- photos - image from the project as it progresses
+
+- productions - files used for manufacturing that are generated from the
 stuff in hardware
-
-- photos has image from the project as it progresses
-
-- firmware has the code for testing and supporting the hardware
 
 <h2 id="hardware">Hardware</h2>
 
@@ -40,12 +53,25 @@ stuff in hardware
 The Firmware is split into 4 categories. Management, User Interface, Security, and Network.
 - Management - STM32F072
 - User Interface - STM32F405
-- Security - STM32F405?
 - Network - ESP32S3
 
 <h3 id="management"><b>Management</b></h3>
 
-WIP
+The management chip is responsible for uploading firmware to the stm32 - main chip and the esp32 network chip using a ch340 usb chip.
+
+The management chip receives commands from the usb communication that informs it what chip we are currently uploading.
+
+<h4 id="management_commands">Commands</h4>
+
+- **reset** - Resets `ui` chip and then `net` chip. Accepts commands.
+- **ui_upload** - Puts the management chip into `ui` chip upload mode. (STM32f05)
+- **net_upload** - Puts the management chip into `net` chip upload mode. (ESP32S3)
+- **debug** - Puts the management chip into debugging mode where serial messages from both `ui` and network chips are transmitted back to the usb interface. This is uni-directional from the management chip to the computer. However, all commands work during this mode. In the future sending messages to the `ui` and `net` chip will be supported
+- **debug_ui** (future feature) - Only reads serial messages from the `ui` chip.
+- **debug_net** (future feature) - Only reads serial messages from the `net` chip.
+- **debug_ui_only** (future feature) - Puts the `ui` chip into normal mode, holds the `net` chip in reset mode, and allows for serial communication to the `ui` chip.
+- **debug_net_only** (future feature) - Puts the `net` chip into normal mode, holds the `ui` chip in reset mode, and allows for serial communication to the `net` chip.
+
 
 <h3 id="ui"><b>User Interface</b></h3>
 
@@ -57,9 +83,15 @@ The User Interface chip is where most of the processing takes place. It utilizes
 
 - `compile` - Builds the target bin, elf, and binary. Output firmware/build/ui
 
-- `upload` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
+- `upload` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI with serial usb-c uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
+
+- `upload_swd` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI with swd uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
 
 - `program` - Runs the compile target, then the upload target.
+
+- `monitor` - Opens a serial communication line with the management chip in debug mode using screen.
+
+- `py_monitor` - Opens a serial communication line with the management chip with a python script that allows for sending of commands.
 
 - `openocd` - Opens a openocd debugging instance. See [Installation](#stm_installation) for instructions on installing openocd.
 
@@ -83,39 +115,51 @@ Additionally, any new Assembly source files need to be added to the ASM sources 
 
 The network chip is responsible for all communications between servers and the entire board. The network chip communicates with the UI chip via UART serial communication.
 
-You must run the `make install_board` prior to trying to run `compile`, `upload`, or `program` targets.
+We are leveraging the **esp-idf** framework.
 
 <b>Target Overview</b>
 
 - `all` - Runs the `compile` and `upload` targets.
 
-- `copy` - Copies the shared includes from `firmware/shared_inc` to `firmware/net/shared_inc` to appease Arduino's rigid source file locations rules.
+- `compile` - Compiles the net code using the command `idf.py compile`
 
-- `compile` - Executes the `copy` target and then builds the Arduino target ino file with `Arduino-cli`. Output: `firmware/build/net`
-
-- `upload` - Uploads the Arduino target to the Network chip using the Arduino-cli. See [installation](#esp_installation) for instructions on installing the `Arduino-cli`.
+- `upload` - Uploads the net code by first sending a command to the mgmt chip to put the board into **net upload** mode. Then uses `esptool.py upload`
 
 - `program` - Runs the compile target, then the upload target.
 
-- `monitor` - Opens a serial monitor using `Arduino-cli`
+- `monitor` - Opens a serial communication line with the management chip in debug mode using screen.
 
-- `install_board` - Updates the arduino core index specified by the arduino-cli.yaml file and installs the specified Arduino-core files for the given core.
+- `py_monitor` - Opens a serial communication line with the management chip with a python script that allows for sending of commands.
 
-- `clean` - Deletes the firmware/build/net directory.
+- `clean` - Deletes the firmware/net/build directory.
 
 <b>Source code</b>
 
 All source code for the network chip can be found in `firmware/net` and `firmware/shared_inc`.
 
-<b>Important Note</b> -- Do not add any additional files to `firmware/net/shared_inc` this is an important distinction, as those files are copied from `firmware/shared_inc` as to adhere to Arduino's rigid source file locations.
-
-Adding a C/C++ file to firmware/net/inc and firmware/net/src does not require any additional changes to the `firmware/net/Makefile`. Similarly, any files added to `firmware/shared_inc` will be copied when the `copy` target is executed in the `firmware/net/makefile`.
-
 <h3 id="security"><b>Security</b></h3>
 
 WIP
 
+
+<h2 id="tools">Tools</h2>
+
 <h3 id="echo_server"><b>Echo Server</b></h3>
+    Very basic server that echo's the message it receives.
+
+<h3 id="serial_monitor"><b>Python Serial Monitor</b></h3>
+
+Located in firmware/tools
+
+Requirements
+- py_serial - ```pip install py_serial```
+
+This monitor can be used by the following command:
+`python monitor.py \[port] \[baudrate]`
+
+ex.
+
+`python monitor.py /dev/ttyUSB0 115200`
 
 <h2 id="stm_installation">Installation - STM32 Toolchain</h2>
 
@@ -195,6 +239,23 @@ https://www.st.com/en/development-tools/stm32cubeprog.html
     export PATH="$PATH:/path/to/stm_cube_programmer/bin"
     ```
 
+- NOTE - If you are getting an error saying that libusb needs permission to write usb, then you'll need to do an additional step.
+    - Navigate to
+        ```bash
+        /path/to/stm_cube_programmer/Drivers/rules
+        ```
+    - Edit 49-stlinkv2.rules
+        - Add the following to the bottom of the file
+            ```
+            SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", SYSFS{idVendor}=="3748", \
+                MODE="0666", \
+                GROUP="plugdev"
+            ```
+    - Copy all of the rules to /etc/udev/rules.d/
+        - `cp /path/to/stm_cube_programmer/Drivers/rules/*.* /etc/udev/rules.d/`
+    - Unplug then plug in your device and STMCubeProgrammerCLI should work.
+
+
 <i>Windows</i>
 
 - Open the start search, and type `env`. Select `"Edit the system environment variables"`
@@ -229,6 +290,13 @@ Run the following command:
 sudo apt install openocd gdb-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
 ```
 
+If you don't have python3.8 installed, which is used for arm-none-eabi-gdb, then you'll need to install it
+```bash
+sudo add-apt-repository ppa:deadsnakes/ppa
+apt update
+sudo apt install python3.8
+```
+
 <i>Windows</i>
 
 - Download the appropriate zip for your system https://openocd.org/pages/getting-openocd.html
@@ -261,7 +329,7 @@ This project leverages the usage of the Arduino Library for the network chip.
 
 The following tools are used for the Network.
 - [Make](net_make) \[required]
-- [Arduino CLI](arduino_cli) \[required]
+- [esp-idf](esp_idf) \[required]
 
 <b id="net_make">Make \[required]</b>
 
@@ -296,23 +364,110 @@ sudo apt install make
 brew install make
 ```
 
-<b id="arduino_cli">Arduino CLI \[required]</b>
+<b id="esp_idf">esp-idf \[required]</b>
 
 <i>Debian</i>
-```bash
-curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/local/bin sh
-```
 
-<b>Note</b> - You can change the installation directory by changing the `BINDIR`
+- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html
 
 <i>Windows</i>
 
-- Download and install the arduino-cli from https://arduino.github.io/arduino-cli/0.31/installation/
+- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html
 
 
 <i>MacOS</i>
 
-```brew
-brew update
-brew install arduino-cli
-```
+- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html
+
+
+<h2 id="hactar_installation">Hactar Installation</h2>
+
+<h3 id="EV1">EV1</h2>
+
+WIP
+
+<h3 id="EV2">EV2</h2>
+
+WIP
+
+<h3 id="EV3">EV3</h2>
+
+WIP
+
+<h3 id="EV4">EV4</h2>
+
+WIP
+
+<h3 id="EV5">EV5</h2>
+
+WIP
+
+<h3 id="EV6">EV6</h2>
+
+WIP
+
+<h3 id="EV7">EV7</h2>
+
+WIP
+
+<h3 id="EV8">EV8 - Current</h2>
+
+<i>Management Chip</i>
+
+- Prerequisites
+    - Stlink-v2
+    - STM32 Cube Programmer CLI
+    - arm-none-eabi-g++
+    - make
+- Hook up the stlink-v2 to the connector beside the usb-c connector.
+    - Note, you will probably want to make a connector that has female dupoint headers on one end and a PH 2.0 connector on the other end.
+- Build the mgmt code by navigating to `hactar/firmware/mgmt` and entering `make compile`
+- Upload the mgmt code by entering `make upload`
+- After this you should see a couple of LED's light up
+
+<i>Userinterface Chip</i>
+
+- Prerequisites
+    - A programmed `management chip`
+    - USB-C Cable
+    - STM32 Cube Programmer CLI
+    - arm-none-eabi-g++
+    - make
+- Plug in the USB-C cable to the Hactar board.
+- Build the ui code by navigating to the `hactar/firmware/ui` folder and entering `make compile`
+- Upload the ui code by entering `make upload`
+    - **NOTE** - Update your the `port` variable, based on your OS and usb input, in the `hactar/firmware/ui/makefile`
+    - Once the process begins, a python script is called to send the command `ui_upload` to the management chip, turns off other LED's and turns on the third LED from the left, and puts the ui chip into bootloader mode.
+    - Then the stm32 cube programmer cli is called to upload the firmware.
+- After finishing uploading the firmware to the ui chip, it will return to running mode after 5 seconds.
+
+<i>Network Chip</i>
+
+- Prerequisites
+    - A programmed `management chip`
+    - USB-C Cable
+    - esp-idf - must be on your path
+    - make
+- Plug in the USB-C cable to the Hactar board.
+- Build the net code by navigating to the `hactar/firmware/net` folder and entering `make compile`
+- Upload the net code by entering `make upload`
+    - **NOTE** - Update your the `port` variable, based on your OS and usb input, in the `hactar/firmware/net/makefile`
+    - Once the process begins, a python script is called to send the command `net_upload` to the management chip, turns off other LED's and turns on the first LED from the left, and puts the net chip into bootloader mode.
+    - Then the stm32 cube programmer cli is called to upload the firmware.
+- After finishing uploading the firmware to the net chip, the management chip will return to running mode.
+
+<i>Debug mode example</i>
+
+- Prerequisites
+    - Python3
+        - **pyserial** - download using `pip3 install pyserial`
+    - make
+    - USB-C Cable
+- Have your hactar board programmed and plugged in using a USB-C cable
+- Navigate to either `hactar/firmware/ui` or `hactar/firmware/net`
+    - **NOTE** - Update your ports appropriately in the makefile
+- Enter `make py_monitor` into your terminal
+- You should see a serial monitor open in your terminal requesting a command. Enter `debug` to put the hactar board into debugging mode.
+    - See [Management Commands](#management_commands) for more commands that can be sent to the hactar board.
+- The first and third LED from the left will turn blue indicating debug mode and your console will receive serial debug messages from the UI and Net chips.
+- Enter `exit` to leave the monitor

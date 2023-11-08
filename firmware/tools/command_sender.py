@@ -2,7 +2,7 @@ import serial
 import time
 import sys
 
-if (len(sys.argv) < 3):
+if (len(sys.argv) < 4):
     print("Error. Need port followed by command")
     exit()
 
@@ -19,10 +19,9 @@ uart = serial.Serial(
 )
 
 send_data = [ch for ch in bytes(command, "UTF-8")]
-send_data.append(0)
 
 print(f"Port: {port}, Baud: {baud}, Command: {command}" )
 uart.write(bytes(send_data))
 uart.close()
 
-time.sleep(2)
+time.sleep(1)

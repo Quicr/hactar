@@ -20,16 +20,16 @@ TARGET = mgmt
 # building variables
 ######################################
 # debug build?
-DEBUG = 1
+DEBUG = 0
 # optimization
-OPT = -O0
+OPT = -Os
 
 #######################################
 # programming
 #######################################
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
-CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.elf ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
 
 ifeq (${PROGRAMMER}, CUBE)
 	ifeq (${OS}, WINDOWS_NT)
@@ -51,7 +51,7 @@ BUILD_DIR = ./build
 ######################################
 # C sources
 C_SOURCES =  \
-Core/Src/main.c \
+Core/Src/mgmt.c \
 Core/Src/stm32f0xx_it.c \
 Core/Src/stm32f0xx_hal_msp.c \
 Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc.c \

@@ -13,7 +13,8 @@
 ######################################
 # target
 ######################################
-TARGET = firmware
+TARGET = ui
+FIRMWARE = ${TARGET}.bin
 
 ######################################
 # building variables
@@ -21,7 +22,7 @@ TARGET = firmware
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Og
+OPT = -O0
 # OPT = -O3
 
 #######################################
@@ -29,11 +30,9 @@ OPT = -Og
 #######################################
 # Build path
 BUILD_DIR = ./build
-OBJ_DIR = ${BUILD_DIR}/obj
-BIN_DIR = ${BUILD_DIR}/bin
-DEP_DIR = ${BUILD_DIR}/dep
-
-DIRS = ${OBJ_DIR} ${BIN_DIR} ${DEP_DIR}
+# BUILD_DIR = ${BUILD_DIR}/obj
+# BUILD_DIR = ${BUILD_DIR}/bin
+# BUILD_DIR = ${BUILD_DIR}/dep
 
 #######################################
 # programming
@@ -42,8 +41,8 @@ WRITE_START = 0x08000000
 PROGRAMMER = CUBE
 PORT = /dev/ttyUSB0
 BAUD = 115200
-# CUBE_PROGRAMMER_ARGS = -c port=swd freq=2400 mode=hotplug ap=0 speed=Reliable -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
-CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BIN_DIR}/${TARGET}.bin ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
 
 
 ######################################
@@ -207,25 +206,25 @@ LDSCRIPT = STM32F405RGTx_FLASH.ld
 # libraries
 LIBS = -lc -lm -lnosys -lrdimon
 LIBDIR =
-LDFLAGS = $(MCU) --specs=rdimon.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LDFLAGS = $(MCU) --specs=rdimon.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/${TARGET}.map,--cref -Wl,--gc-sections
 
 #######################################
 # build the application
 #######################################
 # list of objects
-OBJECTS_C = $(addprefix $(OBJ_DIR)/,$(SRCS_C:.c=.o))
+OBJECTS_C = $(addprefix $(BUILD_DIR)/,$(SRCS_C:.c=.o))
 # vpath %.c $(sort $(dir $(SRCS_C)))
-OBJECTS_CC = $(addprefix $(OBJ_DIR)/,$(SRCS_CC:.cc=.o))
+OBJECTS_CC = $(addprefix $(BUILD_DIR)/,$(SRCS_CC:.cc=.o))
 # vpath %.cc $(sort $(dir $(SRCS_CC)))
 # list of ASM program objects
-OBJECTS_S = $(addprefix $(OBJ_DIR)/,$(ASM_SOURCES:.s=.o))
+OBJECTS_S = $(addprefix $(BUILD_DIR)/,$(ASM_SOURCES:.s=.o))
 # vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
 OBJECTS = ${OBJECTS_C} ${OBJECTS_CC} ${OBJECTS_S}
 
 # Deps
-DEPS_C     = $(addprefix ${DEP_DIR}/,$(SRCS_C:.c=.d))
-DEPS_CC    = $(addprefix ${DEP_DIR}/,$(SRCS_CC:.cc=.d))
+DEPS_C     = $(addprefix ${BUILD_DIR}/,$(SRCS_C:.c=.d))
+DEPS_CC    = $(addprefix ${BUILD_DIR}/,$(SRCS_CC:.cc=.d))
 DEPS       = ${DEPS_C} ${DEPS_CC}
 
 .PHONY: all
@@ -236,57 +235,66 @@ all: info program
 -include $(DEPS)
 
 # So I can silence the warning from the HAL lib
-${OBJ_DIR}/stm32f4%.o : stm32f4%.c | ${DIRS}
+${BUILD_DIR}/stm32f4%.o : stm32f4%.c | ${BUILD_DIR}
 	@echo "[C]			$(notdir $<)"
-	@$(CC) $(HAL_CFLAGS) -c -o $@ $< -MMD -MF ${DEP_DIR}/$(*F).d
+	@$(CC) $(HAL_CFLAGS) -c -o $@ $< -MMD -MF ${BUILD_DIR}/$(*F).d
 
-${OBJ_DIR}/%.o : %.c | ${DIRS}
+${BUILD_DIR}/%.o : %.c | ${BUILD_DIR}
 	@echo "[C]			$(notdir $<)"
-	@$(CC) $(CFLAGS) -c -o $@ $< -MMD -MF ${DEP_DIR}/$(*F).d
+	@$(CC) $(CFLAGS) -c -o $@ $< -MMD -MF ${BUILD_DIR}/$(*F).d
 
-${OBJ_DIR}/%.o : %.cc | ${DIRS}
+${BUILD_DIR}/%.o : %.cc | ${BUILD_DIR}
 	@echo "[CC]			$(notdir $<)"
-	@$(CC) $(CFLAGS) -c -o $@ $< -MMD -MF ${DEP_DIR}/$(*F).d
+	@$(CC) $(CFLAGS) -c -o $@ $< -MMD -MF ${BUILD_DIR}/$(*F).d
 
-$(OBJ_DIR)/%.o: %.s Makefile | $(DIRS)
+$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
 	@echo "[S]			$(notdir $<)"
 	@$(AS) -c $(CFLAGS) $< -o $@
 
-$(BIN_DIR)/$(TARGET).elf: ${OBJECTS} | ${DIRS}
-	@echo "[LD]			$(TARGET).elf"
+$(BUILD_DIR)/${TARGET}.elf: ${OBJECTS} | ${BUILD_DIR}
+	@echo "[LD]			${TARGET}.elf"
 	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-	@$(DP) -St $@ >$(BIN_DIR)/$(TARGET).lst
+	@$(DP) -St $@ >$(BUILD_DIR)/${TARGET}.lst
 	$(SZ) $@
 
-$(BIN_DIR)/%.hex: $(BIN_DIR)/%.elf | $(DIRS)
-	@echo "[LD]			$(TARGET).hex"
+$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	@echo "[LD]			${TARGET}.hex"
 	@$(HEX) $< $@
 	$(SZ) $@
 
-$(BIN_DIR)/%.bin: $(BIN_DIR)/%.elf | $(DIRS)
-	@echo "[LD]			$(TARGET).bin"
+$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	@echo "[LD]			${TARGET}.bin"
 	@$(BIN) $< $@
 	@echo "*******SUCCESS*******"
 
-compile: $(BIN_DIR)/$(TARGET).bin $(BIN_DIR)/$(TARGET).hex
+compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
 
 upload:
+	python ../flasher/flasher.py --baud=${BAUD} --chip="ui" \
+								 --ui_binary_path=${BUILD_DIR}/${FIRMWARE}
+
+upload_prog:
 	python ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
 	fi \
 
+upload_swd:
+	if [ ${PROGRAMMER} = CUBE ] ; then \
+		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS_SWD} ; \
+	fi \
+
 program: compile upload
 
 info:
-	@echo "[Build path]		${DIRS}"
+	@echo "[Build path]		${BUILD_DIR}"
 	@echo "[Includes] 		${INCS}"
 	@echo "[Objects] 		${OBJECTS}"
 	@echo "[Dependencies]	${DEPS}"
 	@echo "[vpath] 			${VPATH}"
 
-dirs: ${DIRS}
-${DIRS}:
+dirs: ${BUILD_DIR}
+${BUILD_DIR}:
 	@echo "[MKDIR]		$@"
 	@mkdir -p $@
 
@@ -296,6 +304,9 @@ openocd:
 monitor:
 	python ../tools/command_sender.py ${PORT} ${BAUD} debug
 	screen ${PORT} ${BAUD}
+
+py_monitor:
+	python ../tools/monitor.py ${PORT} ${BAUD}
 
 #######################################
 # clean up

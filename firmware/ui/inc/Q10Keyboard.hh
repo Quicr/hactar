@@ -65,6 +65,7 @@ public:
     bool Read(String &buffer);
     bool Read(char* buffer, size_t &buffer_ptr, const size_t buffer_max_size);
     String& GetKeys();
+    String GetKeysCopy();
 
     static const unsigned char lshift_flag_b = 0b00000001;
     static const unsigned char rshift_flag_b = 0b00000010;

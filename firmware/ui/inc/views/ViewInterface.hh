@@ -15,10 +15,10 @@ class UserInterfaceManager;
 class ViewInterface
 {
 public:
-    ViewInterface(UserInterfaceManager &manager,
-             Screen &screen,
-             Q10Keyboard &keyboard,
-             SettingManager& setting_manager):
+    ViewInterface(UserInterfaceManager& manager,
+        Screen& screen,
+        Q10Keyboard& keyboard,
+        SettingManager& setting_manager) :
         manager(manager),
         screen(screen),
         keyboard(keyboard),
@@ -55,7 +55,7 @@ public:
     {
         AnimatedDraw();
         Draw();
-        BaseUpdate(); // TODO somehow need to return here so change views doesn't crash
+        BaseUpdate();
     }
 
     void Clear()
@@ -66,7 +66,8 @@ public:
     }
 protected:
     // Cursor types and const expr
-    typedef struct {
+    typedef struct
+    {
         uint16_t x = 0;
         uint16_t y = 0;
     } cursor_position_t;
@@ -85,13 +86,10 @@ protected:
         if (command_handler->ChangeViewCommand(new_view)) return true;
         // Clear the new_view string if it is not a view it should be blank
         new_view.clear();
-
         return false;
     }
 
-     // TODO put most of input base code here
-     // Need to think of a different way of changing views. Probably should be
-     // In update or something
+    // TODO put most of input base code here
     void InputUpdate()
     {
         GetInput();
@@ -148,33 +146,33 @@ protected:
         {
             // Set the next timeout
             cursor_animate_timeout = HAL_GetTick() +
-                                     Cursor_Animate_Duration;
+                Cursor_Animate_Duration;
 
             if (cursor_fill)
             {
                 // Draw a filled in rectangle
                 screen.FillRectangle(cursor_pos.x,
-                                     cursor_pos.y,
-                                     cursor_pos.x + usr_font.width,
-                                     cursor_pos.y + usr_font.height,
-                                     fg);
+                    cursor_pos.y,
+                    cursor_pos.x + usr_font.width,
+                    cursor_pos.y + usr_font.height,
+                    fg);
             }
             else
             {
                 // Clear the cursor
                 screen.FillRectangle(cursor_pos.x,
-                                     cursor_pos.y,
-                                     cursor_pos.x + usr_font.width,
-                                     cursor_pos.y + usr_font.height,
-                                     bg);
+                    cursor_pos.y,
+                    cursor_pos.x + usr_font.width,
+                    cursor_pos.y + usr_font.height,
+                    bg);
 
                 // Draw a hollow rectangle
                 screen.DrawRectangle(cursor_pos.x,
-                                     cursor_pos.y,
-                                     cursor_pos.x + usr_font.width,
-                                     cursor_pos.y + usr_font.height,
-                                     Cursor_Hollow_Thickness,
-                                     fg);
+                    cursor_pos.y,
+                    cursor_pos.x + usr_font.width,
+                    cursor_pos.y + usr_font.height,
+                    Cursor_Hollow_Thickness,
+                    fg);
             }
 
             // Swap the cursor fill flag
@@ -192,10 +190,10 @@ protected:
             uint32_t clear_width = backspace_count * usr_font.width;
             cursor_pos.x -= clear_width;
             screen.FillRectangle(cursor_pos.x,
-                                cursor_pos.y,
-                                cursor_pos.x + clear_width + usr_font.width,
-                                cursor_pos.y + usr_font.height,
-                                bg);
+                cursor_pos.y,
+                cursor_pos.x + clear_width + usr_font.width,
+                cursor_pos.y + usr_font.height,
+                bg);
             backspace_count = 0;
             last_drawn_idx = usr_input.length();
             redraw_cursor = true;
@@ -203,7 +201,7 @@ protected:
         }
     }
 
-    void DrawInputString(const String &str)
+    void DrawInputString(const String& str)
     {
         last_drawn_idx = usr_input.length();
         screen.DrawText(cursor_pos.x, cursor_pos.y, str,
@@ -218,15 +216,15 @@ protected:
     void GetInput()
     {
         // Get input
-        // redraw_input = keyboard.Read(usr_input);
+        redraw_input = keyboard.Read(usr_input);
 
-        // // If the back button is pressed anda there is characters in the buffer
-        // if (keyboard.BackPressed() && usr_input.length())
-        // {
-        //     usr_input.pop_back();
-        //     redraw_cursor = true;
-        //     backspace_count += 1;
-        // }
+        // If the back button is pressed anda there is characters in the buffer
+        if (keyboard.BackPressed() && usr_input.length())
+        {
+            usr_input.pop_back();
+            redraw_cursor = true;
+            backspace_count += 1;
+        }
     }
 
     void ClearInput()
@@ -269,9 +267,9 @@ protected:
         cursor_pos.y = y;
     }
 
-    UserInterfaceManager &manager;
-    Screen &screen;
-    Q10Keyboard &keyboard;
+    UserInterfaceManager& manager;
+    Screen& screen;
+    Q10Keyboard& keyboard;
     SettingManager& setting_manager;
     CommandHandler* command_handler;
 
@@ -305,9 +303,9 @@ protected:
     uint32_t general_refresh_timeout;
 
     // TODO EEPROM setting
-    Font &menu_font = font11x16;
+    Font& menu_font = font11x16;
     // TODO EEPROM setting
-    Font &usr_font = font7x12;
+    Font& usr_font = font7x12;
     // TODO EERPOM setting
     uint16_t fg = C_WHITE;
     // TODO EEPROM setting

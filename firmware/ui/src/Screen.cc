@@ -2,6 +2,7 @@
 #include "Helper.h"
 #include "Screen.hh"
 #include "RingBuffer.hh"
+#include "main.hh"
 
 #define DELAY HAL_MAX_DELAY
 
@@ -20,12 +21,21 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     view_height(0),
     view_width(0),
     chunk_buffer({ 0 }),
-    spi_busy(0)
+    spi_busy(0),
+    draw_async(0),
+    draw_async_stop(0),
+    buffer_overwritten_by_sync(0),
+    drawing_func_read(0),
+    drawing_func_write(0),
+    async_draw_ready(0),
+    draw_matrix(32),
+    Drawing_Func_Ring(new void* [32])
 {
 }
 
 Screen::~Screen()
 {
+    delete [] Drawing_Func_Ring;
 }
 
 void Screen::Begin()
@@ -173,13 +183,13 @@ void Screen::Begin()
     Deselect();
 }
 
-void Screen::Select()
+inline void Screen::Select()
 {
     // Set pin LOW for selection
     HAL_GPIO_WritePin(cs.port, cs.pin, GPIO_PIN_RESET);
 }
 
-void Screen::Deselect()
+inline void Screen::Deselect()
 {
     // Set the pin to HIGH to deselect
     HAL_GPIO_WritePin(cs.port, cs.pin, GPIO_PIN_SET);
@@ -231,18 +241,11 @@ void Screen::WriteData(uint8_t data)
 void Screen::WriteDataDMA(uint8_t* data, const uint32_t data_size)
 {
     spi_busy = 1;
+    buffer_overwritten_by_sync = 1;
     HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
 
     // Wait for the SPI IT call complete to invoked
-    uint32_t next_blink = 0;
-    while (spi_busy)
-    {
-        if (HAL_GetTick() > next_blink)
-        {
-            next_blink += 500;
-        }
-        __NOP();
-    }
+    WaitUntilSPIFree();
 }
 
 
@@ -413,9 +416,11 @@ void Screen::DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour
 
     SetWritablePixels(x, y, x, y);
 
+    uint8_t data[2] = { static_cast<uint8_t>(colour>>8),
+                        static_cast<uint8_t>(colour)};
+
     // Draw pixel
-    WriteDataDMA(new uint8_t[2]{ static_cast<uint8_t>(colour >> 8),
-                                 static_cast<uint8_t>(colour) }, 2);
+    WriteDataDMA(data, 2);
 
     Deselect();
 }
@@ -625,6 +630,8 @@ void Screen::DrawText(const uint16_t x, const uint16_t y, const String& str,
     const uint32_t height = font.height;
     const uint32_t lines = 1 + ((font.width * str.length()) / (view_width - x));
 
+    // TODO move to using the chunk buffer instead of creating an array
+    // during runtime.
     // Get the chunk size
     const uint32_t chunk = std::min<uint32_t>(width * height, max_chunk_size);
     uint32_t data_idx = 0;
@@ -892,6 +899,8 @@ void Screen::FillRectangle(const uint16_t x_start,
     if (max_chunk_size > Screen::Max_Chunk_Size)
         max_chunk_size = Screen::Max_Chunk_Size;
 
+    WaitUntilSPIFree();
+
     Select();
     SetWritablePixels(x_start, y_start, x_end - 1, y_end - 1);
     HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
@@ -902,7 +911,6 @@ void Screen::FillRectangle(const uint16_t x_start,
     uint32_t total_pixels = y_pixels * x_pixels;
 
     uint32_t chunk = std::min<uint32_t>(total_pixels, 128);
-    // uint8_t* data = new uint8_t[chunk * 2];
 
     // Copy colour to data
     for (uint32_t i = 0; i < chunk * 2; i += 2)
@@ -933,9 +941,16 @@ void Screen::FillTriangle(const uint16_t x1, const uint16_t y1,
     FillPolygon(3, points, colour);
 }
 
-void Screen::FillScreen(const uint16_t colour)
+void Screen::FillScreen(const uint16_t colour, bool async)
 {
-    FillRectangle(0, 0, view_width, view_height, colour);
+    if (async)
+    {
+        FillRectangleAsync(0, 0, view_width, view_height, colour);
+    }
+    else
+    {
+        FillRectangle(0, 0, view_width, view_height, colour);
+    }
 }
 
 void Screen::SetOrientation(Orientation _orientation)
@@ -973,6 +988,35 @@ void Screen::SetOrientation(Orientation _orientation)
 void Screen::ReleaseSPI()
 {
     spi_busy = 0;
+
+    if (draw_async)
+    {
+        draw_async = 0;
+        async_draw_ready = 1;
+        Deselect();
+    }
+
+    if (draw_async_stop)
+    {
+        // Give time for the ili9341 to finish drawing
+        draw_matrix.Swap();
+        draw_async_stop = 0;
+        if (++drawing_func_read >= 8)
+        {
+            drawing_func_read = 0;
+        }
+
+        if (Drawing_Func_Ring[drawing_func_read] != nullptr)
+        {
+            async_draw_ready = 1;
+        }
+        else
+        {
+            draw_async = 0;
+            async_draw_ready = 0;
+            Deselect();
+        }
+    }
 }
 
 uint16_t Screen::GetStringWidth(const uint16_t str_len, const Font& font) const
@@ -1106,4 +1150,161 @@ uint16_t Screen::ViewWidth() const
 uint16_t Screen::ViewHeight() const
 {
     return view_height;
+}
+
+
+void Screen::FillRectangleAsync(const uint16_t x_start,
+    const uint16_t y_start,
+    uint16_t x_end,
+    uint16_t y_end,
+    const uint16_t colour)
+{
+    // Clip to the size of the screen
+    if (x_start >= view_width || y_start >= view_height) return;
+
+    if (x_end >= view_width) x_end = view_width;
+    if (y_end >= view_height) y_end = view_height;
+
+    uint32_t num_pixels = (x_end - x_start) * (y_end - y_start);
+
+    draw_matrix.Allocate(19);
+
+    draw_matrix.Push(colour);
+    draw_matrix.Push(x_start);
+    draw_matrix.Push(y_start);
+    draw_matrix.Push(x_end);
+    draw_matrix.Push(y_end);
+    draw_matrix.Push(x_start);
+    draw_matrix.Push(y_start);
+    draw_matrix.Push(num_pixels);
+    draw_matrix.Push((uint8_t)0); // initialized = 0;
+
+    PushDrawingFunction((void*)&FillRectangleAsyncProcedure);
+    draw_async = 1;
+    async_draw_ready = 1;
+}
+
+void Screen::PushDrawingFunction(void* func)
+{
+    Drawing_Func_Ring[drawing_func_write++] = func;
+
+    if (drawing_func_write >= 8)
+    {
+        drawing_func_write = 0;
+    }
+}
+
+void Screen::UpdateDrawingFunction(void* func)
+{
+    Drawing_Func_Ring[drawing_func_read] = func;
+}
+
+inline void Screen::DrawNext()
+{
+    if (Drawing_Func_Ring[drawing_func_read] != nullptr)
+        ((void(*)(Screen*))Drawing_Func_Ring[drawing_func_read])(this);
+}
+
+void Screen::WriteDataDMAFree(uint8_t* data, const uint32_t data_size)
+{
+    HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
+}
+
+void Screen::FillRectangleAsyncProcedure(Screen* screen)
+{
+    screen->draw_async = 1;
+    uint16_t x_end = screen->draw_matrix.Read<uint16_t>(6);
+    uint16_t y_end = screen->draw_matrix.Read<uint16_t>(8);
+
+    if (!screen->draw_matrix.Read<uint8_t>(18) ||
+        screen->buffer_overwritten_by_sync)
+    {
+        screen->buffer_overwritten_by_sync = 0;
+        // uint16_t colour = *(uint16_t*)screen->PopVariable(0, 2);
+        uint16_t colour = screen->draw_matrix.Read<uint16_t>(0);
+
+        uint16_t x_start = screen->draw_matrix.Read<uint16_t>(2);
+        uint16_t y_start = screen->draw_matrix.Read<uint16_t>(4);
+
+        // Filled rectangles always use the same colour, so we can
+        // just fill the buffer now and reuse it.
+        uint32_t total_pixel_bytes = (((x_end - x_start) * (y_end - y_start)) * 2);
+
+        if (total_pixel_bytes > Chunk_Buffer_Size * 2)
+            total_pixel_bytes = Chunk_Buffer_Size * 2;
+
+        // This is big enough for a 64x64 rectangle
+        for (uint32_t i = 0; i < total_pixel_bytes; i += 2)
+        {
+            screen->chunk_buffer[i] = static_cast<uint8_t>(colour >> 8);
+            screen->chunk_buffer[i + 1] = static_cast<uint8_t>(colour);
+        }
+
+        screen->draw_matrix.Write<uint8_t>((uint8_t)1, 18);
+    }
+
+    uint16_t x_current = screen->draw_matrix.Read<uint16_t>(10);
+    uint16_t y_current = screen->draw_matrix.Read<uint16_t>(12);
+
+    const uint16_t Pixel_Distance = 32;
+    uint16_t x_width = x_current + Pixel_Distance;
+    if (x_width > x_end)
+        x_width = x_end;
+
+    uint16_t y_height = y_current + Pixel_Distance;
+    if (y_height > y_end)
+        y_height = y_end;
+
+    screen->Select();
+    screen->SetWritablePixels(x_current, y_current, x_width - 1, y_height - 1);
+
+    uint32_t remaining_pixels = screen->draw_matrix.Read<uint32_t>(14);
+
+    uint32_t num_pixels = (x_width - x_current) * (y_height - y_current);
+    if (num_pixels > remaining_pixels)
+        num_pixels = remaining_pixels;
+
+    remaining_pixels -= num_pixels;
+    if (remaining_pixels == 0)
+    {
+        screen->draw_async_stop = 1;
+    }
+    screen->WriteDataDMAFree(screen->chunk_buffer, num_pixels * 2);
+
+    x_current += x_width - x_current;
+    if (x_current >= x_end)
+    {
+        // Get the start x
+        x_current = screen->draw_matrix.Read<uint16_t>(2);
+        y_current += y_height - y_current;
+
+        if (y_current >= y_end)
+        {
+            // Get the start y
+            y_current = screen->draw_matrix.Read<uint16_t>(4);
+        }
+        screen->draw_matrix.Write(y_current, 12);
+    }
+
+    screen->draw_matrix.Write(x_current, 10);
+    screen->draw_matrix.Write(remaining_pixels, 14);
+}
+
+void Screen::Loop()
+{
+    if (async_draw_ready && !spi_busy)
+    {
+        spi_busy = 1;
+        async_draw_ready = 0;
+
+        DrawNext();
+    }
+}
+
+inline void Screen::WaitUntilSPIFree()
+{
+    while (spi_busy)
+    {
+        __NOP();
+    }
 }

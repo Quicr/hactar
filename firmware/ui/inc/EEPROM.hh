@@ -49,7 +49,7 @@ public:
     uint16_t Write(T data, const int32_t sz=1)
     {
         const uint16_t addr = next_address;
-        const size_t data_size = sizeof(data) * sz;
+        const size_t data_size = sizeof(T) * sz;
         uint8_t* to_write = (uint8_t*)(void*)&data;
 
         // If the write failed return a -1 address
@@ -64,8 +64,17 @@ public:
     template<typename T>
     HAL_StatusTypeDef Write(const int32_t address, T& data, const int32_t sz=1)
     {
-        const size_t data_size = sizeof(data) * sz;
+        const size_t data_size = sizeof(T) * sz;
         uint8_t* to_write = (uint8_t*)(void*)&data;
+
+        return PerformWrite(to_write, address, data_size);
+    }
+
+    template<typename T>
+    HAL_StatusTypeDef Write(const int32_t address, T* data, const int32_t sz=1)
+    {
+        const size_t data_size = sizeof(T) * sz;
+        uint8_t* to_write = (uint8_t*)(void*)&*data;
 
         return PerformWrite(to_write, address, data_size);
     }

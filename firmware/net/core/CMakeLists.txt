@@ -1,3 +1,5 @@
-idf_component_register(SRCS "net.cc"
-                    INCLUDE_DIRS .
-                    REQUIRES driver serial_esp net_manager)
+set(SOURCE ./src/net.cc ./src/Subscriptions.cc)
+
+idf_component_register(SRCS ${SOURCE}
+    INCLUDE_DIRS inc
+    REQUIRES driver serial_esp net_manager logging quicr wifi)

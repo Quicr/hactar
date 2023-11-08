@@ -4,6 +4,7 @@
 #include "String.hh"
 #include "Packet.hh"
 #include "Message.hh"
+#include "QChat.hh"
 
 #define Margin_0 0
 
@@ -14,6 +15,7 @@
 
 #define Text_Draw_Speed 20
 
+
 class ChatView : public ViewInterface
 {
 public:
@@ -22,6 +24,9 @@ public:
              Q10Keyboard& keyboard,
              SettingManager& setting_manager);
     ~ChatView();
+
+    void SetActiveRoom(const struct Room &room);
+
 protected:
     void AnimatedDraw();
     void Draw();
@@ -46,4 +51,8 @@ private:
         uint16_t name_colour = C_BLUE;
         uint16_t body_colour = C_WHITE;
     } settings;
+
+    // qchat room being displayed by this chat view
+    qchat::Room active_room {};
+    uint64_t msg_id {0};
 };

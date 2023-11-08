@@ -4,6 +4,7 @@
 #include "PortPin.hh"
 #include "Font.hh"
 #include "String.hh"
+#include "RingMatrix.hh"
 
 #define SF_RST 0x01 // Software reset
 #define PWRC_A 0xCB // Power control A
@@ -88,15 +89,17 @@ public:
     //https://www.waveshare.com/w/upload/e/e3/ILI9341_DS.pdf
 
     void Begin();
-    void Select();
-    void Deselect();
+    inline void Select();
+    inline void Deselect();
     void Reset();
+    void Loop();
 
     // TODO move these to private?
     void WriteCommand(uint8_t command);
     void WriteData(uint8_t* data, uint32_t data_size);
     void WriteData(uint8_t data);
     void WriteDataDMA(uint8_t* data, const uint32_t data_size);
+    void WriteDataDMAFree(uint8_t* data, const uint32_t data_size);
     void SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_end,
                            uint16_t y_end);
     void SetOrientation(Orientation _orientation);
@@ -172,7 +175,14 @@ public:
                        uint16_t y_end,
                        const uint16_t colour,
                        uint32_t max_chunk_size=Max_Chunk_Size);
-    void FillScreen(const uint16_t colour);
+
+    void FillRectangleAsync(const uint16_t x_start,
+                            const uint16_t y_start,
+                            uint16_t x_end,
+                            uint16_t y_end,
+                            const uint16_t colour);
+
+    void FillScreen(const uint16_t colour, bool async=false);
 
     void FillTriangle(const uint16_t x1, const uint16_t y1,
                       const uint16_t x2, const uint16_t y2,
@@ -197,12 +207,23 @@ public:
     uint16_t GetStringCenter(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringCenterMargin(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringLeftDistanceFromRightEdge(const uint16_t str_len, const Font& font) const;
+
+    inline void DrawNext();
 private:
+    void PushDrawingFunction(void* func);
+    void UpdateDrawingFunction(void* func);
+    void PopDrawingFunction();
+
+    static void FillRectangleAsyncProcedure(Screen* screen);
+
+
     static constexpr uint32_t Max_Chunk_Size = 16384U;
-    static constexpr uint32_t Chunk_Buffer_Size = 256UL;
+    static constexpr uint32_t Chunk_Buffer_Size = 1024UL;
 
     void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
               uint16_t &y_end);
+
+    inline void WaitUntilSPIFree();
 
     // Variables
     SPI_HandleTypeDef *spi_handle = nullptr;
@@ -214,5 +235,13 @@ private:
     uint16_t view_height;
     uint16_t view_width;
     uint8_t chunk_buffer[Chunk_Buffer_Size * 2]; // TODO use this more
-    volatile uint8_t spi_busy = 0;
+    volatile bool spi_busy;
+    volatile bool draw_async;
+    volatile bool draw_async_stop;
+    bool buffer_overwritten_by_sync;
+    uint32_t drawing_func_read;
+    uint32_t drawing_func_write;
+    bool async_draw_ready;
+    RingMatrix draw_matrix;
+    void** Drawing_Func_Ring;
 };

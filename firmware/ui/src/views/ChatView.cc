@@ -1,20 +1,58 @@
+
 #include "ChatView.hh"
 #include "UserInterfaceManager.hh"
 #include "TeamView.hh"
 #include "SettingsView.hh"
+#include "QChat.hh"
+#include <string>
+
+// Model Helpers (to be moved to a better place)
+// TODO: This must come from config and deleted
+// from here.
+static qchat::Room create_default_room(const std::string& user_name)
+{
+    return qchat::Room{
+        .is_default = true,
+        .friendly_name = "CAFE",
+        .room_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1/",
+        .publisher_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1" + user_name + "/",
+    };
+}
+
 
 ChatView::ChatView(UserInterfaceManager& manager,
-                   Screen& screen,
-                   Q10Keyboard& keyboard,
-                   SettingManager& setting_manager) :
+    Screen& screen,
+    Q10Keyboard& keyboard,
+    SettingManager& setting_manager):
     ViewInterface(manager, screen, keyboard, setting_manager)
 {
-    // messages = new Vector<String>();
-    // for (int i = 0; i < 15; i++)
-    // {
-    //     Message msg("00:00", "George", "Hello1 hello2 hello3 hello4"); //hello5 hello6 hello7 hello8 hello9 hello10 hello11 hello12 hello13 hello14 hello15");
-    //     messages.push_back(msg);
-    // }
+    // TODO: This is added as a placeholder and should be removed from
+    // the constructor and set via the api for active_room.
+    // Each chat-view represent UX state for a given QChat Room
+    std::string user_name{ manager.GetUsername().c_str() };
+    active_room = create_default_room(user_name);
+
+    // Set watch on the room
+    qchat::WatchRoom watch = qchat::WatchRoom{
+        .publisher_uri = active_room.publisher_uri,
+        .room_uri = active_room.room_uri,
+    };
+
+    Packet* packet = new Packet(HAL_GetTick(), 1);
+    packet->SetData(Packet::Types::Message, 0, 6);
+    packet->SetData(manager.NextPacketId(), 6, 8);
+
+    qchat::Codec::encode(packet, watch);
+    uint64_t new_offset = packet->BitsUsed();
+
+    // Expiry time
+    packet->SetData(0xFFFFFFFF, new_offset, 32);
+    new_offset += 32;
+
+    // Creation time
+    packet->SetData(0, new_offset, 32);
+    // new_offset += 32;
+    manager.EnqueuePacket(packet);
 }
 
 ChatView::~ChatView()
@@ -91,40 +129,49 @@ void ChatView::HandleInput()
     }
     else
     {
-        Message msg;
+        // prepare ascii message, encode into Message + Packet
+        qchat::Ascii ascii = qchat::Ascii{
+          .message_uri = active_room.publisher_uri + "msg/" + std::to_string(msg_id),
+          .message = {usr_input.c_str()},
+        };
 
+        Message msg;
         // TODO get from a RTC
         msg.Timestamp("00:00");
-
         // TODO get from EEPROM
-        msg.Sender("Brett");
-        msg.Body(usr_input);
+        msg.Sender(manager.GetUsername());
 
-        messages.push_back(msg);
 
+        // TODO move into encode...
+        // TODO packet should maybe have a static next_packet_id?
         Packet* packet = new Packet(HAL_GetTick(), 1);
-
-        // Set the type
         packet->SetData(Packet::Types::Message, 0, 6);
-
-        // Set the id
         packet->SetData(manager.NextPacketId(), 6, 8);
 
-        // Set the data length
-        packet->SetData(msg.Length(), 14, 10);
+        // The packet length is set in the encode function
+        // TODO encode probably could just generate a packet instead...
+        qchat::Codec::encode(packet, 14, ascii);
 
-        // Append the data
-        // TODO update the packet arr to take unsigned char and signed char
-        packet->SetDataArray(reinterpret_cast<const unsigned char*>(
-            msg.Concatenate().c_str()), msg.Length(), 24);
+        uint64_t new_offset = packet->BitsUsed();
+        // Expiry time
+        packet->SetData(0xFFFFFFFF, new_offset, 32);
+        new_offset += 32;
+        // Creation time
+        packet->SetData(0, new_offset, 32);
+        new_offset += 32;
 
+        // TODO ENABLE
         manager.EnqueuePacket(packet);
+
+        // TODO facelift
+        // Add message and the usr_input to the messages
+        msg.Body(usr_input);
+        messages.push_back(msg);
 
         redraw_messages = true;
 
+        msg_id++;
 
-        // Send message to sec layer
-        // TODO
     }
 }
 
@@ -189,7 +236,7 @@ void ChatView::DrawMessages()
         {
             // Calculate the amount of space based on the number of characters
             // used
-            next_used_x_space = x_pos + (messages[msg_idx-1].Length() +
+            next_used_x_space = x_pos + (messages[msg_idx - 1].Length() +
                 name_seperator.length()) * usr_font.width;
 
             if (next_used_x_space > screen.ViewWidth())
