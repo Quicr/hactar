@@ -18,6 +18,7 @@ public:
     const String& Sender() const;
     const String& Body() const;
     unsigned int Length();
+
 private:
     void Parse(const char* c_str);
     void CalculateLength();

@@ -6,6 +6,7 @@ SerialStm::SerialStm(UART_HandleTypeDef* uart_handler,
                      unsigned short rx_ring_sz) :
     uart(uart_handler),
     rx_ring(rx_ring_sz),
+    rx_activated(false),
     tx_free(true)
 {
     StartRx();
@@ -51,8 +52,24 @@ void SerialStm::RxEvent(uint16_t num_received)
 
 void SerialStm::StartRx()
 {
+    // If rx is already running do nothing
+    if (rx_activated)
+        return;
+
+    rx_activated = true;
     // Begin the receive IT
     HAL_UARTEx_ReceiveToIdle_DMA(uart, rx_ring.Buffer(), rx_ring.Size());
+}
+
+void SerialStm::Reset()
+{
+    // If rx is not running do nothing
+    if (!rx_activated)
+        return;
+
+    rx_activated = false;
+
+    HAL_UART_AbortReceive_IT(uart);
 }
 
 void SerialStm::TxEvent()

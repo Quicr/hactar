@@ -6,6 +6,7 @@
 #include "TeamView.hh"
 
 #include "SettingManager.hh"
+#include "QChat.hh"
 
 #include "main.hh"
 
@@ -14,7 +15,7 @@
 UserInterfaceManager::UserInterfaceManager(Screen& screen,
     Q10Keyboard& keyboard,
     SerialInterface& net_interface,
-    EEPROM& eeprom) :
+    EEPROM& eeprom):
     screen(&screen),
     keyboard(&keyboard),
     net_layer(&net_interface),
@@ -26,13 +27,19 @@ UserInterfaceManager::UserInterfaceManager(Screen& screen,
     ssids(),
     last_wifi_check(10000),
     is_connected_to_wifi(false),
-    attempt_to_connect_timeout(0)
+    attempt_to_connect_timeout(0),
+    username("")
 {
     if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
         == FIRST_BOOT_DONE)
+    {
+        LoadSettings();
         ChangeView<LoginView>();
+    }
     else
+    {
         ChangeView<FirstBootView>();
+    }
 }
 
 UserInterfaceManager::~UserInterfaceManager()
@@ -87,6 +94,11 @@ void UserInterfaceManager::EnqueuePacket(Packet* packet)
     net_layer.EnqueuePacket(packet);
 }
 
+void UserInterfaceManager::LoopbackPacket(Packet* packet)
+{
+    net_layer.LoopbackRxPacket(packet);
+}
+
 void UserInterfaceManager::ForceRedraw()
 {
     force_redraw = true;
@@ -104,12 +116,22 @@ uint8_t UserInterfaceManager::NextPacketId()
     return net_layer.NextPacketId();
 }
 
+const String& UserInterfaceManager::GetUsername()
+{
+    if (username == "")
+    {
+        LoadUsername();
+    }
+
+    return username;
+}
+
 void UserInterfaceManager::HandleIncomingPackets()
 {
     if (!net_layer.HasRxPackets()) return;
 
     // Get the packets
-    Vector<Packet*>& packets = net_layer.GetRxPackets();
+    const Vector<Packet*>& packets = net_layer.GetRxPackets();
 
     // Handle incoming packets
     while (packets.size() > 0)
@@ -122,23 +144,42 @@ void UserInterfaceManager::HandleIncomingPackets()
             // P_type will only be message or debug by this point
             case (Packet::Types::Message):
             {
-                // Write a message to the screen
-                Message in_msg;
-                // TODO The message should be parsed some how here.
-                in_msg.Timestamp("00:00");
-                in_msg.Sender("Server");
+                HandleMessagePacket(rx_packet);
 
-                String body;
-
-                // Skip the type and length, add the whole message
-                uint16_t packet_len = rx_packet->GetData(14, 10);
-                for (uint32_t j = 0; j < packet_len; ++j)
+                if (ascii_messages.size() > 0)
                 {
-                    body.push_back((char)rx_packet->GetData(24 + (j * 8), 8));
+                    // HACK remove later
+                    qchat::Ascii* ascii = ascii_messages[0];
+
+                    Message in_msg;
+                    in_msg.Timestamp("00.00");
+                    in_msg.Sender("Ascii");
+
+                    in_msg.Body(ascii->message.c_str());
+
+                    received_messages.push_back(in_msg);
+
+                    delete ascii;
+                    ascii_messages.erase(0);
                 }
 
-                in_msg.Body(body);
-                received_messages.push_back(in_msg);
+                // Write a message to the screen
+                // Message in_msg;
+                // // TODO The message should be parsed some how here.
+                // in_msg.Timestamp("00:00");
+                // in_msg.Sender("Server");
+
+                // String body;
+
+                // // Skip the type and length, add the whole message
+                // uint16_t packet_len = rx_packet->GetData(14, 10);
+                // for (uint32_t j = 0; j < packet_len; ++j)
+                // {
+                //     body.push_back((char)rx_packet->GetData(24 + (j * 8), 8));
+                // }
+
+                // in_msg.Body(body);
+                // received_messages.push_back(in_msg);
                 break;
             }
             case (Packet::Types::Setting):
@@ -202,8 +243,10 @@ void UserInterfaceManager::HandleIncomingPackets()
             }
         }
 
-        delete rx_packet;
-        packets.erase(0);
+        // delete rx_packet;
+        // packets.erase(0);
+
+        net_layer.DestroyRxPacket(0);
     }
 }
 
@@ -243,10 +286,10 @@ void UserInterfaceManager::ConnectToWifi()
         ssid_password_len)) return;
 
     String ssid_str;
-    for (int i  =0 ; i < ssid_len; i++)
+    for (int i = 0 ; i < ssid_len; i++)
         ssid_str += ssid[i];
     String password_str;
-    for (int i  =0 ; i < ssid_password_len; i++)
+    for (int i = 0 ; i < ssid_password_len; i++)
         password_str += ssid_password[i];
 
     // Create the packet
@@ -379,9 +422,17 @@ void UserInterfaceManager::SendCheckWifiPacket()
 
     // Check a check wifi status packet
     Packet* check_wifi = new Packet();
+
+    // Set the command
     check_wifi->SetData(Packet::Types::Command, 0, 6);
+
+    // Set the id
     check_wifi->SetData(NextPacketId(), 6, 8);
+
+    // Set the size
     check_wifi->SetData(1, 14, 10);
+
+    // Set the data
     check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
 
     EnqueuePacket(check_wifi);
@@ -389,4 +440,73 @@ void UserInterfaceManager::SendCheckWifiPacket()
     last_wifi_check = current_time + 10000;
     uint8_t message [] = "UI: Send check wifi to esp\n\r";
     HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);
+}
+
+void UserInterfaceManager::HandleMessagePacket(
+    Packet* packet)
+{
+    // Get the message type
+    qchat::MessageTypes message_type =
+        (qchat::MessageTypes)packet->GetData(24, 8);
+
+    // Check the message type
+    if (message_type == qchat::MessageTypes::Ascii)
+    {
+        // Make a new the ascii message pointer
+        qchat::Ascii* ascii = new qchat::Ascii();
+
+        // message uri
+        size_t uri_len = packet->GetData(32, 32);
+        screen->DrawText(0, 100, String::int_to_string(uri_len), font5x8, C_WHITE, C_BLACK);
+        uint32_t offset = 64;
+        for (uint16_t i = 0; i < uri_len; ++i)
+        {
+            // ascii->message_uri.push_back(static_cast<char>(
+            //     packet->GetData(offset, 8)));
+            offset += 8;
+        }
+
+        // ascii
+        size_t msg_len = packet->GetData(offset, 32);
+        offset += 32;
+
+        for (uint16_t i = 0; i < msg_len; ++i)
+        {
+            ascii->message.push_back(static_cast<char>(
+                packet->GetData(offset, 8)));
+            offset += 8;
+        }
+
+        // Decode the packet
+        // const bool res = qchat::Codec::decode(*ascii, packet, 32);
+
+        // if (!res)
+        // {
+        //     // TODO some error state
+        //     return;
+        // }
+
+        // Do something with the ascii message
+        ascii_messages.push_back(ascii);
+    }
+}
+
+void UserInterfaceManager::LoadSettings()
+{
+    LoadUsername();
+}
+
+void UserInterfaceManager::LoadUsername()
+{
+    // TODO make this better
+    char* username;
+    short len;
+    setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
+        &username, len);
+    for (short i = 0; i < len; i++)
+    {
+        this->username.push_back(username[i]);
+    }
+    delete username;
+    // ^^^ ugly chunk
 }

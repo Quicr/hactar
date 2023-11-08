@@ -1,11 +1,5 @@
-/* GPIO Example
+#include "net.hh"
 
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -21,135 +15,74 @@
 #include "nvs_flash.h"
 #include "esp_event.h"
 
-#include "Wifi.hh"
 #include "Logging.hh"
 #include "SerialLogger.hh"
 #include "SerialEsp.hh"
 #include "SerialManager.hh"
 #include "NetManager.hh"
 
+#include "Wifi.hh"
 #include "NetPins.hh"
 
-#include "TestLogger.hh"
-#include "quicr/quicr_client.h"
-#include "quicr/quicr_client_delegate.h"
-#include "quicr/quicr_name.h"
-
-static const char* TAG = "net-main";
-
-
-// Defines
-
-// #define BUFFER_SIZE (128)
-
-// static QueueHandle_t uart1_queue;
-static hactar_utils::LogManager* logger;
-hactar_net::TestLogger test_logger;
-
-static NetManager* manager = nullptr;
-static SerialEsp* ui_uart1 = nullptr;
-static SerialManager* ui_layer = nullptr;
-static quicr::QuicRClient* qclient = nullptr;
-
-// quicr helper
-class SubDelegate : public quicr::SubscriberDelegate
-{
-public:
-    SubDelegate(hactar_net::TestLogger& logger)
-        : logger(logger)
-    {
-    }
-
-    void onSubscribeResponse(
-        [[maybe_unused]] const quicr::Namespace& quicr_namespace,
-        [[maybe_unused]] const quicr::SubscribeResult& result) override
-    {
-        printf("onsubres\n\r");
-        std::cout << "onSubscriptionResponse: name: " << quicr_namespace.to_hex()
-            << " status: " << int(static_cast<uint8_t>(result.status))
-            << std::endl;
-
-    }
-
-    void onSubscriptionEnded(
-        [[maybe_unused]] const quicr::Namespace& quicr_namespace,
-        [[maybe_unused]] const quicr::SubscribeResult::SubscribeStatus& reason)
-        override
-    {
-        printf("subended\n\r");
-    }
-
-    void onSubscribedObject([[maybe_unused]] const quicr::Name& quicr_name,
-        [[maybe_unused]] uint8_t priority,
-        [[maybe_unused]] uint16_t expiry_age_ms,
-        [[maybe_unused]] bool use_reliable_transport,
-        [[maybe_unused]] quicr::bytes&& data) override
-    {
-        printf("onsubobj\n\r");
-
-        std::cout << "onSubscribedObject:  Name: " << quicr_name.to_hex()
-            << " data sz: " << data.size() << std::endl;
-    }
-
-    void onSubscribedObjectFragment(
-        [[maybe_unused]] const quicr::Name& quicr_name,
-        [[maybe_unused]] uint8_t priority,
-        [[maybe_unused]] uint16_t expiry_age_ms,
-        [[maybe_unused]] bool use_reliable_transport,
-        [[maybe_unused]] const uint64_t& offset,
-        [[maybe_unused]] bool is_last_fragment,
-        [[maybe_unused]] quicr::bytes&& data) override
-    {
-        printf("onsubresfrag\n\r");
-    }
-
-private:
-    hactar_net::TestLogger& logger;
-};
-std::shared_ptr<SubDelegate> sub_delegate = nullptr;
-
-class PubDelegate : public quicr::PublisherDelegate
-{
-public:
-    PubDelegate(hactar_net::TestLogger& logger)
-        : logger(logger)
-    {
-    }
-    void onPublishIntentResponse(
-        [[maybe_unused]] const quicr::Namespace& quicr_namespace,
-        [[maybe_unused]] const quicr::PublishIntentResult& result) override
-    {
-        printf("NET - Received publish for %s", quicr_namespace.to_hex().c_str());
-    }
-
-private:
-    hactar_net::TestLogger& logger;
-};
-std::shared_ptr<PubDelegate> pub_delegate = nullptr;
-
-auto name = quicr::Name("abcd");
-
+#include <qsession.h>
 
 // Forward declare functions
-void Setup();
+void Setup(const uart_config_t&);
 void Run();
+
+
+void wifi_monitor()
+{
+
+    auto state = wifi->GetState();
+    switch (state)
+    {
+        case Wifi::State::ReadyToConnect:
+        case Wifi::State::Disconnected: {
+            logger->info(TAG, "Wifi : Ready to connect/Disconnected\n");
+            wifi->Connect();
+        }
+        default:
+            break;
+    }
+
+}
 
 extern "C" void app_main(void)
 {
     esp_log_level_set(TAG, ESP_LOG_INFO);
-    // vTaskDelay(10000 / portTICK_PERIOD_MS);
 
-    // Configure the uart
-    uart_config_t uart_config = {
-        .baud_rate = 115200,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_EVEN,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_MAX,
-        .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
-    };
+    GpioInit();
+    UartInit();
 
+
+    gpio_set_level(LED_R_Pin, 1);
+    gpio_set_level(LED_G_Pin, 1);
+    gpio_set_level(LED_B_Pin, 1);
+    gpio_set_level(NET_DBG5_Pin, 0);
+    gpio_set_level(NET_DBG6_Pin, 0);
+
+    int next = 0;
+    gpio_set_level(LED_R_Pin, 0);
+
+    // Ready for normal operations
+    gpio_set_level(NET_STAT_Pin, 1);
+
+    Setup();
+
+    int32_t count = 0;
+    while (1)
+    {
+        gpio_set_level(LED_R_Pin, next);
+        next = next ? 0 : 1;
+        Run();
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
+
+void GpioInit()
+{
     gpio_config_t io_conf = {};
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
@@ -175,87 +108,88 @@ extern "C" void app_main(void)
     io_conf.pull_down_en = (gpio_pulldown_t)0;
     io_conf.pull_up_en = (gpio_pullup_t)0;
     gpio_config(&io_conf);
+}
 
-    // TODO put somewhere else?
+void UartInit()
+{
+    // Configure the uart
+    uart_config_t uart_config = {
+        .baud_rate = 115200,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_EVEN,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_MAX,
+        .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
+    };
+
+    // Setup serial interface for ui
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 256);
+
+    // UART to the ui
     ui_layer = new SerialManager(ui_uart1);
-    manager = new NetManager(ui_layer);
 
-    gpio_set_level(LED_R_Pin, 1);
-    gpio_set_level(LED_G_Pin, 1);
-    gpio_set_level(LED_B_Pin, 1);
-    gpio_set_level(NET_DBG5_Pin, 0);
-    gpio_set_level(NET_DBG6_Pin, 0);
-
-    int next = 0;
-    gpio_set_level(LED_R_Pin, 0);
-
-    // Ready for normal operations
-    gpio_set_level(NET_STAT_Pin, 1);
-
-
+    // TODO remove this and convert it into a mgmt chip serialmanager.
+    // setup logger
     logger = hactar_utils::LogManager::GetInstance();
     logger->add_logger(new hactar_utils::ESP32SerialLogger());
-    logger->info(TAG, "Net app_main start");
-    sub_delegate = std::make_shared<SubDelegate>(test_logger);
-    pub_delegate = std::make_shared<PubDelegate>(test_logger);
-
-    int32_t count = 0;
-    while (1)
-    {
-        gpio_set_level(LED_R_Pin, next);
-        next = next ? 0 : 1;
-        Run();
-
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
+    logger->info(TAG, "Net app_main start\r\n");
 }
 
 void Setup()
 {
-    logger = hactar_utils::LogManager::GetInstance();
-    logger->add_logger(new hactar_utils::ESP32SerialLogger());
-    logger->info(TAG, "Net app_main start");
+
+    wifi = Wifi::GetInstance();
+    // TODO remove
+    wifi->SetCredentials("Regnier", "Spikeball21Computers");
+    wifi->Connect();
+
+
+    inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
+    char default_relay [] = "192.168.50.19";
+    auto relay_name = default_relay;
+    uint16_t port = 1234;
+    quicr::RelayInfo relay{
+        .hostname = relay_name,
+        .port = port,
+        .proto = quicr::RelayInfo::Protocol::UDP
+    };
+    qsession = std::make_shared<QSession>(relay, inbound_queue);
+
+    manager = new NetManager(ui_layer, qsession, inbound_queue);
+
 }
 
 void Run()
 {
-    static bool subscribed = false;
-    auto state = hactar_utils::Wifi::GetInstance()->GetState();
 
-    if (state != hactar_utils::Wifi::State::Connected)
-        return;
-
-    if (qclient == nullptr)
+    wifi_monitor();
+    auto state = Wifi::GetInstance()->GetState();
+    if (state == Wifi::State::Connected && !qsession_connected)
     {
-        char default_relay [] = "192.168.50.19";
-        auto relay_name = default_relay;
-        uint16_t port = 33434;
+        logger->info(TAG, "Net app_main Connecting to QSession\n");
+        qsession->connect();
+        qsession_connected = true;
 
-        quicr::RelayInfo relay{
-            .hostname = relay_name,
-                .port = port,
-                .proto = quicr::RelayInfo::Protocol::UDP
-        };
-        qclient = new quicr::QuicRClient(relay, {}, test_logger);
-    }
-    else
-    {
+        logger->info(TAG, "netcc: Subscribing to namespace");
+        //quicr::Namespace ns = qsession->to_namespace("quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1");
         quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);
-        if (subscribed)
+        std::cout << "Subscribing to " << nspace << std::endl;
+        bool res = qsession->subscribe(nspace);
+
+        if (res)
         {
-            qclient->publishNamedObject(nspace.name(), 0, 10000, false, {'h', 'e', 'l', 'l', 'o', '!'});
-            return;
+            std::cout << "Subscribed!!" << std::endl;
         }
 
-        qclient->publishIntent(pub_delegate, nspace, "origin_url", "auth_token", {});
-
-        logger->info(TAG, "Subscribe\n");
-        std::cout << "Subscribe to " << nspace.to_hex() << std::endl;
-        quicr::SubscribeIntent intent = quicr::SubscribeIntent::immediate;
-        quicr::bytes empty;
-        qclient->subscribe(
-            sub_delegate, nspace, intent, "origin_url", false, "auth_token", std::move(empty));
-        subscribed = true;
+        res = qsession->publish_intent(nspace);
+        if (res)
+        {
+            std::cout << "Publish intent ready" << std::endl;
+        }
     }
+
+
+
+
 }

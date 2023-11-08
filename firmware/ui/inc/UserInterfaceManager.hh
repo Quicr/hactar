@@ -13,6 +13,8 @@
 #include "SettingManager.hh"
 #include "Screen.hh"
 
+#include "QChat.hh"
+
 #define VIEW_ADDRESS 0x00
 #define FIRST_BOOT_STARTED 0x01
 #define FIRST_BOOT_DONE 0x02
@@ -33,6 +35,7 @@ public:
     Vector<Message>& GetMessages();
     void ClearMessages();
     void EnqueuePacket(Packet* packet);
+    void LoopbackPacket(Packet* packet);
     void ForceRedraw();
     bool RedrawForced();
     void ConnectToWifi();
@@ -66,17 +69,7 @@ public:
         return true;
     }
 
-    // bool ChangeViewCommand(const String command)
-    // {
-    //     if (command == "t")
-    //         return ChangeView<TeamView>();
-    //     else if (command == "s")
-    //         return ChangeView<SettingsView>();
-    //     // else if (command == "wifi")
-    //         // return manager.ChangeView<
-
-    //     return false;
-    // }
+    const String& GetUsername();
 
 private:
     void HandleIncomingPackets();
@@ -86,6 +79,9 @@ private:
 
     void SendTestPacket();
     void SendCheckWifiPacket();
+    void LoadSettings();
+    void LoadUsername();
+    void HandleMessagePacket(Packet* packet);
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
@@ -95,6 +91,7 @@ private:
     SettingManager setting_manager;
     ViewInterface* view;
     Vector<Message> received_messages;
+    Vector<qchat::Ascii*> ascii_messages;
     bool force_redraw;
     uint32_t current_time;
 
@@ -105,4 +102,6 @@ private:
     uint32_t attempt_to_connect_timeout;
 
     uint32_t last_test_packet = 0;
+
+    String username;
 };
