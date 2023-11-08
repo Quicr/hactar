@@ -85,13 +85,15 @@ void SerialEsp::RxEvent(void* parameter)
         if (!xQueueReceive(serial->uart_queue, (void*)&event, portMAX_DELAY))
             continue;
 
-        printf("NET: uart[%d] event size: %d\n", serial->uart, event.size);
+        printf("NET-serial: uart[%d] event size: %d, type: %d\n", serial->uart, event.size, event.type);
 
         switch (event.type)
         {
             case UART_DATA:
             {
+                printf("NET-serial: read serial bytes\n");
                 uart_read_bytes(serial->uart, buff, event.size, portMAX_DELAY);
+                printf("NET-serial: Send to ring buffer\n");
 
                 for (size_t i = 0; i < event.size; ++i)
                 {

@@ -13,37 +13,44 @@ const port = process.env.PORT;
 function GetFiles()
 {
     const build_dir = "../../net/build"
-    const files:any = [];
+    const files: any = [];
 
     // Get all the binary files
-    const flasher_args:any = JSON.parse(
-        fs.readFileSync(`${build_dir}/flasher_args.json`, "utf-8"));
-    const flash_files_by_offset = flasher_args["flash_files"];
-
-    // Get keys and values
-    for (let key in flash_files_by_offset)
+    try
     {
-        const file = flash_files_by_offset[key];
-        const name = file.substring(file.indexOf("/")+1, file.indexOf(".bin"))
-        const binary = fs.readFileSync(`${build_dir}/${file}`).toJSON().data;
 
-        // Convert int array in 8 bit array
-        let t:any = Uint8Array.from(binary);
-        const hash = crypto.createHash('md5').update(t).digest("hex").toString();
+        const flasher_args: any = JSON.parse(
+            fs.readFileSync(`${build_dir}/flasher_args.json`, "utf-8"));
+        const flash_files_by_offset = flasher_args["flash_files"];
+
+        // Get keys and values
+        for (let key in flash_files_by_offset)
+        {
+            const file = flash_files_by_offset[key];
+            const name = file.substring(file.indexOf("/") + 1, file.indexOf(".bin"))
+            const binary = fs.readFileSync(`${build_dir}/${file}`).toJSON().data;
+
+            // Convert int array in 8 bit array
+            let t: any = Uint8Array.from(binary);
+            const hash = crypto.createHash('md5').update(t).digest("hex").toString();
 
 
-        files.push({
-            "name": name,
-            "offset": Number(key),
-            "binary": binary,
-            "md5": hash,
-        })
+            files.push({
+                "name": name,
+                "offset": Number(key),
+                "binary": binary,
+                "md5": hash,
+            })
+        }
+    }
+    catch(exception)
+    {
+        console.log(exception);
+        console.log("No net binaries found");
     }
 
     return files;
 }
-
-GetFiles();
 
 app.use(cors());
 
