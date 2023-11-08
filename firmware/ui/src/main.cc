@@ -49,8 +49,10 @@ static void KeyboardTimerInit();
 // Handlers
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef hdma_usart1_tx;
+DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart2_tx;
 
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
@@ -69,21 +71,21 @@ SerialStm* net_serial_interface = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
 
-Led rx_led(LED_R_Port, LED_R_Pin, 10);
-Led tx_led(LED_G_Port, LED_G_Pin, 10);
+Led rx_led(LED_R_Port, LED_R_Pin, 0, 1, 10);
+Led tx_led(LED_G_Port, LED_G_Pin, 0, 1, 10);
 
 int main(void)
 {
     // Reset of all peripherals, Initializes the Flash interface and the Systick.
     HAL_Init();
 
+    /* Configure the system clock */
+    SystemClock_Config();
+
     // Initialize the GPIO prior to clock so that the io pins do not
     // start high and then go low when the clock config starts.
     // This prevents the screen from flashing on before its ready.
     MX_GPIO_Init();
-
-    /* Configure the system clock */
-    SystemClock_Config();
 
     // Not in use
     // IRQInit();
@@ -139,7 +141,7 @@ int main(void)
     KeyboardTimerInit();
 
     // Create the keyboard object
-    keyboard = new Q10Keyboard(col_pins, row_pins, 500, 100, &htim2);
+    keyboard = new Q10Keyboard(col_pins, row_pins, 200, 100, &htim2);
 
     // Initialize the keyboard
     keyboard->Begin();
@@ -149,9 +151,6 @@ int main(void)
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_serial_interface, *eeprom);
 
     SerialManager serial(net_serial_interface);
-
-    // Run once before entering the Main loop
-    ui_manager->Run();
 
     uint32_t blink = 0;
     uint8_t test_message [] = "UI: Test\n\r";
@@ -164,19 +163,19 @@ int main(void)
     HAL_GPIO_WritePin(UI_DBG3_Port, UI_DBG3_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_DBG4_Port, UI_DBG4_Pin, GPIO_PIN_SET);
 
-
     while (1)
     {
         ui_manager->Run();
 
-        rx_led.Timeout();
-        tx_led.Timeout();
+        // rx_led.Timeout();
+        // tx_led.Timeout();
 
+        // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
-            blink = HAL_GetTick() + 5000;
-            HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
-            HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+            // blink = HAL_GetTick() + 1000;
+            // // HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+            // HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
         }
     }
 
@@ -189,87 +188,45 @@ int main(void)
  */
 void SystemClock_Config(void)
 {
-    RCC_OscInitTypeDef RCC_OscInitStruct = {};
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = {};
+    RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
     /** Configure the main internal regulator output voltage
-     */
+    */
     __HAL_RCC_PWR_CLK_ENABLE();
     __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
     /** Initializes the RCC Oscillators according to the specified parameters
-     * in the RCC_OscInitTypeDef structure.
-     */
+    * in the RCC_OscInitTypeDef structure.
+    */
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
     RCC_OscInitStruct.HSIState = RCC_HSI_ON;
     RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+    RCC_OscInitStruct.PLL.PLLM = 8;
+    RCC_OscInitStruct.PLL.PLLN = 168;
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ = 4;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
     {
         Error_Handler();
     }
 
     /** Initializes the CPU, AHB and APB buses clocks
-     */
-    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+    */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+        | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
     RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
     {
         Error_Handler();
     }
-    //   RCC_OscInitTypeDef RCC_OscInitStruct = {};
-    //   RCC_ClkInitTypeDef RCC_ClkInitStruct = {};
-
-    //   /** Configure the main internal regulator output voltage
-    //   */
-    //   __HAL_RCC_PWR_CLK_ENABLE();
-    //   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-    //   /** Initializes the RCC Oscillators according to the specified parameters
-    //   * in the RCC_OscInitTypeDef structure.
-    //   */
-    //   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-    //   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-    //   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-    //   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-    //   RCC_OscInitStruct.PLL.PLLM = 25;
-    //   RCC_OscInitStruct.PLL.PLLN = 192;
-    //   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-    //   RCC_OscInitStruct.PLL.PLLQ = 4;
-    //   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-    //   {
-    //     Error_Handler();
-    //   }
-
-    //   /** Initializes the CPU, AHB and APB buses clocks
-    //   */
-    //   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-    //                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-    //   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    //   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
-    //   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-    //   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-    //   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
-    //   {
-    //     Error_Handler();
-    //   }
-    //   __HAL_RCC_GPIOH_CLK_ENABLE();
-
-        /**Configure the Systick interrupt time
-         */
-         // HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / 1000);
-
-         // /**Configure the Systick
-         //  */
-         // HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
-         // /* SysTick_IRQn interrupt configuration */
-         // HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+    __HAL_RCC_GPIOH_CLK_ENABLE();
 }
 
 /**
@@ -373,8 +330,18 @@ static void MX_SPI1_Init(void)
 
 static void MX_DMA_Init()
 {
+    __HAL_RCC_DMA1_CLK_ENABLE();
     __HAL_RCC_DMA2_CLK_ENABLE();
 
+    // uart2 rx
+    HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+
+    // uart2 tx
+    HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+
+    // SPI
     HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 
@@ -403,7 +370,6 @@ static void MX_USART1_Init(void)
     }
 }
 
-// TODO move to DMA circular buffer
 static void MX_USART2_Init()
 {
     huart2.Instance = USART2;
@@ -450,17 +416,36 @@ static void MX_I2C1_Init()
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
-    UNUSED(huart);
-    UNUSED(size);
-    net_serial_interface->RxEvent(size);
-    rx_led.On();
+    if (huart->Instance == USART2)
+    {
+        net_serial_interface->RxEvent(size);
+        // rx_led.Toggle();
+    }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-    UNUSED(huart);
-    net_serial_interface->TxEvent();
-    tx_led.On();
+    if (huart->Instance == USART2)
+    {
+        net_serial_interface->TxEvent();
+        // tx_led.Toggle();
+    }
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
+{
+    uint16_t err;
+    if (huart->Instance == USART2)
+    {
+        net_serial_interface->Reset();
+        HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
+
+        // Read the err codes to clear them
+        err = huart->Instance->SR;
+
+        net_serial_interface->StartRx();
+
+    }
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
@@ -478,7 +463,7 @@ static void KeyboardTimerInit()
     htim2.Instance = TIM2;
     htim2.Init.Prescaler = 1600;
     htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim2.Init.Period = 1000;
+    htim2.Init.Period = 100;
     htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 
@@ -510,8 +495,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
+        // screen.Loop();
+
         // Poll the keyboard and have the keys saved in the internal rx_buffer
-        // keyboard->Read();
+        // TODO why was this commented out??
+        keyboard->Read();
     }
 }
 

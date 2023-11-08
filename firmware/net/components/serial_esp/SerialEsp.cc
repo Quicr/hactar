@@ -1,5 +1,5 @@
 #include "SerialEsp.hh"
-#include "../../core/Error.h"
+#include "Error.hh"
 
 SerialEsp::SerialEsp(uart_port_t uart,
     unsigned long long tx_pin,
@@ -21,7 +21,7 @@ SerialEsp::SerialEsp(uart_port_t uart,
     printf("uart set pin res=%d\n", res);
     res = uart_param_config(uart, &uart_config);
     printf("install res=%d\n", res);
-    xTaskCreate(RxEvent, "uart_event_task", 2048, (void*)this, 12, NULL);
+    xTaskCreate(RxEvent, "uart_event_task", 4096, (void*)this, 12, NULL);
 }
 
 SerialEsp::~SerialEsp()
@@ -52,7 +52,12 @@ void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 
-    printf("Net: Send to ui\n\r");
+    printf("NET: Send to ui");
+    for (int i =0; i <  buff_size; ++i )
+    {
+        printf("%d", (int)buff[i]);
+    }
+    printf("\n\r");
     uint8_t start[] = {0xFF};
     uart_write_bytes(uart, start, 1);
 
@@ -77,37 +82,26 @@ void SerialEsp::RxEvent(void* parameter)
 
     while (true)
     {
-        // TODO move to ISR
-        if (!xQueueReceive(serial->uart_queue, (void*)&event, 0xFF))
+        if (!xQueueReceive(serial->uart_queue, (void*)&event, portMAX_DELAY))
             continue;
 
-        printf("uart[%d] event size: %d\n", serial->uart, event.size);
-
-        // for (int i = 0; i < event.size; i++)
-        // {
-        //     printf("buffer[%d] = %d", i, (int)buff[i]);
-        // }
-        // printf("\nMessage: ");
-
-        // for (int i = 0; i < event.size; i++)
-        // {
-        //     printf("%c", buff[i]);
-        // }
-        // printf("\n");
+        printf("NET-serial: uart[%d] event size: %d, type: %d\n", serial->uart, event.size, event.type);
 
         switch (event.type)
         {
             case UART_DATA:
             {
+                printf("NET-serial: read serial bytes\n");
                 uart_read_bytes(serial->uart, buff, event.size, portMAX_DELAY);
+                printf("NET-serial: Send to ring buffer\n");
 
                 for (size_t i = 0; i < event.size; ++i)
                 {
-                    printf("%d ", buff[i]);
+                    printf("%d ", (int)buff[i]);
                     serial->rx_ring.Write(buff[i]);
                 }
                 printf("\n\r");
-                printf("NET: available bytes=%d\n\r", serial->AvailableBytes());
+
 
                 break;
             }

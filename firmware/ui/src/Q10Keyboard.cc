@@ -105,6 +105,11 @@ String& Q10Keyboard::GetKeys()
     return internal_buffer;
 }
 
+String Q10Keyboard::GetKeysCopy()
+{
+    return internal_buffer;
+}
+
 void Q10Keyboard::Read()
 {
     ReadKeys();
@@ -112,7 +117,7 @@ void Q10Keyboard::Read()
 
 bool Q10Keyboard::Read(String &buffer)
 {
-    ReadKeys();
+    // ReadKeys();
 
     bool has_keys = char_pressed || internal_buffer.length();
 
