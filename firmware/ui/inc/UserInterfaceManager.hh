@@ -31,8 +31,9 @@ public:
     ~UserInterfaceManager();
 
     void Run();
-    bool HasMessages();
-    Vector<Message>& GetMessages();
+    bool HasNewMessages();
+    const Vector<String>& GetMessages();
+    void PushMessage(String&& str);
     void ClearMessages();
     void EnqueuePacket(Packet* packet);
     void LoopbackPacket(Packet* packet);
@@ -90,7 +91,8 @@ private:
     SerialManager net_layer;
     SettingManager setting_manager;
     ViewInterface* view;
-    Vector<Message> received_messages;
+    Vector<String> received_messages;
+    bool has_new_messages;
     Vector<qchat::Ascii*> ascii_messages;
     bool force_redraw;
     uint32_t current_time;
