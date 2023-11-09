@@ -73,14 +73,21 @@ void UserInterfaceManager::Run()
     HandleIncomingPackets();
 }
 
-bool UserInterfaceManager::HasMessages()
+bool UserInterfaceManager::HasNewMessages()
 {
-    return received_messages.size();
+    return has_new_messages;
 }
 
-Vector<Message>& UserInterfaceManager::GetMessages()
+const Vector<String>& UserInterfaceManager::GetMessages()
 {
+    has_new_messages = false;
     return received_messages;
+}
+
+void UserInterfaceManager::PushMessage(String&& str)
+{
+    has_new_messages = true;
+    received_messages.push_back(str);
 }
 
 void UserInterfaceManager::ClearMessages()
@@ -151,14 +158,10 @@ void UserInterfaceManager::HandleIncomingPackets()
                     // HACK remove later
                     qchat::Ascii* ascii = ascii_messages[0];
 
-                    Message in_msg;
-                    in_msg.Timestamp("00.00");
-                    in_msg.Sender("Ascii");
+                    received_messages.push_back(ascii->message.c_str());
+                    has_new_messages = true;
 
-                    in_msg.Body(ascii->message.c_str());
-
-                    received_messages.push_back(in_msg);
-
+                    // HACK remove later
                     delete ascii;
                     ascii_messages.erase(0);
                 }

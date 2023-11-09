@@ -144,8 +144,6 @@ void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, si
                 return;
             }
 
-            ESP_LOGI(TAG, "Publish message: %s to %s", ascii.message.c_str(), ascii.message_uri.c_str());
-
             // auto nspace = quicr_session->to_namespace(ascii.message_uri);
             // ESP_LOGI(TAG, "namespace: %s", std::string(q_namespace.name()).c_str());
             quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);
@@ -154,6 +152,7 @@ void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, si
             ESP_LOGI(TAG, "string to bytes done");
 
             quicr_session->publish(nspace, bytes);
+            ESP_LOGI(TAG, "Publish message: %s to %s", ascii.message.c_str(), ascii.message_uri.c_str());
             break;
         }
         default:
