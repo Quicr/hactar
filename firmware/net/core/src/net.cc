@@ -30,25 +30,6 @@
 void Setup(const uart_config_t&);
 void Run();
 
-
-void wifi_monitor()
-{
-
-    auto state = wifi->GetState();
-    switch (state)
-    {
-        case Wifi::State::ReadyToConnect:
-        case Wifi::State::Disconnected: {
-            logger->info(TAG, "Wifi : Ready to connect/Disconnected\n");
-            wifi->Connect();
-        }
-        default:
-            break;
-    }
-
-}
-
-
 extern "C" void app_main(void)
 {
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -142,8 +123,7 @@ void Setup()
 {
     // Wifi will manage itself and keep it connected if it disconnects.
     wifi = Wifi::GetInstance();
-    wifi->SetCredentials("", "");
-    wifi->Connect();
+    wifi->Connect("", "");
 
     inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
     char default_relay [] = "192.168.50.19";
@@ -162,7 +142,6 @@ void Setup()
 
 void Run()
 {
-    wifi_monitor();
     auto state = Wifi::GetInstance()->GetState();
     if (state == Wifi::State::Connected && !qsession_connected)
     {
