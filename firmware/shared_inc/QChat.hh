@@ -89,14 +89,15 @@ struct Codec
     {
         return { str.begin(), str.end() };
     }
-    static void
-        encode(Packet* packet, const WatchRoom& msg)
+    static void encode(Packet* packet, const WatchRoom& msg)
     {
         // [total_len][type][pub_uri_len][[pub_uri][room_uri_len][room_uri]
-        packet->AppendData(msg.publisher_uri.length() + msg.room_uri.length() + 1, 10);
+        const uint16_t extra_bytes = 1 + uri_len_bytes + uri_len_bytes;
+        packet->AppendData(extra_bytes + msg.publisher_uri.length() +
+            msg.room_uri.length(), 10);
         // Set the message type, starts at bit 24
-        packet->AppendData(msg.publisher_uri.length(), uri_len_bits);
         packet->AppendData((unsigned int)MessageTypes::Watch, 8);
+        packet->AppendData(msg.publisher_uri.length(), uri_len_bits);
         for (size_t i = 0; i < msg.publisher_uri.length(); ++i)
         {
             packet->AppendData(msg.publisher_uri[i], 8);

@@ -460,12 +460,11 @@ void UserInterfaceManager::HandleMessagePacket(
 
         // message uri
         size_t uri_len = packet->GetData(32, 32);
-        screen->DrawText(0, 100, String::int_to_string(uri_len), font5x8, C_WHITE, C_BLACK);
         uint32_t offset = 64;
         for (uint16_t i = 0; i < uri_len; ++i)
         {
-            // ascii->message_uri.push_back(static_cast<char>(
-            //     packet->GetData(offset, 8)));
+            ascii->message_uri.push_back(static_cast<char>(
+                packet->GetData(offset, 8)));
             offset += 8;
         }
 

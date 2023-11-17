@@ -18,6 +18,7 @@ public:
 private:
     void HandleSerialCommands(Packet* rx_packet);
     void HandleQChatMessages(uint8_t message_type, Packet* rx_packet, size_t offset);
+    static void HandleWatchMessage(void* watch);
 
     void HandleQSessionMessages(QuicrObject&& obj);
 

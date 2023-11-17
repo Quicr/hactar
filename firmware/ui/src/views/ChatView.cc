@@ -14,8 +14,8 @@ static qchat::Room create_default_room(const std::string& user_name)
     return qchat::Room{
         .is_default = true,
         .friendly_name = "CAFE",
-        .room_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1/",
-        .publisher_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1" + user_name + "/",
+        .room_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1",
+        .publisher_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1/" + user_name + "/",
     };
 }
 
@@ -126,7 +126,9 @@ void ChatView::HandleInput()
 
         // prepare ascii message, encode into Message + Packet
         qchat::Ascii ascii = qchat::Ascii{
-          .message_uri = active_room.publisher_uri + "msg/" + std::to_string(msg_id),
+            // I want to use this, but quicr gets mad if we pass it in.
+        //   .message_uri = active_room.publisher_uri + "endpoint/" + std::to_string(msg_id),
+          .message_uri = active_room.room_uri,
           .message = {msg.c_str()},
         };
 

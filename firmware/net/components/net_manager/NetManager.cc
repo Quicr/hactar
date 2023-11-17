@@ -11,6 +11,12 @@
 #include <transport/transport.h>
 #include "esp_log.h"
 
+typedef struct
+{
+    qchat::WatchRoom* watch;
+    NetManager* manager;
+}WatchRoomParams;
+
 static const char* TAG = "[Net Manager]: ";
 
 NetManager::NetManager(SerialManager* _ui_layer,
@@ -21,7 +27,7 @@ NetManager::NetManager(SerialManager* _ui_layer,
     inbound_objects(inbound_objects)
 {
 
-    xTaskCreate(HandleSerial, "handle_serial_task", 8192*2, (void*)this, 13, NULL);
+    xTaskCreate(HandleSerial, "handle_serial_task", 8192 * 2, (void*)this, 13, NULL);
     xTaskCreate(HandleNetwork, "handle_network", 4096, (void*)this, 13, NULL);
 }
 
@@ -46,25 +52,25 @@ void NetManager::HandleSerial(void* param)
         while (rx_packets.size() > 0 &&
             xTaskGetTickCount() / portTICK_PERIOD_MS < timeout)
         {
-            printf("NET: Message from ui chip - ");
             Packet* rx_packet = rx_packets[0];
             uint8_t packet_type = rx_packet->GetData(0, 6);
             uint16_t data_len = rx_packet->GetData(14, 10);
             uint8_t data;
-            for (uint16_t i = 0; i < data_len; ++i)
-            {
-                // Get each data byte
-                data = rx_packet->GetData(24 + (i * 8), 8);
-                if ((data >= '0' && data <= '9') || (data >= 'A' && data <= 'z'))
-                {
-                    printf("%c", (char)data);
-                }
-                else
-                {
-                    printf("%d ", (int)data);
-                }
-            }
-            printf("\n\r");
+            // printf("NET: Message from ui chip - ");
+            // for (uint16_t i = 0; i < data_len; ++i)
+            // {
+            //     // Get each data byte
+            //     data = rx_packet->GetData(24 + (i * 8), 8);
+            //     if ((data >= '0' && data <= '9') || (data >= 'A' && data <= 'z'))
+            //     {
+            //         printf("%c", (char)data);
+            //     }
+            //     else
+            //     {
+            //         printf("%d ", (int)data);
+            //     }
+            // }
+            // printf("\n\r");
 
             if (packet_type == Packet::Types::Message)
             {
@@ -112,24 +118,24 @@ void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, si
         {
             ESP_LOGI(TAG, "Got an watch message");
 
-            // qchat::WatchRoom watch;
-            // if (!qchat::Codec::decode(watch, rx_packet, offset))
-            // {
-            //     printf("%s\r\n", "NetManager:QChatMessage:Watch Decode  Failed");
-            //     return;
-            // }
+            qchat::WatchRoom* watch = new qchat::WatchRoom();
+            if (!qchat::Codec::decode(*watch, rx_packet, offset))
+            {
+                printf("%s\r\n", "NetManager:QChatMessage:Watch Decode  Failed");
+                return;
+            }
 
-            // if (!quicr_session->subscribe(quicr_session->to_namespace(watch.room_uri)))
-            // {
-            //     printf("%s\r\n", "NetManager:QChatMessage:Watch subscribe error ");
-            //     return;
-            // }
+            WatchRoomParams* watch_params = new WatchRoomParams();
+            watch_params->watch = watch;
+            watch_params->manager = this;
 
-            // if (!quicr_session->publish_intent(quicr_session->to_namespace(watch.publisher_uri)))
-            // {
-            //     printf("%s\r\n", "NetManager:QChatMessage:Watch publish_intent error ");
-            //     return;
-            // }
+            xTaskCreate(HandleWatchMessage,
+                "handle_watch_message",
+                16384,
+                (void*)watch_params,
+                13,
+                NULL);
+
             break;
         }
         case qchat::MessageTypes::Ascii:
@@ -144,15 +150,12 @@ void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, si
                 return;
             }
 
-            // auto nspace = quicr_session->to_namespace(ascii.message_uri);
-            // ESP_LOGI(TAG, "namespace: %s", std::string(q_namespace.name()).c_str());
-            quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);
+            auto nspace = quicr_session->to_namespace(ascii.message_uri);
+            // quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);
 
             auto bytes = qchat::Codec::string_to_bytes(ascii.message);
-            ESP_LOGI(TAG, "string to bytes done");
 
             quicr_session->publish(nspace, bytes);
-            ESP_LOGI(TAG, "Publish message: %s to %s", ascii.message.c_str(), ascii.message_uri.c_str());
             break;
         }
         default:
@@ -166,6 +169,45 @@ void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, si
 
 }
 
+void NetManager::HandleWatchMessage(void* params)
+{
+    WatchRoomParams* watch_room_params = (WatchRoomParams*)params;
+    NetManager* _this = watch_room_params->manager;
+    qchat::WatchRoom* watch = watch_room_params->watch;
+
+    printf("[net] room uri %s\n", watch->room_uri.c_str());
+    printf("[net] publisher uri %s\n", watch->publisher_uri.c_str());
+    try
+    {
+        // quicr::Namespace sub_ns = quicr_session->to_namespace(watch->room_uri);
+
+        if (!_this->quicr_session->subscribe(_this->quicr_session->to_namespace(watch->room_uri)))
+        {
+            printf("%s\r\n", "NetManager:QChatMessage:Watch subscribe error ");
+            return;
+        }
+
+        ESP_LOGI(TAG, "Subscribed");
+
+        // TODO ask Suhas about this
+        // if (!_this->quicr_session->publish_intent(_this->quicr_session->to_namespace(watch->publisher_uri)))
+        if (!_this->quicr_session->publish_intent(_this->quicr_session->to_namespace(watch->room_uri)))
+        {
+            printf("%s\r\n", "NetManager:QChatMessage:Watch publish_intent error ");
+            return;
+        }
+    }
+    catch (std::runtime_error& ex)
+    {
+        printf("[net] failed to watch, %s\n", ex.what());
+    }
+
+    delete watch_room_params->watch;
+    delete watch_room_params;
+
+    vTaskDelete(NULL);
+}
+
 void NetManager::HandleNetwork(void* param)
 {
     // part 1, parse quicr message
@@ -173,68 +215,76 @@ void NetManager::HandleNetwork(void* param)
     NetManager* _this = (NetManager*)param;
     while (true)
     {
-        // Set the delay
-        vTaskDelay(50 / portTICK_PERIOD_MS);
-
-        if (_this->inbound_objects->empty())
+        try
         {
-            continue;
+
+            // Set the delay
+            vTaskDelay(50 / portTICK_PERIOD_MS);
+
+            if (_this->inbound_objects->empty())
+            {
+                continue;
+            }
+
+            const uint16_t bytes_in_128_bits = 128 / 8;
+
+            // Get the next item
+            auto qobj = _this->inbound_objects->pop();
+            auto qname = qobj.name;
+            auto qdata = qobj.data;
+
+            // Create a net packet
+            Packet* packet = new Packet();
+
+            // Set the type
+            packet->SetData(Packet::Types::Message, 0, 6);
+
+            // Set the id
+            packet->SetData(0, 6, 8);
+
+            // Set the length
+            uint16_t total_len = 9 + bytes_in_128_bits + qobj.data.size();
+            packet->SetData(total_len, 14, 10);
+
+            // Set the message type
+            packet->SetData((int)qchat::MessageTypes::Ascii, 24, 8);
+
+            // Set the length of the ascii message qname
+            packet->SetData(bytes_in_128_bits, 32, 32);
+
+            // Set the name, which is 128 bits.
+            size_t offset = 64;
+            for (size_t i = 0; i < bytes_in_128_bits; ++i)
+            {
+                packet->SetData(qname[i], offset, 8);
+                offset += 8;
+            }
+
+            // Set the length of the data
+            packet->SetData(qdata.size(), offset, 32);
+            offset += 32;
+
+            // Get the message from the item
+            for (size_t i = 0; i < qdata.size(); ++i)
+            {
+                packet->SetData(qdata[i], offset, 8);
+                offset += 8;
+            }
+
+            ESP_LOGI(TAG, "Packet data total len %d", total_len);
+            for (size_t i = 0; i < total_len + 3; ++i)
+            {
+                printf("%d\r\n", (int)packet->GetData(i * 8, 8));
+            }
+            ESP_LOGI(TAG, "Enqueue serial packet that came from the network");
+            // Enqueue the packet to go to the UI
+            _this->ui_layer->EnqueuePacket(packet);
+            packet = nullptr;
         }
-
-        const uint16_t bytes_in_128_bits = 128/8;
-
-        // Get the next item
-        auto qobj = _this->inbound_objects->pop();
-        auto qname = qobj.name;
-        auto qdata = qobj.data;
-
-        // Create a net packet
-        Packet* packet = new Packet();
-
-        // Set the type
-        packet->SetData(Packet::Types::Message, 0, 6);
-
-        // Set the id
-        packet->SetData(0, 6, 8);
-
-        // Set the length
-        uint16_t total_len = 9 + bytes_in_128_bits + qobj.data.size();
-        packet->SetData(total_len, 14, 10);
-
-        // Set the message type
-        packet->SetData((int)qchat::MessageTypes::Ascii, 24, 8);
-
-        // Set the length of the ascii message qname
-        packet->SetData(bytes_in_128_bits, 32, 32);
-
-        // Set the name, which is 128 bits.
-        size_t offset = 64;
-        for (size_t i = 0; i < bytes_in_128_bits; ++i)
+        catch (const std::exception& ex)
         {
-            packet->SetData(qname[i], offset, 8);
-            offset += 8;
+            printf("[HandleNetworkError] %s\n", ex.what());
         }
-
-        // Set the length of the data
-        packet->SetData(qdata.size(), offset, 32);
-        offset += 32;
-
-        // Get the message from the item
-        for (size_t i = 0; i < qdata.size(); ++i)
-        {
-            packet->SetData(qdata[i], offset, 8);
-            offset += 8;
-        }
-
-        ESP_LOGI(TAG, "Packet data total len %d", total_len);
-        for (size_t i = 0; i < total_len+3; ++i)
-        {
-            printf("%d\r\n", (int)packet->GetData(i * 8, 8));
-        }
-        ESP_LOGI(TAG, "Enqueue serial packet that came from the network");
-        // Enqueue the packet to go to the UI
-        _this->ui_layer->EnqueuePacket(packet);
-        packet = nullptr;
     }
 
     //Ascii ascii;
