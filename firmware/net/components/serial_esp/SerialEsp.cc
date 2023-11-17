@@ -52,12 +52,12 @@ void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 
-    printf("NET: Send to ui");
-    for (int i =0; i <  buff_size; ++i )
-    {
-        printf("%d", (int)buff[i]);
-    }
-    printf("\n\r");
+    // printf("NET: Send to ui");
+    // for (int i =0; i <  buff_size; ++i )
+    // {
+    //     printf("%d", (int)buff[i]);
+    // }
+    // printf("\n\r");
     uint8_t start[] = {0xFF};
     uart_write_bytes(uart, start, 1);
 
@@ -75,7 +75,7 @@ void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
 void SerialEsp::RxEvent(void* parameter)
 {
     SerialEsp* serial = (SerialEsp*)parameter;
-    printf("Serial %d\n", serial->uart);
+    printf("net-serial[%d]: Event begin!\n", serial->uart);
 
     uart_event_t event;
     unsigned char buff[BUFFER_SIZE];
@@ -85,23 +85,18 @@ void SerialEsp::RxEvent(void* parameter)
         if (!xQueueReceive(serial->uart_queue, (void*)&event, portMAX_DELAY))
             continue;
 
-        printf("NET-serial: uart[%d] event size: %d, type: %d\n", serial->uart, event.size, event.type);
+        printf("net-serial[%d]: event size: %d, type: %d\n", serial->uart, event.size, event.type);
 
         switch (event.type)
         {
             case UART_DATA:
             {
-                printf("NET-serial: read serial bytes\n");
                 uart_read_bytes(serial->uart, buff, event.size, portMAX_DELAY);
-                printf("NET-serial: Send to ring buffer\n");
 
                 for (size_t i = 0; i < event.size; ++i)
                 {
-                    printf("%d ", (int)buff[i]);
                     serial->rx_ring.Write(buff[i]);
                 }
-                printf("\n\r");
-
 
                 break;
             }
