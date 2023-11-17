@@ -5,7 +5,7 @@
 
 #include "esp_log.h"
 
-static const char* TAG = "[Net Wifi]";
+static const char* TAG = "[net-wifi]";
 
 Wifi* Wifi::instance;
 std::recursive_mutex Wifi::mux;
@@ -21,75 +21,93 @@ Wifi* Wifi::GetInstance()
     return instance;
 }
 
-
-esp_err_t Wifi::Connect()
+Wifi::Wifi():
+    wifi_init_cfg(WIFI_INIT_CONFIG_DEFAULT()),
+    wifi_cfg({}),
+    state(State::NotInitialized),
+    creds_entered(false)
 {
-    std::lock_guard<std::recursive_mutex> lock(mux);
-    logger->info(TAG, "connect()\n");
+    connect_semaphore = xSemaphoreCreateBinary();
 
-    // If the config has changed we should ensure that the config is updated
-    esp_err_t status{ ESP_OK };
+    // Start with a value of 1 for readability
+    xSemaphoreGive(connect_semaphore);
 
-    logger->info(TAG, "connect() state %d \n", state);
+    ESP_ERROR_CHECK(Initialize());
 
-    switch (state)
-    {
-        case State::Connecting:
-        case State::WaitingForIP:
-        case State::Connected:
-        {
-            // Disconnect and fall through
-            // status = Disconnect();
-            // ESP_ERROR_CHECK(status);
-            break;
-        }
-        case State::ReadyToConnect:
-        case State::Disconnected:
-        {
-            status = esp_wifi_connect();
-            ESP_ERROR_CHECK(status);
-            if (status == ESP_OK)
-            {
-                std::cout << "moving to connecting state " << std::endl;
-                state = State::Connecting;
+    xTaskCreate(ConnectTask,
+        "wifi_connect_task",
+        2048,
+        NULL,
+        12,
+        &event_task);
 
-            }
-            break;
-        }
-        case State::NotInitialized:
-        case State::Initialized:
-        case State::Error:
-            status = ESP_FAIL;
-            break;
-    }
-    return status;
 }
 
-
-esp_err_t Wifi::Connect(const char* ssid, const char* password)
+Wifi::~Wifi()
 {
-    // Set creds, and then call connect
-    SetCredentials(ssid, password);
-    return Connect();
+    ESP_LOGI(TAG, "Delete wifi");
+    vTaskDelete(event_task);
+}
+
+void Wifi::Connect(const char* ssid, const char* password)
+{
+    Connect(ssid,
+        std::min(strlen(ssid), sizeof(wifi_cfg.sta.ssid)),
+        password,
+        std::min(strlen(password), sizeof(wifi_cfg.sta.password))
+    );
+}
+
+void Wifi::Connect(const char* ssid,
+    const size_t ssid_len,
+    const char* password,
+    const size_t password_len)
+{
+    memcpy(wifi_cfg.sta.ssid,
+        ssid,
+        ssid_len);
+
+    memcpy(wifi_cfg.sta.password,
+        password,
+        password_len);
+
+    ESP_LOGE(TAG, "ssid %s password %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
+
+    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY)) { ESP_LOGW(TAG,"Connect() Waiting for semaphore");}
+
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
+
+    state = State::ReadyToConnect;
+
+    xSemaphoreGive(connect_semaphore);
+    ESP_LOGI(TAG, "SetCredentialsTask() Ready to connect state: %d", (int)state);
 }
 
 esp_err_t Wifi::Deinitialize()
 {
-    std::lock_guard<std::recursive_mutex> lock(mux);
+    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY)) { ESP_LOGW(TAG,"Deinitialize() Waiting for semaphore"); }
+
     state = State::NotInitialized;
-    return esp_wifi_deinit();
+    esp_err_t status = esp_wifi_deinit();
+
+    xSemaphoreGive(connect_semaphore);
+    return status;
 }
 
 esp_err_t Wifi::Disconnect()
 {
-    std::lock_guard<std::recursive_mutex> lock(mux);
+    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY)) {ESP_LOGW(TAG,"Disconnect() Waiting for semaphore"); }
 
     state = State::Disconnected;
-    return esp_wifi_disconnect();
+    esp_err_t status = esp_wifi_disconnect();
+
+    xSemaphoreGive(connect_semaphore);
+    return status;
 }
 
 esp_err_t Wifi::ScanNetworks(Vector<String>* ssids)
 {
+    // TODO
     wifi_scan_config_t scan_config = {
         .ssid = 0,
         .bssid = 0,
@@ -122,7 +140,13 @@ esp_err_t Wifi::ScanNetworks(Vector<String>* ssids)
 esp_err_t Wifi::Initialize()
 {
     std::lock_guard<std::recursive_mutex> lock(mux);
-    ESP_LOGI(TAG, "begin initialization:");
+
+    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY))
+    {
+        ESP_LOGE(TAG, "Semaphore should not be in use now????");
+    };
+
+    ESP_LOGI(TAG, "Begin initialization:");
 
     if (state != State::NotInitialized)
     {
@@ -187,18 +211,7 @@ esp_err_t Wifi::Initialize()
     status = esp_wifi_start();
     ESP_ERROR_CHECK(status);
 
-    state = State::ReadyToConnect;
-
-    ESP_LOGI(TAG, "Ready to connect");
     return status;
-}
-
-void Wifi::SetCredentials(const char* ssid, const char* password)
-{
-    // TODO error checking that returns an error if an ssid or password is too long
-    memcpy(wifi_cfg.sta.ssid, ssid, std::min(strlen(ssid), sizeof(wifi_cfg.sta.ssid)));
-    memcpy(wifi_cfg.sta.password, password, std::min(strlen(password), sizeof(wifi_cfg.sta.password)));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
 }
 
 Wifi::State Wifi::GetState() const
@@ -212,48 +225,76 @@ bool Wifi::IsConnected() const
 }
 
 /** Private functions **/
+
+void Wifi::ConnectTask(void* params)
+{
+    while (true)
+    {
+        // Delay for a second
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+        // If the state is ready to be connected to something then do it.
+        if (instance->state != State::ReadyToConnect &&
+            instance->state != State::Disconnected) continue;
+
+        // Try to take the semaphore
+        while (!xSemaphoreTake(instance->connect_semaphore, portMAX_DELAY)) { ESP_LOGW(TAG,"ConnectTask() Waiting for semaphore"); }
+
+        ESP_LOGI(TAG, "connect() state %d", (int)instance->state);
+
+        esp_err_t status = { ESP_OK };
+        ESP_ERROR_CHECK(esp_wifi_connect());
+        if (status == ESP_OK)
+        {
+            ESP_LOGI(TAG, "moving to connecting state");
+            instance->state = State::Connecting;
+        }
+
+        // Give semaphore in IP events
+    }
+}
+
 void Wifi::EventHandler(void* arg, esp_event_base_t event_base,
     int32_t event_id, void* event_data)
 {
-    Wifi* wifi = Wifi::GetInstance();
     if (event_base == WIFI_EVENT)
     {
-        std::cout << "Got Wifi Event: event_id " << event_data << std::endl;
-        wifi->WifiEvents(event_id, event_data);
+        instance->WifiEvents(event_id, event_data);
     }
     else if (event_base == IP_EVENT)
     {
-        std::cout << "Got IP Event: event_id " << event_data << std::endl;
-        wifi->IpEvents(event_id);
+        instance->IpEvents(event_id);
     }
 }
 
 inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
 {
-    logger->info(TAG, "WifiEvents- event %d \n", event_id);
-    const wifi_event_t event_type{static_cast<wifi_event_t>(event_id)};
+    ESP_LOGI(TAG, "Wifi Event -- event %d", (int)event_id);
+    const wifi_event_t event_type{ static_cast<wifi_event_t>(event_id) };
 
     switch (event_type)
     {
         case WIFI_EVENT_STA_START:
         {
             std::lock_guard<std::recursive_mutex> state_guard(mux);
-            state = State::ReadyToConnect;
-            std::cout << "Wifi Event - Ready to connect" << std::endl;
+            state = State::Initialized;
+            ESP_LOGI(TAG, "Wifi Event - Initialized");
+            xSemaphoreGive(connect_semaphore);
             break;
         }
         case WIFI_EVENT_STA_CONNECTED:
         {
             std::lock_guard<std::recursive_mutex> state_guard(mux);
             state = State::WaitingForIP;
-            std::cout << "Wifi Event - Waiting for IP" << std::endl;
+            ESP_LOGI(TAG, "Wifi Event - Waiting for IP");
             break;
         }
         case WIFI_EVENT_STA_DISCONNECTED:
         {
             std::lock_guard<std::recursive_mutex> state_guard(mux);
-            std::cout << "Wifi Event - Disconnected" << std::endl;
+            ESP_LOGI(TAG, "Wifi Event - Disconnected");
             state = State::Disconnected;
+            xSemaphoreGive(connect_semaphore);
             break;
         }
         default:
@@ -263,15 +304,16 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
 
 inline void Wifi::IpEvents(int32_t event_id)
 {
-    logger->info(TAG, "IP Event - %d\n\r", event_id);
+    ESP_LOGI(TAG, "IP Event - %d", (int)event_id);
 
     switch (event_id)
     {
         case IP_EVENT_STA_GOT_IP:
         {
             std::lock_guard<std::recursive_mutex> state_guard(mux);
-            std::cout << "IP Event - Got IP" << std::endl;
+            ESP_LOGI(TAG, "IP Event - Got IP");
             state = State::Connected;
+            xSemaphoreGive(connect_semaphore);
             break;
         }
         case IP_EVENT_STA_LOST_IP:
@@ -281,7 +323,7 @@ inline void Wifi::IpEvents(int32_t event_id)
             {
                 state = State::WaitingForIP;
             }
-            std::cout << "IP Event - Lost IP" << std::endl;
+            ESP_LOGI(TAG, "IP Event - Lost IP");
             break;
         }
         default:
