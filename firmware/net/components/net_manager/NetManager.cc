@@ -110,6 +110,14 @@ void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, si
         return;
     }
 
+    if (!Wifi::GetInstance()->IsConnected())
+    {
+        // Not connected to wifi just skip
+
+        // Reject, and instead we need to reply with a NACK of sorts
+        return;
+    }
+
     qchat::MessageTypes msg_type = static_cast<qchat::MessageTypes>(message_type);
 
     switch (msg_type)
@@ -303,10 +311,11 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
         Vector<String> ssids;
         esp_err_t res = Wifi::GetInstance()->ScanNetworks(&ssids);
 
+        // ERROR Here for some reason...
         if (res != ESP_OK)
         {
             printf("Error while scanning networks");
-            ESP_ERROR_CHECK(res);
+            ESP_ERROR_CHECK_WITHOUT_ABORT(res);
             return;
         }
 

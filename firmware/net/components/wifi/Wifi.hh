@@ -13,8 +13,7 @@
 // TODO scrolling
 #define MAX_AP 10
 
-// TODO
-#define MAX_ATTEMPTS 3
+#define MAX_ATTEMPTS 1
 
 class Wifi
 {
@@ -29,7 +28,7 @@ public:
         Connected,
         Disconnected,
         Error,
-        InvalidCredentials // TODO
+        InvalidCredentials
     };
 
     Wifi(Wifi& other) = delete;
@@ -49,8 +48,6 @@ public:
     bool IsConnected() const;
 
 protected:
-
-
     Wifi();
     ~Wifi();
 
@@ -79,7 +76,6 @@ private:
     // Static variables
     // For singleton
     static Wifi* instance;
-    static std::recursive_mutex mux;
 
     // Private functions
     inline void WifiEvents(int32_t event_id, void* event_data);
@@ -89,10 +85,8 @@ private:
     wifi_init_config_t wifi_init_cfg;
     wifi_config_t wifi_cfg;
     State state;
-    bool creds_entered;
-    TaskHandle_t event_task;
+    TaskHandle_t connect_task;
     SemaphoreHandle_t connect_semaphore;
 
-    // TODO
     int16_t failed_attempts = 0;
 };

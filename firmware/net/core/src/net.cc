@@ -123,7 +123,6 @@ void Setup()
 {
     // Wifi will manage itself and keep it connected if it disconnects.
     wifi = Wifi::GetInstance();
-    wifi->Connect("", "");
 
     inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
     char default_relay [] = "192.168.50.19";
