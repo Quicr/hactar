@@ -88,5 +88,5 @@ private:
     TaskHandle_t connect_task;
     SemaphoreHandle_t connect_semaphore;
 
-    int16_t failed_attempts = 0;
+    uint8_t failed_attempts = 0;
 };

@@ -134,8 +134,8 @@ struct Codec
     }
 
     static bool decode(WatchRoom& msg,
-        const Packet* encoded,
-        size_t& current_offset)
+        const std::unique_ptr<Packet>& encoded,
+        const size_t current_offset)
     {
         if (encoded == nullptr)
         {
@@ -164,12 +164,11 @@ struct Codec
             offset += 8;
         }
 
-        current_offset = offset;
         return true;
     }
 
     static bool decode(Ascii& msg,
-        const Packet* encoded,
+        const std::unique_ptr<Packet>& encoded,
         const size_t current_offset)
     {
         // type

@@ -42,11 +42,6 @@ public:
 
     ~SerialManager()
     {
-        if (rx_packet != nullptr) delete rx_packet;
-        for (unsigned long i = 0; i < rx_packets.size(); ++i)
-        {
-            delete rx_packets[i];
-        }
     }
 
     void RxTx(const unsigned long current_time)
@@ -63,7 +58,7 @@ public:
     void Tx(const unsigned long current_time)
     {
         // Don't try to send if we are reading
-        if (uart->AvailableBytes() >= 4) return;
+        if (uart->Unread() >= 4) return;
         if (rx_packet != nullptr) return;
 
         // Check pending tx packets
@@ -90,7 +85,7 @@ public:
         return rx_packets.size();
     }
 
-    const Vector<Packet*>& GetRxPackets()
+    const Vector<std::unique_ptr<Packet>>& GetRxPackets()
     {
         return rx_packets;
     }
@@ -117,34 +112,34 @@ public:
         return next_packet_id++;
     }
 
-    void LoopbackRxPacket(Packet* packet)
+    void LoopbackRxPacket(std::unique_ptr<Packet> packet)
     {
-        rx_packets.push_back(packet);
+        rx_packets.push_back(std::move(packet));
     }
 
+    // DEPRECATED
     void DestroyRxPacket(unsigned int idx)
     {
-        delete rx_packets[idx];
+        // delete rx_packets[idx];
         rx_packets.erase(idx);
     }
 
 private:
     SerialStatus ReadSerial(const unsigned long current_time)
     {
-        if (rx_packet != nullptr && current_time > rx_packet_timeout)
+        if (rx_packet && current_time > rx_packet_timeout)
         {
-            delete rx_packet;
-            rx_packet = nullptr;
+            rx_packet.reset();
             return SerialStatus::TIMEOUT;
         }
 
-        if (!uart->AvailableBytes()) return SerialStatus::EMPTY;
+        if (!uart->Unread()) return SerialStatus::EMPTY;
 
-        if (rx_packet == nullptr)
+        if (!rx_packet)
         {
             // Enough bytes to determine the start of a packet and
             // packet id, type, and length
-            if (uart->AvailableBytes() < Start_Bytes) return SerialStatus::EMPTY;
+            if (uart->Unread() < Start_Bytes) return SerialStatus::EMPTY;
 
             // Read the next byte if it is the start of a packet then continue on
             // TODO enqueue an error response?
@@ -156,7 +151,7 @@ private:
             }
 
             // Found the start, so create a packet
-            rx_packet = new Packet(current_time);
+            rx_packet = std::make_unique<Packet>(current_time);
 
             // Timeout the packet in 5 seconds after it has started.
             rx_packet_timeout = current_time + 5000;
@@ -171,12 +166,11 @@ private:
         unsigned short data_length = rx_packet->GetData(14U, 10U);
 
         // Read n bytes from the ring to the packet
-        while (uart->AvailableBytes())
+        while (uart->Unread())
         {
             if (rx_packet->SizeInBytes() > 256U)
             {
-                delete rx_packet;
-                rx_packet = nullptr;
+                rx_packet.reset();
                 return SerialStatus::TIMEOUT;
             }
             rx_packet->AppendData(uart->Read(), 8U);
@@ -191,7 +185,7 @@ private:
             {
                 case (unsigned char)Packet::Types::LocalDebug:
                 {
-                    delete rx_packet;
+                    rx_packet.reset();
                     status = SerialStatus::EMPTY;
                     break;
                 }
@@ -206,7 +200,7 @@ private:
                     // Remove the pointer from the map
                     tx_pending_packets.erase(ok_id);
 
-                    delete rx_packet;
+                    rx_packet.reset();
                     status = SerialStatus::OK;
                     break;
                 }
@@ -218,7 +212,7 @@ private:
                     tx_pending_packets.erase(failed_id);
                     failed_packet = nullptr;
 
-                    delete rx_packet;
+                    rx_packet.reset();
                     status = SerialStatus::ERROR;
                     break;
                 }
@@ -227,7 +221,7 @@ private:
                     // TODO resend our message
 
 
-                    delete rx_packet;
+                    rx_packet.reset();
                     status = SerialStatus::BUSY;
                     break;
                 }
@@ -249,12 +243,11 @@ private:
                     EnqueuePacket(ok_packet);
                     ok_packet = nullptr;
 
-                    rx_packets.push_back(rx_packet);
+                    rx_packets.push_back(std::move(rx_packet));
                     status = SerialStatus::OK;
                     break;
                 }
             }
-            rx_packet = nullptr;
             return status;
         }
 
@@ -371,8 +364,8 @@ private:
     // THINK should I have a map of vector of packets?
     // THINK linked list?
     // rx
-    Vector<Packet*> rx_packets;
-    Packet* rx_packet;
+    Vector<std::unique_ptr<Packet>> rx_packets;
+    std::unique_ptr<Packet> rx_packet;
     unsigned long rx_packet_timeout;
     SerialStatus rx_status;
 

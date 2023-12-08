@@ -71,6 +71,8 @@ void UserInterfaceManager::Run()
     //      otherwise it will be bizarre having to get all of the old messages.
     // TODO this should only occur in the chat view mode?
     HandleIncomingPackets();
+
+    // TODO Clear pending packets after a certain amount of time
 }
 
 bool UserInterfaceManager::HasNewMessages()
@@ -101,9 +103,9 @@ void UserInterfaceManager::EnqueuePacket(Packet* packet)
     net_layer.EnqueuePacket(packet);
 }
 
-void UserInterfaceManager::LoopbackPacket(Packet* packet)
+void UserInterfaceManager::LoopbackPacket(std::unique_ptr<Packet> packet)
 {
-    net_layer.LoopbackRxPacket(packet);
+    net_layer.LoopbackRxPacket(std::move(packet));
 }
 
 void UserInterfaceManager::ForceRedraw()
@@ -138,20 +140,22 @@ void UserInterfaceManager::HandleIncomingPackets()
     if (!net_layer.HasRxPackets()) return;
 
     // Get the packets
-    const Vector<Packet*>& packets = net_layer.GetRxPackets();
+    const Vector<std::unique_ptr<Packet>>& packets = net_layer.GetRxPackets();
 
     // Handle incoming packets
     while (packets.size() > 0)
     {
         // Get the type
-        Packet* rx_packet = packets[0];
+        std::unique_ptr<Packet> rx_packet = std::move(packets[0]);
+        net_layer.DestroyRxPacket(0);
+
         uint8_t p_type = rx_packet->GetData(0, 6);
         switch (p_type)
         {
             // P_type will only be message or debug by this point
             case (Packet::Types::Message):
             {
-                HandleMessagePacket(rx_packet);
+                HandleMessagePacket(std::move(rx_packet));
 
                 if (ascii_messages.size() > 0)
                 {
@@ -205,29 +209,19 @@ void UserInterfaceManager::HandleIncomingPackets()
             {
                 // TODO move to a parse command function
                 // TODO switch statement
-                uint8_t command_type = rx_packet->GetData(24, 8);
+                Packet::Commands command_type = static_cast<Packet::Commands>(
+                    rx_packet->GetData(24, 8));
+
                 if (Packet::Commands::SSIDs == command_type)
                 {
-                    // Get the packet len
-                    uint16_t len = rx_packet->GetData(14, 10);
-
-                    // Get the ssid id
-                    uint8_t ssid_id = rx_packet->GetData(32, 8);
-
-                    // Build the string
-                    String str;
-                    for (uint8_t i = 0; i < len - 2; ++i)
-                    {
-                        str.push_back(static_cast<char>(
-                            rx_packet->GetData(40 + i * 8, 8)));
-                    }
-
-                    ssids[ssid_id] = std::move(str);
+                    pending_command_packets[command_type].Write(std::move(rx_packet));
                 }
                 else if (Packet::Commands::WifiStatus == command_type)
                 {
                     // Response from the esp32 will invoke this
-                    is_connected_to_wifi = rx_packet->GetData(32, 8);
+
+                    uint8_t message [] = "Got a connection status\n\r";
+                    HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);                    is_connected_to_wifi = rx_packet->GetData(32, 8);
                     if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
                     {
                         ConnectToWifi();
@@ -249,7 +243,7 @@ void UserInterfaceManager::HandleIncomingPackets()
         // delete rx_packet;
         // packets.erase(0);
 
-        net_layer.DestroyRxPacket(0);
+        // net_layer.DestroyRxPacket(0);
     }
 }
 
@@ -267,6 +261,23 @@ const std::map<uint8_t, String>& UserInterfaceManager::SSIDs() const
 {
     return ssids;
 }
+
+// TODO move to RingBuffer
+const bool UserInterfaceManager::GetReadyPackets(
+    RingBuffer<std::unique_ptr<Packet>>** buff,
+    const Packet::Commands command_type) const
+{
+    if (pending_command_packets.find(command_type) == pending_command_packets.end())
+    {
+        return false;
+    }
+
+    *buff = const_cast<RingBuffer<std::unique_ptr<Packet>>*>(&pending_command_packets.at(command_type));
+
+    return true;
+}
+
+//a value of type "const Foo<std::unique_ptr<Bar, std::default_delete<Bar>>> *" cannot be assigned to an entity of type "Foo<std::unique_ptr<Bar, std::default_delete<Bar>>> *"
 
 void UserInterfaceManager::ClearSSIDs()
 {
@@ -304,7 +315,7 @@ void UserInterfaceManager::ConnectToWifi()
     uint16_t length = ssid_len + ssid_password_len + 3;
     connect_packet->SetData(length, 14, 10);
 
-    connect_packet->SetData(Packet::Commands::ConnectToSSID, 24, 8);
+    connect_packet->SetData(Packet::Commands::WifiConnect, 24, 8);
 
     // Set the length of the ssid
     connect_packet->SetData(ssid_len, 32, 8);
@@ -349,7 +360,7 @@ void UserInterfaceManager::ConnectToWifi(const String& ssid,
     uint16_t length = ssid_len + ssid_password_len + 3;
     connect_packet->SetData(length, 14, 10);
 
-    connect_packet->SetData(Packet::Commands::ConnectToSSID, 24, 8);
+    connect_packet->SetData(Packet::Commands::WifiConnect, 24, 8);
 
     // Set the length of the ssid
     connect_packet->SetData(ssid_len, 32, 8);
@@ -446,7 +457,7 @@ void UserInterfaceManager::SendCheckWifiPacket()
 }
 
 void UserInterfaceManager::HandleMessagePacket(
-    Packet* packet)
+    std::unique_ptr<Packet> packet)
 {
     // Get the message type
     qchat::MessageTypes message_type =

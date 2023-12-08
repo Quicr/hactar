@@ -29,9 +29,9 @@ SerialEsp::~SerialEsp()
 
 }
 
-size_t SerialEsp::AvailableBytes()
+size_t SerialEsp::Unread()
 {
-    return rx_ring.AvailableBytes();
+    return rx_ring.Unread();
 }
 
 unsigned char SerialEsp::Read()

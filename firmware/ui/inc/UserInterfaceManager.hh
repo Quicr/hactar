@@ -36,7 +36,7 @@ public:
     void PushMessage(String&& str);
     void ClearMessages();
     void EnqueuePacket(Packet* packet);
-    void LoopbackPacket(Packet* packet);
+    void LoopbackPacket(std::unique_ptr<Packet> packet);
     void ForceRedraw();
     bool RedrawForced();
     void ConnectToWifi();
@@ -46,6 +46,9 @@ public:
     uint32_t GetRxStatusColour() const;
 
     const std::map<uint8_t, String>& SSIDs() const;
+    const bool GetReadyPackets(
+        RingBuffer<std::unique_ptr<Packet>>** buff,
+        const Packet::Commands command_type) const;
     void ClearSSIDs();
     bool IsConnectedToWifi() const;
 
@@ -82,7 +85,7 @@ private:
     void SendCheckWifiPacket();
     void LoadSettings();
     void LoadUsername();
-    void HandleMessagePacket(Packet* packet);
+    void HandleMessagePacket(std::unique_ptr<Packet> packet);
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
@@ -99,6 +102,7 @@ private:
 
 
     std::map<uint8_t, String> ssids;
+    std::map<Packet::Commands, RingBuffer<std::unique_ptr<Packet>>> pending_command_packets;
     uint32_t last_wifi_check;
     bool is_connected_to_wifi;
     uint32_t attempt_to_connect_timeout;

@@ -16,8 +16,8 @@ public:
     static void HandleSerial(void* param);
     static void HandleNetwork(void* param);
 private:
-    void HandleSerialCommands(Packet* rx_packet);
-    void HandleQChatMessages(uint8_t message_type, Packet* rx_packet, size_t offset);
+    void HandleSerialCommands(const std::unique_ptr<Packet>& rx_packet);
+    void HandleQChatMessages(uint8_t message_type, const std::unique_ptr<Packet>& rx_packet, size_t offset);
     static void HandleWatchMessage(void* watch);
 
     void HandleQSessionMessages(QuicrObject&& obj);

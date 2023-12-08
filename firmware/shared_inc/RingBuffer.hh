@@ -2,11 +2,13 @@
 
 #include <stdint.h>
 
+#define DEFAULT_BUFFER_SIZE 32
+
 template <typename T>
 class RingBuffer
 {
 public:
-    RingBuffer(const unsigned short size) :
+    RingBuffer(const unsigned short size=DEFAULT_BUFFER_SIZE) :
         size(size),
         read_idx(0),
         write_idx(0),
@@ -24,9 +26,9 @@ public:
         delete [] buffer;
     }
 
-    void Write(const T d_in)
+    void Write(T d_in)
     {
-        buffer[write_idx++] = d_in;
+        buffer[write_idx++] = std::move(d_in);
 
         if (write_idx >= size)
             write_idx = 0;
@@ -34,26 +36,37 @@ public:
         unread_values++;
     }
 
-    void Write(const T&& d_in)
-    {
-        buffer[write_idx++] = d_in;
+    // void Write(T&& d_in)
+    // {
+    //     buffer[write_idx++] = d_in;
 
-        if (write_idx >= size)
-            write_idx = 0;
+    //     if (write_idx >= size)
+    //         write_idx = 0;
 
-        unread_values++;
-    }
+    //     unread_values++;
+    // }
 
-    T Read()
+    T Read() noexcept
     {
         if (unread_values > 0) unread_values--;
-        T d_out = buffer[read_idx++];
+        T d_out = std::move(buffer[read_idx++]);
 
         if (read_idx >= size)
             read_idx = 0;
 
         return d_out;
     }
+
+    // T&& Read() noexcept
+    // {
+    //     if (unread_values > 0) unread_values--;
+    //     T d_out = buffer[read_idx++];
+
+    //     if (read_idx >= size)
+    //         read_idx = 0;
+
+    //     return std::move(d_out);
+    // }
 
     void Read(T& d_out, bool& is_end)
     {
@@ -66,7 +79,7 @@ public:
         is_end = read_idx == write_idx;
     }
 
-    size_t AvailableBytes() const
+    size_t Unread() const
     {
         return unread_values;
     }
