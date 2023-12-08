@@ -17,9 +17,9 @@ SerialStm::~SerialStm()
     uart = nullptr;
 }
 
-size_t SerialStm::AvailableBytes()
+size_t SerialStm::Unread()
 {
-    return rx_ring.AvailableBytes();
+    return rx_ring.Unread();
 }
 
 unsigned char SerialStm::Read()

@@ -12,7 +12,7 @@ public:
               unsigned short rx_ring_sz=256);
     ~SerialStm();
 
-    size_t AvailableBytes() override;
+    size_t Unread() override;
     unsigned char Read() override;
     bool ReadyToWrite() override;
     void Write(unsigned char* buff, const unsigned short buff_sz) override;

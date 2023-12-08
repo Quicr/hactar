@@ -17,5 +17,13 @@ protected:
     void Update();
 
 private:
+    void RequestRooms();
+    void DisplayRooms();
+    void SelectRoom();
+    void ConnectToRoom();
 
+
+    int32_t selected_room_id;
+    bool connecting_to_room;
+    uint32_t next_get_rooms_time;
 };

@@ -34,20 +34,41 @@ void WifiView::Update()
     // Periodically get the list of teams.
     if (current_tick > next_get_ssid_timeout && state == WifiState::SSID)
     {
-        manager.ClearSSIDs();
+        ssids.clear();
         SendGetSSIDPacket();
 
         // Get the list again after 30 seconds
         next_get_ssid_timeout = current_tick + 30000;
     }
 
-    // TODO clean up below
     if (state == WifiState::SSID && current_tick > state_update_timeout)
     {
-        // TODO this should do nothing until we've sent a new request
-        ssids = manager.SSIDs();
+        RingBuffer<std::unique_ptr<Packet>>* ssid_packets;
 
-        state_update_timeout = current_tick + 1000;
+        if (manager.GetReadyPackets(&ssid_packets, Packet::Commands::SSIDs))
+        {
+            while (ssid_packets->Unread() > 0)
+            {
+                auto rx_packet = std::move(ssid_packets->Read());
+                // Get the packet len
+                uint16_t len = rx_packet->GetData(14, 10);
+
+                // Get the ssid id
+                uint8_t ssid_id = rx_packet->GetData(32, 8);
+
+                // Build the string
+                String str;
+                for (uint8_t i = 0; i < len - 2; ++i)
+                {
+                    str.push_back(static_cast<char>(
+                        rx_packet->GetData(40 + i * 8, 8)));
+                }
+
+                ssids[ssid_id] = std::move(str);
+            }
+        }
+
+        state_update_timeout = current_tick + 500;
     }
     else if (state == WifiState::Connecting && current_tick > state_update_timeout)
     {
@@ -117,18 +138,11 @@ void WifiView::Draw()
             first_load = false;
         }
 
-
         screen.FillRectangle(1,
             screen.ViewHeight() - (usr_font.height * 3), screen.ViewWidth(), screen.ViewHeight() - (usr_font.height * 2), bg);
         screen.DrawText(1, screen.ViewHeight() - (usr_font.height * 3),
             request_msg, usr_font, fg, bg);
         redraw_menu = false;
-
-        screen.DrawText(80, 20, String::int_to_string(ssid.length()), font5x8, C_WHITE, C_BLACK);
-        screen.DrawText(80, 28, String::int_to_string(password.length()), font5x8, C_WHITE, C_BLACK);
-        screen.DrawText(100, 20, ssid, font5x8, C_WHITE, C_BLACK);
-        screen.DrawText(100, 28, password, font5x8, C_WHITE, C_BLACK);
-
     }
 
     if (state == WifiState::SSID && last_num_ssids != ssids.size())
@@ -212,8 +226,6 @@ void WifiView::HandleWifiInput()
             redraw_menu = true;
             return;
         }
-
-        const std::map<uint8_t, String>& ssids = manager.SSIDs();
 
         if (ssids.find(ssid_id) == ssids.end())
         {

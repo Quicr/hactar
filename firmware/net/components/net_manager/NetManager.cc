@@ -46,13 +46,13 @@ void NetManager::HandleSerial(void* param)
 
         if (!_this->ui_layer->HasRxPackets()) continue;
 
-        const Vector<Packet*>& rx_packets = _this->ui_layer->GetRxPackets();
+        const Vector<std::unique_ptr<Packet>>& rx_packets = _this->ui_layer->GetRxPackets();
         uint32_t timeout = (xTaskGetTickCount() / portTICK_PERIOD_MS) + 10000;
 
         while (rx_packets.size() > 0 &&
             xTaskGetTickCount() / portTICK_PERIOD_MS < timeout)
         {
-            Packet* rx_packet = rx_packets[0];
+            std::unique_ptr<Packet> rx_packet = std::move(rx_packets[0]);
             uint8_t packet_type = rx_packet->GetData(0, 6);
             uint16_t data_len = rx_packet->GetData(14, 10);
             uint8_t data;
@@ -97,7 +97,9 @@ void NetManager::HandleSerial(void* param)
     }
 }
 
-void NetManager::HandleQChatMessages(uint8_t message_type, Packet* rx_packet, size_t offset)
+void NetManager::HandleQChatMessages(uint8_t message_type,
+    const std::unique_ptr<Packet>& rx_packet,
+    const size_t offset)
 {
     if (rx_packet == nullptr)
     {
@@ -300,7 +302,7 @@ void NetManager::HandleNetwork(void* param)
 }
 
 /**                          Private Functions                               **/
-void NetManager::HandleSerialCommands(Packet* rx_packet)
+void NetManager::HandleSerialCommands(const std::unique_ptr<Packet>& rx_packet)
 {
     // Get the command type
     uint8_t command_type = rx_packet->GetData(24, 8);
@@ -360,7 +362,7 @@ void NetManager::HandleSerialCommands(Packet* rx_packet)
             ui_layer->EnqueuePacket(packet);
         }
     }
-    else if (command_type == Packet::Commands::ConnectToSSID)
+    else if (command_type == Packet::Commands::WifiConnect)
     {
         // Get the ssid value, followed by the ssid_password
         unsigned char ssid_len = rx_packet->GetData(32, 8);

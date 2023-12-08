@@ -50,7 +50,7 @@ public:
     enum Commands
     {
         SSIDs = 1,
-        ConnectToSSID,
+        WifiConnect,
         WifiStatus
     };
 
