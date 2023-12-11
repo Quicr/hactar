@@ -89,7 +89,7 @@ struct Codec
     {
         return { str.begin(), str.end() };
     }
-    static void encode(Packet* packet, const WatchRoom& msg)
+    static void encode(std::unique_ptr<Packet>& packet, const WatchRoom& msg)
     {
         // [total_len][type][pub_uri_len][[pub_uri][room_uri_len][room_uri]
         const uint16_t extra_bytes = 1 + uri_len_bytes + uri_len_bytes;
@@ -110,7 +110,7 @@ struct Codec
         }
     }
 
-    static void encode(Packet* packet,
+    static void encode(std::unique_ptr<Packet>& packet,
         const uint16_t start_offset,
         const Ascii& msg)
     {

@@ -36,7 +36,7 @@ void NetManager::HandleSerial(void* param)
     // TODO add a mutex
     NetManager* _this = (NetManager*)param;
 
-    // Vector<Packet*>* rx_packets = nullptr;
+    // Vector<std::unique_ptr<Packet>>* rx_packets = nullptr;
     while (true)
     {
         // Delay at the start
@@ -244,7 +244,7 @@ void NetManager::HandleNetwork(void* param)
             auto qdata = qobj.data;
 
             // Create a net packet
-            Packet* packet = new Packet();
+            std::unique_ptr<Packet> packet = std::make_unique<Packet>();
 
             // Set the type
             packet->SetData(Packet::Types::Message, 0, 6);
@@ -288,7 +288,7 @@ void NetManager::HandleNetwork(void* param)
             }
             ESP_LOGI(TAG, "Enqueue serial packet that came from the network");
             // Enqueue the packet to go to the UI
-            _this->ui_layer->EnqueuePacket(packet);
+            _this->ui_layer->EnqueuePacket(std::move(packet));
             packet = nullptr;
         }
         catch (const std::exception& ex)
@@ -336,7 +336,7 @@ void NetManager::HandleSerialCommands(const std::unique_ptr<Packet>& rx_packet)
             if (ssid.length() == 0) continue;
             printf("%d. length - %d\n\r", i, ssid.length());
 
-            Packet* packet = new Packet();
+            std::unique_ptr<Packet> packet = std::make_unique<Packet>();
 
             // Set the type
             packet->SetData(Packet::Types::Command, 0, 6);
@@ -359,7 +359,7 @@ void NetManager::HandleSerialCommands(const std::unique_ptr<Packet>& rx_packet)
             {
                 packet->SetData(ssid[j], 40 + (j * 8), 8);
             }
-            ui_layer->EnqueuePacket(packet);
+            ui_layer->EnqueuePacket(std::move(packet));
         }
     }
     else if (command_type == Packet::Commands::WifiConnect)
@@ -401,13 +401,13 @@ void NetManager::HandleSerialCommands(const std::unique_ptr<Packet>& rx_packet)
         printf("NET: Connection status - %d\n\r", (int)wifi->GetState());
 
         // Create a packet that tells the current status
-        Packet* connected_packet = new Packet();
+        std::unique_ptr<Packet> connected_packet = std::make_unique<Packet>();
         connected_packet->SetData(Packet::Types::Command, 0, 6);
         connected_packet->SetData(1, 6, 8);
         connected_packet->SetData(2, 14, 10);
         connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
         connected_packet->SetData(wifi->GetState() == Wifi::State::Connected, 32, 8);
 
-        ui_layer->EnqueuePacket(connected_packet);
+        ui_layer->EnqueuePacket(std::move(connected_packet));
     }
 }

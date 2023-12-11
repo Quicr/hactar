@@ -75,12 +75,12 @@ void RoomView::RequestRooms()
     next_get_rooms_time = HAL_GetTick() + 5000;
 
     // Send request to the esp32 to get the rooms
-    Packet* room_req_packet = new Packet();
+    std::unique_ptr<Packet> room_req_packet = std::make_unique<Packet>();
     room_req_packet->SetData(Packet::Types::Command, 0, 6);
     room_req_packet->SetData(manager.NextPacketId(), 6, 8);
     room_req_packet->SetData(1, 14, 10);
     room_req_packet->SetData(Packet::Commands::RoomsGet, 24, 8);
-    manager.EnqueuePacket(room_req_packet);
+    manager.EnqueuePacket(std::move(room_req_packet));
 }
 
 void RoomView::DisplayRooms()

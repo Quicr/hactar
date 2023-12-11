@@ -35,7 +35,7 @@ public:
     const Vector<String>& GetMessages();
     void PushMessage(String&& str);
     void ClearMessages();
-    void EnqueuePacket(Packet* packet);
+    void EnqueuePacket(std::unique_ptr<Packet> packet);
     void LoopbackPacket(std::unique_ptr<Packet> packet);
     void ForceRedraw();
     bool RedrawForced();
