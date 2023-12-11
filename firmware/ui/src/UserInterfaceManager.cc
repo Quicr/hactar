@@ -97,10 +97,10 @@ void UserInterfaceManager::ClearMessages()
     received_messages.clear();
 }
 
-void UserInterfaceManager::EnqueuePacket(Packet* packet)
+void UserInterfaceManager::EnqueuePacket(std::unique_ptr<Packet> packet)
 {
     // TODO maybe make this into a linked list?
-    net_layer.EnqueuePacket(packet);
+    net_layer.EnqueuePacket(std::move(packet));
 }
 
 void UserInterfaceManager::LoopbackPacket(std::unique_ptr<Packet> packet)
@@ -307,7 +307,7 @@ void UserInterfaceManager::ConnectToWifi()
         password_str += ssid_password[i];
 
     // Create the packet
-    Packet* connect_packet = new Packet();
+    std::unique_ptr<Packet> connect_packet = std::make_unique<Packet>();
     connect_packet->SetData(Packet::Types::Command, 0, 6);
     connect_packet->SetData(UserInterfaceManager::NextPacketId(), 6, 8);
     // THINK should these be separate packets?
@@ -342,7 +342,7 @@ void UserInterfaceManager::ConnectToWifi()
     }
 
     // Enqueue the message
-    EnqueuePacket(connect_packet);
+    EnqueuePacket(std::move(connect_packet));
 
     delete ssid;
     delete ssid_password;
@@ -351,7 +351,7 @@ void UserInterfaceManager::ConnectToWifi()
 void UserInterfaceManager::ConnectToWifi(const String& ssid,
     const String& password)
 {
-    Packet* connect_packet = new Packet();
+    std::unique_ptr<Packet> connect_packet = std::make_unique<Packet>();
     connect_packet->SetData(Packet::Types::Command, 0, 6);
     connect_packet->SetData(UserInterfaceManager::NextPacketId(), 6, 8);
 
@@ -387,7 +387,7 @@ void UserInterfaceManager::ConnectToWifi(const String& ssid,
     }
 
     // Enqueue the message
-    EnqueuePacket(connect_packet);
+    EnqueuePacket(std::move(connect_packet));
 }
 
 bool UserInterfaceManager::IsConnectedToWifi() const
@@ -416,7 +416,7 @@ uint32_t UserInterfaceManager::GetStatusColour(
 
 void UserInterfaceManager::SendTestPacket()
 {
-    Packet* test_packet = new Packet();
+    std::unique_ptr<Packet> test_packet = std::make_unique<Packet>();
 
     test_packet->SetData(Packet::Types::Message, 0, 6);
     test_packet->SetData(NextPacketId(), 6, 8);
@@ -427,7 +427,7 @@ void UserInterfaceManager::SendTestPacket()
     test_packet->SetData('l', 48, 8);
     test_packet->SetData('o', 56, 8);
 
-    EnqueuePacket(test_packet);
+    EnqueuePacket(std::move(test_packet));
 }
 
 void UserInterfaceManager::SendCheckWifiPacket()
@@ -435,7 +435,7 @@ void UserInterfaceManager::SendCheckWifiPacket()
     if (current_time < last_wifi_check) return;
 
     // Check a check wifi status packet
-    Packet* check_wifi = new Packet();
+    std::unique_ptr<Packet> check_wifi = std::make_unique<Packet>();
 
     // Set the command
     check_wifi->SetData(Packet::Types::Command, 0, 6);
@@ -449,7 +449,7 @@ void UserInterfaceManager::SendCheckWifiPacket()
     // Set the data
     check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
 
-    EnqueuePacket(check_wifi);
+    EnqueuePacket(std::move(check_wifi));
 
     last_wifi_check = current_time + 10000;
     uint8_t message [] = "UI: Send check wifi to esp\n\r";

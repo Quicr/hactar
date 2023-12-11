@@ -38,7 +38,7 @@ ChatView::ChatView(UserInterfaceManager& manager,
         .room_uri = active_room.room_uri,
     };
 
-    Packet* packet = new Packet(HAL_GetTick(), 1);
+    std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
     packet->SetData(Packet::Types::Message, 0, 6);
     packet->SetData(manager.NextPacketId(), 6, 8);
 
@@ -52,7 +52,7 @@ ChatView::ChatView(UserInterfaceManager& manager,
     // Creation time
     packet->SetData(0, new_offset, 32);
     // new_offset += 32;
-    manager.EnqueuePacket(packet);
+    manager.EnqueuePacket(std::move(packet));
 
     redraw_messages = true;
 }
@@ -134,7 +134,7 @@ void ChatView::HandleInput()
 
         // TODO move into encode...
         // TODO packet should maybe have a static next_packet_id?
-        Packet* packet = new Packet(HAL_GetTick(), 1);
+        std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
         packet->SetData(Packet::Types::Message, 0, 6);
         packet->SetData(manager.NextPacketId(), 6, 8);
 
@@ -151,7 +151,7 @@ void ChatView::HandleInput()
         new_offset += 32;
 
         // TODO ENABLE
-        manager.EnqueuePacket(packet);
+        manager.EnqueuePacket(std::move(packet));
         manager.PushMessage(std::move(msg));
 
         // redraw_messages = true;

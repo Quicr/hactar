@@ -267,10 +267,10 @@ void WifiView::HandleWifiInput()
 
 void WifiView::SendGetSSIDPacket()
 {
-    Packet* ssid_req_packet = new Packet();
+    std::unique_ptr<Packet> ssid_req_packet = std::make_unique<Packet>();
     ssid_req_packet->SetData(Packet::Types::Command, 0, 6);
     ssid_req_packet->SetData(manager.NextPacketId(), 6, 8);
     ssid_req_packet->SetData(1, 14, 10);
     ssid_req_packet->SetData(Packet::Commands::SSIDs, 24, 8);
-    manager.EnqueuePacket(ssid_req_packet);
+    manager.EnqueuePacket(std::move(ssid_req_packet));
 }
