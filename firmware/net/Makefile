@@ -1,5 +1,5 @@
 BAUD 				= 115200
-PORT 				= /dev/cu.wchusbserial110
+PORT 				= /dev/ttyUSB0
 BUILD_PATH			= ./build
 TARGET				= net
 

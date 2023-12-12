@@ -207,27 +207,32 @@ void UserInterfaceManager::HandleIncomingPackets()
             }
             case (Packet::Types::Command):
             {
-                // TODO move to a parse command function
-                // TODO switch statement
+                // TODO move into a function too many tabs deeeeep
                 Packet::Commands command_type = static_cast<Packet::Commands>(
                     rx_packet->GetData(24, 8));
 
-                if (Packet::Commands::SSIDs == command_type)
+                switch (command_type)
                 {
-                    pending_command_packets[command_type].Write(std::move(rx_packet));
-                }
-                else if (Packet::Commands::WifiStatus == command_type)
-                {
-                    // Response from the esp32 will invoke this
-
-                    uint8_t message [] = "Got a connection status\n\r";
-                    HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);                    is_connected_to_wifi = rx_packet->GetData(32, 8);
-                    if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
+                    case Packet::Commands::WifiStatus:
                     {
-                        ConnectToWifi();
+                        // Response from the esp32 will invoke this
+                        uint8_t message [] = "Got a connection status\n\r";
+                        HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);                    is_connected_to_wifi = rx_packet->GetData(32, 8);
+                        if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
+                        {
+                            ConnectToWifi();
 
-                        // Wait a long time before trying to connect again
-                        attempt_to_connect_timeout = HAL_GetTick() + 10000;
+                            // Wait a long time before trying to connect again
+                            attempt_to_connect_timeout = HAL_GetTick() + 10000;
+                        }
+                        break;
+                    }
+                    default:
+                    {
+                        // Every other command type should be put into the
+                        // pending command packets.
+                        pending_command_packets[command_type].Write(std::move(rx_packet));
+                        break;
                     }
                 }
 
@@ -267,12 +272,14 @@ const bool UserInterfaceManager::GetReadyPackets(
     RingBuffer<std::unique_ptr<Packet>>** buff,
     const Packet::Commands command_type) const
 {
-    if (pending_command_packets.find(command_type) == pending_command_packets.end())
+    if (pending_command_packets.find(command_type) ==
+        pending_command_packets.end())
     {
         return false;
     }
 
-    *buff = const_cast<RingBuffer<std::unique_ptr<Packet>>*>(&pending_command_packets.at(command_type));
+    *buff = const_cast<RingBuffer<std::unique_ptr<Packet>>*>(
+        &pending_command_packets.at(command_type));
 
     return true;
 }

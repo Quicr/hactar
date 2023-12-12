@@ -49,6 +49,7 @@ public:
     const bool GetReadyPackets(
         RingBuffer<std::unique_ptr<Packet>>** buff,
         const Packet::Commands command_type) const;
+    const bool HasReadyPackets(const Packet::Commands command_type) const;
     void ClearSSIDs();
     bool IsConnectedToWifi() const;
 

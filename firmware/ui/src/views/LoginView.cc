@@ -68,7 +68,7 @@ void LoginView::Draw()
             last_drawn_idx++;
         }
 
-        DrawInputString(draw_str);
+        ViewInterface::DrawInputString(draw_str);
     }
 
     if (!redraw_menu)
@@ -108,7 +108,7 @@ void LoginView::HandleInput()
 
     if (usr_input == password)
     {
-        ChangeView("/chat");
+        ChangeView("/rooms");
     }
     else
     {
