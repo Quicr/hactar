@@ -307,107 +307,155 @@ void NetManager::HandleSerialCommands(const std::unique_ptr<Packet>& rx_packet)
     // Get the command type
     uint8_t command_type = rx_packet->GetData(24, 8);
     printf("NET: Packet command received - %d\n\r", (int)command_type);
-    if (command_type == Packet::Commands::SSIDs)
+
+    switch (command_type)
     {
-        // Get the ssids
-        Vector<String> ssids;
-        esp_err_t res = Wifi::GetInstance()->ScanNetworks(&ssids);
-
-        // ERROR Here for some reason...
-        if (res != ESP_OK)
-        {
-            printf("Error while scanning networks");
-            ESP_ERROR_CHECK_WITHOUT_ABORT(res);
-            return;
-        }
-
-        if (ssids.size() == 0)
-        {
-            printf("No networks found\n\r");
-            return;
-        }
-
-        printf("SSIDs found - %d\n\r", ssids.size());
-
-        // Put ssids into a vector of packets and enqueue them
-        for (unsigned int i = 0; i < ssids.size(); ++i)
-        {
-            String& ssid = ssids[i];
-            if (ssid.length() == 0) continue;
-            printf("%d. length - %d\n\r", i, ssid.length());
-
-            std::unique_ptr<Packet> packet = std::make_unique<Packet>();
-
-            // Set the type
-            packet->SetData(Packet::Types::Command, 0, 6);
-
-            // Set the packet id
-            packet->SetData(1, 6, 8);
-
-            // Add 1 for the command type
-            // Add 1 for the ssid id
-            packet->SetData(ssid.length() + 2, 14, 10);
-
-            // Set the first byte to the command type
-            packet->SetData(Packet::Commands::SSIDs, 24, 8);
-
-            // Set the ssid id
-            packet->SetData(i + 1, 32, 8);
-
-            // Add each character of the string to the packet
-            for (unsigned int j = 0; j < ssid.length(); j++)
-            {
-                packet->SetData(ssid[j], 40 + (j * 8), 8);
-            }
-            ui_layer->EnqueuePacket(std::move(packet));
-        }
+        case Packet::Commands::SSIDs:
+            GetSSIDsCommand();
+            break;
+        case Packet::Commands::WifiConnect:
+            ConnectToWifiCommand(rx_packet);
+            break;
+        case Packet::Commands::WifiStatus:
+            GetWifiStatusCommand();
+            break;
+        case Packet::Commands::RoomsGet:
+            GetRoomsCommand();
+            break;
+        default:
+            break;
     }
-    else if (command_type == Packet::Commands::WifiConnect)
+}
+
+void NetManager::GetSSIDsCommand()
+{
+    // Get the ssids
+    Vector<String> ssids;
+    esp_err_t res = Wifi::GetInstance()->ScanNetworks(&ssids);
+
+    // ERROR Here for some reason...
+    if (res != ESP_OK)
     {
-        // Get the ssid value, followed by the ssid_password
-        unsigned char ssid_len = rx_packet->GetData(32, 8);
-        printf("NET SSID length - %d\n\r", ssid_len);
+        printf("Error while scanning networks");
+        ESP_ERROR_CHECK_WITHOUT_ABORT(res);
+        return;
+    }
 
-        // Build the ssid
-        String ssid;
-        unsigned short offset = 40;
-        unsigned char i = 0;
-        for (i = 0; i < ssid_len; ++i)
+    if (ssids.size() == 0)
+    {
+        printf("No networks found\n\r");
+        return;
+    }
+
+    printf("SSIDs found - %d\n\r", ssids.size());
+
+    // Put ssids into a vector of packets and enqueue them
+    for (unsigned int i = 0; i < ssids.size(); ++i)
+    {
+        String& ssid = ssids[i];
+        if (ssid.length() == 0) continue;
+        printf("%d. length - %d\n\r", i, ssid.length());
+
+        std::unique_ptr<Packet> packet = std::make_unique<Packet>();
+
+        // Set the type
+        packet->SetData(Packet::Types::Command, 0, 6);
+
+        // Set the packet id
+        packet->SetData(1, 6, 8);
+
+        // Add 1 for the command type
+        // Add 1 for the ssid id
+        packet->SetData(ssid.length() + 2, 14, 10);
+
+        // Set the first byte to the command type
+        packet->SetData(Packet::Commands::SSIDs, 24, 8);
+
+        // Set the ssid id
+        packet->SetData(i + 1, 32, 8);
+
+        // Add each character of the string to the packet
+        for (unsigned int j = 0; j < ssid.length(); j++)
         {
-            ssid += static_cast<char>(
-                rx_packet->GetData(offset, 8));
-            offset += 8;
+            packet->SetData(ssid[j], 40 + (j * 8), 8);
         }
-        printf("NET: SSID - %s\r\n", ssid.c_str());
+        ui_layer->EnqueuePacket(std::move(packet));
+    }
+}
 
-        unsigned char ssid_password_len = rx_packet->GetData(offset, 8);
+
+void NetManager::ConnectToWifiCommand(const std::unique_ptr<Packet>& packet)
+{        // Get the ssid value, followed by the ssid_password
+    unsigned char ssid_len = packet->GetData(32, 8);
+    printf("NET SSID length - %d\n\r", ssid_len);
+
+    // Build the ssid
+    String ssid;
+    unsigned short offset = 40;
+    unsigned char i = 0;
+    for (i = 0; i < ssid_len; ++i)
+    {
+        ssid += static_cast<char>(
+            packet->GetData(offset, 8));
         offset += 8;
-        printf("NET: Password length - %d\n\r", ssid_password_len);
-
-        String ssid_password;
-        for (unsigned char j = 0; j < ssid_password_len; ++j)
-        {
-            ssid_password += static_cast<char>(rx_packet->GetData(
-                offset, 8));
-            offset += 8;
-        }
-        printf("NET: SSID Password - %s\n\r", ssid_password.c_str());
-
-        Wifi::GetInstance()->Connect(ssid.c_str(), ssid_password.c_str());
     }
-    else if (command_type == Packet::Commands::WifiStatus)
+    printf("NET: SSID - %s\r\n", ssid.c_str());
+
+    unsigned char ssid_password_len = packet->GetData(offset, 8);
+    offset += 8;
+    printf("NET: Password length - %d\n\r", ssid_password_len);
+
+    String ssid_password;
+    for (unsigned char j = 0; j < ssid_password_len; ++j)
     {
-        auto wifi = Wifi::GetInstance();
-        printf("NET: Connection status - %d\n\r", (int)wifi->GetState());
-
-        // Create a packet that tells the current status
-        std::unique_ptr<Packet> connected_packet = std::make_unique<Packet>();
-        connected_packet->SetData(Packet::Types::Command, 0, 6);
-        connected_packet->SetData(1, 6, 8);
-        connected_packet->SetData(2, 14, 10);
-        connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
-        connected_packet->SetData(wifi->GetState() == Wifi::State::Connected, 32, 8);
-
-        ui_layer->EnqueuePacket(std::move(connected_packet));
+        ssid_password += static_cast<char>(packet->GetData(
+            offset, 8));
+        offset += 8;
     }
+    printf("NET: SSID Password - %s\n\r", ssid_password.c_str());
+
+    Wifi::GetInstance()->Connect(ssid.c_str(), ssid_password.c_str());
+}
+
+void NetManager::GetWifiStatusCommand()
+{
+    auto wifi = Wifi::GetInstance();
+    printf("NET: Connection status - %d\n\r", (int)wifi->GetState());
+
+    // Create a packet that tells the current status
+    std::unique_ptr<Packet> connected_packet = std::make_unique<Packet>();
+    connected_packet->SetData(Packet::Types::Command, 0, 6);
+    connected_packet->SetData(1, 6, 8);
+    connected_packet->SetData(2, 14, 10);
+    connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
+    connected_packet->SetData(wifi->GetState() == Wifi::State::Connected, 32, 8);
+
+    ui_layer->EnqueuePacket(std::move(connected_packet));
+
+}
+
+static qchat::Room CreateFakeRoom()
+{
+    return qchat::Room{
+        .is_default = true,
+        .friendly_name = "CAFE",
+        .publisher_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1/",
+        .room_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1",
+        .root_channel_uri = "root"
+    };
+}
+
+void NetManager::GetRoomsCommand()
+{
+    // TODO real function for now just make a fake room...
+
+    // Fake room
+    ESP_LOGI(TAG, "Send fake room");
+
+    std::unique_ptr<Packet> room_packet = std::make_unique<Packet>();
+    room_packet->SetData(Packet::Types::Command, 0, 6);
+    room_packet->SetData(1, 6, 8);
+    qchat::Codec::encode(room_packet, CreateFakeRoom());
+
+    ui_layer->EnqueuePacket(std::move(room_packet));
 }

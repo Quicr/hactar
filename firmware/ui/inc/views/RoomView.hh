@@ -20,10 +20,16 @@ private:
     void RequestRooms();
     void DisplayRooms();
     void SelectRoom();
-    void ConnectToRoom();
+    void ConnectToRoom(qchat::Room room);
 
 
     int32_t selected_room_id;
     bool connecting_to_room;
     uint32_t next_get_rooms_time;
+    uint32_t state_update_timeout;
+    std::map<uint32_t, qchat::Room> rooms;
+    uint32_t last_num_rooms;
+
+    // UI variables
+    String request_msg;
 };

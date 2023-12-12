@@ -22,6 +22,11 @@ private:
 
     void HandleQSessionMessages(QuicrObject&& obj);
 
+    void GetSSIDsCommand();
+    void ConnectToWifiCommand(const std::unique_ptr<Packet>& packet);
+    void GetWifiStatusCommand();
+    void GetRoomsCommand();
+
     SerialManager* ui_layer;
     std::optional<std::thread> handler_thread;
     static constexpr auto inbound_object_timeout = std::chrono::milliseconds(100);

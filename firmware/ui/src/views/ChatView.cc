@@ -6,6 +6,8 @@
 #include "QChat.hh"
 #include <string>
 
+#include "TitleBar.hh"
+
 // Model Helpers (to be moved to a better place)
 // TODO: This must come from config and deleted
 // from here.
@@ -14,8 +16,8 @@ static qchat::Room create_default_room(const std::string& user_name)
     return qchat::Room{
         .is_default = true,
         .friendly_name = "CAFE",
-        .room_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1",
         .publisher_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1/" + user_name + "/",
+        .room_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1",
     };
 }
 
@@ -26,33 +28,33 @@ ChatView::ChatView(UserInterfaceManager& manager,
     SettingManager& setting_manager):
     ViewInterface(manager, screen, keyboard, setting_manager)
 {
-    // TODO: This is added as a placeholder and should be removed from
-    // the constructor and set via the api for active_room.
-    // Each chat-view represent UX state for a given QChat Room
-    std::string user_name{ manager.GetUsername().c_str() };
-    active_room = create_default_room(user_name);
+    // // TODO: This is added as a placeholder and should be removed from
+    // // the constructor and set via the api for active_room.
+    // // Each chat-view represent UX state for a given QChat Room
+    // std::string user_name{ manager.GetUsername().c_str() };
+    // active_room = create_default_room(user_name);
 
-    // Set watch on the room
-    qchat::WatchRoom watch = qchat::WatchRoom{
-        .publisher_uri = active_room.publisher_uri,
-        .room_uri = active_room.room_uri,
-    };
+    // // Set watch on the room
+    // qchat::WatchRoom watch = qchat::WatchRoom{
+    //     .publisher_uri = active_room.publisher_uri,
+    //     .room_uri = active_room.room_uri,
+    // };
 
-    std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
-    packet->SetData(Packet::Types::Message, 0, 6);
-    packet->SetData(manager.NextPacketId(), 6, 8);
+    // std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
+    // packet->SetData(Packet::Types::Message, 0, 6);
+    // packet->SetData(manager.NextPacketId(), 6, 8);
 
-    qchat::Codec::encode(packet, watch);
-    uint64_t new_offset = packet->BitsUsed();
+    // qchat::Codec::encode(packet, watch);
+    // uint64_t new_offset = packet->BitsUsed();
 
-    // Expiry time
-    packet->SetData(0xFFFFFFFF, new_offset, 32);
-    new_offset += 32;
-
-    // Creation time
-    packet->SetData(0, new_offset, 32);
+    // // Expiry time
+    // packet->SetData(0xFFFFFFFF, new_offset, 32);
     // new_offset += 32;
-    manager.EnqueuePacket(std::move(packet));
+
+    // // Creation time
+    // packet->SetData(0, new_offset, 32);
+    // // new_offset += 32;
+    // manager.EnqueuePacket(std::move(packet));
 
     redraw_messages = true;
 }
@@ -80,7 +82,8 @@ void ChatView::Draw()
         if (first_load)
         {
             DrawUsrInputSeperator();
-            DrawTitle();
+            // DrawTitle();
+            DrawTitleBar("@CTO Team - Chat", menu_font, C_WHITE, C_BLACK, screen);
             first_load = false;
         }
     }
@@ -92,7 +95,7 @@ void ChatView::Draw()
         String draw_str;
         draw_str = usr_input.substring(last_drawn_idx);
         last_drawn_idx = usr_input.length();
-        DrawInputString(draw_str);
+        ViewInterface::DrawInputString(draw_str);
     }
 
     if (manager.HasNewMessages() || redraw_messages)
