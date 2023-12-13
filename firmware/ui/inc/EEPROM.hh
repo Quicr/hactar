@@ -106,7 +106,9 @@ public:
 
         HAL_Delay(operation_delay);
 
+        // sizeof(**data) is not needed??
         uint16_t output_sz = sizeof(**data) * sz;
+        // uint16_t output_sz = sz;
 
         // Create a new pointer to this data
         uint8_t* output_data = new uint8_t[output_sz];

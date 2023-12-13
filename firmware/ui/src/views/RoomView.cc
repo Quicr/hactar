@@ -177,7 +177,7 @@ void RoomView::ConnectToRoom(qchat::Room room)
 {
     // TODO placeholder for better more suitable code
     // TODO Active room needs to be passed to the chat view some how
-    std::string user_name{ manager.GetUsername().c_str() };
+    std::string user_name{ setting_manager.Username()->c_str() };
 
     // Set watch on the room
     qchat::WatchRoom watch = qchat::WatchRoom{

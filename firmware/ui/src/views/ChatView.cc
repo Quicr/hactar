@@ -121,7 +121,7 @@ void ChatView::HandleInput()
         // TODO switch to using C strings so we don;t need to extend
         // strings for each added character
         // and then we can just memcpy?
-        const String& username = manager.GetUsername();
+        const String& username = *setting_manager.Username();
         String msg = "00:00 ";
         msg += username;
         msg += ": ";
