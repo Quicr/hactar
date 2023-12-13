@@ -45,7 +45,7 @@ void LoginView::AnimatedDraw()
 
     screen.DrawBlockAnimateString(
         1 + usr_font.width * msg.length(), screen.ViewHeight() - (usr_font.height * 4),
-        manager.GetUsername(), usr_font, fg, bg, speed);
+        setting_manager.Username()->c_str(), usr_font, fg, bg, speed);
 
     msg = "Enter your passcode";
     screen.DrawBlockAnimateString(1, screen.ViewHeight() - (usr_font.height * 2),

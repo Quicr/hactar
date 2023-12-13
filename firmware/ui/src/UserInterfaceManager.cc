@@ -27,13 +27,11 @@ UserInterfaceManager::UserInterfaceManager(Screen& screen,
     ssids(),
     last_wifi_check(10000),
     is_connected_to_wifi(false),
-    attempt_to_connect_timeout(0),
-    username("")
+    attempt_to_connect_timeout(0)
 {
-    if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
+    if (setting_manager.ReadSetting(SettingManager::SettingAddress::Firstboot)
         == FIRST_BOOT_DONE)
     {
-        LoadSettings();
         ChangeView<LoginView>();
     }
     else
@@ -123,16 +121,6 @@ bool UserInterfaceManager::RedrawForced()
 uint8_t UserInterfaceManager::NextPacketId()
 {
     return net_layer.NextPacketId();
-}
-
-const String& UserInterfaceManager::GetUsername()
-{
-    if (username == "")
-    {
-        LoadUsername();
-    }
-
-    return username;
 }
 
 void UserInterfaceManager::HandleIncomingPackets()
@@ -509,24 +497,4 @@ void UserInterfaceManager::HandleMessagePacket(
         // Do something with the ascii message
         ascii_messages.push_back(ascii);
     }
-}
-
-void UserInterfaceManager::LoadSettings()
-{
-    LoadUsername();
-}
-
-void UserInterfaceManager::LoadUsername()
-{
-    // TODO make this better
-    char* username;
-    short len;
-    setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
-        &username, len);
-    for (short i = 0; i < len; i++)
-    {
-        this->username.push_back(username[i]);
-    }
-    delete username;
-    // ^^^ ugly chunk
 }

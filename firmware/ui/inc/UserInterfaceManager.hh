@@ -74,8 +74,6 @@ public:
         return true;
     }
 
-    const String& GetUsername();
-
 private:
     void HandleIncomingPackets();
     void TimeoutPackets();
@@ -110,5 +108,5 @@ private:
 
     uint32_t last_test_packet = 0;
 
-    String username;
+
 };
