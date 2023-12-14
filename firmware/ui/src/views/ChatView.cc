@@ -8,54 +8,12 @@
 
 #include "TitleBar.hh"
 
-// Model Helpers (to be moved to a better place)
-// TODO: This must come from config and deleted
-// from here.
-static qchat::Room create_default_room(const std::string& user_name)
-{
-    return qchat::Room{
-        .is_default = true,
-        .friendly_name = "CAFE",
-        .publisher_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1/" + user_name + "/",
-        .room_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1",
-    };
-}
-
-
 ChatView::ChatView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
     SettingManager& setting_manager):
     ViewInterface(manager, screen, keyboard, setting_manager)
 {
-    // // TODO: This is added as a placeholder and should be removed from
-    // // the constructor and set via the api for active_room.
-    // // Each chat-view represent UX state for a given QChat Room
-    // std::string user_name{ manager.GetUsername().c_str() };
-    // active_room = create_default_room(user_name);
-
-    // // Set watch on the room
-    // qchat::WatchRoom watch = qchat::WatchRoom{
-    //     .publisher_uri = active_room.publisher_uri,
-    //     .room_uri = active_room.room_uri,
-    // };
-
-    // std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
-    // packet->SetData(Packet::Types::Message, 0, 6);
-    // packet->SetData(manager.NextPacketId(), 6, 8);
-
-    // qchat::Codec::encode(packet, watch);
-    // uint64_t new_offset = packet->BitsUsed();
-
-    // // Expiry time
-    // packet->SetData(0xFFFFFFFF, new_offset, 32);
-    // new_offset += 32;
-
-    // // Creation time
-    // packet->SetData(0, new_offset, 32);
-    // // new_offset += 32;
-    // manager.EnqueuePacket(std::move(packet));
-
     redraw_messages = true;
 }
 
@@ -130,8 +88,7 @@ void ChatView::HandleInput()
         // prepare ascii message, encode into Message + Packet
         qchat::Ascii ascii = qchat::Ascii{
             // I want to use this, but quicr gets mad if we pass it in.
-        //   .message_uri = active_room.publisher_uri + "endpoint/" + std::to_string(msg_id),
-          .message_uri = active_room.room_uri,
+          .message_uri = manager.ActiveRoom()->room_uri,
           .message = {msg.c_str()},
         };
 
