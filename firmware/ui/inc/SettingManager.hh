@@ -166,9 +166,6 @@ public:
 
     inline void LoadString(String** str, SettingAddress addr)
     {
-
-        // TODO fix
-        // ISN'T SETTING THE STRING FOR SOME REASON
         if (*str != nullptr)
         {
             // Was already loaded
@@ -181,7 +178,7 @@ public:
         uint8_t* data;
         int16_t len;
 
-        if (LoadSetting(addr, &data, len))
+        if (!LoadSetting(addr, &data, len))
         {
             delete* str;
             *str = nullptr;
