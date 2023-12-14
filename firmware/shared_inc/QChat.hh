@@ -180,8 +180,8 @@ struct Codec
 
         // +9 for the type byte, 2 len bytes and the 8 bytes of length
         uint16_t extra_bytes = 1 + field_len_bytes + field_len_bytes;
-        packet->AppendData(msg.message_uri.length()
-            + msg.message.length() + extra_bytes, 10);
+        uint16_t data_len = msg.message_uri.length() + msg.message.length();
+        packet->AppendData(data_len + extra_bytes, 10);
         packet->AppendData((unsigned int)MessageTypes::Ascii, 8);
 
         // Append the message_uri
@@ -191,7 +191,22 @@ struct Codec
         AppendStringFieldToPacket(msg.message, field_len_bits, packet);
     }
 
-    static bool decode(Room& room,
+    static void encode(std::unique_ptr<Packet>& packet,
+        const UnwatchRoom& unwatch)
+    {
+        // Packet is in this order
+        // [total_len][type][room_uri_len][room_uri]
+
+        uint16_t extra_bytes = 1 + field_len_bytes;
+        uint16_t data_len = unwatch.room_uri.length();
+        packet->AppendData(extra_bytes + data_len, 10);
+        packet->AppendData((unsigned int)MessageTypes::Unwatch, 8);
+
+        // Append the room uri
+        AppendStringFieldToPacket(unwatch.room_uri, field_len_bits, packet);
+    }
+
+    static bool decode(std::unique_ptr<Room>& room,
         const std::unique_ptr<Packet>& encoded,
         const size_t current_offset)
     {
@@ -200,23 +215,23 @@ struct Codec
         // Get the is_default field
         size_t field_len = encoded->GetData(offset, field_len_bits);
         offset += field_len_bits;
-        room.is_default = static_cast<bool>(encoded->GetData(offset, 8));
+        room->is_default = static_cast<bool>(encoded->GetData(offset, 8));
         offset += 8;
 
         // Get the friendly name
-        SetStringFieldFromPacket(room.friendly_name, offset,
+        SetStringFieldFromPacket(room->friendly_name, offset,
             field_len_bits, encoded);
 
         // Get the publisher uri
-        SetStringFieldFromPacket(room.publisher_uri, offset,
+        SetStringFieldFromPacket(room->publisher_uri, offset,
             field_len_bits, encoded);
 
         // Get the room uri
-        SetStringFieldFromPacket(room.room_uri, offset,
+        SetStringFieldFromPacket(room->room_uri, offset,
             field_len_bits, encoded);
 
         // Get the root channel uri
-        SetStringFieldFromPacket(room.root_channel_uri, offset,
+        SetStringFieldFromPacket(room->root_channel_uri, offset,
             field_len_bits, encoded);
 
         return true;
@@ -261,6 +276,18 @@ struct Codec
         return true;
     }
 
+    static bool decode(std::unique_ptr<UnwatchRoom>& unwatch,
+        const std::unique_ptr<Packet>& encoded,
+        const size_t current_offset)
+    {
+        size_t offset = current_offset;
+
+        // Get the room_uri
+        SetStringFieldFromPacket(unwatch->room_uri, offset,
+            field_len_bits, encoded);
+
+        return true;
+    }
 };
 
 

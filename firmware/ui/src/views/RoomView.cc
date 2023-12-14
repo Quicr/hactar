@@ -98,10 +98,12 @@ void RoomView::Update()
                 auto rx_packet = std::move(room_packets->Read());
 
                 // Build the string that will be the room
-                qchat::Room room;
+                std::unique_ptr<qchat::Room> room =
+                    std::make_unique<qchat::Room>();
+
                 qchat::Codec::decode(room, rx_packet, 32);
 
-                rooms[rooms.size()+1] = room;
+                rooms[rooms.size()+1] = std::move(room);
             }
         }
         state_update_timeout = current_tick + 500;
@@ -133,7 +135,7 @@ void RoomView::DisplayRooms()
     screen.FillRectangle(0, y_start, screen.ViewWidth(), screen.ViewHeight() - 100, C_BLACK);
 
     uint16_t idx = 0;
-    for (auto room : rooms)
+    for (const auto& room : rooms)
     {
         // Convert the room id into a string
         const String room_id_str = String::int_to_string(room.first);
@@ -144,7 +146,7 @@ void RoomView::DisplayRooms()
             ".", usr_font, C_WHITE, C_BLACK);
 
         screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
-            room.second.friendly_name.c_str(), usr_font, C_WHITE, C_BLACK);
+            room.second->friendly_name.c_str(), usr_font, C_WHITE, C_BLACK);
         ++idx;
     }
 
@@ -170,36 +172,15 @@ void RoomView::SelectRoom()
         return;
     }
 
-    ConnectToRoom(rooms[room_id]);
+    ConnectToRoom(std::move(rooms[room_id]));
 }
 
-void RoomView::ConnectToRoom(qchat::Room room)
+void RoomView::ConnectToRoom(std::unique_ptr<qchat::Room> room)
 {
-    // TODO placeholder for better more suitable code
-    // TODO Active room needs to be passed to the chat view some how
-    std::string user_name{ setting_manager.Username()->c_str() };
 
-    // Set watch on the room
-    qchat::WatchRoom watch = qchat::WatchRoom{
-        .publisher_uri = room.publisher_uri,
-        .room_uri = room.room_uri,
-    };
+    manager.ChangeRoom(std::move(room));
 
-    std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
-    packet->SetData(Packet::Types::Message, 0, 6);
-    packet->SetData(manager.NextPacketId(), 6, 8);
-
-    qchat::Codec::encode(packet, watch);
-    uint64_t new_offset = packet->BitsUsed();
-
-    // Expiry time
-    packet->SetData(0xFFFFFFFF, new_offset, 32);
-    new_offset += 32;
-
-    // Creation time
-    packet->SetData(0, new_offset, 32);
-    // new_offset += 32;
-    manager.EnqueuePacket(std::move(packet));
-
+    // TODO put into an update function that waits for a reply from
+    // the server.
     ChangeView("/chat");
 }

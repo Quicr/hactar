@@ -45,15 +45,16 @@ public:
     uint32_t GetTxStatusColour() const;
     uint32_t GetRxStatusColour() const;
 
-    const std::map<uint8_t, String>& SSIDs() const;
     const bool GetReadyPackets(
         RingBuffer<std::unique_ptr<Packet>>** buff,
         const Packet::Commands command_type) const;
     const bool HasReadyPackets(const Packet::Commands command_type) const;
-    void ClearSSIDs();
     bool IsConnectedToWifi() const;
 
     uint8_t NextPacketId();
+
+    void ChangeRoom(std::unique_ptr<qchat::Room> new_room);
+    const std::unique_ptr<qchat::Room>& ActiveRoom() const;
 
     template<typename T>
     bool ChangeView()
@@ -100,7 +101,6 @@ private:
     uint32_t current_time;
 
 
-    std::map<uint8_t, String> ssids;
     std::map<Packet::Commands, RingBuffer<std::unique_ptr<Packet>>> pending_command_packets;
     uint32_t last_wifi_check;
     bool is_connected_to_wifi;
@@ -108,5 +108,7 @@ private:
 
     uint32_t last_test_packet = 0;
 
+    // Chat state
+    std::unique_ptr<qchat::Room> active_room;
 
 };

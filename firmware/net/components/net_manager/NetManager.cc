@@ -154,6 +154,7 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
 
             qchat::Ascii ascii;
             bool result = qchat::Codec::decode(ascii, rx_packet, offset);
+            ESP_LOGI(TAG, "Decoded an ascii message");
             if (!result)
             {
                 printf("%s\r\n", "NetManager:QChatMessage: Decode Ascii Message Failed");

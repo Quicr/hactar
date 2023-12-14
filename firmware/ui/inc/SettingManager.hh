@@ -46,6 +46,7 @@ public:
     {
         Firstboot,
         Usr_Font,
+        Menu_Font,
         Fg,
         Bg,
         Username,
@@ -58,6 +59,7 @@ public:
         eeprom(eeprom),
         first_boot(nullptr),
         usr_font(nullptr),
+        menu_font(nullptr),
         fg(nullptr),
         bg(nullptr),
         username(nullptr),
@@ -78,6 +80,11 @@ public:
         if (usr_font)
         {
             delete usr_font;
+        }
+
+        if (menu_font)
+        {
+            delete menu_font;
         }
 
         if (fg)
@@ -138,11 +145,6 @@ public:
     const String* Username()
     {
         LoadString(&username, SettingAddress::Username);
-        if (username == nullptr)
-        {
-            username = new String();
-            username->push_back('c');
-        }
         return username;
     }
 
@@ -422,6 +424,15 @@ private:
                 }
                 break;
             }
+            case SettingAddress::Menu_Font:
+            {
+                if (menu_font)
+                {
+                    delete menu_font;
+                    menu_font = nullptr;
+                }
+                break;
+            }
             case SettingAddress::Fg:
             {
                 if (fg)
@@ -486,6 +497,7 @@ private:
     EEPROM& eeprom;
     bool* first_boot;
     uint8_t* usr_font;
+    uint8_t* menu_font;
     uint16_t* fg;
     uint16_t* bg;
     String* username;

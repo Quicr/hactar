@@ -200,7 +200,7 @@ void WifiView::HandleInput()
 
         if (usr_input == "/refresh" || usr_input == "/r")
         {
-            manager.ClearSSIDs();
+            ssids.clear();
             last_num_ssids = -1;
             SendGetSSIDPacket();
             String msg = "UI: Refresh ssids\n\r";

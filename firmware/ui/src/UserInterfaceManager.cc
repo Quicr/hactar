@@ -24,10 +24,10 @@ UserInterfaceManager::UserInterfaceManager(Screen& screen,
     received_messages(), // TODO limit?
     force_redraw(false),
     current_time(HAL_GetTick()),
-    ssids(),
     last_wifi_check(10000),
     is_connected_to_wifi(false),
-    attempt_to_connect_timeout(0)
+    attempt_to_connect_timeout(0),
+    active_room(nullptr)
 {
     if (setting_manager.ReadSetting(SettingManager::SettingAddress::Firstboot)
         == FIRST_BOOT_DONE)
@@ -121,6 +121,62 @@ bool UserInterfaceManager::RedrawForced()
 uint8_t UserInterfaceManager::NextPacketId()
 {
     return net_layer.NextPacketId();
+}
+
+void UserInterfaceManager::ChangeRoom(std::unique_ptr<qchat::Room> new_room)
+{
+    if (active_room != nullptr)
+    {
+        // If we are currently in a room we need to unsubscribe and delete
+        // any messages that are currently in the map.
+        qchat::UnwatchRoom unwatch;
+        unwatch.room_uri = active_room->room_uri;
+
+        std::unique_ptr<Packet> unwatch_packet = std::make_unique<Packet>();
+        unwatch_packet->SetData(Packet::Types::Message, 0, 6);
+        unwatch_packet->SetData(NextPacketId(), 6, 8);
+
+        qchat::Codec::encode(unwatch_packet, unwatch);
+
+        // Push the packet onto the queue
+        EnqueuePacket(std::move(unwatch_packet));
+
+        active_room.reset();
+    }
+
+    // Send a watch message to the new room
+    active_room = std::move(new_room);
+
+    // TODO placeholder for better more suitable code
+    // TODO Active room needs to be passed to the chat view some how
+    std::string user_name{ setting_manager.Username()->c_str() };
+
+    // Set watch on the room
+    qchat::WatchRoom watch = qchat::WatchRoom{
+        .publisher_uri = active_room->publisher_uri + user_name + "/",
+        .room_uri = active_room->room_uri,
+    };
+
+    std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
+    packet->SetData(Packet::Types::Message, 0, 6);
+    packet->SetData(NextPacketId(), 6, 8);
+
+    qchat::Codec::encode(packet, watch);
+    uint64_t new_offset = packet->BitsUsed();
+
+    // Expiry time
+    packet->SetData(0xFFFFFFFF, new_offset, 32);
+    new_offset += 32;
+
+    // Creation time
+    packet->SetData(0, new_offset, 32);
+    // new_offset += 32;
+    EnqueuePacket(std::move(packet));
+}
+
+const std::unique_ptr<qchat::Room>& UserInterfaceManager::ActiveRoom() const
+{
+    return active_room;
 }
 
 void UserInterfaceManager::HandleIncomingPackets()
@@ -250,11 +306,6 @@ uint32_t UserInterfaceManager::GetRxStatusColour() const
     return GetStatusColour(net_layer.GetRxStatus());
 }
 
-const std::map<uint8_t, String>& UserInterfaceManager::SSIDs() const
-{
-    return ssids;
-}
-
 // TODO move to RingBuffer
 const bool UserInterfaceManager::GetReadyPackets(
     RingBuffer<std::unique_ptr<Packet>>** buff,
@@ -270,13 +321,6 @@ const bool UserInterfaceManager::GetReadyPackets(
         &pending_command_packets.at(command_type));
 
     return true;
-}
-
-//a value of type "const Foo<std::unique_ptr<Bar, std::default_delete<Bar>>> *" cannot be assigned to an entity of type "Foo<std::unique_ptr<Bar, std::default_delete<Bar>>> *"
-
-void UserInterfaceManager::ClearSSIDs()
-{
-    ssids.clear();
 }
 
 void UserInterfaceManager::ConnectToWifi()
