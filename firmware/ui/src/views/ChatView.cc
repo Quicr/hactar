@@ -41,7 +41,8 @@ void ChatView::Draw()
         {
             DrawUsrInputSeperator();
             // DrawTitle();
-            DrawTitleBar("@CTO Team - Chat", menu_font, C_WHITE, C_BLACK, screen);
+            DrawTitleBar(manager.ActiveRoom()->friendly_name.c_str(),
+                menu_font, C_WHITE, C_BLACK, screen);
             first_load = false;
         }
     }
