@@ -32,6 +32,7 @@
 
 #include "SerialStm.hh"
 #include "Led.hh"
+#include "AudioCodec.hh"
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -57,6 +58,7 @@ DMA_HandleTypeDef hdma_usart2_tx;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 I2C_HandleTypeDef hi2c1;
+I2S_HandleTypeDef hi2s1;
 TIM_HandleTypeDef htim2;
 
 
@@ -70,6 +72,8 @@ Q10Keyboard* keyboard;
 SerialStm* net_serial_interface = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
+AudioCodec* audio = nullptr;
+
 
 Led rx_led(LED_R_Port, LED_R_Pin, 0, 1, 10);
 Led tx_led(LED_G_Port, LED_G_Pin, 0, 1, 10);
@@ -101,17 +105,12 @@ int main(void)
 
     MX_I2C1_Init();
 
-    // TODO remove
-    // const uint8_t sz = 2;
-    // uint8_t audio_data[sz] = { 0x19, 0b00000010 };
-    // const uint8_t write_condition = 0x34 + 0;
-    // // const uint8_t read_condition = 0x34 + 1;
-    // HAL_StatusTypeDef audio_select = HAL_I2C_Master_Transmit(&hi2c1,
-    //     write_condition, audio_data, sz, HAL_MAX_DELAY);
-    // TODO remove to here
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
+
+    // TODO
+    audio = new AudioCodec(hi2c1);
 
     screen.Begin();
 
@@ -158,14 +157,14 @@ int main(void)
     HAL_GPIO_WritePin(LED_G_Port, LED_G_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_B_Port, LED_B_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_STAT_Port, UI_STAT_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_DBG1_Port, UI_DBG1_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_DBG2_Port, UI_DBG2_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_DBG3_Port, UI_DBG3_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_DBG4_Port, UI_DBG4_Pin, GPIO_PIN_SET);
+    // HAL_GPIO_WritePin(UI_DBG1_Port, UI_DBG1_Pin, GPIO_PIN_RESET);
+    // HAL_GPIO_WritePin(UI_DBG2_Port, UI_DBG2_Pin, GPIO_PIN_RESET);
+    // HAL_GPIO_WritePin(UI_DBG3_Port, UI_DBG3_Pin, GPIO_PIN_RESET);
+    // HAL_GPIO_WritePin(UI_DBG4_Port, UI_DBG4_Pin, GPIO_PIN_RESET);
 
     while (1)
     {
-        ui_manager->Run();
+        // ui_manager->Run();
 
         // rx_led.Timeout();
         // tx_led.Timeout();
@@ -173,9 +172,9 @@ int main(void)
         // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
-            // blink = HAL_GetTick() + 1000;
+            blink = HAL_GetTick() + 1000;
+            HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
             // // HAL_UART_Transmit(&huart1, test_message, 10, 1000);
-            // HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
         }
     }
 
