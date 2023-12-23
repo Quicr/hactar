@@ -3,12 +3,14 @@
 // NOTE MCLK = 12Mhz
 #include "main.hh"
 
+#include <cmath>
+
 void DebugPins(int output)
 {
-    HAL_GPIO_WritePin(GPIOC, UI_DBG1_Pin, GPIO_PinState((output & 0x01) >> 0));
-    HAL_GPIO_WritePin(GPIOC, UI_DBG2_Pin, GPIO_PinState((output & 0x02) >> 1));
-    HAL_GPIO_WritePin(GPIOC, UI_DBG3_Pin, GPIO_PinState((output & 0x04) >> 2));
-    HAL_GPIO_WritePin(GPIOC, UI_DBG4_Pin, GPIO_PinState((output & 0x08) >> 3));
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PinState((output & 0x01) >> 0));
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PinState((output & 0x02) >> 1));
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PinState((output & 0x04) >> 2));
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PinState((output & 0x08) >> 3));
 }
 
 
@@ -78,7 +80,7 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
 
     // Set left and right mixer
     WriteRegisterSeries(0x22, 0b110000000, 5);
-    WriteRegisterSeries(0x25, 0b110000000, 6);
+    WriteRegisterSeries(0x25, 0b110000000, 15);
 
 }
 
@@ -136,6 +138,27 @@ bool AudioCodec::ReadRegister(uint8_t address, uint16_t& value)
 
     // Deep magic.
     uint8_t* bytes = registers[address].bytes;
-    value = (*((uint16_t*)(void*)bytes)) & Data_Mask;
+    value = (*(reinterpret_cast<uint16_t*>(bytes))) & Data_Mask;
     return true;
+}
+
+void AudioCodec::Send1KHzSignal()
+{
+    const float freq = 1000.0;
+    const float amplitude = 0.5;
+    const float PI = 3.14159265358979311599796346854;
+
+    uint16_t sample_rate = static_cast<uint16_t>(32767.0 * std::sin(2 * PI * freq * HAL_GetTick() / 1000.0));
+    // uint16_t sample = static_cast<uint16_t>(32767.0 * sin(2 * 3.141592653589793 * 1000.0 * HAL_GetTick() / 1000.0))
+
+    HAL_Delay(1000);
+    HAL_I2S_Transmit(i2s, &sample_rate, 1, HAL_MAX_DELAY);
+
+    // for (int i = 0; i < sample_rate; ++i)
+    // {
+    //     float value = amplitude * std::sin((2 * PI * i) / sample_rate);
+    //     int16_t sample = static_cast<int16_t>(value * 32767);
+
+    //     HAL_I2S_
+    // }
 }

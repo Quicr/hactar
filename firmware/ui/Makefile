@@ -60,6 +60,8 @@ stm32f4xx_hal_flash_ex.c \
 stm32f4xx_hal_flash_ramfunc.c \
 stm32f4xx_hal_gpio.c \
 stm32f4xx_hal_i2c.c \
+stm32f4xx_hal_i2s.c \
+stm32f4xx_hal_i2s_ex.c \
 stm32f4xx_hal_pwr.c \
 stm32f4xx_hal_pwr_ex.c \
 stm32f4xx_hal_spi.c \
