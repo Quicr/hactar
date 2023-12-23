@@ -17,11 +17,11 @@ public:
     ~AudioCodec();
 
     bool WriteRegister(uint8_t address, uint16_t data);
-    // TODO remove the "output" param.
+    // TODO remove the "debug" param.
     bool WriteRegisterSeries(uint8_t address, uint16_t data, uint8_t debug);
 
-    // TODO Will return the cached register
     bool ReadRegister(uint8_t address, uint16_t& value);
+    void Send1KHzSignal();
 
 private:
     HAL_StatusTypeDef WriteRegisterToCodec(uint8_t address);
