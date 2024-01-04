@@ -30,24 +30,6 @@
 void Setup(const uart_config_t&);
 void Run();
 
-
-void wifi_monitor()
-{
-
-    auto state = wifi->GetState();
-    switch (state)
-    {
-        case Wifi::State::ReadyToConnect:
-        case Wifi::State::Disconnected: {
-            logger->info(TAG, "Wifi : Ready to connect/Disconnected\n");
-            wifi->Connect();
-        }
-        default:
-            break;
-    }
-
-}
-
 extern "C" void app_main(void)
 {
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -75,6 +57,7 @@ extern "C" void app_main(void)
     {
         gpio_set_level(LED_R_Pin, next);
         next = next ? 0 : 1;
+
         Run();
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -133,17 +116,13 @@ void UartInit()
     // setup logger
     logger = hactar_utils::LogManager::GetInstance();
     logger->add_logger(new hactar_utils::ESP32SerialLogger());
-    logger->info(TAG, "Net app_main start\r\n");
+    ESP_LOGI(TAG, "Net app_main start");
 }
 
 void Setup()
 {
-
+    // Wifi will manage itself and keep it connected if it disconnects.
     wifi = Wifi::GetInstance();
-    // TODO remove
-    wifi->SetCredentials("", "");
-    wifi->Connect();
-
 
     inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
     char default_relay [] = "192.168.50.19";
@@ -156,37 +135,34 @@ void Setup()
     };
     qsession = std::make_shared<QSession>(relay, inbound_queue);
 
+    ESP_LOGI(TAG, "Starting net manager");
     manager = new NetManager(ui_layer, qsession, inbound_queue);
-
 }
 
 void Run()
 {
-
-    wifi_monitor();
     auto state = Wifi::GetInstance()->GetState();
     if (state == Wifi::State::Connected && !qsession_connected)
     {
-        logger->info(TAG, "Net app_main Connecting to QSession\n");
+        ESP_LOGI(TAG, "Net app_main Connecting to QSession");
         qsession->connect();
         qsession_connected = true;
 
-        logger->info(TAG, "netcc: Subscribing to namespace");
         //quicr::Namespace ns = qsession->to_namespace("quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1");
-        quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);
-        std::cout << "Subscribing to " << nspace << std::endl;
-        bool res = qsession->subscribe(nspace);
+        // quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);
+        // std::cout << "Subscribing to " << nspace << std::endl;
+        // bool res = qsession->subscribe(nspace);
 
-        if (res)
-        {
-            std::cout << "Subscribed!!" << std::endl;
-        }
+        // if (res)
+        // {
+        //     std::cout << "Subscribed!!" << std::endl;
+        // }
 
-        res = qsession->publish_intent(nspace);
-        if (res)
-        {
-            std::cout << "Publish intent ready" << std::endl;
-        }
+        // res = qsession->publish_intent(nspace);
+        // if (res)
+        // {
+        //     std::cout << "Publish intent ready" << std::endl;
+        // }
     }
 
 

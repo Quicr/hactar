@@ -53,6 +53,5 @@ private:
     } settings;
 
     // qchat room being displayed by this chat view
-    qchat::Room active_room {};
     uint64_t msg_id {0};
 };

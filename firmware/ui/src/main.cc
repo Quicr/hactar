@@ -32,6 +32,7 @@
 
 #include "SerialStm.hh"
 #include "Led.hh"
+#include "AudioCodec.hh"
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -41,6 +42,7 @@ static void MX_DMA_Init();
 static void MX_USART1_Init();
 static void MX_USART2_Init();
 static void MX_I2C1_Init();
+static void MX_I2S3_Init();
 static void KeyboardTimerInit();
 
 // Overriden interrupt callbacks
@@ -57,6 +59,7 @@ DMA_HandleTypeDef hdma_usart2_tx;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 I2C_HandleTypeDef hi2c1;
+I2S_HandleTypeDef hi2s3;
 TIM_HandleTypeDef htim2;
 
 
@@ -66,10 +69,12 @@ port_pin rst = { LCD_RST_GPIO_Port, LCD_RST_Pin };
 port_pin bl = { LCD_BL_GPIO_Port, LCD_BL_Pin };
 
 Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::left_landscape);
-Q10Keyboard* keyboard;
+Q10Keyboard* keyboard = nullptr;
 SerialStm* net_serial_interface = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
+AudioCodec* audio = nullptr;
+
 
 Led rx_led(LED_R_Port, LED_R_Pin, 0, 1, 10);
 Led tx_led(LED_G_Port, LED_G_Pin, 0, 1, 10);
@@ -99,19 +104,14 @@ int main(void)
     // Init the SPI for the screen
     MX_SPI1_Init();
 
+    MX_I2S3_Init();
     MX_I2C1_Init();
 
-    // TODO remove
-    // const uint8_t sz = 2;
-    // uint8_t audio_data[sz] = { 0x19, 0b00000010 };
-    // const uint8_t write_condition = 0x34 + 0;
-    // // const uint8_t read_condition = 0x34 + 1;
-    // HAL_StatusTypeDef audio_select = HAL_I2C_Master_Transmit(&hi2c1,
-    //     write_condition, audio_data, sz, HAL_MAX_DELAY);
-    // TODO remove to here
+    audio = new AudioCodec(hi2s3, hi2c1);
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
+
 
     screen.Begin();
 
@@ -153,29 +153,26 @@ int main(void)
     SerialManager serial(net_serial_interface);
 
     uint32_t blink = 0;
-    uint8_t test_message [] = "UI: Test\n\r";
+    // uint8_t test_message [] = "UI: Test\n\r";
     HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_G_Port, LED_G_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_B_Port, LED_B_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_STAT_Port, UI_STAT_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_DBG1_Port, UI_DBG1_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_DBG2_Port, UI_DBG2_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_DBG3_Port, UI_DBG3_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_DBG4_Port, UI_DBG4_Pin, GPIO_PIN_SET);
 
     while (1)
     {
         ui_manager->Run();
 
-        // rx_led.Timeout();
-        // tx_led.Timeout();
+        rx_led.Timeout();
+        tx_led.Timeout();
 
         // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
-            // blink = HAL_GetTick() + 1000;
+            audio->Send1KHzSignal();
+            blink = HAL_GetTick() + 1000;
+            HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
             // // HAL_UART_Transmit(&huart1, test_message, 10, 1000);
-            // HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
         }
     }
 
@@ -188,45 +185,45 @@ int main(void)
  */
 void SystemClock_Config(void)
 {
-    RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
-    /** Configure the main internal regulator output voltage
-    */
-    __HAL_RCC_PWR_CLK_ENABLE();
-    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-    /** Initializes the RCC Oscillators according to the specified parameters
-    * in the RCC_OscInitTypeDef structure.
-    */
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-    RCC_OscInitStruct.PLL.PLLM = 8;
-    RCC_OscInitStruct.PLL.PLLN = 168;
-    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-    RCC_OscInitStruct.PLL.PLLQ = 4;
-    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-    {
-        Error_Handler();
-    }
+  /** Configure the main internal regulator output voltage
+  */
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-    /** Initializes the CPU, AHB and APB buses clocks
-    */
-    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-        | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN = 168;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
-    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    __HAL_RCC_GPIOH_CLK_ENABLE();
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /**
@@ -403,6 +400,23 @@ static void MX_I2C1_Init()
     }
 }
 
+static void MX_I2S3_Init()
+{
+    hi2s3.Instance = SPI3;
+    hi2s3.Init.Mode = I2S_MODE_MASTER_TX;
+    hi2s3.Init.Standard = I2S_STANDARD_MSB;
+    hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
+    hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
+    hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_8K;
+    hi2s3.Init.CPOL = I2S_CPOL_HIGH;
+    hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
+    hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_ENABLE;
+    if (HAL_I2S_Init(&hi2s3) != HAL_OK)
+    {
+        Error_Handler();
+    }
+}
+
 // This will only be called when the rx_buffer is filled up
 // void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart)
 // {
@@ -555,10 +569,17 @@ void Error_Handler(void)
     //     screen.DrawText(2, 2, "There was an error", font11x16, C_WHITE, C_BLACK);
     //     screen.DrawRectangle(2, 18, 2 + 11*18, 18, 1, C_WHITE);
     // }
+        HAL_GPIO_WritePin(GPIOC, UI_DBG1_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC, UI_DBG2_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC, UI_DBG3_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC, UI_DBG4_Pin, GPIO_PIN_RESET);
     while (1)
     {
         __enable_irq();
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+        HAL_GPIO_TogglePin(GPIOC, UI_DBG1_Pin);
+        HAL_GPIO_TogglePin(GPIOC, UI_DBG2_Pin);
+        HAL_GPIO_TogglePin(GPIOC, UI_DBG3_Pin);
+        HAL_GPIO_TogglePin(GPIOC, UI_DBG4_Pin);
         HAL_Delay(1000);
         __disable_irq();
     }

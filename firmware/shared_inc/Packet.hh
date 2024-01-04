@@ -50,8 +50,10 @@ public:
     enum Commands
     {
         SSIDs = 1,
-        ConnectToSSID,
-        WifiStatus
+        WifiConnect,
+        WifiDisconnect,
+        WifiStatus,
+        RoomsGet
     };
 
     // TODO important to have different data lengths for each type..
