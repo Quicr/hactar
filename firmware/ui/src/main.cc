@@ -68,7 +68,7 @@ port_pin dc = { LCD_DC_GPIO_Port, LCD_DC_Pin };
 port_pin rst = { LCD_RST_GPIO_Port, LCD_RST_Pin };
 port_pin bl = { LCD_BL_GPIO_Port, LCD_BL_Pin };
 
-// Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::left_landscape);
+Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::left_landscape);
 Q10Keyboard* keyboard = nullptr;
 SerialStm* net_serial_interface = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
@@ -76,8 +76,8 @@ EEPROM* eeprom = nullptr;
 AudioCodec* audio = nullptr;
 
 
-// Led rx_led(LED_R_Port, LED_R_Pin, 0, 1, 10);
-// Led tx_led(LED_G_Port, LED_G_Pin, 0, 1, 10);
+Led rx_led(LED_R_Port, LED_R_Pin, 0, 1, 10);
+Led tx_led(LED_G_Port, LED_G_Pin, 0, 1, 10);
 
 int main(void)
 {
@@ -110,10 +110,10 @@ int main(void)
     audio = new AudioCodec(hi2s3, hi2c1);
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
-    // eeprom = new EEPROM(hi2c1, 32, 255);
+    eeprom = new EEPROM(hi2c1, 32, 255);
 
 
-    // screen.Begin();
+    screen.Begin();
 
     // // Set the port pins and groups for the keyboard columns
     port_pin col_pins[Q10_COLS] =
@@ -138,19 +138,19 @@ int main(void)
     };
 
     // Initialize the keyboard timer
-    // KeyboardTimerInit();
+    KeyboardTimerInit();
 
     // Create the keyboard object
-    // keyboard = new Q10Keyboard(col_pins, row_pins, 200, 100, &htim2);
+    keyboard = new Q10Keyboard(col_pins, row_pins, 200, 100, &htim2);
 
     // Initialize the keyboard
-    // keyboard->Begin();
+    keyboard->Begin();
 
-    // net_serial_interface = new SerialStm(&huart2);
+    net_serial_interface = new SerialStm(&huart2);
 
-    // ui_manager = new UserInterfaceManager(screen, *keyboard, *net_serial_interface, *eeprom);
+    ui_manager = new UserInterfaceManager(screen, *keyboard, *net_serial_interface, *eeprom);
 
-    // SerialManager serial(net_serial_interface);
+    SerialManager serial(net_serial_interface);
 
     uint32_t blink = 0;
     // uint8_t test_message [] = "UI: Test\n\r";
@@ -158,17 +158,13 @@ int main(void)
     HAL_GPIO_WritePin(LED_G_Port, LED_G_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_B_Port, LED_B_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_STAT_Port, UI_STAT_Pin, GPIO_PIN_SET);
-    // HAL_GPIO_WritePin(UI_DBG1_Port, UI_DBG1_Pin, GPIO_PIN_RESET);
-    // HAL_GPIO_WritePin(UI_DBG2_Port, UI_DBG2_Pin, GPIO_PIN_RESET);
-    // HAL_GPIO_WritePin(UI_DBG3_Port, UI_DBG3_Pin, GPIO_PIN_RESET);
-    // HAL_GPIO_WritePin(UI_DBG4_Port, UI_DBG4_Pin, GPIO_PIN_RESET);
 
     while (1)
     {
-        // ui_manager->Run();
+        ui_manager->Run();
 
-        // rx_led.Timeout();
-        // tx_led.Timeout();
+        rx_led.Timeout();
+        tx_led.Timeout();
 
         // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
@@ -469,7 +465,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
     UNUSED(hspi);
-    // screen.ReleaseSPI();
+    screen.ReleaseSPI();
 }
 
 static void KeyboardTimerInit()
