@@ -18,7 +18,7 @@ public:
         size_t ring_buffer_size);
     ~SerialEsp();
 
-    size_t AvailableBytes() override;
+    size_t Unread() override;
     unsigned char Read() override;
     bool ReadyToWrite() override;
     void Write(unsigned char* buff, const unsigned short buff_size) override;

@@ -133,8 +133,8 @@ void QSession::add_uri_templates()
   // TODO (this should come config file passed from ui to net chip during boot)
   // TODO harcoding for now
   static std::set<std::string> url_templates{
-    "quicr://webex.cisco.com<pen=1>/version/<int8>/appId/<int8>/org/<int12>/channel/<int16>/room/<int16>/endpoint/<int16>",
-    "quicr://webex.cisco.com<pen=1>/version/<int8>/appId/<int8>/org/<int12>/channel/<int16>/room/<int16>",
+    // "quicr://webex.cisco.com<pen=1>/version/<int8>/appId/<int8>/org/<int12>/channel/<int16>/room/<int16>/endpoint/<int16>",
+    "quicr://webex.cisco.com<pen=10>/version/<int8>/appId/<int8>/org/<int12>/channel/<int16>/room/<int16>",
   };
 
   for (const std::string& url_template : url_templates)

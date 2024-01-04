@@ -23,6 +23,8 @@ FirstBootView::FirstBootView(UserInterfaceManager& manager,
         (uint8_t)FIRST_BOOT_STARTED);
     setting_manager.SaveSetting(SettingManager::SettingAddress::Usr_Font,
         (uint8_t)Fonts::_7x12);
+    setting_manager.SaveSetting(SettingManager::SettingAddress::Menu_Font,
+        (uint8_t)Fonts::_11x16);
     setting_manager.SaveSetting(SettingManager::SettingAddress::Fg,
         (uint16_t)C_WHITE);
     setting_manager.SaveSetting(SettingManager::SettingAddress::Bg,
@@ -68,8 +70,6 @@ void FirstBootView::Draw()
 
     if (wifi_state == WifiState::SSID)
     {
-        auto ssids = manager.SSIDs();
-
         // TODO move into function
         uint16_t idx = 0;
         for (auto ssid : ssids)
@@ -131,12 +131,12 @@ void FirstBootView::HandleInput()
 
             request_message = "Please select SSID by number:";
 
-            Packet* ssid_req_packet = new Packet();
+            std::unique_ptr<Packet> ssid_req_packet = std::make_unique<Packet>();
             ssid_req_packet->SetData(Packet::Types::Command, 0, 6);
             ssid_req_packet->SetData(manager.NextPacketId(), 6, 8);
             ssid_req_packet->SetData(1, 14, 10);
             ssid_req_packet->SetData(Packet::Commands::SSIDs, 24, 8);
-            manager.EnqueuePacket(ssid_req_packet);
+            manager.EnqueuePacket(std::move(ssid_req_packet));
             state = State::Wifi;
             break;
         }
@@ -156,6 +156,31 @@ void FirstBootView::Update()
 {
     if (state == State::Wifi)
     {
+        RingBuffer<std::unique_ptr<Packet>>* ssid_packets;
+
+        if (manager.GetReadyPackets(&ssid_packets, Packet::Commands::SSIDs))
+        {
+            while (ssid_packets->Unread() > 0)
+            {
+                auto rx_packet = std::move(ssid_packets->Read());
+                // Get the packet len
+                uint16_t len = rx_packet->GetData(14, 10);
+
+                // Get the ssid id
+                uint8_t ssid_id = rx_packet->GetData(32, 8);
+
+                // Build the string
+                String str;
+                for (uint8_t i = 0; i < len - 2; ++i)
+                {
+                    str.push_back(static_cast<char>(
+                        rx_packet->GetData(40 + i * 8, 8)));
+                }
+
+                ssids[ssid_id] = std::move(str);
+            }
+        }
+
         if (wifi_state == WifiState::Connecting)
         {
             UpdateConnecting();
@@ -198,8 +223,6 @@ void FirstBootView::SetWifi()
             request_message = "Error. Please select SSID number:";
             return;
         }
-
-        const std::map<uint8_t, String>& ssids = manager.SSIDs();
 
         if (ssids.find(ssid_id) == ssids.end())
         {

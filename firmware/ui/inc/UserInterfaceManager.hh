@@ -31,11 +31,12 @@ public:
     ~UserInterfaceManager();
 
     void Run();
-    bool HasMessages();
-    Vector<Message>& GetMessages();
+    bool HasNewMessages();
+    const Vector<String>& GetMessages();
+    void PushMessage(String&& str);
     void ClearMessages();
-    void EnqueuePacket(Packet* packet);
-    void LoopbackPacket(Packet* packet);
+    void EnqueuePacket(std::unique_ptr<Packet> packet);
+    void LoopbackPacket(std::unique_ptr<Packet> packet);
     void ForceRedraw();
     bool RedrawForced();
     void ConnectToWifi();
@@ -44,11 +45,16 @@ public:
     uint32_t GetTxStatusColour() const;
     uint32_t GetRxStatusColour() const;
 
-    const std::map<uint8_t, String>& SSIDs() const;
-    void ClearSSIDs();
+    const bool GetReadyPackets(
+        RingBuffer<std::unique_ptr<Packet>>** buff,
+        const Packet::Commands command_type) const;
+    const bool HasReadyPackets(const Packet::Commands command_type) const;
     bool IsConnectedToWifi() const;
 
     uint8_t NextPacketId();
+
+    void ChangeRoom(std::unique_ptr<qchat::Room> new_room);
+    const std::unique_ptr<qchat::Room>& ActiveRoom() const;
 
     template<typename T>
     bool ChangeView()
@@ -69,8 +75,6 @@ public:
         return true;
     }
 
-    const String& GetUsername();
-
 private:
     void HandleIncomingPackets();
     void TimeoutPackets();
@@ -81,7 +85,7 @@ private:
     void SendCheckWifiPacket();
     void LoadSettings();
     void LoadUsername();
-    void HandleMessagePacket(Packet* packet);
+    void HandleMessagePacket(std::unique_ptr<Packet> packet);
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
@@ -90,18 +94,21 @@ private:
     SerialManager net_layer;
     SettingManager setting_manager;
     ViewInterface* view;
-    Vector<Message> received_messages;
+    Vector<String> received_messages;
+    bool has_new_messages;
     Vector<qchat::Ascii*> ascii_messages;
     bool force_redraw;
     uint32_t current_time;
 
 
-    std::map<uint8_t, String> ssids;
+    std::map<Packet::Commands, RingBuffer<std::unique_ptr<Packet>>> pending_command_packets;
     uint32_t last_wifi_check;
     bool is_connected_to_wifi;
     uint32_t attempt_to_connect_timeout;
 
     uint32_t last_test_packet = 0;
 
-    String username;
+    // Chat state
+    std::unique_ptr<qchat::Room> active_room;
+
 };

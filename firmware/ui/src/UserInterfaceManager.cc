@@ -24,16 +24,14 @@ UserInterfaceManager::UserInterfaceManager(Screen& screen,
     received_messages(), // TODO limit?
     force_redraw(false),
     current_time(HAL_GetTick()),
-    ssids(),
     last_wifi_check(10000),
     is_connected_to_wifi(false),
     attempt_to_connect_timeout(0),
-    username("")
+    active_room(nullptr)
 {
-    if (setting_manager.LoadSetting(SettingManager::SettingAddress::Firstboot)
+    if (setting_manager.ReadSetting(SettingManager::SettingAddress::Firstboot)
         == FIRST_BOOT_DONE)
     {
-        LoadSettings();
         ChangeView<LoginView>();
     }
     else
@@ -71,16 +69,25 @@ void UserInterfaceManager::Run()
     //      otherwise it will be bizarre having to get all of the old messages.
     // TODO this should only occur in the chat view mode?
     HandleIncomingPackets();
+
+    // TODO Clear pending packets after a certain amount of time
 }
 
-bool UserInterfaceManager::HasMessages()
+bool UserInterfaceManager::HasNewMessages()
 {
-    return received_messages.size();
+    return has_new_messages;
 }
 
-Vector<Message>& UserInterfaceManager::GetMessages()
+const Vector<String>& UserInterfaceManager::GetMessages()
 {
+    has_new_messages = false;
     return received_messages;
+}
+
+void UserInterfaceManager::PushMessage(String&& str)
+{
+    has_new_messages = true;
+    received_messages.push_back(str);
 }
 
 void UserInterfaceManager::ClearMessages()
@@ -88,15 +95,15 @@ void UserInterfaceManager::ClearMessages()
     received_messages.clear();
 }
 
-void UserInterfaceManager::EnqueuePacket(Packet* packet)
+void UserInterfaceManager::EnqueuePacket(std::unique_ptr<Packet> packet)
 {
     // TODO maybe make this into a linked list?
-    net_layer.EnqueuePacket(packet);
+    net_layer.EnqueuePacket(std::move(packet));
 }
 
-void UserInterfaceManager::LoopbackPacket(Packet* packet)
+void UserInterfaceManager::LoopbackPacket(std::unique_ptr<Packet> packet)
 {
-    net_layer.LoopbackRxPacket(packet);
+    net_layer.LoopbackRxPacket(std::move(packet));
 }
 
 void UserInterfaceManager::ForceRedraw()
@@ -116,14 +123,60 @@ uint8_t UserInterfaceManager::NextPacketId()
     return net_layer.NextPacketId();
 }
 
-const String& UserInterfaceManager::GetUsername()
+void UserInterfaceManager::ChangeRoom(std::unique_ptr<qchat::Room> new_room)
 {
-    if (username == "")
+    if (active_room != nullptr)
     {
-        LoadUsername();
+        // If we are currently in a room we need to unsubscribe and delete
+        // any messages that are currently in the map.
+        qchat::UnwatchRoom unwatch;
+        unwatch.room_uri = active_room->room_uri;
+
+        std::unique_ptr<Packet> unwatch_packet = std::make_unique<Packet>();
+        unwatch_packet->SetData(Packet::Types::Message, 0, 6);
+        unwatch_packet->SetData(NextPacketId(), 6, 8);
+
+        qchat::Codec::encode(unwatch_packet, unwatch);
+
+        // Push the packet onto the queue
+        EnqueuePacket(std::move(unwatch_packet));
+
+        active_room.reset();
     }
 
-    return username;
+    // Send a watch message to the new room
+    active_room = std::move(new_room);
+
+    // TODO placeholder for better more suitable code
+    // TODO Active room needs to be passed to the chat view some how
+    std::string user_name{ setting_manager.Username()->c_str() };
+
+    // Set watch on the room
+    qchat::WatchRoom watch = qchat::WatchRoom{
+        .publisher_uri = active_room->publisher_uri + user_name + "/",
+        .room_uri = active_room->room_uri,
+    };
+
+    std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
+    packet->SetData(Packet::Types::Message, 0, 6);
+    packet->SetData(NextPacketId(), 6, 8);
+
+    qchat::Codec::encode(packet, watch);
+    uint64_t new_offset = packet->BitsUsed();
+
+    // Expiry time
+    packet->SetData(0xFFFFFFFF, new_offset, 32);
+    new_offset += 32;
+
+    // Creation time
+    packet->SetData(0, new_offset, 32);
+    // new_offset += 32;
+    EnqueuePacket(std::move(packet));
+}
+
+const std::unique_ptr<qchat::Room>& UserInterfaceManager::ActiveRoom() const
+{
+    return active_room;
 }
 
 void UserInterfaceManager::HandleIncomingPackets()
@@ -131,34 +184,32 @@ void UserInterfaceManager::HandleIncomingPackets()
     if (!net_layer.HasRxPackets()) return;
 
     // Get the packets
-    const Vector<Packet*>& packets = net_layer.GetRxPackets();
+    const Vector<std::unique_ptr<Packet>>& packets = net_layer.GetRxPackets();
 
     // Handle incoming packets
     while (packets.size() > 0)
     {
         // Get the type
-        Packet* rx_packet = packets[0];
+        std::unique_ptr<Packet> rx_packet = std::move(packets[0]);
+        net_layer.DestroyRxPacket(0);
+
         uint8_t p_type = rx_packet->GetData(0, 6);
         switch (p_type)
         {
             // P_type will only be message or debug by this point
             case (Packet::Types::Message):
             {
-                HandleMessagePacket(rx_packet);
+                HandleMessagePacket(std::move(rx_packet));
 
                 if (ascii_messages.size() > 0)
                 {
                     // HACK remove later
                     qchat::Ascii* ascii = ascii_messages[0];
 
-                    Message in_msg;
-                    in_msg.Timestamp("00.00");
-                    in_msg.Sender("Ascii");
+                    received_messages.push_back(ascii->message.c_str());
+                    has_new_messages = true;
 
-                    in_msg.Body(ascii->message.c_str());
-
-                    received_messages.push_back(in_msg);
-
+                    // HACK remove later
                     delete ascii;
                     ascii_messages.erase(0);
                 }
@@ -200,37 +251,32 @@ void UserInterfaceManager::HandleIncomingPackets()
             }
             case (Packet::Types::Command):
             {
-                // TODO move to a parse command function
-                // TODO switch statement
-                uint8_t command_type = rx_packet->GetData(24, 8);
-                if (Packet::Commands::SSIDs == command_type)
+                // TODO move into a function too many tabs deeeeep
+                Packet::Commands command_type = static_cast<Packet::Commands>(
+                    rx_packet->GetData(24, 8));
+
+                switch (command_type)
                 {
-                    // Get the packet len
-                    uint16_t len = rx_packet->GetData(14, 10);
-
-                    // Get the ssid id
-                    uint8_t ssid_id = rx_packet->GetData(32, 8);
-
-                    // Build the string
-                    String str;
-                    for (uint8_t i = 0; i < len - 2; ++i)
+                    case Packet::Commands::WifiStatus:
                     {
-                        str.push_back(static_cast<char>(
-                            rx_packet->GetData(40 + i * 8, 8)));
+                        // Response from the esp32 will invoke this
+                        uint8_t message [] = "Got a connection status\n\r";
+                        HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);                    is_connected_to_wifi = rx_packet->GetData(32, 8);
+                        if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
+                        {
+                            ConnectToWifi();
+
+                            // Wait a long time before trying to connect again
+                            attempt_to_connect_timeout = HAL_GetTick() + 10000;
+                        }
+                        break;
                     }
-
-                    ssids[ssid_id] = std::move(str);
-                }
-                else if (Packet::Commands::WifiStatus == command_type)
-                {
-                    // Response from the esp32 will invoke this
-                    is_connected_to_wifi = rx_packet->GetData(32, 8);
-                    if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
+                    default:
                     {
-                        ConnectToWifi();
-
-                        // Wait a long time before trying to connect again
-                        attempt_to_connect_timeout = HAL_GetTick() + 10000;
+                        // Every other command type should be put into the
+                        // pending command packets.
+                        pending_command_packets[command_type].Write(std::move(rx_packet));
+                        break;
                     }
                 }
 
@@ -246,7 +292,7 @@ void UserInterfaceManager::HandleIncomingPackets()
         // delete rx_packet;
         // packets.erase(0);
 
-        net_layer.DestroyRxPacket(0);
+        // net_layer.DestroyRxPacket(0);
     }
 }
 
@@ -260,14 +306,21 @@ uint32_t UserInterfaceManager::GetRxStatusColour() const
     return GetStatusColour(net_layer.GetRxStatus());
 }
 
-const std::map<uint8_t, String>& UserInterfaceManager::SSIDs() const
+// TODO move to RingBuffer
+const bool UserInterfaceManager::GetReadyPackets(
+    RingBuffer<std::unique_ptr<Packet>>** buff,
+    const Packet::Commands command_type) const
 {
-    return ssids;
-}
+    if (pending_command_packets.find(command_type) ==
+        pending_command_packets.end())
+    {
+        return false;
+    }
 
-void UserInterfaceManager::ClearSSIDs()
-{
-    ssids.clear();
+    *buff = const_cast<RingBuffer<std::unique_ptr<Packet>>*>(
+        &pending_command_packets.at(command_type));
+
+    return true;
 }
 
 void UserInterfaceManager::ConnectToWifi()
@@ -293,7 +346,7 @@ void UserInterfaceManager::ConnectToWifi()
         password_str += ssid_password[i];
 
     // Create the packet
-    Packet* connect_packet = new Packet();
+    std::unique_ptr<Packet> connect_packet = std::make_unique<Packet>();
     connect_packet->SetData(Packet::Types::Command, 0, 6);
     connect_packet->SetData(UserInterfaceManager::NextPacketId(), 6, 8);
     // THINK should these be separate packets?
@@ -301,7 +354,7 @@ void UserInterfaceManager::ConnectToWifi()
     uint16_t length = ssid_len + ssid_password_len + 3;
     connect_packet->SetData(length, 14, 10);
 
-    connect_packet->SetData(Packet::Commands::ConnectToSSID, 24, 8);
+    connect_packet->SetData(Packet::Commands::WifiConnect, 24, 8);
 
     // Set the length of the ssid
     connect_packet->SetData(ssid_len, 32, 8);
@@ -328,7 +381,7 @@ void UserInterfaceManager::ConnectToWifi()
     }
 
     // Enqueue the message
-    EnqueuePacket(connect_packet);
+    EnqueuePacket(std::move(connect_packet));
 
     delete ssid;
     delete ssid_password;
@@ -337,7 +390,7 @@ void UserInterfaceManager::ConnectToWifi()
 void UserInterfaceManager::ConnectToWifi(const String& ssid,
     const String& password)
 {
-    Packet* connect_packet = new Packet();
+    std::unique_ptr<Packet> connect_packet = std::make_unique<Packet>();
     connect_packet->SetData(Packet::Types::Command, 0, 6);
     connect_packet->SetData(UserInterfaceManager::NextPacketId(), 6, 8);
 
@@ -346,7 +399,7 @@ void UserInterfaceManager::ConnectToWifi(const String& ssid,
     uint16_t length = ssid_len + ssid_password_len + 3;
     connect_packet->SetData(length, 14, 10);
 
-    connect_packet->SetData(Packet::Commands::ConnectToSSID, 24, 8);
+    connect_packet->SetData(Packet::Commands::WifiConnect, 24, 8);
 
     // Set the length of the ssid
     connect_packet->SetData(ssid_len, 32, 8);
@@ -373,7 +426,7 @@ void UserInterfaceManager::ConnectToWifi(const String& ssid,
     }
 
     // Enqueue the message
-    EnqueuePacket(connect_packet);
+    EnqueuePacket(std::move(connect_packet));
 }
 
 bool UserInterfaceManager::IsConnectedToWifi() const
@@ -402,7 +455,7 @@ uint32_t UserInterfaceManager::GetStatusColour(
 
 void UserInterfaceManager::SendTestPacket()
 {
-    Packet* test_packet = new Packet();
+    std::unique_ptr<Packet> test_packet = std::make_unique<Packet>();
 
     test_packet->SetData(Packet::Types::Message, 0, 6);
     test_packet->SetData(NextPacketId(), 6, 8);
@@ -413,7 +466,7 @@ void UserInterfaceManager::SendTestPacket()
     test_packet->SetData('l', 48, 8);
     test_packet->SetData('o', 56, 8);
 
-    EnqueuePacket(test_packet);
+    EnqueuePacket(std::move(test_packet));
 }
 
 void UserInterfaceManager::SendCheckWifiPacket()
@@ -421,7 +474,7 @@ void UserInterfaceManager::SendCheckWifiPacket()
     if (current_time < last_wifi_check) return;
 
     // Check a check wifi status packet
-    Packet* check_wifi = new Packet();
+    std::unique_ptr<Packet> check_wifi = std::make_unique<Packet>();
 
     // Set the command
     check_wifi->SetData(Packet::Types::Command, 0, 6);
@@ -435,7 +488,7 @@ void UserInterfaceManager::SendCheckWifiPacket()
     // Set the data
     check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
 
-    EnqueuePacket(check_wifi);
+    EnqueuePacket(std::move(check_wifi));
 
     last_wifi_check = current_time + 10000;
     uint8_t message [] = "UI: Send check wifi to esp\n\r";
@@ -443,7 +496,7 @@ void UserInterfaceManager::SendCheckWifiPacket()
 }
 
 void UserInterfaceManager::HandleMessagePacket(
-    Packet* packet)
+    std::unique_ptr<Packet> packet)
 {
     // Get the message type
     qchat::MessageTypes message_type =
@@ -457,12 +510,11 @@ void UserInterfaceManager::HandleMessagePacket(
 
         // message uri
         size_t uri_len = packet->GetData(32, 32);
-        screen->DrawText(0, 100, String::int_to_string(uri_len), font5x8, C_WHITE, C_BLACK);
         uint32_t offset = 64;
         for (uint16_t i = 0; i < uri_len; ++i)
         {
-            // ascii->message_uri.push_back(static_cast<char>(
-            //     packet->GetData(offset, 8)));
+            ascii->message_uri.push_back(static_cast<char>(
+                packet->GetData(offset, 8)));
             offset += 8;
         }
 
@@ -489,24 +541,4 @@ void UserInterfaceManager::HandleMessagePacket(
         // Do something with the ascii message
         ascii_messages.push_back(ascii);
     }
-}
-
-void UserInterfaceManager::LoadSettings()
-{
-    LoadUsername();
-}
-
-void UserInterfaceManager::LoadUsername()
-{
-    // TODO make this better
-    char* username;
-    short len;
-    setting_manager.LoadSetting(SettingManager::SettingAddress::Username,
-        &username, len);
-    for (short i = 0; i < len; i++)
-    {
-        this->username.push_back(username[i]);
-    }
-    delete username;
-    // ^^^ ugly chunk
 }

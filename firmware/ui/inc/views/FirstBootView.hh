@@ -43,6 +43,7 @@ private:
     State state;
     String request_message;
     WifiState wifi_state;
+    std::map<uint8_t, String> ssids;
     String ssid;
     String password;
     uint32_t state_update_timeout;

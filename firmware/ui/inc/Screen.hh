@@ -207,6 +207,7 @@ public:
     uint16_t GetStringCenter(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringCenterMargin(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringLeftDistanceFromRightEdge(const uint16_t str_len, const Font& font) const;
+    uint16_t Convert32ColorTo16(const uint32_t colour);
 
     inline void DrawNext();
 private:

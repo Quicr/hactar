@@ -9,11 +9,11 @@
 
 #include "Vector.hh"
 #include "String.hh"
-#include "Logging.hh"
-#include "SerialLogger.hh"
 
 // TODO scrolling
 #define MAX_AP 10
+
+#define MAX_ATTEMPTS 1
 
 class Wifi
 {
@@ -27,59 +27,66 @@ public:
         WaitingForIP,
         Connected,
         Disconnected,
-        Error
+        Error,
+        InvalidCredentials
     };
 
     Wifi(Wifi& other) = delete;
     void operator=(const Wifi& other) = delete;
     static Wifi* GetInstance();
 
-    esp_err_t Connect();
-    esp_err_t Connect(const char* ssid, const char* password);
-    esp_err_t Deinitialize();
+    void Connect(const char* ssid, const char* password);
+    void Connect(
+        const char* ssid,
+        const size_t ssid_len,
+        const char* password,
+        const size_t password_len);
     esp_err_t Disconnect();
     esp_err_t ScanNetworks(Vector<String>* ssids);
-    void SetCredentials(const char* ssid, const char* password);
 
     State GetState() const;
     bool IsConnected() const;
 
 protected:
-
-Wifi()
-{
-    logger = hactar_utils::LogManager::GetInstance();
-    logger->add_logger(new hactar_utils::ESP32SerialLogger());
-    state = State::NotInitialized;
-    wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
-    wifi_cfg = {};
-    ESP_ERROR_CHECK(Initialize());
-}
-
-~Wifi()
-{
-}
+    Wifi();
+    ~Wifi();
 
 
 private:
-    esp_err_t Initialize();
+    typedef struct
+    {
+        char* ssid;
+        size_t ssid_len;
+        char* password;
+        const size_t password_len;
+    } wifi_creds;
 
+    esp_err_t Initialize();
+    // TODO test deinit and init for deep sleep.
+    esp_err_t Deinitialize();
 
     // Static functions
     // ESP events need to be static
-    static void EventHandler(void* arg, esp_event_base_t event_base,
-        int32_t event_id, void* event_data);
+    static void ConnectTask(void* params);
+    static void EventHandler(void* arg,
+        esp_event_base_t event_base,
+        int32_t event_id,
+        void* event_data);
 
     // Static variables
     // For singleton
     static Wifi* instance;
-    static std::recursive_mutex mux;
 
+    // Private functions
     inline void WifiEvents(int32_t event_id, void* event_data);
     inline void IpEvents(int32_t event_id);
 
+    // Private variables
     wifi_init_config_t wifi_init_cfg;
     wifi_config_t wifi_cfg;
     State state;
-    hactar_utils::LogManager* logger;
+    TaskHandle_t connect_task;
+    SemaphoreHandle_t connect_semaphore;
+
+    uint8_t failed_attempts = 0;
 };

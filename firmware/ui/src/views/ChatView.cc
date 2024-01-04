@@ -6,19 +6,7 @@
 #include "QChat.hh"
 #include <string>
 
-// Model Helpers (to be moved to a better place)
-// TODO: This must come from config and deleted
-// from here.
-static qchat::Room create_default_room(const std::string& user_name)
-{
-    return qchat::Room{
-        .is_default = true,
-        .friendly_name = "CAFE",
-        .room_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1/",
-        .publisher_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1" + user_name + "/",
-    };
-}
-
+#include "TitleBar.hh"
 
 ChatView::ChatView(UserInterfaceManager& manager,
     Screen& screen,
@@ -26,33 +14,7 @@ ChatView::ChatView(UserInterfaceManager& manager,
     SettingManager& setting_manager):
     ViewInterface(manager, screen, keyboard, setting_manager)
 {
-    // TODO: This is added as a placeholder and should be removed from
-    // the constructor and set via the api for active_room.
-    // Each chat-view represent UX state for a given QChat Room
-    std::string user_name{ manager.GetUsername().c_str() };
-    active_room = create_default_room(user_name);
-
-    // Set watch on the room
-    qchat::WatchRoom watch = qchat::WatchRoom{
-        .publisher_uri = active_room.publisher_uri,
-        .room_uri = active_room.room_uri,
-    };
-
-    Packet* packet = new Packet(HAL_GetTick(), 1);
-    packet->SetData(Packet::Types::Message, 0, 6);
-    packet->SetData(manager.NextPacketId(), 6, 8);
-
-    qchat::Codec::encode(packet, watch);
-    uint64_t new_offset = packet->BitsUsed();
-
-    // Expiry time
-    packet->SetData(0xFFFFFFFF, new_offset, 32);
-    new_offset += 32;
-
-    // Creation time
-    packet->SetData(0, new_offset, 32);
-    // new_offset += 32;
-    manager.EnqueuePacket(packet);
+    redraw_messages = true;
 }
 
 ChatView::~ChatView()
@@ -62,22 +24,6 @@ ChatView::~ChatView()
 
 void ChatView::Update()
 {
-    // TODO move this into a function
-    if (!manager.HasMessages()) return;
-
-    Vector<Message>& msgs = manager.GetMessages();
-
-    // TODO std::move
-    // TODO note- will this cause issues with references being deleted
-    // with the stack?
-    for (uint16_t i = 0; i < msgs.size(); i++)
-    {
-        (void)messages.push_back(msgs[i]);
-    }
-
-    manager.ClearMessages();
-
-    redraw_messages = true;
 }
 
 void ChatView::AnimatedDraw()
@@ -94,7 +40,9 @@ void ChatView::Draw()
         if (first_load)
         {
             DrawUsrInputSeperator();
-            DrawTitle();
+            // DrawTitle();
+            DrawTitleBar(manager.ActiveRoom()->friendly_name.c_str(),
+                menu_font, C_WHITE, C_BLACK, screen);
             first_load = false;
         }
     }
@@ -106,10 +54,10 @@ void ChatView::Draw()
         String draw_str;
         draw_str = usr_input.substring(last_drawn_idx);
         last_drawn_idx = usr_input.length();
-        DrawInputString(draw_str);
+        ViewInterface::DrawInputString(draw_str);
     }
 
-    if (redraw_messages)
+    if (manager.HasNewMessages() || redraw_messages)
     {
         // TODO draw arrows and the ability to scroll messages.
         // I have a feeling this is gonna be slow as ever.
@@ -129,22 +77,25 @@ void ChatView::HandleInput()
     }
     else
     {
+        // TODO switch to using C strings so we don;t need to extend
+        // strings for each added character
+        // and then we can just memcpy?
+        const String& username = *setting_manager.Username();
+        String msg = "00:00 ";
+        msg += username;
+        msg += ": ";
+        msg += usr_input;
+
         // prepare ascii message, encode into Message + Packet
         qchat::Ascii ascii = qchat::Ascii{
-          .message_uri = active_room.publisher_uri + "msg/" + std::to_string(msg_id),
-          .message = {usr_input.c_str()},
+            // I want to use this, but quicr gets mad if we pass it in.
+          .message_uri = manager.ActiveRoom()->room_uri,
+          .message = {msg.c_str()},
         };
-
-        Message msg;
-        // TODO get from a RTC
-        msg.Timestamp("00:00");
-        // TODO get from EEPROM
-        msg.Sender(manager.GetUsername());
-
 
         // TODO move into encode...
         // TODO packet should maybe have a static next_packet_id?
-        Packet* packet = new Packet(HAL_GetTick(), 1);
+        std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
         packet->SetData(Packet::Types::Message, 0, 6);
         packet->SetData(manager.NextPacketId(), 6, 8);
 
@@ -161,14 +112,10 @@ void ChatView::HandleInput()
         new_offset += 32;
 
         // TODO ENABLE
-        manager.EnqueuePacket(packet);
+        manager.EnqueuePacket(std::move(packet));
+        manager.PushMessage(std::move(msg));
 
-        // TODO facelift
-        // Add message and the usr_input to the messages
-        msg.Body(usr_input);
-        messages.push_back(msg);
-
-        redraw_messages = true;
+        // redraw_messages = true;
 
         msg_id++;
 
@@ -178,7 +125,8 @@ void ChatView::HandleInput()
 
 void ChatView::DrawMessages()
 {
-    // Need -1 for the conditional loop
+    const Vector<String>& messages = manager.GetMessages();
+
     int32_t msg_idx = messages.size() - 1;
 
     // If there are no messages just return
@@ -201,8 +149,7 @@ void ChatView::DrawMessages()
     uint16_t next_used_x_space = 0;
 
     // Get the msg size of the first message in the list
-    curr_used_x_space = x_window_start + (messages[msg_idx].Length() +
-        name_seperator.length()) * usr_font.width;
+    curr_used_x_space = x_window_start + messages[msg_idx].length() * usr_font.width;
 
     // clip to screen width
     if (curr_used_x_space > screen.ViewWidth())
@@ -215,7 +162,7 @@ void ChatView::DrawMessages()
         x_pos = x_window_start;
 
         // Get the next message
-        Message& msg = messages[msg_idx];
+        auto& msg = messages[msg_idx];
 
         // Swap the current used space and previous
         prev_used_y_space = curr_used_y_space;
@@ -236,8 +183,7 @@ void ChatView::DrawMessages()
         {
             // Calculate the amount of space based on the number of characters
             // used
-            next_used_x_space = x_pos + (messages[msg_idx - 1].Length() +
-                name_seperator.length()) * usr_font.width;
+            next_used_x_space = x_pos + (messages[msg_idx - 1].length()) * usr_font.width;
 
             if (next_used_x_space > screen.ViewWidth())
                 next_used_x_space = screen.ViewWidth();
@@ -279,26 +225,9 @@ void ChatView::DrawMessages()
         // Swap the curr x space with the next x space;
         curr_used_x_space = next_used_x_space;
 
-        // Draw the timestamp
-        screen.DrawTextbox(x_pos, y_pos, x_window_start, y_window_start,
-            x_window_end, y_window_end, msg.Timestamp(), usr_font,
-            settings.timestamp_colour, bg);
-        x_pos += usr_font.width * msg.Timestamp().length();
-
-        // Draw the sender
-        screen.DrawTextbox(x_pos, y_pos, x_window_start, y_window_start,
-            x_window_end, y_window_end, msg.Sender(), usr_font,
-            settings.name_colour, bg);
-        x_pos += usr_font.width * msg.Sender().length();
-
-        // Draw the seperator
-        screen.DrawTextbox(x_pos, y_pos, x_window_start, y_window_start,
-            x_window_end, y_window_end, ": ", usr_font, fg, bg);
-        x_pos += usr_font.width * 2;
-
         // Draw the body
         screen.DrawTextbox(x_pos, y_pos, x_window_start, y_window_start,
-            x_window_end, y_window_end, msg.Body(), usr_font,
+            x_window_end, y_window_end, msg.c_str(), usr_font,
             settings.body_colour, bg);
 
         // Decrement the idx
