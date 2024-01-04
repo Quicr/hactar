@@ -1,9 +1,55 @@
 import serial
+import time
 
 from ansi_colours import BG, NW, BR, BB
 
 ACK = 0x79
 READY = 0x80
+
+
+def FlashSelection(uart: serial.Serial, chip: str):
+    if (chip == "mgmt"):
+        print(f"Update uart to parity: {BB}EVEN{NW}")
+        uart.close()
+        uart.parity = serial.PARITY_EVEN
+        uart.open()
+        print(f"Activating MGMT Upload Mode: {BG}SUCCESS{NW}")
+    elif (chip == "ui"):
+        send_data = [ch for ch in bytes("ui_upload", "UTF-8")]
+        res = WriteBytesWaitForACK(uart, bytes(send_data))
+
+        if res != ACK:
+            raise Exception("Failed to move device into upload mode")
+
+        # Change to parity even
+        print(f"Update uart to parity: {BB}EVEN{NW}")
+        uart.close()
+        uart.parity = serial.PARITY_EVEN
+        uart.open()
+
+        # Wait for a response
+        res = WaitForBytes(uart, 1)
+        if (res != READY):
+            raise Exception("NO REPLY received after activating ui upload")
+
+        print(f"Activating UI Upload Mode: {BG}SUCCESS{NW}")
+    elif (chip == "net"):
+        send_data = [ch for ch in bytes("net_upload", "UTF-8")]
+        res = WriteBytesWaitForACK(uart, bytes(send_data))
+
+        if res != ACK:
+            raise Exception("Failed to move device into upload mode")
+
+        # Change to parity none
+        print(f"Update uart to parity: {BR}NONE{NW}")
+        uart.parity = serial.PARITY_NONE
+
+        # Wait for a response
+        res = WaitForBytes(uart, 1)
+        if (res != READY):
+            raise Exception("NO REPLY received after activating net upload")
+
+        print(f"Activating NET Upload Mode: {BG}SUCCESS{NW}")
 
 
 def SendUploadSelectionCommand(uart: serial.Serial, command: str):

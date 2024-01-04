@@ -1,11 +1,14 @@
 import serial
 import time
 import functools
+import os
+import sys
+import json
 from types import SimpleNamespace
 import uart_utils
 from ansi_colours import BW, BC, BG, BR, BB, BY, BM, NW, NY
 
-# https://www.manualslib.com/download/1764455/St-An3155.html
+# https://www.st.com/resource/en/application_note/an3155-usart-protocol-used-in-the-stm32-bootloader-stmicroelectronics.pdf
 
 
 class stm32_flasher:
@@ -30,29 +33,46 @@ class stm32_flasher:
         "readout_unprotect": 0x92
     })
 
-    # Depending on the sector, we can add the bytes together iteratively.
-    User_Sector_Start_Address = 0x08000000
-
-    Sectors = [
-        SimpleNamespace(**{"size": 0x004000, "addr": 0x08000000}),
-        SimpleNamespace(**{"size": 0x004000, "addr": 0x08004000}),
-        SimpleNamespace(**{"size": 0x004000, "addr": 0x08008000}),
-        SimpleNamespace(**{"size": 0x004000, "addr": 0x0800C000}),
-        SimpleNamespace(**{"size": 0x010000, "addr": 0x08010000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x08020000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x08040000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x08060000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x08080000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x080A0000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x080C0000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x080E0000}),
-    ]
+    config_file: dict = None
+    chip: dict = None
 
     def __init__(self, uart: serial.Serial):
         self.uart = uart
 
+        config_path = f"{os.path.dirname(os.path.abspath(sys.argv[0]))}/"
+        config_path += "stm32_configurations.json"
+
+        if (not os.path.isfile(config_path)):
+            raise Exception(
+                "Failed to find configuration file in program directory")
+
+        self.config_file = json.load(open(f"{config_path}"))
+
+    def SetChipConfig(self, pid: int):
+        print(f"Retrieving configurations for chip ID: {BC}{hex(pid)}{NW}")
+        # Get the config from file returns an error if its missing
+        if str(pid) not in self.config_file.keys():
+            raise Exception(f"Chip ID: {pid}. Not in configuration file")
+
+        self.chip = self.config_file[str(pid)]
+
     def CalculateChecksum(self, arr: [int]):
         return functools.reduce(lambda a, b: a ^ b, arr).to_bytes(1, "big")
+
+    def GetSectorsForFirmware(self, data_len: int):
+        """ Gets the sectors, starting from zero, that the firmware will fill.
+
+        """
+        sectors = 0
+        total_sectors = len(self.chip["sectors"])
+        while (data_len > 0):
+            data_len -= self.chip["sectors"][sectors]["size"]
+            sectors += 1
+
+            if (sectors >= total_sectors):
+                raise Exception("Not enough flash memory for binary")
+
+        return [i for i in range(sectors)]
 
     def SendSync(self, retry_num: int = 5):
         """ Sends the sync byte 0x7F and waits for an self.ACK from the device.
@@ -101,7 +121,7 @@ class stm32_flasher:
                             "num bytes in GetID")
 
         # Get the pid which should be N+1 bytes
-        pid = uart_utils.WaitForBytesExcept(self.uart, num_bytes+1)
+        pid_bytes = uart_utils.WaitForBytesExcept(self.uart, num_bytes+1)
 
         # Wait for an ack
         res = uart_utils.WaitForBytesExcept(self.uart, 1)
@@ -110,8 +130,8 @@ class stm32_flasher:
         elif res == -1:
             raise Exception("No reply was received during GetID")
 
-        h_pid = hex(int.from_bytes(bytes(pid), "big"))
-        print(f"Chip ID: {BC}{h_pid}{NW}")
+        pid = int.from_bytes(bytes(pid_bytes), "big")
+        print(f"Chip ID: {BC}{hex(pid)}{NW}")
 
         return pid
 
@@ -242,7 +262,6 @@ class stm32_flasher:
         elif (reply == self.NACK):
             raise Exception("Failed to erase")
 
-
         # TODO verify erase but just check the first 256 bytes of each
         # Sector
         print(f"Erase Verify: {BB}BEGIN{NW}")
@@ -253,13 +272,15 @@ class stm32_flasher:
         read_count = 0
         bytes_verified = 0
         total_bytes_to_verify = 0
-        for sector in sectors:
-            total_bytes_to_verify += self.Sectors[sector].size
+        for sector_idx in sectors:
+            total_bytes_to_verify += self.chip["sectors"][sector_idx]["size"]
         percent_verified = int((bytes_verified / total_bytes_to_verify)*100)
 
-        for sector in sectors:
-            memory_address = self.Sectors[sector].addr
-            end_of_sector = (self.Sectors[sector].addr + 1024)
+        for sector_idx in sectors:
+            memory_address = self.chip["sectors"][sector_idx]["addr"]
+            end_of_sector = (self.chip["sectors"][sector_idx]["addr"] +
+                self.chip["sectors"][sector_idx]["size"])
+
             while (memory_address != end_of_sector):
                 read_count = 0
                 mem = [0] * mem_bytes_sz
@@ -273,12 +294,12 @@ class stm32_flasher:
                         mem_bytes_sz)
                     read_count += 1
                     if (mem != expected_mem):
-                        print(f"Sector not verified {sector} retry"
+                        print(f"Sector not verified {sector_idx} retry"
                               f" {read_count}")
 
                 if (read_count == 10 and mem != expected_mem):
                     print(f"Verifying: {BR}Failed to verify sector "
-                          f"[{sector}]{NW}")
+                          f"[{sector_idx}]{NW}")
                     return False
 
                 memory_address += mem_bytes_sz
@@ -287,6 +308,26 @@ class stm32_flasher:
         # Don't actually need to do the math here
         print(f"Verifying erase: {BG}100{NW}% verified")
         print(f"Erase: {BG}COMPLETE{NW}")
+        return True
+
+    def FullFlashVerify():
+        # TODO
+        pass
+
+    def FastFlashVerify():
+        # TODO
+        pass
+
+    def FlashCompare(self, data:bytes, addr:int):
+        # TODO
+        """ Compares a byte array to the flash at the provided addr.
+            True if equal, False otherwise
+        """
+        # Get the flash from the address of equal size to data
+        mem = bytes(self.SendReadMemory(addr.to_bytes(4, "big"), len(data)))
+
+
+
         return True
 
     def SendWriteMemory(self, data: bytes, address: int,
@@ -401,33 +442,34 @@ class stm32_flasher:
 
         return self.ACK
 
-    def ProgramSTM(self, binary_path):
-
+    def ProgramSTM(self, chip: str, binary_path: str):
         # Send the command to the mgmt chip that we want to program the UI chip
-        uart_utils.SendUploadSelectionCommand(self.uart, "ui_upload")
-        # time.sleep(0.5)
+        uart_utils.FlashSelection(self.uart, chip)
+
         self.SendSync(2)
-        time.sleep(0.5)
         # Sometimes a small delay is required otherwise it won't
         # continue on correctly
+        time.sleep(0.5)
 
-        self.SendGetID(1)
+        pid = self.SendGetID(1)
+
+        self.SetChipConfig(pid)
 
         self.SendGet()
 
-        mem = self.SendReadMemory(bytes([0x08, 0x00, 0x00, 0x00]), 256)
+        mem = self.SendReadMemory(self.chip["usr_start_addr"].to_bytes(4, "big"), 256)
         print(f"Reading memory: {BG}SUCCESSFUL{NW}")
         print(f"Number of bytes read from memory: {BM}{len(mem)}\
             {NW}")
 
-        time.sleep(1)
+        # Get the firmware
+        firmware = open(binary_path, "rb").read()
 
-        # TODO get the size of our binary file and erase the
-        # sectors that it would fit into
-        sectors = [x for x in range(6)]
+        # Get the size of memory that we need to erase
+        sectors = self.GetSectorsForFirmware(len(firmware))
+
         self.SendExtendedEraseMemory(sectors, False)
 
-        firmware = open(binary_path, "rb").read()
-        self.SendWriteMemory(firmware, self.User_Sector_Start_Address, 5)
+        self.SendWriteMemory(firmware, self.chip["usr_start_addr"], 5)
 
         return True
