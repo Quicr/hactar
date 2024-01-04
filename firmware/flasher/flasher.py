@@ -43,7 +43,6 @@ def SerialPorts(uart_config):
             pass
     return result
 
-
 def main():
     try:
         parser = argparse.ArgumentParser()
@@ -62,15 +61,10 @@ def main():
                                  "Multiple chips: ui+net, or ui+net+mgmt, etc",
                                  default="",
                                  required=True)
-        parser.add_argument("--mgmt_binary_path",
-                            help="Path to the mgmt binary",
-                            default="")
-        parser.add_argument("--ui_binary_path",
-                            help="Path to where the ui binary",
-                            default="")
-        parser.add_argument("--net_build_path",
-                            help="Path to where the net binaries can be found",
-                            default="")
+        parser.add_argument("-bin", "--binary_path",
+                            help="Path to the binary",
+                            default="",
+                            required=True)
 
         args = parser.parse_args()
 
@@ -98,6 +92,7 @@ def main():
         for port in ports:
             programmed = False
             while not programmed:
+                programmed = True
                 try:
                     uart = serial.Serial(
                         port=port,
@@ -105,34 +100,35 @@ def main():
                     )
 
                     print(f"Opened port: {BB}{port}{NW} "
-                          f"baudrate: {BG}{args.baud}{NW}")
+                        f"baudrate: {BG}{args.baud}{NW}")
 
-                    if ("mgmt" in args.chip and args.mgmt_binary_path != ""):
+                    # TODO use oop inheritance
+                    if ("mgmt" in args.chip):
+                        print(f"{BW}Starting MGMT Upload{NW}")
+                        stm32_flasher = stm32.stm32_flasher(uart)
+                        programmed = stm32_flasher.ProgramSTM(args.chip,
+                            args.binary_path)
+
+                    if ("ui" in args.chip):
                         print(f"{BW}Starting UI Upload{NW}")
                         stm32_flasher = stm32.stm32_flasher(uart)
-                        programmed = stm32_flasher.ProgramSTM(
-                            args.mgmt_binary_path)
+                        programmed = stm32_flasher.ProgramSTM(args.chip,
+                            args.binary_path)
 
-                    if ("ui" in args.chip and args.ui_binary_path != ""):
-                        print(f"{BW}Starting UI Upload{NW}")
-                        stm32_flasher = stm32.stm32_flasher(uart)
-                        programmed = stm32_flasher.ProgramSTM(
-                            args.ui_binary_path)
-
-                    if ("net" in args.chip and args.net_build_path != ""):
+                    if ("net" in args.chip):
                         print(f"{BW}Starting Net Upload{NW}")
                         esp32_flasher = esp32.esp32_flasher(uart)
                         programmed = esp32_flasher.ProgramESP(
-                            args.net_build_path)
+                            args.binary_path)
 
-                    print(f"Done flashing {BR}GOODBYE{NW}")
-
+                    print(f"Done Flashing {BR}GOODBYE{NW}")
                     uart.close()
                 except Exception as ex:
-                    print(f"{BR}{ex}{NW}")
+                    print(f"{BR}[Error]{NW} {ex}")
                     uart.close()
+            # End while
     except Exception as ex:
-        print(f"{BR}{ex}{NW}")
+        print(f"{BR}[Error]{NW} {ex}")
 
 
 main()
