@@ -38,7 +38,7 @@ async function FlashHactar()
             return;
         }
 
-        await flasher.Flash();
+        await flasher.Flash("mgmt");
     }
     catch (exception)
     {
@@ -60,8 +60,10 @@ async function ShowAdvancedOptions()
 
 async function TestLog()
 {
-    logger.Warning("test");
     logger.Debug("test");
+    logger.Info("test")
+    logger.Warning("test");
+    logger.Error("test");
 }
 
 function UpdateLogLevel(log_level: any)

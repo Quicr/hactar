@@ -108,11 +108,11 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART3_UART_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-static void Usart3_Net_Upload_Runnning_Debug_Reset(void);
-static void Usart3_UI_Upload_Init(void);
+static void Usart1_Net_Upload_Runnning_Debug_Reset(void);
+static void Usart1_UI_Upload_Init(void);
 extern inline void HandleRx(uart_stream_t* uart_stream, uint16_t num_received);
 extern inline void HandleTx(uart_stream_t* uart_stream);
 extern inline void HandleCommands(uart_stream_t* uart_stream);
@@ -180,7 +180,7 @@ uint8_t CheckForDebugMode()
 
 void HAL_GPIO_EXTI_Callback(uint16_t gpio_pin)
 {
-    if (gpio_pin == RTS_Pin)
+    if (gpio_pin == USB_RTS_Pin)
     {
         if ((state == Net_Upload || state == UI_Upload) && usb_stream.idle_receive)
         {
@@ -409,12 +409,13 @@ extern inline void HandleCommands(uart_stream_t* uart_stream)
 
         if (strcmp((const char*)uart_stream->tx_buffer, ui_upload_cmd) == 0)
         {
-            HAL_UART_Transmit(&huart3, ACK, 1, HAL_MAX_DELAY);
+            // Echo back
+            HAL_UART_Transmit(usb_stream.from_uart, ACK, 1, HAL_MAX_DELAY);
             state = UI_Upload_Reset;
         }
         else if (strcmp((const char*)uart_stream->tx_buffer, net_upload_cmd) == 0)
         {
-            HAL_UART_Transmit(&huart3, ACK, 1, HAL_MAX_DELAY);
+            HAL_UART_Transmit(usb_stream.from_uart, ACK, 1, HAL_MAX_DELAY);
             state = Net_Upload_Reset;
         }
         else if (strcmp((const char*)uart_stream->tx_buffer, debug_cmd) == 0)
@@ -427,7 +428,7 @@ extern inline void HandleCommands(uart_stream_t* uart_stream)
         }
         else if (strcmp((const char*)uart_stream->tx_buffer, HELLO) == 0)
         {
-            HAL_UART_Transmit(&huart3, HELLO_RES, 28, HAL_MAX_DELAY);
+            HAL_UART_Transmit(usb_stream.from_uart, HELLO_RES, 28, HAL_MAX_DELAY);
         }
 
         // Invalidate the command
@@ -574,9 +575,9 @@ void NetUpload()
     HAL_UART_DeInit(usb_stream.from_uart);
 
     // Init huart3
-    Usart3_Net_Upload_Runnning_Debug_Reset();
+    Usart1_Net_Upload_Runnning_Debug_Reset();
 
-    usb_stream.to_uart = &huart1;
+    usb_stream.to_uart = &huart3;
     usb_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
     usb_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
 
@@ -603,7 +604,7 @@ void NetUpload()
     HAL_Delay(500);
 
     // Send a ready message
-    HAL_UART_Transmit(&huart3, READY, 1, HAL_MAX_DELAY);
+    HAL_UART_Transmit(usb_stream.from_uart, READY, 1, HAL_MAX_DELAY);
 
     usb_stream.last_transmission_time = HAL_GetTick();
     net_stream.last_transmission_time = HAL_GetTick();
@@ -632,7 +633,7 @@ void UIUpload()
     HAL_UART_DeInit(usb_stream.from_uart);
 
     // Init huart3
-    Usart3_UI_Upload_Init();
+    Usart1_UI_Upload_Init();
 
     usb_stream.to_uart = &huart2;
     usb_stream.rx_buffer_size = UI_RECEIVE_BUFF_SZ;
@@ -660,7 +661,7 @@ void UIUpload()
     HAL_Delay(500);
 
     // Send a ready message
-    HAL_UART_Transmit(&huart3, READY, 1, HAL_MAX_DELAY);
+    HAL_UART_Transmit(usb_stream.from_uart, READY, 1, HAL_MAX_DELAY);
 
     usb_stream.last_transmission_time = HAL_GetTick();
     ui_stream.last_transmission_time = HAL_GetTick();
@@ -686,13 +687,13 @@ void RunningMode()
 
     CancelAllUart();
 
-    // Init uart3 for UI upload
+    // De-init usb from uart for running mode
     HAL_UART_DeInit(usb_stream.from_uart);
 
     // Init huart3
-    Usart3_Net_Upload_Runnning_Debug_Reset();
+    Usart1_Net_Upload_Runnning_Debug_Reset();
 
-    // usb_stream.to_uart = &huart3;
+    usb_stream.to_uart = &huart3;
     usb_stream.rx_buffer_size = COMMAND_BUFF_SZ;
     usb_stream.tx_buffer_size = COMMAND_BUFF_SZ;
 
@@ -702,7 +703,7 @@ void RunningMode()
     UINormalMode();
     uint32_t timeout = HAL_GetTick() + 3000;
     while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
+        HAL_GPIO_ReadPin(ADC_UI_STAT_GPIO_Port, ADC_UI_STAT_Pin) != GPIO_PIN_SET)
     {
         // Stay here until the UI is finished booting
         HAL_Delay(10);
@@ -712,16 +713,25 @@ void RunningMode()
     // Refresh the timeout
     timeout = HAL_GetTick() + 3000;
     while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+        HAL_GPIO_ReadPin(ADC_NET_STAT_GPIO_Port, ADC_NET_STAT_Pin) != GPIO_PIN_SET)
     {
         // Stay here until the Net is done booting
         HAL_Delay(10);
     }
 
     state = Running;
+    // char hello[] = {'h', 'e', 'l', 'l', 'o'};
+    // unsigned long long next_debug_msg = 0;
     while (state == Running)
     {
         HandleCommands(&usb_stream);
+
+        // if (HAL_GetTick() > next_debug_msg)
+        // {
+        //     next_debug_msg = HAL_GetTick() + 1000;
+        //     HAL_UART_Transmit(usb_stream.from_uart, hello, 5, HAL_MAX_DELAY);
+        //     HAL_GPIO_TogglePin(LEDA_G_GPIO_Port, LEDA_G_Pin);
+        // }
     }
 }
 
@@ -743,7 +753,7 @@ void DebugMode()
     HAL_UART_DeInit(usb_stream.from_uart);
 
     // Init huart3
-    Usart3_Net_Upload_Runnning_Debug_Reset();
+    Usart1_Net_Upload_Runnning_Debug_Reset();
 
     // usb_stream.to_uart = &huart3;
     usb_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
@@ -766,7 +776,7 @@ void DebugMode()
 
     uint32_t timeout = HAL_GetTick() + 3000;
     while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) != GPIO_PIN_SET)
+        HAL_GPIO_ReadPin(ADC_UI_STAT_GPIO_Port, ADC_UI_STAT_Pin) != GPIO_PIN_SET)
     {
         // Stay here until the UI is finished booting
         HAL_Delay(10);
@@ -776,7 +786,7 @@ void DebugMode()
     // Refresh the timeout
     timeout = HAL_GetTick() + 3000;
     while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+        HAL_GPIO_ReadPin(ADC_NET_STAT_GPIO_Port, ADC_NET_STAT_Pin) != GPIO_PIN_SET)
     {
         // Stay here until the Net is done booting
         HAL_Delay(10);
@@ -821,8 +831,8 @@ int main(void)
     MX_DMA_Init();
     MX_TIM3_Init();
     MX_USART2_UART_Init();
-    MX_USART1_UART_Init();
-    Usart3_Net_Upload_Runnning_Debug_Reset();
+    MX_USART3_UART_Init();
+    Usart1_Net_Upload_Runnning_Debug_Reset();
     /* USER CODE BEGIN 2 */
 
     // Set LEDS for ui
@@ -861,16 +871,16 @@ int main(void)
     ui_stream.rx_buffer = (uint8_t*)malloc(ui_stream.rx_buffer_size * sizeof(uint8_t));
     ui_stream.tx_buffer = (uint8_t*)malloc(ui_stream.tx_buffer_size * sizeof(uint8_t));
 
-    usb_stream.from_uart = &huart3;
+    usb_stream.from_uart = &huart1;
     usb_stream.to_uart = &huart1;
     InitUartStreamParameters(&usb_stream);
 
-    net_stream.from_uart = &huart1;
-    net_stream.to_uart = &huart3;
+    net_stream.from_uart = &huart3;
+    net_stream.to_uart = &huart1;
     InitUartStreamParameters(&net_stream);
 
     ui_stream.from_uart = &huart2;
-    ui_stream.to_uart = &huart3;
+    ui_stream.to_uart = &huart1;
     InitUartStreamParameters(&ui_stream);
 
     // NOTE these need to be set to 1 so when we choose a mode
@@ -1010,11 +1020,12 @@ static void MX_TIM3_Init(void)
 }
 
 /**
-  * @brief USART1 Initialization Function
+  * @brief USART3 Initialization Function
+  *     Setting for net upload, running mode, debug mode, and default reset
   * @param None
   * @retval None
   */
-static void MX_USART1_UART_Init(void)
+static void Usart1_Net_Upload_Runnning_Debug_Reset(void)
 {
 
     /* USER CODE BEGIN USART1_Init 0 */
@@ -1027,6 +1038,39 @@ static void MX_USART1_UART_Init(void)
     huart1.Init.WordLength = UART_WORDLENGTH_8B;
     huart1.Init.StopBits = UART_STOPBITS_1;
     huart1.Init.Parity = UART_PARITY_NONE;
+    huart1.Init.Mode = UART_MODE_TX_RX;
+    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+    huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+    huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+    if (HAL_UART_Init(&huart1) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    /* USER CODE BEGIN USART1_Init 2 */
+    /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  *     Specific initialization for UI upload transmission and receives
+  * @param None
+  * @retval None
+  */
+static void Usart1_UI_Upload_Init(void)
+{
+
+    /* USER CODE BEGIN USART1_Init 0 */
+    /* USER CODE END USART1_Init 0 */
+
+    /* USER CODE BEGIN USART1_Init 1 */
+    /* USER CODE END USART1_Init 1 */
+    huart1.Instance = USART1;
+    huart1.Init.BaudRate = BAUD;
+    huart1.Init.WordLength = UART_WORDLENGTH_9B;
+    huart1.Init.StopBits = UART_STOPBITS_1;
+    huart1.Init.Parity = UART_PARITY_EVEN;
     huart1.Init.Mode = UART_MODE_TX_RX;
     huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     huart1.Init.OverSampling = UART_OVERSAMPLING_16;
@@ -1078,7 +1122,7 @@ static void MX_USART2_UART_Init(void)
   * @param None
   * @retval None
   */
-static void Usart3_Net_Upload_Runnning_Debug_Reset(void)
+static void MX_USART3_UART_Init(void)
 {
 
     /* USER CODE BEGIN USART3_Init 0 */
@@ -1091,38 +1135,6 @@ static void Usart3_Net_Upload_Runnning_Debug_Reset(void)
     huart3.Init.WordLength = UART_WORDLENGTH_8B;
     huart3.Init.StopBits = UART_STOPBITS_1;
     huart3.Init.Parity = UART_PARITY_NONE;
-    huart3.Init.Mode = UART_MODE_TX_RX;
-    huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart3.Init.OverSampling = UART_OVERSAMPLING_16;
-    huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-    huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-    if (HAL_UART_Init(&huart3) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    /* USER CODE BEGIN USART3_Init 2 */
-    /* USER CODE END USART3_Init 2 */
-
-}
-
-/**
-  * @brief USART3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void Usart3_UI_Upload_Init(void)
-{
-
-    /* USER CODE BEGIN USART3_Init 0 */
-    /* USER CODE END USART3_Init 0 */
-
-    /* USER CODE BEGIN USART3_Init 1 */
-    /* USER CODE END USART3_Init 1 */
-    huart3.Instance = USART3;
-    huart3.Init.BaudRate = BAUD;
-    huart3.Init.WordLength = UART_WORDLENGTH_9B;
-    huart3.Init.StopBits = UART_STOPBITS_1;
-    huart3.Init.Parity = UART_PARITY_EVEN;
     huart3.Init.Mode = UART_MODE_TX_RX;
     huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     huart3.Init.OverSampling = UART_OVERSAMPLING_16;
@@ -1163,90 +1175,80 @@ static void MX_DMA_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
-    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-    /* USER CODE BEGIN MX_GPIO_Init_1 */
-    /* USER CODE END MX_GPIO_Init_1 */
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
-      /* GPIO Ports Clock Enable */
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    __HAL_RCC_GPIOF_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOF_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin | LEDA_R_Pin | LEDA_G_Pin | UI_BOOT1_Pin
-        | UI_RST_Pin, GPIO_PIN_RESET);
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin|UI_RST_Pin, GPIO_PIN_RESET);
 
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin | LEDB_G_Pin | LEDB_B_Pin | UI_BOOT0_Pin
-        | NET_RST_Pin | NET_BOOT_Pin, GPIO_PIN_RESET);
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT0_Pin
+                          |NET_RST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin, GPIO_PIN_RESET);
 
-    /*Configure GPIO pins : BTN_RST_Pin BTN_UI_Pin BTN_NET_Pin */
-    GPIO_InitStruct.Pin = BTN_RST_Pin | BTN_UI_Pin | BTN_NET_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  /*Configure GPIO pins : BTN_RST_Pin BTN_UI_Pin BTN_NET_Pin */
+  GPIO_InitStruct.Pin = BTN_RST_Pin|BTN_UI_Pin|BTN_NET_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : ADC_UI_STAT_Pin ADC_NET_STAT_Pin UI_STAT_Pin NET_STAT_Pin */
-    GPIO_InitStruct.Pin = ADC_UI_STAT_Pin | ADC_NET_STAT_Pin | UI_STAT_Pin | NET_STAT_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  /*Configure GPIO pins : ADC_UI_STAT_Pin ADC_NET_STAT_Pin */
+  GPIO_InitStruct.Pin = ADC_UI_STAT_Pin|ADC_NET_STAT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : LEDB_R_Pin LEDA_R_Pin LEDA_G_Pin UI_BOOT1_Pin
-                             UI_RST_Pin */
-    GPIO_InitStruct.Pin = LEDB_R_Pin | LEDA_R_Pin | LEDA_G_Pin | UI_BOOT1_Pin
-        | UI_RST_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  /*Configure GPIO pins : LEDB_R_Pin LEDA_R_Pin LEDA_G_Pin UI_RST_Pin */
+  GPIO_InitStruct.Pin = LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin|UI_RST_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : LEDA_B_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT0_Pin
-                             NET_RST_Pin NET_BOOT_Pin */
-    GPIO_InitStruct.Pin = LEDA_B_Pin | LEDB_G_Pin | LEDB_B_Pin | UI_BOOT0_Pin
-        | NET_RST_Pin | NET_BOOT_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  /*Configure GPIO pins : LEDA_B_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT0_Pin
+                           NET_RST_Pin NET_BOOT_Pin UI_BOOT1_Pin */
+  GPIO_InitStruct.Pin = LEDA_B_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT0_Pin
+                          |NET_RST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : RTS_Pin */
-    GPIO_InitStruct.Pin = RTS_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(RTS_GPIO_Port, &GPIO_InitStruct);
+  /*Configure GPIO pin : USB_RTS_Pin */
+  GPIO_InitStruct.Pin = USB_RTS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(USB_RTS_GPIO_Port, &GPIO_InitStruct);
 
-    // /*Configure GPIO pin : CTS_Pin */
-    // GPIO_InitStruct.Pin = CTS_Pin;
-    // GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    // GPIO_InitStruct.Pull = GPIO_NOPULL;
-    // HAL_GPIO_Init(CTS_GPIO_Port, &GPIO_InitStruct);
+  /*Configure GPIO pin : USB_DTR_Pin */
+  GPIO_InitStruct.Pin = USB_DTR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(USB_DTR_GPIO_Port, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : CTS_Pin */
-    GPIO_InitStruct.Pin = MGMT_DBG7_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(MGMT_DBG7_GPIO_Port, &GPIO_InitStruct);
+  /*Configure GPIO pin : MCLK_Pin */
+  GPIO_InitStruct.Pin = MCLK_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
+  HAL_GPIO_Init(MCLK_GPIO_Port, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
 
-    // Clock
-    /*Configure GPIO pin : PA8 */
-    GPIO_InitStruct.Pin = GPIO_PIN_8;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
-    /* EXTI interrupt init*/
-    HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
-    HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
-
-    /* USER CODE BEGIN MX_GPIO_Init_2 */
-    /* USER CODE END MX_GPIO_Init_2 */
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
