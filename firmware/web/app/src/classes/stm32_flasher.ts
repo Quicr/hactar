@@ -3,9 +3,9 @@ import Serial from "./serial"
 import logger from "./logger";
 import { WriteByteWaitForACK, WriteBytesWaitForACK } from "./stm32_serial";
 
-import { ACK, READY, NACK, NO_REPLY, MemoryCompare, ToByteArray } from "./uart_utils"
+import { ACK, READY, NACK, NO_REPLY, MemoryCompare, ToByteArray, FromByteArray } from "./uart_utils"
 
-
+import axios from "axios";
 
 class STM32Flasher
 {
@@ -16,6 +16,10 @@ class STM32Flasher
         this.progress = "Starting";
 
         await this.Sync(serial);
+
+        const uid = await this.GetId(serial);
+
+        await this.GetConfiguration(uid);
 
         await Sleep(200);
 
@@ -46,6 +50,72 @@ class STM32Flasher
         logger.Info("Activating device: SUCCESS");
     }
 
+    async GetId(serial: Serial, retry: number = 5)
+    {
+        let reply: number = await WriteByteWaitForACK(serial,
+            this.Commands.get_id,
+            retry,
+            true);
+
+        if (reply == NACK)
+        {
+            logger.Error("Getting ID: Failed");
+            throw "Getting ID: Failed";
+        }
+        else if (reply == NO_REPLY)
+        {
+            logger.Error("Getting ID: NO REPLY");
+            throw "Getting ID: No reply";
+        }
+
+        // Read the next byte which should be the number of bytes incoming - 1
+        let num_bytes = await serial.ReadByte();
+
+
+        // NOTE there is a bug in the bootloader for stm, or there is a
+        // inaccuracy in the an3155 datasheet that says that a single ACK
+        // is sent after receiving the get_id command.
+        // However, it seems two ACK's are sent
+        if (num_bytes == ACK)
+        {
+            num_bytes = await serial.ReadByte();
+        }
+        else if (num_bytes == NACK)
+        {
+            logger.Error("NACK was received while trying to get the number of bytes in GetID");
+            throw "NACK was received while trying to get the number of bytes in GetID";
+        }
+
+        // Get the pid in bytes format
+        const pid_bytes = await serial.ReadBytes(num_bytes+1);
+
+        // Wait for an ack
+        reply = await serial.ReadByte(1);
+
+        if (reply == NACK)
+        {
+            logger.Error("NACK was received during GetID");
+            throw "NACK was received during GetID";
+        }
+        else if (reply == NO_REPLY)
+        {
+            logger.Error("No reply was received during GetID");
+            throw "No reply was received during GetID";
+        }
+
+        const pid = FromByteArray(pid_bytes, "big");
+        logger.Debug(`Chip ID: ${pid}`);
+
+        return pid;
+    }
+
+    async GetConfiguration(uid: number)
+    {
+        // Get a binary from the server
+        let res = await axios.get(`http://localhost:7775/stm_configuration?uid=${uid}`);
+        this.User_Sector_Start_Address = res.data["usr_start_addr"];
+        this.Defined_Sectors = res.data["sectors"]
+    }
 
     async ReadMemory(serial: Serial, address: number[], num_bytes: number,
         retry: number = 1)
@@ -78,7 +148,7 @@ class STM32Flasher
             throw "NO REPLY received after sending memory address";
         }
 
-        reply = await WriteByteWaitForACK(serial,num_bytes - 1);
+        reply = await WriteByteWaitForACK(serial, num_bytes - 1);
         if (reply == NACK)
         {
             logger.Error("NACK was received after sending num bytes to receive");
@@ -369,24 +439,9 @@ class STM32Flasher
         "readout_unprotect": 0x92
     };
 
-    User_Sector_Start_Address = 0x08000000;
-
-    Defined_Sectors = [
-        { "size": 0x00004000, "addr": 0x08000000 },
-        { "size": 0x00004000, "addr": 0x08004000 },
-        { "size": 0x00004000, "addr": 0x08008000 },
-        { "size": 0x00004000, "addr": 0x0800C000 },
-        { "size": 0x00010000, "addr": 0x08010000 },
-        { "size": 0x00020000, "addr": 0x08020000 },
-        { "size": 0x00020000, "addr": 0x08040000 },
-        { "size": 0x00020000, "addr": 0x08060000 },
-        { "size": 0x00020000, "addr": 0x08080000 },
-        { "size": 0x00020000, "addr": 0x080A0000 },
-        { "size": 0x00020000, "addr": 0x080C0000 },
-        { "size": 0x00020000, "addr": 0x080E0000 }
-    ];
-
-
+    User_Sector_Start_Address: number = 0;
+    // Array of objects
+    Defined_Sectors: any[] = [];
     erasing_verification: number = 0;
     flashing_progress: number = 0;
     flash_verification: number = 0;

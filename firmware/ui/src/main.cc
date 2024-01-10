@@ -112,7 +112,6 @@ int main(void)
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
 
-
     screen.Begin();
 
     // // Set the port pins and groups for the keyboard columns
@@ -169,7 +168,7 @@ int main(void)
         // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
-            audio->Send1KHzSignal();
+            // audio->Send1KHzSignal();
             blink = HAL_GetTick() + 1000;
             HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
             // // HAL_UART_Transmit(&huart1, test_message, 10, 1000);

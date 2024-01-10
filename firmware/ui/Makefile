@@ -273,7 +273,7 @@ compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
 
 upload:
 	python ../flasher/flasher.py --baud=${BAUD} --chip="ui" \
-								 --ui_binary_path=${BUILD_DIR}/${FIRMWARE}
+								 -bin=${BUILD_DIR}/${FIRMWARE}
 
 upload_prog:
 	python ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
