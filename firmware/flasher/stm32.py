@@ -10,6 +10,8 @@ from ansi_colours import BW, BC, BG, BR, BB, BY, BM, NW, NY
 
 # https://www.st.com/resource/en/application_note/an3155-usart-protocol-used-in-the-stm32-bootloader-stmicroelectronics.pdf
 
+# TODO Put the sector verify code somewhere
+# TODO clean up full verify and write flash
 
 class stm32_flasher:
     ACK = 0x79
@@ -111,9 +113,9 @@ class stm32_flasher:
         num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
 
         # NOTE there is a bug in the bootloader for stm, or there is a
-        # inaccuracy in the an3155 datasheet that says that a single self.ACK
+        # inaccuracy in the an3155 datasheet that says that a single ACK
         # is sent after receiving the get_id command.
-        # But in reality 90% of the time two self.ACK bytes are sent
+        # But in reality 90% of the time two ACK bytes are sent
         if (num_bytes == self.ACK):
             num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
         elif (num_bytes == self.NACK):
@@ -126,7 +128,7 @@ class stm32_flasher:
         # Wait for an ack
         res = uart_utils.WaitForBytesExcept(self.uart, 1)
         if (res == self.NACK):
-            raise Exception("A self.NACK was received at the end of GetID")
+            raise Exception("A NACK was received at the end of GetID")
         elif res == -1:
             raise Exception("No reply was received during GetID")
 
@@ -215,7 +217,9 @@ class stm32_flasher:
         return recv_data
 
     def SendExtendedEraseMemory(self, sectors: [int],
-                                special: bool, retry_num: int = 5):
+                                special: bool,
+                                fast_verify: bool = True,
+                                retry_num: int = 5):
         """ Sends the Erase memory command and it's compliment.
             Command = 0x44
             Compliment = 0xBB = 0x44 ^ 0xFF
@@ -229,8 +233,6 @@ class stm32_flasher:
         elif (reply == self.NO_REPLY):
             raise Exception("No reply was received after sending erase"
                             " command")
-
-        # TODO error check sectors?
 
         # Number of sectors starts at 0x00 0x00. So 0x00 0x00 means
         # delete 1 sector
@@ -262,73 +264,178 @@ class stm32_flasher:
         elif (reply == self.NACK):
             raise Exception("Failed to erase")
 
-        # TODO verify erase but just check the first 256 bytes of each
-        # Sector
-        print(f"Erase Verify: {BB}BEGIN{NW}")
 
-        mem_bytes_sz = 256
-        expected_mem = [255] * mem_bytes_sz
-        mem = [0] * mem_bytes_sz
-        read_count = 0
-        bytes_verified = 0
-        total_bytes_to_verify = 0
-        for sector_idx in sectors:
-            total_bytes_to_verify += self.chip["sectors"][sector_idx]["size"]
-        percent_verified = int((bytes_verified / total_bytes_to_verify)*100)
+        if (fast_verify):
+            return self.FastEraseVerify(sectors)
+        else:
+            total_bytes = 0
+            for sector in sectors:
+                total_bytes += self.chip["sectors"][sector]["size"]
+                print(total_bytes)
 
-        for sector_idx in sectors:
-            memory_address = self.chip["sectors"][sector_idx]["addr"]
-            end_of_sector = (self.chip["sectors"][sector_idx]["addr"] +
-                self.chip["sectors"][sector_idx]["size"])
+            data = bytes([255] * total_bytes)
+            for verify_status in self.FullVerify(data):
+                print(f"Verifying erase: {BG}{verify_status['percent']:.2f}"
+                        f"{NW}% verified", end="\r")
 
-            while (memory_address != end_of_sector):
-                read_count = 0
-                mem = [0] * mem_bytes_sz
-                percent_verified = int(
-                    (bytes_verified / total_bytes_to_verify)*100)
-                print(f"Verifying erase: {BG}{percent_verified:2}"
-                      f"{NW}% verified", end="\r")
-                while (mem != expected_mem) and read_count != 10:
-                    mem = self.SendReadMemory(memory_address.to_bytes(
-                        4, "big"),
-                        mem_bytes_sz)
-                    read_count += 1
-                    if (mem != expected_mem):
-                        print(f"Sector not verified {sector_idx} retry"
-                              f" {read_count}")
-
-                if (read_count == 10 and mem != expected_mem):
-                    print(f"Verifying: {BR}Failed to verify sector "
-                          f"[{sector_idx}]{NW}")
+                if (verify_status["failed"]):
+                    print(f"\nVerifying Erase: {BR}Failed to verify address "
+                          f"{hex(verify_status['addr'])}{NW}")
                     return False
 
-                memory_address += mem_bytes_sz
-                bytes_verified += mem_bytes_sz
+            print(f"Verifying erase: {BG}100{NW}% verified")
 
-        # Don't actually need to do the math here
-        print(f"Verifying erase: {BG}100{NW}% verified")
-        print(f"Erase: {BG}COMPLETE{NW}")
         return True
 
-    def FullFlashVerify():
-        # TODO
-        pass
+        # mem_bytes_sz = 256
+        # expected_mem = [255] * mem_bytes_sz
+        # mem = [0] * mem_bytes_sz
+        # read_count = 0
+        # bytes_verified = 0
+        # total_bytes_to_verify = 0
+        # for sector_idx in sectors:
+        #     total_bytes_to_verify += self.chip["sectors"][sector_idx]["size"]
+        # percent_verified = int((bytes_verified / total_bytes_to_verify)*100)
 
-    def FastFlashVerify():
-        # TODO
-        pass
+        # for sector_idx in sectors:
+        #     memory_address = self.chip["sectors"][sector_idx]["addr"]
+        #     end_of_sector = (self.chip["sectors"][sector_idx]["addr"] +
+        #         self.chip["sectors"][sector_idx]["size"])
 
-    def FlashCompare(self, data:bytes, addr:int):
+        #     while (memory_address != end_of_sector):
+        #         read_count = 0
+        #         mem = [0] * mem_bytes_sz
+        #         percent_verified = int(
+        #             (bytes_verified / total_bytes_to_verify)*100)
+        #         print(f"Verifying erase: {BG}{percent_verified:2}"
+        #               f"{NW}% verified", end="\r")
+        #         while (mem != expected_mem) and read_count != 10:
+        #             mem = self.SendReadMemory(memory_address.to_bytes(
+        #                 4, "big"),
+        #                 mem_bytes_sz)
+        #             read_count += 1
+        #             if (mem != expected_mem):
+        #                 print(f"Sector not verified {sector_idx} retry"
+        #                       f" {read_count}")
+
+        #         if (read_count == 10 and mem != expected_mem):
+        #             print(f"Verifying: {BR}Failed to verify sector "
+        #                   f"[{sector_idx}]{NW}")
+        #             return False
+
+        #         memory_address += mem_bytes_sz
+        #         bytes_verified += mem_bytes_sz
+
+        # # Don't actually need to do the math here
+        # print(f"Verifying erase: {BG}100{NW}% verified")
+        # print(f"Erase: {BG}COMPLETE{NW}")
+        # return True
+
+    def FullVerify(self, data:bytes):
+        """ Takes a chunk of memory and verifies it sequentially from the start addr
+
+        """
+        Max_Num_Bytes = 256
+        addr = self.chip["usr_start_addr"]
+        data_addr = 0
+        data_len = len(data)
+        verify_status = {"failed": 1, "percent": 0}
+
+        while (data_addr < data_len):
+            verify_status['addr'] = addr
+            verify_status['percent'] = (data_addr / data_len) * 100
+            yield verify_status
+
+            chunk = data[data_addr:data_addr+Max_Num_Bytes]
+            if (not self.FlashCompare(chunk, addr)):
+                verify_status['failed'] = True
+                break
+
+            addr += len(chunk)
+            data_addr += len(chunk)
+
+        verify_status['percent'] = 100
+        yield verify_status
+
+    def FastEraseVerify(self, sectors:[int]):
+        print(f"Erase Verify: {BB}BEGIN{NW}")
+        Mem_Bytes_Sz = 256
+        expected_mem = bytes([255] * Mem_Bytes_Sz)
+        num_sectors = len(sectors)
+        num_sectors_verified = 0
+
+        for sector in sectors:
+            # Print how much has been verified
+            percent_verified = int(
+                (num_sectors_verified / num_sectors)*100)
+            print(f"Verifying erase: {BG}{percent_verified:2}"
+                    f"{NW}% verified", end="\r")
+
+            # Get the next address to verify
+            addr = self.chip["sectors"][sector]["addr"]
+
+            # Verify the flash at that memory location
+            if not (self.FlashCompare(expected_mem, addr)):
+                print(f"Verifying: {BR}Failed to verify sector "
+                        f"[{sector}]{NW}")
+                return False
+
+            # Verified that sector, continue on
+            num_sectors_verified += 1
+        print(f"Verifying erase: {BG}100{NW}% verified")
+        print(f"Erase: {BG}COMPLETE{NW}")
+
+        return True
+
+
+    def FlashCompare(self, chunk:bytes, addr:int):
         # TODO
         """ Compares a byte array to the flash at the provided addr.
             True if equal, False otherwise
         """
-        # Get the flash from the address of equal size to data
-        mem = bytes(self.SendReadMemory(addr.to_bytes(4, "big"), len(data)))
+        # Get the flash chunk from the address of equal size to chunk
+        Max_Attempts = 10
+        read_count = 0
+        mem = [0] * len(chunk)
 
+        while (mem != chunk and read_count < Max_Attempts):
+            mem = bytes(self.SendReadMemory(addr.to_bytes(4, "big"), len(chunk)))
+            read_count += 1
 
+        return chunk == mem
 
-        return True
+    def SendGo(self, address: int, num_retry: int = 1):
+        """ Sends the Go command according to the passed in address
+        """
+
+        reply = uart_utils.WriteByteWaitForACK(self.uart,
+            self.Commands.go, num_retry)
+
+        if (reply == self.NACK):
+            raise Exception("NACK received during Go command")
+        elif (reply == self.NO_REPLY):
+            raise Exception("NO REPLY during Go Command")
+
+        # Convert the address to bytes
+        addr_bytes = (address).to_bytes(4, "big")
+
+        # Get the checksum for the address
+        checksum = self.CalculateChecksum(addr_bytes)
+
+        # Append the checksum to the address bytes
+        addr_bytes += checksum
+
+        # Send the data and get a reply
+        reply = uart_utils.WriteBytesWaitForACK(self.uart,
+                                                addr_bytes,
+                                                num_retry)
+
+        if (reply == self.NACK):
+            raise Exception("NACK received after sending jump address")
+        elif (reply == self.NO_REPLY):
+            raise Exception("NO REPLY after sending jump address")
+
+        print(f"Successfully jumped to address: {BB}{hex(address+8)}{BW}")
 
     def SendWriteMemory(self, data: bytes, address: int,
                         num_retry: int = 5):
@@ -443,24 +550,30 @@ class stm32_flasher:
         return self.ACK
 
     def ProgramSTM(self, chip: str, binary_path: str):
-        # Send the command to the mgmt chip that we want to program the UI chip
+        # Determine which chip will be flashed
         uart_utils.FlashSelection(self.uart, chip)
 
         self.SendSync(2)
+
         # Sometimes a small delay is required otherwise it won't
         # continue on correctly
         time.sleep(0.5)
 
-        pid = self.SendGetID(1)
+        # Get the id of the chip
+        uid = self.SendGetID(1)
 
-        self.SetChipConfig(pid)
+        # Set the configuration based on the id
+        self.SetChipConfig(uid)
 
-        self.SendGet()
+        # Get all of the available commands
+        # TODO use if needed.
+        # self.SendGet()
 
-        mem = self.SendReadMemory(self.chip["usr_start_addr"].to_bytes(4, "big"), 256)
-        print(f"Reading memory: {BG}SUCCESSFUL{NW}")
-        print(f"Number of bytes read from memory: {BM}{len(mem)}\
-            {NW}")
+        # Check if memory can be read.
+        # mem = self.SendReadMemory(self.chip["usr_start_addr"].to_bytes(4, "big"), 256)
+        # print(f"Reading memory: {BG}SUCCESSFUL{NW}")
+        # print(f"Number of bytes read from memory: {BM}{len(mem)}\
+        #     {NW}")
 
         # Get the firmware
         firmware = open(binary_path, "rb").read()
@@ -471,5 +584,8 @@ class stm32_flasher:
         self.SendExtendedEraseMemory(sectors, False)
 
         self.SendWriteMemory(firmware, self.chip["usr_start_addr"], 5)
+
+        if (chip == "mgmt"):
+            self.SendGo(self.chip["usr_start_addr"])
 
         return True
