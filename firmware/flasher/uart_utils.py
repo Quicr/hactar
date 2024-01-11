@@ -10,9 +10,10 @@ READY = 0x80
 def FlashSelection(uart: serial.Serial, chip: str):
     if (chip == "mgmt"):
         print(f"Update uart to parity: {BB}EVEN{NW}")
-        uart.close()
+        uart.setRTS(0)
+        uart.setDTR(0)
+        time.sleep(0.1)
         uart.parity = serial.PARITY_EVEN
-        uart.open()
         print(f"Activating MGMT Upload Mode: {BG}SUCCESS{NW}")
     elif (chip == "ui"):
         send_data = [ch for ch in bytes("ui_upload", "UTF-8")]
