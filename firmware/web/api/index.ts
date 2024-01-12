@@ -59,30 +59,18 @@ app.all('/auth', (req: Request, res: Response) =>
     // TODO authentication
 });
 
-app.get('/get_net_bins', (req: Request, res: Response) =>
-{
-});
-
-app.get('/get_ui_bins', (req: Request, res: Response) =>
-{
-    let bin = fs.readFileSync("../../ui/build/ui.bin", null);
-
-    res.json(bin.toJSON().data);
-});
-
 // TODO expand to use github repos
 app.get('/firmware', (req: Request, res: Response) =>
 {
     console.log(req.query)
 
-    // TODO use a db coonnection to query the location of the bin,
+    // TODO use a db connection to query the location of the bin,
     // given the version
 
     // but for now lets just if statement and grab latest
     if (req.query["bin"] == "mgmt")
     {
-        // const bin = fs.readFileSync("../../mgmt/build/mgmt.bin", null);
-        const bin = fs.readFileSync("/home/brett/code/test/blinky/build/blinky.bin", null);
+        const bin = fs.readFileSync("../../mgmt/build/mgmt.bin", null);
         res.json(bin.toJSON().data);
     }
     else if (req.query["bin"] == "ui")
@@ -107,7 +95,6 @@ app.get('/stm_configuration', (req: Request, res: Response) =>
     res.json(config);
 
 });
-
 
 app.listen(port, () =>
 {

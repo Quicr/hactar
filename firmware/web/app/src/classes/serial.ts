@@ -13,6 +13,7 @@ class Serial
     reader_promise: any = null;
     released_reader: boolean = true;
     stop: boolean = false;
+    parity: string = "none";
 
     constructor()
     {
@@ -33,7 +34,7 @@ class Serial
         // No port was selected
         if (!this.port) return false;
 
-        await this.OpenPort("none");
+        await this.OpenPort(this.parity);
 
         return true;
     }
@@ -65,12 +66,20 @@ class Serial
 
     async OpenPort(parity: string)
     {
-        logger.Debug(`[OpenPort(...)] Start with parity: ${parity}`);
+        if (this.open && parity == this.parity)
+        {
+            // Do nothing.
+            return;
+        }
+
+        this.parity = parity;
+
+        logger.Debug(`[OpenPort(...)] Start with parity: ${this.parity}`);
         const options = {
             baudRate: 115200,
             dataBits: 8,
             stopBits: 1,
-            parity: parity
+            parity: this.parity
         };
 
         await this.ClosePort();
