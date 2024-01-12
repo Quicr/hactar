@@ -339,7 +339,7 @@ class stm32_flasher:
         addr = self.chip["usr_start_addr"]
         data_addr = 0
         data_len = len(data)
-        verify_status = {"failed": 1, "percent": 0}
+        verify_status = {"addr": addr, "failed": 0, "percent": 0}
 
         while (data_addr < data_len):
             verify_status['addr'] = addr
@@ -389,7 +389,6 @@ class stm32_flasher:
 
 
     def FlashCompare(self, chunk:bytes, addr:int):
-        # TODO
         """ Compares a byte array to the flash at the provided addr.
             True if equal, False otherwise
         """
@@ -435,7 +434,7 @@ class stm32_flasher:
         elif (reply == self.NO_REPLY):
             raise Exception("NO REPLY after sending jump address")
 
-        print(f"Successfully jumped to address: {BB}{hex(address+8)}{BW}")
+        print(f"Successfully jumped to address: {BB}{hex(address)}{BW}")
 
     def SendWriteMemory(self, data: bytes, address: int,
                         num_retry: int = 5):

@@ -46,7 +46,7 @@ class HactarFlasher
                 const binary = await this.GetBinary("mgmt");
 
                 await this.SendUploadSelectionCommand("mgmt_upload");
-                await stm32_flasher.FlashSTM(this.serial, binary);
+                await stm32_flasher.FlashSTM(this.serial, binary, true);
                 await this.serial.ClosePortAndNull();
                 return;
             }
@@ -105,6 +105,9 @@ class HactarFlasher
         if (command == "mgmt_upload")
         {
             await this.serial.OpenPort("even");
+
+            // TODO optional
+            this.PulseSignals(false, false);
 
             logger.Info("Activating MGMT Upload Mode: SUCCESS");
             logger.Debug("Update uart to parity: EVEN");
@@ -172,6 +175,20 @@ class HactarFlasher
             logger.Info("Activating NET Upload Mode: SUCCESS");
             logger.Info("Update uart to parity: NONE");
         }
+    }
+
+    async PulseSignals(rts: boolean = false,
+        dtr: boolean = false,
+        toggle_speed_ms: number = 1)
+    {
+        await this.serial.port.setSignals({ requestToSend: rts });
+        await this.serial.port.setSignals({ dataTerminalReady: dtr });
+        await new Promise(resolve => setTimeout(resolve, toggle_speed_ms));
+        await this.serial.port.setSignals({ requestToSend: !rts });
+        await this.serial.port.setSignals({ dataTerminalReady: !dtr });
+        await new Promise(resolve => setTimeout(resolve, toggle_speed_ms));
+        await this.serial.port.setSignals({ requestToSend: rts });
+        await this.serial.port.setSignals({ dataTerminalReady: dtr });
     }
 
 };

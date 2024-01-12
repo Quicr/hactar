@@ -9,10 +9,8 @@ import axios from "axios";
 
 class STM32Flasher
 {
-    async FlashSTM(serial: Serial, ui_bin: number[])
+    async FlashSTM(serial: Serial, bin: number[], jump_to_usr_code: boolean = false)
     {
-        let sectors_to_erase = this.SectorsToErase(ui_bin.length);
-
         this.progress = "Starting";
 
         await this.Sync(serial);
@@ -23,9 +21,15 @@ class STM32Flasher
 
         await Sleep(200);
 
-        await this.ExtendedEraseMemory(serial, sectors_to_erase);
+        let sectors_to_erase = this.SectorsToErase(bin.length);
+        await this.ExtendedEraseMemory(serial, sectors_to_erase, false);
 
-        await this.WriteMemory(serial, ui_bin, this.User_Sector_Start_Address);
+        await this.WriteMemory(serial, bin, this.User_Sector_Start_Address);
+
+        if (jump_to_usr_code)
+        {
+            await this.Go(serial, this.User_Sector_Start_Address);
+        }
 
         logger.Info("Update Complete.");
         this.progress = "Update complete";
@@ -164,8 +168,167 @@ class STM32Flasher
         return recv_data
     }
 
+    async CompareFlash(serial: Serial, chunk: number[], addr:number)
+    {
+        /**
+         * Compares a byte array to the flash at the provided addr.
+         * True if equal, false otherwise
+         */
 
-    async ExtendedEraseMemory(serial: Serial, sectors: number[]): Promise<boolean>
+        const Max_Attempt = 10;
+        let read_count = 0;
+        let mem: number[] = [];
+        let result: boolean = false
+
+        while (!result && read_count < Max_Attempt)
+        {
+            mem = await this.ReadMemory(serial, ToByteArray([addr], 4), chunk.length);
+            result = MemoryCompare(chunk, mem);
+            read_count += 1;
+        }
+
+        return result;
+    }
+
+    async* FullVerify(serial: Serial, data: number[], start_addr: number): any
+    {
+        const Max_Attempts = 15;
+        const Max_Num_Bytes = 256;
+        const data_len = data.length;
+        let data_addr = 0;
+        let addr = start_addr;
+
+        let status = {"addr": addr, "failed": false, "percent": 0};
+
+        while (data_addr < data_len)
+        {
+            status["addr"] = addr;
+            status["percent"] = (data_addr / data_len) * 100;
+            yield status;
+
+            const chunk = data.slice(data_addr, data_addr + Max_Num_Bytes);
+            const addr_bytes = ToByteArray([addr], 4);
+            const mem = await this.ReadMemory(serial, addr_bytes, chunk.length);
+
+            if(!MemoryCompare(mem, chunk))
+            {
+                status["failed"] = true;
+                break;
+            }
+
+            addr += chunk.length;
+            data_addr += chunk.length;
+        }
+
+        status["percent"] = 100;
+        yield status;
+
+        // await sectors.forEach(sector_idx =>
+        // {
+        //     total_bytes_to_verify += this.Defined_Sectors[sector_idx].size;
+        // });
+
+
+        // let percent_verified =
+        //     Math.floor((bytes_verified / total_bytes_to_verify) * 100);
+        // logger.Info(`Verifying erase: ${percent_verified}% verified`);
+        // this.progress = `Preparing: ${percent_verified}%`;
+
+        // let sector_idx = -1;
+        // for (let i = 0; i < sectors.length; ++i)
+        // {
+        //     sector_idx = sectors[i];
+        //     let memory_address = this.Defined_Sectors[sector_idx].addr;
+        //     let end_of_sector = this.Defined_Sectors[sector_idx].addr +
+        //         this.Defined_Sectors[sector_idx].size;
+
+        //     while (memory_address != end_of_sector)
+        //     {
+        //         read_count = 0;
+        //         percent_verified =
+        //             Math.floor((bytes_verified / total_bytes_to_verify) * 100);
+        //         logger.Info(`Verifying erase: ${percent_verified}% verified`, true);
+        //         this.progress = `Preparing: ${percent_verified}%`;
+
+        //         let compare = false;
+        //         do
+        //         {
+        //             let memory_address_bytes = ToByteArray([memory_address], 4);
+        //             mem = await this.ReadMemory(serial, memory_address_bytes, mem_bytes_sz);
+        //             read_count += 1;
+
+        //             compare = MemoryCompare(mem, expected_mem);
+
+        //             if (compare)
+        //             {
+        //                 logger.Info(`Sector [${sector_idx}] not verified. Retry: ${read_count}`);
+        //             }
+        //         } while ((compare) && read_count != Max_Attempts);
+
+        //         if (read_count >= Max_Attempts && compare)
+        //         {
+        //             logger.Error(`Verifying: Failed to verify sector [${sector_idx}]`);
+        //             throw `Verifying: Failed to verify sector [${sector_idx}]`;
+        //         }
+
+        //         memory_address += mem_bytes_sz;
+        //         bytes_verified += mem_bytes_sz;
+
+        //     }
+        // }
+
+        // // Don't actually need to do the math here
+        // this.progress = `Preparing: 100%`;
+        // logger.Info("Verifying erase: 100% verified", true);
+        // logger.Info("Erase: COMPLETE");
+        // return true;
+    }
+
+    async FastEraseVerify(serial: Serial, sectors: number[]): Promise<boolean>
+    {
+        logger.Info(`Erase: Sectors ${sectors}`);
+
+        const Mem_Bytes_Sz = 256;
+        const expected_mem: number[] = Array(Mem_Bytes_Sz - 1);
+        expected_mem.fill(255);
+        const num_sectors = sectors.length;
+        let num_sectors_verified = 0;
+
+        let percent_verified = 0;
+        logger.Info(`Verifying erase: ${percent_verified}% verified`);
+        this.progress = `Preparing: ${percent_verified}%`;
+        const Defined_Sectors = this.Defined_Sectors;
+
+        sectors.forEach(sector => {
+            percent_verified =
+                Math.floor((num_sectors_verified / num_sectors) * 100);
+            logger.Info(`Verifying erase: ${percent_verified}% verified`, true);
+            this.progress = `Preparing: ${percent_verified}%`;
+
+            // Get the next address to verify
+            const addr = Defined_Sectors[sector]["addr"];
+
+            // Verify the flash
+            if (!this.CompareFlash(serial, expected_mem, addr))
+            {
+                logger.Error(`Verifying: Failed to verify sector [${sector}]`);
+                return false;
+            }
+
+            ++num_sectors_verified;
+        });
+
+        this.progress = `Preparing: 100%`;
+        logger.Info("Verifying erase: 100% verified", true);
+        logger.Info("Erase: COMPLETE");
+
+        return true;
+    }
+
+
+    async ExtendedEraseMemory(serial: Serial,
+        sectors: number[],
+        fast_verify: boolean = true): Promise<boolean>
     {
         logger.Info(`Erase: Sectors ${sectors}`);
 
@@ -198,8 +361,9 @@ class STM32Flasher
         data = data.concat(checksum);
 
         logger.Info(`Erase: STARTED`);
+        this.progress = "Preparing";
 
-        reply = await WriteBytesWaitForACK(serial,new Uint8Array(data), 10000);
+        reply = await WriteBytesWaitForACK(serial, new Uint8Array(data), 10000);
         if (reply == NACK)
         {
             logger.Error("Failed to erase");
@@ -211,74 +375,39 @@ class STM32Flasher
             throw "Failed to erase, NO REPLY received";
         }
 
-        const Max_Attempts = 15;
-        const mem_bytes_sz = 256;
-        const expected_mem: number[] = Array(mem_bytes_sz - 1);
-        expected_mem.fill(255);
-
-        let mem: number[] = Array(mem_bytes_sz - 1);
-        let read_count = 0;
-        let bytes_verified = 0;
-        let total_bytes_to_verify = 0;
-
-        await sectors.forEach(sector_idx =>
+        if (fast_verify)
         {
-            total_bytes_to_verify += this.Defined_Sectors[sector_idx].size;
-        });
-
-
-        let percent_verified =
-            Math.floor((bytes_verified / total_bytes_to_verify) * 100);
-        logger.Info(`Verifying erase: ${percent_verified}% verified`);
-        this.progress = `Preparing: ${percent_verified}%`;
-
-        let sector_idx = -1;
-        for (let i = 0; i < sectors.length; ++i)
+            return await this.FastEraseVerify(serial, sectors);
+        }
+        else
         {
-            sector_idx = sectors[i];
-            let memory_address = this.Defined_Sectors[sector_idx].addr;
-            let end_of_sector = this.Defined_Sectors[sector_idx].addr +
-                this.Defined_Sectors[sector_idx].size;
-
-            while (memory_address != end_of_sector)
+            // Create an array of the entire memory space to be verified against
+            let total_bytes = 0;
+            for (let i = 0; i < sectors.length; ++i)
             {
-                read_count = 0;
-                percent_verified =
-                    Math.floor((bytes_verified / total_bytes_to_verify) * 100);
-                logger.Info(`Verifying erase: ${percent_verified}% verified`, true);
-                this.progress = `Preparing: ${percent_verified}%`;
+                total_bytes += this.Defined_Sectors[sectors[i]]["size"];
+            }
 
-                let compare = false;
-                do
+            const data = new Array(total_bytes);
+            data.fill(255);
+
+            // Loop through generated results
+            for await (const status of this.FullVerify(serial,
+                                    data,
+                                    this.Defined_Sectors[sectors[0]]["addr"]))
+            {
+                if (status["failed"])
                 {
-                    let memory_address_bytes = ToByteArray([memory_address], 4);
-                    mem = await this.ReadMemory(serial, memory_address_bytes, mem_bytes_sz);
-                    read_count += 1;
-
-                    compare = MemoryCompare(mem, expected_mem);
-
-                    if (compare)
-                    {
-                        logger.Info(`Sector [${sector_idx}] not verified. Retry: ${read_count}`);
-                    }
-                } while ((compare) && read_count != Max_Attempts);
-
-                if (read_count >= Max_Attempts && compare)
-                {
-                    logger.Error(`Verifying: Failed to verify sector [${sector_idx}]`);
-                    throw `Verifying: Failed to verify sector [${sector_idx}]`;
+                    this.progress = `Failed to verify at ${status["addr"]}`;
+                    logger.Info(`Failed to verify at ${status["addr"]}`);
+                    throw `Failed to verify at ${status["addr"]}`;
                 }
 
-                memory_address += mem_bytes_sz;
-                bytes_verified += mem_bytes_sz;
-
+                logger.Info(`Verifying erase: ${Math.floor(status["percent"])}%`, true);
+                this.progress = `Preparing: ${(Math.floor(status["percent"]))}%`;
             }
         }
 
-        // Don't actually need to do the math here
-        this.progress = `Preparing: 100%`;
-        logger.Info("Verifying erase: 100% verified", true);
-        logger.Info("Erase: COMPLETE");
         return true;
     }
 
@@ -364,7 +493,6 @@ class STM32Flasher
 
             file_addr += chunk_size;
             addr += chunk_size;
-
         }
 
         logger.Info(`Flashing: 100%`, true);
@@ -400,6 +528,57 @@ class STM32Flasher
         logger.Info("Write: COMPLETE");
 
         return ACK;
+    }
+
+    async Go(serial: Serial, addr: number)
+    {
+        logger.Info(`Jumping to address: ${addr.toString(16)}`);
+        console.log(`Jumping to address: ${addr.toString(16)}`);
+
+        let reply = await WriteByteWaitForACK(serial, this.Commands.go);
+
+        if (reply == NACK)
+        {
+            logger.Info(`NACK received when trying to send Go command}`);
+            return `NACK received when trying to send Go command}`;
+        }
+        else if (reply == NO_REPLY)
+        {
+            logger.Info(`NO REPLY received when trying to send Go command}`);
+            return `NO REPLY received when trying to send Go command}`;
+        }
+
+        // Convert the address to bytes and add the checksum
+        const addr_bytes = this.AddressToBytes(addr);
+
+        reply = await WriteBytesWaitForACK(serial, addr_bytes);
+
+        if (reply == NACK)
+        {
+            logger.Info(`NACK received when jumping to ${addr.toString(16)}`);
+            return `NACK received when jumping to ${addr.toString(16)}`;
+        }
+        else if (reply == NO_REPLY)
+        {
+            logger.Info(`NO REPLY received when jumping to ${addr.toString(16)}`);
+            return `NO REPLY received when jumping to ${addr.toString(16)}`;
+        }
+
+        logger.Info(`Jumped to address: ${addr.toString(16)}`);
+        console.log(`Jumped to address: ${addr.toString(16)}`);
+    }
+
+    AddressToBytes(addr: number, append_checksum: boolean = true): Uint8Array
+    {
+        let bytes = ToByteArray([addr], 4);
+
+        if (append_checksum)
+        {
+            let checksum = this.CalculateChecksum(bytes);
+            bytes.push(checksum);
+        }
+
+        return new Uint8Array(bytes);
     }
 
     // Helper functions
