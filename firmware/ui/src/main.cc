@@ -34,6 +34,8 @@
 #include "Led.hh"
 #include "AudioCodec.hh"
 
+#include <memory>
+
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init();
@@ -70,6 +72,7 @@ port_pin bl = { LCD_BL_GPIO_Port, LCD_BL_Pin };
 
 Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::left_landscape);
 Q10Keyboard* keyboard = nullptr;
+SerialStm* mgmt_serial_interface = nullptr;
 SerialStm* net_serial_interface = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
@@ -145,11 +148,12 @@ int main(void)
     // Initialize the keyboard
     keyboard->Begin();
 
+    mgmt_serial_interface = new SerialStm(&huart1);
     net_serial_interface = new SerialStm(&huart2);
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_serial_interface, *eeprom);
 
-    SerialManager serial(net_serial_interface);
+    SerialManager mgmt_serial(mgmt_serial_interface);
 
     uint32_t blink = 0;
     // uint8_t test_message [] = "UI: Test\n\r";
@@ -158,9 +162,11 @@ int main(void)
     HAL_GPIO_WritePin(LED_B_Port, LED_B_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_STAT_Port, UI_STAT_Pin, GPIO_PIN_SET);
 
+
     while (1)
     {
         ui_manager->Run();
+        mgmt_serial.RxTx(HAL_GetTick());
 
         rx_led.Timeout();
         tx_led.Timeout();
@@ -168,6 +174,16 @@ int main(void)
         // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
+            auto packet = std::make_unique<Packet>();
+            packet->SetData(Packet::Types::Debug, 0, 6);
+            packet->SetData(mgmt_serial.NextPacketId(), 6, 8);
+            packet->SetData(5, 14, 10);
+            packet->AppendData('h', 8);
+            packet->AppendData('e', 8);
+            packet->AppendData('l', 8);
+            packet->AppendData('l', 8);
+            packet->AppendData('o', 8);
+            mgmt_serial.EnqueuePacket(std::move(packet));
             // audio->Send1KHzSignal();
             blink = HAL_GetTick() + 1000;
             HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
@@ -185,44 +201,44 @@ int main(void)
 void SystemClock_Config(void)
 {
 
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
-  /** Configure the main internal regulator output voltage
-  */
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+    /** Configure the main internal regulator output voltage
+    */
+    __HAL_RCC_PWR_CLK_ENABLE();
+    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 168;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    /** Initializes the RCC Oscillators according to the specified parameters
+    * in the RCC_OscInitTypeDef structure.
+    */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+    RCC_OscInitStruct.PLL.PLLM = 8;
+    RCC_OscInitStruct.PLL.PLLN = 168;
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ = 4;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+    {
+        Error_Handler();
+    }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+    /** Initializes the CPU, AHB and APB buses clocks
+    */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+        | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+    {
+        Error_Handler();
+    }
 }
 
 /**
@@ -434,6 +450,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
         net_serial_interface->RxEvent(size);
         // rx_led.Toggle();
     }
+    else if (huart->Instance == USART1)
+    {
+        mgmt_serial_interface->RxEvent(size);
+        // rx_led.Toggle();
+    }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
@@ -441,6 +462,12 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     if (huart->Instance == USART2)
     {
         net_serial_interface->TxEvent();
+        // tx_led.Toggle();
+    }
+    else if (huart->Instance == USART1)
+    {
+        HAL_GPIO_TogglePin(LED_G_Port, LED_G_Pin);
+        mgmt_serial_interface->TxEvent();
         // tx_led.Toggle();
     }
 }
@@ -457,7 +484,16 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
         err = huart->Instance->SR;
 
         net_serial_interface->StartRx();
+    }
+    else if (huart->Instance == USART1)
+    {
+        mgmt_serial_interface->Reset();
+        HAL_GPIO_TogglePin(LED_G_Port, LED_G_Pin);
 
+        // Read the err codes to clear them
+        err = huart->Instance->SR;
+
+        mgmt_serial_interface->StartRx();
     }
 }
 
@@ -568,10 +604,10 @@ void Error_Handler(void)
     //     screen.DrawText(2, 2, "There was an error", font11x16, C_WHITE, C_BLACK);
     //     screen.DrawRectangle(2, 18, 2 + 11*18, 18, 1, C_WHITE);
     // }
-        HAL_GPIO_WritePin(GPIOC, UI_DBG1_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(GPIOC, UI_DBG2_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(GPIOC, UI_DBG3_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(GPIOC, UI_DBG4_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, UI_DBG1_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, UI_DBG2_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, UI_DBG3_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, UI_DBG4_Pin, GPIO_PIN_RESET);
     while (1)
     {
         __enable_irq();

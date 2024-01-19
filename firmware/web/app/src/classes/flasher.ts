@@ -23,11 +23,6 @@ class HactarFlasher
         this.serial = new Serial();
     }
 
-    async ConnectToHactar(filters: Object[])
-    {
-        return await this.serial.ConnectToDevice(filters);
-    }
-
     async GetBinary(firmware: string)
     {
         // Get a binary from the server
@@ -54,6 +49,7 @@ class HactarFlasher
             if (mode.includes("ui"))
             {
                 const binary = await this.GetBinary("ui");
+
                 await this.SendUploadSelectionCommand("ui_upload");
                 await stm32_flasher.FlashSTM(this.serial, binary);
                 await this.serial.ClosePort();

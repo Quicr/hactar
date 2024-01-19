@@ -6,7 +6,7 @@ import logger from "./logger";
 class Serial
 {
 
-    in_buffer: number[];
+    in_buffer: number[] = [];
     open: boolean = false;
     port: any = null;
     reader: any = null;
@@ -14,10 +14,10 @@ class Serial
     released_reader: boolean = true;
     stop: boolean = false;
     parity: string = "none";
+    text_decoder: TextDecoder = new TextDecoder("utf-8");
 
     constructor()
     {
-        this.in_buffer = [];
     }
 
     // TODO clean up by keeping track of the parity for hactar
@@ -82,6 +82,7 @@ class Serial
             parity: this.parity
         };
 
+        logger.Debug("[OpenPort(...)] Attempt to close port if it is open");
         await this.ClosePort();
 
         this.stop = false;
@@ -109,7 +110,7 @@ class Serial
             {
                 while (!this.stop)
                 {
-                    const { value, done } = await this.reader.read()
+                    const { value, done } = await this.reader.read();
 
                     if (done)
                     {
@@ -144,7 +145,7 @@ class Serial
         return res[0];
     }
 
-    async ReadBytes(num_bytes: number, timeout: number = 2000): Promise<number[]>
+    async ReadBytes(num_bytes: number, timeout: number = 5000): Promise<number[]>
     {
         let num = num_bytes
         let bytes: number[] = []
@@ -175,6 +176,43 @@ class Serial
         return bytes;
     }
 
+    async ReadLine(timeout: number = 5000): Promise<String>
+    {
+        let bytes:number[] = [];
+
+        const Line_End = 10;
+        const Carriage_Return = 13;
+        const Ignore = [0, 10, 13];
+
+        var run = true;
+        const clock: NodeJS.Timeout = setTimeout(() => {
+            run = false;
+        }, timeout);
+
+        let ch: number = 0;
+        while (ch != Line_End && run)
+        {
+            if (this.in_buffer.length == 0)
+            {
+                await Sleep(0.001);
+                continue;
+            }
+
+            ch = this.in_buffer[0];
+            this.in_buffer.shift();
+
+            if (Ignore.includes(ch))
+            {
+                console.log(`Ignored: ${ch}`);
+                continue;
+            }
+
+            bytes.push(ch);
+        }
+
+        return this.text_decoder.decode(new Uint8Array(bytes));
+    }
+
     async ReadBytesExcept(num_bytes: number, timeout: number = 2000): Promise<number[]>
     {
         let result: number[] = await this.ReadBytes(num_bytes, timeout);
@@ -192,6 +230,11 @@ class Serial
         const writer = this.port.writable.getWriter();
         await writer.write(bytes);
         writer.releaseLock();
+    }
+
+    HasBytes() : boolean
+    {
+        return this.in_buffer.length > 0;
     }
 }
 
