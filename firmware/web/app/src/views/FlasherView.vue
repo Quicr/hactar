@@ -5,6 +5,7 @@ import { defineComponent, getCurrentInstance, onUpdated, reactive, ref } from "v
 import LogItem from "@/components/LogItem.vue";
 
 import HactarFlasher from "@/classes/flasher";
+import HactarMonitor from "@/classes/monitor";
 
 import logger from "@/classes/logger";
 import { LogLevel } from "@/classes/logger";
@@ -15,9 +16,15 @@ logger.SetLogLevel(enabled_log_levels);
 const log_list = ref(null);
 const adv_container = ref(null);
 const log_list_key = ref(0);
+let command = ref("");
+// TODO ref?
 let auto_scroll: number = 1;
 
 let flasher: HactarFlasher = new HactarFlasher();
+let monitor: HactarMonitor = new HactarMonitor();
+const filters = [
+    { usbVendorId: 6790, usbProductId: 29987 }
+];
 
 // TODO Serial monitor
 // TODO serial commands to ui and net
@@ -25,26 +32,44 @@ let flasher: HactarFlasher = new HactarFlasher();
 
 async function FlashHactar()
 {
-
     try
     {
-        const filters = [
-            { usbVendorId: 6790, usbProductId: 29987 }
-        ];
-
-
-        if (!await flasher.ConnectToHactar(filters))
+        if (!await flasher.serial.ConnectToDevice(filters))
         {
             return;
         }
-
-        await flasher.Flash("mgmt");
+        await flasher.Flash("ui");
     }
     catch (exception)
     {
         logger.Error(exception);
         await flasher.serial.ClosePortAndNull();
     }
+}
+
+async function DebugHactar()
+{
+    try
+    {
+        if (!await monitor.serial.ConnectToDevice(filters))
+        {
+            console.log("Failed to connect");
+            return;
+        }
+        await monitor.Begin();
+    }
+    catch (exception)
+    {
+        logger.Error(exception);
+        await monitor.serial.ClosePortAndNull();
+    }
+}
+
+async function SendCommand()
+{
+    const text_encoder = new TextEncoder();
+    const bytes = text_encoder.encode(command.value);
+    await monitor.Write(bytes);
 }
 
 async function ShowAdvancedOptions()
@@ -95,7 +120,9 @@ onUpdated(() =>
     <div class="user_info__container">
         <div class="user_info">
             <button @click="FlashHactar()">Update Hactar</button>
-            <!-- <p>{{ user_info.text }}</p> -->
+        </div>
+        <div class="user_info">
+            <button @click="DebugHactar()">Debug Hactar</button>
         </div>
     </div>
     <div class="adv_button__container">
@@ -147,8 +174,8 @@ onUpdated(() =>
             <p>
                 Command
             </P>
-            <input type="input">
-            <button>Send</button>
+            <input v-model="command" type="input">
+            <button @click="SendCommand">Send</button>
         </div>
     </div>
 </template>
