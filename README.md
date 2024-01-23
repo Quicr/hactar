@@ -386,35 +386,35 @@ brew install make
 
 <h2 id="hactar_installation">Hactar Installation</h2>
 
-<h3 id="EV1">EV1</h2>
+<h3 id="EV1">EV1</h3>
 
 WIP
 
-<h3 id="EV2">EV2</h2>
+<h3 id="EV2">EV2</h3>
 
 WIP
 
-<h3 id="EV3">EV3</h2>
+<h3 id="EV3">EV3</h3>
 
 WIP
 
-<h3 id="EV4">EV4</h2>
+<h3 id="EV4">EV4</h3>
 
 WIP
 
-<h3 id="EV5">EV5</h2>
+<h3 id="EV5">EV5</h3>
 
 WIP
 
-<h3 id="EV6">EV6</h2>
+<h3 id="EV6">EV6</h3>
 
 WIP
 
-<h3 id="EV7">EV7</h2>
+<h3 id="EV7">EV7</h3>
 
 WIP
 
-<h3 id="EV8">EV8 - Current</h2>
+<h3 id="EV8">EV8 - Current</h3>
 
 <i>Management Chip</i>
 
@@ -460,11 +460,11 @@ WIP
     - Then the stm32 cube programmer cli is called to upload the firmware.
 - After finishing uploading the firmware to the net chip, the management chip will return to running mode.
 
-<h3 id="EV9">EV9 - Not Doing</h2>
+<h3 id="EV9">EV9 - Not Doing</h3>
 
-<h3 id="EV9.5">EV9.5 - Not Doing</h2>
+<h3 id="EV9.5">EV9.5 - Not Doing</h3>
 
-<h3 id="EV10">EV10 - Current</h2>
+<h3 id="EV10">EV10 - Current</h3>
 
 <i>Display connector</i>
 
