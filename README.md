@@ -23,7 +23,11 @@ Hardware design for test device
     5. [EV5](#ev5) - WIP
     6. [EV6](#ev6) - WIP
     7. [EV7](#ev7) - WIP
-    8. [EV8](#ev8) - Current
+    8. [EV8](#ev8) - Done
+    9. [EV9](#ev9) - NOT USING
+    9. [EV9.5](#ev9.5) - NOT USING
+    10. [EV10](#ev10) - Current
+
 
 <h2 id="where">Where To Find Things</h2>
 
@@ -425,7 +429,7 @@ WIP
 - Upload the mgmt code by entering `make upload`
 - After this you should see a couple of LED's light up
 
-<i>Userinterface Chip</i>
+<i>User interface Chip</i>
 
 - Prerequisites
     - A programmed `management chip`
@@ -454,6 +458,71 @@ WIP
     - **NOTE** - Update your the `port` variable, based on your OS and usb input, in the `hactar/firmware/net/makefile`
     - Once the process begins, a python script is called to send the command `net_upload` to the management chip, turns off other LED's and turns on the first LED from the left, and puts the net chip into bootloader mode.
     - Then the stm32 cube programmer cli is called to upload the firmware.
+- After finishing uploading the firmware to the net chip, the management chip will return to running mode.
+
+<h3 id="EV9">EV9 - Not Doing</h2>
+
+<h3 id="EV9.5">EV9.5 - Not Doing</h2>
+
+<h3 id="EV10">EV10 - Current</h2>
+
+<i>Display connector</i>
+
+- Required hardware
+    - 2.4 inch LCD Module from Waveshare
+    - Connector for display and Hactar board.
+- From the display match the connector's pins with the associated pins on the connector.
+    - VCC -- VCC
+    - GND -- GND
+    - DIN -- DISP_DIN
+    - CLK -- DISP_CLK
+    - CS  -- DISP_CS
+    - DC  -- DISP_DC
+    - RST -- DISP_RST
+    - BL  -- DISP_BL
+
+<i>Management Chip</i>
+
+- Prerequisites
+    - USB-C Cable
+    - Python3
+        - PySerial
+    - arm-none-eabi-g++
+    - make
+- Build the mgmt code by navigating to `hactar/firmware/mgmt` and entering `make compile`
+- Plug in a USB-C
+- Press and hold the BOOT button Press and release the RESET button. Release the BOOT button.
+- Upload the mgmt code by entering `make upload`
+- After this you should see a couple of LED's light up
+
+<i>Main Chip</i>
+
+- Prerequisites
+    - A programmed `management chip`
+    - USB-C Cable
+    - Python3
+        - PySerial
+    - arm-none-eabi-g++
+    - make
+- Plug in the USB-C cable to the Hactar board.
+- Build the ui code by navigating to the `hactar/firmware/ui` folder and entering `make compile`
+- Upload the ui code by entering `make upload`
+    - The python script "flasher.py" is called to upload to the main chip.
+    - NOTE - For some reason the Main STM32 chip doesn't like being put into bootloader mode this way. Fixing it is a WIP. You just need to keep trying... sorry.
+- After finishing uploading the firmware to the main chip, the management chip will return to running mode.
+
+<i>Network Chip</i>
+
+- Prerequisites
+    - A programmed `management chip`
+    - USB-C Cable
+    - esp-idf - must be on your path
+    - make
+- Plug in the USB-C cable to the Hactar board.
+- Build the net code by navigating to the `hactar/firmware/net` folder and entering `make compile`
+- Upload the net code by entering `make upload`
+    - The python script "flasher.py" is called to upload to the net chip
+    - NOTE - The size is quite large, takes about 4 minutes to upload.
 - After finishing uploading the firmware to the net chip, the management chip will return to running mode.
 
 <i>Debug mode example</i>
