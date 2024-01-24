@@ -291,3 +291,6 @@ extern inline void StartUartReceive(uart_stream_t* uart_stream)
 
     uart_stream->is_listening = 1;
 }
+
+// TODO function that will read from tx and do all of the processing from there?
+// TODO make the function inline

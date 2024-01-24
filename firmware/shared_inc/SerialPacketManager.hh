@@ -61,7 +61,7 @@ public:
     void Tx(const unsigned long current_time)
     {
         // Don't try to send if we are reading
-        if (uart->Unread() >= 4) return;
+        if (uart->Unread() >= Front_Bytes) return;
         if (rx_packet != nullptr) return;
 
         // Check pending tx packets
