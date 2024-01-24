@@ -19,7 +19,7 @@ typedef struct
 
 static const char* TAG = "[Net Manager]: ";
 
-NetManager::NetManager(SerialManager* _ui_layer,
+NetManager::NetManager(SerialPacketManager* _ui_layer,
     std::shared_ptr<QSession> qsession,
     std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects)
     : ui_layer(_ui_layer),
@@ -46,16 +46,18 @@ void NetManager::HandleSerial(void* param)
 
         if (!_this->ui_layer->HasRxPackets()) continue;
 
-        const Vector<std::unique_ptr<Packet>>& rx_packets = _this->ui_layer->GetRxPackets();
+        const Vector<std::unique_ptr<SerialPacket>>& rx_packets = _this->ui_layer->GetRxPackets();
         uint32_t timeout = (xTaskGetTickCount() / portTICK_PERIOD_MS) + 10000;
 
+        printf("%s\r\n", "NetManager: Packet available");
         while (rx_packets.size() > 0 &&
             xTaskGetTickCount() / portTICK_PERIOD_MS < timeout)
         {
-            std::unique_ptr<Packet> rx_packet = std::move(rx_packets[0]);
-            uint8_t packet_type = rx_packet->GetData(0, 6);
-            uint16_t data_len = rx_packet->GetData(14, 10);
-            uint8_t data;
+            std::unique_ptr<SerialPacket> rx_packet = std::move(rx_packets[0]);
+            uint8_t packet_type = rx_packet->GetData<uint8_t>(0, 1);
+            uint16_t data_len = rx_packet->GetData<uint16_t>(3, 2);
+
+            // uint8_t data;
             // printf("NET: Message from ui chip - ");
             // for (uint16_t i = 0; i < data_len; ++i)
             // {
@@ -78,12 +80,12 @@ void NetManager::HandleSerial(void* param)
                 // skip the packetId and go to the next part of the packet data
                 // 6 + 8 = 14, skip to 14,
                 // Mesages have sub-types whuch is encoded in the first byte
-                uint8_t sub_message_type = rx_packet->GetData(24, 8);
+                uint8_t sub_message_type = rx_packet->GetData<uint8_t>(5, 1);
                 if (sub_message_type >= 0 && sub_message_type <= 2)
                 {
                     // qchat message handler
                     //handle_qchat_message(sub_message_type, rx_packet);
-                    _this->HandleQChatMessages(sub_message_type, rx_packet, 32);
+                    _this->HandleQChatMessages(sub_message_type, rx_packet, 6);
                 }
 
             }
@@ -98,7 +100,7 @@ void NetManager::HandleSerial(void* param)
 }
 
 void NetManager::HandleQChatMessages(uint8_t message_type,
-    const std::unique_ptr<Packet>& rx_packet,
+    const std::unique_ptr<SerialPacket>& rx_packet,
     const size_t offset)
 {
     if (rx_packet == nullptr)
@@ -237,7 +239,7 @@ void NetManager::HandleNetwork(void* param)
                 continue;
             }
 
-            const uint16_t bytes_in_128_bits = 128 / 8;
+            const uint16_t Bytes_In_128_Bits = 128 / 8;
 
             // Get the next item
             auto qobj = _this->inbound_objects->pop();
@@ -245,47 +247,47 @@ void NetManager::HandleNetwork(void* param)
             auto qdata = qobj.data;
 
             // Create a net packet
-            std::unique_ptr<Packet> packet = std::make_unique<Packet>();
+            std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>();
 
             // Set the type
-            packet->SetData(Packet::Types::Message, 0, 6);
+            packet->SetData(SerialPacket::Types::Message, 0, 1);
 
             // Set the id
-            packet->SetData(0, 6, 8);
+            packet->SetData(0, 1, 2);
 
             // Set the length
-            uint16_t total_len = 9 + bytes_in_128_bits + qobj.data.size();
-            packet->SetData(total_len, 14, 10);
+            uint16_t total_len = 9 + Bytes_In_128_Bits + qobj.data.size();
+            packet->SetData(total_len, 3, 2);
 
             // Set the message type
-            packet->SetData((int)qchat::MessageTypes::Ascii, 24, 8);
+            packet->SetData((int)qchat::MessageTypes::Ascii, 5, 1);
 
             // Set the length of the ascii message qname
-            packet->SetData(bytes_in_128_bits, 32, 32);
+            packet->SetData(Bytes_In_128_Bits, 6, 4);
 
             // Set the name, which is 128 bits.
-            size_t offset = 64;
-            for (size_t i = 0; i < bytes_in_128_bits; ++i)
+            size_t offset = 10;
+            for (size_t i = 0; i < Bytes_In_128_Bits; ++i)
             {
-                packet->SetData(qname[i], offset, 8);
-                offset += 8;
+                packet->SetData(qname[i], offset, 1);
+                offset += 1;
             }
 
             // Set the length of the data
-            packet->SetData(qdata.size(), offset, 32);
-            offset += 32;
+            packet->SetData(qdata.size(), offset, 4);
+            offset += 4;
 
             // Get the message from the item
             for (size_t i = 0; i < qdata.size(); ++i)
             {
-                packet->SetData(qdata[i], offset, 8);
-                offset += 8;
+                packet->SetData(qdata[i], offset, 1);
+                offset += 1;
             }
 
             ESP_LOGI(TAG, "Packet data total len %d", total_len);
             for (size_t i = 0; i < total_len + 3; ++i)
             {
-                printf("%d\r\n", (int)packet->GetData(i * 8, 8));
+                printf("%d\r\n", packet->GetData<int>(i, 1));
             }
             ESP_LOGI(TAG, "Enqueue serial packet that came from the network");
             // Enqueue the packet to go to the UI
@@ -303,24 +305,24 @@ void NetManager::HandleNetwork(void* param)
 }
 
 /**                          Private Functions                               **/
-void NetManager::HandleSerialCommands(const std::unique_ptr<Packet>& rx_packet)
+void NetManager::HandleSerialCommands(const std::unique_ptr<SerialPacket>& rx_packet)
 {
     // Get the command type
-    uint8_t command_type = rx_packet->GetData(24, 8);
+    uint8_t command_type = rx_packet->GetData<uint8_t>(5, 1);
     printf("NET: Packet command received - %d\n\r", (int)command_type);
 
     switch (command_type)
     {
-        case Packet::Commands::SSIDs:
+        case SerialPacket::Commands::SSIDs:
             GetSSIDsCommand();
             break;
-        case Packet::Commands::WifiConnect:
+        case SerialPacket::Commands::WifiConnect:
             ConnectToWifiCommand(rx_packet);
             break;
-        case Packet::Commands::WifiStatus:
+        case SerialPacket::Commands::WifiStatus:
             GetWifiStatusCommand();
             break;
-        case Packet::Commands::RoomsGet:
+        case SerialPacket::Commands::RoomsGet:
             GetRoomsCommand();
             break;
         default:
@@ -351,67 +353,64 @@ void NetManager::GetSSIDsCommand()
     printf("SSIDs found - %d\n\r", ssids.size());
 
     // Put ssids into a vector of packets and enqueue them
-    for (unsigned int i = 0; i < ssids.size(); ++i)
+    for (uint16_t i = 0; i < ssids.size(); ++i)
     {
         String& ssid = ssids[i];
         if (ssid.length() == 0) continue;
         printf("%d. length - %d\n\r", i, ssid.length());
 
-        std::unique_ptr<Packet> packet = std::make_unique<Packet>();
+        std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>();
 
         // Set the type
-        packet->SetData(Packet::Types::Command, 0, 6);
+        packet->SetData(SerialPacket::Types::Command, 0, 1);
 
         // Set the packet id
-        packet->SetData(1, 6, 8);
+        packet->SetData(1, 1, 2);
 
         // Add 1 for the command type
         // Add 1 for the ssid id
-        packet->SetData(ssid.length() + 2, 14, 10);
+        packet->SetData(ssid.length() + 2, 3, 2);
 
         // Set the first byte to the command type
-        packet->SetData(Packet::Commands::SSIDs, 24, 8);
+        packet->SetData(Packet::Commands::SSIDs, 5, 1);
 
         // Set the ssid id
-        packet->SetData(i + 1, 32, 8);
+        packet->SetData(i + 1, 6, 1);
 
         // Add each character of the string to the packet
-        for (unsigned int j = 0; j < ssid.length(); j++)
+        for (uint16_t j = 0; j < ssid.length(); j++)
         {
-            packet->SetData(ssid[j], 40 + (j * 8), 8);
+            packet->SetData(ssid[j], 7 + j, 1);
         }
         ui_layer->EnqueuePacket(std::move(packet));
     }
 }
 
 
-void NetManager::ConnectToWifiCommand(const std::unique_ptr<Packet>& packet)
+void NetManager::ConnectToWifiCommand(const std::unique_ptr<SerialPacket>& packet)
 {        // Get the ssid value, followed by the ssid_password
-    unsigned char ssid_len = packet->GetData(32, 8);
+    uint16_t ssid_len = packet->GetData<uint16_t>(6, 2);
     printf("NET SSID length - %d\n\r", ssid_len);
 
     // Build the ssid
     String ssid;
-    unsigned short offset = 40;
-    unsigned char i = 0;
-    for (i = 0; i < ssid_len; ++i)
+    unsigned short offset = 8;
+    for (uint16_t i = 0; i < ssid_len; ++i)
     {
-        ssid += static_cast<char>(
-            packet->GetData(offset, 8));
-        offset += 8;
+        ssid += packet->GetData<char>(offset, 1);
+        offset += 1;
     }
     printf("NET: SSID - %s\r\n", ssid.c_str());
 
-    unsigned char ssid_password_len = packet->GetData(offset, 8);
-    offset += 8;
+    uint16_t ssid_password_len = packet->GetData<uint16_t>(offset, 2);
+    offset += 2;
     printf("NET: Password length - %d\n\r", ssid_password_len);
 
     String ssid_password;
-    for (unsigned char j = 0; j < ssid_password_len; ++j)
+    for (uint16_t j = 0; j < ssid_password_len; ++j)
     {
-        ssid_password += static_cast<char>(packet->GetData(
-            offset, 8));
-        offset += 8;
+        ssid_password += packet->GetData<char>(offset, 1);
+        offset += 1;
     }
     printf("NET: SSID Password - %s\n\r", ssid_password.c_str());
 
@@ -424,12 +423,12 @@ void NetManager::GetWifiStatusCommand()
     printf("NET: Connection status - %d\n\r", (int)wifi->GetState());
 
     // Create a packet that tells the current status
-    std::unique_ptr<Packet> connected_packet = std::make_unique<Packet>();
-    connected_packet->SetData(Packet::Types::Command, 0, 6);
-    connected_packet->SetData(1, 6, 8);
-    connected_packet->SetData(2, 14, 10);
-    connected_packet->SetData(Packet::Commands::WifiStatus, 24, 8);
-    connected_packet->SetData(wifi->GetState() == Wifi::State::Connected, 32, 8);
+    std::unique_ptr<SerialPacket> connected_packet = std::make_unique<SerialPacket>();
+    connected_packet->SetData(SerialPacket::Types::Command, 0, 1);
+    connected_packet->SetData(1, 1, 2);
+    connected_packet->SetData(2, 3, 2);
+    connected_packet->SetData(SerialPacket::Commands::WifiStatus, 5, 1);
+    connected_packet->SetData(wifi->GetState() == Wifi::State::Connected, 6, 1);
 
     ui_layer->EnqueuePacket(std::move(connected_packet));
 
@@ -453,9 +452,9 @@ void NetManager::GetRoomsCommand()
     // Fake room
     ESP_LOGI(TAG, "Send fake room");
 
-    std::unique_ptr<Packet> room_packet = std::make_unique<Packet>();
-    room_packet->SetData(Packet::Types::Command, 0, 6);
-    room_packet->SetData(1, 6, 8);
+    std::unique_ptr<SerialPacket> room_packet = std::make_unique<SerialPacket>();
+    room_packet->SetData(Packet::Types::Command, 0, 1);
+    room_packet->SetData(1, 1, 2);
     qchat::Codec::encode(room_packet, CreateFakeRoom());
 
     ui_layer->EnqueuePacket(std::move(room_packet));

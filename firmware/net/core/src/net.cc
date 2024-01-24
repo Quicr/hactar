@@ -18,7 +18,7 @@
 #include "Logging.hh"
 #include "SerialLogger.hh"
 #include "SerialEsp.hh"
-#include "SerialManager.hh"
+#include "SerialPacketManager.hh"
 #include "NetManager.hh"
 
 #include "Wifi.hh"
@@ -110,7 +110,7 @@ void UartInit()
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 256);
 
     // UART to the ui
-    ui_layer = new SerialManager(ui_uart1);
+    ui_layer = new SerialPacketManager(ui_uart1);
 
     // TODO remove this and convert it into a mgmt chip serialmanager.
     // setup logger

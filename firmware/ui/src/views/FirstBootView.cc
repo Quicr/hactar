@@ -1,5 +1,6 @@
 #include "FirstBootView.hh"
 #include "LoginView.hh"
+#include "SerialPacket.hh"
 #include "fonts/Font.hh"
 
 // TODO make sure the usr input is not empty
@@ -131,11 +132,11 @@ void FirstBootView::HandleInput()
 
             request_message = "Please select SSID by number:";
 
-            std::unique_ptr<Packet> ssid_req_packet = std::make_unique<Packet>();
-            ssid_req_packet->SetData(Packet::Types::Command, 0, 6);
-            ssid_req_packet->SetData(manager.NextPacketId(), 6, 8);
-            ssid_req_packet->SetData(1, 14, 10);
-            ssid_req_packet->SetData(Packet::Commands::SSIDs, 24, 8);
+            std::unique_ptr<SerialPacket> ssid_req_packet = std::make_unique<SerialPacket>();
+            ssid_req_packet->SetData(Packet::Types::Command, 0, 1);
+            ssid_req_packet->SetData(manager.NextPacketId(), 1, 2);
+            ssid_req_packet->SetData(1, 3, 2);
+            ssid_req_packet->SetData(Packet::Commands::SSIDs, 5, 1);
             manager.EnqueuePacket(std::move(ssid_req_packet));
             state = State::Wifi;
             break;
@@ -156,25 +157,24 @@ void FirstBootView::Update()
 {
     if (state == State::Wifi)
     {
-        RingBuffer<std::unique_ptr<Packet>>* ssid_packets;
+        RingBuffer<std::unique_ptr<SerialPacket>>* ssid_packets;
 
-        if (manager.GetReadyPackets(&ssid_packets, Packet::Commands::SSIDs))
+        if (manager.GetReadyPackets(&ssid_packets, SerialPacket::Commands::SSIDs))
         {
             while (ssid_packets->Unread() > 0)
             {
                 auto rx_packet = std::move(ssid_packets->Read());
                 // Get the packet len
-                uint16_t len = rx_packet->GetData(14, 10);
+                uint16_t packet_data_len = rx_packet->GetData<uint16_t>(3, 2);
 
                 // Get the ssid id
-                uint8_t ssid_id = rx_packet->GetData(32, 8);
+                uint8_t ssid_id = rx_packet->GetData<uint8_t>(6, 1);
 
                 // Build the string
                 String str;
-                for (uint8_t i = 0; i < len - 2; ++i)
+                for (uint8_t i = 0; i < packet_data_len - 2; ++i)
                 {
-                    str.push_back(static_cast<char>(
-                        rx_packet->GetData(40 + i * 8, 8)));
+                    str.push_back(rx_packet->GetData<char>(7 + i, 1));
                 }
 
                 ssids[ssid_id] = std::move(str);

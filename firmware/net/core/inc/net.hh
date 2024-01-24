@@ -10,7 +10,7 @@
 #include "Logging.hh"
 #include "SerialLogger.hh"
 #include "SerialEsp.hh"
-#include "SerialManager.hh"
+#include "SerialPacketManager.hh"
 #include "NetManager.hh"
 
 #include "Wifi.hh"
@@ -23,7 +23,7 @@ static hactar_utils::LogManager* logger;
 
 static NetManager* manager = nullptr;
 static SerialEsp* ui_uart1 = nullptr;
-static SerialManager* ui_layer = nullptr;
+static SerialPacketManager* ui_layer = nullptr;
 static std::shared_ptr<QSession> qsession = nullptr;
 static std::shared_ptr<AsyncQueue<QuicrObject>> inbound_queue;
 static Wifi* wifi = nullptr;

@@ -95,21 +95,21 @@ void ChatView::HandleInput()
 
         // TODO move into encode...
         // TODO packet should maybe have a static next_packet_id?
-        std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
-        packet->SetData(Packet::Types::Message, 0, 6);
-        packet->SetData(manager.NextPacketId(), 6, 8);
+        std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 1);
+        packet->SetData(Packet::Types::Message, 0, 1);
+        packet->SetData(manager.NextPacketId(), 1, 2);
 
         // The packet length is set in the encode function
         // TODO encode probably could just generate a packet instead...
-        qchat::Codec::encode(packet, 14, ascii);
+        qchat::Codec::encode(packet, 3, ascii);
 
-        uint64_t new_offset = packet->BitsUsed();
+        uint64_t new_offset = packet->NumBytes();
         // Expiry time
-        packet->SetData(0xFFFFFFFF, new_offset, 32);
-        new_offset += 32;
+        packet->SetData(0xFFFFFFFF, new_offset, 4);
+        new_offset += 4;
         // Creation time
-        packet->SetData(0, new_offset, 32);
-        new_offset += 32;
+        packet->SetData(0, new_offset, 4);
+        new_offset += 4;
 
         // TODO ENABLE
         manager.EnqueuePacket(std::move(packet));

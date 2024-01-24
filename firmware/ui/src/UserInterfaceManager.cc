@@ -95,13 +95,13 @@ void UserInterfaceManager::ClearMessages()
     received_messages.clear();
 }
 
-void UserInterfaceManager::EnqueuePacket(std::unique_ptr<Packet> packet)
+void UserInterfaceManager::EnqueuePacket(std::unique_ptr<SerialPacket> packet)
 {
     // TODO maybe make this into a linked list?
     net_layer.EnqueuePacket(std::move(packet));
 }
 
-void UserInterfaceManager::LoopbackPacket(std::unique_ptr<Packet> packet)
+void UserInterfaceManager::LoopbackPacket(std::unique_ptr<SerialPacket> packet)
 {
     net_layer.LoopbackRxPacket(std::move(packet));
 }
@@ -118,7 +118,7 @@ bool UserInterfaceManager::RedrawForced()
     return force_redraw;
 }
 
-uint8_t UserInterfaceManager::NextPacketId()
+uint16_t UserInterfaceManager::NextPacketId()
 {
     return net_layer.NextPacketId();
 }
@@ -132,9 +132,9 @@ void UserInterfaceManager::ChangeRoom(std::unique_ptr<qchat::Room> new_room)
         qchat::UnwatchRoom unwatch;
         unwatch.room_uri = active_room->room_uri;
 
-        std::unique_ptr<Packet> unwatch_packet = std::make_unique<Packet>();
-        unwatch_packet->SetData(Packet::Types::Message, 0, 6);
-        unwatch_packet->SetData(NextPacketId(), 6, 8);
+        std::unique_ptr<SerialPacket> unwatch_packet = std::make_unique<SerialPacket>();
+        unwatch_packet->SetData(SerialPacket::Types::Message, 0, 1);
+        unwatch_packet->SetData(NextPacketId(), 1, 2);
 
         qchat::Codec::encode(unwatch_packet, unwatch);
 
@@ -157,20 +157,20 @@ void UserInterfaceManager::ChangeRoom(std::unique_ptr<qchat::Room> new_room)
         .room_uri = active_room->room_uri,
     };
 
-    std::unique_ptr<Packet> packet = std::make_unique<Packet>(HAL_GetTick(), 1);
-    packet->SetData(Packet::Types::Message, 0, 6);
-    packet->SetData(NextPacketId(), 6, 8);
+    std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 5);
+    packet->SetData(SerialPacket::Types::Message, 0, 1);
+    packet->SetData(NextPacketId(), 1, 2);
 
     qchat::Codec::encode(packet, watch);
-    uint64_t new_offset = packet->BitsUsed();
+    uint32_t new_offset = packet->NumBytes();
 
     // Expiry time
-    packet->SetData(0xFFFFFFFF, new_offset, 32);
-    new_offset += 32;
+    packet->SetData(0xFFFFFFFF, new_offset, 4);
+    new_offset += 4;
 
     // Creation time
-    packet->SetData(0, new_offset, 32);
-    // new_offset += 32;
+    packet->SetData(0, new_offset, 4);
+    new_offset += 4;
     EnqueuePacket(std::move(packet));
 }
 
@@ -184,20 +184,20 @@ void UserInterfaceManager::HandleIncomingPackets()
     if (!net_layer.HasRxPackets()) return;
 
     // Get the packets
-    const Vector<std::unique_ptr<Packet>>& packets = net_layer.GetRxPackets();
+    const Vector<std::unique_ptr<SerialPacket>>& packets = net_layer.GetRxPackets();
 
     // Handle incoming packets
     while (packets.size() > 0)
     {
         // Get the type
-        std::unique_ptr<Packet> rx_packet = std::move(packets[0]);
+        std::unique_ptr<SerialPacket> rx_packet = std::move(packets[0]);
         net_layer.DestroyRxPacket(0);
 
-        uint8_t p_type = rx_packet->GetData(0, 6);
+        uint8_t p_type = rx_packet->GetData<uint8_t>(0, 1);
         switch (p_type)
         {
             // P_type will only be message or debug by this point
-            case (Packet::Types::Message):
+            case (SerialPacket::Types::Message):
             {
                 HandleMessagePacket(std::move(rx_packet));
 
@@ -233,7 +233,7 @@ void UserInterfaceManager::HandleIncomingPackets()
                 // received_messages.push_back(in_msg);
                 break;
             }
-            case (Packet::Types::Setting):
+            case (SerialPacket::Types::Setting):
             {
                 // TODO Set the setting
 
@@ -249,19 +249,21 @@ void UserInterfaceManager::HandleIncomingPackets()
 
                 break;
             }
-            case (Packet::Types::Command):
+            case (SerialPacket::Types::Command):
             {
                 // TODO move into a function too many tabs deeeeep
-                Packet::Commands command_type = static_cast<Packet::Commands>(
-                    rx_packet->GetData(24, 8));
+                SerialPacket::Commands command_type = static_cast<SerialPacket::Commands>(
+                    rx_packet->GetData<uint8_t>(5, 1));
 
                 switch (command_type)
                 {
-                    case Packet::Commands::WifiStatus:
+                    case SerialPacket::Commands::WifiStatus:
                     {
+                        // TODO move into a wifi handler
                         // Response from the esp32 will invoke this
                         uint8_t message [] = "Got a connection status\n\r";
-                        HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);                    is_connected_to_wifi = rx_packet->GetData(32, 8);
+                        HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);
+                        is_connected_to_wifi = rx_packet->GetData<char>(6, 1);
                         if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
                         {
                             ConnectToWifi();
@@ -306,10 +308,9 @@ uint32_t UserInterfaceManager::GetRxStatusColour() const
     return GetStatusColour(net_layer.GetRxStatus());
 }
 
-// TODO move to RingBuffer
 const bool UserInterfaceManager::GetReadyPackets(
-    RingBuffer<std::unique_ptr<Packet>>** buff,
-    const Packet::Commands command_type) const
+    RingBuffer<std::unique_ptr<SerialPacket>>** buff,
+    const SerialPacket::Commands command_type) const
 {
     if (pending_command_packets.find(command_type) ==
         pending_command_packets.end())
@@ -317,7 +318,7 @@ const bool UserInterfaceManager::GetReadyPackets(
         return false;
     }
 
-    *buff = const_cast<RingBuffer<std::unique_ptr<Packet>>*>(
+    *buff = const_cast<RingBuffer<std::unique_ptr<SerialPacket>>*>(
         &pending_command_packets.at(command_type));
 
     return true;
@@ -345,84 +346,86 @@ void UserInterfaceManager::ConnectToWifi()
     for (int i = 0 ; i < ssid_password_len; i++)
         password_str += ssid_password[i];
 
+    delete [] ssid;
+    delete [] ssid_password;
+
+    ConnectToWifi(ssid_str, password_str);
+
     // Create the packet
-    std::unique_ptr<Packet> connect_packet = std::make_unique<Packet>();
-    connect_packet->SetData(Packet::Types::Command, 0, 6);
-    connect_packet->SetData(UserInterfaceManager::NextPacketId(), 6, 8);
-    // THINK should these be separate packets?
-    // +3 for the length of the ssid, length of the password
-    uint16_t length = ssid_len + ssid_password_len + 3;
-    connect_packet->SetData(length, 14, 10);
+    // std::unique_ptr<SerialPacket> connect_packet = std::make_unique<SerialPacket>();
+    // connect_packet->SetData(SerialPacket::Types::Command, 0, 1);
+    // connect_packet->SetData(UserInterfaceManager::NextPacketId(), 1, 2);
+    // // THINK should these be separate packets?
+    // // +3 for the length of the ssid, length of the password
+    // uint16_t length = ssid_len + ssid_password_len + 3;
+    // connect_packet->SetData(length, 3, 2);
 
-    connect_packet->SetData(Packet::Commands::WifiConnect, 24, 8);
+    // connect_packet->SetData(SerialPacket::Commands::WifiConnect, 5, 1);
 
-    // Set the length of the ssid
-    connect_packet->SetData(ssid_len, 32, 8);
+    // // Set the length of the ssid
+    // connect_packet->SetData(ssid_len, 6, 2);
 
-    // Populate with the ssid
-    uint16_t i;
-    uint16_t offset = 40;
-    for (i = 0; i < ssid_len; ++i)
-    {
-        connect_packet->SetData(ssid[i], offset, 8);
-        offset += 8;
-    }
+    // // Populate with the ssid
+    // uint16_t i;
+    // uint16_t offset = 8;
+    // for (i = 0; i < ssid_len; ++i)
+    // {
+    //     connect_packet->SetData(ssid[i], offset, 1);
+    //     offset += 1;
+    // }
 
-    // Set the length of the password
-    connect_packet->SetData(ssid_password_len, offset, 8);
-    offset += 8;
+    // // Set the length of the password
+    // connect_packet->SetData(ssid_password_len, offset, 2);
+    // offset += 2;
 
-    // Populate with the password
-    uint16_t j;
-    for (j = 0; j < ssid_password_len; ++j)
-    {
-        connect_packet->SetData(ssid_password[j], offset, 8);
-        offset += 8;
-    }
+    // // Populate with the password
+    // uint16_t j;
+    // for (j = 0; j < ssid_password_len; ++j)
+    // {
+    //     connect_packet->SetData(ssid_password[j], offset, 1);
+    //     offset += 1;
+    // }
 
-    // Enqueue the message
-    EnqueuePacket(std::move(connect_packet));
-
-    delete ssid;
-    delete ssid_password;
+    // // Enqueue the message
+    // EnqueuePacket(std::move(connect_packet));
 }
 
 void UserInterfaceManager::ConnectToWifi(const String& ssid,
     const String& password)
 {
-    std::unique_ptr<Packet> connect_packet = std::make_unique<Packet>();
-    connect_packet->SetData(Packet::Types::Command, 0, 6);
-    connect_packet->SetData(UserInterfaceManager::NextPacketId(), 6, 8);
+    std::unique_ptr<SerialPacket> connect_packet = std::make_unique<SerialPacket>();
+    connect_packet->SetData(SerialPacket::Types::Command, 0, 1);
+    connect_packet->SetData(UserInterfaceManager::NextPacketId(), 1, 2);
 
     uint16_t ssid_len = ssid.length();
     uint16_t ssid_password_len = password.length();
-    uint16_t length = ssid_len + ssid_password_len + 3;
-    connect_packet->SetData(length, 14, 10);
+    uint16_t length = ssid_len + ssid_password_len + 5;
+    connect_packet->SetData(length, 3, 2);
 
-    connect_packet->SetData(Packet::Commands::WifiConnect, 24, 8);
+    connect_packet->SetData(SerialPacket::Commands::WifiConnect, 5, 1);
 
     // Set the length of the ssid
-    connect_packet->SetData(ssid_len, 32, 8);
+    connect_packet->SetData(ssid_len, 6, 2);
 
     // Populate with the ssid
     uint16_t i;
-    uint16_t offset = 40;
+    uint16_t offset = 8;
     for (i = 0; i < ssid_len; ++i)
     {
-        connect_packet->SetData(ssid[i], offset, 8);
-        offset += 8;
+        connect_packet->SetData(ssid[i], offset, 1);
+        offset += 1;
     }
 
     // Set the length of the password
-    connect_packet->SetData(ssid_password_len, offset, 8);
-    offset += 8;
+    connect_packet->SetData(ssid_password_len, offset, 2);
+    offset += 2;
 
     // Populate with the password
     uint16_t j;
     for (j = 0; j < ssid_password_len; ++j)
     {
-        connect_packet->SetData(password[j], offset, 8);
-        offset += 8;
+        connect_packet->SetData(password[j], offset, 1);
+        offset += 1;
     }
 
     // Enqueue the message
@@ -435,19 +438,19 @@ bool UserInterfaceManager::IsConnectedToWifi() const
 }
 
 uint32_t UserInterfaceManager::GetStatusColour(
-    const SerialManager::SerialStatus status) const
+    const SerialPacketManager::SerialStatus status) const
 {
-    if (status == SerialManager::SerialStatus::OK)
+    if (status == SerialPacketManager::SerialStatus::OK)
         return C_GREEN;
-    else if (status == SerialManager::SerialStatus::PARTIAL)
+    else if (status == SerialPacketManager::SerialStatus::PARTIAL)
         return C_CYAN;
-    else if (status == SerialManager::SerialStatus::TIMEOUT)
+    else if (status == SerialPacketManager::SerialStatus::TIMEOUT)
         return C_MAGENTA;
-    else if (status == SerialManager::SerialStatus::BUSY)
+    else if (status == SerialPacketManager::SerialStatus::BUSY)
         return C_YELLOW;
-    else if (status == SerialManager::SerialStatus::ERROR)
+    else if (status == SerialPacketManager::SerialStatus::ERROR)
         return C_RED;
-    else if (status == SerialManager::SerialStatus::CRITICAL_ERROR)
+    else if (status == SerialPacketManager::SerialStatus::CRITICAL_ERROR)
         return C_BLUE;
     else
         return C_WHITE;
@@ -455,16 +458,16 @@ uint32_t UserInterfaceManager::GetStatusColour(
 
 void UserInterfaceManager::SendTestPacket()
 {
-    std::unique_ptr<Packet> test_packet = std::make_unique<Packet>();
+    std::unique_ptr<SerialPacket> test_packet = std::make_unique<SerialPacket>();
 
-    test_packet->SetData(Packet::Types::Message, 0, 6);
-    test_packet->SetData(NextPacketId(), 6, 8);
-    test_packet->SetData(5, 14, 10);
-    test_packet->SetData('H', 24, 8);
-    test_packet->SetData('e', 32, 8);
-    test_packet->SetData('l', 40, 8);
-    test_packet->SetData('l', 48, 8);
-    test_packet->SetData('o', 56, 8);
+    test_packet->SetData(SerialPacket::Types::Message, 0, 1);
+    test_packet->SetData(NextPacketId(), 1, 2);
+    test_packet->SetData(5, 3, 2);
+    test_packet->SetData('H', 5, 1);
+    test_packet->SetData('e', 6, 1);
+    test_packet->SetData('l', 7, 1);
+    test_packet->SetData('l', 8, 1);
+    test_packet->SetData('o', 9, 1);
 
     EnqueuePacket(std::move(test_packet));
 }
@@ -474,33 +477,40 @@ void UserInterfaceManager::SendCheckWifiPacket()
     if (current_time < last_wifi_check) return;
 
     // Check a check wifi status packet
-    std::unique_ptr<Packet> check_wifi = std::make_unique<Packet>();
+    std::unique_ptr<SerialPacket> check_wifi = std::make_unique<SerialPacket>();
 
     // Set the command
-    check_wifi->SetData(Packet::Types::Command, 0, 6);
+    check_wifi->SetData(SerialPacket::Types::Command, 0, 1);
 
     // Set the id
-    check_wifi->SetData(NextPacketId(), 6, 8);
+    check_wifi->SetData(NextPacketId(), 1, 2);
 
     // Set the size
-    check_wifi->SetData(1, 14, 10);
+    check_wifi->SetData(1, 3, 2);
 
     // Set the data
-    check_wifi->SetData(Packet::Commands::WifiStatus, 24, 8);
+    check_wifi->SetData(SerialPacket::Commands::WifiStatus, 5, 1);
+
+    uint8_t message [] = "UI: Send check wifi to esp\n\r";
+    HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), HAL_MAX_DELAY);
+
+    unsigned char* buff = check_wifi->Data();
+    for (uint16_t i = 0; i < check_wifi->NumBytes(); ++i)
+    {
+        HAL_UART_Transmit(&huart1, buff + i, 1, 1000);
+    }
 
     EnqueuePacket(std::move(check_wifi));
 
     last_wifi_check = current_time + 10000;
-    uint8_t message [] = "UI: Send check wifi to esp\n\r";
-    HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);
 }
 
 void UserInterfaceManager::HandleMessagePacket(
-    std::unique_ptr<Packet> packet)
+    std::unique_ptr<SerialPacket> packet)
 {
     // Get the message type
     qchat::MessageTypes message_type =
-        (qchat::MessageTypes)packet->GetData(24, 8);
+        (qchat::MessageTypes)packet->GetData<uint8_t>(5, 1);
 
     // Check the message type
     if (message_type == qchat::MessageTypes::Ascii)
@@ -509,24 +519,24 @@ void UserInterfaceManager::HandleMessagePacket(
         qchat::Ascii* ascii = new qchat::Ascii();
 
         // message uri
-        size_t uri_len = packet->GetData(32, 32);
-        uint32_t offset = 64;
+        uint32_t uri_len = packet->GetData<uint32_t>(6, 4);
+        uint32_t offset = 10;
         for (uint16_t i = 0; i < uri_len; ++i)
         {
-            ascii->message_uri.push_back(static_cast<char>(
-                packet->GetData(offset, 8)));
-            offset += 8;
+            ascii->message_uri.push_back(
+                packet->GetData<char>(offset, 1));
+            offset += 1;
         }
 
         // ascii
-        size_t msg_len = packet->GetData(offset, 32);
-        offset += 32;
+        uint32_t msg_len = packet->GetData<uint32_t>(offset, 4);
+        offset += 4;
 
         for (uint16_t i = 0; i < msg_len; ++i)
         {
             ascii->message.push_back(static_cast<char>(
-                packet->GetData(offset, 8)));
-            offset += 8;
+                packet->GetData<uint32_t>(offset, 1)));
+            offset += 1;
         }
 
         // Decode the packet

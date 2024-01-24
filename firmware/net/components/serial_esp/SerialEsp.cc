@@ -75,7 +75,7 @@ void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
 void SerialEsp::RxEvent(void* parameter)
 {
     SerialEsp* serial = (SerialEsp*)parameter;
-    printf("net-serial[%d]: Event begin!\n", serial->uart);
+    printf("net-serial[%d]: Event begin\n", serial->uart);
 
     uart_event_t event;
     unsigned char buff[BUFFER_SIZE];
@@ -85,7 +85,7 @@ void SerialEsp::RxEvent(void* parameter)
         if (!xQueueReceive(serial->uart_queue, (void*)&event, portMAX_DELAY))
             continue;
 
-        printf("net-serial[%d]: event size: %d, type: %d\n", serial->uart, event.size, event.type);
+        printf("net-serial[%d]: Event size: %d, type: %d\n", serial->uart, event.size, event.type);
 
         switch (event.type)
         {
@@ -95,6 +95,8 @@ void SerialEsp::RxEvent(void* parameter)
 
                 for (size_t i = 0; i < event.size; ++i)
                 {
+                    // if (i != 0)
+                    //     printf("%d: %d \n", i-1, (int)buff[i]);
                     serial->rx_ring.Write(buff[i]);
                 }
 
