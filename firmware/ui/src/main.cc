@@ -153,10 +153,11 @@ int main(void)
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_serial_interface, *eeprom);
 
-    SerialManager mgmt_serial(mgmt_serial_interface);
+    SerialPacketManager mgmt_serial(mgmt_serial_interface);
 
+    uint8_t start_message [] = "UI: star\n\r";
+    HAL_UART_Transmit(&huart1, start_message, 10, 1000);
     uint32_t blink = 0;
-    // uint8_t test_message [] = "UI: Test\n\r";
     HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_G_Port, LED_G_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_B_Port, LED_B_Pin, GPIO_PIN_SET);
@@ -166,7 +167,7 @@ int main(void)
     while (1)
     {
         ui_manager->Run();
-        mgmt_serial.RxTx(HAL_GetTick());
+        // mgmt_serial.RxTx(HAL_GetTick());
 
         rx_led.Timeout();
         tx_led.Timeout();
@@ -174,20 +175,21 @@ int main(void)
         // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
-            auto packet = std::make_unique<Packet>();
-            packet->SetData(Packet::Types::Debug, 0, 6);
-            packet->SetData(mgmt_serial.NextPacketId(), 6, 8);
-            packet->SetData(5, 14, 10);
-            packet->AppendData('h', 8);
-            packet->AppendData('e', 8);
-            packet->AppendData('l', 8);
-            packet->AppendData('l', 8);
-            packet->AppendData('o', 8);
-            mgmt_serial.EnqueuePacket(std::move(packet));
+            // auto packet = std::make_unique<SerialPacket>();
+            // packet->SetData(SerialPacket::Types::Debug, 0, 1);
+            // packet->SetData(mgmt_serial.NextPacketId(), 1, 2);
+            // packet->SetData(5, 1, 2);
+            // packet->SetData('h', 1);
+            // packet->SetData('e', 1);
+            // packet->SetData('l', 1);
+            // packet->SetData('l', 1);
+            // packet->SetData('o', 1);
+            // mgmt_serial.EnqueuePacket(std::move(packet));
             // audio->Send1KHzSignal();
-            blink = HAL_GetTick() + 1000;
+            blink = HAL_GetTick() + 5000;
             HAL_GPIO_TogglePin(LED_B_Port, LED_B_Pin);
-            // // HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+            uint8_t test_message [] = "UI: Test\n\r";
+            HAL_UART_Transmit(&huart1, test_message, 10, 1000);
         }
     }
 

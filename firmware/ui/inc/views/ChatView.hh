@@ -2,7 +2,7 @@
 
 #include "ViewInterface.hh"
 #include "String.hh"
-#include "Packet.hh"
+#include "SerialPacket.hh"
 #include "Message.hh"
 #include "QChat.hh"
 

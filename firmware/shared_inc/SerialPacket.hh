@@ -6,11 +6,20 @@
 /* Standard SerialPacket
 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  type   |      id      |       len        |.......data........|
+|      type      |               id              |    len...    |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                          data                                 |
-|                          ....                                 |
+|      ...len  |                 data...                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                          ...data...                           |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+type = 1 byte
+id = 2 bytes
+len = 2 bytes
+data = len bytes
+
 */
 
 /* Message SerialPacket
@@ -51,40 +60,54 @@ public:
     {
         SSIDs = 1,
         WifiConnect,
-        WifiStatus
+        WifiDisconnect,
+        WifiStatus,
+        RoomsGet
     };
-
-    enum MessageTypes
-    {
-        Ascii = 1,
-        Watch,
-        Unwatch
-    };
-
-    // TODO important to have different data lengths for each type..
 
     SerialPacket(const unsigned int created_at = 0,
-        const unsigned int capacity = 8,
+        const unsigned int capacity = 1,
         const bool dynamic = true):
         created_at(created_at),
         capacity(capacity),
-        size(0),
         dynamic(dynamic),
+        size(0),
         retries(0),
-        data(new unsigned char[capacity]())
+        data(new unsigned char[capacity]{0})
     {
     }
 
     // Copy
-    SerialPacket(const SerialPacket& other)
+    SerialPacket(const SerialPacket& other) :
+        created_at(other.created_at),
+        capacity(other.capacity),
+        dynamic(other.dynamic),
+        size(other.size),
+        retries(other.retries),
+        data(new unsigned char[capacity]{0})
     {
-        *this = other;
+        for (unsigned int i = 0; i < capacity; ++i)
+        {
+            data[i] = other.data[i];
+        }
+
     }
 
     // Move
-    SerialPacket(SerialPacket&& other) noexcept
+    SerialPacket(SerialPacket&& other) noexcept :
+        created_at(other.created_at),
+        capacity(other.capacity),
+        dynamic(other.dynamic),
+        size(other.size),
+        retries(other.retries),
+        data(other.data)
     {
-        *this = std::move(other);
+        other.created_at = 0;
+        other.capacity = 0;
+        other.dynamic = 0;
+        other.size = 0;
+        other.retries = 0;
+        other.data = nullptr;
     }
 
     ~SerialPacket()
@@ -94,7 +117,10 @@ public:
 
     SerialPacket& operator=(const SerialPacket& other)
     {
-        delete [] data;
+        if (data)
+        {
+            delete [] data;
+        }
         created_at = other.created_at;
         capacity = other.capacity;
         size = other.size;
@@ -113,7 +139,10 @@ public:
     SerialPacket& operator=(SerialPacket&& other)
     {
         // Move operator
-        delete [] data;
+        if (data)
+        {
+            delete [] data;
+        }
 
         created_at = other.created_at;
         capacity = other.capacity;
@@ -131,14 +160,26 @@ public:
         return data[idx];
     }
 
+    // template<typename T, bool = std::is_arithmetic<T>::value>
+    // inline void SetData(const T val)
+    // {
+    //     UpdateData(val, size, -1);
+    // }
+
     template<typename T, bool = std::is_arithmetic<T>::value>
     inline void SetData(const T val,
-        unsigned int& offset,
-        const int num_bytes = -1)
+        unsigned int num_bytes)
     {
-        offset += UpdateData(val, offset, num_bytes);
+        UpdateData(val, size, num_bytes);
     }
 
+    template<typename T, bool = std::is_arithmetic<T>::value>
+    inline void SetData(const T val,
+        unsigned int offset,
+        const int num_bytes)
+    {
+        UpdateData(val, offset, num_bytes);
+    }
 
     template <typename T, typename K, bool = std::is_integral<K>::value>
     typename std::enable_if<!std::is_lvalue_reference<K>::value, void>::type
@@ -206,11 +247,16 @@ public:
     {
         unsigned char* buffer = new unsigned char[capacity];
 
-        for (int i = 0; i < capacity; ++i)
+        for (unsigned int i = 0; i < capacity; ++i)
         {
             buffer[i] = data[i];
         }
         return buffer;
+    }
+
+    unsigned char* Data() const
+    {
+        return data;
     }
 
     void SetCapacity(unsigned int new_capacity)
@@ -219,7 +265,7 @@ public:
             new_capacity = 1;
 
         // Make new data
-        unsigned char* new_data = new unsigned char[new_capacity] {};
+        unsigned char* new_data = new unsigned char[new_capacity]{0};
 
         // Copy the data
         unsigned int iter = 0;
@@ -286,7 +332,7 @@ protected:
         {
             // Resize
             if (!dynamic) return 0;
-            while (offset + in_sz > capacity)
+            while (offset + in_sz >= capacity)
             {
                 // Double the size lazily
                 DoubleCapacity();
@@ -323,8 +369,8 @@ protected:
     // TODO rename created_at
     unsigned int created_at;
     unsigned int capacity;
-    unsigned int size; // last byte used
     bool dynamic;
+    unsigned int size; // last byte used
     unsigned int retries;
     unsigned char* data;
 };
