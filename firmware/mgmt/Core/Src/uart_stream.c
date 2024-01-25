@@ -157,7 +157,7 @@ void HandlePacketTx(uart_stream_t* tx_stream, enum State* state)
     }
 }
 
-extern inline void HandleCommands(uart_stream_t* rx_uart_stream,
+void HandleCommands(uart_stream_t* rx_uart_stream,
     UART_HandleTypeDef* tx_uart,
     enum State* state)
 {
@@ -248,7 +248,7 @@ extern inline void HandleCommands(uart_stream_t* rx_uart_stream,
     }
 }
 
-extern inline void InitUartStreamParameters(uart_stream_t* uart_stream)
+void InitUartStreamParameters(uart_stream_t* uart_stream)
 {
     uart_stream->rx_read = 0;
     uart_stream->tx_write = 0;
@@ -262,13 +262,13 @@ extern inline void InitUartStreamParameters(uart_stream_t* uart_stream)
     uart_stream->command_complete = 0;
 }
 
-extern inline void CancelUart(uart_stream_t* uart_stream)
+void CancelUart(uart_stream_t* uart_stream)
 {
     HAL_UART_Abort_IT(uart_stream->from_uart);
     uart_stream->is_listening = 0;
 }
 
-extern inline void StartUartReceive(uart_stream_t* uart_stream)
+void StartUartReceive(uart_stream_t* uart_stream)
 {
     if (uart_stream->is_listening)
     {
