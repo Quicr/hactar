@@ -15,7 +15,7 @@ void DebugPins(int output)
 
 
 AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
-    i2s(i2s), i2c(&hi2c)
+    i2s(&hi2s), i2c(&hi2c)
 {
     // Reset the chip
     WriteRegisterSeries(0x2F, 0x0000, 1);
@@ -59,9 +59,9 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     // Disable soft mute and ADC high pass filter
     WriteRegisterSeries(0x05, 0b000000000, 11);
 
-    // Set the I2S to 16 bit words
+    // Set the Master mode (1) I2S to 16 bit words
     // TODO maybe use 24 bit words
-    WriteRegisterSeries(0x07, 0b000000010, 12);
+    WriteRegisterSeries(0x07, 0b0'0100'0010, 12);
 
     // Set the left and right headphone volumes
     WriteRegisterSeries(0x02, 0b101101111, 13);
@@ -87,6 +87,15 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
 AudioCodec::~AudioCodec()
 {
     i2c = nullptr;
+}
+
+HAL_StatusTypeDef AudioCodec::WriteRegisterToCodec(uint8_t address)
+{
+    // const uint8_t read_condition = 0x34 + 1;
+    HAL_StatusTypeDef audio_select = HAL_I2C_Master_Transmit(i2c,
+        Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
+
+    return audio_select;
 }
 
 bool AudioCodec::WriteRegister(uint8_t address, uint16_t data)
@@ -120,15 +129,6 @@ bool AudioCodec::WriteRegisterSeries(uint8_t address, uint16_t data, uint8_t deb
     return res;
 }
 
-HAL_StatusTypeDef AudioCodec::WriteRegisterToCodec(uint8_t address)
-{
-    // const uint8_t read_condition = 0x34 + 1;
-    HAL_StatusTypeDef audio_select = HAL_I2C_Master_Transmit(i2c,
-        Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
-
-    return audio_select;
-}
-
 bool AudioCodec::ReadRegister(uint8_t address, uint16_t& value)
 {
     if (address > Max_Address)
@@ -148,11 +148,10 @@ void AudioCodec::Send1KHzSignal()
     const float amplitude = 0.5;
     const float PI = 3.14159265358979311599796346854;
 
-    uint16_t sample_rate = static_cast<uint16_t>(32767.0 * std::sin(2 * PI * freq * HAL_GetTick() / 1000.0));
+    uint16_t sample_rate[1] = {static_cast<uint16_t>(32767.0 * std::sin(2 * PI * freq * HAL_GetTick() / 1000.0))};
     // uint16_t sample = static_cast<uint16_t>(32767.0 * sin(2 * 3.141592653589793 * 1000.0 * HAL_GetTick() / 1000.0))
 
-    HAL_Delay(1000);
-    HAL_I2S_Transmit(i2s, &sample_rate, 1, HAL_MAX_DELAY);
+    HAL_I2S_Transmit(i2s, sample_rate, 1, HAL_MAX_DELAY);
 
     // for (int i = 0; i < sample_rate; ++i)
     // {
