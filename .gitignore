@@ -14,3 +14,6 @@ fp-info-cache
 *~
 hardware/**/*backups
 hardware/**/*~*
+hardware/**/#auto_saved_files#
+
+dist/
