@@ -18,7 +18,6 @@ function GetEspFiles()
     // Get all the binary files
     try
     {
-
         const flasher_args: any = JSON.parse(
             fs.readFileSync(`${build_dir}/flasher_args.json`, "utf-8"));
         const flash_files_by_offset = flasher_args["flash_files"];
