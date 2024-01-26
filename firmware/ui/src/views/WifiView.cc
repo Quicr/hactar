@@ -4,7 +4,8 @@
 #include "UserInterfaceManager.hh"
 #include "ChatView.hh"
 
-#include "main.hh"
+#include "main.h"
+extern UART_HandleTypeDef huart1;
 
 WifiView::WifiView(UserInterfaceManager& manager,
     Screen& screen,

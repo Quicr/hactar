@@ -11,6 +11,8 @@
 #define Front_Bytes 6
 #define Start_Bytes Front_Bytes - 1
 
+// TODO add a chunker
+
 class SerialPacketManager
 {
 public:

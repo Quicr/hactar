@@ -1,7 +1,7 @@
 #include "AudioCodec.hh"
 
 // NOTE MCLK = 12Mhz
-#include "main.hh"
+#include "app_main.hh"
 
 #include <cmath>
 

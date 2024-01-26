@@ -2,7 +2,7 @@
 #include "Helper.h"
 #include "Screen.hh"
 #include "RingBuffer.hh"
-#include "main.hh"
+#include "app_main.hh"
 
 #define DELAY HAL_MAX_DELAY
 

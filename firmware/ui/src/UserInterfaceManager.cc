@@ -8,7 +8,8 @@
 #include "SettingManager.hh"
 #include "QChat.hh"
 
-#include "main.hh"
+#include "main.h"
+extern UART_HandleTypeDef huart1;
 
 // Init the static var
 
