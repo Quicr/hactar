@@ -4,7 +4,7 @@
 #include <any>
 #include "EEPROM.hh"
 #include "Vector.hh"
-#include "main.hh"
+#include "app_main.hh"
 #include "Font.hh"
 
 // TODO use
@@ -345,7 +345,7 @@ public:
             SettingAddress::SSID,
             SettingAddress::SSID_Password
         };
-        // HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_RESET);
+        // HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
 
 
     // We save the settings in order according to the enum order.
@@ -377,7 +377,7 @@ public:
                 continue;
 
             if (o_setting == SettingAddress::SSID_Password)
-                HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_RESET);
+                HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
 
             // Overlaps, move the next setting and update the
             // curr_addr and curr_len

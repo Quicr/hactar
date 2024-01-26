@@ -2,6 +2,8 @@
 #include <utility>
 // TODO function for is network, or is debug
 // TODO Make a inherited class that generally knows the data and type positions
+// TODO flip a bit in type to determine if the message is main or net?
+// or a couple bits.
 
 /* Standard SerialPacket
 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2

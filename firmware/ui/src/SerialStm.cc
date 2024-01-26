@@ -1,6 +1,8 @@
 #include "SerialStm.hh"
-#include "main.hh"
 #include "String.hh"
+
+#include "main.h"
+extern UART_HandleTypeDef huart1;
 
 SerialStm::SerialStm(UART_HandleTypeDef* uart_handler,
                      unsigned short rx_ring_sz) :
