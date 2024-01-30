@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "mgmt.h"
+#include "app_mgmt.h"
 #include "uart_stream.h"
 
 struct packet_t

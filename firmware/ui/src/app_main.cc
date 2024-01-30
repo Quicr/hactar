@@ -20,13 +20,8 @@
 // Handlers
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
-extern DMA_HandleTypeDef hdma_usart1_rx;
-extern DMA_HandleTypeDef hdma_usart1_tx;
-extern DMA_HandleTypeDef hdma_usart2_rx;
-extern DMA_HandleTypeDef hdma_usart2_tx;
 
 extern SPI_HandleTypeDef hspi1;
-extern DMA_HandleTypeDef hdma_spi1_tx;
 extern I2C_HandleTypeDef hi2c1;
 extern I2S_HandleTypeDef hi2s3;
 extern TIM_HandleTypeDef htim2;
@@ -44,9 +39,6 @@ SerialStm* net_serial_interface = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
 AudioCodec* audio = nullptr;
-
-Led rx_led(UI_LED_R_GPIO_Port, UI_LED_R_Pin, 0, 1, 10);
-Led tx_led(UI_LED_G_GPIO_Port, UI_LED_G_Pin, 0, 1, 10);
 
 
 // TODO Get the osc working correctly from an external signal
@@ -94,42 +86,57 @@ int app_main()
 
     SerialPacketManager mgmt_serial(mgmt_serial_interface);
 
-    uint8_t start_message [] = "UI: star\n\r";
-    HAL_UART_Transmit(&huart1, start_message, 10, 1000);
-    uint32_t blink = 0;
+    uint8_t start_message [] = "UI: start\n\r";
+    HAL_UART_Transmit(&huart1, start_message, 12, 1000);
     HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(ADC_UI_STAT_GPIO_Port, ADC_UI_STAT_Pin, GPIO_PIN_SET);
 
+    uint16_t sound_data[5] = { 1,1,1,1,1 };
+    HAL_I2S_Receive_DMA(&hi2s3, sound_data, 5);
+    HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
 
+    uint32_t BUFFER_SIZE = 1024;
+    uint16_t buff[BUFFER_SIZE];
+    // Generate a simple triangle wave
+    for (int i = 0; i < BUFFER_SIZE; ++i)
+    {
+        buff[i] = (uint16_t)((float)i / BUFFER_SIZE * 65535);
+    }
+
+    uint32_t blink = 0;
     while (1)
     {
         ui_manager->Run();
+
+        // HAL_DAC_SetValue()
         // // mgmt_serial.RxTx(HAL_GetTick());
 
-        // rx_led.Timeout();
-        // tx_led.Timeout();
-
         // // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
-        // if (HAL_GetTick() > blink)
-        // {
-        //     // auto packet = std::make_unique<SerialPacket>();
-        //     // packet->SetData(SerialPacket::Types::Debug, 0, 1);
-        //     // packet->SetData(mgmt_serial.NextPacketId(), 1, 2);
-        //     // packet->SetData(5, 1, 2);
-        //     // packet->SetData('h', 1);
-        //     // packet->SetData('e', 1);
-        //     // packet->SetData('l', 1);
-        //     // packet->SetData('l', 1);
-        //     // packet->SetData('o', 1);
-        //     // mgmt_serial.EnqueuePacket(std::move(packet));
-        //     audio->Send1KHzSignal();
-        //     blink = HAL_GetTick() + 1000;
-        //     HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
-        //     uint8_t test_message [] = "UI: Test\n\r";
-        //     HAL_UART_Transmit(&huart1, test_message, 10, 1000);
-        // }
+        if (HAL_GetTick() > blink)
+        {
+
+            //     // auto packet = std::make_unique<SerialPacket>();
+            //     // packet->SetData(SerialPacket::Types::Debug, 0, 1);
+            //     // packet->SetData(mgmt_serial.NextPacketId(), 1, 2);
+            //     // packet->SetData(5, 1, 2);
+            //     // packet->SetData('h', 1);
+            //     // packet->SetData('e', 1);
+            //     // packet->SetData('l', 1);
+            //     // packet->SetData('l', 1);
+            //     // packet->SetData('o', 1);
+            //     // mgmt_serial.EnqueuePacket(std::move(packet));
+            // audio->Send1KHzSignal();
+            // HAL_StatusTypeDef res = HAL_I2S_Transmit(&hi2s3, buff, BUFFER_SIZE, HAL_MAX_DELAY);
+            // if (res == HAL_OK)
+            // {
+            //     HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+            // }
+            blink = HAL_GetTick() + 5000;
+            //     uint8_t test_message [] = "UI: Test\n\r";
+            //     HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+        }
     }
 
     return 0;
@@ -140,12 +147,10 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
     if (huart->Instance == USART2)
     {
         net_serial_interface->RxEvent(size);
-        // rx_led.Toggle();
     }
     else if (huart->Instance == USART1)
     {
         mgmt_serial_interface->RxEvent(size);
-        // rx_led.Toggle();
     }
 }
 
@@ -154,14 +159,23 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     if (huart->Instance == USART2)
     {
         net_serial_interface->TxEvent();
-        // tx_led.Toggle();
     }
     else if (huart->Instance == USART1)
     {
         HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
         mgmt_serial_interface->TxEvent();
-        // tx_led.Toggle();
     }
+}
+
+void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef* hi2s)
+{
+
+    HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+}
+
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef* hi2s)
+{
+
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)

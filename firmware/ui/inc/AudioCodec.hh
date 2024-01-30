@@ -16,9 +16,13 @@ public:
     AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c);
     ~AudioCodec();
 
+    // void ReadAudio();
+
     bool WriteRegister(uint8_t address, uint16_t data);
     // TODO remove the "debug" param.
     bool WriteRegisterSeries(uint8_t address, uint16_t data, uint8_t debug);
+
+    bool TestRegister();
 
     bool ReadRegister(uint8_t address, uint16_t& value);
     void Send1KHzSignal();
@@ -35,10 +39,10 @@ private:
     static constexpr uint8_t Addr_Mask = 0xFE;
     static constexpr uint16_t Top_Bit_Mask = 0x0001;
     static constexpr uint16_t Data_Mask = 0x01FF;
-    static constexpr uint8_t Max_Address = 0x55;
+    static constexpr uint8_t Max_Address = 0x37;
 
     // TODO label all of the registers
-    Register registers[Max_Address+1] = {
+    Register registers[Max_Address + 1] = {
         { .bytes = { 0x00, 0xa7 } }, // 0x00
         { .bytes = { 0x02, 0xa7 } }, // 0x01
         { .bytes = { 0x04, 0x00 } }, // 0x02
@@ -68,13 +72,14 @@ private:
         { .bytes = { 0x34, 0x00 } }, // 0x1a
         { .bytes = { 0x36, 0x00 } }, // 0x1b
         { .bytes = { 0x38, 0x00 } }, // 0x1c
-        { .bytes = { 0x3a, 0x00 } }, // 0x1e - Reserved
-        { .bytes = { 0x3c, 0x00 } }, // 0x1f - Reserved
+        { .bytes = { 0x3a, 0x00 } }, // 0x1d
+        { .bytes = { 0x3c, 0x00 } }, // 0x1e - Reserved
+        { .bytes = { 0x3e, 0x00 } }, // 0x1f - Reserved
         { .bytes = { 0x40, 0x00 } }, // 0x20
         { .bytes = { 0x42, 0x00 } }, // 0x21
         { .bytes = { 0x44, 0x50 } }, // 0x22
-        { .bytes = { 0x46, 0x00 } }, // 0x1d
-        { .bytes = { 0x48, 0x00 } }, // 0x1d
+        { .bytes = { 0x46, 0x00 } }, // 0x23
+        { .bytes = { 0x48, 0x00 } }, // 0x24
         { .bytes = { 0x4a, 0x50 } }, // 0x25
         { .bytes = { 0x4c, 0x00 } }, // 0x26
         { .bytes = { 0x4e, 0x00 } }, // 0x27
