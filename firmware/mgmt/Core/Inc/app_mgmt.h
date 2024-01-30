@@ -19,8 +19,8 @@
   /* USER CODE END Header */
 
   /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef MGMT_H
-#define MGMT_H
+#ifndef APP_MGMT_H
+#define APP_MGMT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,4 +54,4 @@ extern "C" {
 }
 #endif
 
-#endif /* MGMT_H */
+#endif /* APP_MGMT_H */
