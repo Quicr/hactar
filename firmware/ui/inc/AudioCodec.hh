@@ -2,6 +2,7 @@
 
 #include <stm32.h>
 #include "stm32f4xx_hal_i2c.h"
+#include "Screen.hh"
 
 class AudioCodec
 {
@@ -18,20 +19,21 @@ public:
 
     // void ReadAudio();
 
-    bool WriteRegister(uint8_t address, uint16_t data);
+    bool SetRegister(uint8_t address, uint16_t data);
+    bool XorRegister(uint8_t address, uint16_t data);
     // TODO remove the "debug" param.
     bool WriteRegisterSeries(uint8_t address, uint16_t data, uint8_t debug);
 
     bool TestRegister();
 
     bool ReadRegister(uint8_t address, uint16_t& value);
+
+    void RxAudio(Screen* screen);
+    void RxComplete();
     void Send1KHzSignal();
 
 private:
-    HAL_StatusTypeDef WriteRegisterToCodec(uint8_t address);
-
-    I2C_HandleTypeDef* i2c;
-    I2S_HandleTypeDef* i2s;
+    HAL_StatusTypeDef WriteRegister(uint8_t address);
 
     static constexpr uint16_t Write_Condition = 0x34;
 
@@ -40,6 +42,13 @@ private:
     static constexpr uint16_t Top_Bit_Mask = 0x0001;
     static constexpr uint16_t Data_Mask = 0x01FF;
     static constexpr uint8_t Max_Address = 0x37;
+
+    static constexpr uint16_t Rx_Buffer_Sz = 256;
+
+    I2C_HandleTypeDef* i2c;
+    I2S_HandleTypeDef* i2s;
+    uint16_t rx_buffer[Rx_Buffer_Sz];
+    bool rx_busy;
 
     // TODO label all of the registers
     Register registers[Max_Address + 1] = {
