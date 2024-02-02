@@ -94,12 +94,12 @@ void HandleTx(uart_stream_t* tx_stream, enum State* state)
     }
 
     if (HAL_GetTick() > tx_stream->last_transmission_time + TRANSMISSION_TIMEOUT &&
-        state != Debug_Running &&
-        state != Reset &&
-        state != Running)
+        *state != Debug_Running &&
+        *state != Reset &&
+        *state != Running)
     {
         // Clean up and return to reset mode
-        state = Reset;
+        *state = Reset;
     }
 }
 
@@ -148,12 +148,12 @@ void HandlePacketTx(uart_stream_t* tx_stream, enum State* state)
     }
 
     if (HAL_GetTick() > tx_stream->last_transmission_time + TRANSMISSION_TIMEOUT &&
-        state != Debug_Running &&
-        state != Reset &&
-        state != Running)
+        *state != Debug_Running &&
+        *state != Reset &&
+        *state != Running)
     {
         // Clean up and return to reset mode
-        state = Reset;
+        *state = Reset;
     }
 }
 
