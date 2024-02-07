@@ -17,26 +17,18 @@ void DebugPins(int output)
 AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     i2s(&hi2s), i2c(&hi2c), rx_buffer{0}, rx_busy(false)
 {
-    // Reset the chip
-    SetRegister(0x2F, 0b0'0000'1100);
-
     // Set the power
     // NOTE DO NOT CHANGE BITS [3,2]!!
     SetRegister(0x19, 0b1'1100'0000);
 
+    // Enable outputs
+    SetRegister(0x1A, 0b1'1111'1001);
+
     // Enable lr mixer ctrl
+    // TODO NOTE DO NOT ENABLE BITS [3,2] will require
+    // turning off the mgmt master clock and then updating the UI
+    SetRegister(0x2F, 0b0'0000'0000);
     // SetRegister(0x2F, 0b0'0000'1100);
-
-    // Set the clock division
-    // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
-    // BCLKDIV = SYSCLK / 6 = 2.048Mhz
-    SetRegister(0x08, 0b1'1100'0110);
-
-    // Set ADCDIV to get 16Khz from SYSCLK (0x03)
-    // Set DACDIV to get 16Khz from SYSCLK (0x03)
-    // Post scale the PLL to be divided by 2
-    // Set the clock (Select the PLL) (0x01)
-    SetRegister(0x04, 0b0'1101'1101);
 
     // Enable PLL integer mode.
     /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
@@ -59,22 +51,33 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     SetRegister(0x36, 0b0'1001'0011);
     SetRegister(0x37, 0b0'1110'1001);
 
+// TODO verify math
+    // Set ADCDIV to get 16Khz from SYSCLK (0x03)
+    // Set DACDIV to get 16Khz from SYSCLK (0x03)
+    // Post scale the PLL to be divided by 2
+    // Set the clock (Select the PLL) (0x01)
+    SetRegister(0x04, 0b0'1101'1101);
+
+    // Set the clock division
+    // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
+    // BCLKDIV = SYSCLK / 6 = 2.048Mhz
+    SetRegister(0x08, 0b1'1100'0110);
+
     // Disable soft mute and ADC high pass filter
     SetRegister(0x05, 0b0'0000'0000);
 
     // Set the Master mode (1), I2S to 16 bit words
-    // Set audio data format to i1s mode
+    // Set audio data format to i2s mode
     SetRegister(0x07, 0b0'0100'0010);
 
     // Set the left and right headphone volumes
-    SetRegister(0x02, 0b1'0111'1111);
-    SetRegister(0x03, 0b1'0111'1111);
+    SetRegister(0x02, 0b1'0110'1111);
+    SetRegister(0x03, 0b1'0110'1111);
 
     // Set the left and right speaker volumes
     SetRegister(0x28, 0b1'0111'1111);
     SetRegister(0x29, 0b1'0111'1111);
 
-    // TODO verify these registers
     // Enable the outputs
     SetRegister(0x31, 0b0'1111'0111);
 
@@ -86,8 +89,7 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     SetRegister(0x22, 0b1'1000'0000);
     SetRegister(0x25, 0b1'1000'0000);
 
-    // Enable outputs
-    SetRegister(0x1A, 0b1'1111'1011);
+
 
     // Change the ALC sample rate
     SetRegister(0x1B, 0b0'0000'0011);
