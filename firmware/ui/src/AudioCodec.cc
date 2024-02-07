@@ -18,13 +18,14 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     i2s(&hi2s), i2c(&hi2c), rx_buffer{0}, rx_busy(false)
 {
     // Reset the chip
-    SetRegister(0x2F, 0x0000);
+    SetRegister(0x2F, 0b0'0000'1100);
 
     // Set the power
+    // NOTE DO NOT CHANGE BITS [3,2]!!
     SetRegister(0x19, 0b1'1100'0000);
 
     // Enable lr mixer ctrl
-    SetRegister(0x2F, 0b0'0000'1100);
+    // SetRegister(0x2F, 0b0'0000'1100);
 
     // Set the clock division
     // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
@@ -78,15 +79,21 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     SetRegister(0x31, 0b0'1111'0111);
 
     // Set DAC left and right volumes
-    SetRegister(0x0A, 0b1'0110'1111);
-    SetRegister(0x0B, 0b1'0110'1111);
+    SetRegister(0x0A, 0b1'1111'1111);
+    SetRegister(0x0B, 0b1'1111'1111);
 
     // Set left and right mixer
     SetRegister(0x22, 0b1'1000'0000);
     SetRegister(0x25, 0b1'1000'0000);
 
     // Enable outputs
-    SetRegister(0x1A, 0b1'1111'1001);
+    SetRegister(0x1A, 0b1'1111'1011);
+
+    // Change the ALC sample rate
+    SetRegister(0x1B, 0b0'0000'0011);
+
+    // TODO check if I need to do tristate audio or not
+    SetRegister(0x18, 0b0'0000'0000);
 
 }
 
