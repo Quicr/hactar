@@ -22,6 +22,30 @@ cmox_hash_size(Digest::ID id) {
   }
 }
 
+template<>
+const Digest&
+Digest::get<Digest::ID::SHA256>()
+{
+  static const Digest instance(Digest::ID::SHA256);
+  return instance;
+}
+
+template<>
+const Digest&
+Digest::get<Digest::ID::SHA384>()
+{
+  static const Digest instance(Digest::ID::SHA384);
+  return instance;
+}
+
+template<>
+const Digest&
+Digest::get<Digest::ID::SHA512>()
+{
+  static const Digest instance(Digest::ID::SHA512);
+  return instance;
+}
+
 Digest::Digest(Digest::ID id_in)
   : id(id_in)
   , hash_size(cmox_hash_size(id_in))

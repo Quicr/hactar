@@ -15,6 +15,8 @@
 #include "Led.hh"
 #include "AudioCodec.hh"
 
+#include <hpke/digest.h>
+
 #include <memory>
 #include <cmath>
 
@@ -187,10 +189,17 @@ int app_main()
             // if (res == HAL_OK)
             // {
             // }
-            blink = HAL_GetTick() + 5000;
-            uint32_t num = 0;
-            HAL_RNG_GenerateRandomNumber(&hrng, &num);
-            screen.DrawText(0, 82, String::int_to_string(num), font7x12, C_GREEN, C_BLACK);
+            // blink = HAL_GetTick() + 5000;
+            // uint32_t num = 0;
+            // HAL_RNG_GenerateRandomNumber(&hrng, &num);
+            // screen.DrawText(0, 82, String::int_to_string(num), font7x12, C_GREEN, C_BLACK);
+
+
+            // Compute display a digest
+            using namespace mls::hpke;
+            const auto digest = Digest::get<Digest::ID::SHA256>();
+            const auto output = to_hex(digest.hash(from_ascii("hello")));
+            screen.DrawText(0, 82, output.c_str(), font7x12, C_GREEN, C_BLACK);
 
             // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
             //     uint8_t test_message [] = "UI: Test\n\r";
@@ -209,10 +218,10 @@ int app_main()
             // auto output = HAL_I2SEx_TransmitReceive_DMA(&hi2s3, tx_sound_buff, rx_sound_buff, SOUND_BUFFER_SZ);
 
             // screen.DrawText(0, 100, String::int_to_string((int)output), font7x12, C_GREEN, C_BLACK);
-            screen.DrawText(0, 112, String::int_to_string((int)rx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
-            screen.DrawText(0, 124, String::int_to_string((int)rx_sound_buff[1]), font7x12, C_GREEN, C_BLACK);
-            screen.DrawText(0, 136, String::int_to_string((int)rx_sound_buff[2]), font7x12, C_GREEN, C_BLACK);
-            screen.DrawText(0, 148, String::int_to_string((int)rx_sound_buff[3]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 112, String::int_to_string((int)rx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 124, String::int_to_string((int)rx_sound_buff[1]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 136, String::int_to_string((int)rx_sound_buff[2]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 148, String::int_to_string((int)rx_sound_buff[3]), font7x12, C_GREEN, C_BLACK);
 
         }
     }
