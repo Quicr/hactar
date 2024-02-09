@@ -1,11 +1,5 @@
 #include <hpke/base64.h>
 
-#include "openssl_common.h"
-
-#include <openssl/bio.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-
 namespace MLS_NAMESPACE::hpke {
 
 std::string
@@ -15,11 +9,10 @@ to_base64(const bytes& data)
     return "";
   }
 
-#if WITH_BORINGSSL
-  const auto data_size = data.size();
-#else
+  return ""; // TODO implement
+
+#if 0
   const auto data_size = static_cast<int>(data.size());
-#endif
 
   // base64 encoding produces 4 characters for every 3 input bytes (rounded up)
   const auto out_size = (data_size + 2) / 3 * 4;
@@ -32,6 +25,7 @@ to_base64(const bytes& data)
 
   out.resize(out.size() - 1); // strip NUL terminator
   return to_ascii(out);
+#endif // 0
 }
 
 std::string
@@ -64,12 +58,14 @@ from_base64(const std::string& enc)
   if (enc.length() % 4 != 0) {
     throw std::runtime_error("Base64 length is not divisible by 4");
   }
-
   const auto in = from_ascii(enc);
   const auto in_size = static_cast<int>(in.size());
   const auto out_size = in_size / 4 * 3;
   auto out = bytes(out_size);
 
+  return {}; // TODO implement
+
+#if 0
   const auto result = EVP_DecodeBlock(out.data(), in.data(), in_size);
   if (result != out_size) {
     throw openssl_error();
@@ -82,6 +78,7 @@ from_base64(const std::string& enc)
   }
 
   return out;
+#endif // 0
 }
 
 bytes

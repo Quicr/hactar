@@ -1,14 +1,11 @@
+#if 0
+
 #include "group.h"
-#include "openssl_common.h"
 #include "rsa.h"
 #include <hpke/certificate.h>
 #include <hpke/signature.h>
 #include <memory>
 #include <namespace.h>
-#include <openssl/err.h>
-#include <openssl/pem.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
 #include <tls/compat.h>
 
 namespace MLS_NAMESPACE::hpke {
@@ -538,3 +535,5 @@ operator==(const Certificate& lhs, const Certificate& rhs)
 }
 
 } // namespace MLS_NAMESPACE::hpke
+
+#endif // 0
