@@ -169,7 +169,8 @@ AS_INCLUDES =
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
-CFLAGS 		+= $(MCU) $(C_DEFS) $(INCS) $(OPT) -Wall -Wpedantic -Wextra -fdata-sections -ffunction-sections
+CFLAGS 		+= $(MCU) $(C_DEFS) $(INCS) $(OPT) -Wall -Wpedantic -Wextra -fdata-sections -ffunction-sections \
+						 -std=c++17
         # -Wshadow \
         # -Wnon-virtual-dtor \
         # -Wcast-align \
