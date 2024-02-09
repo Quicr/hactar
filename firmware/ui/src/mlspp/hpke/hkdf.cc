@@ -1,9 +1,5 @@
 #include "hkdf.h"
-#include "openssl_common.h"
 #include <namespace.h>
-
-#include <openssl/err.h>
-#include <openssl/evp.h>
 #include <stdexcept>
 
 namespace MLS_NAMESPACE::hpke {

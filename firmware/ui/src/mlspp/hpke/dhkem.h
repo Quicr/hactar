@@ -3,18 +3,16 @@
 #include <hpke/hpke.h>
 #include <namespace.h>
 
-#include "group.h"
-
 namespace MLS_NAMESPACE::hpke {
 
 struct DHKEM : public KEM
 {
   struct PrivateKey : public KEM::PrivateKey
   {
-    PrivateKey(Group::PrivateKey* group_priv_in);
+    // PrivateKey(Group::PrivateKey* group_priv_in);
     std::unique_ptr<KEM::PublicKey> public_key() const override;
 
-    std::unique_ptr<Group::PrivateKey> group_priv;
+    // std::unique_ptr<Group::PrivateKey> group_priv;
   };
 
   template<KEM::ID>
@@ -43,15 +41,14 @@ struct DHKEM : public KEM
                    const KEM::PrivateKey& skR) const override;
 
 private:
-  const Group& group;
+  // const Group& group;
   const KDF& kdf;
   bytes suite_id;
 
   bytes extract_and_expand(const bytes& dh, const bytes& kem_context) const;
 
-  DHKEM(KEM::ID kem_id_in, const Group& group_in, const KDF& kdf_in);
+  DHKEM(KEM::ID kem_id_in, const KDF& kdf_in);
   friend DHKEM make_dhkem(KEM::ID kem_id_in,
-                          const Group& group_in,
                           const KDF& kdf_in);
 };
 
