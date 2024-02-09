@@ -18,7 +18,7 @@ struct packet_t
             uint16_t len;
             char msg[251];
         } __attribute__((packed));
-        uint8_t bytes[256]
+        uint8_t bytes[256];
     };
 };
 
