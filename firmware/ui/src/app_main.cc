@@ -298,6 +298,7 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef* hi2s)
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
     uint16_t err;
+    UNUSED(err);
     if (huart->Instance == USART2)
     {
         net_serial_interface->Reset();

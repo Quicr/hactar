@@ -87,11 +87,10 @@ void ChatView::HandleInput()
         msg += usr_input;
 
         // prepare ascii message, encode into Message + Packet
-        qchat::Ascii ascii = qchat::Ascii{
-            // I want to use this, but quicr gets mad if we pass it in.
-          .message_uri = manager.ActiveRoom()->room_uri,
-          .message = {msg.c_str()},
-        };
+        qchat::Ascii ascii(
+            manager.ActiveRoom()->room_uri,
+            {msg.c_str()}
+        );
 
         // TODO move into encode...
         // TODO packet should maybe have a static next_packet_id?

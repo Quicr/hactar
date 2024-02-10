@@ -3,6 +3,7 @@ import sys
 import glob
 import time
 import serial
+import serial.tools.list_ports
 import stm32
 import esp32
 from ansi_colours import BB, BG, BR, BW, NW
@@ -15,7 +16,8 @@ def SerialPorts(uart_config):
     # Get all ports
     ports = []
     if sys.platform.startswith("win"):
-        ports = [f'COM{i}' for i in range(1, 256)]
+        coms = list(serial.tools.list_ports.comports())
+        ports = [port for (port, _, _) in coms]
     elif (sys.platform.startswith('linux') or
           sys.platform.startswith('cygwin')):
         ports = glob.glob('/dev/ttyUSB[0-9]*')
@@ -24,6 +26,7 @@ def SerialPorts(uart_config):
     else:
         raise EnvironmentError("Unsupported platform")
 
+    print(f"Ports available: {len(ports)} [{ports}]")
     result = []
     for port in ports:
         try:
@@ -36,6 +39,7 @@ def SerialPorts(uart_config):
             resp = s.read(len(HELLO_RES))
 
             s.close()
+
 
             if (resp == HELLO_RES):
                 result.append(port)
