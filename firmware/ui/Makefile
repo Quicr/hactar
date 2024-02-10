@@ -248,6 +248,9 @@ all: info program
 ${BUILD_DIR}/stm32f4%.o : stm32f4%.c | ${BUILD_DIR}
 	@echo "[C]			$(notdir $<)"
 	@$(CC) $(HAL_CFLAGS) -c -o $@ $< -MMD -MF ${BUILD_DIR}/$(*F).d
+${BUILD_DIR}/main.o : main.c | ${BUILD_DIR}
+	@echo "[C]			$(notdir $<)"
+	@$(CC) $(HAL_CFLAGS) -c -o $@ $< -MMD -MF ${BUILD_DIR}/$(*F).d
 
 ${BUILD_DIR}/%.o : %.c | ${BUILD_DIR}
 	@echo "[C]			$(notdir $<)"
@@ -275,12 +278,11 @@ $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	@echo "[LD]			${TARGET}.bin"
 	@$(BIN) $< $@
-	@echo "*******SUCCESS*******"
 
 compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
 
 upload:
-	python ../flasher/flasher.py --baud=${BAUD} --chip="ui" -p="${PORT}" \
+	python ../flasher/flasher.py --baud=${BAUD} --chip="ui" \
 								 -bin=${BUILD_DIR}/${FIRMWARE}
 
 upload_prog:

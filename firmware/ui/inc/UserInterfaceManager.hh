@@ -45,10 +45,9 @@ public:
     uint32_t GetTxStatusColour() const;
     uint32_t GetRxStatusColour() const;
 
-    const bool GetReadyPackets(
+    bool GetReadyPackets(
         RingBuffer<std::unique_ptr<SerialPacket>>** buff,
         const SerialPacket::Commands command_type) const;
-    const bool HasReadyPackets(const SerialPacket::Commands command_type) const;
     bool IsConnectedToWifi() const;
 
     uint16_t NextPacketId();
