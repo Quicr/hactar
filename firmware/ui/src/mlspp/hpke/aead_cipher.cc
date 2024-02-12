@@ -2,6 +2,9 @@
 
 #include <namespace.h>
 
+#include <crypto/cipher/cmox_cipher.h>
+#include <crypto/cipher/cmox_gcm.h>
+
 namespace MLS_NAMESPACE::hpke {
 
 ///
@@ -119,56 +122,23 @@ AEADCipher::seal(const bytes& key,
                  const bytes& aad,
                  const bytes& pt) const
 {
-  return {}; // TODO implement
+  auto ct = bytes(pt.size() + tag_size);
 
-#if 0
-  auto ctx = make_typed_unique(EVP_CIPHER_CTX_new());
-  if (ctx == nullptr) {
-    throw openssl_error();
-  }
+  // TODO read return value and throw on error
+  cmox_aead_encrypt(CMOX_AESSMALL_GCMSMALL_ENC_ALGO,
+                    pt.data(),
+                    pt.size(),
+                    tag_size,
+                    key.data(),
+                    CMOX_CIPHER_128_BIT_KEY,
+                    nonce.data(),
+                    nonce.size(),
+                    aad.data(),
+                    aad.size(),
+                    ct.data(),
+                    nullptr);
 
-  const auto* cipher = openssl_cipher(id);
-  if (1 != EVP_EncryptInit(ctx.get(), cipher, key.data(), nonce.data())) {
-    throw openssl_error();
-  }
-
-  int outlen = 0;
-  if (!aad.empty()) {
-    if (1 != EVP_EncryptUpdate(ctx.get(),
-                               nullptr,
-                               &outlen,
-                               aad.data(),
-                               static_cast<int>(aad.size()))) {
-      throw openssl_error();
-    }
-  }
-
-  bytes ct(pt.size());
-  if (1 != EVP_EncryptUpdate(ctx.get(),
-                             ct.data(),
-                             &outlen,
-                             pt.data(),
-                             static_cast<int>(pt.size()))) {
-    throw openssl_error();
-  }
-
-  // Providing nullptr as an argument is safe here because this
-  // function never writes with GCM; it only computes the tag
-  if (1 != EVP_EncryptFinal(ctx.get(), nullptr, &outlen)) {
-    throw openssl_error();
-  }
-
-  bytes tag(tag_size);
-  if (1 != EVP_CIPHER_CTX_ctrl(ctx.get(),
-                               EVP_CTRL_GCM_GET_TAG,
-                               static_cast<int>(tag_size),
-                               tag.data())) {
-    throw openssl_error();
-  }
-
-  ct += tag;
   return ct;
-#endif // 0
 }
 
 std::optional<bytes>
@@ -181,56 +151,25 @@ AEADCipher::open(const bytes& key,
     throw std::runtime_error("AEAD ciphertext smaller than tag size");
   }
 
-  return {}; // TODO implement
+  auto pt = bytes(ct.size() - tag_size);
+  const auto rv = cmox_aead_decrypt(CMOX_AESSMALL_GCMSMALL_ENC_ALGO,
+                                    ct.data(),
+                                    ct.size(),
+                                    tag_size,
+                                    key.data(),
+                                    CMOX_CIPHER_128_BIT_KEY,
+                                    nonce.data(),
+                                    nonce.size(),
+                                    aad.data(),
+                                    aad.size(),
+                                    pt.data(),
+                                    nullptr);
 
-#if 0
-  auto ctx = make_typed_unique(EVP_CIPHER_CTX_new());
-  if (ctx == nullptr) {
-    throw openssl_error();
-  }
-
-  const auto* cipher = openssl_cipher(id);
-  if (1 != EVP_DecryptInit(ctx.get(), cipher, key.data(), nonce.data())) {
-    throw openssl_error();
-  }
-
-  auto inner_ct_size = ct.size() - tag_size;
-  auto tag = ct.slice(inner_ct_size, ct.size());
-  if (1 != EVP_CIPHER_CTX_ctrl(ctx.get(),
-                               EVP_CTRL_GCM_SET_TAG,
-                               static_cast<int>(tag_size),
-                               tag.data())) {
-    throw openssl_error();
-  }
-
-  int out_size = 0;
-  if (!aad.empty()) {
-    if (1 != EVP_DecryptUpdate(ctx.get(),
-                               nullptr,
-                               &out_size,
-                               aad.data(),
-                               static_cast<int>(aad.size()))) {
-      throw openssl_error();
-    }
-  }
-
-  bytes pt(inner_ct_size);
-  if (1 != EVP_DecryptUpdate(ctx.get(),
-                             pt.data(),
-                             &out_size,
-                             ct.data(),
-                             static_cast<int>(inner_ct_size))) {
-    throw openssl_error();
-  }
-
-  // Providing nullptr as an argument is safe here because this
-  // function never writes with GCM; it only verifies the tag
-  if (1 != EVP_DecryptFinal(ctx.get(), nullptr, &out_size)) {
-    throw std::runtime_error("AEAD authentication failure");
+  if (rv != CMOX_CIPHER_SUCCESS) {
+    return std::nullopt;
   }
 
   return pt;
-#endif // 0
 }
 
 } // namespace MLS_NAMESPACE::hpke

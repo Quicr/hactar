@@ -401,30 +401,6 @@ SignaturePublicKey::verify(const CipherSuite& suite,
   return suite.sig().verify(content, signature, *pub);
 }
 
-SignaturePublicKey
-SignaturePublicKey::from_jwk(CipherSuite suite, const std::string& json_str)
-{
-  auto pub = suite.sig().import_jwk(json_str);
-  auto pub_data = suite.sig().serialize(*pub);
-  return SignaturePublicKey{ pub_data };
-}
-
-std::string
-SignaturePublicKey::to_jwk(CipherSuite suite) const
-{
-  auto pub = suite.sig().deserialize(data);
-  return suite.sig().export_jwk(*pub);
-}
-
-PublicJWK
-PublicJWK::parse(const std::string& jwk_json)
-{
-  const auto parsed = Signature::parse_jwk(jwk_json);
-  const auto scheme = tls_signature_scheme(parsed.sig.id);
-  const auto pub_data = parsed.sig.serialize(*parsed.key);
-  return { scheme, parsed.key_id, { pub_data } };
-}
-
 SignaturePrivateKey
 SignaturePrivateKey::generate(CipherSuite suite)
 {
@@ -477,23 +453,6 @@ SignaturePrivateKey::set_public_key(CipherSuite suite)
   const auto priv = suite.sig().deserialize_private(data);
   auto pub = priv->public_key();
   public_key.data = suite.sig().serialize(*pub);
-}
-
-SignaturePrivateKey
-SignaturePrivateKey::from_jwk(CipherSuite suite, const std::string& json_str)
-{
-  auto priv = suite.sig().import_jwk_private(json_str);
-  auto priv_data = suite.sig().serialize_private(*priv);
-  auto pub = priv->public_key();
-  auto pub_data = suite.sig().serialize(*pub);
-  return { priv_data, pub_data };
-}
-
-std::string
-SignaturePrivateKey::to_jwk(CipherSuite suite) const
-{
-  const auto priv = suite.sig().deserialize_private(data);
-  return suite.sig().export_jwk_private(*priv);
 }
 
 } // namespace MLS_NAMESPACE
