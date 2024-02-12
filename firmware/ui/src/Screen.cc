@@ -495,7 +495,7 @@ void Screen::FillPolygon(const size_t count,
         points[0][x], points[0][y], colour);
 
     // X intersections
-    uint16_t* intersections = new uint16_t[count];
+    uint16_t* intersections = new uint16_t[count]{0};
     uint8_t num_intersect = 0;
     uint16_t curr_point = 0;
     uint16_t next_point = 0;
@@ -568,8 +568,8 @@ void Screen::FillPolygon(const size_t count,
                 intersections[i + 1], pix_y, 1, colour);
         }
 
-        delete [] intersections;
     }
+    delete [] intersections;
 }
 
 void Screen::DrawRectangle(const uint16_t x_start, const uint16_t y_start,
