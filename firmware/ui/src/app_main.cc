@@ -45,6 +45,14 @@ EEPROM* eeprom = nullptr;
 AudioCodec* audio = nullptr;
 bool rx_busy = false;
 
+uint8_t random_byte() {
+    // XXX(RLB) This is 4x slower than it could be, because we only take the
+    // low-order byte of the four bytes in a uint32_t.
+    auto value = uint32_t(0);
+    HAL_RNG_GenerateRandomNumber(&hrng, &value);
+    return value;
+}
+
 uint16_t GenerateTriangleWavePoint(double frequency, double amplitude, double time) {
     double period = 1.0 / frequency;
     double phase = fmod(time, period) / period;

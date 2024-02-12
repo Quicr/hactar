@@ -49,7 +49,6 @@ const std::array<CipherSuite::ID, 6> all_supported_ciphersuites = {
 const std::array<CredentialType, 4> all_supported_credentials = {
   CredentialType::basic,
   CredentialType::x509,
-  CredentialType::userinfo_vc_draft_00,
   CredentialType::multi_draft_00
 };
 
