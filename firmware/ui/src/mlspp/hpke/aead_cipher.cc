@@ -50,6 +50,8 @@ AEADCipher::get<AEAD::ID::AES_128_GCM>()
   return instance;
 }
 
+// XXX We can't actually instantiate these ciphers right now
+#if 0
 template<>
 const AEADCipher&
 AEADCipher::get<AEAD::ID::AES_256_GCM>()
@@ -65,6 +67,7 @@ AEADCipher::get<AEAD::ID::CHACHA20_POLY1305>()
   static const auto instance = make_aead(AEAD::ID::CHACHA20_POLY1305);
   return instance;
 }
+#endif
 
 static size_t
 cipher_key_size(AEAD::ID cipher)

@@ -16,6 +16,8 @@
 #include "AudioCodec.hh"
 
 #include <hpke/digest.h>
+#include <hpke/signature.h>
+#include <hpke/hpke.h>
 
 #include <memory>
 #include <cmath>
@@ -203,11 +205,49 @@ int app_main()
             // screen.DrawText(0, 82, String::int_to_string(num), font7x12, C_GREEN, C_BLACK);
 
 
-            // Compute display a digest
-            using namespace mls::hpke;
-            const auto digest = Digest::get<Digest::ID::SHA256>();
-            const auto output = to_hex(digest.hash(from_ascii("hello")));
-            screen.DrawText(0, 82, output.c_str(), font7x12, C_GREEN, C_BLACK);
+            // Compute and display a digest
+            {
+                using namespace mls::hpke;
+                const auto digest = Digest::get<Digest::ID::SHA256>();
+                const auto output = to_hex(digest.hash(from_ascii("hello"))).substr(0, 8);
+                screen.DrawText(0, 82, output.c_str(), font7x12, C_GREEN, C_BLACK);
+            }
+
+            // Do an encrypt/decrypt round-trip test
+            {
+                using namespace mls::hpke;
+                const auto& cipher = AEAD::get<AEAD::ID::AES_128_GCM>();
+                const auto key = from_ascii("sixteen byte key");
+                const auto nonce = from_ascii("public nonce");
+                const auto pt = from_ascii("secret message");
+                const auto aad = from_ascii("extra");
+                const auto ct = cipher.seal(key, nonce, aad, pt);
+                const auto maybe_pt = cipher.open(key, nonce, aad, ct);
+                auto status = std::string("decryption successful");
+                if (!maybe_pt || pt != *maybe_pt) {
+                    status = std::string("decryption failure");
+                }
+
+                screen.DrawText(0, 94, status.c_str(), font7x12, C_GREEN, C_BLACK);
+            }
+
+            // Do a sign/verify round-trip test
+            {
+                using namespace mls::hpke;
+                const auto& sig = Signature::get<Signature::ID::Ed25519>();
+                const auto sk = sig.generate_key_pair();
+                const auto msg = from_ascii("attack at dawn!");
+                const auto sig_val = sig.sign(msg, *sk);
+                const auto ver = sig.verify(msg, sig_val, *sk->public_key());
+                auto status = std::string("signature valid");
+                if (!ver) {
+                  status = std::string("signature invalid");
+                }
+                status = status + " " + std::to_string(sig_val.size());
+
+                screen.DrawText(0, 106, status.c_str(), font7x12, C_GREEN, C_BLACK);
+            }
+
 
             // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
             //     uint8_t test_message [] = "UI: Test\n\r";
