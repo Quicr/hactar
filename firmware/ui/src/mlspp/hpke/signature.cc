@@ -143,6 +143,7 @@ struct P256 : Signature {
                     sig.data(),
                     &sig_size);
 
+    sig.resize(sig_size);
     return sig;
   }
 

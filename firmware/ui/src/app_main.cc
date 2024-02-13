@@ -248,6 +248,25 @@ int app_main()
                 screen.DrawText(0, 106, status.c_str(), font7x12, C_GREEN, C_BLACK);
             }
 
+            // Do an encap/decap round-trip test
+            {
+                using namespace mls::hpke;
+                const auto& kem = KEM::get<KEM::ID::DHKEM_P256_SHA256>();
+
+                const auto sk = kem.generate_key_pair();
+                const auto pk = sk->public_key();
+
+                const auto [zz_send, enc] = kem.encap(*pk);
+                const auto zz_recv = kem.decap(enc, *sk);
+
+                auto status = std::string("kem successful");
+                if (zz_send != zz_recv) {
+                  status = std::string("kem failed");
+                }
+
+                status = status + " " + std::to_string(zz_send.size())
+                                + " " + std::to_string(enc.size());
+            }
 
             // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
             //     uint8_t test_message [] = "UI: Test\n\r";
