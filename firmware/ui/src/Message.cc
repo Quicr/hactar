@@ -85,10 +85,10 @@ const String& Message::Body() const
     return body;
 }
 
-void Message::Parse(const char* c_str)
-{
-    // TODO parse a byte stream into a message
-}
+// void Message::Parse(const char* c_str)
+// {
+//     // TODO parse a byte stream into a message
+// }
 
 unsigned int Message::Length()
 {

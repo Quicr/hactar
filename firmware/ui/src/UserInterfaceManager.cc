@@ -153,10 +153,7 @@ void UserInterfaceManager::ChangeRoom(std::unique_ptr<qchat::Room> new_room)
     std::string user_name{ setting_manager.Username()->c_str() };
 
     // Set watch on the room
-    qchat::WatchRoom watch = qchat::WatchRoom{
-        .publisher_uri = active_room->publisher_uri + user_name + "/",
-        .room_uri = active_room->room_uri,
-    };
+    qchat::WatchRoom watch(active_room->publisher_uri + user_name + "/", active_room->room_uri);
 
     std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 5);
     packet->SetData(SerialPacket::Types::Message, 0, 1);
@@ -309,7 +306,7 @@ uint32_t UserInterfaceManager::GetRxStatusColour() const
     return GetStatusColour(net_layer.GetRxStatus());
 }
 
-const bool UserInterfaceManager::GetReadyPackets(
+bool UserInterfaceManager::GetReadyPackets(
     RingBuffer<std::unique_ptr<SerialPacket>>** buff,
     const SerialPacket::Commands command_type) const
 {

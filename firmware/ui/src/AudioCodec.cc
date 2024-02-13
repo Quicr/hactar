@@ -17,8 +17,12 @@ void DebugPins(int output)
 AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     i2s(&hi2s), i2c(&hi2c), rx_buffer{0}, rx_busy(false)
 {
+    // Reset the wm8960
+    SetRegister(0x0F, 0b0'0000'0000);
+    HAL_Delay(100);
+
     // Set the power
-    // NOTE DO NOT CHANGE BITS [3,2]!!
+    // NOTE DO NOT CHANGE BITS [3,2]!! on EV10
     SetRegister(0x19, 0b1'1100'0000);
 
     // Enable outputs
@@ -71,15 +75,15 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     SetRegister(0x07, 0b0'0100'0010);
 
     // Set the left and right headphone volumes
-    SetRegister(0x02, 0b1'0110'1111);
-    SetRegister(0x03, 0b1'0110'1111);
+    SetRegister(0x02, 0b1'0111'1111);
+    SetRegister(0x03, 0b1'0111'1111);
 
     // Set the left and right speaker volumes
     SetRegister(0x28, 0b1'0111'1111);
     SetRegister(0x29, 0b1'0111'1111);
 
     // Enable the outputs
-    SetRegister(0x31, 0b0'1111'0111);
+    SetRegister(0x31, 0b0'0111'0111);
 
     // Set DAC left and right volumes
     SetRegister(0x0A, 0b1'1111'1111);
@@ -89,20 +93,18 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     SetRegister(0x22, 0b1'1000'0000);
     SetRegister(0x25, 0b1'1000'0000);
 
-
-
     // Change the ALC sample rate
     SetRegister(0x1B, 0b0'0000'0011);
 
-    // TODO check if I need to do tristate audio or not
-    SetRegister(0x18, 0b0'0000'0000);
 
 }
 
 // TODO read the I2C value to make sure it is writing correctly!
 bool AudioCodec::TestRegister()
 {
-    return SetRegister(0x34, 0b0'0001'1000);
+    // return SetRegister(0x34, 0b0'0001'1000);
+
+    return SetRegister(0x0A, 0b1'1111'1111);
 }
 
 AudioCodec::~AudioCodec()
@@ -114,6 +116,8 @@ HAL_StatusTypeDef AudioCodec::WriteRegister(uint8_t address)
 {
     HAL_StatusTypeDef result = HAL_I2C_Master_Transmit(i2c,
         Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
+
+    HAL_Delay(2);
 
     return result;
 }
@@ -129,7 +133,7 @@ bool AudioCodec::SetRegister(uint8_t address, uint16_t data)
     registers[address].bytes[0] &= ~Top_Bit_Mask;
 
     // Set the register data
-    registers[address].bytes[0] |= uint8_t((data >> 1) & Top_Bit_Mask);
+    registers[address].bytes[0] |= uint8_t((data >> 8) & Top_Bit_Mask);
     registers[address].bytes[1] = uint8_t(data & 0x00FF);
 
     // Write the register to the chip
@@ -144,7 +148,7 @@ bool AudioCodec::XorRegister(uint8_t address, uint16_t data)
     }
 
     // Update the register data
-    registers[address].bytes[0] ^= uint8_t((data >> 1) & Top_Bit_Mask);
+    registers[address].bytes[0] ^= uint8_t((data >> 8) & Top_Bit_Mask);
     registers[address].bytes[1] ^= uint8_t(data & 0x00FF);
 
     return (WriteRegister(address) == HAL_OK);
@@ -157,10 +161,8 @@ bool AudioCodec::ReadRegister(uint8_t address, uint16_t& value)
         return false;
     }
 
-    // Deep magic.
-    uint8_t* bytes = registers[address].bytes;
-    // TODO unionize this
-    value = (*(reinterpret_cast<uint16_t*>(bytes))) & Data_Mask;
+    value = (uint16_t)((registers[address].bytes[0] & 0x0001) << 8);
+    value += registers[address].bytes[1];
     return true;
 }
 
@@ -200,7 +202,7 @@ void AudioCodec::Send1KHzSignal()
     uint16_t sample_rate[1] = {static_cast<uint16_t>(32767.0 * std::sin(2 * PI * freq * HAL_GetTick() / 1000.0))};
     // uint16_t sample = static_cast<uint16_t>(32767.0 * sin(2 * 3.141592653589793 * 1000.0 * HAL_GetTick() / 1000.0))
 
-    HAL_I2S_Transmit(i2s, sample_rate, 1, HAL_MAX_DELAY);
+    HAL_I2S_Transmit_DMA(i2s, sample_rate, 1);
 
     // for (int i = 0; i < sample_rate; ++i)
     // {
