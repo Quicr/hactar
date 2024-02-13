@@ -1,15 +1,19 @@
 #include <hpke/signature.h>
 #include <hpke/random.h>
+#include <hpke/digest.h>
 #include <namespace.h>
 #include <string>
 
 #include "crypto/ecc/cmox_ecc.h"
-#include "crypto/ecc/cmox_eddsa.h"
+#include "crypto/ecc/cmox_ecdsa.h"
 
 namespace MLS_NAMESPACE::hpke {
 
-using PrivateKeyBuffer = std::array<uint8_t, CMOX_ECC_ED25519_PRIVKEY_LEN>;
-using PublicKeyBuffer = std::array<uint8_t, CMOX_ECC_ED25519_PUBKEY_LEN>;
+#define MATH CMOX_MATH_FUNCS_SMALL
+#define CURVE CMOX_ECC_SECP256R1_LOWMEM
+
+using PrivateKeyBuffer = std::array<uint8_t, CMOX_ECC_SECP256R1_PRIVKEY_LEN>;
+using PublicKeyBuffer = std::array<uint8_t, CMOX_ECC_SECP256R1_PUBKEY_LEN>;
 
 // RAII wrapper for cmox_ecc_handle_t and its associated memory buffer.
 struct ECCContext {
@@ -20,7 +24,7 @@ struct ECCContext {
   cmox_ecc_handle_t ctx;
 
   ECCContext() {
-    cmox_ecc_construct(&ctx, CMOX_MATH_FUNCS_SMALL, buffer.data(), buffer.size());
+    cmox_ecc_construct(&ctx, MATH, buffer.data(), buffer.size());
   }
 
   cmox_ecc_handle_t* get() {
@@ -32,7 +36,7 @@ struct ECCContext {
   }
 };
 
-struct Ed25519 : Signature {
+struct P256 : Signature {
   struct PrivateKey : Signature::PrivateKey {
     PrivateKeyBuffer priv;
 
@@ -43,7 +47,7 @@ struct Ed25519 : Signature {
     std::unique_ptr<Signature::PublicKey> public_key() const override {
       auto pub = PublicKeyBuffer();
       std::copy(priv.begin() + 32, priv.end(), pub.begin());
-      return std::make_unique<Ed25519::PublicKey>(std::move(pub));
+      return std::make_unique<P256::PublicKey>(std::move(pub));
     }
   };
 
@@ -55,12 +59,12 @@ struct Ed25519 : Signature {
     {}
   };
 
-  Ed25519()
-    : Signature(ID::Ed25519)
+  P256()
+    : Signature(ID::P256_SHA256)
   {}
 
   std::unique_ptr<Signature::PrivateKey> generate_key_pair() const override {
-    const auto randomness = random_bytes(CMOX_ECC_CURVE25519_SECRET_LEN);
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
     return derive_key_pair(randomness);
   }
 
@@ -80,8 +84,8 @@ struct Ed25519 : Signature {
     auto ctx = ECCContext{};
 
     // TODO check return value
-    cmox_eddsa_keyGen(ctx.get(),
-                      CMOX_ECC_ED25519_OPT_LOWMEM,
+    cmox_ecdsa_keyGen(ctx.get(),
+                      CURVE,
                       ikm.data(),
                       ikm.size(),
                       priv.data(),
@@ -90,45 +94,52 @@ struct Ed25519 : Signature {
                       &pub_size);
 
 
-    return std::make_unique<Ed25519::PrivateKey>(std::move(priv));
+    return std::make_unique<P256::PrivateKey>(std::move(priv));
   }
 
   bytes serialize(const Signature::PublicKey& pk) const override {
-    const auto& rpk = dynamic_cast<const Ed25519::PublicKey&>(pk);
+    const auto& rpk = dynamic_cast<const P256::PublicKey&>(pk);
     return bytes(std::vector<uint8_t>(rpk.pub.begin(), rpk.pub.end()));
   }
 
   std::unique_ptr<Signature::PublicKey> deserialize(const bytes& enc) const override {
     auto pub = PublicKeyBuffer();
     std::copy(enc.begin(), enc.end(), pub.begin());
-    return std::make_unique<Ed25519::PublicKey>(std::move(pub));
+    return std::make_unique<P256::PublicKey>(std::move(pub));
   }
 
   bytes serialize_private(const Signature::PrivateKey& sk) const override {
-    const auto& rsk = dynamic_cast<const Ed25519::PrivateKey&>(sk);
+    const auto& rsk = dynamic_cast<const P256::PrivateKey&>(sk);
     return bytes(std::vector<uint8_t>(rsk.priv.begin(), rsk.priv.end()));
   }
 
   std::unique_ptr<Signature::PrivateKey> deserialize_private(const bytes& enc) const override {
     auto priv = PrivateKeyBuffer();
     std::copy(enc.begin(), enc.end(), priv.begin());
-    return std::make_unique<Ed25519::PrivateKey>(std::move(priv));
+    return std::make_unique<P256::PrivateKey>(std::move(priv));
   }
 
   bytes sign(const bytes& data, const Signature::PrivateKey& sk) const override {
-    const auto& rsk = dynamic_cast<const Ed25519::PrivateKey&>(sk);
+    const auto& rsk = dynamic_cast<const P256::PrivateKey&>(sk);
+
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+
+    const auto sha256 = Digest::get<Digest::ID::SHA256>();
+    const auto digest = sha256.hash(data);
 
     auto sig = bytes(CMOX_ECC_ED25519_SIG_LEN);
     auto sig_size = sig.size();
 
     // TODO check return value
     auto ctx = ECCContext{};
-    cmox_eddsa_sign(ctx.get(),
-                    CMOX_ECC_ED25519_OPT_LOWMEM,
+    cmox_ecdsa_sign(ctx.get(),
+                    CURVE,
+                    randomness.data(),
+                    randomness.size(),
                     rsk.priv.data(),
                     rsk.priv.size(),
-                    data.data(),
-                    data.size(),
+                    digest.data(),
+                    digest.size(),
                     sig.data(),
                     &sig_size);
 
@@ -138,12 +149,12 @@ struct Ed25519 : Signature {
   bool verify(const bytes& data,
               const bytes& sig,
               const Signature::PublicKey& pk) const override {
-    const auto& rpk = dynamic_cast<const Ed25519::PublicKey&>(pk);
+    const auto& rpk = dynamic_cast<const P256::PublicKey&>(pk);
 
     auto fault_check = uint32_t(0);
     auto ctx = ECCContext{};
-    const auto rv = cmox_eddsa_verify(ctx.get(),
-                                      CMOX_ECC_ED25519_OPT_LOWMEM,
+    const auto rv = cmox_ecdsa_verify(ctx.get(),
+                                      CURVE,
                                       rpk.pub.data(),
                                       rpk.pub.size(),
                                       data.data(),
@@ -157,9 +168,9 @@ struct Ed25519 : Signature {
 };
 
 template<>
-const Signature& Signature::get<Signature::ID::Ed25519>()
+const Signature& Signature::get<Signature::ID::P256_SHA256>()
 {
-  static const Ed25519 instance;
+  static const P256 instance;
   return instance;
 }
 
