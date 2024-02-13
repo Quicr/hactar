@@ -156,6 +156,16 @@ struct Ed25519 : Signature {
   }
 };
 
+template<>
+const Signature& Signature::get<Signature::ID::Ed25519>()
+{
+  static const Ed25519 instance;
+  return instance;
+}
+
+Signature::Signature(ID id_in)
+  : id(id_in)
+{}
 
 
 } // namespace MLS_NAMESPACE::hpke
