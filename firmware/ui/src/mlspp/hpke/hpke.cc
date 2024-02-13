@@ -1,5 +1,6 @@
 #include <hpke/digest.h>
 #include <hpke/hpke.h>
+#include <hpke/random.h>
 #include <namespace.h>
 
 #include "aead_cipher.h"
@@ -10,6 +11,10 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+
+#include <crypto/ecc/cmox_ecc.h>
+#include <crypto/ecc/cmox_ecdsa.h>
+#include <crypto/ecc/cmox_ecdh.h>
 
 namespace MLS_NAMESPACE::hpke {
 
@@ -84,83 +89,6 @@ label_secret()
 /// Factory methods for primitives
 ///
 
-KEM::KEM(ID id_in,
-         size_t secret_size_in,
-         size_t enc_size_in,
-         size_t pk_size_in,
-         size_t sk_size_in)
-  : id(id_in)
-  , secret_size(secret_size_in)
-  , enc_size(enc_size_in)
-  , pk_size(pk_size_in)
-  , sk_size(sk_size_in)
-{
-}
-
-template<>
-const KEM&
-KEM::get<KEM::ID::DHKEM_P256_SHA256>()
-{
-  return DHKEM::get<KEM::ID::DHKEM_P256_SHA256>();
-}
-
-template<>
-const KEM&
-KEM::get<KEM::ID::DHKEM_P384_SHA384>()
-{
-  return DHKEM::get<KEM::ID::DHKEM_P384_SHA384>();
-}
-
-template<>
-const KEM&
-KEM::get<KEM::ID::DHKEM_P521_SHA512>()
-{
-  return DHKEM::get<KEM::ID::DHKEM_P521_SHA512>();
-}
-
-template<>
-const KEM&
-KEM::get<KEM::ID::DHKEM_X25519_SHA256>()
-{
-  return DHKEM::get<KEM::ID::DHKEM_X25519_SHA256>();
-}
-
-#if !defined(WITH_BORINGSSL)
-template<>
-const KEM&
-KEM::get<KEM::ID::DHKEM_X448_SHA512>()
-{
-  return DHKEM::get<KEM::ID::DHKEM_X448_SHA512>();
-}
-#endif
-
-bytes
-KEM::serialize_private(const KEM::PrivateKey& /* unused */) const
-{
-  throw std::runtime_error("Not implemented");
-}
-
-std::unique_ptr<KEM::PrivateKey>
-KEM::deserialize_private(const bytes& /* unused */) const
-{
-  throw std::runtime_error("Not implemented");
-}
-
-std::pair<bytes, bytes>
-KEM::auth_encap(const PublicKey& /* unused */,
-                const PrivateKey& /* unused */) const
-{
-  throw std::runtime_error("Not implemented");
-}
-
-bytes
-KEM::auth_decap(const bytes& /* unused */,
-                const PublicKey& /* unused */,
-                const PrivateKey& /* unused */) const
-{
-  throw std::runtime_error("Not implemented");
-}
-
 template<>
 const KDF&
 KDF::get<KDF::ID::HKDF_SHA256>()
@@ -208,6 +136,252 @@ KDF::labeled_expand(const bytes& suite_id,
   auto labeled_info =
     i2osp(size, 2) + label_hpke_version() + suite_id + label + info;
   return expand(prk, labeled_info, size);
+}
+
+// XXX There's a ton of overlap between this and the stuff in signature.cc.  I
+// just copy/pasted instead of factoring more elegantly
+
+#define MATH CMOX_MATH_FUNCS_SMALL
+#define CURVE CMOX_ECC_SECP256R1_LOWMEM
+
+using PrivateKeyBuffer = std::array<uint8_t, CMOX_ECC_SECP256R1_PRIVKEY_LEN>;
+using PublicKeyBuffer = std::array<uint8_t, CMOX_ECC_SECP256R1_PUBKEY_LEN>;
+
+// RAII wrapper for cmox_ecc_handle_t and its associated memory buffer.
+struct ECCContext {
+  // XXX Not at all clear what the right value for this parameter is.
+  static constexpr size_t buffer_size = 128;
+
+  std::array<uint8_t, buffer_size> buffer;
+  cmox_ecc_handle_t ctx;
+
+  ECCContext() {
+    cmox_ecc_construct(&ctx, MATH, buffer.data(), buffer.size());
+  }
+
+  cmox_ecc_handle_t* get() {
+    return &ctx;
+  }
+
+  ~ECCContext() {
+    cmox_ecc_cleanup(&ctx);
+  }
+};
+
+struct P256 : KEM {
+  struct PrivateKey : KEM::PrivateKey {
+    PrivateKeyBuffer priv;
+
+    PrivateKey(PrivateKeyBuffer priv_in)
+      : priv(std::move(priv_in))
+    {}
+
+    std::unique_ptr<KEM::PublicKey> public_key() const override {
+      auto pub = PublicKeyBuffer();
+      std::copy(priv.begin() + 32, priv.end(), pub.begin());
+      return std::make_unique<P256::PublicKey>(std::move(pub));
+    }
+  };
+
+  struct PublicKey : KEM::PublicKey {
+    PublicKeyBuffer pub;
+
+    PublicKey(PublicKeyBuffer pub_in)
+      : pub(std::move(pub_in))
+    {}
+  };
+
+  const KDF& kdf;
+  const bytes suite_id = {};
+
+  static bytes i2osp(uint64_t val, size_t size) {
+    auto out = bytes(size, 0);
+    auto max = size;
+    if (size > 8) {
+      max = 8;
+    }
+
+    for (size_t i = 0; i < max; i++) {
+      out.at(size - i - 1) = static_cast<uint8_t>(val >> (8 * i));
+    }
+    return out;
+  }
+
+  static bytes make_suite_id(ID id) {
+    static const auto label_kem = from_ascii("KEM");
+    return label_kem + i2osp(uint16_t(id), 2);
+  }
+
+  P256()
+    : KEM(ID::DHKEM_P256_SHA256,
+          CMOX_ECC_SECP256R1_SECRET_LEN,
+          CMOX_ECC_SECP256R1_PUBKEY_LEN,
+          CMOX_ECC_SECP256R1_PUBKEY_LEN,
+          CMOX_ECC_SECP256R1_PRIVKEY_LEN)
+    , kdf(KDF::get<KDF::ID::HKDF_SHA256>())
+    , suite_id(make_suite_id(ID::DHKEM_P256_SHA256))
+  {}
+
+  std::unique_ptr<KEM::PrivateKey> generate_key_pair() const override {
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+    return derive_key_pair(randomness);
+  }
+
+  std::unique_ptr<KEM::PrivateKey> derive_key_pair(const bytes& ikm) const override {
+    // Private key buffer seed || pubkey
+    auto priv = PrivateKeyBuffer{};
+    auto priv_size = priv.size();
+
+    // Public key buffer.  Ultimately discarded, because it is duplicative: The
+    // public key is stored in the private key buffer.
+    auto pub = PublicKeyBuffer{};
+    auto pub_size = pub.size();
+
+    // XXX It would be nice to store this context on the object, to facilitate
+    // reuse.  But the various methods here are marked `const`, so we would have
+    // to do some chicanery to hide the mutability of the context.
+    auto ctx = ECCContext{};
+
+    // TODO check return value
+    cmox_ecdsa_keyGen(ctx.get(),
+                      CURVE,
+                      ikm.data(),
+                      ikm.size(),
+                      priv.data(),
+                      &priv_size,
+                      pub.data(),
+                      &pub_size);
+
+
+    return std::make_unique<P256::PrivateKey>(std::move(priv));
+  }
+
+  bytes serialize(const KEM::PublicKey& pk) const override {
+    const auto& rpk = dynamic_cast<const P256::PublicKey&>(pk);
+    return bytes(std::vector<uint8_t>(rpk.pub.begin(), rpk.pub.end()));
+  }
+
+  std::unique_ptr<KEM::PublicKey> deserialize(const bytes& enc) const override {
+    auto pub = PublicKeyBuffer();
+    std::copy(enc.begin(), enc.end(), pub.begin());
+    return std::make_unique<P256::PublicKey>(std::move(pub));
+  }
+
+  bytes serialize_private(const KEM::PrivateKey& sk) const override {
+    const auto& rsk = dynamic_cast<const P256::PrivateKey&>(sk);
+    return bytes(std::vector<uint8_t>(rsk.priv.begin(), rsk.priv.end()));
+  }
+
+  std::unique_ptr<KEM::PrivateKey> deserialize_private(const bytes& enc) const override {
+    auto priv = PrivateKeyBuffer();
+    std::copy(enc.begin(), enc.end(), priv.begin());
+    return std::make_unique<P256::PrivateKey>(std::move(priv));
+  }
+
+  std::pair<bytes, bytes> encap(const KEM::PublicKey& pkR) const override {
+    auto skE = generate_key_pair();
+    auto pkE = skE->public_key();
+
+    auto zz = dh(*skE, pkR);
+    auto enc = serialize(*pkE);
+
+    auto pkRm = serialize(pkR);
+    auto kem_context = enc + pkRm;
+
+    auto shared_secret = extract_and_expand(zz, kem_context);
+    return std::make_pair(shared_secret, enc);
+  }
+
+  bytes decap(const bytes& enc, const KEM::PrivateKey& skR) const override {
+    auto pkE = deserialize(enc);
+    auto zz = dh(skR, *pkE);
+
+    auto pkR = skR.public_key();
+    auto pkRm = serialize(*pkR);
+    auto kem_context = enc + pkRm;
+    return extract_and_expand(zz, kem_context);
+  }
+
+  bytes dh(const KEM::PrivateKey& sk, const KEM::PublicKey& pk) const {
+    const auto& rsk = dynamic_cast<const P256::PrivateKey&>(sk);
+    const auto& rpk = dynamic_cast<const P256::PublicKey&>(pk);
+
+    auto zz = bytes(CMOX_ECC_SECP256R1_SECRET_LEN);
+    auto zz_size = zz.size();
+
+    // XXX same comment about context reuse
+    auto ctx = ECCContext{};
+
+    // TODO check return value
+    cmox_ecdh(ctx.get(),
+              CURVE,
+              rsk.priv.data(),
+              rsk.priv.size(),
+              rpk.pub.data(),
+              rpk.pub.size(),
+              zz.data(),
+              &zz_size);
+
+    zz.resize(zz_size);
+    return zz;
+  }
+
+  bytes extract_and_expand(const bytes& zz, const bytes& kem_context) const {
+    static const auto label_eae_prk = from_ascii("eae_prk");
+    static const auto label_shared_secret = from_ascii("shared_secret");
+
+    auto eae_prk = kdf.labeled_extract(suite_id, {}, label_eae_prk, zz);
+    return kdf.labeled_expand(
+      suite_id, eae_prk, label_shared_secret, kem_context, secret_size);
+  }
+};
+
+KEM::KEM(ID id_in,
+         size_t secret_size_in,
+         size_t enc_size_in,
+         size_t pk_size_in,
+         size_t sk_size_in)
+  : id(id_in)
+  , secret_size(secret_size_in)
+  , enc_size(enc_size_in)
+  , pk_size(pk_size_in)
+  , sk_size(sk_size_in)
+{
+}
+
+template<>
+const KEM&
+KEM::get<KEM::ID::DHKEM_P256_SHA256>()
+{
+  static const P256 instance;
+  return instance;
+}
+
+bytes
+KEM::serialize_private(const KEM::PrivateKey& /* unused */) const
+{
+  throw std::runtime_error("Not implemented");
+}
+
+std::unique_ptr<KEM::PrivateKey>
+KEM::deserialize_private(const bytes& /* unused */) const
+{
+  throw std::runtime_error("Not implemented");
+}
+
+std::pair<bytes, bytes>
+KEM::auth_encap(const PublicKey& /* unused */,
+                const PrivateKey& /* unused */) const
+{
+  throw std::runtime_error("Not implemented");
+}
+
+bytes
+KEM::auth_decap(const bytes& /* unused */,
+                const PublicKey& /* unused */,
+                const PrivateKey& /* unused */) const
+{
+  throw std::runtime_error("Not implemented");
 }
 
 template<>
