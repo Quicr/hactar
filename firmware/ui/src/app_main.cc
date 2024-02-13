@@ -234,7 +234,7 @@ int app_main()
             // Do a sign/verify round-trip test
             {
                 using namespace mls::hpke;
-                const auto& sig = Signature::get<Signature::ID::Ed25519>();
+                const auto& sig = Signature::get<Signature::ID::P256_SHA256>();
                 const auto sk = sig.generate_key_pair();
                 const auto msg = from_ascii("attack at dawn!");
                 const auto sig_val = sig.sign(msg, *sk);
