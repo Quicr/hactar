@@ -240,11 +240,42 @@ int app_main()
 
 
             // Compute and display a digest
+            //
+            // import hashlib
+            // hashlib.sha256(b"hello").hexdigest()
             {
                 using namespace mls::hpke;
                 const auto digest = Digest::get<Digest::ID::SHA256>();
-                const auto output = to_hex(digest.hash(from_ascii("hello"))).substr(0, 8);
-                screen.DrawText(0, 82, output.c_str(), font7x12, C_GREEN, C_BLACK);
+                const auto data = from_ascii("hello");
+                const auto output = digest.hash(data);
+                const auto expected = from_hex("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824");
+
+                const auto pass = output == expected;
+
+                const auto label = std::string("hash");
+                const auto status = std::string(pass? "PASS" : "FAIL");
+                const auto line = label + ": " + status;
+                screen.DrawText(0, 82, line.c_str(), font7x12, C_GREEN, C_BLACK);
+            }
+
+            // Compute and display a MAC
+            //
+            // import hashlib, hmac
+            // hmac.HMAC(b"key", b"hello", digestmod=hashlib.sha256).hexdigest()[:8]
+            {
+                using namespace mls::hpke;
+                const auto digest = Digest::get<Digest::ID::SHA256>();
+                const auto key = from_ascii("key");
+                const auto data = from_ascii("hello");
+                const auto output = digest.hmac(key, data);
+                const auto expected = from_hex("9307b3b915efb5171ff14d8cb55fbcc798c6c0ef1456d66ded1a6aa723a58b7b");
+
+                const auto pass = output == expected;
+
+                const auto label = std::string("hmac");
+                const auto status = std::string(pass? "PASS" : "FAIL");
+                const auto line = label + ": " + status;
+                screen.DrawText(0, 100, line.c_str(), font7x12, C_GREEN, C_BLACK);
             }
 
             // Do an encrypt/decrypt round-trip test
@@ -257,12 +288,13 @@ int app_main()
                 const auto aad = from_ascii("extra");
                 const auto ct = cipher.seal(key, nonce, aad, pt);
                 const auto maybe_pt = cipher.open(key, nonce, aad, ct);
-                auto status = std::string("decryption successful");
-                if (!maybe_pt || pt != *maybe_pt) {
-                    status = std::string("decryption failure");
-                }
 
-                screen.DrawText(0, 94, status.c_str(), font7x12, C_GREEN, C_BLACK);
+                const auto pass = maybe_pt && pt == *maybe_pt;
+
+                const auto label = std::string("aead");
+                const auto status = std::string(pass? "PASS" : "FAIL");
+                const auto line = label + ": " + status;
+                screen.DrawText(0, 118, line.c_str(), font7x12, C_GREEN, C_BLACK);
             }
 
             // Do a sign/verify round-trip test
@@ -273,13 +305,13 @@ int app_main()
                 const auto msg = from_ascii("attack at dawn!");
                 const auto sig_val = sig.sign(msg, *sk);
                 const auto ver = sig.verify(msg, sig_val, *sk->public_key());
-                auto status = std::string("signature valid");
-                if (!ver) {
-                  status = std::string("signature invalid");
-                }
-                status = status + " " + std::to_string(sig_val.size());
 
-                screen.DrawText(0, 106, status.c_str(), font7x12, C_GREEN, C_BLACK);
+                const auto pass = ver;
+
+                const auto label = std::string("sig");
+                const auto status = std::string(pass? "PASS" : "FAIL");
+                const auto line = label + ": " + status;
+                screen.DrawText(0, 136, line.c_str(), font7x12, C_GREEN, C_BLACK);
             }
 
             // Do an encap/decap round-trip test
@@ -293,13 +325,12 @@ int app_main()
                 const auto [zz_send, enc] = kem.encap(*pk);
                 const auto zz_recv = kem.decap(enc, *sk);
 
-                auto status = std::string("kem successful");
-                if (zz_send != zz_recv) {
-                  status = std::string("kem failed");
-                }
+                const auto pass = zz_send == zz_recv;
 
-                status = status + " " + std::to_string(zz_send.size())
-                                + " " + std::to_string(enc.size());
+                const auto label = std::string("kem");
+                const auto status = std::string(pass? "PASS" : "FAIL");
+                const auto line = label + ": " + status;
+                screen.DrawText(0, 154, line.c_str(), font7x12, C_GREEN, C_BLACK);
             }
 
             // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
