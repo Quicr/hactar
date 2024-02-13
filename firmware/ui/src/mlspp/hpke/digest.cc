@@ -1,6 +1,8 @@
 #include <hpke/digest.h>
 #include <namespace.h>
 #include <crypto/hash/cmox_hash.h>
+#include <crypto/mac/cmox_mac.h>
+#include <crypto/mac/cmox_hmac.h>
 
 namespace MLS_NAMESPACE::hpke {
 
@@ -10,6 +12,15 @@ cmox_hash_id(Digest::ID id) {
     case Digest::ID::SHA256: return CMOX_SHA256_ALGO;
     case Digest::ID::SHA384: return CMOX_SHA384_ALGO;
     case Digest::ID::SHA512: return CMOX_SHA512_ALGO;
+  }
+}
+
+cmox_mac_algo_t
+cmox_hmac_id(Digest::ID id) {
+  switch (id) {
+    case Digest::ID::SHA256: return CMOX_HMAC_SHA256_ALGO;
+    case Digest::ID::SHA384: return CMOX_HMAC_SHA384_ALGO;
+    case Digest::ID::SHA512: return CMOX_HMAC_SHA512_ALGO;
   }
 }
 
@@ -73,15 +84,28 @@ bytes
 Digest::hmac(const bytes& key, const bytes& data) const
 {
   auto md = bytes(hash_size);
-  unsigned int size = 0;
+  auto md_size = md.size();
+
+  // TODO check return value
+  cmox_mac_compute(cmox_hmac_id(id),
+                   data.data(),
+                   data.size(),
+                   key.data(),
+                   key.size(),
+                   nullptr,
+                   0,
+                   md.data(),
+                   md.size(),
+                   &md_size);
+
+  md.resize(md_size);
   return md;
 }
 
 bytes
 Digest::hmac_for_hkdf_extract(const bytes& key, const bytes& data) const
 {
-  auto md = bytes(hash_size);
-  return md;
+  return hmac(key, data);
 }
 
 } // namespace MLS_NAMESPACE::hpke

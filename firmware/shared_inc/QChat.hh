@@ -17,7 +17,7 @@ namespace qchat
 constexpr uint8_t Field_Len_Bytes = 4;
 constexpr uint8_t Msg_Field_Len = 4;
 
-struct Room;
+struct Room; // TODO is this needed?
 
 // Channels are the top level construct is made up of
 // one or more rooms (see Room)
@@ -36,11 +36,18 @@ struct Channel
 // user messages. Users are added to the rooms
 struct Room
 {
-    bool is_default{ false };
+    bool is_default;
     std::string friendly_name;
     std::string publisher_uri;
     std::string room_uri; //quicr namespace as URI
     std::string root_channel_uri; // Owner of this room
+
+    Room(bool is_default=false, std::string friendly_name="", std::string publisher_uri="", std::string room_uri="", std::string root_channel_uri="") :
+        is_default(is_default),
+        friendly_name(friendly_name),
+        publisher_uri(publisher_uri),
+        room_uri(room_uri),
+        root_channel_uri(root_channel_uri) {}
 };
 
 //
@@ -60,18 +67,27 @@ struct WatchRoom
 {
     std::string publisher_uri; // quicr namespacee matching the publisher
     std::string room_uri; // matches quicr namespace for the room namespace
+
+    WatchRoom() : publisher_uri(), room_uri() {}
+    WatchRoom(std::string publisher_uri, std::string room_uri) : publisher_uri(publisher_uri), room_uri(room_uri) {}
 };
 
 // Express no interest in receiving messages from a given room
 struct UnwatchRoom
 {
     std::string room_uri;
+
+    UnwatchRoom() : room_uri() {}
+    UnwatchRoom(std::string room_uri) : room_uri(room_uri) {}
 };
 
 struct Ascii
 {
     std::string message_uri; // matches quicr_name for the message sender
     std::string message; // todo: make it vector of bytes
+
+    Ascii() : message_uri(), message() {}
+    Ascii(std::string message_uri, std::string message) : message_uri(message_uri), message(message) {}
 };
 
 
@@ -175,13 +191,17 @@ struct Codec
         const uint16_t start_offset,
         const Ascii& msg)
     {
+        uint16_t offset = start_offset;
         // [total_len][type][msg_uri_len][[msg_uri][msg_len][msg]
 
         // +9 for the type byte, 2 len bytes and the 8 bytes of length
         uint16_t extra_bytes = 1 + Field_Len_Bytes + Field_Len_Bytes;
         uint16_t data_len = msg.message_uri.length() + msg.message.length();
-        packet->SetData(data_len + extra_bytes, 2);
-        packet->SetData((unsigned char)MessageTypes::Ascii, 1);
+        packet->SetData(data_len + extra_bytes, offset, 2);
+        offset += 2;
+
+        packet->SetData((unsigned char)MessageTypes::Ascii, offset, 1);
+        offset += 1;
 
         // Append the message_uri
         AppendStringFieldToPacket(msg.message_uri, Field_Len_Bytes, packet);
@@ -211,11 +231,13 @@ struct Codec
     {
         uint32_t offset = current_offset;
 
-        // Get the is_default field
-        uint32_t field_len = encoded->GetData<uint32_t>(offset, Field_Len_Bytes);
+        // Get the is_default field length
+        uint32_t is_default_len = encoded->GetData<uint32_t>(offset, Field_Len_Bytes);
         offset += Field_Len_Bytes;
-        room->is_default = encoded->GetData<bool>(offset, 1);
-        offset += 1;
+
+        // Get the room is default field
+        room->is_default = encoded->GetData<bool>(offset, is_default_len);
+        offset += is_default_len;
 
         // Get the friendly name
         SetStringFieldFromPacket(room->friendly_name, offset,

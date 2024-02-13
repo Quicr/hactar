@@ -218,7 +218,7 @@ public:
         }
 
         T output = 0;
-        GetData(output, offset, num_bytes);
+        GetData(output, offset, byte_width);
 
         return output;
     }

@@ -55,7 +55,13 @@ uint8_t random_byte() {
     return value;
 }
 
-uint16_t GenerateTriangleWavePoint(double frequency, double amplitude, double time) {
+// buffer size = 0.1s * freq
+const uint16_t SOUND_BUFFER_SZ = 16000;
+uint16_t rx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
+uint16_t tx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
+
+uint16_t GenerateTriangleWavePoint(double frequency, double amplitude, double time)
+{
     double period = 1.0 / frequency;
     double phase = fmod(time, period) / period;
 
@@ -123,12 +129,6 @@ int app_main()
     HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(ADC_UI_STAT_GPIO_Port, ADC_UI_STAT_Pin, GPIO_PIN_SET);
 
-    // buffer size = 0.1s * freq
-    uint16_t SOUND_BUFFER_SZ = 1600;
-    uint16_t rx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
-    rx_sound_buff[0] = 1;
-    rx_sound_buff[1] = 2000;
-    uint16_t tx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
 
     // HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
 
@@ -144,14 +144,38 @@ int app_main()
     //     tx_sound_buff[i++] = GenerateTriangleWavePoint(frequency, amplitude, t);
     // }
 
-    for (i = 0; i < SOUND_BUFFER_SZ; ++i)
-    {
-        // tx_sound_buff[i] = i * (0xFFFF / SOUND_BUFFER_SZ);
-        tx_sound_buff[i] = 0x7FFF;
+    #define SAMPLE_RATE 44100
+    #define DAC_RESOLUTION 4095 // 12-bit DAC
 
+    // Lookup table for sine wave generation (values are between 0 and DAC_RESOLUTION)
+    const uint16_t sine_wave[] = {
+        2048, 2447, 2831, 3185, 3495, 3750, 3939, 4056,
+        4095, 4056, 3939, 3750, 3495, 3185, 2831, 2447,
+        2048, 1648, 1264, 910, 600, 345, 156, 39,
+        0, 39, 156, 345, 600, 910, 1264, 1648
+        // Add more values as needed to cover a complete cycle
+    };
+
+    while (i < SOUND_BUFFER_SZ)
+    {
+        for (int j = 0; j < sizeof(sine_wave) / sizeof(sine_wave[0]); ++j)
+        {
+            tx_sound_buff[i++] = sine_wave[j];
+        }
     }
 
-    tx_sound_buff[SOUND_BUFFER_SZ-1] = 0xFFFF;
+
+
+    // for (i = 0; i < SOUND_BUFFER_SZ; ++i)
+    // {
+    //     // uint32_t val = (i * (0xFFFF / SOUND_BUFFER_SZ)) % 0xFFFF;
+    //     // uint32_t val = i;
+    //     // tx_sound_buff[i] = val;
+    //     tx_sound_buff[i] = GenerateTriangleWavePoint(frequency, amplitude, duration);
+    // }
+
+    tx_sound_buff[SOUND_BUFFER_SZ - 1] = 0x7FFF;
+    // tx_sound_buff[SOUND_BUFFER_SZ-1] = 0x00;
 
     // Sanity check numbers
     // tx_sound_buff[0] = 1;
@@ -165,17 +189,27 @@ int app_main()
     // Delayed condition
     uint32_t blink = HAL_GetTick() + 5000;
     uint32_t tx_sound = 0;
+    auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
     while (1)
     {
         ui_manager->Run();
 
         if (HAL_GetTick() > tx_sound)
         {
-            auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ* sizeof(uint16_t));
-            tx_sound = HAL_GetTick() + 100;
+            // audio->Send1KHzSignal();
+            // HAL_I2SEx_TransmitReceive_DMA(&hi2s3, tx_sound_buff, rx_sound_buff, SOUND_BUFFER_SZ);
+            // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
+            // screen.DrawText(0, 100, String::int_to_string((int)tx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
+
+            // audio->TestRegister();
+            uint16_t reg_value = 0;
+            uint16_t value = 0x01FF;
+            // audio->ReadRegister(0x0A, reg_value);
+            // screen.DrawText(0, 100, String::int_to_string((int)reg_value), font7x12, C_GREEN, C_BLACK);
+
+            tx_sound = HAL_GetTick() + 10;
         }
 
-        // HAL_DAC_SetValue()
         // // mgmt_serial.RxTx(HAL_GetTick());
 
         // // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
@@ -332,6 +366,7 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 
 void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef* hi2s)
 {
+    auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
 
     HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
 }
@@ -339,10 +374,11 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef* hi2s)
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
     uint16_t err;
+    UNUSED(err);
     if (huart->Instance == USART2)
     {
         net_serial_interface->Reset();
-        HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
+        HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
 
         // Read the err codes to clear them
         err = huart->Instance->SR;

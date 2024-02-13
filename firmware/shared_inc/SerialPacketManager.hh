@@ -8,8 +8,8 @@
 #include "SerialPacket.hh"
 #include "RingBuffer.hh"
 
-#define Front_Bytes 6
-#define Start_Bytes Front_Bytes - 1
+#define Front_Bytes 6U
+#define Start_Bytes Front_Bytes - 1U
 
 // TODO add a chunker
 

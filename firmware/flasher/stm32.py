@@ -237,6 +237,7 @@ class stm32_flasher:
         # Number of sectors starts at 0x00 0x00. So 0x00 0x00 means
         # delete 1 sector
         # An exception is thrown if the number is bigger than 2 bytes
+        # TODO delete one sector at a time and report back with an ACK
         num_sectors = [(len(sectors) - 1).to_bytes(2, "big")]
 
         # Turn the sectors received into two byte elements

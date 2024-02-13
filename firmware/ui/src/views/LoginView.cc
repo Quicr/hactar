@@ -94,8 +94,8 @@ void LoginView::HandleInput()
     // Change to the chat view;
 
     // TODO remove this is bad!
-    char* eeprom_password;
-    short eeprom_password_len;
+    char* eeprom_password = nullptr;
+    short eeprom_password_len = 0;
     setting_manager.LoadSetting(SettingManager::SettingAddress::Password,
         &eeprom_password, eeprom_password_len);
     String password;

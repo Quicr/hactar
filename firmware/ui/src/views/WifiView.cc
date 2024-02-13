@@ -145,7 +145,7 @@ void WifiView::Draw()
         redraw_menu = false;
     }
 
-    if (state == WifiState::SSID && last_num_ssids != ssids.size())
+    if (state == WifiState::SSID && last_num_ssids != static_cast<int8_t>(ssids.size()))
     {
         const uint16_t y_start = 50;
         // Clear the area for wifi

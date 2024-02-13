@@ -177,8 +177,8 @@ public:
         *str = new String();
 
         // Load the data
-        uint8_t* data;
-        int16_t len;
+        uint8_t* data = nullptr;
+        int16_t len = 0;
 
         if (!LoadSetting(addr, &data, len))
         {
