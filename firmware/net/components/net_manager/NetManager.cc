@@ -436,13 +436,13 @@ void NetManager::GetWifiStatusCommand()
 
 static qchat::Room CreateFakeRoom()
 {
-    return qchat::Room{
-        .is_default = true,
-        .friendly_name = "CAFE",
-        .publisher_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1/",
-        .room_uri = "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1",
-        .root_channel_uri = "root"
-    };
+    return qchat::Room(
+        true,
+        "CAFE",
+        "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1/",
+        "quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1",
+        "root"
+    );
 }
 
 void NetManager::GetRoomsCommand()
