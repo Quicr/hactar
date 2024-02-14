@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <cmath>
+#include <sstream>
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -75,6 +76,26 @@ uint16_t GenerateTriangleWavePoint(double frequency, double amplitude, double ti
         triangle_point = -4.0 * amplitude + 4.0 * amplitude * phase;
 
     return static_cast<uint16_t>((triangle_point + 1.0) * 32767.5);
+}
+
+std::string space_separated_line(std::stringstream&& str) {
+  str << std::endl;
+  return str.str();
+}
+
+template<typename T, typename... U>
+std::string space_separated_line(std::stringstream&& str, const T& first, const U&... rest) {
+  str << first << " ";
+  return space_separated_line(std::move(str), rest...);
+}
+
+template<typename... T>
+void log(const T&... args) {
+  auto str = std::stringstream();
+  const auto line = space_separated_line(std::move(str), args...);
+  const auto* line_ptr = reinterpret_cast<const uint8_t*>(line.c_str());
+
+  HAL_UART_Transmit(&huart1, line_ptr, line.size(), HAL_MAX_DELAY);
 }
 
 // TODO Get the osc working correctly from an external signal
@@ -279,58 +300,88 @@ int app_main()
             }
 
             // Do an encrypt/decrypt round-trip test
-            {
+            try {
                 using namespace mls::hpke;
                 const auto& cipher = AEAD::get<AEAD::ID::AES_128_GCM>();
                 const auto key = from_ascii("sixteen byte key");
                 const auto nonce = from_ascii("public nonce");
                 const auto pt = from_ascii("secret message");
                 const auto aad = from_ascii("extra");
+                log("cipher", "prep");
+
                 const auto ct = cipher.seal(key, nonce, aad, pt);
+                log("cipher", "seal", to_hex(ct));
+
                 const auto maybe_pt = cipher.open(key, nonce, aad, ct);
+                const auto pt_print = (maybe_pt)? to_hex(*maybe_pt) : std::string("");
+                log("cipher", "open", pt_print);
 
                 const auto pass = maybe_pt && pt == *maybe_pt;
+                log("cipher", "pass", pass);
 
                 const auto label = std::string("aead");
                 const auto status = std::string(pass? "PASS" : "FAIL");
                 const auto line = label + ": " + status;
                 screen.DrawText(0, 118, line.c_str(), font7x12, C_GREEN, C_BLACK);
+            } catch (const std::exception& e) {
+                log("cipher", "throw", e.what());
             }
 
             // Do a sign/verify round-trip test
-            {
+            try {
                 using namespace mls::hpke;
                 const auto& sig = Signature::get<Signature::ID::P256_SHA256>();
-                const auto sk = sig.generate_key_pair();
                 const auto msg = from_ascii("attack at dawn!");
+
+                const auto sk = sig.generate_key_pair();
+                log("sig", "keygen");
+
+                const auto pk = sk->public_key();
+                log("sig", "public_key");
+
                 const auto sig_val = sig.sign(msg, *sk);
-                const auto ver = sig.verify(msg, sig_val, *sk->public_key());
+                log("sig", "sign", sig_val.size());
+
+                const auto ver = sig.verify(msg, sig_val, *pk);
+                log("sig", "verify", ver);
 
                 const auto pass = ver;
+                log("sig", "pass", pass);
 
                 const auto label = std::string("sig");
                 const auto status = std::string(pass? "PASS" : "FAIL");
                 const auto line = label + ": " + status;
                 screen.DrawText(0, 136, line.c_str(), font7x12, C_GREEN, C_BLACK);
+            } catch (const std::exception& e) {
+                log("sig", "throw", e.what());
             }
 
             // Do an encap/decap round-trip test
-            {
+            try {
                 using namespace mls::hpke;
                 const auto& kem = KEM::get<KEM::ID::DHKEM_P256_SHA256>();
 
                 const auto sk = kem.generate_key_pair();
+                log("kem", "keygen");
+
                 const auto pk = sk->public_key();
+                log("kem", "public_key");
 
                 const auto [zz_send, enc] = kem.encap(*pk);
+                log("kem", "encap", zz_send.size(), enc.size());
+
                 const auto zz_recv = kem.decap(enc, *sk);
+                log("kem", "decap", zz_recv.size());
 
                 const auto pass = zz_send == zz_recv;
+                log("kem", "pass", pass);
 
                 const auto label = std::string("kem");
                 const auto status = std::string(pass? "PASS" : "FAIL");
                 const auto line = label + ": " + status;
                 screen.DrawText(0, 154, line.c_str(), font7x12, C_GREEN, C_BLACK);
+            } catch (const std::exception& e) {
+                log("kem", "throw", e.what());
             }
 
             // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);

@@ -4,8 +4,10 @@
 #include <namespace.h>
 #include <string>
 
-#include "crypto/ecc/cmox_ecc.h"
-#include "crypto/ecc/cmox_ecdsa.h"
+#include "common.h"
+
+#include <crypto/ecc/cmox_ecc.h>
+#include <crypto/ecc/cmox_ecdsa.h>
 
 namespace MLS_NAMESPACE::hpke {
 
@@ -17,8 +19,9 @@ using PublicKeyBuffer = std::array<uint8_t, CMOX_ECC_SECP256R1_PUBKEY_LEN>;
 
 // RAII wrapper for cmox_ecc_handle_t and its associated memory buffer.
 struct ECCContext {
-  // XXX Not at all clear what the right value for this parameter is.
-  static constexpr size_t buffer_size = 128;
+  // XXX Not at all clear what the right value for this parameter is.  This is
+  // what it is set to in the examples.
+  static constexpr size_t buffer_size = 2000;
 
   std::array<uint8_t, buffer_size> buffer;
   cmox_ecc_handle_t ctx;
@@ -84,15 +87,18 @@ struct P256 : Signature {
     auto ctx = ECCContext{};
 
     // TODO check return value
-    cmox_ecdsa_keyGen(ctx.get(),
-                      CURVE,
-                      ikm.data(),
-                      ikm.size(),
-                      priv.data(),
-                      &priv_size,
-                      pub.data(),
-                      &pub_size);
+    const auto rv = cmox_ecdsa_keyGen(ctx.get(),
+                                      CURVE,
+                                      ikm.data(),
+                                      ikm.size(),
+                                      priv.data(),
+                                      &priv_size,
+                                      pub.data(),
+                                      &pub_size);
 
+    if (rv != CMOX_ECC_SUCCESS) {
+      throw CMOXError::from_code(rv);
+    }
 
     return std::make_unique<P256::PrivateKey>(std::move(priv));
   }
@@ -130,18 +136,21 @@ struct P256 : Signature {
     auto sig = bytes(CMOX_ECC_ED25519_SIG_LEN);
     auto sig_size = sig.size();
 
-    // TODO check return value
     auto ctx = ECCContext{};
-    cmox_ecdsa_sign(ctx.get(),
-                    CURVE,
-                    randomness.data(),
-                    randomness.size(),
-                    rsk.priv.data(),
-                    rsk.priv.size(),
-                    digest.data(),
-                    digest.size(),
-                    sig.data(),
-                    &sig_size);
+    const auto rv = cmox_ecdsa_sign(ctx.get(),
+                                    CURVE,
+                                    randomness.data(),
+                                    randomness.size(),
+                                    rsk.priv.data(),
+                                    rsk.priv.size(),
+                                    digest.data(),
+                                    digest.size(),
+                                    sig.data(),
+                                    &sig_size);
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      throw CMOXError::from_code(rv);
+    }
 
     sig.resize(sig_size);
     return sig;
@@ -163,6 +172,10 @@ struct P256 : Signature {
                                       sig.data(),
                                       sig.size(),
                                       &fault_check);
+
+    if (rv != CMOX_ECC_AUTH_SUCCESS) {
+      throw CMOXError::from_code(rv);
+    }
 
     return (rv == CMOX_ECC_AUTH_SUCCESS) && (rv == fault_check);
   }

@@ -1,4 +1,5 @@
 #include "aead_cipher.h"
+#include "common.h"
 
 #include <namespace.h>
 
@@ -128,18 +129,22 @@ AEADCipher::seal(const bytes& key,
   auto ct = bytes(pt.size() + tag_size);
 
   // TODO read return value and throw on error
-  cmox_aead_encrypt(CMOX_AESSMALL_GCMSMALL_ENC_ALGO,
-                    pt.data(),
-                    pt.size(),
-                    tag_size,
-                    key.data(),
-                    CMOX_CIPHER_128_BIT_KEY,
-                    nonce.data(),
-                    nonce.size(),
-                    aad.data(),
-                    aad.size(),
-                    ct.data(),
-                    nullptr);
+  const auto rv = cmox_aead_encrypt(CMOX_AESSMALL_GCMSMALL_ENC_ALGO,
+                                    pt.data(),
+                                    pt.size(),
+                                    tag_size,
+                                    key.data(),
+                                    CMOX_CIPHER_128_BIT_KEY,
+                                    nonce.data(),
+                                    nonce.size(),
+                                    aad.data(),
+                                    aad.size(),
+                                    ct.data(),
+                                    nullptr);
+
+  if (rv != CMOX_CIPHER_SUCCESS) {
+    throw CMOXError::from_code(rv);
+  }
 
   return ct;
 }
@@ -168,8 +173,8 @@ AEADCipher::open(const bytes& key,
                                     pt.data(),
                                     nullptr);
 
-  if (rv != CMOX_CIPHER_SUCCESS) {
-    return std::nullopt;
+  if (rv != CMOX_CIPHER_SUCCESS && rv != CMOX_CIPHER_AUTH_SUCCESS) {
+    throw CMOXError::from_code(rv);
   }
 
   return pt;
