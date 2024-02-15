@@ -128,7 +128,6 @@ AEADCipher::seal(const bytes& key,
 {
   auto ct = bytes(pt.size() + tag_size);
 
-  // TODO read return value and throw on error
   const auto rv = cmox_aead_encrypt(CMOX_AESSMALL_GCMSMALL_ENC_ALGO,
                                     pt.data(),
                                     pt.size(),
@@ -160,6 +159,7 @@ AEADCipher::open(const bytes& key,
   }
 
   auto pt = bytes(ct.size() - tag_size);
+  auto pt_size = pt.size();
   const auto rv = cmox_aead_decrypt(CMOX_AESSMALL_GCMSMALL_ENC_ALGO,
                                     ct.data(),
                                     ct.size(),
@@ -171,7 +171,7 @@ AEADCipher::open(const bytes& key,
                                     aad.data(),
                                     aad.size(),
                                     pt.data(),
-                                    nullptr);
+                                    &pt_size);
 
   if (rv != CMOX_CIPHER_SUCCESS && rv != CMOX_CIPHER_AUTH_SUCCESS) {
     throw CMOXError::from_code(rv);

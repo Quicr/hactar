@@ -260,6 +260,13 @@ int app_main()
             // HAL_RNG_GenerateRandomNumber(&hrng, &num);
             // screen.DrawText(0, 82, String::int_to_string(num), font7x12, C_GREEN, C_BLACK);
 
+            // Verify that try/catch works properly
+            try {
+              log("try/catch", "throw");
+              throw std::runtime_error("fnord");
+            } catch (const std::exception& e) {
+              log("try/catch", "caught", e.what());
+            }
 
             // Compute and display a digest
             //
@@ -313,14 +320,29 @@ int app_main()
                 const auto ct = cipher.seal(key, nonce, aad, pt);
                 log("cipher", "seal", to_hex(ct));
 
+                {
+                  const auto expected = from_hex("76e196daeff5e2224f12f7726d82aaedbe176f85ece437c5ce7861a02fc2");
+                  const auto pass = (ct == expected);
+
+                  const auto label = std::string("aead KAT");
+                  const auto status = std::string(pass? "PASS" : "FAIL");
+                  const auto line = label + ": " + status;
+                  screen.DrawText(0, 118, line.c_str(), font7x12, C_GREEN, C_BLACK);
+                }
+
                 const auto maybe_pt = cipher.open(key, nonce, aad, ct);
-                const auto pt_print = (maybe_pt)? to_hex(*maybe_pt) : std::string("");
-                log("cipher", "open", pt_print);
+                log("cipher", "open");
+
+                auto pt_print = std::string("");
+                if (maybe_pt) {
+                  pt_print = to_hex(*maybe_pt);
+                }
+                log("cipher", "pt", pt_print);
 
                 const auto pass = maybe_pt && pt == *maybe_pt;
-                log("cipher", "pass", pass);
+                log("cipher open", "pass", pass);
 
-                const auto label = std::string("aead");
+                const auto label = std::string("aead RTT");
                 const auto status = std::string(pass? "PASS" : "FAIL");
                 const auto line = label + ": " + status;
                 screen.DrawText(0, 118, line.c_str(), font7x12, C_GREEN, C_BLACK);
