@@ -268,6 +268,7 @@ int app_main()
               log("try/catch", "caught", e.what());
             }
 
+#if 0
             // Compute and display a digest
             //
             // import hashlib
@@ -349,7 +350,7 @@ int app_main()
             } catch (const std::exception& e) {
                 log("cipher", "throw", e.what());
             }
-
+#endif // 0
             // Do a sign/verify round-trip test
             try {
                 using namespace mls::hpke;
