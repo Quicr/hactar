@@ -92,6 +92,7 @@ std::string space_separated_line(std::stringstream&& str, const T& first, const 
 template<typename... T>
 void log(const T&... args) {
   auto str = std::stringstream();
+  str << "[UI] ";
   const auto line = space_separated_line(std::move(str), args...);
   const auto* line_ptr = reinterpret_cast<const uint8_t*>(line.c_str());
 
@@ -506,7 +507,7 @@ void assert_failed(uint8_t* file, uint32_t line)
 {
     /* USER CODE BEGIN 6 */
     /* User can add his own implementation to report the file name and line number,
-        ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+        e.g.: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
         /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
