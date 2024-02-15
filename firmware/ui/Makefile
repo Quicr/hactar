@@ -75,7 +75,8 @@ stm32f4xx_hal_tim_ex.c \
 stm32f4xx_hal_rcc.c \
 stm32f4xx_hal_rcc_ex.c \
 stm32f4xx_hal_uart.c \
-stm32f4xx_hal_rng.c
+stm32f4xx_hal_rng.c \
+stm32f4xx_hal_crc.c
 
 # User C/C++ sources
 SRCS_CC	   = $(shell find src -name '*.cc' -exec basename {} \;)
