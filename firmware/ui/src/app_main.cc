@@ -107,7 +107,7 @@ void log(const T&... args) {
 
 // import hashlib
 // hashlib.sha256(b"hello").hexdigest()
-void test_digest() {
+bool test_digest() {
     using namespace mls::hpke;
     const auto digest = Digest::get<Digest::ID::SHA256>();
     const auto data = from_ascii("hello");
@@ -118,9 +118,11 @@ void test_digest() {
     const auto pass = output == expected;
     const auto status = std::string(pass? "PASS" : "FAIL");
     log("hash", status);
+
+    return pass;
 }
 
-void test_hmac() {
+bool test_hmac() {
     using namespace mls::hpke;
     const auto digest = Digest::get<Digest::ID::SHA256>();
     const auto key = from_ascii("key");
@@ -132,9 +134,11 @@ void test_hmac() {
     const auto pass = output == expected;
     const auto status = std::string(pass? "PASS" : "FAIL");
     log("hmac", status);
+
+    return pass;
 }
 
-void test_aead() {
+bool test_aead() {
     try {
         using namespace mls::hpke;
         const auto& cipher = AEAD::get<AEAD::ID::AES_128_GCM>();
@@ -162,12 +166,15 @@ void test_aead() {
 
         const auto pass_rtt = maybe_pt && pt == *maybe_pt;
         log("cipher", "RTT", std::string(pass_rtt? "PASS" : "FAIL"));
+
+        return pass_kat && pass_rtt;
     } catch (const std::exception& e) {
         log("cipher", "throw", e.what());
+        return false;
     }
 }
 
-void test_sig() {
+bool test_sig() {
     try {
         using namespace mls::hpke;
         const auto& sig = Signature::get<Signature::ID::P256_SHA256>();
@@ -187,12 +194,15 @@ void test_sig() {
 
         const auto pass = ver;
         log("sig", "pass", pass);
+
+        return pass;
     } catch (const std::exception& e) {
         log("sig", "throw", e.what());
+        return false;
     }
 }
 
-void test_kem() {
+bool test_kem() {
     try {
         using namespace mls::hpke;
         const auto& kem = KEM::get<KEM::ID::DHKEM_P256_SHA256>();
@@ -211,8 +221,11 @@ void test_kem() {
 
         const auto pass = zz_send == zz_recv;
         log("kem", "pass", pass);
+
+        return pass;
     } catch (const std::exception& e) {
         log("kem", "throw", e.what());
+        return false;
     }
 }
 
@@ -380,16 +393,19 @@ int app_main()
 
             // Self-test the crypto on the first run-through
             if (first_run) {
-              screen.DrawText(0, y, "start", font7x12, C_GREEN, C_BLACK);
+              screen.DrawText(0, 0, "start", font7x12, C_GREEN, C_BLACK);
 
-              test_digest();
-              test_hmac();
-              test_aead();
-              test_sig();
-              test_kem();
+              const auto digest = test_digest();
+              const auto hmac = test_hmac();
+              const auto aead = test_aead();
+              const auto sig = test_sig();
+              const auto kem = test_kem();
               first_run = false;
 
-              screen.DrawText(12, y, "end", font7x12, C_GREEN, C_BLACK);
+              auto ss = std::stringstream();
+              ss << "end " << digest << hmac << aead << sig << kem;
+
+              screen.DrawText(0, 12, ss.str().c_str(), font7x12, C_GREEN, C_BLACK);
             }
 
             if (rx_busy) {

@@ -133,7 +133,7 @@ struct P256 : Signature {
     const auto sha256 = Digest::get<Digest::ID::SHA256>();
     const auto digest = sha256.hash(data);
 
-    auto sig = bytes(CMOX_ECC_ED25519_SIG_LEN);
+    auto sig = bytes(CMOX_ECC_SECP256R1_SIG_LEN);
     auto sig_size = sig.size();
 
     auto ctx = ECCContext{};
@@ -161,14 +161,17 @@ struct P256 : Signature {
               const Signature::PublicKey& pk) const override {
     const auto& rpk = dynamic_cast<const P256::PublicKey&>(pk);
 
+    const auto sha256 = Digest::get<Digest::ID::SHA256>();
+    const auto digest = sha256.hash(data);
+
     auto fault_check = uint32_t(0);
     auto ctx = ECCContext{};
     const auto rv = cmox_ecdsa_verify(ctx.get(),
                                       CURVE,
                                       rpk.pub.data(),
                                       rpk.pub.size(),
-                                      data.data(),
-                                      data.size(),
+                                      digest.data(),
+                                      digest.size(),
                                       sig.data(),
                                       sig.size(),
                                       &fault_check);
