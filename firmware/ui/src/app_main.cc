@@ -78,36 +78,40 @@ uint16_t GenerateTriangleWavePoint(double frequency, double amplitude, double ti
     return static_cast<uint16_t>((triangle_point + 1.0) * 32767.5);
 }
 
-std::string space_separated_line(std::stringstream&& str) {
-  return str.str();
-}
+struct Logger {
+  int y = 0;
 
-template<typename T, typename... U>
-std::string space_separated_line(std::stringstream&& str, const T& first, const U&... rest) {
-  str << first << " ";
-  return space_separated_line(std::move(str), rest...);
-}
+  std::string space_separated_line(std::stringstream&& str) {
+    return str.str();
+  }
 
-template<typename... T>
-void log(const T&... args) {
-  auto str = std::stringstream();
-  str << "[UI] ";
-  const auto line = space_separated_line(std::move(str), args...);
+  template<typename T, typename... U>
+  std::string space_separated_line(std::stringstream&& str, const T& first, const U&... rest) {
+    str << first << " ";
+    return space_separated_line(std::move(str), rest...);
+  }
 
-  // Uncomment for UART logging
-  // line = line + "\n";
-  // const auto* line_ptr = reinterpret_cast<const uint8_t*>(line.c_str());
-  // HAL_UART_Transmit(&huart1, line_ptr, line.size(), HAL_MAX_DELAY);
+  template<typename... T>
+  void log(const T&... args) {
+    auto str = std::stringstream();
+    str << "[UI] ";
+    const auto line = space_separated_line(std::move(str), args...);
 
-  // Uncomment for logging to screen
-  static int y = 0;
-  screen.DrawText(0, y, line.c_str(), font7x12, C_GREEN, C_BLACK);
-  y += 12;
-}
+    // Uncomment for UART logging
+    // line = line + "\n";
+    // const auto* line_ptr = reinterpret_cast<const uint8_t*>(line.c_str());
+    // HAL_UART_Transmit(&huart1, line_ptr, line.size(), HAL_MAX_DELAY);
+
+    // Uncomment for logging to screen
+    screen.DrawText(0, y, line.c_str(), font7x12, C_GREEN, C_BLACK);
+    y += 12;
+  }
+};
+
 
 // import hashlib
 // hashlib.sha256(b"hello").hexdigest()
-bool test_digest() {
+bool test_digest(Logger& log) {
     using namespace mls::hpke;
     const auto digest = Digest::get<Digest::ID::SHA256>();
     const auto data = from_ascii("hello");
@@ -117,12 +121,12 @@ bool test_digest() {
     const auto expected = from_hex("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824");
     const auto pass = output == expected;
     const auto status = std::string(pass? "PASS" : "FAIL");
-    log("hash", status);
+    log.log("hash", status);
 
     return pass;
 }
 
-bool test_hmac() {
+bool test_hmac(Logger& log) {
     using namespace mls::hpke;
     const auto digest = Digest::get<Digest::ID::SHA256>();
     const auto key = from_ascii("key");
@@ -133,12 +137,12 @@ bool test_hmac() {
     const auto expected = from_hex("9307b3b915efb5171ff14d8cb55fbcc798c6c0ef1456d66ded1a6aa723a58b7b");
     const auto pass = output == expected;
     const auto status = std::string(pass? "PASS" : "FAIL");
-    log("hmac", status);
+    log.log("hmac", status);
 
     return pass;
 }
 
-bool test_aead() {
+bool test_aead(Logger& log) {
     try {
         using namespace mls::hpke;
         const auto& cipher = AEAD::get<AEAD::ID::AES_128_GCM>();
@@ -146,85 +150,85 @@ bool test_aead() {
         const auto nonce = from_ascii("public nonce");
         const auto pt = from_ascii("secret message");
         const auto aad = from_ascii("extra");
-        log("cipher", "prep");
+        log.log("cipher", "prep");
 
         const auto ct = cipher.seal(key, nonce, aad, pt);
-        log("cipher", "seal");
+        log.log("cipher", "seal");
 
         const auto expected = from_hex("76e196daeff5e2224f12f7726d82aaedbe176f85ece437c5ce7861a02fc2");
         const auto pass_kat = (ct == expected);
-        log("cipher", "pass_kat", pass_kat);
+        log.log("cipher", "pass_kat", pass_kat);
 
         const auto maybe_pt = cipher.open(key, nonce, aad, ct);
-        log("cipher", "open");
+        log.log("cipher", "open");
 
         auto pt_print = std::string("");
         if (maybe_pt) {
           pt_print = to_hex(*maybe_pt);
         }
-        log("cipher", "pt");
+        log.log("cipher", "pt");
 
         const auto pass_rtt = maybe_pt && pt == *maybe_pt;
-        log("cipher", "pass_rtt", pass_rtt);
+        log.log("cipher", "pass_rtt", pass_rtt);
 
         return pass_kat && pass_rtt;
     } catch (const std::exception& e) {
-        log("cipher", "throw", e.what());
+        log.log("cipher", "throw", e.what());
         return false;
     }
 }
 
-bool test_sig() {
+bool test_sig(Logger& log) {
     try {
         using namespace mls::hpke;
         const auto& sig = Signature::get<Signature::ID::P256_SHA256>();
         const auto msg = from_ascii("attack at dawn!");
 
         const auto sk = sig.generate_key_pair();
-        log("sig", "keygen");
+        log.log("sig", "keygen");
 
         const auto pk = sk->public_key();
-        log("sig", "public_key");
+        log.log("sig", "public_key");
 
         const auto sig_val = sig.sign(msg, *sk);
-        log("sig", "sign", sig_val.size());
+        log.log("sig", "sign", sig_val.size());
 
         const auto ver = sig.verify(msg, sig_val, *pk);
-        log("sig", "verify", ver);
+        log.log("sig", "verify", ver);
 
         const auto pass = ver;
-        log("sig", "pass", pass);
+        log.log("sig", "pass", pass);
 
         return pass;
     } catch (const std::exception& e) {
-        log("sig", "throw", e.what());
+        log.log("sig", "throw", e.what());
         return false;
     }
 }
 
-bool test_kem() {
+bool test_kem(Logger& log) {
     try {
         using namespace mls::hpke;
         const auto& kem = KEM::get<KEM::ID::DHKEM_P256_SHA256>();
 
         const auto sk = kem.generate_key_pair();
-        log("kem", "keygen");
+        log.log("kem", "keygen");
 
         const auto pk = sk->public_key();
-        log("kem", "public_key");
+        log.log("kem", "public_key");
 
         const auto [zz_send, enc] = kem.encap(*pk);
-        log("kem", "encap", zz_send.size(), enc.size());
+        log.log("kem", "encap", zz_send.size(), enc.size());
 
         const auto zz_recv = kem.decap(enc, *sk);
-        log("kem", "decap", zz_recv.size());
+        log.log("kem", "decap", zz_recv.size());
 
         const auto pass = zz_send == zz_recv;
-        log("kem", "pass", pass);
+        log.log("kem", "pass", pass);
 
         return pass;
     } catch (const std::exception& e) {
-        log("kem", "throw", e.what());
+        log.log("kem", "throw", e.what());
         return false;
     }
 }
@@ -342,6 +346,7 @@ int app_main()
     auto first_run = true;
     uint32_t blink = HAL_GetTick() + 5000;
     uint32_t tx_sound = 0;
+    Logger log;
     // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
     while (1)
     {
@@ -393,19 +398,16 @@ int app_main()
 
             // Self-test the crypto on the first run-through
             if (first_run) {
-              log("start");
+              log.log("start");
 
-              const auto digest = true; // already validated // test_digest();
-              const auto hmac = true; // already validated // test_hmac();
-              const auto aead = false; // known broken // test_aead();
-              const auto sig = test_sig();
+              const auto digest = true; // already validated // test_digest(log);
+              const auto hmac = true; // already validated // test_hmac(log);
+              const auto aead = false; // known broken // test_aead(log);
+              const auto sig = test_sig(log);
               const auto kem = true; // already validated // test_kem();
               first_run = false;
 
-              auto ss = std::stringstream();
-              log("end ", digest, hmac, aead, sig, kem);
-
-              screen.DrawText(0, 12, ss.str().c_str(), font7x12, C_GREEN, C_BLACK);
+              log.log("end ", digest, hmac, aead, sig, kem);
             }
 
             if (rx_busy) {
