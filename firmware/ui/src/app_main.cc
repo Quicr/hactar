@@ -100,9 +100,9 @@ void log(const T&... args) {
   // HAL_UART_Transmit(&huart1, line_ptr, line.size(), HAL_MAX_DELAY);
 
   // Uncomment for logging to screen
-  static int y = 0;
-  screen.DrawText(0, y, line.c_str(), font7x12, C_GREEN, C_BLACK);
-  y += 12;
+  // static int y = 0;
+  // screen.DrawText(0, y, line.c_str(), font7x12, C_GREEN, C_BLACK);
+  // y += 12;
 }
 
 // import hashlib
@@ -326,7 +326,7 @@ int app_main()
     // tx_sound_buff[SOUND_BUFFER_SZ - 2] = 0x00AA;
 
     // Delayed condition
-    auto first_run = false;
+    auto first_run = true;
     uint32_t blink = HAL_GetTick() + 5000;
     uint32_t tx_sound = 0;
     // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
@@ -380,12 +380,16 @@ int app_main()
 
             // Self-test the crypto on the first run-through
             if (first_run) {
+              screen.DrawText(0, y, "start", font7x12, C_GREEN, C_BLACK);
+
               test_digest();
               test_hmac();
               test_aead();
               test_sig();
               test_kem();
               first_run = false;
+
+              screen.DrawText(12, y, "end", font7x12, C_GREEN, C_BLACK);
             }
 
             if (rx_busy) {
