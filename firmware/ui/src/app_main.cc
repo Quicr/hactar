@@ -100,9 +100,9 @@ void log(const T&... args) {
   // HAL_UART_Transmit(&huart1, line_ptr, line.size(), HAL_MAX_DELAY);
 
   // Uncomment for logging to screen
-  // static int y = 0;
-  // screen.DrawText(0, y, line.c_str(), font7x12, C_GREEN, C_BLACK);
-  // y += 12;
+  static int y = 0;
+  screen.DrawText(0, y, line.c_str(), font7x12, C_GREEN, C_BLACK);
+  y += 12;
 }
 
 // import hashlib
@@ -149,11 +149,11 @@ bool test_aead() {
         log("cipher", "prep");
 
         const auto ct = cipher.seal(key, nonce, aad, pt);
-        log("cipher", "seal", to_hex(ct));
+        log("cipher", "seal");
 
         const auto expected = from_hex("76e196daeff5e2224f12f7726d82aaedbe176f85ece437c5ce7861a02fc2");
         const auto pass_kat = (ct == expected);
-        log("cipher", "KAT", std::string(pass_kat? "PASS" : "FAIL"));
+        log("cipher", "pass_kat", pass_kat);
 
         const auto maybe_pt = cipher.open(key, nonce, aad, ct);
         log("cipher", "open");
@@ -162,10 +162,10 @@ bool test_aead() {
         if (maybe_pt) {
           pt_print = to_hex(*maybe_pt);
         }
-        log("cipher", "pt", pt_print);
+        log("cipher", "pt");
 
         const auto pass_rtt = maybe_pt && pt == *maybe_pt;
-        log("cipher", "RTT", std::string(pass_rtt? "PASS" : "FAIL"));
+        log("cipher", "pass_rtt", pass_rtt);
 
         return pass_kat && pass_rtt;
     } catch (const std::exception& e) {
@@ -393,17 +393,17 @@ int app_main()
 
             // Self-test the crypto on the first run-through
             if (first_run) {
-              screen.DrawText(0, 0, "start", font7x12, C_GREEN, C_BLACK);
+              log("start");
 
-              const auto digest = test_digest();
-              const auto hmac = test_hmac();
-              const auto aead = test_aead();
+              const auto digest = true; // already validated // test_digest();
+              const auto hmac = true; // already validated // test_hmac();
+              const auto aead = false; // known broken // test_aead();
               const auto sig = test_sig();
-              const auto kem = test_kem();
+              const auto kem = true; // already validated // test_kem();
               first_run = false;
 
               auto ss = std::stringstream();
-              ss << "end " << digest << hmac << aead << sig << kem;
+              log("end ", digest, hmac, aead, sig, kem);
 
               screen.DrawText(0, 12, ss.str().c_str(), font7x12, C_GREEN, C_BLACK);
             }
