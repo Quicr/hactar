@@ -115,7 +115,7 @@ struct P256 : Signature {
   }
 
   bytes serialize_private(const Signature::PrivateKey& sk) const override {
-    const auto& rsk = dynamic_cast<const P256::PrivateKey&>(sk);
+    const auto& rsk = reinterpret_cast<const P256::PrivateKey&>(sk);
     return bytes(std::vector<uint8_t>(rsk.priv.begin(), rsk.priv.end()));
   }
 
@@ -126,7 +126,7 @@ struct P256 : Signature {
   }
 
   bytes sign(const bytes& data, const Signature::PrivateKey& sk) const override {
-    const auto& rsk = dynamic_cast<const P256::PrivateKey&>(sk);
+    const auto& rsk = reinterpret_cast<const P256::PrivateKey&>(sk);
 
     const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
 
