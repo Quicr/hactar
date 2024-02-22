@@ -199,7 +199,7 @@ bool test_sig_raw(Logger& log) {
   const auto random = from_hex("58f741771620bdc428e91a32d86d230873e9140336fcfb1e122892ee1d501bdb");
   const auto known_sig = from_hex("4a19274429e40522234b8785dc25fc524f179dcc95ff09b3c9770fc71f54ca0d58982b79a65b7320f5b92d13bdaecdd1259e760f0f718ba933fd098f6f75d4b7");
 
-  auto hash = bytes(CMOX_SHA224_SIZE);
+  auto hash = bytes(CMOX_SHA256_SIZE);
   auto computed_sig = bytes(CMOX_ECC_SECP256R1_SIG_LEN);
   auto buffer = bytes(2000);
 
@@ -208,11 +208,11 @@ bool test_sig_raw(Logger& log) {
 
   {
     // Pre-hash msg
-    const auto hrv = cmox_hash_compute(CMOX_SHA224_ALGO,
+    const auto hrv = cmox_hash_compute(CMOX_SHA256_ALGO,
                                        msg.data(),
                                        msg.size(),
                                        hash.data(),
-                                       CMOX_SHA224_SIZE,
+                                       CMOX_SHA256_SIZE,
                                        &computed_size);
 
     if (hrv != CMOX_HASH_SUCCESS)
@@ -221,7 +221,7 @@ bool test_sig_raw(Logger& log) {
       return false;
     }
 
-    if (computed_size != CMOX_SHA224_SIZE)
+    if (computed_size != CMOX_SHA256_SIZE)
     {
       Error_Handler();
     }
@@ -239,7 +239,7 @@ bool test_sig_raw(Logger& log) {
                                      priv.data(),
                                      priv.size(),
                                      hash.data(),
-                                     CMOX_SHA224_SIZE,
+                                     CMOX_SHA256_SIZE,
                                      computed_sig.data(),
                                      &computed_size);
     log.log("sig_raw", "sign");
@@ -276,7 +276,7 @@ bool test_sig_raw(Logger& log) {
                                        pub.data(),
                                        pub.size(),
                                        hash.data(),
-                                       CMOX_SHA224_SIZE,
+                                       CMOX_SHA256_SIZE,
                                        computed_sig.data(),
                                        computed_sig.size(),
                                        &fault_check);
