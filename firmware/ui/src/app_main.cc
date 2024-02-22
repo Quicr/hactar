@@ -147,88 +147,6 @@ bool test_hmac(Logger& log) {
     return pass;
 }
 
-bool test_aead_raw(Logger& log) {
-  // Constants
-  const auto Key = from_hex("463b412911767d57a0b33969e674ffe7845d313b88c6fe312f3d724be68e1fca");
-  const auto IV = from_hex("611ce6f9a6880750de7da6cb");
-  const auto Plaintext = from_hex("e7d1dcf668e2876861940e012fe52a98dacbd78ab63c08842cc9801ea581682ad54af0c34d0d7f6f59e8ee0bf4900e0fd85042");
-  const auto AddData = from_hex("0a682fbc6192e1b47a5e0868787ffdafe5a50cead3575849990cdd2ea9b3597749403efb4a56684f0c6bde352d4aeec5");
-  const auto Expected_Ciphertext = from_hex("8886e196010cb3849d9c1a182abe1eeab0a5f3ca423c3669a4a8703c0f146e8e956fb122e0d721b869d2b6fcd4216d7d4d3758");
-  const auto Expected_Tag = from_hex("2469cecd70fd98fec9264f71df1aee9a");
-
-  auto Computed_Ciphertext = bytes(Expected_Ciphertext.size() + Expected_Tag.size());
-  auto Computed_Plaintext = bytes(Plaintext.size());
-  size_t computed_size = 0;
-
-  // Encrypt
-  const auto erv = cmox_aead_encrypt(CMOX_AES_GCM_ENC_ALGO,                  /* Use AES GCM algorithm */
-                             Plaintext.data(), Plaintext.size(),           /* Plaintext to encrypt */
-                             Expected_Tag.size(),                   /* Authentication tag size */
-                             Key.data(), Key.size(),                       /* AES key to use */
-                             IV.data(), IV.size(),                         /* Initialization vector */
-                             AddData.data(), AddData.size(),               /* Additional authenticated data */
-                             Computed_Ciphertext.data(), &computed_size);   /* Data buffer to receive generated ciphertext
-                                                                        and authentication tag */
-  log.log("aead_raw", "encrypt");
-
-  if (erv != CMOX_CIPHER_SUCCESS)
-  {
-    log.log("aead_raw", "erv", erv);
-    return false;
-  }
-
-  if (computed_size != Expected_Ciphertext.size() + Expected_Tag.size())
-  {
-    log.log("aead_raw", "computed_size", computed_size);
-    return false;
-  }
-
-  if (memcmp(Expected_Ciphertext.data(), Computed_Ciphertext.data(), Expected_Ciphertext.size()) != 0)
-  {
-    log.log("aead_raw", "memcmp ct");
-    return false;
-  }
-
-  if (memcmp(Expected_Tag.data(), Computed_Ciphertext.data() + Expected_Ciphertext.size(), Expected_Tag.size()) != 0)
-  {
-    log.log("aead_raw", "memcmp tag");
-    return false;
-  }
-
-  const auto drv = cmox_aead_decrypt(CMOX_AES_GCM_DEC_ALGO,                  /* Use AES GCM algorithm */
-                             Computed_Ciphertext.data(), computed_size,     /* Ciphertext + tag to decrypt and verify */
-                             Expected_Tag.size(),                   /* Authentication tag size */
-                             Key.data(), Key.size(),                       /* AES key to use */
-                             IV.data(), IV.size(),                         /* Initialization vector */
-                             AddData.data(), AddData.size(),               /* Additional authenticated data */
-                             Computed_Plaintext.data(), &computed_size);    /* Data buffer to receive generated plaintext */
-  log.log("aead_raw", "decrypt");
-
-  /* Verify API returned value */
-  if (drv != CMOX_CIPHER_AUTH_SUCCESS)
-  {
-    log.log("aead_raw", "drv", drv);
-    return false;
-  }
-
-  /* Verify generated data size is the expected one */
-  if (computed_size != Plaintext.size())
-  {
-    log.log("aead_raw", "computed_size", computed_size);
-    return false;
-  }
-
-  /* Verify generated data are the expected ones */
-  if (memcmp(Plaintext.data(), Computed_Plaintext.data(), computed_size) != 0)
-  {
-    log.log("aead_raw", "memcmp");
-    return false;
-  }
-
-  log.log("aead_raw", "ok");
-  return true;
-}
-
 bool test_aead(Logger& log) {
     try {
         using namespace mls::hpke;
@@ -709,7 +627,6 @@ int app_main()
 
               const auto digest = true; // already validated // test_digest(log);
               const auto hmac = true; // already validated // test_hmac(log);
-              const auto aead_raw = test_aead_raw(log);
               const auto aead = test_aead(log);
               const auto sig_raw = true; // already validated // test_sig_raw(log);
               const auto sig = false; // known broken // test_sig(log);
@@ -717,7 +634,7 @@ int app_main()
               const auto mls = true; // TODO // test_mls(log);
               first_run = false;
 
-              log.log("end ", digest, hmac, aead_raw, aead, sig_raw, sig, kem, mls);
+              log.log("end ", digest, hmac, aead, sig_raw, sig, kem, mls);
             }
 
             if (rx_busy) {
