@@ -19,7 +19,8 @@
 #include <hpke/signature.h>
 #include <hpke/hpke.h>
 
-#include <crypto/cmox_init.h>
+#include <crypto/cmox_crypto.h>
+#include <cstring>
 
 #include <memory>
 #include <cmath>
@@ -178,6 +179,141 @@ bool test_aead(Logger& log) {
         log.log("cipher", "throw", e.what());
         return false;
     }
+}
+
+// XXX(RLB): Getting signature working:
+// * Validate that raw known-answer test works
+// * Validate that raw known-answer test works with small math functions
+// * Validate that raw known-answer test works with SHA-256
+// * Generate key pair dynamically, verify raw round-trip test works
+// * Move ECC context to an object
+// * Introduce casts
+bool test_sig_raw(Logger& log) {
+  cmox_ecc_handle_t Ecc_Ctx;
+
+  // Constants
+  const uint8_t Message[] =
+  {
+    0xff, 0x62, 0x4d, 0x0b, 0xa0, 0x2c, 0x7b, 0x63, 0x70, 0xc1, 0x62, 0x2e, 0xec, 0x3f, 0xa2, 0x18,
+    0x6e, 0xa6, 0x81, 0xd1, 0x65, 0x9e, 0x0a, 0x84, 0x54, 0x48, 0xe7, 0x77, 0xb7, 0x5a, 0x8e, 0x77,
+    0xa7, 0x7b, 0xb2, 0x6e, 0x57, 0x33, 0x17, 0x9d, 0x58, 0xef, 0x9b, 0xc8, 0xa4, 0xe8, 0xb6, 0x97,
+    0x1a, 0xef, 0x25, 0x39, 0xf7, 0x7a, 0xb0, 0x96, 0x3a, 0x34, 0x15, 0xbb, 0xd6, 0x25, 0x83, 0x39,
+    0xbd, 0x1b, 0xf5, 0x5d, 0xe6, 0x5d, 0xb5, 0x20, 0xc6, 0x3f, 0x5b, 0x8e, 0xab, 0x3d, 0x55, 0xde,
+    0xbd, 0x05, 0xe9, 0x49, 0x42, 0x12, 0x17, 0x0f, 0x5d, 0x65, 0xb3, 0x28, 0x6b, 0x8b, 0x66, 0x87,
+    0x05, 0xb1, 0xe2, 0xb2, 0xb5, 0x56, 0x86, 0x10, 0x61, 0x7a, 0xbb, 0x51, 0xd2, 0xdd, 0x0c, 0xb4,
+    0x50, 0xef, 0x59, 0xdf, 0x4b, 0x90, 0x7d, 0xa9, 0x0c, 0xfa, 0x7b, 0x26, 0x8d, 0xe8, 0xc4, 0xc2
+  };
+  const uint8_t Private_Key[] =
+  {
+    0x70, 0x83, 0x09, 0xa7, 0x44, 0x9e, 0x15, 0x6b, 0x0d, 0xb7, 0x0e, 0x5b, 0x52, 0xe6, 0x06, 0xc7,
+    0xe0, 0x94, 0xed, 0x67, 0x6c, 0xe8, 0x95, 0x3b, 0xf6, 0xc1, 0x47, 0x57, 0xc8, 0x26, 0xf5, 0x90
+  };
+  const uint8_t Public_Key[] =
+  {
+    0x29, 0x57, 0x8c, 0x7a, 0xb6, 0xce, 0x0d, 0x11, 0x49, 0x3c, 0x95, 0xd5, 0xea, 0x05, 0xd2, 0x99,
+    0xd5, 0x36, 0x80, 0x1c, 0xa9, 0xcb, 0xd5, 0x0e, 0x99, 0x24, 0xe4, 0x3b, 0x73, 0x3b, 0x83, 0xab,
+    0x08, 0xc8, 0x04, 0x98, 0x79, 0xc6, 0x27, 0x8b, 0x22, 0x73, 0x34, 0x84, 0x74, 0x15, 0x85, 0x15,
+    0xac, 0xca, 0xa3, 0x83, 0x44, 0x10, 0x6e, 0xf9, 0x68, 0x03, 0xc5, 0xa0, 0x5a, 0xdc, 0x48, 0x00
+  };
+  const uint8_t Known_Random[] = /* = k - 1 */
+  {
+    0x58, 0xf7, 0x41, 0x77, 0x16, 0x20, 0xbd, 0xc4, 0x28, 0xe9, 0x1a, 0x32, 0xd8, 0x6d, 0x23, 0x08,
+    0x73, 0xe9, 0x14, 0x03, 0x36, 0xfc, 0xfb, 0x1e, 0x12, 0x28, 0x92, 0xee, 0x1d, 0x50, 0x1b, 0xdb
+  };
+  const uint8_t Known_Signature[] =
+  {
+    0x4a, 0x19, 0x27, 0x44, 0x29, 0xe4, 0x05, 0x22, 0x23, 0x4b, 0x87, 0x85, 0xdc, 0x25, 0xfc, 0x52,
+    0x4f, 0x17, 0x9d, 0xcc, 0x95, 0xff, 0x09, 0xb3, 0xc9, 0x77, 0x0f, 0xc7, 0x1f, 0x54, 0xca, 0x0d,
+    0x58, 0x98, 0x2b, 0x79, 0xa6, 0x5b, 0x73, 0x20, 0xf5, 0xb9, 0x2d, 0x13, 0xbd, 0xae, 0xcd, 0xd1,
+    0x25, 0x9e, 0x76, 0x0f, 0x0f, 0x71, 0x8b, 0xa9, 0x33, 0xfd, 0x09, 0x8f, 0x6f, 0x75, 0xd4, 0xb7
+  };
+
+  uint8_t Computed_Hash[CMOX_SHA224_SIZE];
+  uint8_t Computed_Signature[CMOX_ECC_SECP256R1_SIG_LEN];
+  uint8_t Working_Buffer[2000];
+
+  size_t computed_size = 0;
+  uint32_t fault_check = CMOX_ECC_AUTH_FAIL;
+
+  // Pre-hash message
+  const auto hrv = cmox_hash_compute(CMOX_SHA224_ALGO,         /* Use SHA224 algorithm */
+                                     Message, sizeof(Message), /* Message to digest */
+                                     Computed_Hash,            /* Data buffer to receive digest data */
+                                     CMOX_SHA224_SIZE,         /* Expected digest size */
+                                     &computed_size);          /* Size of computed digest */
+
+  if (hrv != CMOX_HASH_SUCCESS)
+  {
+    log.log("sig_raw", "hrv", hrv);
+    return false;
+  }
+
+  if (computed_size != CMOX_SHA224_SIZE)
+  {
+    Error_Handler();
+  }
+
+  // Sign
+  cmox_ecc_construct(&Ecc_Ctx, CMOX_ECC256_MATH_FUNCS, Working_Buffer, sizeof(Working_Buffer));
+
+  const auto srv = cmox_ecdsa_sign(&Ecc_Ctx,                                 /* ECC context */
+                           CMOX_ECC_SECP256R1_LOWMEM,                 /* SECP256R1 ECC curve selected */
+                           Known_Random, sizeof(Known_Random),       /* Random data buffer */
+                           Private_Key, sizeof(Private_Key),         /* Private key for signature */
+                           Computed_Hash, CMOX_SHA224_SIZE,          /* Digest to sign */
+                           Computed_Signature, &computed_size);      /* Data buffer to receive signature */
+  log.log("sig_raw", "sign");
+
+  if (srv != CMOX_ECC_SUCCESS)
+  {
+    log.log("sig_raw", "srv", srv);
+    return false;
+  }
+
+  if (computed_size != sizeof(Known_Signature))
+  {
+    log.log("sig_raw", "computed_size", computed_size);
+    return false;
+  }
+
+  if (memcmp(Computed_Signature, Known_Signature, computed_size) != 0)
+  {
+    log.log("sig_raw", "Computed_Signature");
+    return false;
+  }
+
+  log.log("sig_raw", "sig_cleanup");
+  cmox_ecc_cleanup(&Ecc_Ctx);
+
+  // Verify
+  cmox_ecc_construct(&Ecc_Ctx, CMOX_ECC256_MATH_FUNCS, Working_Buffer, sizeof(Working_Buffer));
+
+  const auto vrv = cmox_ecdsa_verify(&Ecc_Ctx,                                  /* ECC context */
+                             CMOX_ECC_CURVE_SECP256R1,                  /* SECP256R1 ECC curve selected */
+                             Public_Key, sizeof(Public_Key),            /* Public key for verification */
+                             Computed_Hash, CMOX_SHA224_SIZE,           /* Digest to verify */
+                             Known_Signature, sizeof(Known_Signature),  /* Data buffer to receive signature */
+                             &fault_check);                             /* Fault check variable:
+                                                            to ensure no fault injection occurs during this API call */
+
+  /* Verify API returned value */
+  if (vrv != CMOX_ECC_AUTH_SUCCESS)
+  {
+    log.log("sig_raw", "srv", srv);
+    return false;
+  }
+  /* Verify Fault check variable value */
+  if (fault_check != CMOX_ECC_AUTH_SUCCESS)
+  {
+    log.log("sig_raw", "fault_check", fault_check);
+    return false;
+  }
+
+  log.log("sig_raw", "ver_cleanup");
+  cmox_ecc_cleanup(&Ecc_Ctx);
+
+
+  return true;
 }
 
 bool test_sig(Logger& log) {
@@ -409,11 +545,12 @@ int app_main()
               const auto digest = true; // already validated // test_digest(log);
               const auto hmac = true; // already validated // test_hmac(log);
               const auto aead = test_aead(log);
-              const auto sig = false; // known broken // test_sig(log);
+              const auto sig_raw = test_sig_raw(log);
+              const auto sig = test_sig(log);
               const auto kem = true; // already validated // test_kem();
               first_run = false;
 
-              log.log("end ", digest, hmac, aead, sig, kem);
+              log.log("end ", digest, hmac, aead, sig_raw, sig, kem);
             }
 
             if (rx_busy) {
