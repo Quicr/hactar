@@ -710,7 +710,7 @@ int app_main()
               const auto digest = true; // already validated // test_digest(log);
               const auto hmac = true; // already validated // test_hmac(log);
               const auto aead_raw = test_aead_raw(log);
-              const auto aead = false; // known broken // test_aead(log);
+              const auto aead = test_aead(log);
               const auto sig_raw = true; // already validated // test_sig_raw(log);
               const auto sig = false; // known broken // test_sig(log);
               const auto kem = true; // already validated // test_kem();

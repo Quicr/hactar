@@ -160,7 +160,7 @@ AEADCipher::open(const bytes& key,
 
   auto pt = bytes(ct.size() - tag_size);
   auto pt_size = pt.size();
-  const auto rv = cmox_aead_decrypt(CMOX_AESSMALL_GCMSMALL_ENC_ALGO,
+  const auto rv = cmox_aead_decrypt(CMOX_AESSMALL_GCMSMALL_DEC_ALGO,
                                     ct.data(),
                                     ct.size(),
                                     tag_size,
