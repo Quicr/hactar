@@ -239,31 +239,9 @@ bool test_sig_raw(Logger& log) {
   }
 
   // Pre-hash msg
-  auto hash = bytes(CMOX_SHA256_SIZE);
-  {
-    size_t computed_size = 0;
-    const auto rv = cmox_hash_compute(CMOX_SHA256_ALGO,
-                                       msg.data(),
-                                       msg.size(),
-                                       hash.data(),
-                                       CMOX_SHA256_SIZE,
-                                       &computed_size);
-    log.log("sig_raw", "hash");
-
-    if (rv != CMOX_HASH_SUCCESS)
-    {
-      log.log("sig_raw", "hash", "rv", rv);
-      return false;
-    }
-
-    if (computed_size != CMOX_SHA256_SIZE)
-    {
-      log.log("sig_raw", "hash", "computed_size", computed_size);
-      return false;
-    }
-
-    log.log("sig_raw", "hash", "ok");
-  }
+  const auto sha256 = Digest::get<Digest::ID::SHA256>();
+  const auto hash = sha256.hash(msg);
+  log.log("sig_raw", "hash", "ok");
 
   // Sign
   auto computed_sig = bytes(CMOX_ECC_SECP256R1_SIG_LEN);
