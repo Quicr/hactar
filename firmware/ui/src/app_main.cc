@@ -15,6 +15,7 @@
 #include "Led.hh"
 #include "AudioCodec.hh"
 
+#include <hpke/random.h>
 #include <hpke/digest.h>
 #include <hpke/signature.h>
 #include <hpke/hpke.h>
@@ -205,9 +206,10 @@ struct ECCContext {
 };
 
 bool test_sig_raw(Logger& log) {
+  using namespace mls::hpke;
+
   // Constants
-  const auto msg = from_hex("ff624d0ba02c7b6370c1622eec3fa2186ea681d1659e0a845448e777b75a8e77a77bb26e5733179d58ef9bc8a4e8b6971aef2539f77ab0963a3415bbd6258339bd1bf55de65db520c63f5b8eab3d55debd05e9494212170f5d65b3286b8b668705b1e2b2b5568610617abb51d2dd0cb450ef59df4b907da90cfa7b268de8c4c2");
-  const auto random = from_hex("58f741771620bdc428e91a32d86d230873e9140336fcfb1e122892ee1d501bdb");
+  const auto msg = from_ascii("attack at dawn!");
 
   // Generate a key pair
   auto priv = bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
@@ -217,10 +219,11 @@ bool test_sig_raw(Logger& log) {
     auto priv_size = priv.size();
     auto pub_size = pub.size();
 
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
     const auto rv = cmox_ecdsa_keyGen(ctx.get(),
                                       CMOX_ECC_SECP256R1_LOWMEM,
-                                      random.data(),
-                                      random.size(),
+                                      randomness.data(),
+                                      randomness.size(),
                                       priv.data(),
                                       &priv_size,
                                       pub.data(),
@@ -267,16 +270,17 @@ bool test_sig_raw(Logger& log) {
   {
     auto ctx = ECCContext();
     size_t computed_size = 0;
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
     const auto rv = cmox_ecdsa_sign(ctx.get(),
-                                     CMOX_ECC_SECP256R1_LOWMEM,
-                                     random.data(),
-                                     random.size(),
-                                     priv.data(),
-                                     priv.size(),
-                                     hash.data(),
-                                     CMOX_SHA256_SIZE,
-                                     computed_sig.data(),
-                                     &computed_size);
+                                    CMOX_ECC_SECP256R1_LOWMEM,
+                                    randomness.data(),
+                                    randomness.size(),
+                                    priv.data(),
+                                    priv.size(),
+                                    hash.data(),
+                                    CMOX_SHA256_SIZE,
+                                    computed_sig.data(),
+                                    &computed_size);
     log.log("sig_raw", "sign");
 
     if (rv != CMOX_ECC_SUCCESS)
