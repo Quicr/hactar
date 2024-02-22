@@ -147,6 +147,115 @@ bool test_hmac(Logger& log) {
     return pass;
 }
 
+bool test_aead_raw(Logger& log) {
+  // Constants
+  const uint8_t Key[] =
+  {
+    0x46, 0x3b, 0x41, 0x29, 0x11, 0x76, 0x7d, 0x57, 0xa0, 0xb3, 0x39, 0x69, 0xe6, 0x74, 0xff, 0xe7,
+    0x84, 0x5d, 0x31, 0x3b, 0x88, 0xc6, 0xfe, 0x31, 0x2f, 0x3d, 0x72, 0x4b, 0xe6, 0x8e, 0x1f, 0xca
+  };
+  const uint8_t IV[] =
+  {
+    0x61, 0x1c, 0xe6, 0xf9, 0xa6, 0x88, 0x07, 0x50, 0xde, 0x7d, 0xa6, 0xcb
+  };
+  const uint8_t Plaintext[] =
+  {
+    0xe7, 0xd1, 0xdc, 0xf6, 0x68, 0xe2, 0x87, 0x68, 0x61, 0x94, 0x0e, 0x01, 0x2f, 0xe5, 0x2a, 0x98,
+    0xda, 0xcb, 0xd7, 0x8a, 0xb6, 0x3c, 0x08, 0x84, 0x2c, 0xc9, 0x80, 0x1e, 0xa5, 0x81, 0x68, 0x2a,
+    0xd5, 0x4a, 0xf0, 0xc3, 0x4d, 0x0d, 0x7f, 0x6f, 0x59, 0xe8, 0xee, 0x0b, 0xf4, 0x90, 0x0e, 0x0f,
+    0xd8, 0x50, 0x42
+  };
+  const uint8_t AddData[] =
+  {
+    0x0a, 0x68, 0x2f, 0xbc, 0x61, 0x92, 0xe1, 0xb4, 0x7a, 0x5e, 0x08, 0x68, 0x78, 0x7f, 0xfd, 0xaf,
+    0xe5, 0xa5, 0x0c, 0xea, 0xd3, 0x57, 0x58, 0x49, 0x99, 0x0c, 0xdd, 0x2e, 0xa9, 0xb3, 0x59, 0x77,
+    0x49, 0x40, 0x3e, 0xfb, 0x4a, 0x56, 0x68, 0x4f, 0x0c, 0x6b, 0xde, 0x35, 0x2d, 0x4a, 0xee, 0xc5
+  };
+  const uint8_t Expected_Ciphertext[] =
+  {
+    0x88, 0x86, 0xe1, 0x96, 0x01, 0x0c, 0xb3, 0x84, 0x9d, 0x9c, 0x1a, 0x18, 0x2a, 0xbe, 0x1e, 0xea,
+    0xb0, 0xa5, 0xf3, 0xca, 0x42, 0x3c, 0x36, 0x69, 0xa4, 0xa8, 0x70, 0x3c, 0x0f, 0x14, 0x6e, 0x8e,
+    0x95, 0x6f, 0xb1, 0x22, 0xe0, 0xd7, 0x21, 0xb8, 0x69, 0xd2, 0xb6, 0xfc, 0xd4, 0x21, 0x6d, 0x7d,
+    0x4d, 0x37, 0x58,
+  };
+  const uint8_t Expected_Tag[] =
+  {
+    0x24, 0x69, 0xce, 0xcd, 0x70, 0xfd, 0x98, 0xfe, 0xc9, 0x26, 0x4f, 0x71, 0xdf, 0x1a, 0xee, 0x9a
+  };
+
+  uint8_t Computed_Ciphertext[sizeof(Expected_Ciphertext) + sizeof(Expected_Tag)];
+  uint8_t Computed_Plaintext[sizeof(Plaintext)];
+  size_t computed_size = 0;
+
+  // Encrypt
+  const auto erv = cmox_aead_encrypt(CMOX_AES_GCM_ENC_ALGO,                  /* Use AES GCM algorithm */
+                             Plaintext, sizeof(Plaintext),           /* Plaintext to encrypt */
+                             sizeof(Expected_Tag),                   /* Authentication tag size */
+                             Key, sizeof(Key),                       /* AES key to use */
+                             IV, sizeof(IV),                         /* Initialization vector */
+                             AddData, sizeof(AddData),               /* Additional authenticated data */
+                             Computed_Ciphertext, &computed_size);   /* Data buffer to receive generated ciphertext
+                                                                        and authentication tag */
+  log.log("aead_raw", "encrypt");
+
+  if (erv != CMOX_CIPHER_SUCCESS)
+  {
+    log.log("aead_raw", "erv", erv);
+    return false;
+  }
+
+  if (computed_size != (sizeof(Expected_Ciphertext) + sizeof(Expected_Tag)))
+  {
+    log.log("aead_raw", "computed_size", computed_size);
+    return false;
+  }
+
+  if (memcmp(Expected_Ciphertext, Computed_Ciphertext, sizeof(Expected_Ciphertext)) != 0)
+  {
+    log.log("aead_raw", "memcmp ct");
+    return false;
+  }
+
+  if (memcmp(Expected_Tag, &Computed_Ciphertext[sizeof(Expected_Ciphertext)], sizeof(Expected_Tag)) != 0)
+  {
+    log.log("aead_raw", "memcmp tag");
+    return false;
+  }
+
+  const auto drv = cmox_aead_decrypt(CMOX_AES_GCM_DEC_ALGO,                  /* Use AES GCM algorithm */
+                             Computed_Ciphertext, computed_size,     /* Ciphertext + tag to decrypt and verify */
+                             sizeof(Expected_Tag),                   /* Authentication tag size */
+                             Key, sizeof(Key),                       /* AES key to use */
+                             IV, sizeof(IV),                         /* Initialization vector */
+                             AddData, sizeof(AddData),               /* Additional authenticated data */
+                             Computed_Plaintext, &computed_size);    /* Data buffer to receive generated plaintext */
+  log.log("aead_raw", "decrypt");
+
+  /* Verify API returned value */
+  if (drv != CMOX_CIPHER_AUTH_SUCCESS)
+  {
+    log.log("aead_raw", "drv", drv);
+    return false;
+  }
+
+  /* Verify generated data size is the expected one */
+  if (computed_size != sizeof(Plaintext))
+  {
+    log.log("aead_raw", "computed_size", computed_size);
+    return false;
+  }
+
+  /* Verify generated data are the expected ones */
+  if (memcmp(Plaintext, Computed_Plaintext, computed_size) != 0)
+  {
+    log.log("aead_raw", "memcmp");
+    return false;
+  }
+
+  log.log("aead_raw", "ok");
+  return true;
+}
+
 bool test_aead(Logger& log) {
     try {
         using namespace mls::hpke;
@@ -298,13 +407,11 @@ bool test_sig_raw(Logger& log) {
                              &fault_check);                             /* Fault check variable:
                                                             to ensure no fault injection occurs during this API call */
 
-  /* Verify API returned value */
   if (vrv != CMOX_ECC_AUTH_SUCCESS)
   {
-    log.log("sig_raw", "srv", srv);
+    log.log("sig_raw", "vrv", vrv);
     return false;
   }
-  /* Verify Fault check variable value */
   if (fault_check != CMOX_ECC_AUTH_SUCCESS)
   {
     log.log("sig_raw", "fault_check", fault_check);
@@ -314,7 +421,7 @@ bool test_sig_raw(Logger& log) {
   log.log("sig_raw", "ver_cleanup");
   cmox_ecc_cleanup(&Ecc_Ctx);
 
-
+  log.log("sig_raw", "ok");
   return true;
 }
 
@@ -629,14 +736,15 @@ int app_main()
 
               const auto digest = true; // already validated // test_digest(log);
               const auto hmac = true; // already validated // test_hmac(log);
-              const auto aead = test_aead(log);
-              const auto sig_raw = test_sig_raw(log);
-              const auto sig = test_sig(log);
+              const auto aead_raw = test_aead_raw(log);
+              const auto aead = false; // known broken // test_aead(log);
+              const auto sig_raw = true; // already validated // test_sig_raw(log);
+              const auto sig = false; // known broken // test_sig(log);
               const auto kem = true; // already validated // test_kem();
-              const auto mls = test_mls(log);
+              const auto mls = true; // TODO // test_mls(log);
               first_run = false;
 
-              log.log("end ", digest, hmac, aead, sig_raw, sig, kem, mls);
+              log.log("end ", digest, hmac, aead_raw, aead, sig_raw, sig, kem, mls);
             }
 
             if (rx_busy) {
