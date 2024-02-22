@@ -378,6 +378,7 @@ AEAD::get<AEAD::ID::AES_128_GCM>()
   return AEADCipher::get<AEAD::ID::AES_128_GCM>();
 }
 
+#if 0
 template<>
 const AEAD&
 AEAD::get<AEAD::ID::AES_256_GCM>()
@@ -391,6 +392,7 @@ AEAD::get<AEAD::ID::CHACHA20_POLY1305>()
 {
   return AEADCipher::get<AEAD::ID::CHACHA20_POLY1305>();
 }
+#endif // 0
 
 template<>
 const AEAD&
@@ -510,6 +512,7 @@ select_kem(KEM::ID id)
   switch (id) {
     case KEM::ID::DHKEM_P256_SHA256:
       return KEM::get<KEM::ID::DHKEM_P256_SHA256>();
+#if 0
     case KEM::ID::DHKEM_P384_SHA384:
       return KEM::get<KEM::ID::DHKEM_P384_SHA384>();
     case KEM::ID::DHKEM_P521_SHA512:
@@ -520,6 +523,7 @@ select_kem(KEM::ID id)
     case KEM::ID::DHKEM_X448_SHA512:
       return KEM::get<KEM::ID::DHKEM_X448_SHA512>();
 #endif
+#endif // 0
     default:
       throw std::runtime_error("Unsupported algorithm");
   }
@@ -531,10 +535,12 @@ select_kdf(KDF::ID id)
   switch (id) {
     case KDF::ID::HKDF_SHA256:
       return KDF::get<KDF::ID::HKDF_SHA256>();
+#if 0
     case KDF::ID::HKDF_SHA384:
       return KDF::get<KDF::ID::HKDF_SHA384>();
     case KDF::ID::HKDF_SHA512:
       return KDF::get<KDF::ID::HKDF_SHA512>();
+#endif // 0
     default:
       throw std::runtime_error("Unsupported algorithm");
   }
@@ -546,10 +552,12 @@ select_aead(AEAD::ID id)
   switch (id) {
     case AEAD::ID::AES_128_GCM:
       return AEAD::get<AEAD::ID::AES_128_GCM>();
+#if 0
     case AEAD::ID::AES_256_GCM:
       return AEAD::get<AEAD::ID::AES_256_GCM>();
     case AEAD::ID::CHACHA20_POLY1305:
       return AEAD::get<AEAD::ID::CHACHA20_POLY1305>();
+#endif // 0
     case AEAD::ID::export_only:
       return AEAD::get<AEAD::ID::export_only>();
     default:

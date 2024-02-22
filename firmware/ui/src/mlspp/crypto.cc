@@ -75,6 +75,14 @@ CipherSuite::signature_scheme() const
 const CipherSuite::Ciphers&
 CipherSuite::get() const
 {
+  static const auto ciphers_P256_AES128GCM_SHA256_P256 = CipherSuite::Ciphers{
+    HPKE(
+      KEM::ID::DHKEM_P256_SHA256, KDF::ID::HKDF_SHA256, AEAD::ID::AES_128_GCM),
+    Digest::get<Digest::ID::SHA256>(),
+    Signature::get<Signature::ID::P256_SHA256>(),
+  };
+
+#if 0
   static const auto ciphers_X25519_AES128GCM_SHA256_Ed25519 =
     CipherSuite::Ciphers{
       HPKE(KEM::ID::DHKEM_X25519_SHA256,
@@ -83,13 +91,6 @@ CipherSuite::get() const
       Digest::get<Digest::ID::SHA256>(),
       Signature::get<Signature::ID::Ed25519>(),
     };
-
-  static const auto ciphers_P256_AES128GCM_SHA256_P256 = CipherSuite::Ciphers{
-    HPKE(
-      KEM::ID::DHKEM_P256_SHA256, KDF::ID::HKDF_SHA256, AEAD::ID::AES_128_GCM),
-    Digest::get<Digest::ID::SHA256>(),
-    Signature::get<Signature::ID::P256_SHA256>(),
-  };
 
   static const auto ciphers_X25519_CHACHA20POLY1305_SHA256_Ed25519 =
     CipherSuite::Ciphers{
@@ -131,16 +132,18 @@ CipherSuite::get() const
       Signature::get<Signature::ID::Ed448>(),
     };
 #endif
+#endif // 0
 
   switch (id) {
     case ID::unknown:
       throw InvalidParameterError("Uninitialized ciphersuite");
 
-    case ID::X25519_AES128GCM_SHA256_Ed25519:
-      return ciphers_X25519_AES128GCM_SHA256_Ed25519;
-
     case ID::P256_AES128GCM_SHA256_P256:
       return ciphers_P256_AES128GCM_SHA256_P256;
+
+#if 0
+    case ID::X25519_AES128GCM_SHA256_Ed25519:
+      return ciphers_X25519_AES128GCM_SHA256_Ed25519;
 
     case ID::X25519_CHACHA20POLY1305_SHA256_Ed25519:
       return ciphers_X25519_CHACHA20POLY1305_SHA256_Ed25519;
@@ -158,6 +161,7 @@ CipherSuite::get() const
     case ID::X448_CHACHA20POLY1305_SHA512_Ed448:
       return ciphers_X448_CHACHA20POLY1305_SHA512_Ed448;
 #endif
+#endif // 0
 
     default:
       throw InvalidParameterError("Unsupported ciphersuite");

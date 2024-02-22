@@ -22,6 +22,8 @@
 #include <crypto/cmox_crypto.h>
 #include <cstring>
 
+#include <mls/state.h>
+
 #include <memory>
 #include <cmath>
 #include <sstream>
@@ -371,6 +373,89 @@ bool test_kem(Logger& log) {
     }
 }
 
+bool test_mls(Logger& log) {
+  try {
+    using namespace mls;
+
+    const CipherSuite suite{ CipherSuite::ID::P256_AES128GCM_SHA256_P256 };
+    const bytes group_id = from_ascii("group_id");
+
+    // XXX(RLB) This should be actually random
+    const bytes fresh_secret = from_ascii("this is a thirty-two-byte string");
+
+
+    // Create initial state for Alice
+    log.log("mls", "init_a");
+    auto identity_priv_a = SignaturePrivateKey::generate(suite);
+    auto credential_a = Credential::basic(from_ascii("alice"));
+    auto init_priv_a = HPKEPrivateKey::generate(suite);
+    auto leaf_priv_a = HPKEPrivateKey::generate(suite);
+    auto leaf_node_a = LeafNode{ suite,
+                               leaf_priv_a.public_key,
+                               identity_priv_a.public_key,
+                               credential_a,
+                               Capabilities::create_default(),
+                               Lifetime::create_default(),
+                               {},
+                               identity_priv_a };
+
+    // Create initial state for Bob
+    log.log("mls", "init_b");
+    auto identity_priv_b = SignaturePrivateKey::generate(suite);
+    auto credential_b = Credential::basic(from_ascii("bob"));
+    auto init_priv_b = HPKEPrivateKey::generate(suite);
+    auto leaf_priv_b = HPKEPrivateKey::generate(suite);
+    auto leaf_node_b = LeafNode{ suite,
+                               leaf_priv_b.public_key,
+                               identity_priv_b.public_key,
+                               credential_b,
+                               Capabilities::create_default(),
+                               Lifetime::create_default(),
+                               {},
+                               identity_priv_b };
+    auto key_package_b =
+      KeyPackage{ suite, init_priv_b.public_key, leaf_node_b, {}, identity_priv_b };
+
+    // Initialize the creator's state
+    log.log("mls", "create");
+    auto alice0 = State{ group_id,
+                         suite,
+                         leaf_priv_a,
+                         identity_priv_a,
+                         leaf_node_a,
+                         {} };
+
+    // Handle the Add proposal and create a Commit
+    log.log("mls", "add");
+    auto add = alice0.add_proposal(key_package_b);
+    auto proposals = std::vector<Proposal>{ add };
+    auto [commit, welcome, alice1] =
+      alice0.commit(fresh_secret, CommitOpts{ proposals, true, false, {} }, {});
+
+    // Initialize the second participant from the Welcome
+    log.log("mls", "join");
+    auto bob1 = State{ init_priv_b,
+                          leaf_priv_b,
+                          identity_priv_b,
+                          key_package_b,
+                          welcome,
+                          std::nullopt,
+                          {} };
+
+    // Verify group
+    log.log("mls", "join");
+    if (alice1.epoch_authenticator() != bob1.epoch_authenticator()) {
+      log.log("mls", "disagree");
+      return false;
+    }
+
+    return true;
+  } catch (const std::exception& e) {
+        log.log("mls", "throw", e.what());
+        return false;
+  }
+}
+
 // TODO Get the osc working correctly from an external signal
 int app_main()
 {
@@ -548,9 +633,10 @@ int app_main()
               const auto sig_raw = test_sig_raw(log);
               const auto sig = test_sig(log);
               const auto kem = true; // already validated // test_kem();
+              const auto mls = test_mls(log);
               first_run = false;
 
-              log.log("end ", digest, hmac, aead, sig_raw, sig, kem);
+              log.log("end ", digest, hmac, aead, sig_raw, sig, kem, mls);
             }
 
             if (rx_busy) {

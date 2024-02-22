@@ -12,6 +12,7 @@ using namespace MLS_NAMESPACE::bytes_ns;
 
 namespace MLS_NAMESPACE::hpke {
 
+#if 0
 struct Certificate
 {
 private:
@@ -72,5 +73,6 @@ public:
 
 bool
 operator==(const Certificate& lhs, const Certificate& rhs);
+#endif // 0
 
 } // namespace MLS_NAMESPACE::hpke
