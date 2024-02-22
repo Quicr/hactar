@@ -183,15 +183,28 @@ bool test_aead(Logger& log) {
     }
 }
 
-// XXX(RLB): Getting signature working:
-// * Validate that raw known-answer test works
-// * Validate that raw known-answer test works with small math functions
-// * Validate that raw known-answer test works with SHA-256
-// * Generate key pair dynamically, verify raw round-trip test works
-// * Move ECC context to an object
-// * Introduce casts
-bool test_sig_raw(Logger& log) {
+struct ECCContext {
+  // XXX Not at all clear what the right value for this parameter is.  This is
+  // what it is set to in the examples.
+  static constexpr size_t buffer_size = 2000;
 
+  std::array<uint8_t, buffer_size> buffer;
+  cmox_ecc_handle_t ctx;
+
+  ECCContext() {
+    cmox_ecc_construct(&ctx, CMOX_ECC256_MATH_FUNCS, buffer.data(), buffer.size());
+  }
+
+  cmox_ecc_handle_t* get() {
+    return &ctx;
+  }
+
+  ~ECCContext() {
+    cmox_ecc_cleanup(&ctx);
+  }
+};
+
+bool test_sig_raw(Logger& log) {
   // Constants
   const auto msg = from_hex("ff624d0ba02c7b6370c1622eec3fa2186ea681d1659e0a845448e777b75a8e77a77bb26e5733179d58ef9bc8a4e8b6971aef2539f77ab0963a3415bbd6258339bd1bf55de65db520c63f5b8eab3d55debd05e9494212170f5d65b3286b8b668705b1e2b2b5568610617abb51d2dd0cb450ef59df4b907da90cfa7b268de8c4c2");
   const auto priv = from_hex("708309a7449e156b0db70e5b52e606c7e094ed676ce8953bf6c14757c826f590");
@@ -229,10 +242,8 @@ bool test_sig_raw(Logger& log) {
 
   {
     // Sign
-    cmox_ecc_handle_t ctx;
-    cmox_ecc_construct(&ctx, CMOX_ECC256_MATH_FUNCS, buffer.data(), buffer.size());
-
-    const auto srv = cmox_ecdsa_sign(&ctx,
+    auto ctx = ECCContext();
+    const auto srv = cmox_ecdsa_sign(ctx.get(),
                                      CMOX_ECC_SECP256R1_LOWMEM,
                                      random.data(),
                                      random.size(),
@@ -262,16 +273,13 @@ bool test_sig_raw(Logger& log) {
       return false;
     }
 
-    log.log("sig_raw", "sig_cleanup");
-    cmox_ecc_cleanup(&ctx);
+    log.log("sig_raw", "sig ok");
   }
 
   // Verify
   {
-    cmox_ecc_handle_t ctx;
-    cmox_ecc_construct(&ctx, CMOX_ECC256_MATH_FUNCS, buffer.data(), buffer.size());
-
-    const auto vrv = cmox_ecdsa_verify(&ctx,
+    auto ctx = ECCContext();
+    const auto vrv = cmox_ecdsa_verify(ctx.get(),
                                        CMOX_ECC_CURVE_SECP256R1,
                                        pub.data(),
                                        pub.size(),
@@ -292,8 +300,7 @@ bool test_sig_raw(Logger& log) {
       return false;
     }
 
-    log.log("sig_raw", "ver_cleanup");
-    cmox_ecc_cleanup(&ctx);
+    log.log("sig_raw", "ver ok");
   }
 
   log.log("sig_raw", "ok");
