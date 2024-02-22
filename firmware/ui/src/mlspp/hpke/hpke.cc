@@ -168,7 +168,7 @@ struct ECCContext {
   }
 };
 
-struct P256 : KEM {
+struct P256KEM : KEM {
   struct PrivateKey : KEM::PrivateKey {
     PrivateKeyBuffer priv;
 
@@ -179,7 +179,7 @@ struct P256 : KEM {
     std::unique_ptr<KEM::PublicKey> public_key() const override {
       auto pub = PublicKeyBuffer();
       std::copy(priv.begin() + 32, priv.end(), pub.begin());
-      return std::make_unique<P256::PublicKey>(std::move(pub));
+      return std::make_unique<P256KEM::PublicKey>(std::move(pub));
     }
   };
 
@@ -199,7 +199,7 @@ struct P256 : KEM {
     return label_kem + i2osp(uint16_t(id), 2);
   }
 
-  P256()
+  P256KEM()
     : KEM(ID::DHKEM_P256_SHA256,
           CMOX_ECC_SECP256R1_SECRET_LEN,
           CMOX_ECC_SECP256R1_PUBKEY_LEN,
@@ -240,29 +240,29 @@ struct P256 : KEM {
                       &pub_size);
 
 
-    return std::make_unique<P256::PrivateKey>(std::move(priv));
+    return std::make_unique<P256KEM::PrivateKey>(std::move(priv));
   }
 
   bytes serialize(const KEM::PublicKey& pk) const override {
-    const auto& rpk = dynamic_cast<const P256::PublicKey&>(pk);
+    const auto& rpk = dynamic_cast<const P256KEM::PublicKey&>(pk);
     return bytes(std::vector<uint8_t>(rpk.pub.begin(), rpk.pub.end()));
   }
 
   std::unique_ptr<KEM::PublicKey> deserialize(const bytes& enc) const override {
     auto pub = PublicKeyBuffer();
     std::copy(enc.begin(), enc.end(), pub.begin());
-    return std::make_unique<P256::PublicKey>(std::move(pub));
+    return std::make_unique<P256KEM::PublicKey>(std::move(pub));
   }
 
   bytes serialize_private(const KEM::PrivateKey& sk) const override {
-    const auto& rsk = dynamic_cast<const P256::PrivateKey&>(sk);
+    const auto& rsk = dynamic_cast<const P256KEM::PrivateKey&>(sk);
     return bytes(std::vector<uint8_t>(rsk.priv.begin(), rsk.priv.end()));
   }
 
   std::unique_ptr<KEM::PrivateKey> deserialize_private(const bytes& enc) const override {
     auto priv = PrivateKeyBuffer();
     std::copy(enc.begin(), enc.end(), priv.begin());
-    return std::make_unique<P256::PrivateKey>(std::move(priv));
+    return std::make_unique<P256KEM::PrivateKey>(std::move(priv));
   }
 
   std::pair<bytes, bytes> encap(const KEM::PublicKey& pkR) const override {
@@ -290,8 +290,8 @@ struct P256 : KEM {
   }
 
   bytes dh(const KEM::PrivateKey& sk, const KEM::PublicKey& pk) const {
-    const auto& rsk = dynamic_cast<const P256::PrivateKey&>(sk);
-    const auto& rpk = dynamic_cast<const P256::PublicKey&>(pk);
+    const auto& rsk = dynamic_cast<const P256KEM::PrivateKey&>(sk);
+    const auto& rpk = dynamic_cast<const P256KEM::PublicKey&>(pk);
 
     auto zz = bytes(CMOX_ECC_SECP256R1_SECRET_LEN);
     auto zz_size = zz.size();
@@ -340,7 +340,7 @@ template<>
 const KEM&
 KEM::get<KEM::ID::DHKEM_P256_SHA256>()
 {
-  static const P256 instance;
+  static const P256KEM instance;
   return instance;
 }
 
