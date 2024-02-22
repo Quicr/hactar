@@ -215,11 +215,12 @@ bool test_sig_raw(Logger& log) {
   auto priv = bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
   auto pub = bytes(CMOX_ECC_SECP256R1_PUBKEY_LEN);
   {
-    auto ctx = ECCContext();
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+
     auto priv_size = priv.size();
     auto pub_size = pub.size();
 
-    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+    auto ctx = ECCContext();
     const auto rv = cmox_ecdsa_keyGen(ctx.get(),
                                       CMOX_ECC_SECP256R1_LOWMEM,
                                       randomness.data(),
@@ -235,6 +236,8 @@ bool test_sig_raw(Logger& log) {
       return false;
     }
 
+    priv.resize(priv_size);
+    pub.resize(pub_size);
     log.log("sig_raw", "keygen", "ok");
   }
 
@@ -309,10 +312,10 @@ bool test_sig(Logger& log) {
         const auto msg = from_ascii("attack at dawn!");
         log.log("sig", "start");
 
-#if 0
         const auto sk = sig.generate_key_pair();
         log.log("sig", "keygen");
 
+#if 0
         const auto pk = sk->public_key();
         log.log("sig", "public_key");
 
