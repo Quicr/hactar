@@ -19,6 +19,8 @@
 #include <hpke/signature.h>
 #include <hpke/hpke.h>
 
+#include <crypto/cmox_init.h>
+
 #include <memory>
 #include <cmath>
 #include <sstream>
@@ -342,11 +344,15 @@ int app_main()
     // tx_sound_buff[SOUND_BUFFER_SZ - 1] = 1;
     // tx_sound_buff[SOUND_BUFFER_SZ - 2] = 0x00AA;
 
+    // Initialize the cryptographic library
+    Logger log;
+    const auto rv = cmox_initialize(nullptr);
+    log.log("init", rv == CMOX_INIT_SUCCESS);
+
     // Delayed condition
     auto first_run = true;
     uint32_t blink = HAL_GetTick() + 5000;
     uint32_t tx_sound = 0;
-    Logger log;
     // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
     while (1)
     {
@@ -402,8 +408,8 @@ int app_main()
 
               const auto digest = true; // already validated // test_digest(log);
               const auto hmac = true; // already validated // test_hmac(log);
-              const auto aead = false; // known broken // test_aead(log);
-              const auto sig = test_sig(log);
+              const auto aead = test_aead(log);
+              const auto sig = false; // known broken // test_sig(log);
               const auto kem = true; // already validated // test_kem();
               first_run = false;
 
