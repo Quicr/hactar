@@ -75,6 +75,8 @@ struct P256Signature : Signature {
     auto pub = bytes(CMOX_ECC_SECP256R1_PUBKEY_LEN);
     auto pub_size = pub.size();
 
+    /// vvv PROBLEM IS SOMEWHERE IN HERE vvv ///
+    /*
     auto ctx = ECCContext();
     const auto rv = cmox_ecdsa_keyGen(ctx.get(),
                                       CMOX_ECC_SECP256R1_LOWMEM,
@@ -88,6 +90,8 @@ struct P256Signature : Signature {
     if (rv != CMOX_ECC_SUCCESS) {
       throw CMOXError::from_code(rv);
     }
+    */
+    /// ^^^ PROBLEM IS SOMEWHERE IN HERE ^^^ ///
 
     priv.resize(priv_size);
     pub.resize(pub_size);
@@ -128,7 +132,7 @@ struct P256Signature : Signature {
     auto sig = bytes(CMOX_ECC_SECP256R1_SIG_LEN);
     auto sig_size = sig.size();
 
-    auto ctx = ECCContext{};
+    auto ctx = ECCContext();
     const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
     const auto rv = cmox_ecdsa_sign(ctx.get(),
                                     CURVE,
@@ -158,7 +162,7 @@ struct P256Signature : Signature {
     const auto digest = sha256.hash(data);
 
     auto fault_check = uint32_t(0);
-    auto ctx = ECCContext{};
+    auto ctx = ECCContext();
     const auto rv = cmox_ecdsa_verify(ctx.get(),
                                       CURVE,
                                       rpk.pub.data(),
