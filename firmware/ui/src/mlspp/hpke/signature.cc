@@ -11,7 +11,6 @@
 
 namespace MLS_NAMESPACE::hpke {
 
-#define MATH CMOX_MATH_FUNCS_SMALL
 #define CURVE CMOX_ECC_SECP256R1_LOWMEM
 
 // RAII wrapper for cmox_ecc_handle_t and its associated memory buffer.
@@ -24,7 +23,7 @@ struct ECCContext {
   cmox_ecc_handle_t ctx;
 
   ECCContext() {
-    cmox_ecc_construct(&ctx, MATH, buffer.data(), buffer.size());
+    cmox_ecc_construct(&ctx, CMOX_ECC256_MATH_FUNCS, buffer.data(), buffer.size());
   }
 
   cmox_ecc_handle_t* get() {
@@ -76,11 +75,7 @@ struct P256Signature : Signature {
     auto pub = bytes(CMOX_ECC_SECP256R1_PUBKEY_LEN);
     auto pub_size = pub.size();
 
-#if 0
-    // XXX It would be nice to store this context on the object, to facilitate
-    // reuse.  But the various methods here are marked `const`, so we would have
-    // to do some chicanery to hide the mutability of the context.
-    auto ctx = ECCContext{};
+    auto ctx = ECCContext();
     const auto rv = cmox_ecdsa_keyGen(ctx.get(),
                                       CMOX_ECC_SECP256R1_LOWMEM,
                                       ikm.data(),
@@ -97,7 +92,6 @@ struct P256Signature : Signature {
     priv.resize(priv_size);
     pub.resize(pub_size);
 
-#endif // 0
     return std::make_unique<P256Signature::PrivateKey>(std::move(priv), std::move(pub));
   }
 
