@@ -99,7 +99,7 @@ struct P256Signature : Signature {
 
     return std::make_unique<P256Signature::PrivateKey>(std::move(priv), std::move(pub));
 #endif // 0
-    return std::make_unique<P256Signature::PrivateKey>({}, {});
+    return std::make_unique<P256Signature::PrivateKey>(bytes{}, bytes{});
   }
 
   bytes serialize(const Signature::PublicKey& pk) const override {
