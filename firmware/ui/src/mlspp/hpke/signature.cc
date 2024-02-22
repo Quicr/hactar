@@ -81,7 +81,7 @@ struct P256Signature : Signature {
     // to do some chicanery to hide the mutability of the context.
     auto ctx = ECCContext{};
     const auto rv = cmox_ecdsa_keyGen(ctx.get(),
-                                      CURVE,
+                                      CMOX_ECC_SECP256R1_LOWMEM,
                                       ikm.data(),
                                       ikm.size(),
                                       priv.data(),
