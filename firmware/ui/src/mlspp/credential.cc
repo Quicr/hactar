@@ -9,7 +9,8 @@ namespace MLS_NAMESPACE {
 /// X509Credential
 ///
 
-using MLS_NAMESPACE::hpke::Certificate; // NOLINT(misc-unused-using-decls)
+#if 0
+// using MLS_NAMESPACE::hpke::Certificate; // NOLINT(misc-unused-using-decls)
 using MLS_NAMESPACE::hpke::Signature;   // NOLINT(misc-unused-using-decls)
 
 static const Signature&
@@ -18,6 +19,7 @@ find_signature(Signature::ID id)
   switch (id) {
     case Signature::ID::P256_SHA256:
       return Signature::get<Signature::ID::P256_SHA256>();
+#if 0
     case Signature::ID::P384_SHA384:
       return Signature::get<Signature::ID::P384_SHA384>();
     case Signature::ID::P521_SHA512:
@@ -30,6 +32,7 @@ find_signature(Signature::ID id)
 #endif
     case Signature::ID::RSA_SHA256:
       return Signature::get<Signature::ID::RSA_SHA256>();
+#endif // 0
     default:
       throw InvalidParameterError("Unsupported algorithm");
   }
@@ -111,6 +114,7 @@ operator==(const X509Credential& lhs, const X509Credential& rhs)
 {
   return lhs.der_chain == rhs.der_chain;
 }
+#endif // 0
 
 ///
 /// CredentialBinding and MultiCredential
@@ -201,11 +205,13 @@ Credential::basic(const bytes& identity)
   return { BasicCredential{ identity } };
 }
 
+#if 0
 Credential
 Credential::x509(const std::vector<bytes>& der_chain)
 {
   return { X509Credential{ der_chain } };
 }
+#endif // 0
 
 Credential
 Credential::multi(const std::vector<CredentialBindingInput>& binding_inputs,
@@ -218,7 +224,9 @@ bool
 Credential::valid_for(const SignaturePublicKey& pub) const
 {
   const auto pub_key_match = overloaded{
+#if 0
     [&](const X509Credential& x509) { return x509.valid_for(pub); },
+#endif // 0
     [](const BasicCredential& /* basic */) { return true; },
     [&](const MultiCredential& multi) { return multi.valid_for(pub); },
   };

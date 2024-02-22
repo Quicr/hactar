@@ -24,6 +24,7 @@ struct BasicCredential
   TLS_SERIALIZABLE(identity)
 };
 
+#if 0
 struct X509Credential
 {
   struct CertData
@@ -56,12 +57,15 @@ operator>>(tls::istream& str, X509Credential& obj);
 
 bool
 operator==(const X509Credential& lhs, const X509Credential& rhs);
+#endif // 0
 
 enum struct CredentialType : uint16_t
 {
   reserved = 0,
   basic = 1,
+#if 0
   x509 = 2,
+#endif // 0
 
   multi_draft_00 = 0xFF00,
 
@@ -131,7 +135,9 @@ struct Credential
   }
 
   static Credential basic(const bytes& identity);
+#if 0
   static Credential x509(const std::vector<bytes>& der_chain);
+#endif // 0
   static Credential multi(
     const std::vector<CredentialBindingInput>& binding_inputs,
     const SignaturePublicKey& signature_key);
@@ -143,7 +149,9 @@ struct Credential
 
 private:
   using SpecificCredential = var::variant<BasicCredential,
+#if 0
                                           X509Credential,
+#endif // 0
                                           MultiCredential>;
 
   Credential(SpecificCredential specific);
@@ -187,9 +195,11 @@ namespace MLS_NAMESPACE::tls {
 TLS_VARIANT_MAP(MLS_NAMESPACE::CredentialType,
                 MLS_NAMESPACE::BasicCredential,
                 basic)
+#if 0
 TLS_VARIANT_MAP(MLS_NAMESPACE::CredentialType,
                 MLS_NAMESPACE::X509Credential,
                 x509)
+#endif // 0
 TLS_VARIANT_MAP(MLS_NAMESPACE::CredentialType,
                 MLS_NAMESPACE::MultiCredential,
                 multi_draft_00)

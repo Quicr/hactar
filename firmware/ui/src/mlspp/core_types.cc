@@ -48,7 +48,9 @@ const std::array<CipherSuite::ID, 6> all_supported_ciphersuites = {
 
 const std::array<CredentialType, 4> all_supported_credentials = {
   CredentialType::basic,
+#if 0
   CredentialType::x509,
+#endif // 0
   CredentialType::multi_draft_00
 };
 
@@ -215,6 +217,7 @@ LeafNode::verify(CipherSuite cipher_suite,
 {
   const auto tbs = to_be_signed(binding);
 
+#if 0
   if (CredentialType::x509 == credential.type()) {
     const auto& cred = credential.get<X509Credential>();
     if (cred.signature_scheme() !=
@@ -222,6 +225,7 @@ LeafNode::verify(CipherSuite cipher_suite,
       throw std::runtime_error("Signature algorithm invalid");
     }
   }
+#endif // 0
 
   return signature_key.verify(
     cipher_suite, sign_label::leaf_node, tbs, signature);
@@ -420,6 +424,7 @@ KeyPackage::verify() const
   // Verify the KeyPackage
   const auto tbs = to_be_signed();
 
+#if 0
   if (CredentialType::x509 == leaf_node.credential.type()) {
     const auto& cred = leaf_node.credential.get<X509Credential>();
     if (cred.signature_scheme() !=
@@ -427,6 +432,7 @@ KeyPackage::verify() const
       throw std::runtime_error("Signature algorithm invalid");
     }
   }
+#endif // 0
 
   return leaf_node.signature_key.verify(
     cipher_suite, sign_label::key_package, tbs, signature);
