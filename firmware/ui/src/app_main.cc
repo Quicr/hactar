@@ -207,39 +207,67 @@ struct ECCContext {
 bool test_sig_raw(Logger& log) {
   // Constants
   const auto msg = from_hex("ff624d0ba02c7b6370c1622eec3fa2186ea681d1659e0a845448e777b75a8e77a77bb26e5733179d58ef9bc8a4e8b6971aef2539f77ab0963a3415bbd6258339bd1bf55de65db520c63f5b8eab3d55debd05e9494212170f5d65b3286b8b668705b1e2b2b5568610617abb51d2dd0cb450ef59df4b907da90cfa7b268de8c4c2");
-  const auto priv = from_hex("708309a7449e156b0db70e5b52e606c7e094ed676ce8953bf6c14757c826f590");
-  const auto pub = from_hex("29578c7ab6ce0d11493c95d5ea05d299d536801ca9cbd50e9924e43b733b83ab08c8049879c6278b2273348474158515accaa38344106ef96803c5a05adc4800");
   const auto random = from_hex("58f741771620bdc428e91a32d86d230873e9140336fcfb1e122892ee1d501bdb");
 
+  // Generate a key pair
+  auto priv = bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+  auto pub = bytes(CMOX_ECC_SECP256R1_PUBKEY_LEN);
+  {
+    auto ctx = ECCContext();
+    auto priv_size = priv.size();
+    auto pub_size = pub.size();
+
+    const auto rv = cmox_ecdsa_keyGen(ctx.get(),
+                                      CMOX_ECC_SECP256R1_LOWMEM,
+                                      random.data(),
+                                      random.size(),
+                                      priv.data(),
+                                      &priv_size,
+                                      pub.data(),
+                                      &pub_size);
+    log.log("sig_raw", "keygen");
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      log.log("sig_raw", "keygen", "rv", rv);
+      return false;
+    }
+
+    log.log("sig_raw", "keygen", "ok");
+  }
+
+  // Pre-hash msg
   auto hash = bytes(CMOX_SHA256_SIZE);
   {
-    // Pre-hash msg
     size_t computed_size = 0;
-    const auto hrv = cmox_hash_compute(CMOX_SHA256_ALGO,
+    const auto rv = cmox_hash_compute(CMOX_SHA256_ALGO,
                                        msg.data(),
                                        msg.size(),
                                        hash.data(),
                                        CMOX_SHA256_SIZE,
                                        &computed_size);
+    log.log("sig_raw", "hash");
 
-    if (hrv != CMOX_HASH_SUCCESS)
+    if (rv != CMOX_HASH_SUCCESS)
     {
-      log.log("sig_raw", "hrv", hrv);
+      log.log("sig_raw", "hash", "rv", rv);
       return false;
     }
 
     if (computed_size != CMOX_SHA256_SIZE)
     {
-      Error_Handler();
+      log.log("sig_raw", "hash", "computed_size", computed_size);
+      return false;
     }
+
+    log.log("sig_raw", "hash", "ok");
   }
 
+  // Sign
   auto computed_sig = bytes(CMOX_ECC_SECP256R1_SIG_LEN);
   {
-    // Sign
     auto ctx = ECCContext();
     size_t computed_size = 0;
-    const auto srv = cmox_ecdsa_sign(ctx.get(),
+    const auto rv = cmox_ecdsa_sign(ctx.get(),
                                      CMOX_ECC_SECP256R1_LOWMEM,
                                      random.data(),
                                      random.size(),
@@ -251,9 +279,9 @@ bool test_sig_raw(Logger& log) {
                                      &computed_size);
     log.log("sig_raw", "sign");
 
-    if (srv != CMOX_ECC_SUCCESS)
+    if (rv != CMOX_ECC_SUCCESS)
     {
-      log.log("sig_raw", "srv", srv);
+      log.log("sig_raw", "sign", "rv", rv);
       return false;
     }
 
@@ -264,7 +292,7 @@ bool test_sig_raw(Logger& log) {
   {
     auto ctx = ECCContext();
     uint32_t fault_check = CMOX_ECC_AUTH_FAIL;
-    const auto vrv = cmox_ecdsa_verify(ctx.get(),
+    const auto rv = cmox_ecdsa_verify(ctx.get(),
                                        CMOX_ECC_CURVE_SECP256R1,
                                        pub.data(),
                                        pub.size(),
@@ -274,14 +302,14 @@ bool test_sig_raw(Logger& log) {
                                        computed_sig.size(),
                                        &fault_check);
 
-    if (vrv != CMOX_ECC_AUTH_SUCCESS)
+    if (rv != CMOX_ECC_AUTH_SUCCESS)
     {
-      log.log("sig_raw", "vrv", vrv);
+      log.log("sig_raw", "ver", "rv", rv);
       return false;
     }
     if (fault_check != CMOX_ECC_AUTH_SUCCESS)
     {
-      log.log("sig_raw", "fault_check", fault_check);
+      log.log("sig_raw", "ver", "fault_check", fault_check);
       return false;
     }
 
