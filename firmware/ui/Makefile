@@ -282,11 +282,11 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
 
 upload:
-	python ../flasher/flasher.py --baud=${BAUD} --chip="ui" \
+	python3 ../flasher/flasher.py --baud=${BAUD} --chip="ui" \
 								 -bin=${BUILD_DIR}/${FIRMWARE}
 
 upload_prog:
-	python ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
+	python3 ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
 	fi \
@@ -314,11 +314,11 @@ openocd:
 	openocd $(OCDFLAGS)
 
 monitor:
-	python ../tools/command_sender.py ${PORT} ${BAUD} debug
+	python3 ../tools/command_sender.py ${PORT} ${BAUD} debug
 	screen ${PORT} ${BAUD}
 
 py_monitor:
-	python ../tools/monitor.py ${PORT} ${BAUD}
+	python3 ../tools/monitor.py ${PORT} ${BAUD}
 
 #######################################
 # clean up

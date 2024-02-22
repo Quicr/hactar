@@ -21,13 +21,13 @@ compile:
 	idf.py build
 
 upload:
-	python ../flasher/flasher.py  --baud=${BAUD} --chip="net" \
+	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" \
 								 -bin=${BUILD_PATH}
 
 upload_esptool:
-	python ../tools/command_sender.py ${PORT} ${BAUD} net_upload
+	python3 ../tools/command_sender.py ${PORT} ${BAUD} net_upload
 	if [ ${OS} == Windows_NT ] ; then \
-		python -m esptool ${ESP_TOOL_ARGS} ; \
+		python3 -m esptool ${ESP_TOOL_ARGS} ; \
 	else \
 		esptool.py ${ESP_TOOL_ARGS} ; \
 	fi \
@@ -35,11 +35,11 @@ upload_esptool:
 program: compile upload
 
 monitor:
-	python ../tools/command_sender.py ${PORT} ${BAUD} debug
+	python3 ../tools/command_sender.py ${PORT} ${BAUD} debug
 	screen ${PORT} ${BAUD}
 
 py_monitor:
-	python ../tools/monitor.py ${PORT} ${BAUD}
+	python3 ../tools/monitor.py ${PORT} ${BAUD}
 
 clean:
 	rm -rf ${BUILD_PATH}
