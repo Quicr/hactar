@@ -39,7 +39,7 @@ struct ECCContext {
   }
 };
 
-struct P256 : Signature {
+struct P256Signature : Signature {
   struct PrivateKey : Signature::PrivateKey {
     PrivateKeyBuffer priv;
 
@@ -50,7 +50,7 @@ struct P256 : Signature {
     std::unique_ptr<Signature::PublicKey> public_key() const override {
       auto pub = PublicKeyBuffer();
       std::copy(priv.begin() + 32, priv.end(), pub.begin());
-      return std::make_unique<P256::PublicKey>(std::move(pub));
+      return std::make_unique<P256Signature::PublicKey>(std::move(pub));
     }
   };
 
@@ -62,7 +62,7 @@ struct P256 : Signature {
     {}
   };
 
-  P256()
+  P256Signature()
     : Signature(ID::P256_SHA256)
   {}
 
@@ -100,35 +100,35 @@ struct P256 : Signature {
       throw CMOXError::from_code(rv);
     }
 
-    return std::make_unique<P256::PrivateKey>(std::move(priv));
+    return std::make_unique<P256Signature::PrivateKey>(std::move(priv));
   }
 
   bytes serialize(const Signature::PublicKey& pk) const override {
-    const auto& rpk = dynamic_cast<const P256::PublicKey&>(pk);
+    const auto& rpk = dynamic_cast<const P256Signature::PublicKey&>(pk);
     return bytes(std::vector<uint8_t>(rpk.pub.begin(), rpk.pub.end()));
   }
 
   std::unique_ptr<Signature::PublicKey> deserialize(const bytes& enc) const override {
     auto pub = PublicKeyBuffer();
     std::copy(enc.begin(), enc.end(), pub.begin());
-    return std::make_unique<P256::PublicKey>(std::move(pub));
+    return std::make_unique<P256Signature::PublicKey>(std::move(pub));
   }
 
   bytes serialize_private(const Signature::PrivateKey& sk) const override {
-    const auto& rsk = reinterpret_cast<const P256::PrivateKey&>(sk);
+    const auto& rsk = reinterpret_cast<const P256Signature::PrivateKey&>(sk);
     return bytes(std::vector<uint8_t>(rsk.priv.begin(), rsk.priv.end()));
   }
 
   std::unique_ptr<Signature::PrivateKey> deserialize_private(const bytes& enc) const override {
     auto priv = PrivateKeyBuffer();
     std::copy(enc.begin(), enc.end(), priv.begin());
-    return std::make_unique<P256::PrivateKey>(std::move(priv));
+    return std::make_unique<P256Signature::PrivateKey>(std::move(priv));
   }
 
   bytes sign(const bytes& data, const Signature::PrivateKey& sk) const override {
     // XXX(RLB) This should use dynamic_cast, but dynamic_cast appears to throw
     // `bad_cast` on STM32.
-    const auto& rsk = reinterpret_cast<const P256::PrivateKey&>(sk);
+    const auto& rsk = reinterpret_cast<const P256Signature::PrivateKey&>(sk);
 
     const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
 
@@ -161,7 +161,7 @@ struct P256 : Signature {
   bool verify(const bytes& data,
               const bytes& sig,
               const Signature::PublicKey& pk) const override {
-    const auto& rpk = reinterpret_cast<const P256::PublicKey&>(pk);
+    const auto& rpk = reinterpret_cast<const P256Signature::PublicKey&>(pk);
 
     const auto sha256 = Digest::get<Digest::ID::SHA256>();
     const auto digest = sha256.hash(data);
@@ -189,7 +189,7 @@ struct P256 : Signature {
 template<>
 const Signature& Signature::get<Signature::ID::P256_SHA256>()
 {
-  static const P256 instance;
+  static const P256Signature instance;
   return instance;
 }
 
