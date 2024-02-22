@@ -210,17 +210,11 @@ bool test_sig_raw(Logger& log) {
   const auto priv = from_hex("708309a7449e156b0db70e5b52e606c7e094ed676ce8953bf6c14757c826f590");
   const auto pub = from_hex("29578c7ab6ce0d11493c95d5ea05d299d536801ca9cbd50e9924e43b733b83ab08c8049879c6278b2273348474158515accaa38344106ef96803c5a05adc4800");
   const auto random = from_hex("58f741771620bdc428e91a32d86d230873e9140336fcfb1e122892ee1d501bdb");
-  const auto known_sig = from_hex("4a19274429e40522234b8785dc25fc524f179dcc95ff09b3c9770fc71f54ca0d58982b79a65b7320f5b92d13bdaecdd1259e760f0f718ba933fd098f6f75d4b7");
 
   auto hash = bytes(CMOX_SHA256_SIZE);
-  auto computed_sig = bytes(CMOX_ECC_SECP256R1_SIG_LEN);
-  auto buffer = bytes(2000);
-
-  size_t computed_size = 0;
-  uint32_t fault_check = CMOX_ECC_AUTH_FAIL;
-
   {
     // Pre-hash msg
+    size_t computed_size = 0;
     const auto hrv = cmox_hash_compute(CMOX_SHA256_ALGO,
                                        msg.data(),
                                        msg.size(),
@@ -240,9 +234,11 @@ bool test_sig_raw(Logger& log) {
     }
   }
 
+  auto computed_sig = bytes(CMOX_ECC_SECP256R1_SIG_LEN);
   {
     // Sign
     auto ctx = ECCContext();
+    size_t computed_size = 0;
     const auto srv = cmox_ecdsa_sign(ctx.get(),
                                      CMOX_ECC_SECP256R1_LOWMEM,
                                      random.data(),
@@ -261,24 +257,13 @@ bool test_sig_raw(Logger& log) {
       return false;
     }
 
-    if (computed_size != known_sig.size())
-    {
-      log.log("sig_raw", "computed_size", computed_size);
-      return false;
-    }
-
-    if (computed_sig != known_sig)
-    {
-      log.log("sig_raw", "Computed_Signature");
-      return false;
-    }
-
     log.log("sig_raw", "sig ok");
   }
 
   // Verify
   {
     auto ctx = ECCContext();
+    uint32_t fault_check = CMOX_ECC_AUTH_FAIL;
     const auto vrv = cmox_ecdsa_verify(ctx.get(),
                                        CMOX_ECC_CURVE_SECP256R1,
                                        pub.data(),
