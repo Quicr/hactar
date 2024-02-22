@@ -14,9 +14,6 @@ namespace MLS_NAMESPACE::hpke {
 #define MATH CMOX_MATH_FUNCS_SMALL
 #define CURVE CMOX_ECC_SECP256R1_LOWMEM
 
-using PrivateKeyBuffer = std::array<uint8_t, CMOX_ECC_SECP256R1_PRIVKEY_LEN>;
-using PublicKeyBuffer = std::array<uint8_t, CMOX_ECC_SECP256R1_PUBKEY_LEN>;
-
 // RAII wrapper for cmox_ecc_handle_t and its associated memory buffer.
 struct ECCContext {
   // XXX Not at all clear what the right value for this parameter is.  This is
@@ -41,23 +38,23 @@ struct ECCContext {
 
 struct P256Signature : Signature {
   struct PrivateKey : Signature::PrivateKey {
-    PrivateKeyBuffer priv;
+    bytes priv;
+    bytes pub;
 
-    PrivateKey(PrivateKeyBuffer priv_in)
+    PrivateKey(bytes priv_in, bytes pub_in)
       : priv(std::move(priv_in))
+      , pub(std::move(pub_in))
     {}
 
     std::unique_ptr<Signature::PublicKey> public_key() const override {
-      auto pub = PublicKeyBuffer();
-      std::copy(priv.begin() + 32, priv.end(), pub.begin());
-      return std::make_unique<P256Signature::PublicKey>(std::move(pub));
+      return std::make_unique<P256Signature::PublicKey>(pub);
     }
   };
 
   struct PublicKey : Signature::PublicKey {
-    PublicKeyBuffer pub;
+    bytes pub;
 
-    PublicKey(PublicKeyBuffer pub_in)
+    PublicKey(bytes pub_in)
       : pub(std::move(pub_in))
     {}
   };
@@ -72,21 +69,17 @@ struct P256Signature : Signature {
   }
 
   std::unique_ptr<Signature::PrivateKey> derive_key_pair(const bytes& ikm) const override {
-    // Private key buffer seed || pubkey
-    auto priv = PrivateKeyBuffer{};
+    // Key buffers
+    auto priv = bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
     auto priv_size = priv.size();
 
-    // Public key buffer.  Ultimately discarded, because it is duplicative: The
-    // public key is stored in the private key buffer.
-    auto pub = PublicKeyBuffer{};
+    auto pub = bytes(CMOX_ECC_SECP256R1_PUBKEY_LEN);
     auto pub_size = pub.size();
 
     // XXX It would be nice to store this context on the object, to facilitate
     // reuse.  But the various methods here are marked `const`, so we would have
     // to do some chicanery to hide the mutability of the context.
     auto ctx = ECCContext{};
-
-    // TODO check return value
     const auto rv = cmox_ecdsa_keyGen(ctx.get(),
                                       CURVE,
                                       ikm.data(),
@@ -100,29 +93,32 @@ struct P256Signature : Signature {
       throw CMOXError::from_code(rv);
     }
 
-    return std::make_unique<P256Signature::PrivateKey>(std::move(priv));
+    priv.resize(priv_size);
+    pub.resize(pub_size);
+
+    return std::make_unique<P256Signature::PrivateKey>(std::move(priv), std::move(pub));
   }
 
   bytes serialize(const Signature::PublicKey& pk) const override {
     const auto& rpk = dynamic_cast<const P256Signature::PublicKey&>(pk);
-    return bytes(std::vector<uint8_t>(rpk.pub.begin(), rpk.pub.end()));
+    return rpk.pub;
   }
 
   std::unique_ptr<Signature::PublicKey> deserialize(const bytes& enc) const override {
-    auto pub = PublicKeyBuffer();
-    std::copy(enc.begin(), enc.end(), pub.begin());
-    return std::make_unique<P256Signature::PublicKey>(std::move(pub));
+    return std::make_unique<P256Signature::PublicKey>(enc);
   }
 
   bytes serialize_private(const Signature::PrivateKey& sk) const override {
     const auto& rsk = reinterpret_cast<const P256Signature::PrivateKey&>(sk);
-    return bytes(std::vector<uint8_t>(rsk.priv.begin(), rsk.priv.end()));
+    const auto len = std::vector<uint8_t>(1, uint8_t(rsk.priv.size()));
+    return bytes(len) + rsk.priv + rsk.pub;
   }
 
   std::unique_ptr<Signature::PrivateKey> deserialize_private(const bytes& enc) const override {
-    auto priv = PrivateKeyBuffer();
-    std::copy(enc.begin(), enc.end(), priv.begin());
-    return std::make_unique<P256Signature::PrivateKey>(std::move(priv));
+    auto len = size_t(enc.data()[0]);
+    auto priv = std::vector<uint8_t>(enc.begin() + 1, enc.begin() + len + 1);
+    auto pub = std::vector<uint8_t>(enc.begin() + len + 1, enc.end());
+    return std::make_unique<P256Signature::PrivateKey>(std::move(priv), std::move(pub));
   }
 
   bytes sign(const bytes& data, const Signature::PrivateKey& sk) const override {
