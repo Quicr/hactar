@@ -126,6 +126,8 @@ struct P256 : Signature {
   }
 
   bytes sign(const bytes& data, const Signature::PrivateKey& sk) const override {
+    // XXX(RLB) This should use dynamic_cast, but dynamic_cast appears to throw
+    // `bad_cast` on STM32.
     const auto& rsk = reinterpret_cast<const P256::PrivateKey&>(sk);
 
     const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
@@ -159,7 +161,7 @@ struct P256 : Signature {
   bool verify(const bytes& data,
               const bytes& sig,
               const Signature::PublicKey& pk) const override {
-    const auto& rpk = dynamic_cast<const P256::PublicKey&>(pk);
+    const auto& rpk = reinterpret_cast<const P256::PublicKey&>(pk);
 
     const auto sha256 = Digest::get<Digest::ID::SHA256>();
     const auto digest = sha256.hash(data);
