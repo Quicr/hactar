@@ -126,8 +126,6 @@ struct P256Signature : Signature {
     // `bad_cast` on STM32.
     const auto& rsk = reinterpret_cast<const P256Signature::PrivateKey&>(sk);
 
-    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
-
     const auto sha256 = Digest::get<Digest::ID::SHA256>();
     const auto digest = sha256.hash(data);
 
@@ -135,6 +133,7 @@ struct P256Signature : Signature {
     auto sig_size = sig.size();
 
     auto ctx = ECCContext{};
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
     const auto rv = cmox_ecdsa_sign(ctx.get(),
                                     CURVE,
                                     randomness.data(),
@@ -178,7 +177,7 @@ struct P256Signature : Signature {
       throw CMOXError::from_code(rv);
     }
 
-    return (rv == CMOX_ECC_AUTH_SUCCESS) && (rv == fault_check);
+    return (fault_check == rv);
   }
 };
 
