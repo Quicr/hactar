@@ -8,7 +8,7 @@ READY = 0x80
 
 
 def FlashSelection(uart: serial.Serial, chip: str):
-    if (chip == "mgmt"):
+    if (chip == "mgmt" or chip == "generic_stm32"):
         print(f"Update uart to parity: {BB}EVEN{NW}")
 
         # TODO optional
