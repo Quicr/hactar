@@ -78,8 +78,7 @@ Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c \
 Core/Src/system_stm32f0xx.c \
 Core/Src/main.c \
 Core/Src/app_mgmt.c \
-Core/Src/uart_stream.c \
-Core/Src/packet.c
+Core/Src/uart_stream.c
 
 # ASM sources
 ASM_SOURCES =  \
