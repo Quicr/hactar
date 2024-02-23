@@ -334,6 +334,126 @@ bool test_sig(Logger& log) {
     }
 }
 
+bool test_kem_raw(Logger& log) {
+  using namespace mls::hpke;
+
+  // Generate a first key pair
+  auto skA = bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+  auto pkA = bytes(CMOX_ECC_SECP256R1_PUBKEY_LEN);
+  {
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+
+    auto priv_size = skA.size();
+    auto pub_size = pkA.size();
+
+    auto ctx = ECCContext();
+    const auto rv = cmox_ecdsa_keyGen(ctx.get(),
+                                      CMOX_ECC_SECP256R1_LOWMEM,
+                                      randomness.data(),
+                                      randomness.size(),
+                                      skA.data(),
+                                      &priv_size,
+                                      pkA.data(),
+                                      &pub_size);
+    log.log("kem_raw", "keygen");
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      log.log("kem_raw", "keygen", "rv", rv);
+      return false;
+    }
+
+    skA.resize(priv_size);
+    pkA.resize(pub_size);
+    log.log("kem_raw", "keygen", "ok");
+  }
+
+  // Generate a second key pair
+  auto skB = bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+  auto pkB = bytes(CMOX_ECC_SECP256R1_PUBKEY_LEN);
+  {
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+
+    auto priv_size = skB.size();
+    auto pub_size = pkB.size();
+
+    auto ctx = ECCContext();
+    const auto rv = cmox_ecdsa_keyGen(ctx.get(),
+                                      CMOX_ECC_SECP256R1_LOWMEM,
+                                      randomness.data(),
+                                      randomness.size(),
+                                      skB.data(),
+                                      &priv_size,
+                                      pkB.data(),
+                                      &pub_size);
+    log.log("kem_raw", "keygen");
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      log.log("kem_raw", "keygen", "rv", rv);
+      return false;
+    }
+
+    skB.resize(priv_size);
+    pkB.resize(pub_size);
+    log.log("kem_raw", "keygen", "ok");
+  }
+
+  // DH A->B
+  auto zzAB = bytes(CMOX_ECC_SECP256R1_SECRET_LEN);
+  {
+    auto zz_size = zzAB.size();
+
+    auto ctx = ECCContext{};
+    const auto rv = cmox_ecdh(ctx.get(),
+                              CMOX_ECC_SECP256R1_LOWMEM,
+                              skA.data(),
+                              skA.size(),
+                              pkB.data(),
+                              pkB.size(),
+                              zzAB.data(),
+                              &zz_size);
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      log.log("kem_raw", "dhAB", "rv", rv);
+      return false;
+    }
+
+    zzAB.resize(zz_size);
+    log.log("kem_raw", "dhAB ok");
+  }
+
+  // DH B->A
+  auto zzBA = bytes(CMOX_ECC_SECP256R1_SECRET_LEN);
+  {
+    auto zz_size = zzBA.size();
+
+    auto ctx = ECCContext{};
+    const auto rv = cmox_ecdh(ctx.get(),
+                              CMOX_ECC_SECP256R1_LOWMEM,
+                              skB.data(),
+                              skB.size(),
+                              pkA.data(),
+                              pkA.size(),
+                              zzBA.data(),
+                              &zz_size);
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      log.log("kem_raw", "dhBA", "rv", rv);
+      return false;
+    }
+
+    zzBA.resize(zz_size);
+    log.log("kem_raw", "dhBA ok");
+  }
+
+  if (zzAB != zzBA) {
+    log.log("kem_raw", "dhBA != dhAB");
+    return false;
+  }
+
+  log.log("kem_raw", "ok");
+  return true;
+}
+
 bool test_kem(Logger& log) {
     try {
         using namespace mls::hpke;
@@ -620,11 +740,12 @@ int app_main()
               const auto aead = test_aead(log);
               const auto sig_raw = true; // already validated // test_sig_raw(log);
               const auto sig = false; // known broken // test_sig(log);
+              const auto kem_raw = test_kem_raw(log);
               const auto kem = true; // already validated // test_kem();
               const auto mls = true; // TODO // test_mls(log);
               first_run = false;
 
-              log.log("end ", digest, hmac, aead, sig_raw, sig, kem, mls);
+              log.log("end ", digest, hmac, aead, sig_raw, sig, kem_raw, kem, mls);
             }
 
             if (rx_busy) {
