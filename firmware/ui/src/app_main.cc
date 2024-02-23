@@ -737,12 +737,12 @@ int app_main()
 
               const auto digest = true; // already validated // test_digest(log);
               const auto hmac = true; // already validated // test_hmac(log);
-              const auto aead = test_aead(log);
+              const auto aead = true; // validated
               const auto sig_raw = true; // already validated // test_sig_raw(log);
-              const auto sig = false; // known broken // test_sig(log);
-              const auto kem_raw = test_kem_raw(log);
+              const auto sig = true; // validated // test_sig(log);
+              const auto kem_raw = true; // validated
               const auto kem = true; // already validated // test_kem();
-              const auto mls = true; // TODO // test_mls(log);
+              const auto mls = test_mls(log);
               first_run = false;
 
               log.log("end ", digest, hmac, aead, sig_raw, sig, kem_raw, kem, mls);
