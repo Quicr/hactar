@@ -256,7 +256,7 @@ class stm32_flasher:
         print(f"Erase: {BB}STARTED{NW}")
 
         # Give more time to reply with the deleted sectors
-        self.uart.timeout = 10
+        self.uart.timeout = 30
         reply = uart_utils.WriteBytesWaitForACK(self.uart, data, 1)
         # Revert the change back to two seconds
         self.uart.timeout = 2

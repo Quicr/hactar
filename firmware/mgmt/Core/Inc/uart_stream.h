@@ -6,7 +6,7 @@
 #include "state.h"
 
 #define COMMAND_TIMEOUT 1000
-#define TRANSMISSION_TIMEOUT 5000
+#define TRANSMISSION_TIMEOUT 30000
 
 typedef struct _uart_stream_t
 {
