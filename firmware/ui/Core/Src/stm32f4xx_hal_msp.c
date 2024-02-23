@@ -23,9 +23,9 @@
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
-extern DMA_HandleTypeDef hdma_i2s3_ext_rx;
-
 extern DMA_HandleTypeDef hdma_spi3_tx;
+
+extern DMA_HandleTypeDef hdma_i2s3_ext_rx;
 
 extern DMA_HandleTypeDef hdma_spi1_tx;
 
@@ -83,6 +83,11 @@ void HAL_MspInit(void)
   __HAL_RCC_PWR_CLK_ENABLE();
 
   /* System interrupt init*/
+
+  /* Peripheral interrupt init */
+  /* RCC_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(RCC_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(RCC_IRQn);
 
   /* USER CODE BEGIN MspInit 1 */
 
@@ -184,6 +189,50 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
   /* USER CODE BEGIN ADC2_MspDeInit 1 */
 
   /* USER CODE END ADC2_MspDeInit 1 */
+  }
+
+}
+
+/**
+* @brief CRC MSP Initialization
+* This function configures the hardware resources used in this example
+* @param hcrc: CRC handle pointer
+* @retval None
+*/
+void HAL_CRC_MspInit(CRC_HandleTypeDef* hcrc)
+{
+  if(hcrc->Instance==CRC)
+  {
+  /* USER CODE BEGIN CRC_MspInit 0 */
+
+  /* USER CODE END CRC_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_CRC_CLK_ENABLE();
+  /* USER CODE BEGIN CRC_MspInit 1 */
+
+  /* USER CODE END CRC_MspInit 1 */
+  }
+
+}
+
+/**
+* @brief CRC MSP De-Initialization
+* This function freeze the hardware resources used in this example
+* @param hcrc: CRC handle pointer
+* @retval None
+*/
+void HAL_CRC_MspDeInit(CRC_HandleTypeDef* hcrc)
+{
+  if(hcrc->Instance==CRC)
+  {
+  /* USER CODE BEGIN CRC_MspDeInit 0 */
+
+  /* USER CODE END CRC_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_CRC_CLK_DISABLE();
+  /* USER CODE BEGIN CRC_MspDeInit 1 */
+
+  /* USER CODE END CRC_MspDeInit 1 */
   }
 
 }
@@ -314,24 +363,6 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s)
     HAL_GPIO_Init(I2S_ADCDAT_GPIO_Port, &GPIO_InitStruct);
 
     /* I2S3 DMA Init */
-    /* I2S3_EXT_RX Init */
-    hdma_i2s3_ext_rx.Instance = DMA1_Stream0;
-    hdma_i2s3_ext_rx.Init.Channel = DMA_CHANNEL_3;
-    hdma_i2s3_ext_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
-    hdma_i2s3_ext_rx.Init.PeriphInc = DMA_PINC_DISABLE;
-    hdma_i2s3_ext_rx.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_i2s3_ext_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    hdma_i2s3_ext_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    hdma_i2s3_ext_rx.Init.Mode = DMA_NORMAL;
-    hdma_i2s3_ext_rx.Init.Priority = DMA_PRIORITY_LOW;
-    hdma_i2s3_ext_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
-    if (HAL_DMA_Init(&hdma_i2s3_ext_rx) != HAL_OK)
-    {
-      Error_Handler();
-    }
-
-    __HAL_LINKDMA(hi2s,hdmarx,hdma_i2s3_ext_rx);
-
     /* SPI3_TX Init */
     hdma_spi3_tx.Instance = DMA1_Stream7;
     hdma_spi3_tx.Init.Channel = DMA_CHANNEL_0;
@@ -341,14 +372,38 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s)
     hdma_spi3_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hdma_spi3_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     hdma_spi3_tx.Init.Mode = DMA_NORMAL;
-    hdma_spi3_tx.Init.Priority = DMA_PRIORITY_LOW;
-    hdma_spi3_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    hdma_spi3_tx.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    hdma_spi3_tx.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+    hdma_spi3_tx.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+    hdma_spi3_tx.Init.MemBurst = DMA_MBURST_SINGLE;
+    hdma_spi3_tx.Init.PeriphBurst = DMA_PBURST_SINGLE;
     if (HAL_DMA_Init(&hdma_spi3_tx) != HAL_OK)
     {
       Error_Handler();
     }
 
     __HAL_LINKDMA(hi2s,hdmatx,hdma_spi3_tx);
+
+    /* I2S3_EXT_RX Init */
+    hdma_i2s3_ext_rx.Instance = DMA1_Stream0;
+    hdma_i2s3_ext_rx.Init.Channel = DMA_CHANNEL_3;
+    hdma_i2s3_ext_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_i2s3_ext_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_i2s3_ext_rx.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_i2s3_ext_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_i2s3_ext_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_i2s3_ext_rx.Init.Mode = DMA_NORMAL;
+    hdma_i2s3_ext_rx.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    hdma_i2s3_ext_rx.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+    hdma_i2s3_ext_rx.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+    hdma_i2s3_ext_rx.Init.MemBurst = DMA_MBURST_SINGLE;
+    hdma_i2s3_ext_rx.Init.PeriphBurst = DMA_PBURST_SINGLE;
+    if (HAL_DMA_Init(&hdma_i2s3_ext_rx) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_LINKDMA(hi2s,hdmarx,hdma_i2s3_ext_rx);
 
     /* I2S3 interrupt Init */
     HAL_NVIC_SetPriority(SPI3_IRQn, 0, 0);
@@ -387,8 +442,8 @@ void HAL_I2S_MspDeInit(I2S_HandleTypeDef* hi2s)
     HAL_GPIO_DeInit(GPIOC, I2S_BCLK_Pin|I2S_ADCDAT_Pin|I2S_DACDAT_Pin);
 
     /* I2S3 DMA DeInit */
-    HAL_DMA_DeInit(hi2s->hdmarx);
     HAL_DMA_DeInit(hi2s->hdmatx);
+    HAL_DMA_DeInit(hi2s->hdmarx);
 
     /* I2S3 interrupt DeInit */
     HAL_NVIC_DisableIRQ(SPI3_IRQn);

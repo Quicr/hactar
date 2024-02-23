@@ -15,8 +15,19 @@
 #include "Led.hh"
 #include "AudioCodec.hh"
 
+#include <hpke/random.h>
+#include <hpke/digest.h>
+#include <hpke/signature.h>
+#include <hpke/hpke.h>
+
+#include <crypto/cmox_crypto.h>
+#include <cstring>
+
+#include <mls/state.h>
+
 #include <memory>
 #include <cmath>
+#include <sstream>
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -43,6 +54,14 @@ EEPROM* eeprom = nullptr;
 AudioCodec* audio = nullptr;
 bool rx_busy = false;
 
+uint8_t random_byte() {
+    // XXX(RLB) This is 4x slower than it could be, because we only take the
+    // low-order byte of the four bytes in a uint32_t.
+    auto value = uint32_t(0);
+    HAL_RNG_GenerateRandomNumber(&hrng, &value);
+    return value;
+}
+
 // buffer size = 0.1s * freq
 const uint16_t SOUND_BUFFER_SZ = 16000;
 uint16_t rx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
@@ -63,6 +82,486 @@ uint16_t GenerateTriangleWavePoint(double frequency, double amplitude, double ti
         triangle_point = -4.0 * amplitude + 4.0 * amplitude * phase;
 
     return static_cast<uint16_t>((triangle_point + 1.0) * 32767.5);
+}
+
+struct Logger {
+  int y = 0;
+
+  std::string space_separated_line(std::stringstream&& str) {
+    return str.str();
+  }
+
+  template<typename T, typename... U>
+  std::string space_separated_line(std::stringstream&& str, const T& first, const U&... rest) {
+    str << first << " ";
+    return space_separated_line(std::move(str), rest...);
+  }
+
+  template<typename... T>
+  void log(const T&... args) {
+    auto str = std::stringstream();
+    str << "[UI] ";
+    const auto line = space_separated_line(std::move(str), args...);
+
+    // Uncomment for UART logging
+    // line = line + "\n";
+    // const auto* line_ptr = reinterpret_cast<const uint8_t*>(line.c_str());
+    // HAL_UART_Transmit(&huart1, line_ptr, line.size(), HAL_MAX_DELAY);
+
+    // Uncomment for logging to screen
+    screen.DrawText(0, y, line.c_str(), font7x12, C_GREEN, C_BLACK);
+    y += 12;
+  }
+};
+
+
+// import hashlib
+// hashlib.sha256(b"hello").hexdigest()
+bool test_digest(Logger& log) {
+    using namespace mls::hpke;
+    const auto digest = Digest::get<Digest::ID::SHA256>();
+    const auto data = from_ascii("hello");
+
+    const auto output = digest.hash(data);
+
+    const auto expected = from_hex("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824");
+    const auto pass = output == expected;
+    const auto status = std::string(pass? "PASS" : "FAIL");
+    log.log("hash", status);
+
+    return pass;
+}
+
+bool test_hmac(Logger& log) {
+    using namespace mls::hpke;
+    const auto digest = Digest::get<Digest::ID::SHA256>();
+    const auto key = from_ascii("key");
+    const auto data = from_ascii("hello");
+
+    const auto output = digest.hmac(key, data);
+
+    const auto expected = from_hex("9307b3b915efb5171ff14d8cb55fbcc798c6c0ef1456d66ded1a6aa723a58b7b");
+    const auto pass = output == expected;
+    const auto status = std::string(pass? "PASS" : "FAIL");
+    log.log("hmac", status);
+
+    return pass;
+}
+
+bool test_aead(Logger& log) {
+    try {
+        using namespace mls::hpke;
+        const auto& cipher = AEAD::get<AEAD::ID::AES_128_GCM>();
+        const auto key = from_ascii("sixteen byte key");
+        const auto nonce = from_ascii("public nonce");
+        const auto pt = from_ascii("secret message");
+        const auto aad = from_ascii("extra");
+        log.log("cipher", "prep");
+
+        const auto ct = cipher.seal(key, nonce, aad, pt);
+        log.log("cipher", "seal");
+
+        const auto expected = from_hex("76e196daeff5e2224f12f7726d82aaedbe176f85ece437c5ce7861a02fc2");
+        const auto pass_kat = (ct == expected);
+        log.log("cipher", "pass_kat", pass_kat);
+
+        const auto maybe_pt = cipher.open(key, nonce, aad, ct);
+        log.log("cipher", "open");
+
+        auto pt_print = std::string("");
+        if (maybe_pt) {
+          pt_print = to_hex(*maybe_pt);
+        }
+        log.log("cipher", "pt");
+
+        const auto pass_rtt = maybe_pt && pt == *maybe_pt;
+        log.log("cipher", "pass_rtt", pass_rtt);
+
+        return pass_kat && pass_rtt;
+    } catch (const std::exception& e) {
+        log.log("cipher", "throw", e.what());
+        return false;
+    }
+}
+
+struct ECCContext {
+  // XXX Not at all clear what the right value for this parameter is.  This is
+  // what it is set to in the examples.
+  static constexpr size_t buffer_size = 2000;
+
+  std::array<uint8_t, buffer_size> buffer;
+  cmox_ecc_handle_t ctx;
+
+  ECCContext() {
+    cmox_ecc_construct(&ctx, CMOX_ECC256_MATH_FUNCS, buffer.data(), buffer.size());
+  }
+
+  cmox_ecc_handle_t* get() {
+    return &ctx;
+  }
+
+  ~ECCContext() {
+    cmox_ecc_cleanup(&ctx);
+  }
+};
+
+bool test_sig_raw(Logger& log) {
+  using namespace mls::hpke;
+
+  // Constants
+  const auto msg = from_ascii("attack at dawn!");
+
+  // Generate a key pair
+  auto priv = bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+  auto pub = bytes(CMOX_ECC_SECP256R1_PUBKEY_LEN);
+  {
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+
+    auto priv_size = priv.size();
+    auto pub_size = pub.size();
+
+    auto ctx = ECCContext();
+    const auto rv = cmox_ecdsa_keyGen(ctx.get(),
+                                      CMOX_ECC_SECP256R1_LOWMEM,
+                                      randomness.data(),
+                                      randomness.size(),
+                                      priv.data(),
+                                      &priv_size,
+                                      pub.data(),
+                                      &pub_size);
+    log.log("sig_raw", "keygen");
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      log.log("sig_raw", "keygen", "rv", rv);
+      return false;
+    }
+
+    priv.resize(priv_size);
+    pub.resize(pub_size);
+    log.log("sig_raw", "keygen", "ok");
+  }
+
+  // Pre-hash msg
+  const auto sha256 = Digest::get<Digest::ID::SHA256>();
+  const auto hash = sha256.hash(msg);
+  log.log("sig_raw", "hash", "ok");
+
+  // Sign
+  auto computed_sig = bytes(CMOX_ECC_SECP256R1_SIG_LEN);
+  {
+    auto ctx = ECCContext();
+    size_t computed_size = 0;
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+    const auto rv = cmox_ecdsa_sign(ctx.get(),
+                                    CMOX_ECC_SECP256R1_LOWMEM,
+                                    randomness.data(),
+                                    randomness.size(),
+                                    priv.data(),
+                                    priv.size(),
+                                    hash.data(),
+                                    CMOX_SHA256_SIZE,
+                                    computed_sig.data(),
+                                    &computed_size);
+    log.log("sig_raw", "sign");
+
+    if (rv != CMOX_ECC_SUCCESS)
+    {
+      log.log("sig_raw", "sign", "rv", rv);
+      return false;
+    }
+
+    log.log("sig_raw", "sig ok");
+  }
+
+  // Verify
+  {
+    auto ctx = ECCContext();
+    uint32_t fault_check = CMOX_ECC_AUTH_FAIL;
+    const auto rv = cmox_ecdsa_verify(ctx.get(),
+                                       CMOX_ECC_CURVE_SECP256R1,
+                                       pub.data(),
+                                       pub.size(),
+                                       hash.data(),
+                                       CMOX_SHA256_SIZE,
+                                       computed_sig.data(),
+                                       computed_sig.size(),
+                                       &fault_check);
+
+    if (rv != CMOX_ECC_AUTH_SUCCESS)
+    {
+      log.log("sig_raw", "ver", "rv", rv);
+      return false;
+    }
+    if (fault_check != CMOX_ECC_AUTH_SUCCESS)
+    {
+      log.log("sig_raw", "ver", "fault_check", fault_check);
+      return false;
+    }
+
+    log.log("sig_raw", "ver ok");
+  }
+
+  log.log("sig_raw", "ok");
+  return true;
+}
+
+bool test_sig(Logger& log) {
+    try {
+        using namespace mls::hpke;
+        const auto& sig = Signature::get<Signature::ID::P256_SHA256>();
+        const auto msg = from_ascii("attack at dawn!");
+        log.log("sig", "start");
+
+        const auto sk = sig.generate_key_pair();
+        log.log("sig", "keygen");
+
+        const auto pk = sk->public_key();
+        log.log("sig", "public_key");
+
+        const auto sig_val = sig.sign(msg, *sk);
+        log.log("sig", "sign", sig_val.size());
+
+        const auto ver = sig.verify(msg, sig_val, *pk);
+        log.log("sig", "verify", ver);
+
+        const auto pass = ver;
+        log.log("sig", "pass", pass);
+
+        return pass;
+    } catch (const std::exception& e) {
+        log.log("sig", "throw", e.what());
+        return false;
+    }
+}
+
+bool test_kem_raw(Logger& log) {
+  using namespace mls::hpke;
+
+  // Generate a first key pair
+  auto skA = bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+  auto pkA = bytes(CMOX_ECC_SECP256R1_PUBKEY_LEN);
+  {
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+
+    auto priv_size = skA.size();
+    auto pub_size = pkA.size();
+
+    auto ctx = ECCContext();
+    const auto rv = cmox_ecdsa_keyGen(ctx.get(),
+                                      CMOX_ECC_SECP256R1_LOWMEM,
+                                      randomness.data(),
+                                      randomness.size(),
+                                      skA.data(),
+                                      &priv_size,
+                                      pkA.data(),
+                                      &pub_size);
+    log.log("kem_raw", "keygen");
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      log.log("kem_raw", "keygen", "rv", rv);
+      return false;
+    }
+
+    skA.resize(priv_size);
+    pkA.resize(pub_size);
+    log.log("kem_raw", "keygen", "ok");
+  }
+
+  // Generate a second key pair
+  auto skB = bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+  auto pkB = bytes(CMOX_ECC_SECP256R1_PUBKEY_LEN);
+  {
+    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
+
+    auto priv_size = skB.size();
+    auto pub_size = pkB.size();
+
+    auto ctx = ECCContext();
+    const auto rv = cmox_ecdsa_keyGen(ctx.get(),
+                                      CMOX_ECC_SECP256R1_LOWMEM,
+                                      randomness.data(),
+                                      randomness.size(),
+                                      skB.data(),
+                                      &priv_size,
+                                      pkB.data(),
+                                      &pub_size);
+    log.log("kem_raw", "keygen");
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      log.log("kem_raw", "keygen", "rv", rv);
+      return false;
+    }
+
+    skB.resize(priv_size);
+    pkB.resize(pub_size);
+    log.log("kem_raw", "keygen", "ok");
+  }
+
+  // DH A->B
+  auto zzAB = bytes(CMOX_ECC_SECP256R1_SECRET_LEN);
+  {
+    auto zz_size = zzAB.size();
+
+    auto ctx = ECCContext{};
+    const auto rv = cmox_ecdh(ctx.get(),
+                              CMOX_ECC_SECP256R1_LOWMEM,
+                              skA.data(),
+                              skA.size(),
+                              pkB.data(),
+                              pkB.size(),
+                              zzAB.data(),
+                              &zz_size);
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      log.log("kem_raw", "dhAB", "rv", rv);
+      return false;
+    }
+
+    zzAB.resize(zz_size);
+    log.log("kem_raw", "dhAB ok");
+  }
+
+  // DH B->A
+  auto zzBA = bytes(CMOX_ECC_SECP256R1_SECRET_LEN);
+  {
+    auto zz_size = zzBA.size();
+
+    auto ctx = ECCContext{};
+    const auto rv = cmox_ecdh(ctx.get(),
+                              CMOX_ECC_SECP256R1_LOWMEM,
+                              skB.data(),
+                              skB.size(),
+                              pkA.data(),
+                              pkA.size(),
+                              zzBA.data(),
+                              &zz_size);
+
+    if (rv != CMOX_ECC_SUCCESS) {
+      log.log("kem_raw", "dhBA", "rv", rv);
+      return false;
+    }
+
+    zzBA.resize(zz_size);
+    log.log("kem_raw", "dhBA ok");
+  }
+
+  if (zzAB != zzBA) {
+    log.log("kem_raw", "dhBA != dhAB");
+    return false;
+  }
+
+  log.log("kem_raw", "ok");
+  return true;
+}
+
+bool test_kem(Logger& log) {
+    try {
+        using namespace mls::hpke;
+        const auto& kem = KEM::get<KEM::ID::DHKEM_P256_SHA256>();
+
+        const auto sk = kem.generate_key_pair();
+        log.log("kem", "keygen");
+
+        const auto pk = sk->public_key();
+        log.log("kem", "public_key");
+
+        const auto [zz_send, enc] = kem.encap(*pk);
+        log.log("kem", "encap", zz_send.size(), enc.size());
+
+        const auto zz_recv = kem.decap(enc, *sk);
+        log.log("kem", "decap", zz_recv.size());
+
+        const auto pass = zz_send == zz_recv;
+        log.log("kem", "pass", pass);
+
+        return pass;
+    } catch (const std::exception& e) {
+        log.log("kem", "throw", e.what());
+        return false;
+    }
+}
+
+bool test_mls(Logger& log) {
+  try {
+    using namespace mls;
+
+    const CipherSuite suite{ CipherSuite::ID::P256_AES128GCM_SHA256_P256 };
+    const bytes group_id = from_ascii("group_id");
+
+    // XXX(RLB) This should be actually random
+    const bytes fresh_secret = from_ascii("this is a thirty-two-byte string");
+
+
+    // Create initial state for Alice
+    log.log("mls", "init_a");
+    auto identity_priv_a = SignaturePrivateKey::generate(suite);
+    auto credential_a = Credential::basic(from_ascii("alice"));
+    auto init_priv_a = HPKEPrivateKey::generate(suite);
+    auto leaf_priv_a = HPKEPrivateKey::generate(suite);
+    auto leaf_node_a = LeafNode{ suite,
+                               leaf_priv_a.public_key,
+                               identity_priv_a.public_key,
+                               credential_a,
+                               Capabilities::create_default(),
+                               Lifetime::create_default(),
+                               {},
+                               identity_priv_a };
+
+    // Create initial state for Bob
+    log.log("mls", "init_b");
+    auto identity_priv_b = SignaturePrivateKey::generate(suite);
+    auto credential_b = Credential::basic(from_ascii("bob"));
+    auto init_priv_b = HPKEPrivateKey::generate(suite);
+    auto leaf_priv_b = HPKEPrivateKey::generate(suite);
+    auto leaf_node_b = LeafNode{ suite,
+                               leaf_priv_b.public_key,
+                               identity_priv_b.public_key,
+                               credential_b,
+                               Capabilities::create_default(),
+                               Lifetime::create_default(),
+                               {},
+                               identity_priv_b };
+    auto key_package_b =
+      KeyPackage{ suite, init_priv_b.public_key, leaf_node_b, {}, identity_priv_b };
+
+    // Initialize the creator's state
+    log.log("mls", "create");
+    auto alice0 = State{ group_id,
+                         suite,
+                         leaf_priv_a,
+                         identity_priv_a,
+                         leaf_node_a,
+                         {} };
+
+    // Handle the Add proposal and create a Commit
+    log.log("mls", "add");
+    auto add = alice0.add_proposal(key_package_b);
+    auto proposals = std::vector<Proposal>{ add };
+    auto [commit, welcome, alice1] =
+      alice0.commit(fresh_secret, CommitOpts{ proposals, true, false, {} }, {});
+
+    // Initialize the second participant from the Welcome
+    log.log("mls", "join");
+    auto bob1 = State{ init_priv_b,
+                          leaf_priv_b,
+                          identity_priv_b,
+                          key_package_b,
+                          welcome,
+                          std::nullopt,
+                          {} };
+
+    // Verify group
+    log.log("mls", "join");
+    if (alice1.epoch_authenticator() != bob1.epoch_authenticator()) {
+      log.log("mls", "disagree");
+      return false;
+    }
+
+    return true;
+  } catch (const std::exception& e) {
+        log.log("mls", "throw", e.what());
+        return false;
+  }
 }
 
 // TODO Get the osc working correctly from an external signal
@@ -122,10 +621,10 @@ int app_main()
 
     // TODO figure out how to send a small sound??
     // Generate a simple triangle wave
-    double frequency = 1000; // Hz
-    double amplitude = 1000.0;
-    double duration = 1.0;  //seconds
-    double sample_rate = 16'000; // samples per second5
+    // double frequency = 1000; // Hz
+    // double amplitude = 1000.0;
+    // double duration = 1.0;  //seconds
+    // double sample_rate = 16'000; // samples per second5
     uint32_t i = 0;
     // for (double t = 0.0; t < duration && i < SOUND_BUFFER_SZ; t += 1.0 / sample_rate)
     // {
@@ -146,7 +645,7 @@ int app_main()
 
     while (i < SOUND_BUFFER_SZ)
     {
-        for (int j = 0; j < sizeof(sine_wave) / sizeof(sine_wave[0]); ++j)
+        for (unsigned int j = 0; j < sizeof(sine_wave) / sizeof(sine_wave[0]); ++j)
         {
             tx_sound_buff[i++] = sine_wave[j];
         }
@@ -174,10 +673,16 @@ int app_main()
     // tx_sound_buff[SOUND_BUFFER_SZ - 1] = 1;
     // tx_sound_buff[SOUND_BUFFER_SZ - 2] = 0x00AA;
 
+    // Initialize the cryptographic library
+    Logger log;
+    const auto rv = cmox_initialize(nullptr);
+    log.log("init", rv == CMOX_INIT_SUCCESS);
+
     // Delayed condition
+    auto first_run = true;
     uint32_t blink = HAL_GetTick() + 5000;
     uint32_t tx_sound = 0;
-    auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
+    // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
     while (1)
     {
         ui_manager->Run();
@@ -190,8 +695,8 @@ int app_main()
             // screen.DrawText(0, 100, String::int_to_string((int)tx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
 
             // audio->TestRegister();
-            uint16_t reg_value = 0;
-            uint16_t value = 0x01FF;
+            // uint16_t reg_value = 0;
+            // uint16_t value = 0x01FF;
             // audio->ReadRegister(0x0A, reg_value);
             // screen.DrawText(0, 100, String::int_to_string((int)reg_value), font7x12, C_GREEN, C_BLACK);
 
@@ -221,17 +726,32 @@ int app_main()
             // if (res == HAL_OK)
             // {
             // }
-            blink = HAL_GetTick() + 5000;
-            uint32_t num = 0;
-            HAL_RNG_GenerateRandomNumber(&hrng, &num);
-            screen.DrawText(0, 82, String::int_to_string(num), font7x12, C_GREEN, C_BLACK);
+            // blink = HAL_GetTick() + 5000;
+            // uint32_t num = 0;
+            // HAL_RNG_GenerateRandomNumber(&hrng, &num);
+            // screen.DrawText(0, 82, String::int_to_string(num), font7x12, C_GREEN, C_BLACK);
 
-            // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
-            //     uint8_t test_message [] = "UI: Test\n\r";
-            //     HAL_UART_Transmit(&huart1, test_message, 10, 1000);
+            // Self-test the crypto on the first run-through
+            if (first_run) {
+              log.log("start");
 
-            if (rx_busy)
+              const auto digest = true; // already validated // test_digest(log);
+              const auto hmac = true; // already validated // test_hmac(log);
+              const auto aead = true; // validated
+              const auto sig_raw = true; // already validated // test_sig_raw(log);
+              const auto sig = true; // validated // test_sig(log);
+              const auto kem_raw = true; // validated
+              const auto kem = true; // already validated // test_kem();
+              const auto mls = test_mls(log);
+              first_run = false;
+
+              log.log("end ", digest, hmac, aead, sig_raw, sig, kem_raw, kem, mls);
+            }
+
+            if (rx_busy) {
                 continue;
+            }
+
             // We need this because if the mic stays on it will write to USART3 in
             // bootloader mode which locks up the main chip
             // TODO remove enable mic bits [2,3]
@@ -243,10 +763,10 @@ int app_main()
             // auto output = HAL_I2SEx_TransmitReceive_DMA(&hi2s3, tx_sound_buff, rx_sound_buff, SOUND_BUFFER_SZ);
 
             // screen.DrawText(0, 100, String::int_to_string((int)output), font7x12, C_GREEN, C_BLACK);
-            screen.DrawText(0, 112, String::int_to_string((int)rx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
-            screen.DrawText(0, 124, String::int_to_string((int)rx_sound_buff[1]), font7x12, C_GREEN, C_BLACK);
-            screen.DrawText(0, 136, String::int_to_string((int)rx_sound_buff[2]), font7x12, C_GREEN, C_BLACK);
-            screen.DrawText(0, 148, String::int_to_string((int)rx_sound_buff[3]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 112, String::int_to_string((int)rx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 124, String::int_to_string((int)rx_sound_buff[1]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 136, String::int_to_string((int)rx_sound_buff[2]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 148, String::int_to_string((int)rx_sound_buff[3]), font7x12, C_GREEN, C_BLACK);
 
         }
     }
@@ -279,7 +799,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     }
 }
 
-void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
+void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* /* hi2s */)
 {
     // audio->RxComplete();
     // rx_busy = false;
@@ -288,9 +808,9 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
     HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
 }
 
-void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef* hi2s)
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef* /* hi2s */)
 {
-    auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
+    // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
 
     HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
 }
@@ -348,7 +868,7 @@ void assert_failed(uint8_t* file, uint32_t line)
 {
     /* USER CODE BEGIN 6 */
     /* User can add his own implementation to report the file name and line number,
-        ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+        e.g.: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
         /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

@@ -319,7 +319,7 @@
     },
     "1073": {
         "id": 1073,
-        "name": "STM32F405RGT6",
+        "name": "STM32F411",
         "usr_start_addr": 134217728,
         "sectors": [
             {"addr": 134217728,"size": 16384},
