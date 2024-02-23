@@ -315,7 +315,6 @@ bool test_sig(Logger& log) {
         const auto sk = sig.generate_key_pair();
         log.log("sig", "keygen");
 
-#if 0
         const auto pk = sk->public_key();
         log.log("sig", "public_key");
 
@@ -329,8 +328,6 @@ bool test_sig(Logger& log) {
         log.log("sig", "pass", pass);
 
         return pass;
-#endif // 0
-        return true;
     } catch (const std::exception& e) {
         log.log("sig", "throw", e.what());
         return false;
