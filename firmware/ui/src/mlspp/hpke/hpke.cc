@@ -7,6 +7,7 @@
 #include "common.h"
 #include "dhkem.h"
 #include "hkdf.h"
+#include "p256.h"
 
 #include <limits>
 #include <stdexcept>
@@ -170,24 +171,22 @@ struct ECCContext {
 
 struct P256KEM : KEM {
   struct PrivateKey : KEM::PrivateKey {
-    PrivateKeyBuffer priv;
+    p256::PrivateKey priv;
 
-    PrivateKey(PrivateKeyBuffer priv_in)
-      : priv(std::move(priv_in))
+    PrivateKey(p256::PrivateKey priv_in)
+      : priv(priv_in)
     {}
 
     std::unique_ptr<KEM::PublicKey> public_key() const override {
-      auto pub = PublicKeyBuffer();
-      std::copy(priv.begin() + 32, priv.end(), pub.begin());
-      return std::make_unique<P256KEM::PublicKey>(std::move(pub));
+      return std::make_unique<P256KEM::PublicKey>(p256::PublicKey{ priv.pub });
     }
   };
 
   struct PublicKey : KEM::PublicKey {
-    PublicKeyBuffer pub;
+    p256::PublicKey pub;
 
-    PublicKey(PublicKeyBuffer pub_in)
-      : pub(std::move(pub_in))
+    PublicKey(p256::PublicKey pub_in)
+      : pub(pub_in)
     {}
   };
 
@@ -210,107 +209,57 @@ struct P256KEM : KEM {
   {}
 
   std::unique_ptr<KEM::PrivateKey> generate_key_pair() const override {
-    const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
-    return derive_key_pair(randomness);
+    return std::make_unique<PrivateKey>(p256::generate_key_pair());
   }
 
   std::unique_ptr<KEM::PrivateKey> derive_key_pair(const bytes& ikm) const override {
-    // Private key buffer seed || pubkey
-    auto priv = PrivateKeyBuffer{};
-    auto priv_size = priv.size();
-
-    // Public key buffer.  Ultimately discarded, because it is duplicative: The
-    // public key is stored in the private key buffer.
-    auto pub = PublicKeyBuffer{};
-    auto pub_size = pub.size();
-
-    // XXX It would be nice to store this context on the object, to facilitate
-    // reuse.  But the various methods here are marked `const`, so we would have
-    // to do some chicanery to hide the mutability of the context.
-    auto ctx = ECCContext{};
-
-    // TODO check return value
-    cmox_ecdsa_keyGen(ctx.get(),
-                      CURVE,
-                      ikm.data(),
-                      ikm.size(),
-                      priv.data(),
-                      &priv_size,
-                      pub.data(),
-                      &pub_size);
-
-
-    return std::make_unique<P256KEM::PrivateKey>(std::move(priv));
+    return std::make_unique<PrivateKey>(p256::derive_key_pair(ikm));
   }
 
   bytes serialize(const KEM::PublicKey& pk) const override {
     const auto& rpk = dynamic_cast<const P256KEM::PublicKey&>(pk);
-    return bytes(std::vector<uint8_t>(rpk.pub.begin(), rpk.pub.end()));
+    return p256::serialize(rpk.pub);
   }
 
   std::unique_ptr<KEM::PublicKey> deserialize(const bytes& enc) const override {
-    auto pub = PublicKeyBuffer();
-    std::copy(enc.begin(), enc.end(), pub.begin());
-    return std::make_unique<P256KEM::PublicKey>(std::move(pub));
+    return std::make_unique<PublicKey>(p256::deserialize(enc));
   }
 
   bytes serialize_private(const KEM::PrivateKey& sk) const override {
     const auto& rsk = dynamic_cast<const P256KEM::PrivateKey&>(sk);
-    return bytes(std::vector<uint8_t>(rsk.priv.begin(), rsk.priv.end()));
+    return p256::serialize_private(rsk.priv);
   }
 
   std::unique_ptr<KEM::PrivateKey> deserialize_private(const bytes& enc) const override {
-    auto priv = PrivateKeyBuffer();
-    std::copy(enc.begin(), enc.end(), priv.begin());
-    return std::make_unique<P256KEM::PrivateKey>(std::move(priv));
+    return std::make_unique<PrivateKey>(p256::deserialize_private(enc));
   }
 
-  std::pair<bytes, bytes> encap(const KEM::PublicKey& pkR) const override {
-    auto skE = generate_key_pair();
-    auto pkE = skE->public_key();
+  std::pair<bytes, bytes> encap(const KEM::PublicKey& pkR_in) const override {
+    const auto& pkR = dynamic_cast<const P256KEM::PublicKey&>(pkR_in).pub;
 
-    auto zz = dh(*skE, pkR);
-    auto enc = serialize(*pkE);
+    auto skE = p256::generate_key_pair();
+    auto pkE = skE.public_key();
 
-    auto pkRm = serialize(pkR);
+    auto zz = p256::dh(skE, pkR);
+    auto enc = p256::serialize(pkE);
+
+    auto pkRm = p256::serialize(pkR);
     auto kem_context = enc + pkRm;
 
     auto shared_secret = extract_and_expand(zz, kem_context);
     return std::make_pair(shared_secret, enc);
   }
 
-  bytes decap(const bytes& enc, const KEM::PrivateKey& skR) const override {
-    auto pkE = deserialize(enc);
-    auto zz = dh(skR, *pkE);
+  bytes decap(const bytes& enc, const KEM::PrivateKey& skR_in) const override {
+    const auto& skR = dynamic_cast<const P256KEM::PrivateKey&>(skR_in).priv;
+
+    auto pkE = p256::deserialize(enc);
+    auto zz = p256::dh(skR, pkE);
 
     auto pkR = skR.public_key();
-    auto pkRm = serialize(*pkR);
+    auto pkRm = p256::serialize(pkR);
     auto kem_context = enc + pkRm;
     return extract_and_expand(zz, kem_context);
-  }
-
-  bytes dh(const KEM::PrivateKey& sk, const KEM::PublicKey& pk) const {
-    const auto& rsk = dynamic_cast<const P256KEM::PrivateKey&>(sk);
-    const auto& rpk = dynamic_cast<const P256KEM::PublicKey&>(pk);
-
-    auto zz = bytes(CMOX_ECC_SECP256R1_SECRET_LEN);
-    auto zz_size = zz.size();
-
-    // XXX same comment about context reuse
-    auto ctx = ECCContext{};
-
-    // TODO check return value
-    cmox_ecdh(ctx.get(),
-              CURVE,
-              rsk.priv.data(),
-              rsk.priv.size(),
-              rpk.pub.data(),
-              rpk.pub.size(),
-              zz.data(),
-              &zz_size);
-
-    zz.resize(zz_size);
-    return zz;
   }
 
   bytes extract_and_expand(const bytes& zz, const bytes& kem_context) const {
