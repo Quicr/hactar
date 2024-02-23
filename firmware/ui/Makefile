@@ -75,7 +75,8 @@ stm32f4xx_hal_tim_ex.c \
 stm32f4xx_hal_rcc.c \
 stm32f4xx_hal_rcc_ex.c \
 stm32f4xx_hal_uart.c \
-stm32f4xx_hal_rng.c
+stm32f4xx_hal_rng.c \
+stm32f4xx_hal_crc.c
 
 # User C/C++ sources
 SRCS_CC	   = $(shell find src -name '*.cc' -exec basename {} \;)
@@ -169,7 +170,9 @@ AS_INCLUDES =
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
-CFLAGS 		+= $(MCU) $(C_DEFS) $(INCS) $(OPT) -Wall -Wpedantic -Wextra -fdata-sections -ffunction-sections
+CFLAGS 		+= $(MCU) $(C_DEFS) $(INCS) $(OPT) -std=c++17 \
+						 -Wall -Wpedantic -Wextra \
+						 -fdata-sections -ffunction-sections -fexceptions
         # -Wshadow \
         # -Wnon-virtual-dtor \
         # -Wcast-align \
@@ -214,8 +217,8 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32F405RGTx_FLASH.ld
 
 # libraries
-LIBS = -lc -lm -lnosys -lrdimon
-LIBDIR =
+LIBS = -lc -lm -lnosys -lrdimon -lSTM32Cryptographic_CM4
+LIBDIR = -Llib
 LDFLAGS = $(MCU) --specs=rdimon.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/${TARGET}.map,--cref -Wl,--gc-sections
 
 #######################################
