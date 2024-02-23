@@ -5,6 +5,8 @@ namespace mls::hpke::p256 {
 
 namespace {
 
+#define CURVE CMOX_ECC_SECP256R1_LOWMEM
+
 struct ECCContext {
   // XXX Not at all clear what the right value for this parameter is.
   static constexpr size_t buffer_size = 128;
@@ -13,7 +15,7 @@ struct ECCContext {
   cmox_ecc_handle_t ctx;
 
   ECCContext() {
-    cmox_ecc_construct(&ctx, CMOX_MATH_FUNCS_SMALL, buffer.data(), buffer.size());
+    cmox_ecc_construct(&ctx, CMOX_ECC256_MATH_FUNCS, buffer.data(), buffer.size());
   }
 
   cmox_ecc_handle_t* get() {
@@ -44,7 +46,7 @@ PrivateKey derive_key_pair(const bytes& ikm){
 
   // TODO check return value
   cmox_ecdsa_keyGen(ctx.get(),
-                    CMOX_ECC_SECP256R1_LOWMEM,
+                    CURVE,
                     ikm.data(),
                     ikm.size(),
                     priv.data(),
@@ -87,7 +89,7 @@ bytes dh(const p256::PrivateKey& sk, const p256::PublicKey& pk) {
 
   auto ctx = ECCContext{};
   const auto rv = cmox_ecdh(ctx.get(),
-                            CMOX_ECC_SECP256R1_LOWMEM,
+                            CURVE,
                             sk.priv.data(),
                             sk.priv.size(),
                             pk.pub.data(),
@@ -113,7 +115,7 @@ bytes sign(const bytes& data, const PrivateKey& sk) {
   auto ctx = ECCContext();
   const auto randomness = random_bytes(CMOX_ECC_SECP256R1_PRIVKEY_LEN);
   const auto rv = cmox_ecdsa_sign(ctx.get(),
-                                  CMOX_ECC_SECP256R1_LOWMEM,
+                                  CURVE,
                                   randomness.data(),
                                   randomness.size(),
                                   sk.priv.data(),
