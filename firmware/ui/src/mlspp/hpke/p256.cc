@@ -7,7 +7,7 @@ namespace {
 
 struct ECCContext {
   // XXX Not at all clear what the right value for this parameter is.
-  static constexpr size_t buffer_size = 128;
+  static constexpr size_t buffer_size = 2000;
 
   std::array<uint8_t, buffer_size> buffer;
   cmox_ecc_handle_t ctx;
