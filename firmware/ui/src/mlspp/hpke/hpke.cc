@@ -13,10 +13,6 @@
 #include <stdexcept>
 #include <string>
 
-#include <crypto/ecc/cmox_ecc.h>
-#include <crypto/ecc/cmox_ecdsa.h>
-#include <crypto/ecc/cmox_ecdh.h>
-
 namespace MLS_NAMESPACE::hpke {
 
 ///
