@@ -15,6 +15,8 @@
 
 #include "QChat.hh"
 
+#include <vector>
+
 #define VIEW_ADDRESS 0x00
 #define FIRST_BOOT_STARTED 0x01
 #define FIRST_BOOT_DONE 0x02
@@ -32,7 +34,7 @@ public:
 
     void Run();
     bool HasNewMessages();
-    const Vector<String>& GetMessages();
+    std::vector<String> TakeMessages();
     void PushMessage(String&& str);
     void ClearMessages();
     void EnqueuePacket(std::unique_ptr<SerialPacket> packet);
@@ -93,7 +95,7 @@ private:
     SerialPacketManager net_layer;
     SettingManager setting_manager;
     ViewInterface* view;
-    Vector<String> received_messages;
+    std::vector<String> received_messages;
     bool has_new_messages;
     Vector<qchat::Ascii*> ascii_messages;
     bool force_redraw;
