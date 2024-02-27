@@ -101,16 +101,16 @@ struct Logger {
   void log(const T&... args) {
     auto str = std::stringstream();
     str << "[UI] ";
-    const auto line = space_separated_line(std::move(str), args...);
+    auto line = space_separated_line(std::move(str), args...);
 
     // Uncomment for UART logging
-    // line = line + "\n";
-    // const auto* line_ptr = reinterpret_cast<const uint8_t*>(line.c_str());
-    // HAL_UART_Transmit(&huart1, line_ptr, line.size(), HAL_MAX_DELAY);
+    line += std::string("\n");
+    const auto* line_ptr = reinterpret_cast<const uint8_t*>(line.c_str());
+    HAL_UART_Transmit(&huart1, line_ptr, line.size(), HAL_MAX_DELAY);
 
     // Uncomment for logging to screen
-    screen.DrawText(0, y, line.c_str(), font7x12, C_GREEN, C_BLACK);
-    y += 12;
+    // screen.DrawText(0, y, line.c_str(), font7x12, C_GREEN, C_BLACK);
+    // y += 12;
   }
 };
 
@@ -551,7 +551,7 @@ bool test_mls(Logger& log) {
                           {} };
 
     // Verify group
-    log.log("mls", "join");
+    log.log("mls", "verify");
     if (alice1.epoch_authenticator() != bob1.epoch_authenticator()) {
       log.log("mls", "disagree");
       return false;

@@ -6,6 +6,8 @@
 #include "Message.hh"
 #include "QChat.hh"
 
+#include <optional>
+
 #define Margin_0 0
 
 #define Padding_0 0
@@ -15,6 +17,19 @@
 
 #define Text_Draw_Speed 20
 
+struct MLSState;
+
+struct PreJoinedState {
+  PreJoinedState();
+  String key_package();
+  MLSState join(const String& welcome);
+};
+
+struct MLSState {
+  static std::pair<String, MLSState> create(const String& key_package);
+  String protect(const String& plaintext);
+  String unprotect(const String& ciphertext);
+};
 
 class ChatView : public ViewInterface
 {
@@ -23,7 +38,7 @@ public:
              Screen& screen,
              Q10Keyboard& keyboard,
              SettingManager& setting_manager);
-    ~ChatView();
+    ~ChatView() = default;
 
     void SetActiveRoom(const struct Room &room);
 
@@ -32,17 +47,19 @@ protected:
     void Draw();
     void Update();
     void HandleInput();
+
 private:
     void DrawTitle();
     void DrawUsrInputSeperator();
     void DrawMessages();
+    void IngestMessages();
+    void SendPacket(const String& data);
 
     // Consts
     const String name_seperator = ": ";
 
-    // We need to keep this saved somewhere outside of the chat view?
-    // Perhaps in the user interface manager.
-    Vector<Message> messages;
+    // Decrypted messages
+    std::vector<String> messages;
     bool redraw_messages = true;
 
     struct
@@ -54,4 +71,7 @@ private:
 
     // qchat room being displayed by this chat view
     uint64_t msg_id {0};
+
+    std::optional<PreJoinedState> pre_joined_state;
+    std::optional<MLSState> mls_state;
 };

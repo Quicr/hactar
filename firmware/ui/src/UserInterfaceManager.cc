@@ -79,10 +79,12 @@ bool UserInterfaceManager::HasNewMessages()
     return has_new_messages;
 }
 
-const Vector<String>& UserInterfaceManager::GetMessages()
+std::vector<String> UserInterfaceManager::TakeMessages()
 {
     has_new_messages = false;
-    return received_messages;
+    auto out = std::vector<String>{};
+    std::swap(received_messages, out);
+    return out;
 }
 
 void UserInterfaceManager::PushMessage(String&& str)

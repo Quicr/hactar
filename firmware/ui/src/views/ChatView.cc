@@ -8,18 +8,57 @@
 
 #include "TitleBar.hh"
 
+enum struct MlsMessageType : uint8_t {
+    key_package = 1,
+    welcome = 2,
+    message = 3,
+};
+
+static String frame(MlsMessageType msg_type, const String& msg) {
+  return {}; // TODO
+}
+
+static std::pair<MlsMessageType, String> unframe(const String& framed) {
+  return { MlsMessageType::key_package,  {} }; // TODO
+}
+
+PreJoinedState::PreJoinedState()
+{
+  // TODO: Make a key package
+}
+
+String PreJoinedState::key_package() {
+  return {}; // TODO
+}
+
+MLSState PreJoinedState::join(const String& welcome) {
+  return {}; // TODO
+}
+
+std::pair<String, MLSState> MLSState::create(const String& key_package) {
+  return { {}, {} }; // TODO
+}
+
+String MLSState::protect(const String& plaintext) {
+  return plaintext; // TODO
+}
+
+String MLSState::unprotect(const String& ciphertext) {
+  return ciphertext; // TODO
+}
+
 ChatView::ChatView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
-    SettingManager& setting_manager):
-    ViewInterface(manager, screen, keyboard, setting_manager)
+    SettingManager& setting_manager)
+    : ViewInterface(manager, screen, keyboard, setting_manager)
+    , pre_joined_state(PreJoinedState())
 {
     redraw_messages = true;
-}
 
-ChatView::~ChatView()
-{
-
+    const auto key_package = pre_joined_state->key_package();
+    const auto framed = frame(MlsMessageType::key_package, key_package);
+    SendPacket(framed);
 }
 
 void ChatView::Update()
@@ -81,38 +120,25 @@ void ChatView::HandleInput()
         // strings for each added character
         // and then we can just memcpy?
         const String& username = *setting_manager.Username();
-        String msg = "00:00 ";
-        msg += username;
-        msg += ": ";
-        msg += usr_input;
+        String plaintext = "00:00 ";
+        plaintext += username;
+        plaintext += ": ";
+        plaintext += usr_input;
 
-        // prepare ascii message, encode into Message + Packet
-        qchat::Ascii ascii(
-            manager.ActiveRoom()->room_uri,
-            {msg.c_str()}
-        );
+        // If there's no MLS state, then we can't send the message.
+        if (!mls_state) {
+            return;
+        }
 
-        // TODO move into encode...
-        // TODO packet should maybe have a static next_packet_id?
-        std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 1);
-        packet->SetData(Packet::Types::Message, 0, 1);
-        packet->SetData(manager.NextPacketId(), 1, 2);
+        // Encrypt the message
+        const auto ciphertext = mls_state->protect(plaintext);
+        const auto framed = frame(MlsMessageType::message, ciphertext);
 
-        // The packet length is set in the encode function
-        // TODO encode probably could just generate a packet instead...
-        qchat::Codec::encode(packet, 3, ascii);
+        // Send the message out on the wire
+        SendPacket(framed);
 
-        uint64_t new_offset = packet->NumBytes();
-        // Expiry time
-        packet->SetData(0xFFFFFFFF, new_offset, 4);
-        new_offset += 4;
-        // Creation time
-        packet->SetData(0, new_offset, 4);
-        new_offset += 4;
-
-        // TODO ENABLE
-        manager.EnqueuePacket(std::move(packet));
-        manager.PushMessage(std::move(msg));
+        // Keep a copy of the message for display
+        messages.push_back(std::move(plaintext));
 
         // redraw_messages = true;
 
@@ -121,10 +147,83 @@ void ChatView::HandleInput()
     }
 }
 
+void ChatView::SendPacket(const String& msg) {
+    // prepare ascii message, encode into Message + Packet
+    // XXX(RLB): This should use a null-safe message type.
+    qchat::Ascii ascii(
+        manager.ActiveRoom()->room_uri,
+        { msg.c_str() }
+    );
+
+    // TODO move into encode...
+    // TODO packet should maybe have a static next_packet_id?
+    std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 1);
+    packet->SetData(Packet::Types::Message, 0, 1);
+    packet->SetData(manager.NextPacketId(), 1, 2);
+
+    // The packet length is set in the encode function
+    // TODO encode probably could just generate a packet instead...
+    qchat::Codec::encode(packet, 3, ascii);
+
+    uint64_t new_offset = packet->NumBytes();
+    // Expiry time
+    packet->SetData(0xFFFFFFFF, new_offset, 4);
+    new_offset += 4;
+    // Creation time
+    packet->SetData(0, new_offset, 4);
+    new_offset += 4;
+
+    // TODO ENABLE
+    manager.EnqueuePacket(std::move(packet));
+}
+
+void ChatView::IngestMessages()
+{
+    const auto raw_messages = manager.TakeMessages();
+    for (const auto& msg : raw_messages) {
+        const auto [msg_type, msg_data] = unframe(msg);
+        switch (msg_type) {
+            case MlsMessageType::key_package: {
+                const auto [welcome, state] = MLSState::create(msg_data);
+
+                pre_joined_state = std::nullopt;
+                mls_state = std::move(state);
+
+                const auto framed = frame(MlsMessageType::welcome, welcome);
+                SendPacket(framed);
+            }
+
+            case MlsMessageType::welcome: {
+                if (!pre_joined_state) {
+                    // Can't join by welcome
+                    // TODO(RLB) Would be nice to log this situation
+                    break;
+                }
+
+                const auto state = pre_joined_state->join(msg_data);
+
+                pre_joined_state = std::nullopt;
+                mls_state = std::move(state);
+            }
+
+            case MlsMessageType::message: {
+                // If we don't have MLS state, we can't decrypt
+                if (!mls_state) {
+                    messages.push_back("[decryption failure]");
+                    // TODO(RLB) Would be nice to log this situation
+                    break;
+                }
+
+                const auto plaintext = mls_state->unprotect(msg_data);
+                messages.push_back(plaintext);
+            }
+        }
+    }
+}
 
 void ChatView::DrawMessages()
 {
-    const Vector<String>& messages = manager.GetMessages();
+    IngestMessages();
 
     int32_t msg_idx = messages.size() - 1;
 
