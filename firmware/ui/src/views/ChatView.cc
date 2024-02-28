@@ -102,7 +102,6 @@ ChatView::ChatView(UserInterfaceManager& manager,
     SettingManager& setting_manager)
     : ViewInterface(manager, screen, keyboard, setting_manager)
     , pre_joined_state(PreJoinedState())
-    , mls_state(MLSState{}) // TODO(trigaux): Remove in favour of real MLS flow.
 {
     redraw_messages = true;
 
@@ -178,7 +177,8 @@ void ChatView::HandleInput()
     // If we have MLS state, encrypt and send the message
     if (mls_state) {
         // Encrypt the message
-        const auto ciphertext = mls_state->protect(plaintext);
+        const auto plaintext_data = from_ascii(std::string(plaintext.c_str()));
+        const auto ciphertext = mls_state->protect(plaintext_data);
         const auto framed = frame(MlsMessageType::message, ciphertext);
 
         // Send the message out on the wire
@@ -270,7 +270,8 @@ void ChatView::IngestMessages()
                 }
 
                 auto plaintext = mls_state->unprotect(msg_data);
-                PushMessage(std::move(plaintext));
+                auto plaintext_str = String(to_ascii(plaintext).c_str());
+                PushMessage(std::move(plaintext_str));
             }
         }
     }

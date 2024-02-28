@@ -28,7 +28,7 @@ OPT = -Og
 #######################################
 # programming
 #######################################
-PORT = /dev/ttyUSB0
+PORT = /dev/tty.usbserial-210
 BAUD = 115200
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
