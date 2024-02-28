@@ -66,6 +66,7 @@ private:
     void DrawMessages();
     void IngestMessages();
     void SendPacket(const bytes& data);
+    void PushMessage(String&& msg);
 
     // Consts
     const String name_seperator = ": ";
@@ -80,9 +81,6 @@ private:
         uint16_t name_colour = C_BLUE;
         uint16_t body_colour = C_WHITE;
     } settings;
-
-    // qchat room being displayed by this chat view
-    uint64_t msg_id {0};
 
     std::optional<PreJoinedState> pre_joined_state;
     std::optional<MLSState> mls_state;
