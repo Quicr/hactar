@@ -102,6 +102,7 @@ ChatView::ChatView(UserInterfaceManager& manager,
     SettingManager& setting_manager)
     : ViewInterface(manager, screen, keyboard, setting_manager)
     , pre_joined_state(PreJoinedState())
+    , mls_state(MLSState{}) // TODO(trigaux): Remove in favour of real MLS flow.
 {
     redraw_messages = true;
 
@@ -162,40 +163,30 @@ void ChatView::HandleInput()
     if (usr_input[0] == '/')
     {
         ChangeView(usr_input);
+        return;
     }
-    else
-    {
-        // TODO switch to using C strings so we don;t need to extend
-        // strings for each added character
-        // and then we can just memcpy?
-        const std::string username = setting_manager.Username()->c_str();
-        std::string msg = "00:00 ";
-        msg += username;
-        msg += ": ";
-        msg += std::string(usr_input.c_str());
-        const auto plaintext = from_ascii(msg);
 
-        // If there's no MLS state, then we can't send the message.
-        if (!mls_state) {
-            return;
-        }
+    // TODO switch to using C strings so we don;t need to extend
+    // strings for each added character
+    // and then we can just memcpy?
+    const String& username = *setting_manager.Username();
+    String plaintext = "00:00 ";
+    plaintext += username;
+    plaintext += ": ";
+    plaintext += usr_input;
 
+    // If we have MLS state, encrypt and send the message
+    if (mls_state) {
         // Encrypt the message
         const auto ciphertext = mls_state->protect(plaintext);
         const auto framed = frame(MlsMessageType::message, ciphertext);
 
         // Send the message out on the wire
         SendPacket(framed);
-
-        // Keep a copy of the message for display
-        const auto str = String(msg.c_str());
-        messages.push_back(std::move(str));
-
-        // redraw_messages = true;
-
-        msg_id++;
-
     }
+
+    // Keep a copy of the message for display
+    PushMessage(std::move(plaintext));
 }
 
 void ChatView::SendPacket(const bytes& msg) {
@@ -226,6 +217,12 @@ void ChatView::SendPacket(const bytes& msg) {
 
     // TODO ENABLE
     manager.EnqueuePacket(std::move(packet));
+}
+
+void ChatView::PushMessage(String&& msg)
+{
+    messages.push_back(std::move(msg));
+    redraw_messages = true;
 }
 
 void ChatView::IngestMessages()
@@ -267,14 +264,13 @@ void ChatView::IngestMessages()
             case MlsMessageType::message: {
                 // If we don't have MLS state, we can't decrypt
                 if (!mls_state) {
-                    messages.push_back("[decryption failure]");
+                    PushMessage("[decryption failure]");
                     // TODO(RLB) Would be nice to log this situation
                     break;
                 }
 
-                const auto plaintext = mls_state->unprotect(msg_data);
-                const auto plaintext_str = to_ascii(plaintext);
-                messages.push_back(plaintext_str.c_str());
+                auto plaintext = mls_state->unprotect(msg_data);
+                PushMessage(std::move(plaintext));
             }
         }
     }
@@ -287,7 +283,9 @@ void ChatView::DrawMessages()
     int32_t msg_idx = messages.size() - 1;
 
     // If there are no messages just return
-    if (msg_idx < 0) return;
+    if (msg_idx < 0) {
+        return;
+    }
 
     uint16_t y_window_start = (menu_font.height + Padding_3);
     uint16_t y_window_end = screen.ViewHeight() - (usr_font.height + usr_font.height / 2);
