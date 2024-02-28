@@ -567,7 +567,7 @@ bool test_mls(Logger& log) {
 // TODO Get the osc working correctly from an external signal
 int app_main()
 {
-    audio = new AudioCodec(hi2s3, hi2c1);
+    // audio = new AudioCodec(hi2s3, hi2c1);
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
