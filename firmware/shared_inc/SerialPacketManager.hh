@@ -171,6 +171,8 @@ private:
             // Length
             rx_packet->SetData(uart->Read(), 3, 1);
             rx_packet->SetData(uart->Read(), 4, 1);
+
+            // printf(">>>>> PACKET Length %u\n", rx_packet->GetData<uint16_t>(3, 2));
         }
 
         // Get the length of the incoming message

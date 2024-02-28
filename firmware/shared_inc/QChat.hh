@@ -4,8 +4,9 @@
 #include <vector>
 
 #include "SerialPacket.hh"
+#include "stm32f4xx_hal.h"
 
-
+extern UART_HandleTypeDef huart1;
 // Quicr based chat protocol
 namespace qchat
 {
@@ -197,6 +198,10 @@ struct Codec
         // +9 for the type byte, 2 len bytes and the 8 bytes of length
         uint16_t extra_bytes = 1 + Field_Len_Bytes + Field_Len_Bytes;
         uint16_t data_len = msg.message_uri.length() + msg.message.length();
+
+        const auto &str_size = ">>>>>>> " + std::to_string(data_len + extra_bytes) + "\n";
+        HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t *>(str_size.c_str()), str_size.size(), HAL_MAX_DELAY);
+
         packet->SetData(data_len + extra_bytes, offset, 2);
         offset += 2;
 

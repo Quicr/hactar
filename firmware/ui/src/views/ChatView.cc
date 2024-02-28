@@ -6,6 +6,8 @@
 #include "QChat.hh"
 #include <string>
 
+extern UART_HandleTypeDef huart1;
+
 #include "TitleBar.hh"
 
 static const CipherSuite cipher_suite = CipherSuite{
@@ -107,6 +109,9 @@ ChatView::ChatView(UserInterfaceManager& manager,
 
     const auto framed = frame(MlsMessageType::key_package,
                               pre_joined_state->key_package_data);
+
+    const auto& str_size = ">>>>>>> " + std::to_string(framed.size()) + "\n";
+    HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(str_size.c_str()), str_size.size(), HAL_MAX_DELAY);
     SendPacket(framed);
 }
 
