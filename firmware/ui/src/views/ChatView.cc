@@ -6,8 +6,6 @@
 #include "QChat.hh"
 #include <string>
 
-extern UART_HandleTypeDef huart1;
-
 #include "TitleBar.hh"
 
 static const CipherSuite cipher_suite = CipherSuite{
@@ -106,13 +104,6 @@ ChatView::ChatView(UserInterfaceManager& manager,
     , pre_joined_state(PreJoinedState())
 {
     redraw_messages = true;
-
-    const auto framed = frame(MlsMessageType::key_package,
-                              pre_joined_state->key_package_data);
-
-    const auto& str_size = ">>>>>>> " + std::to_string(framed.size()) + "\n";
-    HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(str_size.c_str()), str_size.size(), HAL_MAX_DELAY);
-    SendPacket(framed);
 }
 
 void ChatView::Update()
@@ -189,6 +180,15 @@ void ChatView::HandleInput()
         // Send the message out on the wire
         SendPacket(framed);
     }
+    else
+    {
+        const auto framed = frame(MlsMessageType::key_package,
+                                  pre_joined_state->key_package_data);
+
+        Logger::Log("[ChatView] " + std::to_string(framed.size()));
+
+        SendPacket(framed);
+    }
 
     // Keep a copy of the message for display
     PushMessage(std::move(plaintext));
@@ -231,6 +231,7 @@ void ChatView::PushMessage(String&& msg)
 }
 
 void ChatView::IngestMessages()
+try
 {
     const auto raw_messages = manager.TakeMessages();
     for (const auto& msg : raw_messages) {
@@ -280,6 +281,10 @@ void ChatView::IngestMessages()
             }
         }
     }
+}
+catch(const std::exception& e)
+{
+    Logger::Log("[EXCEPT] Caught exception: ", e.what());
 }
 
 void ChatView::DrawMessages()
