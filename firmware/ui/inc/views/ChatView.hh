@@ -8,6 +8,8 @@
 
 #include <optional>
 
+#include <mls/state.h>
+
 #define Margin_0 0
 
 #define Padding_0 0
@@ -17,18 +19,28 @@
 
 #define Text_Draw_Speed 20
 
+using namespace mls;
+
 struct MLSState;
 
 struct PreJoinedState {
+  SignaturePrivateKey identity_priv;
+  HPKEPrivateKey init_priv;
+  HPKEPrivateKey leaf_priv;
+  LeafNode leaf_node;
+  KeyPackage key_package;
+  bytes key_package_data;
+
   PreJoinedState();
-  String key_package();
-  MLSState join(const String& welcome);
+  std::pair<bytes, MLSState> create(const bytes& key_package_data);
+  MLSState join(const bytes& welcome_data);
 };
 
 struct MLSState {
-  static std::pair<String, MLSState> create(const String& key_package);
-  String protect(const String& plaintext);
-  String unprotect(const String& ciphertext);
+  bytes protect(const bytes& plaintext);
+  bytes unprotect(const bytes& ciphertext);
+
+  mls::State state;
 };
 
 class ChatView : public ViewInterface
@@ -53,7 +65,7 @@ private:
     void DrawUsrInputSeperator();
     void DrawMessages();
     void IngestMessages();
-    void SendPacket(const String& data);
+    void SendPacket(const bytes& data);
 
     // Consts
     const String name_seperator = ": ";

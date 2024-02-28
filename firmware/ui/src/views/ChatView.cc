@@ -8,43 +8,92 @@
 
 #include "TitleBar.hh"
 
+static const CipherSuite cipher_suite = CipherSuite{
+  CipherSuite::ID::P256_AES128GCM_SHA256_P256
+};
+
+static const bytes group_id = from_ascii("group_id");
+
 enum struct MlsMessageType : uint8_t {
     key_package = 1,
     welcome = 2,
     message = 3,
 };
 
-static String frame(MlsMessageType msg_type, const String& msg) {
-  return {}; // TODO
+static bytes frame(MlsMessageType msg_type, const bytes& msg) {
+  const auto msg_type_8 = static_cast<uint8_t>(msg_type);
+  const auto type_vec = std::vector<uint8_t>(1, msg_type_8);
+  return bytes(type_vec) + msg;
 }
 
-static std::pair<MlsMessageType, String> unframe(const String& framed) {
-  return { MlsMessageType::key_package,  {} }; // TODO
+static std::pair<MlsMessageType, bytes> unframe(const bytes& framed) {
+  const auto& data = framed.as_vec();
+  const auto msg_type = static_cast<MlsMessageType>(data.at(0));
+  const auto msg_data = bytes(std::vector<uint8_t>(data.begin() + 1, data.end()));
+  return { msg_type, msg_data };
 }
 
 PreJoinedState::PreJoinedState()
+  : identity_priv(SignaturePrivateKey::generate(cipher_suite))
+  , init_priv(HPKEPrivateKey::generate(cipher_suite))
+  , leaf_priv(HPKEPrivateKey::generate(cipher_suite))
 {
-  // TODO: Make a key package
+  auto credential = Credential::basic(from_ascii("bob"));
+  leaf_node = LeafNode{ cipher_suite,
+                        leaf_priv.public_key,
+                        identity_priv.public_key,
+                        credential,
+                        Capabilities::create_default(),
+                        Lifetime::create_default(),
+                        {},
+                        identity_priv };
+
+  key_package = KeyPackage{ cipher_suite,
+                            init_priv.public_key,
+                            leaf_node,
+                            {},
+                            identity_priv };
+
+  key_package_data = tls::marshal(key_package);
 }
 
-String PreJoinedState::key_package() {
-  return {}; // TODO
+std::pair<bytes, MLSState> PreJoinedState::create(const bytes& key_package_data) {
+  auto state0 = State{ group_id,
+                       cipher_suite,
+                       leaf_priv,
+                       identity_priv,
+                       leaf_node,
+                       {} };
+
+  const auto fresh_secret = random_bytes(32);
+  const auto key_package = tls::get<KeyPackage>(key_package_data);
+  const auto add = state0.add_proposal(key_package);
+  auto [_commit, welcome, state1] =
+    state0.commit(fresh_secret, CommitOpts{ { add }, true, false, {} }, {});
+
+  return { tls::marshal(welcome), MLSState{ state1 } };
 }
 
-MLSState PreJoinedState::join(const String& welcome) {
-  return {}; // TODO
+MLSState PreJoinedState::join(const bytes& welcome_data) {
+  const auto welcome = tls::get<Welcome>(welcome_data);
+  return MLSState{ State{ init_priv,
+                          leaf_priv,
+                          identity_priv,
+                          key_package,
+                          welcome,
+                          std::nullopt,
+                          {} } };
 }
 
-std::pair<String, MLSState> MLSState::create(const String& key_package) {
-  return { {}, {} }; // TODO
+bytes MLSState::protect(const bytes& plaintext) {
+  const auto private_message = state.protect({}, plaintext, 0);
+  return tls::marshal(private_message);
 }
 
-String MLSState::protect(const String& plaintext) {
-  return plaintext; // TODO
-}
-
-String MLSState::unprotect(const String& ciphertext) {
-  return ciphertext; // TODO
+bytes MLSState::unprotect(const bytes& ciphertext) {
+  const auto private_message = tls::get<MLSMessage>(ciphertext);
+  const auto [aad, pt] = state.unprotect(private_message);
+  return pt;
 }
 
 ChatView::ChatView(UserInterfaceManager& manager,
@@ -56,8 +105,8 @@ ChatView::ChatView(UserInterfaceManager& manager,
 {
     redraw_messages = true;
 
-    const auto key_package = pre_joined_state->key_package();
-    const auto framed = frame(MlsMessageType::key_package, key_package);
+    const auto framed = frame(MlsMessageType::key_package,
+                              pre_joined_state->key_package_data);
     SendPacket(framed);
 }
 
@@ -119,11 +168,12 @@ void ChatView::HandleInput()
         // TODO switch to using C strings so we don;t need to extend
         // strings for each added character
         // and then we can just memcpy?
-        const String& username = *setting_manager.Username();
-        String plaintext = "00:00 ";
-        plaintext += username;
-        plaintext += ": ";
-        plaintext += usr_input;
+        const std::string username = setting_manager.Username()->c_str();
+        std::string msg = "00:00 ";
+        msg += username;
+        msg += ": ";
+        msg += std::string(usr_input.c_str());
+        const auto plaintext = from_ascii(msg);
 
         // If there's no MLS state, then we can't send the message.
         if (!mls_state) {
@@ -138,7 +188,8 @@ void ChatView::HandleInput()
         SendPacket(framed);
 
         // Keep a copy of the message for display
-        messages.push_back(std::move(plaintext));
+        const auto str = String(msg.c_str());
+        messages.push_back(std::move(str));
 
         // redraw_messages = true;
 
@@ -147,12 +198,12 @@ void ChatView::HandleInput()
     }
 }
 
-void ChatView::SendPacket(const String& msg) {
+void ChatView::SendPacket(const bytes& msg) {
     // prepare ascii message, encode into Message + Packet
     // XXX(RLB): This should use a null-safe message type.
     qchat::Ascii ascii(
         manager.ActiveRoom()->room_uri,
-        { msg.c_str() }
+        { msg.begin(), msg.end() }
     );
 
     // TODO move into encode...
@@ -181,10 +232,17 @@ void ChatView::IngestMessages()
 {
     const auto raw_messages = manager.TakeMessages();
     for (const auto& msg : raw_messages) {
-        const auto [msg_type, msg_data] = unframe(msg);
+        const auto msg_bytes = from_ascii(msg.c_str());
+        const auto [msg_type, msg_data] = unframe(msg_bytes);
         switch (msg_type) {
             case MlsMessageType::key_package: {
-                const auto [welcome, state] = MLSState::create(msg_data);
+                if (!pre_joined_state) {
+                    // Can't create group
+                    // TODO(RLB) Would be nice to log this situation
+                    break;
+                }
+
+                const auto [welcome, state] = pre_joined_state->create(msg_data);
 
                 pre_joined_state = std::nullopt;
                 mls_state = std::move(state);
@@ -215,7 +273,8 @@ void ChatView::IngestMessages()
                 }
 
                 const auto plaintext = mls_state->unprotect(msg_data);
-                messages.push_back(plaintext);
+                const auto plaintext_str = to_ascii(plaintext);
+                messages.push_back(plaintext_str.c_str());
             }
         }
     }
