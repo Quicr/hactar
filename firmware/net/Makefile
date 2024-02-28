@@ -1,5 +1,5 @@
 BAUD 				= 115200
-PORT 				= /dev/tty.usbserial-210
+PORT 				= /dev/ttyUSB0
 BUILD_PATH			= ./build
 TARGET				= net
 
@@ -21,7 +21,7 @@ compile:
 	idf.py build
 
 upload:
-	python3 ../flasher/flasher.py --port=${PORT} --baud=${BAUD} --chip="net" \
+	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" \
 								 -bin=${BUILD_PATH}
 
 upload_esptool:

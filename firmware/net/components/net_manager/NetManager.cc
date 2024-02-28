@@ -414,13 +414,7 @@ void NetManager::ConnectToWifiCommand(const std::unique_ptr<SerialPacket>& packe
     }
     printf("NET: SSID Password - %s\n\r", ssid_password.c_str());
 
-    //Wifi::GetInstance()->Connect(ssid.c_str(), ssid_password.c_str());
-
-    {
-      std::string ssid = "FluffyWork5";
-      std::string ssid_password = "4084219990";
-      Wifi::GetInstance()->Connect(ssid.c_str(), ssid_password.c_str());
-    }
+    Wifi::GetInstance()->Connect(ssid.c_str(), ssid_password.c_str());
 }
 
 void NetManager::GetWifiStatusCommand()
