@@ -83,7 +83,11 @@ protected:
         Update();
 
         // Change view if set
-        if (command_handler->ChangeViewCommand(new_view)) return true;
+        if (command_handler->ChangeViewCommand(new_view))
+        {
+            return true;
+        }
+
         // Clear the new_view string if it is not a view it should be blank
         new_view.clear();
         return false;

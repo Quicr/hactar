@@ -168,6 +168,7 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
 
             auto bytes = qchat::Codec::string_to_bytes(ascii.message);
 
+            Logger::Log("Send to quicr session to publish");
             quicr_session->publish(nspace, bytes);
             break;
         }
@@ -177,9 +178,6 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
             break;
         }
     }
-
-
-
 }
 
 void NetManager::HandleWatchMessage(void* params)
@@ -365,7 +363,7 @@ void NetManager::GetSSIDsCommand()
         packet->SetData(SerialPacket::Types::Command, 0, 1);
 
         // Set the packet id
-        packet->SetData(1, 1, 2);
+        packet->SetData(ui_layer->NextPacketId(), 1, 2);
 
         // Add 1 for the command type
         // Add 1 for the ssid id
@@ -425,7 +423,7 @@ void NetManager::GetWifiStatusCommand()
     // Create a packet that tells the current status
     std::unique_ptr<SerialPacket> connected_packet = std::make_unique<SerialPacket>();
     connected_packet->SetData(SerialPacket::Types::Command, 0, 1);
-    connected_packet->SetData(1, 1, 2);
+    connected_packet->SetData(ui_layer->NextPacketId(), 1, 2);
     connected_packet->SetData(2, 3, 2);
     connected_packet->SetData(SerialPacket::Commands::WifiStatus, 5, 1);
     connected_packet->SetData(wifi->GetState() == Wifi::State::Connected, 6, 1);
@@ -454,7 +452,7 @@ void NetManager::GetRoomsCommand()
 
     std::unique_ptr<SerialPacket> room_packet = std::make_unique<SerialPacket>();
     room_packet->SetData(Packet::Types::Command, 0, 1);
-    room_packet->SetData(1, 1, 2);
+    room_packet->SetData(ui_layer->NextPacketId(), 1, 2);
     qchat::Codec::encode(room_packet, CreateFakeRoom());
 
     ui_layer->EnqueuePacket(std::move(room_packet));

@@ -393,7 +393,7 @@ void UserInterfaceManager::ConnectToWifi()
 void UserInterfaceManager::ConnectToWifi(const String& ssid,
     const String& password)
 {
-    std::unique_ptr<SerialPacket> connect_packet = std::make_unique<SerialPacket>();
+    std::unique_ptr<SerialPacket> connect_packet = std::make_unique<SerialPacket>(HAL_GetTick());
     connect_packet->SetData(SerialPacket::Types::Command, 0, 1);
     connect_packet->SetData(UserInterfaceManager::NextPacketId(), 1, 2);
 
@@ -477,7 +477,7 @@ void UserInterfaceManager::SendCheckWifiPacket()
     if (current_time < last_wifi_check) return;
 
     // Check a check wifi status packet
-    std::unique_ptr<SerialPacket> check_wifi = std::make_unique<SerialPacket>();
+    std::unique_ptr<SerialPacket> check_wifi = std::make_unique<SerialPacket>(HAL_GetTick());
 
     // Set the command
     check_wifi->SetData(SerialPacket::Types::Command, 0, 1);

@@ -1,3 +1,3 @@
 idf_component_register(SRCS "SerialEsp.cc"
-    INCLUDE_DIRS . ../../../shared_inc/
+    INCLUDE_DIRS . ../../../shared_inc/ ../../Core/inc
     REQUIRES "driver error")
