@@ -113,38 +113,32 @@ void ChatView::HandleInput()
     if (usr_input[0] == '/')
     {
         ChangeView(usr_input);
+        return;
     }
-    else
-    {
-        // TODO switch to using C strings so we don;t need to extend
-        // strings for each added character
-        // and then we can just memcpy?
-        const String& username = *setting_manager.Username();
-        String plaintext = "00:00 ";
-        plaintext += username;
-        plaintext += ": ";
-        plaintext += usr_input;
 
-        // If there's no MLS state, then we can't send the message.
-        if (!mls_state) {
-            return;
-        }
+    // TODO switch to using C strings so we don;t need to extend
+    // strings for each added character
+    // and then we can just memcpy?
+    const String& username = *setting_manager.Username();
+    String plaintext = "00:00 ";
+    plaintext += username;
+    plaintext += ": ";
+    plaintext += usr_input;
 
+    // Keep a copy of the message for display
+    messages.push_back(std::move(plaintext));
+
+    // If we have MLS state, encrypt and send the message
+    if (mls_state) {
         // Encrypt the message
         const auto ciphertext = mls_state->protect(plaintext);
         const auto framed = frame(MlsMessageType::message, ciphertext);
 
         // Send the message out on the wire
         SendPacket(framed);
-
-        // Keep a copy of the message for display
-        messages.push_back(std::move(plaintext));
-
-        // redraw_messages = true;
-
-        msg_id++;
-
     }
+
+    // redraw_messages = true;
 }
 
 void ChatView::SendPacket(const String& msg) {
@@ -228,7 +222,9 @@ void ChatView::DrawMessages()
     int32_t msg_idx = messages.size() - 1;
 
     // If there are no messages just return
-    if (msg_idx < 0) return;
+    if (msg_idx < 0) {
+        return;
+    }
 
     uint16_t y_window_start = (menu_font.height + Padding_3);
     uint16_t y_window_end = screen.ViewHeight() - (usr_font.height + usr_font.height / 2);
