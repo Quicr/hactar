@@ -54,6 +54,7 @@ private:
     void DrawMessages();
     void IngestMessages();
     void SendPacket(const String& data);
+    void PushMessage(String&& msg);
 
     // Consts
     const String name_seperator = ": ";

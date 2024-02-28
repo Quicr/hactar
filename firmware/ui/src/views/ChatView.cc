@@ -15,11 +15,11 @@ enum struct MlsMessageType : uint8_t {
 };
 
 static String frame(MlsMessageType msg_type, const String& msg) {
-  return {}; // TODO
+  return msg; // TODO
 }
 
 static std::pair<MlsMessageType, String> unframe(const String& framed) {
-  return { MlsMessageType::key_package,  {} }; // TODO
+  return { MlsMessageType::message,  framed }; // TODO
 }
 
 PreJoinedState::PreJoinedState()
@@ -53,6 +53,7 @@ ChatView::ChatView(UserInterfaceManager& manager,
     SettingManager& setting_manager)
     : ViewInterface(manager, screen, keyboard, setting_manager)
     , pre_joined_state(PreJoinedState())
+    , mls_state(MLSState{}) // TODO(trigaux): Remove in favour of real MLS flow.
 {
     redraw_messages = true;
 
@@ -125,9 +126,6 @@ void ChatView::HandleInput()
     plaintext += ": ";
     plaintext += usr_input;
 
-    // Keep a copy of the message for display
-    messages.push_back(std::move(plaintext));
-
     // If we have MLS state, encrypt and send the message
     if (mls_state) {
         // Encrypt the message
@@ -138,7 +136,8 @@ void ChatView::HandleInput()
         SendPacket(framed);
     }
 
-    // redraw_messages = true;
+    // Keep a copy of the message for display
+    PushMessage(std::move(plaintext));
 }
 
 void ChatView::SendPacket(const String& msg) {
@@ -169,6 +168,12 @@ void ChatView::SendPacket(const String& msg) {
 
     // TODO ENABLE
     manager.EnqueuePacket(std::move(packet));
+}
+
+void ChatView::PushMessage(String&& msg)
+{
+    messages.push_back(std::move(msg));
+    redraw_messages = true;
 }
 
 void ChatView::IngestMessages()
@@ -203,13 +208,13 @@ void ChatView::IngestMessages()
             case MlsMessageType::message: {
                 // If we don't have MLS state, we can't decrypt
                 if (!mls_state) {
-                    messages.push_back("[decryption failure]");
+                    PushMessage("[decryption failure]");
                     // TODO(RLB) Would be nice to log this situation
                     break;
                 }
 
-                const auto plaintext = mls_state->unprotect(msg_data);
-                messages.push_back(plaintext);
+                auto plaintext = mls_state->unprotect(msg_data);
+                PushMessage(std::move(plaintext));
             }
         }
     }
