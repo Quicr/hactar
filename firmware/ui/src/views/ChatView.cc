@@ -237,6 +237,11 @@ try
     for (const auto& msg : raw_messages) {
         const auto msg_bytes = from_ascii(msg.c_str());
         const auto [msg_type, msg_data] = unframe(msg_bytes);
+
+        Logger::Log("[MLS] Bytes", to_hex(msg_bytes));
+        Logger::Log("[MLS] Type", int(msg_type));
+        Logger::Log("[MLS] Data", to_hex(msg_data));
+
         switch (msg_type) {
             case MlsMessageType::key_package: {
                 if (!pre_joined_state) {
