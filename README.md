@@ -16,6 +16,7 @@ Hardware design for test device
 5. [STM32 Toolchain](#stm_installation)
 6. [ESP32 Toolchain](#esp_installation)
 7. [Hactar Setup](#hactar_setup)
+8. [Fully Assembled Hactar Setup - cliff notes](#hactar_upload)
 
 
 <h2 id="where">Where To Find Things</h2>
@@ -473,3 +474,55 @@ brew install make
     - See [Management Commands](#management_commands) for more commands that can be sent to the hactar board.
 - The first and third LED from the left will turn blue indicating debug mode and your console will receive serial debug messages from the UI and Net chips.
 - Enter `exit` to leave the monitor
+
+<h2 id="hactar_upload">Fully Assembled Hactar Setup</h2>
+
+<i>Silly pre-requisites:</i>
+- verify that your hactar folder and esp-if folders are peers
+- not within each other (usually hactar within esp-if)
+
+ARM:
+- brew install --cask gcc-arm-embedded
+
+Esp-idf:
+- brew install cmake ninja dfu-util
+- mkdir -p esp
+- cd esp
+- git clone -b v5.2 --recursive https://github.com/espressif/esp-idf.git --depth 1
+- cd esp-idf
+- ./install.sh esp32s3
+
+Add esp-idf to your path in ~/.zshrc    /* or equivalent */
+- alias get_idf='. $HOME/esp/esp-idf/export.sh'
+- (not the path of the export.sh is likely different for you)
+- source ~/.zshrc
+
+Flasher:
+- pip3 install pyserial
+
+Hactar:
+- git clone git@github.com/quicr/hactar
+- git submodule update --init --recursive
+- cd hactar
+- git checkout ev10
+
+<i>Mgmt:</i>
+- cd hactar/firmware/mgmt
+- conenct the hactar via USB
+- you might need to edit the Makefile to ensure that PORT is pointing to the correct USB (where the hactar is connected)
+- make compile
+- make upload
+
+
+<i>ui:</i>
+- cd hactar/firmware/ui
+- make compile
+- make upload
+
+<i>net:</i>
+- Ensure your esp-idf is on your path   /* which we set above */
+- cd hactar/firmware/net
+- make compile
+- make upload
+
+If it works (watch for the % progress, it retries if it fails so be patient), you're done!
