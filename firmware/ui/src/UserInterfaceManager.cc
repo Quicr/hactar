@@ -1,5 +1,5 @@
 #include "UserInterfaceManager.hh"
-#include "String.hh"
+#include <string>
 #include "FirstBootView.hh"
 #include "LoginView.hh"
 #include "ChatView.hh"
@@ -152,7 +152,7 @@ void UserInterfaceManager::ChangeRoom(std::unique_ptr<qchat::Room> new_room)
 
     // TODO placeholder for better more suitable code
     // TODO Active room needs to be passed to the chat view some how
-    std::string user_name{ setting_manager.Username()->c_str() };
+    std::string user_name = *setting_manager.Username();
 
     // Set watch on the room
     qchat::WatchRoom watch(active_room->publisher_uri + user_name + "/", active_room->room_uri);
@@ -220,7 +220,7 @@ void UserInterfaceManager::HandleIncomingPackets()
                 // in_msg.Timestamp("00:00");
                 // in_msg.Sender("Server");
 
-                // String body;
+                // std::string body;
 
                 // // Skip the type and length, add the whole message
                 // uint16_t packet_len = rx_packet->GetData(14, 10);
@@ -339,10 +339,10 @@ void UserInterfaceManager::ConnectToWifi()
         SettingManager::SettingAddress::SSID_Password, &ssid_password,
         ssid_password_len)) return;
 
-    String ssid_str;
+    std::string ssid_str;
     for (int i = 0 ; i < ssid_len; i++)
         ssid_str += ssid[i];
-    String password_str;
+    std::string password_str;
     for (int i = 0 ; i < ssid_password_len; i++)
         password_str += ssid_password[i];
 
@@ -390,8 +390,8 @@ void UserInterfaceManager::ConnectToWifi()
     // EnqueuePacket(std::move(connect_packet));
 }
 
-void UserInterfaceManager::ConnectToWifi(const String& ssid,
-    const String& password)
+void UserInterfaceManager::ConnectToWifi(const std::string& ssid,
+    const std::string& password)
 {
     std::unique_ptr<SerialPacket> connect_packet = std::make_unique<SerialPacket>(HAL_GetTick());
     connect_packet->SetData(SerialPacket::Types::Command, 0, 1);

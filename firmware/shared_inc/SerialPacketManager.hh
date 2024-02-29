@@ -4,10 +4,11 @@
 #include <map>
 
 #include "SerialInterface.hh"
-#include "Vector.hh"
 #include "SerialPacket.hh"
 #include "RingBuffer.hh"
 #include "logger.hh"
+
+#include "Vector.hh"
 
 #define Front_Bytes 6U
 #define Start_Bytes Front_Bytes - 1U
@@ -97,7 +98,7 @@ public:
         return rx_packets.size();
     }
 
-    const Vector<std::unique_ptr<SerialPacket>>& GetRxPackets()
+    Vector<std::unique_ptr<SerialPacket>>& GetRxPackets()
     {
         return rx_packets;
     }
@@ -290,8 +291,8 @@ private:
         // Check the pending packets
         if (tx_pending_packets.size() == 0) return;
 
-        Vector<unsigned short> delete_ids;
-        Vector<unsigned short> resend_ids;
+        std::vector<unsigned short> delete_ids;
+        std::vector<unsigned short> resend_ids;
 
         for (std::pair<const unsigned short, std::unique_ptr<SerialPacket>>&
             packet_pair : tx_pending_packets)
@@ -366,10 +367,10 @@ private:
         // Check the type of packet sent
         byte_t packet_type = tx_packet->GetData<byte_t>(0, 1);
 
-        if (packet_type != Packet::Types::Ok ||
-            packet_type != Packet::Types::Error ||
-            packet_type != Packet::Types::Busy ||
-            packet_type != Packet::Types::LocalDebug)
+        if (packet_type != SerialPacket::Types::Ok ||
+            packet_type != SerialPacket::Types::Error ||
+            packet_type != SerialPacket::Types::Busy ||
+            packet_type != SerialPacket::Types::LocalDebug)
         {
             // Get the packet id
             uint16_t packet_id = tx_packet->GetData<uint16_t>(1, 2);

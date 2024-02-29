@@ -3,7 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "Packet.hh"
+#include "SerialPacket.hh"
 #include "Vector.hh"
 #include "String.hh"
 #include "QChat.hh"
@@ -74,7 +74,7 @@ void NetManager::HandleSerial(void* param)
             // }
             // printf("\n\r");
 
-            if (packet_type == Packet::Types::Message)
+            if (packet_type == SerialPacket::Types::Message)
             {
                 printf("%s\r\n", "NetManager: Handle for Packet:Type:Message");
                 // skip the packetId and go to the next part of the packet data
@@ -89,7 +89,7 @@ void NetManager::HandleSerial(void* param)
                 }
 
             }
-            else if (packet_type == Packet::Types::Command)
+            else if (packet_type == SerialPacket::Types::Command)
             {
                 _this->HandleSerialCommands(rx_packet);
             }
@@ -370,7 +370,7 @@ void NetManager::GetSSIDsCommand()
         packet->SetData(ssid.length() + 2, 3, 2);
 
         // Set the first byte to the command type
-        packet->SetData(Packet::Commands::SSIDs, 5, 1);
+        packet->SetData(SerialPacket::Commands::SSIDs, 5, 1);
 
         // Set the ssid id
         packet->SetData(i + 1, 6, 1);
@@ -451,7 +451,7 @@ void NetManager::GetRoomsCommand()
     ESP_LOGI(TAG, "Send fake room");
 
     std::unique_ptr<SerialPacket> room_packet = std::make_unique<SerialPacket>();
-    room_packet->SetData(Packet::Types::Command, 0, 1);
+    room_packet->SetData(SerialPacket::Types::Command, 0, 1);
     room_packet->SetData(ui_layer->NextPacketId(), 1, 2);
     qchat::Codec::encode(room_packet, CreateFakeRoom());
 

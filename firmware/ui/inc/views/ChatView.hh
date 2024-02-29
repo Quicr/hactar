@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ViewInterface.hh"
-#include "String.hh"
+#include <string>
 #include "SerialPacket.hh"
 #include "Message.hh"
 #include "QChat.hh"
@@ -66,13 +66,13 @@ private:
     void DrawMessages();
     void IngestMessages();
     void SendPacket(const bytes& data);
-    void PushMessage(String&& msg);
+    void PushMessage(std::string&& msg);
 
     // Consts
-    const String name_seperator = ": ";
+    const std::string name_seperator = ": ";
 
     // Decrypted messages
-    std::vector<String> messages;
+    std::vector<std::string> messages;
     bool redraw_messages = true;
 
     struct

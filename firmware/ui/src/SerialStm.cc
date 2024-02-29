@@ -1,5 +1,5 @@
 #include "SerialStm.hh"
-#include "String.hh"
+#include <string>
 
 #include <string>
 

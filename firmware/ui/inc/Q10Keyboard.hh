@@ -1,7 +1,7 @@
 #pragma once
 
 #include "LinkedQueue.hh"
-#include "String.hh"
+#include <string>
 #include "PortPin.hh"
 
 #define Q10_COLS 5
@@ -62,10 +62,10 @@ public:
     void ClearInternalBuffer(unsigned long start = 0, unsigned long end = 0);
     bool EnterPressed();
     void Read();
-    bool Read(String &buffer);
+    bool Read(std::string &buffer);
     bool Read(char* buffer, size_t &buffer_ptr, const size_t buffer_max_size);
-    String& GetKeys();
-    String GetKeysCopy();
+    std::string& GetKeys();
+    std::string GetKeysCopy();
 
     static const unsigned char lshift_flag_b = 0b00000001;
     static const unsigned char rshift_flag_b = 0b00000010;
@@ -163,7 +163,7 @@ private:
     // Character pressed flag
     bool char_pressed;
 
-    String internal_buffer;
+    std::string internal_buffer;
     size_t internal_buffer_ptr;
 
     unsigned char last_read_ptr;

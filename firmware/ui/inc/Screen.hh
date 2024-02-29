@@ -3,8 +3,9 @@
 #include "stm32.h"
 #include "PortPin.hh"
 #include "Font.hh"
-#include "String.hh"
 #include "RingMatrix.hh"
+
+#include <string>
 
 #define SF_RST 0x01U // Software reset
 #define PWRC_A 0xCBU // Power control A
@@ -133,11 +134,11 @@ public:
                        const uint16_t thickness, const uint16_t colour);
 
     void DrawBlockAnimateString(const uint16_t x, const uint16_t y,
-                                const String &str, const Font &font,
+                                const std::string &str, const Font &font,
                                 const uint16_t fg, const uint16_t bg,
                                 const uint16_t delay);
 
-    void DrawText(const uint16_t x, const uint16_t y, const String &str,
+    void DrawText(const uint16_t x, const uint16_t y, const std::string &str,
                     const Font &font, const uint16_t fg, const uint16_t bg,
                     const bool wordwrap = false,
                     uint32_t max_chunk_size=Max_Chunk_Size);
@@ -148,7 +149,7 @@ public:
                      const uint16_t y_window_start,
                      const uint16_t x_window_end,
                      const uint16_t y_window_end,
-                     const String &str,
+                     const std::string &str,
                      const Font &font,
                      const uint16_t fg,
                      const uint16_t bg);
