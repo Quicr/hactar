@@ -79,15 +79,15 @@ bool UserInterfaceManager::HasNewMessages()
     return has_new_messages;
 }
 
-std::vector<String> UserInterfaceManager::TakeMessages()
+std::vector<std::string> UserInterfaceManager::TakeMessages()
 {
     has_new_messages = false;
-    auto out = std::vector<String>{};
+    auto out = std::vector<std::string>{};
     std::swap(received_messages, out);
     return out;
 }
 
-void UserInterfaceManager::PushMessage(String&& str)
+void UserInterfaceManager::PushMessage(std::string&& str)
 {
     has_new_messages = true;
     received_messages.push_back(str);
@@ -206,7 +206,7 @@ void UserInterfaceManager::HandleIncomingPackets()
                     // HACK remove later
                     qchat::Ascii* ascii = ascii_messages[0];
 
-                    received_messages.push_back(ascii->message.c_str());
+                    received_messages.push_back(std::move(ascii->message));
                     has_new_messages = true;
 
                     // HACK remove later
