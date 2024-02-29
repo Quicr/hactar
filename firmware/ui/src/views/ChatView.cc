@@ -79,6 +79,7 @@ MLSState PreJoinedState::join(const bytes& welcome_data) {
 }
 
 bool MLSState::should_commit() const {
+  Logger::Log("[MLS] should commit?", state.index().val);
   return state.index() == LeafIndex{ 0 };
 }
 
@@ -257,6 +258,7 @@ try
             case MlsMessageType::key_package: {
                 // If this is the initial creation, create the group
                 if (pre_joined_state) {
+                    Logger::Log("[MLS] Creating group");
                     auto state = pre_joined_state->create();
                     const auto [commit, welcome] = state.add(msg_data);
 
@@ -270,15 +272,17 @@ try
 
                 // Otherwise, we should have MLS state ready
                 if (!mls_state) {
-                    // TODO(RLB) Would be nice to log this situation
+                    Logger::Log("[MLS] Ignoring KeyPackage; no MLS state");
                     break;
                 }
 
                 if (mls_state->should_commit()){
                     // We are not the committer
+                    Logger::Log("[MLS] Ignoring KeyPackage; not the committer");
                     break;
                 }
 
+                Logger::Log("[MLS] Committing");
                 const auto [commit, welcome] = mls_state->add(msg_data);
 
                 const auto framed_welcome = frame(MlsMessageType::welcome, welcome);
@@ -292,10 +296,11 @@ try
             case MlsMessageType::welcome: {
                 if (!pre_joined_state) {
                     // Can't join by welcome
-                    // TODO(RLB) Would be nice to log this situation
+                    Logger::Log("[MLS] Ignoring Welcome; not pre-joined");
                     break;
                 }
 
+                Logger::Log("[MLS] Joining");
                 const auto state = pre_joined_state->join(msg_data);
 
                 pre_joined_state = std::nullopt;
@@ -306,10 +311,11 @@ try
             case MlsMessageType::commit: {
                 if (!mls_state) {
                     // Can't handle commits before join
-                    // TODO(RLB) Would be nice to log this situation
+                    Logger::Log("[MLS] Ignoring Commit; no MLS state");
                     break;
                 }
 
+                Logger::Log("[MLS] Processing commit");
                 mls_state->handle(msg_data);
                 break;
             }
@@ -317,11 +323,12 @@ try
             case MlsMessageType::message: {
                 // If we don't have MLS state, we can't decrypt
                 if (!mls_state) {
+                    Logger::Log("[MLS] Ignoring message; no MLS state");
                     PushMessage("[decryption failure]");
-                    // TODO(RLB) Would be nice to log this situation
                     break;
                 }
 
+                Logger::Log("[MLS] Decrypting message");
                 auto plaintext = mls_state->unprotect(msg_data);
                 auto plaintext_str = std::string(to_ascii(plaintext));
                 PushMessage(std::move(plaintext_str));
