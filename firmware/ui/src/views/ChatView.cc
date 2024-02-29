@@ -78,6 +78,10 @@ MLSState PreJoinedState::join(const bytes& welcome_data) {
                           {} } };
 }
 
+bool MLSState::should_commit() const {
+  return state.index() == LeafIndex{ 0 };
+}
+
 std::tuple<bytes, bytes> MLSState::add(const bytes& key_package_data) {
   const auto fresh_secret = random_bytes(32);
   const auto key_package = tls::get<KeyPackage>(key_package_data);
@@ -267,6 +271,11 @@ try
                 // Otherwise, we should have MLS state ready
                 if (!mls_state) {
                     // TODO(RLB) Would be nice to log this situation
+                    break;
+                }
+
+                if (mls_state->should_commit()){
+                    // We are not the committer
                     break;
                 }
 

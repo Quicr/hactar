@@ -37,6 +37,7 @@ struct PreJoinedState {
 };
 
 struct MLSState {
+  bool should_commit() const;
   std::tuple<bytes, bytes> add(const bytes& key_package_data);
   void handle(const bytes& commit_data);
 
