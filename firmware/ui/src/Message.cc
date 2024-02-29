@@ -8,9 +8,9 @@ Message::Message()
 {
 }
 
-Message::Message(const String& timestamp,
-                 const String& sender,
-                 const String& body)
+Message::Message(const std::string& timestamp,
+                 const std::string& sender,
+                 const std::string& body)
     : timestamp(timestamp),
       sender(sender),
       body(body),
@@ -29,12 +29,12 @@ Message::Message(const char* c_str)
     CalculateLength();
 }
 
-String Message::Concatenate()
+std::string Message::Concatenate()
 {
     return timestamp + sender + body;
 }
 
-void Message::Timestamp(const String& timestamp)
+void Message::Timestamp(const std::string& timestamp)
 {
     // Subtract the previous timestamp's length
     total_length -= this->timestamp.length();
@@ -46,7 +46,7 @@ void Message::Timestamp(const String& timestamp)
     total_length += this->timestamp.length();
 }
 
-void Message::Sender(const String& sender)
+void Message::Sender(const std::string& sender)
 {
     // Subtract the previous sender's length
     total_length -= this->sender.length();
@@ -58,7 +58,7 @@ void Message::Sender(const String& sender)
     total_length += this->sender.length();
 }
 
-void Message::Body(const String& body)
+void Message::Body(const std::string& body)
 {
     // Subtract the previous body's length
     total_length -= this->body.length();
@@ -70,17 +70,17 @@ void Message::Body(const String& body)
     total_length += this->body.length();
 }
 
-const String& Message::Timestamp() const
+const std::string& Message::Timestamp() const
 {
     return timestamp;
 }
 
-const String& Message::Sender() const
+const std::string& Message::Sender() const
 {
     return sender;
 }
 
-const String& Message::Body() const
+const std::string& Message::Body() const
 {
     return body;
 }

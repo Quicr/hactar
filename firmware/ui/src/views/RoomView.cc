@@ -2,6 +2,8 @@
 
 #include "TitleBar.hh"
 
+#include <stdlib.h>
+
 RoomView::RoomView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
@@ -52,8 +54,8 @@ void RoomView::Draw()
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
         // Shift over and draw the input that is currently in the buffer
-        String draw_str;
-        draw_str = usr_input.substring(last_drawn_idx);
+        std::string draw_str;
+        draw_str = usr_input.substr(last_drawn_idx);
         last_drawn_idx = usr_input.length();
         ViewInterface::DrawInputString(draw_str);
     }
@@ -115,7 +117,7 @@ void RoomView::RequestRooms()
     next_get_rooms_time = HAL_GetTick() + 5000;
 
     // Send request to the esp32 to get the rooms
-    std::unique_ptr<SerialPacket> room_req_packet = std::make_unique<SerialPacket>();
+    std::unique_ptr<SerialPacket> room_req_packet = std::make_unique<SerialPacket>(HAL_GetTick());
     room_req_packet->SetData(SerialPacket::Types::Command, 0, 1);
     room_req_packet->SetData(manager.NextPacketId(), 1, 2);
     room_req_packet->SetData(1, 3, 2);
@@ -138,7 +140,7 @@ void RoomView::DisplayRooms()
     for (const auto& room : rooms)
     {
         // Convert the room id into a string
-        const String room_id_str = String::int_to_string(room.first);
+        const std::string room_id_str = std::to_string(room.first);
 
         screen.DrawText(1, y_start + (idx * usr_font.height),
             room_id_str, usr_font, C_WHITE, C_BLACK);
@@ -146,7 +148,7 @@ void RoomView::DisplayRooms()
             ".", usr_font, C_WHITE, C_BLACK);
 
         screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
-            room.second->friendly_name.c_str(), usr_font, C_WHITE, C_BLACK);
+            room.second->friendly_name, usr_font, C_WHITE, C_BLACK);
         ++idx;
     }
 
@@ -155,9 +157,16 @@ void RoomView::DisplayRooms()
 
 void RoomView::SelectRoom()
 {
+    // My String class had a built in ToNumber that doesn't had exceptions
+    // but instead would return a -1...
     // Read the value that was entered by the user
-    int32_t room_id = usr_input.ToNumber();
+    // int32_t room_id = usr_input.ToNumber();
 
+    // To avoid exceptions for now
+    char *str_part;
+    int32_t room_id = strtol(usr_input.c_str(), &str_part, 10);
+
+    // May never get called now..
     if (room_id == -1)
     {
         request_msg = "Error. Please select a room number";
@@ -177,10 +186,5 @@ void RoomView::SelectRoom()
 
 void RoomView::ConnectToRoom(std::unique_ptr<qchat::Room> room)
 {
-
     manager.ChangeRoom(std::move(room));
-
-    // TODO put into an update function that waits for a reply from
-    // the server.
-    ChangeView("/chat");
 }

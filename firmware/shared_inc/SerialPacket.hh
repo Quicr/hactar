@@ -50,7 +50,7 @@ public:
         LocalDebug,
         Message,
         Setting,
-        Command,
+        Command
     };
 
     enum Settings

@@ -1,5 +1,7 @@
 #include "SerialStm.hh"
-#include "String.hh"
+#include <string>
+
+#include <string>
 
 #include "main.h"
 extern UART_HandleTypeDef huart1;
@@ -36,11 +38,16 @@ bool SerialStm::ReadyToWrite()
 
 void SerialStm::Write(unsigned char* buff, const unsigned short buff_sz)
 {
-    tx_free = false;
+    // tx_free = false;
     uint8_t start_byte[1] = { 0xFF };
+
+    const auto& str_size = "[STM] " + std::to_string(buff_sz) + "\n";
+    HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(str_size.c_str()), str_size.size(), HAL_MAX_DELAY);
+
     HAL_UART_Transmit(uart, start_byte, 1, HAL_MAX_DELAY);
 
-    HAL_UART_Transmit_IT(uart, buff, buff_sz);
+    // HAL_UART_Transmit_IT(uart, buff, buff_sz);
+    HAL_UART_Transmit(uart, buff, buff_sz, HAL_MAX_DELAY);
 }
 
 // un-inherited functions

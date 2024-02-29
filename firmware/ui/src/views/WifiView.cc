@@ -58,7 +58,7 @@ void WifiView::Update()
                 uint8_t ssid_id = rx_packet->GetData<uint8_t>(6, 1);
 
                 // Build the string
-                String str;
+                std::string str;
                 for (uint8_t i = 0; i < packet_data_len - 2; ++i)
                 {
                     str.push_back(rx_packet->GetData<char>(7 + i, 1));
@@ -158,7 +158,7 @@ void WifiView::Draw()
         {
 
             // convert the ssid int val to a string
-            const String ssid_id_str = String::int_to_string(ssid.first);
+            const std::string ssid_id_str = std::to_string(ssid.first);
 
             screen.DrawText(1, y_start + (idx * usr_font.height),
                 ssid_id_str, usr_font, C_WHITE, C_BLACK);
@@ -173,11 +173,11 @@ void WifiView::Draw()
 
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
-        String draw_str;
+        std::string draw_str;
         if (state != WifiState::Password)
         {
             // Shift over and draw the input that is currently in the buffer
-            draw_str = usr_input.substring(last_drawn_idx);
+            draw_str = usr_input.substr(last_drawn_idx);
         }
         else if (state == WifiState::Password)
         {
@@ -203,7 +203,7 @@ void WifiView::HandleInput()
             ssids.clear();
             last_num_ssids = -1;
             SendGetSSIDPacket();
-            String msg = "UI: Refresh ssids\n\r";
+            std::string msg = "UI: Refresh ssids\n\r";
             HAL_UART_Transmit(&huart1, (const uint8_t*)msg.c_str(), msg.length(), HAL_MAX_DELAY);
         }
 
@@ -219,7 +219,16 @@ void WifiView::HandleWifiInput()
     const uint16_t y_start = 50;
     if (state == WifiState::SSID)
     {
-        int32_t ssid_id = usr_input.ToNumber();
+        // My String class had a built in ToNumber that doesn't had exceptions
+        // but instead would return a -1...
+        // Read the value that was entered by the user
+        // int32_t ssid_id = usr_input.ToNumber();
+
+        // To avoid exceptions for now
+        char *str_part;
+        int32_t ssid_id = strtol(usr_input.c_str(), &str_part, 10);
+
+        // May never get called now..
         if (ssid_id == -1)
         {
             request_msg = "Error. Please select SSID number:";

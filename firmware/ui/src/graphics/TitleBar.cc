@@ -1,6 +1,6 @@
 #include "TitleBar.hh"
 
-void DrawTitleBar(String title, Font& font, uint16_t fg, uint16_t bg, Screen& screen)
+void DrawTitleBar(std::string title, Font& font, uint16_t fg, uint16_t bg, Screen& screen)
 {
     // Clear the title space
     screen.FillRectangle(Margin_0, Margin_0, screen.ViewWidth(), font.height + Padding_3, bg);

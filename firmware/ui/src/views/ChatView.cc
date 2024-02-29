@@ -8,18 +8,122 @@
 
 #include "TitleBar.hh"
 
+static const CipherSuite cipher_suite = CipherSuite{
+  CipherSuite::ID::P256_AES128GCM_SHA256_P256
+};
+
+static const bytes group_id = from_ascii("group_id");
+
+enum struct MlsMessageType : uint8_t {
+    key_package = 1,
+    welcome = 2,
+    commit = 3,
+    message = 4,
+};
+
+static bytes frame(MlsMessageType msg_type, const bytes& msg) {
+  const auto msg_type_8 = static_cast<uint8_t>(msg_type);
+  const auto type_vec = std::vector<uint8_t>(1, msg_type_8);
+  return bytes(type_vec) + msg;
+}
+
+static std::pair<MlsMessageType, bytes> unframe(const bytes& framed) {
+  const auto& data = framed.as_vec();
+  const auto msg_type = static_cast<MlsMessageType>(data.at(0));
+  const auto msg_data = bytes(std::vector<uint8_t>(data.begin() + 1, data.end()));
+  return { msg_type, msg_data };
+}
+
+PreJoinedState::PreJoinedState()
+  : identity_priv(SignaturePrivateKey::generate(cipher_suite))
+  , init_priv(HPKEPrivateKey::generate(cipher_suite))
+  , leaf_priv(HPKEPrivateKey::generate(cipher_suite))
+{
+  auto credential = Credential::basic(from_ascii("bob"));
+  leaf_node = LeafNode{ cipher_suite,
+                        leaf_priv.public_key,
+                        identity_priv.public_key,
+                        credential,
+                        Capabilities::create_default(),
+                        Lifetime::create_default(),
+                        {},
+                        identity_priv };
+
+  key_package = KeyPackage{ cipher_suite,
+                            init_priv.public_key,
+                            leaf_node,
+                            {},
+                            identity_priv };
+
+  key_package_data = tls::marshal(key_package);
+}
+
+MLSState PreJoinedState::create() {
+  return { State{ group_id,
+                  cipher_suite,
+                  leaf_priv,
+                  identity_priv,
+                  leaf_node,
+                  {} } };
+}
+
+MLSState PreJoinedState::join(const bytes& welcome_data) {
+  const auto welcome = tls::get<Welcome>(welcome_data);
+  return MLSState{ State{ init_priv,
+                          leaf_priv,
+                          identity_priv,
+                          key_package,
+                          welcome,
+                          std::nullopt,
+                          {} } };
+}
+
+bool MLSState::should_commit() const {
+  Logger::Log("[MLS] should commit?", state.index().val);
+  return state.index() == LeafIndex{ 0 };
+}
+
+std::tuple<bytes, bytes> MLSState::add(const bytes& key_package_data) {
+  const auto fresh_secret = random_bytes(32);
+  const auto key_package = tls::get<KeyPackage>(key_package_data);
+  const auto add = state.add_proposal(key_package);
+  auto [commit, welcome, next_state] =
+    state.commit(fresh_secret, CommitOpts{ { add }, true, false, {} }, {});
+
+  state = std::move(next_state);
+  return { tls::marshal(commit), tls::marshal(welcome) };
+}
+
+void MLSState::handle(const bytes& commit_data) {
+  const auto commit = tls::get<MLSMessage>(commit_data);
+  auto maybe_next_state = state.handle(commit);
+  state = std::move(maybe_next_state.value());
+}
+
+bytes MLSState::protect(const bytes& plaintext) {
+  const auto private_message = state.protect({}, plaintext, 0);
+  return tls::marshal(private_message);
+}
+
+bytes MLSState::unprotect(const bytes& ciphertext) {
+  const auto private_message = tls::get<MLSMessage>(ciphertext);
+  const auto [aad, pt] = state.unprotect(private_message);
+  return pt;
+}
+
 ChatView::ChatView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
-    SettingManager& setting_manager):
-    ViewInterface(manager, screen, keyboard, setting_manager)
+    SettingManager& setting_manager)
+    : ViewInterface(manager, screen, keyboard, setting_manager)
+    , pre_joined_state(PreJoinedState())
 {
     redraw_messages = true;
-}
+    const auto framed = frame(MlsMessageType::key_package,
+                                pre_joined_state->key_package_data);
 
-ChatView::~ChatView()
-{
-
+    Logger::Log("[ChatView] " + std::to_string(framed.size()));
+    SendPacket(framed);
 }
 
 void ChatView::Update()
@@ -41,7 +145,7 @@ void ChatView::Draw()
         {
             DrawUsrInputSeperator();
             // DrawTitle();
-            DrawTitleBar(manager.ActiveRoom()->friendly_name.c_str(),
+            DrawTitleBar(manager.ActiveRoom()->friendly_name,
                 menu_font, C_WHITE, C_BLACK, screen);
             first_load = false;
         }
@@ -51,8 +155,8 @@ void ChatView::Draw()
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
         // Shift over and draw the input that is currently in the buffer
-        String draw_str;
-        draw_str = usr_input.substring(last_drawn_idx);
+        std::string draw_str;
+        draw_str = usr_input.substr(last_drawn_idx);
         last_drawn_idx = usr_input.length();
         ViewInterface::DrawInputString(draw_str);
     }
@@ -74,62 +178,180 @@ void ChatView::HandleInput()
     if (usr_input[0] == '/')
     {
         ChangeView(usr_input);
+        return;
     }
-    else
-    {
-        // TODO switch to using C strings so we don;t need to extend
-        // strings for each added character
-        // and then we can just memcpy?
-        const String& username = *setting_manager.Username();
-        String msg = "00:00 ";
-        msg += username;
-        msg += ": ";
-        msg += usr_input;
 
-        // prepare ascii message, encode into Message + Packet
-        qchat::Ascii ascii(
-            manager.ActiveRoom()->room_uri,
-            {msg.c_str()}
-        );
+    // TODO switch to using C strings so we don;t need to extend
+    // strings for each added character
+    // and then we can just memcpy?
+    const std::string& username = *setting_manager.Username();
+    std::string plaintext = "00:00 ";
+    plaintext += username;
+    plaintext += ": ";
+    plaintext += usr_input;
 
-        // TODO move into encode...
-        // TODO packet should maybe have a static next_packet_id?
-        std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 1);
-        packet->SetData(Packet::Types::Message, 0, 1);
-        packet->SetData(manager.NextPacketId(), 1, 2);
+    // If we have MLS state, encrypt and send the message
+    if (mls_state) {
+        // Encrypt the message
+        const auto plaintext_data = from_ascii(plaintext);
+        const auto ciphertext = mls_state->protect(plaintext_data);
+        const auto framed = frame(MlsMessageType::message, ciphertext);
 
-        // The packet length is set in the encode function
-        // TODO encode probably could just generate a packet instead...
-        qchat::Codec::encode(packet, 3, ascii);
-
-        uint64_t new_offset = packet->NumBytes();
-        // Expiry time
-        packet->SetData(0xFFFFFFFF, new_offset, 4);
-        new_offset += 4;
-        // Creation time
-        packet->SetData(0, new_offset, 4);
-        new_offset += 4;
-
-        // TODO ENABLE
-        manager.EnqueuePacket(std::move(packet));
-        manager.PushMessage(std::move(msg));
-
-        // redraw_messages = true;
-
-        msg_id++;
-
+        // Send the message out on the wire
+        SendPacket(framed);
     }
+
+    // Keep a copy of the message for display
+    PushMessage(std::move(plaintext));
 }
 
+void ChatView::SendPacket(const bytes& msg) {
+    // prepare ascii message, encode into Message + Packet
+    // XXX(RLB): This should use a null-safe message type.
+    qchat::Ascii ascii{
+        manager.ActiveRoom()->room_uri,
+        std::string{ msg.begin(), msg.end() }
+    };
+
+    // TODO move into encode...
+    // TODO packet should maybe have a static next_packet_id?
+    std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 1);
+    packet->SetData(SerialPacket::Types::Message, 0, 1);
+    packet->SetData(manager.NextPacketId(), 1, 2);
+
+    // The packet length is set in the encode function
+    // TODO encode probably could just generate a packet instead...
+    qchat::Codec::encode(packet, 3, ascii);
+
+    uint64_t new_offset = packet->NumBytes();
+    // Expiry time
+    packet->SetData(0xFFFFFFFF, new_offset, 4);
+    new_offset += 4;
+
+    // Creation time
+    packet->SetData(0, new_offset, 4);
+    new_offset += 4;
+
+    // TODO ENABLE
+    manager.EnqueuePacket(std::move(packet));
+}
+
+void ChatView::PushMessage(std::string&& msg)
+{
+    messages.push_back(std::move(msg));
+    redraw_messages = true;
+}
+
+void ChatView::IngestMessages()
+try
+{
+    const auto raw_messages = manager.TakeMessages();
+    for (const auto& msg : raw_messages) {
+        const auto msg_bytes = from_ascii(msg);
+        const auto [msg_type, msg_data] = unframe(msg_bytes);
+
+        Logger::Log("[MLS] Bytes", to_hex(msg_bytes));
+        Logger::Log("[MLS] Type", int(msg_type));
+        Logger::Log("[MLS] Data", to_hex(msg_data));
+
+        switch (msg_type) {
+            case MlsMessageType::key_package: {
+                // If this is the initial creation, create the group
+                if (pre_joined_state) {
+                    Logger::Log("[MLS] Creating group");
+                    auto state = pre_joined_state->create();
+                    const auto [commit, welcome] = state.add(msg_data);
+
+                    pre_joined_state = std::nullopt;
+                    mls_state = std::move(state);
+
+                    const auto framed_welcome = frame(MlsMessageType::welcome, welcome);
+                    SendPacket(framed_welcome);
+                    break;
+                }
+
+                // Otherwise, we should have MLS state ready
+                if (!mls_state) {
+                    Logger::Log("[MLS] Ignoring KeyPackage; no MLS state");
+                    break;
+                }
+
+                if (!mls_state->should_commit()){
+                    // We are not the committer
+                    Logger::Log("[MLS] Ignoring KeyPackage; not the committer");
+                    break;
+                }
+
+                Logger::Log("[MLS] Committing");
+                const auto [commit, welcome] = mls_state->add(msg_data);
+
+                const auto framed_welcome = frame(MlsMessageType::welcome, welcome);
+                SendPacket(framed_welcome);
+
+                const auto framed_commit = frame(MlsMessageType::commit, commit);
+                SendPacket(framed_commit);
+                break;
+            }
+
+            case MlsMessageType::welcome: {
+                if (!pre_joined_state) {
+                    // Can't join by welcome
+                    Logger::Log("[MLS] Ignoring Welcome; not pre-joined");
+                    break;
+                }
+
+                Logger::Log("[MLS] Joining");
+                const auto state = pre_joined_state->join(msg_data);
+
+                pre_joined_state = std::nullopt;
+                mls_state = std::move(state);
+                break;
+            }
+
+            case MlsMessageType::commit: {
+                if (!mls_state) {
+                    // Can't handle commits before join
+                    Logger::Log("[MLS] Ignoring Commit; no MLS state");
+                    break;
+                }
+
+                Logger::Log("[MLS] Processing commit");
+                mls_state->handle(msg_data);
+                break;
+            }
+
+            case MlsMessageType::message: {
+                // If we don't have MLS state, we can't decrypt
+                if (!mls_state) {
+                    Logger::Log("[MLS] Ignoring message; no MLS state");
+                    PushMessage("[decryption failure]");
+                    break;
+                }
+
+                Logger::Log("[MLS] Decrypting message");
+                auto plaintext = mls_state->unprotect(msg_data);
+                auto plaintext_str = std::string(to_ascii(plaintext));
+                PushMessage(std::move(plaintext_str));
+                break;
+            }
+        }
+    }
+}
+catch(const std::exception& e)
+{
+    Logger::Log("[EXCEPT] Caught exception: ", e.what());
+}
 
 void ChatView::DrawMessages()
 {
-    const Vector<String>& messages = manager.GetMessages();
+    IngestMessages();
 
     int32_t msg_idx = messages.size() - 1;
 
     // If there are no messages just return
-    if (msg_idx < 0) return;
+    if (msg_idx < 0) {
+        return;
+    }
 
     uint16_t y_window_start = (menu_font.height + Padding_3);
     uint16_t y_window_end = screen.ViewHeight() - (usr_font.height + usr_font.height / 2);
@@ -226,7 +448,7 @@ void ChatView::DrawMessages()
 
         // Draw the body
         screen.DrawTextbox(x_pos, y_pos, x_window_start, y_window_start,
-            x_window_end, y_window_end, msg.c_str(), usr_font,
+            x_window_end, y_window_end, msg, usr_font,
             settings.body_colour, bg);
 
         // Decrement the idx

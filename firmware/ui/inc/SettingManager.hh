@@ -3,7 +3,7 @@
 #include <map>
 #include <any>
 #include "EEPROM.hh"
-#include "Vector.hh"
+#include <vector>
 #include "app_main.hh"
 #include "Font.hh"
 
@@ -142,31 +142,31 @@ public:
         return bg;
     }
 
-    const String* Username()
+    const std::string* Username()
     {
         LoadString(&username, SettingAddress::Username);
         return username;
     }
 
-    const String* Password()
+    const std::string* Password()
     {
         LoadString(&password, SettingAddress::Password);
         return password;
     }
 
-    const String* SSID()
+    const std::string* SSID()
     {
         LoadString(&ssid, SettingAddress::SSID);
         return ssid;
     }
 
-    const String* SSIDPassword()
+    const std::string* SSIDPassword()
     {
         LoadString(&ssid_password, SettingAddress::SSID_Password);
         return ssid_password;
     }
 
-    inline void LoadString(String** str, SettingAddress addr)
+    inline void LoadString(std::string** str, SettingAddress addr)
     {
         if (*str != nullptr)
         {
@@ -174,7 +174,7 @@ public:
             return;
         }
 
-        *str = new String();
+        *str = new std::string();
 
         // Load the data
         uint8_t* data = nullptr;
@@ -500,8 +500,8 @@ private:
     uint8_t* menu_font;
     uint16_t* fg;
     uint16_t* bg;
-    String* username;
-    String* password;
-    String* ssid;
-    String* ssid_password;
+    std::string* username;
+    std::string* password;
+    std::string* ssid;
+    std::string* ssid_password;
 };

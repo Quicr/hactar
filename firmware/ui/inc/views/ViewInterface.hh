@@ -7,7 +7,7 @@
 #include "Q10Keyboard.hh"
 #include "EEPROM.hh"
 #include "CommandHandler.hh"
-#include "String.hh"
+#include <string>
 
 
 class UserInterfaceManager;
@@ -83,7 +83,11 @@ protected:
         Update();
 
         // Change view if set
-        if (command_handler->ChangeViewCommand(new_view)) return true;
+        if (command_handler->ChangeViewCommand(new_view))
+        {
+            return true;
+        }
+
         // Clear the new_view string if it is not a view it should be blank
         new_view.clear();
         return false;
@@ -201,7 +205,7 @@ protected:
         }
     }
 
-    void DrawInputString(const String& str)
+    void DrawInputString(const std::string& str)
     {
         last_drawn_idx = usr_input.length();
         screen.DrawText(cursor_pos.x, cursor_pos.y, str,
@@ -244,7 +248,7 @@ protected:
         new_view = str;
     }
 
-    void ChangeView(const String& str)
+    void ChangeView(const std::string& str)
     {
         new_view = str;
     }
@@ -292,7 +296,7 @@ protected:
     bool redraw_input;
 
     // Input variables
-    String usr_input;
+    std::string usr_input;
 
     uint32_t tx_colour;
     uint32_t rx_colour;
@@ -311,7 +315,7 @@ protected:
     // TODO EEPROM setting
     uint16_t bg = C_BLACK;
 private:
-    String new_view;
+    std::string new_view;
 
     void DrawWifiSymbol()
     {

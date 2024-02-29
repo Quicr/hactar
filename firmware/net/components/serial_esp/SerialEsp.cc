@@ -1,6 +1,8 @@
 #include "SerialEsp.hh"
 #include "Error.hh"
 
+#include "logger.hh"
+
 SerialEsp::SerialEsp(uart_port_t uart,
     unsigned long long tx_pin,
     unsigned long long rx_pin,
@@ -15,13 +17,13 @@ SerialEsp::SerialEsp(uart_port_t uart,
 {
     esp_err_t res;
     // NOTE rx buff is MINIMUM 128
-    res = uart_driver_install(uart, BUFFER_SIZE * 2, BUFFER_SIZE * 2, 20, &uart_queue, 0);
+    res = uart_driver_install(uart, BUFFER_SIZE * 4, BUFFER_SIZE * 4, 20, &uart_queue, 0);
     printf("install res=%d\n", res);
     res = uart_set_pin(uart, tx_pin, rx_pin, rts_pin, cts_pin);
     printf("uart set pin res=%d\n", res);
     res = uart_param_config(uart, &uart_config);
     printf("install res=%d\n", res);
-    xTaskCreate(RxEvent, "uart_event_task", 4096, (void*)this, 12, NULL);
+    xTaskCreate(RxEvent, "uart_event_task", 8192, (void*)this, 12, NULL);
 }
 
 SerialEsp::~SerialEsp()
@@ -95,8 +97,6 @@ void SerialEsp::RxEvent(void* parameter)
 
                 for (size_t i = 0; i < event.size; ++i)
                 {
-                    // if (i != 0)
-                    //     printf("%d: %d \n", i-1, (int)buff[i]);
                     serial->rx_ring.Write(buff[i]);
                 }
 

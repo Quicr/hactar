@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "SerialPacket.hh"
-
+#include "logger.hh"
 
 // Quicr based chat protocol
 namespace qchat
@@ -58,6 +58,7 @@ struct Room
 enum struct MessageTypes: uint8_t
 {
     Watch = 0,
+    WatchOk,
     Unwatch,
     Ascii
 };
@@ -76,18 +77,12 @@ struct WatchRoom
 struct UnwatchRoom
 {
     std::string room_uri;
-
-    UnwatchRoom() : room_uri() {}
-    UnwatchRoom(std::string room_uri) : room_uri(room_uri) {}
 };
 
 struct Ascii
 {
     std::string message_uri; // matches quicr_name for the message sender
     std::string message; // todo: make it vector of bytes
-
-    Ascii() : message_uri(), message() {}
-    Ascii(std::string message_uri, std::string message) : message_uri(message_uri), message(message) {}
 };
 
 
@@ -197,6 +192,10 @@ struct Codec
         // +9 for the type byte, 2 len bytes and the 8 bytes of length
         uint16_t extra_bytes = 1 + Field_Len_Bytes + Field_Len_Bytes;
         uint16_t data_len = msg.message_uri.length() + msg.message.length();
+
+        Logger::Log("[QChat] " + std::to_string(data_len + extra_bytes));
+        // HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t *>(str_size.c_str()), str_size.size(), HAL_MAX_DELAY);
+
         packet->SetData(data_len + extra_bytes, offset, 2);
         offset += 2;
 
