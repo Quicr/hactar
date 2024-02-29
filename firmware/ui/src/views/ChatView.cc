@@ -276,7 +276,7 @@ try
                     break;
                 }
 
-                if (mls_state->should_commit()){
+                if (!mls_state->should_commit()){
                     // We are not the committer
                     Logger::Log("[MLS] Ignoring KeyPackage; not the committer");
                     break;
