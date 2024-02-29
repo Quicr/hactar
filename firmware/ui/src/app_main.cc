@@ -125,7 +125,7 @@ int app_main()
     keyboard->Begin();
 
     mgmt_serial_interface = new SerialStm(&huart1);
-    net_serial_interface = new SerialStm(&huart2);
+    net_serial_interface = new SerialStm(&huart2, 2048);
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_serial_interface, *eeprom);
 
