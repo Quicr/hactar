@@ -58,6 +58,7 @@ struct Room
 enum struct MessageTypes: uint8_t
 {
     Watch = 0,
+    WatchOk,
     Unwatch,
     Ascii
 };
@@ -76,18 +77,12 @@ struct WatchRoom
 struct UnwatchRoom
 {
     std::string room_uri;
-
-    UnwatchRoom() : room_uri() {}
-    UnwatchRoom(std::string room_uri) : room_uri(room_uri) {}
 };
 
 struct Ascii
 {
     std::string message_uri; // matches quicr_name for the message sender
     std::string message; // todo: make it vector of bytes
-
-    Ascii() : message_uri(), message() {}
-    Ascii(std::string message_uri, std::string message) : message_uri(message_uri), message(message) {}
 };
 
 

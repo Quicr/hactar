@@ -186,10 +186,5 @@ void RoomView::SelectRoom()
 
 void RoomView::ConnectToRoom(std::unique_ptr<qchat::Room> room)
 {
-
     manager.ChangeRoom(std::move(room));
-
-    // TODO put into an update function that waits for a reply from
-    // the server.
-    ChangeView("/chat");
 }

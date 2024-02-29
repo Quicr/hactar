@@ -97,13 +97,6 @@ void SerialEsp::RxEvent(void* parameter)
 
                 for (size_t i = 0; i < event.size; ++i)
                 {
-                    // if (i != 0)
-                    //     printf("%d: %d \n", i-1, (int)buff[i]);
-
-                    if (i < 6)
-                    {
-                        Logger::Log((int)buff[i]);
-                    }
                     serial->rx_ring.Write(buff[i]);
                 }
 

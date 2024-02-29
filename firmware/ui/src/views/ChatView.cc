@@ -104,6 +104,11 @@ ChatView::ChatView(UserInterfaceManager& manager,
     , pre_joined_state(PreJoinedState())
 {
     redraw_messages = true;
+    const auto framed = frame(MlsMessageType::key_package,
+                                pre_joined_state->key_package_data);
+
+    Logger::Log("[ChatView] " + std::to_string(framed.size()));
+    SendPacket(framed);
 }
 
 void ChatView::Update()
@@ -180,15 +185,6 @@ void ChatView::HandleInput()
         // Send the message out on the wire
         SendPacket(framed);
     }
-    else
-    {
-        const auto framed = frame(MlsMessageType::key_package,
-                                  pre_joined_state->key_package_data);
-
-        Logger::Log("[ChatView] " + std::to_string(framed.size()));
-
-        SendPacket(framed);
-    }
 
     // Keep a copy of the message for display
     PushMessage(std::move(plaintext));
@@ -197,10 +193,10 @@ void ChatView::HandleInput()
 void ChatView::SendPacket(const bytes& msg) {
     // prepare ascii message, encode into Message + Packet
     // XXX(RLB): This should use a null-safe message type.
-    qchat::Ascii ascii(
+    qchat::Ascii ascii{
         manager.ActiveRoom()->room_uri,
-        { msg.begin(), msg.end() }
-    );
+        std::string{ msg.begin(), msg.end() }
+    };
 
     // TODO move into encode...
     // TODO packet should maybe have a static next_packet_id?
@@ -216,6 +212,7 @@ void ChatView::SendPacket(const bytes& msg) {
     // Expiry time
     packet->SetData(0xFFFFFFFF, new_offset, 4);
     new_offset += 4;
+
     // Creation time
     packet->SetData(0, new_offset, 4);
     new_offset += 4;
@@ -257,8 +254,8 @@ try
 
                 const auto framed = frame(MlsMessageType::welcome, welcome);
                 SendPacket(framed);
+                break;
             }
-
             case MlsMessageType::welcome: {
                 if (!pre_joined_state) {
                     // Can't join by welcome
@@ -270,6 +267,7 @@ try
 
                 pre_joined_state = std::nullopt;
                 mls_state = std::move(state);
+                break;
             }
 
             case MlsMessageType::message: {
@@ -283,6 +281,7 @@ try
                 auto plaintext = mls_state->unprotect(msg_data);
                 auto plaintext_str = std::string(to_ascii(plaintext));
                 PushMessage(std::move(plaintext_str));
+                break;
             }
         }
     }
