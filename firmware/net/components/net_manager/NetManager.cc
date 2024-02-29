@@ -15,7 +15,7 @@ typedef struct
 {
     qchat::WatchRoom* watch;
     NetManager* manager;
-}WatchRoomParams;
+} WatchRoomParams;
 
 static const char* TAG = "[Net Manager]: ";
 
@@ -34,7 +34,7 @@ NetManager::NetManager(SerialPacketManager* _ui_layer,
 void NetManager::HandleSerial(void* param)
 {
     // TODO add a mutex
-    NetManager* _this = (NetManager*)param;
+    NetManager* self = (NetManager*)param;
 
     // Vector<std::unique_ptr<Packet>>* rx_packets = nullptr;
     while (true)
@@ -42,11 +42,11 @@ void NetManager::HandleSerial(void* param)
         // Delay at the start
         vTaskDelay(50 / portTICK_PERIOD_MS);
 
-        _this->ui_layer->RxTx(xTaskGetTickCount() / portTICK_PERIOD_MS);
+        self->ui_layer->RxTx(xTaskGetTickCount() / portTICK_PERIOD_MS);
 
-        if (!_this->ui_layer->HasRxPackets()) continue;
+        if (!self->ui_layer->HasRxPackets()) continue;
 
-        const Vector<std::unique_ptr<SerialPacket>>& rx_packets = _this->ui_layer->GetRxPackets();
+        const Vector<std::unique_ptr<SerialPacket>>& rx_packets = self->ui_layer->GetRxPackets();
         uint32_t timeout = (xTaskGetTickCount() / portTICK_PERIOD_MS) + 10000;
 
         printf("%s\r\n", "NetManager: Packet available");
@@ -81,20 +81,17 @@ void NetManager::HandleSerial(void* param)
                 // 6 + 8 = 14, skip to 14,
                 // Mesages have sub-types whuch is encoded in the first byte
                 uint8_t sub_message_type = rx_packet->GetData<uint8_t>(5, 1);
-                if (sub_message_type >= 0 && sub_message_type <= 2)
-                {
                     // qchat message handler
                     //handle_qchat_message(sub_message_type, rx_packet);
-                    _this->HandleQChatMessages(sub_message_type, rx_packet, 6);
-                }
+                    self->HandleQChatMessages(sub_message_type, rx_packet, 6);
 
             }
             else if (packet_type == SerialPacket::Types::Command)
             {
-                _this->HandleSerialCommands(rx_packet);
+                self->HandleSerialCommands(rx_packet);
             }
 
-            _this->ui_layer->DestroyRxPacket(0);
+            self->ui_layer->DestroyRxPacket(0);
         }
     }
 }
@@ -183,34 +180,43 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
 void NetManager::HandleWatchMessage(void* params)
 {
     WatchRoomParams* watch_room_params = (WatchRoomParams*)params;
-    NetManager* _this = watch_room_params->manager;
+    NetManager* self = watch_room_params->manager;
     qchat::WatchRoom* watch = watch_room_params->watch;
 
-    printf("[net] room uri %s\n", watch->room_uri.c_str());
-    printf("[net] publisher uri %s\n", watch->publisher_uri.c_str());
+    Logger::Log("Room URI: ", watch->room_uri.c_str());
+    Logger::Log("Publisher URI: ", watch->publisher_uri.c_str());
     try
     {
-        // quicr::Namespace sub_ns = quicr_session->to_namespace(watch->room_uri);
-
-        if (!_this->quicr_session->subscribe(_this->quicr_session->to_namespace(watch->room_uri)))
+        if (!self->quicr_session->publish_intent(self->quicr_session->to_namespace(watch->room_uri)))
         {
-            printf("%s\r\n", "NetManager:QChatMessage:Watch subscribe error ");
+            Logger::Log("NetManager: QChatMessage:Watch publish_intent error ");
             return;
         }
 
-        ESP_LOGI(TAG, "Subscribed");
+        Logger::Log("Publish Intended");
 
-        // TODO ask Suhas about this
-        // if (!_this->quicr_session->publish_intent(_this->quicr_session->to_namespace(watch->publisher_uri)))
-        if (!_this->quicr_session->publish_intent(_this->quicr_session->to_namespace(watch->room_uri)))
+        if (!self->quicr_session->subscribe(self->quicr_session->to_namespace(watch->room_uri)))
         {
-            printf("%s\r\n", "NetManager:QChatMessage:Watch publish_intent error ");
+            Logger::Log("NetManager: QChatMessage:Watch subscribe error ");
             return;
         }
+
+        Logger::Log("Subscribed");
+
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+        auto watch_ok_packet = std::make_unique<SerialPacket>(xTaskGetTickCount());
+        watch_ok_packet->SetData(SerialPacket::Types::Message, 0, 1);
+        watch_ok_packet->SetData(self->ui_layer->NextPacketId(), 1, 2);
+        watch_ok_packet->SetData(1, 3, 2);
+        watch_ok_packet->SetData(qchat::MessageTypes::WatchOk, 5, 1);
+
+        Logger::Log("Sending WatchOk to UI");
+        self->ui_layer->EnqueuePacket(std::move(watch_ok_packet));
     }
     catch (std::runtime_error& ex)
     {
-        printf("[net] failed to watch, %s\n", ex.what());
+        Logger::Log("Failed to watch: ", ex.what());
     }
 
     delete watch_room_params->watch;
@@ -223,7 +229,7 @@ void NetManager::HandleNetwork(void* param)
 {
     // part 1, parse quicr message
     // Get the quicr messages from the inbound objects
-    NetManager* _this = (NetManager*)param;
+    NetManager* self = (NetManager*)param;
     while (true)
     {
         try
@@ -232,7 +238,7 @@ void NetManager::HandleNetwork(void* param)
             // Set the delay
             vTaskDelay(50 / portTICK_PERIOD_MS);
 
-            if (_this->inbound_objects->empty())
+            if (self->inbound_objects->empty())
             {
                 continue;
             }
@@ -240,7 +246,7 @@ void NetManager::HandleNetwork(void* param)
             const uint16_t Bytes_In_128_Bits = 128 / 8;
 
             // Get the next item
-            auto qobj = _this->inbound_objects->pop();
+            auto qobj = self->inbound_objects->pop();
             auto qname = qobj.name;
             auto qdata = qobj.data;
 
@@ -289,7 +295,7 @@ void NetManager::HandleNetwork(void* param)
             }
             ESP_LOGI(TAG, "Enqueue serial packet that came from the network");
             // Enqueue the packet to go to the UI
-            _this->ui_layer->EnqueuePacket(std::move(packet));
+            self->ui_layer->EnqueuePacket(std::move(packet));
             packet = nullptr;
         }
         catch (const std::exception& ex)
