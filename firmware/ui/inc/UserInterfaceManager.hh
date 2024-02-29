@@ -34,8 +34,8 @@ public:
 
     void Run();
     bool HasNewMessages();
-    std::vector<String> TakeMessages();
-    void PushMessage(String&& str);
+    std::vector<std::string> TakeMessages();
+    void PushMessage(std::string&& str);
     void ClearMessages();
     void EnqueuePacket(std::unique_ptr<SerialPacket> packet);
     void LoopbackPacket(std::unique_ptr<SerialPacket> packet);
@@ -95,7 +95,7 @@ private:
     SerialPacketManager net_layer;
     SettingManager setting_manager;
     ViewInterface* view;
-    std::vector<String> received_messages;
+    std::vector<std::string> received_messages;
     bool has_new_messages;
     Vector<qchat::Ascii*> ascii_messages;
     bool force_redraw;
