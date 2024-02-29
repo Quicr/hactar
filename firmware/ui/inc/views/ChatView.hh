@@ -32,11 +32,14 @@ struct PreJoinedState {
   bytes key_package_data;
 
   PreJoinedState();
-  std::pair<bytes, MLSState> create(const bytes& key_package_data);
+  MLSState create();
   MLSState join(const bytes& welcome_data);
 };
 
 struct MLSState {
+  std::tuple<bytes, bytes> add(const bytes& key_package_data);
+  void handle(const bytes& commit_data);
+
   bytes protect(const bytes& plaintext);
   bytes unprotect(const bytes& ciphertext);
 
