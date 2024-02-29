@@ -17,7 +17,8 @@ static const bytes group_id = from_ascii("group_id");
 enum struct MlsMessageType : uint8_t {
     key_package = 1,
     welcome = 2,
-    message = 3,
+    commit = 3,
+    message = 4,
 };
 
 static bytes frame(MlsMessageType msg_type, const bytes& msg) {
@@ -57,21 +58,13 @@ PreJoinedState::PreJoinedState()
   key_package_data = tls::marshal(key_package);
 }
 
-std::pair<bytes, MLSState> PreJoinedState::create(const bytes& key_package_data) {
-  auto state0 = State{ group_id,
-                       cipher_suite,
-                       leaf_priv,
-                       identity_priv,
-                       leaf_node,
-                       {} };
-
-  const auto fresh_secret = random_bytes(32);
-  const auto key_package = tls::get<KeyPackage>(key_package_data);
-  const auto add = state0.add_proposal(key_package);
-  auto [_commit, welcome, state1] =
-    state0.commit(fresh_secret, CommitOpts{ { add }, true, false, {} }, {});
-
-  return { tls::marshal(welcome), MLSState{ state1 } };
+MLSState PreJoinedState::create() {
+  return { State{ group_id,
+                  cipher_suite,
+                  leaf_priv,
+                  identity_priv,
+                  leaf_node,
+                  {} } };
 }
 
 MLSState PreJoinedState::join(const bytes& welcome_data) {
@@ -83,6 +76,23 @@ MLSState PreJoinedState::join(const bytes& welcome_data) {
                           welcome,
                           std::nullopt,
                           {} } };
+}
+
+std::tuple<bytes, bytes> MLSState::add(const bytes& key_package_data) {
+  const auto fresh_secret = random_bytes(32);
+  const auto key_package = tls::get<KeyPackage>(key_package_data);
+  const auto add = state.add_proposal(key_package);
+  auto [commit, welcome, next_state] =
+    state.commit(fresh_secret, CommitOpts{ { add }, true, false, {} }, {});
+
+  state = std::move(next_state);
+  return { tls::marshal(commit), tls::marshal(welcome) };
+}
+
+void MLSState::handle(const bytes& commit_data) {
+  const auto commit = tls::get<MLSMessage>(commit_data);
+  auto maybe_next_state = state.handle(commit);
+  state = std::move(maybe_next_state.value());
 }
 
 bytes MLSState::protect(const bytes& plaintext) {
@@ -241,21 +251,35 @@ try
 
         switch (msg_type) {
             case MlsMessageType::key_package: {
-                if (!pre_joined_state) {
-                    // Can't create group
+                // If this is the initial creation, create the group
+                if (pre_joined_state) {
+                    auto state = pre_joined_state->create();
+                    const auto [commit, welcome] = state.add(msg_data);
+
+                    pre_joined_state = std::nullopt;
+                    mls_state = std::move(state);
+
+                    const auto framed_welcome = frame(MlsMessageType::welcome, welcome);
+                    SendPacket(framed_welcome);
+                    break;
+                }
+
+                // Otherwise, we should have MLS state ready
+                if (!mls_state) {
                     // TODO(RLB) Would be nice to log this situation
                     break;
                 }
 
-                const auto [welcome, state] = pre_joined_state->create(msg_data);
+                const auto [commit, welcome] = mls_state->add(msg_data);
 
-                pre_joined_state = std::nullopt;
-                mls_state = std::move(state);
+                const auto framed_welcome = frame(MlsMessageType::welcome, welcome);
+                SendPacket(framed_welcome);
 
-                const auto framed = frame(MlsMessageType::welcome, welcome);
-                SendPacket(framed);
+                const auto framed_commit = frame(MlsMessageType::commit, commit);
+                SendPacket(framed_commit);
                 break;
             }
+
             case MlsMessageType::welcome: {
                 if (!pre_joined_state) {
                     // Can't join by welcome
@@ -267,6 +291,17 @@ try
 
                 pre_joined_state = std::nullopt;
                 mls_state = std::move(state);
+                break;
+            }
+
+            case MlsMessageType::commit: {
+                if (!mls_state) {
+                    // Can't handle commits before join
+                    // TODO(RLB) Would be nice to log this situation
+                    break;
+                }
+
+                mls_state->handle(msg_data);
                 break;
             }
 
