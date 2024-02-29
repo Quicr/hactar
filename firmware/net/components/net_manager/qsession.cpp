@@ -107,7 +107,7 @@ QSession::publish_intent(quicr::Namespace ns)
     std::make_shared<PubDelegate>(logger, std::move(promise));
 
   client->publishIntent(delegate, ns, {}, {}, {});
-  return future.get();
+  return true;//future.get();
 }
 
 void QSession::unsubscribe(quicr::Namespace nspace) {}

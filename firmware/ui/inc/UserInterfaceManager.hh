@@ -15,6 +15,8 @@
 
 #include "QChat.hh"
 
+#include "Vector.hh"
+
 #define VIEW_ADDRESS 0x00
 #define FIRST_BOOT_STARTED 0x01
 #define FIRST_BOOT_DONE 0x02
@@ -32,15 +34,15 @@ public:
 
     void Run();
     bool HasNewMessages();
-    const Vector<String>& GetMessages();
-    void PushMessage(String&& str);
+    std::vector<std::string> TakeMessages();
+    void PushMessage(std::string&& str);
     void ClearMessages();
     void EnqueuePacket(std::unique_ptr<SerialPacket> packet);
     void LoopbackPacket(std::unique_ptr<SerialPacket> packet);
     void ForceRedraw();
     bool RedrawForced();
     void ConnectToWifi();
-    void ConnectToWifi(const String& ssid, const String& password);
+    void ConnectToWifi(const std::string& ssid, const std::string& password);
 
     uint32_t GetTxStatusColour() const;
     uint32_t GetRxStatusColour() const;
@@ -93,7 +95,7 @@ private:
     SerialPacketManager net_layer;
     SettingManager setting_manager;
     ViewInterface* view;
-    Vector<String> received_messages;
+    std::vector<std::string> received_messages;
     bool has_new_messages;
     Vector<qchat::Ascii*> ascii_messages;
     bool force_redraw;

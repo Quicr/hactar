@@ -3,6 +3,7 @@
 #include "Screen.hh"
 #include "RingBuffer.hh"
 #include "app_main.hh"
+#include <vector>
 
 #define DELAY HAL_MAX_DELAY
 
@@ -591,7 +592,7 @@ void Screen::DrawRectangle(const uint16_t x_start, const uint16_t y_start,
 
 // TODO consider adding x2 and y2 so it has a bounding box.
 void Screen::DrawBlockAnimateString(const uint16_t x, const uint16_t y,
-    const String& str, const Font& font,
+    const std::string& str, const Font& font,
     const uint16_t fg, const uint16_t bg,
     const uint16_t delay)
 {
@@ -609,15 +610,17 @@ void Screen::DrawBlockAnimateString(const uint16_t x, const uint16_t y,
         // Clear the rectangle we drew
         FillRectangle(x_pos, y, x_end, y_end, bg);
 
+        std::string letter;
+        letter.push_back(str[i]);
         // Draw the string finally
-        DrawText(x_pos, y, str[i], font, fg, bg);
+        DrawText(x_pos, y, letter, font, fg, bg);
 
         x_pos += font.width;
         x_end += font.width;
     }
 }
 
-void Screen::DrawText(const uint16_t x, const uint16_t y, const String& str,
+void Screen::DrawText(const uint16_t x, const uint16_t y, const std::string& str,
     const Font& font, const uint16_t fg, const uint16_t bg,
     const bool wordwrap, uint32_t max_chunk_size)
 {
@@ -753,18 +756,18 @@ void Screen::DrawTextbox(uint16_t x_pos,
     const uint16_t y_window_start,
     const uint16_t x_window_end,
     const uint16_t y_window_end,
-    const String& str,
+    const std::string& str,
     const Font& font,
     const uint16_t fg,
     const uint16_t bg)
 {
-    Vector<String> words;
+    std::vector<std::string> words;
 
     // Find each word in put into a vector
     bool found_space = false;
     char ch;
     uint16_t sz = str.length();
-    String word;
+    std::string word;
     for (uint16_t i = 0; i < sz; i++)
     {
         ch = str[i];

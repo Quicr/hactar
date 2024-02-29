@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ViewInterface.hh"
-#include "String.hh"
+#include <string>
 
 class WifiView : public ViewInterface
 {
@@ -31,10 +31,10 @@ private:
     int8_t last_num_ssids;
     uint32_t next_get_ssid_timeout;
     WifiState state;
-    String request_msg;
-    String ssid;
-    std::map<uint8_t, String> ssids;
-    String password;
+    std::string request_msg;
+    std::string ssid;
+    std::map<uint8_t, std::string> ssids;
+    std::string password;
     uint32_t state_update_timeout;
     uint16_t num_connection_checks;
     bool connecting_done;

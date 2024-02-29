@@ -4,9 +4,11 @@
 #include <map>
 
 #include "SerialInterface.hh"
-#include "Vector.hh"
 #include "SerialPacket.hh"
 #include "RingBuffer.hh"
+#include "logger.hh"
+
+#include "Vector.hh"
 
 #define Front_Bytes 6U
 #define Start_Bytes Front_Bytes - 1U
@@ -63,8 +65,15 @@ public:
     void Tx(const unsigned long current_time)
     {
         // Don't try to send if we are reading
-        if (uart->Unread() >= Front_Bytes) return;
-        if (rx_packet != nullptr) return;
+        if (uart->Unread() >= Front_Bytes)
+        {
+            return;
+        }
+
+        if (rx_packet != nullptr)
+        {
+            return;
+        }
 
         // Check pending tx packets
         HandlePendingTx(current_time);
@@ -75,7 +84,7 @@ public:
 
     void EnqueuePacket(std::unique_ptr<SerialPacket> packet)
     {
-        if (tx_packets.size() >= 10)
+        if (tx_packets.size() >= 100)
         {
             packet.reset();
             return;
@@ -89,7 +98,7 @@ public:
         return rx_packets.size();
     }
 
-    const Vector<std::unique_ptr<SerialPacket>>& GetRxPackets()
+    Vector<std::unique_ptr<SerialPacket>>& GetRxPackets()
     {
         return rx_packets;
     }
@@ -171,6 +180,10 @@ private:
             // Length
             rx_packet->SetData(uart->Read(), 3, 1);
             rx_packet->SetData(uart->Read(), 4, 1);
+
+            Logger::Log("RX Packet Header, Type=", rx_packet->GetData<uint16_t>(0, 1));
+            Logger::Log("RX Packet Header, ID=", rx_packet->GetData<uint16_t>(1, 2));
+            Logger::Log("RX Packet Header, Length=", rx_packet->GetData<uint16_t>(3, 2));
         }
 
         // Get the length of the incoming message
@@ -256,9 +269,10 @@ private:
                     ok_packet->SetData<unsigned short>(
                         rx_packet->GetData<unsigned short>(1, 2), 5, 2);
 
+                    Logger::Log("Packet=", Logger::to_hex(rx_packet->Data(), rx_packet->NumBytes()));
+
                     // Push the ok packet
                     EnqueuePacket(std::move(ok_packet));
-                    ok_packet = nullptr;
 
                     rx_packets.push_back(std::move(rx_packet));
                     status = SerialStatus::OK;
@@ -277,14 +291,17 @@ private:
         // Check the pending packets
         if (tx_pending_packets.size() == 0) return;
 
-        Vector<unsigned short> delete_ids;
-        Vector<unsigned short> resend_ids;
+        std::vector<unsigned short> delete_ids;
+        std::vector<unsigned short> resend_ids;
 
         for (std::pair<const unsigned short, std::unique_ptr<SerialPacket>>&
             packet_pair : tx_pending_packets)
         {
+            // Packet hasn't timeout yet, ignore it
             if (packet_pair.second->GetCreatedAt() + Packet_Timeout > current_time)
+            {
                 continue;
+            }
 
             if (packet_pair.second->GetRetries() >= Max_Retry)
             {
@@ -295,21 +312,11 @@ private:
             // Add to the packets to remove from the map
             resend_ids.push_back(packet_pair.first);
 
-            // Error state for now
-            // TODO error state for the serial interface
-
-
-            // TODO update the tx_pending_packets to be a pointer
-            // otherwise we run into memory issues
-
             // Update the time on the packet
             packet_pair.second->UpdateCreatedAt(current_time);
 
             // Increment the retry on the packet
             packet_pair.second->IncrementRetry();
-
-            // The packet has expired with no response so resend it.
-            // EnqueuePacket(std::move(packet_pair.second));
         }
 
         // Remove resent packets from the tx_pending_packets map
@@ -319,11 +326,11 @@ private:
             tx_pending_packets.erase(delete_ids[i]);
         }
 
+        // Try to resend a packet
         for (unsigned int i = 0; i < resend_ids.size(); ++i)
         {
             EnqueuePacket(std::move(tx_pending_packets[resend_ids[i]]));
 
-            // Remove from the pending packets
             tx_pending_packets.erase(resend_ids[i]);
         }
     }
@@ -343,29 +350,33 @@ private:
 
         std::unique_ptr<SerialPacket> tx_packet = std::move(tx_packets.front());
 
-        // Get the buffer, with a start byte of 0xFF
+        // Get the buffer, with a eristart byte of 0xFF
         unsigned char* tx_buffer = tx_packet->Buffer();
 
         // Get the size
         uint16_t tx_buffer_sz =
             tx_packet->GetData<unsigned short>(3, 2) + Start_Bytes;
 
+        Logger::Log("TX Packet Header, Type=", tx_packet->GetData<uint16_t>(0, 1));
+        Logger::Log("TX Packet Header, ID=", tx_packet->GetData<uint16_t>(1, 2));
+        Logger::Log("TX Packet Header, Length=", tx_packet->GetData<uint16_t>(3, 2));
+
+        Logger::Log("Packet=", Logger::to_hex(tx_packet->Data(), tx_packet->NumBytes()));
         uart->Write(tx_buffer, tx_buffer_sz);
 
         // Check the type of packet sent
         byte_t packet_type = tx_packet->GetData<byte_t>(0, 1);
 
-        if (packet_type != Packet::Types::Ok ||
-            packet_type != Packet::Types::Error ||
-            packet_type != Packet::Types::Busy ||
-            packet_type != Packet::Types::LocalDebug)
+        if (packet_type != SerialPacket::Types::Ok ||
+            packet_type != SerialPacket::Types::Error ||
+            packet_type != SerialPacket::Types::Busy ||
+            packet_type != SerialPacket::Types::LocalDebug)
         {
             // Get the packet id
-            // byte_t packet_id = tx_packet->GetData(6, 8);
+            uint16_t packet_id = tx_packet->GetData<uint16_t>(1, 2);
 
             // Move the tx packet to the sent packets
-            // tx_pending_packets[packet_id] = tx_packet;
-            tx_packet.reset();
+            tx_pending_packets[packet_id] = std::move(tx_packet);
         }
         else
         {
@@ -392,9 +403,9 @@ private:
     // tx
     byte_t* tx_buffer;
     Vector<std::unique_ptr<SerialPacket>> tx_packets;
-    std::map<unsigned short, std::unique_ptr<SerialPacket>> tx_pending_packets; // TODO max packets
+    std::map<uint16_t, std::unique_ptr<SerialPacket>> tx_pending_packets; // TODO max packets
     SerialStatus tx_status;
 
-    unsigned short next_packet_id;
+    uint16_t next_packet_id;
 
 };

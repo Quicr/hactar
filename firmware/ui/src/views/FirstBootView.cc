@@ -49,7 +49,7 @@ void FirstBootView::AnimatedDraw()
         return;
 
     uint16_t speed = 10;
-    String msg = "Welcome to Cisco";
+    std::string msg = "Welcome to Cisco";
     screen.DrawBlockAnimateString(
         screen.GetStringCenterMargin(msg.length(), font11x16), 6,
         msg, font11x16, fg, bg, speed);
@@ -78,7 +78,7 @@ void FirstBootView::Draw()
             const uint16_t y_start = 50;
 
             // convert the ssid int val to a string
-            const String ssid_id_str = String::int_to_string(ssid.first);
+            const std::string ssid_id_str = std::to_string(ssid.first);
 
             screen.FillRectangle(1 + usr_font.width * ssid_id_str.length(),
                 y_start + (idx * usr_font.height),
@@ -97,8 +97,8 @@ void FirstBootView::Draw()
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
         // Shift over and draw the input that is currently in the buffer
-        String draw_str;
-        draw_str = usr_input.substring(last_drawn_idx);
+        std::string draw_str;
+        draw_str = usr_input.substr(last_drawn_idx);
         last_drawn_idx = usr_input.length();
         DrawInputString(draw_str);
     }
@@ -133,10 +133,10 @@ void FirstBootView::HandleInput()
             request_message = "Please select SSID by number:";
 
             std::unique_ptr<SerialPacket> ssid_req_packet = std::make_unique<SerialPacket>();
-            ssid_req_packet->SetData(Packet::Types::Command, 0, 1);
+            ssid_req_packet->SetData(SerialPacket::Types::Command, 0, 1);
             ssid_req_packet->SetData(manager.NextPacketId(), 1, 2);
             ssid_req_packet->SetData(1, 3, 2);
-            ssid_req_packet->SetData(Packet::Commands::SSIDs, 5, 1);
+            ssid_req_packet->SetData(SerialPacket::Commands::SSIDs, 5, 1);
             manager.EnqueuePacket(std::move(ssid_req_packet));
             state = State::Wifi;
             break;
@@ -171,7 +171,7 @@ void FirstBootView::Update()
                 uint8_t ssid_id = rx_packet->GetData<uint8_t>(6, 1);
 
                 // Build the string
-                String str;
+                std::string str;
                 for (uint8_t i = 0; i < packet_data_len - 2; ++i)
                 {
                     str.push_back(rx_packet->GetData<char>(7 + i, 1));
@@ -217,7 +217,16 @@ void FirstBootView::SetWifi()
             return;
         }
 
-        int32_t ssid_id = usr_input.ToNumber();
+        // My String class had a built in ToNumber that doesn't had exceptions
+        // but instead would return a -1...
+        // Read the value that was entered by the user
+        // int32_t room_id = usr_input.ToNumber();
+
+        // To avoid exceptions for now
+        char *str_part;
+        int32_t ssid_id = strtol(usr_input.c_str(), &str_part, 10);
+
+        // May never get called now..
         if (ssid_id == -1)
         {
             request_message = "Error. Please select SSID number:";

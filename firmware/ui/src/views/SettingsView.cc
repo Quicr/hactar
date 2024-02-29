@@ -29,7 +29,7 @@ void SettingsView::Draw()
         if (first_load)
         {
             uint16_t speed = 0;
-            String msg = "Settings";
+            std::string msg = "Settings";
             screen.DrawBlockAnimateString(0, 6, msg, font11x16, fg, bg, speed);
             first_load = false;
         }
@@ -37,7 +37,7 @@ void SettingsView::Draw()
 
     if ((usr_input.length() > last_drawn_idx || redraw_input))
     {
-        String draw_str;
+        std::string draw_str;
         // Fill the draw string buffer with stars instead.
         while (last_drawn_idx < usr_input.length())
         {
@@ -45,8 +45,8 @@ void SettingsView::Draw()
             if (usr_input.length() > last_drawn_idx || redraw_input)
             {
                 // Shift over and draw the input that is currently in the buffer
-                String draw_str;
-                draw_str = usr_input.substring(last_drawn_idx);
+                std::string draw_str;
+                draw_str = usr_input.substr(last_drawn_idx);
                 last_drawn_idx = usr_input.length();
                 DrawInputString(draw_str);
             }
@@ -68,7 +68,7 @@ void SettingsView::HandleInput()
     // Check if this is a command
     if (usr_input[0] == '/')
     {
-        String command = usr_input.substring(1);
+        std::string command = usr_input.substr(1);
 
         // command_handler->ChangeViewCommand(command);
     }

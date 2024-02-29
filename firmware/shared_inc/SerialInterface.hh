@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Packet.hh"
-
 class SerialInterface
 {
 public:
