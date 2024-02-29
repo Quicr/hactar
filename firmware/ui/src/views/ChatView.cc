@@ -125,7 +125,7 @@ void ChatView::Draw()
         {
             DrawUsrInputSeperator();
             // DrawTitle();
-            DrawTitleBar(manager.ActiveRoom()->friendly_name.c_str(),
+            DrawTitleBar(manager.ActiveRoom()->friendly_name,
                 menu_font, C_WHITE, C_BLACK, screen);
             first_load = false;
         }
@@ -135,8 +135,8 @@ void ChatView::Draw()
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
         // Shift over and draw the input that is currently in the buffer
-        String draw_str;
-        draw_str = usr_input.substring(last_drawn_idx);
+        std::string draw_str;
+        draw_str = usr_input.substr(last_drawn_idx);
         last_drawn_idx = usr_input.length();
         ViewInterface::DrawInputString(draw_str);
     }
@@ -164,8 +164,8 @@ void ChatView::HandleInput()
     // TODO switch to using C strings so we don;t need to extend
     // strings for each added character
     // and then we can just memcpy?
-    const String& username = *setting_manager.Username();
-    String plaintext = "00:00 ";
+    const std::string& username = *setting_manager.Username();
+    std::string plaintext = "00:00 ";
     plaintext += username;
     plaintext += ": ";
     plaintext += usr_input;
@@ -173,7 +173,7 @@ void ChatView::HandleInput()
     // If we have MLS state, encrypt and send the message
     if (mls_state) {
         // Encrypt the message
-        const auto plaintext_data = from_ascii(std::string(plaintext.c_str()));
+        const auto plaintext_data = from_ascii(plaintext);
         const auto ciphertext = mls_state->protect(plaintext_data);
         const auto framed = frame(MlsMessageType::message, ciphertext);
 
@@ -205,7 +205,7 @@ void ChatView::SendPacket(const bytes& msg) {
     // TODO move into encode...
     // TODO packet should maybe have a static next_packet_id?
     std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 1);
-    packet->SetData(Packet::Types::Message, 0, 1);
+    packet->SetData(SerialPacket::Types::Message, 0, 1);
     packet->SetData(manager.NextPacketId(), 1, 2);
 
     // The packet length is set in the encode function
@@ -224,7 +224,7 @@ void ChatView::SendPacket(const bytes& msg) {
     manager.EnqueuePacket(std::move(packet));
 }
 
-void ChatView::PushMessage(String&& msg)
+void ChatView::PushMessage(std::string&& msg)
 {
     messages.push_back(std::move(msg));
     redraw_messages = true;
@@ -235,7 +235,7 @@ try
 {
     const auto raw_messages = manager.TakeMessages();
     for (const auto& msg : raw_messages) {
-        const auto msg_bytes = from_ascii(msg.c_str());
+        const auto msg_bytes = from_ascii(msg);
         const auto [msg_type, msg_data] = unframe(msg_bytes);
 
         Logger::Log("[MLS] Bytes", to_hex(msg_bytes));
@@ -281,7 +281,7 @@ try
                 }
 
                 auto plaintext = mls_state->unprotect(msg_data);
-                auto plaintext_str = String(to_ascii(plaintext).c_str());
+                auto plaintext_str = std::string(to_ascii(plaintext));
                 PushMessage(std::move(plaintext_str));
             }
         }
@@ -398,7 +398,7 @@ void ChatView::DrawMessages()
 
         // Draw the body
         screen.DrawTextbox(x_pos, y_pos, x_window_start, y_window_start,
-            x_window_end, y_window_end, msg.c_str(), usr_font,
+            x_window_end, y_window_end, msg, usr_font,
             settings.body_colour, bg);
 
         // Decrement the idx

@@ -2,8 +2,8 @@
 
 #include <map>
 #include <functional>
-#include "Vector.hh"
-#include "String.hh"
+#include <vector>
+#include <string>
 
 #include "UserInterfaceManager.hh"
 
@@ -13,8 +13,8 @@ class CommandHandler
 public:
     CommandHandler(UserInterfaceManager* manager);
 
-    bool ChangeViewCommand(const String& command);
-    bool ReadCommand(String cmd);
+    bool ChangeViewCommand(const std::string& command);
+    bool ReadCommand(std::string cmd);
 
 private:
     UserInterfaceManager* manager;

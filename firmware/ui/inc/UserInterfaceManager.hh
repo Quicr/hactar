@@ -15,7 +15,7 @@
 
 #include "QChat.hh"
 
-#include <vector>
+#include "Vector.hh"
 
 #define VIEW_ADDRESS 0x00
 #define FIRST_BOOT_STARTED 0x01
@@ -42,7 +42,7 @@ public:
     void ForceRedraw();
     bool RedrawForced();
     void ConnectToWifi();
-    void ConnectToWifi(const String& ssid, const String& password);
+    void ConnectToWifi(const std::string& ssid, const std::string& password);
 
     uint32_t GetTxStatusColour() const;
     uint32_t GetRxStatusColour() const;

@@ -87,7 +87,7 @@ void Q10Keyboard::ClearInternalBuffer(unsigned long start, unsigned long end)
     if (end > internal_buffer.length()) end = internal_buffer.length()-1;
 
     // Set the internal buffer to be a substring of the previous string
-    internal_buffer = internal_buffer.substring(start, end);
+    internal_buffer = internal_buffer.substr(start, end-start);
 
     // Set our ptr back to the start of the string
     internal_buffer_ptr = 0;
@@ -100,12 +100,12 @@ bool Q10Keyboard::EnterPressed()
     return res;
 }
 
-String& Q10Keyboard::GetKeys()
+std::string& Q10Keyboard::GetKeys()
 {
     return internal_buffer;
 }
 
-String Q10Keyboard::GetKeysCopy()
+std::string Q10Keyboard::GetKeysCopy()
 {
     return internal_buffer;
 }
@@ -115,7 +115,7 @@ void Q10Keyboard::Read()
     ReadKeys();
 }
 
-bool Q10Keyboard::Read(String &buffer)
+bool Q10Keyboard::Read(std::string &buffer)
 {
     // ReadKeys();
 

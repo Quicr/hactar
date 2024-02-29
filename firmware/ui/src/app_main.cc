@@ -1,7 +1,7 @@
 #include "main.h"
 #include "app_main.hh"
 
-#include "String.hh"
+#include <string>
 #include "Font.hh"
 #include "PortPin.hh"
 #include "PushReleaseButton.hh"
@@ -214,13 +214,13 @@ int app_main()
             // audio->Send1KHzSignal();
             // HAL_I2SEx_TransmitReceive_DMA(&hi2s3, tx_sound_buff, rx_sound_buff, SOUND_BUFFER_SZ);
             // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
-            // screen.DrawText(0, 100, String::int_to_string((int)tx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 100, std::to_string((int)tx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
 
             // audio->TestRegister();
             // uint16_t reg_value = 0;
             // uint16_t value = 0x01FF;
             // audio->ReadRegister(0x0A, reg_value);
-            // screen.DrawText(0, 100, String::int_to_string((int)reg_value), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 100, std::to_string((int)reg_value), font7x12, C_GREEN, C_BLACK);
 
             tx_sound = HAL_GetTick() + 10;
         }
@@ -244,14 +244,14 @@ int app_main()
             // audio->Send1KHzSignal();
 
             // HAL_StatusTypeDef res = HAL_I2S_Transmit_DMA(&hi2s3, buff, BUFFER_SIZE * sizeof(uint16_t));
-            // screen.DrawText(0, 100, String::int_to_string((int)res), font7x12, C_WHITE, C_BLACK);
+            // screen.DrawText(0, 100, std::to_string((int)res), font7x12, C_WHITE, C_BLACK);
             // if (res == HAL_OK)
             // {
             // }
             // blink = HAL_GetTick() + 5000;
             // uint32_t num = 0;
             // HAL_RNG_GenerateRandomNumber(&hrng, &num);
-            // screen.DrawText(0, 82, String::int_to_string(num), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 82, std::to_string(num), font7x12, C_GREEN, C_BLACK);
 
             if (rx_busy) {
                 continue;
@@ -267,11 +267,11 @@ int app_main()
             // TODO Rx_Buffer_Sz might need to be in bytes not element sz.
             // auto output = HAL_I2SEx_TransmitReceive_DMA(&hi2s3, tx_sound_buff, rx_sound_buff, SOUND_BUFFER_SZ);
 
-            // screen.DrawText(0, 100, String::int_to_string((int)output), font7x12, C_GREEN, C_BLACK);
-            // screen.DrawText(0, 112, String::int_to_string((int)rx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
-            // screen.DrawText(0, 124, String::int_to_string((int)rx_sound_buff[1]), font7x12, C_GREEN, C_BLACK);
-            // screen.DrawText(0, 136, String::int_to_string((int)rx_sound_buff[2]), font7x12, C_GREEN, C_BLACK);
-            // screen.DrawText(0, 148, String::int_to_string((int)rx_sound_buff[3]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 100, std::to_string((int)output), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 112, std::to_string((int)rx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 124, std::to_string((int)rx_sound_buff[1]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 136, std::to_string((int)rx_sound_buff[2]), font7x12, C_GREEN, C_BLACK);
+            // screen.DrawText(0, 148, std::to_string((int)rx_sound_buff[3]), font7x12, C_GREEN, C_BLACK);
 
         }
     }

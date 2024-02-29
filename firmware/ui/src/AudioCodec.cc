@@ -179,7 +179,7 @@ void AudioCodec::RxAudio(Screen* screen)
 
     // TODO Rx_Buffer_Sz might need to be in bytes not element sz.
     auto output = HAL_I2S_Receive_DMA(i2s, rx_buffer, Rx_Buffer_Sz*2);
-    screen->DrawText(0, 100, String::int_to_string((int)output), font7x12, C_GREEN, C_BLACK);
+    screen->DrawText(0, 100, std::to_string((int)output), font7x12, C_GREEN, C_BLACK);
 
 }
 

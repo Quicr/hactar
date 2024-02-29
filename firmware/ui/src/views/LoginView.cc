@@ -28,7 +28,7 @@ void LoginView::AnimatedDraw()
         return;
 
     uint16_t speed = 10;
-    String msg = "Welcome to Cisco";
+    std::string msg = "Welcome to Cisco";
     screen.DrawBlockAnimateString(
         screen.GetStringCenterMargin(msg.length(), font11x16), 6, msg,
         font11x16, fg, bg, speed);
@@ -60,7 +60,7 @@ void LoginView::Draw()
 
     if ((usr_input.length() > last_drawn_idx || redraw_input))
     {
-        String draw_str;
+        std::string draw_str;
         // Fill the draw string buffer with stars instead.
         while (last_drawn_idx < usr_input.length())
         {
@@ -76,7 +76,7 @@ void LoginView::Draw()
 
     if (incorrect_passcode_entered)
     {
-        String msg = "** Incorrect passcode **";
+        std::string msg = "** Incorrect passcode **";
         screen.DrawText(1,
             screen.ViewHeight() - (usr_font.height * 3), msg, usr_font,
             fg, bg);
@@ -98,7 +98,7 @@ void LoginView::HandleInput()
     short eeprom_password_len = 0;
     setting_manager.LoadSetting(SettingManager::SettingAddress::Password,
         &eeprom_password, eeprom_password_len);
-    String password;
+    std::string password;
     for (short i = 0 ; i < eeprom_password_len; ++i)
     {
         password.push_back(eeprom_password[i]);
@@ -112,7 +112,7 @@ void LoginView::HandleInput()
     }
     else
     {
-        String msg = "** Incorrect passcode **";
+        std::string msg = "** Incorrect passcode **";
         screen.DrawText(1,
             screen.ViewHeight() - (usr_font.height * 3), msg, usr_font,
             fg, bg);
