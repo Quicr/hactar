@@ -79,7 +79,7 @@ MLSState PreJoinedState::join(const bytes& welcome_data) {
 }
 
 bool MLSState::should_commit() const {
-  Logger::Log("[MLS] should commit?", state.index().val);
+  Logger::Log(Logger::Level::Debug, "[MLS] should commit?", state.index().val);
   return state.index() == LeafIndex{ 0 };
 }
 
@@ -121,8 +121,6 @@ ChatView::ChatView(UserInterfaceManager& manager,
     redraw_messages = true;
     const auto framed = frame(MlsMessageType::key_package,
                                 pre_joined_state->key_package_data);
-
-    Logger::Log("[ChatView] " + std::to_string(framed.size()));
     SendPacket(framed);
 }
 
@@ -250,15 +248,15 @@ try
         const auto msg_bytes = from_ascii(msg);
         const auto [msg_type, msg_data] = unframe(msg_bytes);
 
-        Logger::Log("[MLS] Bytes", to_hex(msg_bytes));
-        Logger::Log("[MLS] Type", int(msg_type));
-        Logger::Log("[MLS] Data", to_hex(msg_data));
+        Logger::Log(Logger::Level::Debug, "[MLS] Bytes", to_hex(msg_bytes));
+        Logger::Log(Logger::Level::Debug, "[MLS] Type", int(msg_type));
+        Logger::Log(Logger::Level::Debug, "[MLS] Data", to_hex(msg_data));
 
         switch (msg_type) {
             case MlsMessageType::key_package: {
                 // If this is the initial creation, create the group
                 if (pre_joined_state) {
-                    Logger::Log("[MLS] Creating group");
+                    Logger::Log(Logger::Level::Debug, "[MLS] Creating group");
                     auto state = pre_joined_state->create();
                     const auto [commit, welcome] = state.add(msg_data);
 
@@ -272,17 +270,17 @@ try
 
                 // Otherwise, we should have MLS state ready
                 if (!mls_state) {
-                    Logger::Log("[MLS] Ignoring KeyPackage; no MLS state");
+                    Logger::Log(Logger::Level::Debug, "[MLS] Ignoring KeyPackage; no MLS state");
                     break;
                 }
 
                 if (!mls_state->should_commit()){
                     // We are not the committer
-                    Logger::Log("[MLS] Ignoring KeyPackage; not the committer");
+                    Logger::Log(Logger::Level::Debug, "[MLS] Ignoring KeyPackage; not the committer");
                     break;
                 }
 
-                Logger::Log("[MLS] Committing");
+                Logger::Log(Logger::Level::Debug, "[MLS] Committing");
                 const auto [commit, welcome] = mls_state->add(msg_data);
 
                 const auto framed_welcome = frame(MlsMessageType::welcome, welcome);
@@ -296,26 +294,24 @@ try
             case MlsMessageType::welcome: {
                 if (!pre_joined_state) {
                     // Can't join by welcome
-                    Logger::Log("[MLS] Ignoring Welcome; not pre-joined");
+                    Logger::Log(Logger::Level::Error, "[MLS] Ignoring Welcome; not pre-joined");
                     break;
                 }
 
-                Logger::Log("[MLS] Joining");
-                const auto state = pre_joined_state->join(msg_data);
-
+                Logger::Log(Logger::Level::Debug, "[MLS] Joining");
+                mls_state = pre_joined_state->join(msg_data);
                 pre_joined_state = std::nullopt;
-                mls_state = std::move(state);
                 break;
             }
 
             case MlsMessageType::commit: {
                 if (!mls_state) {
                     // Can't handle commits before join
-                    Logger::Log("[MLS] Ignoring Commit; no MLS state");
+                    Logger::Log(Logger::Level::Error, "[MLS] Ignoring Commit; no MLS state");
                     break;
                 }
 
-                Logger::Log("[MLS] Processing commit");
+                Logger::Log(Logger::Level::Debug, "[MLS] Processing commit");
                 mls_state->handle(msg_data);
                 break;
             }
@@ -323,12 +319,12 @@ try
             case MlsMessageType::message: {
                 // If we don't have MLS state, we can't decrypt
                 if (!mls_state) {
-                    Logger::Log("[MLS] Ignoring message; no MLS state");
+                    Logger::Log(Logger::Level::Error, "[MLS] Ignoring message; no MLS state");
                     PushMessage("[decryption failure]");
                     break;
                 }
 
-                Logger::Log("[MLS] Decrypting message");
+                Logger::Log(Logger::Level::Debug, "[MLS] Decrypting message");
                 auto plaintext = mls_state->unprotect(msg_data);
                 auto plaintext_str = std::string(to_ascii(plaintext));
                 PushMessage(std::move(plaintext_str));
@@ -339,7 +335,7 @@ try
 }
 catch(const std::exception& e)
 {
-    Logger::Log("[EXCEPT] Caught exception: ", e.what());
+    Logger::Log(Logger::Level::Error, "[EXCEPT] Caught exception: ", e.what());
 }
 
 void ChatView::DrawMessages()

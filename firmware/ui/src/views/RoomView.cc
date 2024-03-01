@@ -97,7 +97,7 @@ void RoomView::Update()
             while (room_packets->Unread() > 0)
             {
                 // Parse the packets for the room
-                auto rx_packet = std::move(room_packets->Read());
+                auto rx_packet = room_packets->Read();
 
                 // Build the string that will be the room
                 std::unique_ptr<qchat::Room> room =

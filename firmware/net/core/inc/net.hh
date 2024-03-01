@@ -36,7 +36,7 @@ static void Setup();
 static void Run();
 
 // TODO move into wifi?
-static void WifiWatchdog();
+// static void WifiWatchdog() {}
 
 
 

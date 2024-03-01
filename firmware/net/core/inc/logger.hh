@@ -1,23 +1,48 @@
 #pragma once
 
+#include "esp_log.h"
+
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <iomanip>
 
 class Logger
 {
-public:
-    template <typename... T>
-    static void Log(const T &...args)
-    {
-        auto str = std::stringstream();
-        str << "[Net] ";
-        auto line = space_separated_line(std::move(str), args...);
+static constexpr const char* TAG = "[NET]";
 
-        // Uncomment for UART logging
-        line += std::string("\n");
-        printf(line.c_str());
+public:
+    enum class Level
+    {
+        Error,
+        Warn,
+        Info,
+        Debug,
+    };
+
+    template <typename... T>
+    static void Log(Level level, const T&... args)
+    {
+        auto ss = std::stringstream();
+        (..., (ss << args << ' '));
+
+        const auto line = ss.str();
+
+        switch (level)
+        {
+            case Level::Error:
+                ESP_LOGE(TAG, "%s", line.c_str());
+                break;
+            case Level::Warn:
+                ESP_LOGW(TAG, "%s", line.c_str());
+                break;
+            case Level::Info:
+                ESP_LOGI(TAG, "%s", line.c_str());
+                break;
+            case Level::Debug:
+                ESP_LOGD(TAG, "%s", line.c_str());
+                break;
+        }
     }
 
     static std::string to_hex(const uint8_t* data, size_t size)
@@ -29,18 +54,5 @@ public:
             hex << std::setw(2) << std::setfill('0') << int(data[i]);
         }
         return hex.str();
-    }
-
-private:
-    static std::string space_separated_line(std::stringstream &&str)
-    {
-        return str.str();
-    }
-
-    template <typename T, typename... U>
-    static std::string space_separated_line(std::stringstream &&str, const T &first, const U &...rest)
-    {
-        str << first << " ";
-        return space_separated_line(std::move(str), rest...);
     }
 };

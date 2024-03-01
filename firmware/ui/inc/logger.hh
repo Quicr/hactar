@@ -1,25 +1,34 @@
 #pragma once
 
+#include "stm32.h"
+
+#include <iomanip>
 #include <sstream>
 #include <string>
-#include <iomanip>
-
-#include "stm32.h"
 
 extern UART_HandleTypeDef huart1;
 
 class Logger
 {
 public:
-    template <typename... T>
-    static void Log(const T &...args)
+    enum class Level
     {
-        auto str = std::stringstream();
-        str << "[UI] ";
-        auto line = space_separated_line(std::move(str), args...);
+        Error,
+        Warn,
+        Info,
+        Debug,
+    };
 
-        // Uncomment for UART logging
-        line += std::string("\n");
+    template <typename... T>
+    static void Log(Level level, const T&... args)
+    {
+        auto ss = std::stringstream();
+        ss << "[UI][" << log_level_string(level) << "] ";
+        (..., (ss << args << ' '));
+        ss << std::endl;
+
+        const auto line = ss.str();
+
         const auto *line_ptr = reinterpret_cast<const uint8_t *>(line.c_str());
         HAL_UART_Transmit(&huart1, line_ptr, line.size(), HAL_MAX_DELAY);
     }
@@ -36,15 +45,16 @@ public:
     }
 
 private:
-    static std::string space_separated_line(std::stringstream &&str)
+    static std::string log_level_string(Level level)
     {
-        return str.str();
-    }
+        switch (level)
+        {
+        case Level::Error: return "ERRR";
+        case Level::Warn:  return "WARN";
+        case Level::Info:  return "INFO";
+        case Level::Debug: return "DBUG";
+        }
 
-    template <typename T, typename... U>
-    static std::string space_separated_line(std::stringstream &&str, const T &first, const U &...rest)
-    {
-        str << first << " ";
-        return space_separated_line(std::move(str), rest...);
+        return "UNKN";
     }
 };
