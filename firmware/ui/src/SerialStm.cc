@@ -40,6 +40,8 @@ void SerialStm::Write(unsigned char* buff, const unsigned short buff_sz)
 {
     uint8_t start_byte[1] = { 0xFF };
     HAL_UART_Transmit(uart, start_byte, 1, HAL_MAX_DELAY);
+
+    // HAL_UART_Transmit_IT(uart, buff, buff_sz);
     HAL_UART_Transmit(uart, buff, buff_sz, HAL_MAX_DELAY);
 }
 
