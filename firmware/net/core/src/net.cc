@@ -53,7 +53,6 @@ extern "C" void app_main(void)
 
     Setup();
 
-    int32_t count = 0;
     while (1)
     {
         gpio_set_level(LED_R_Pin, next);

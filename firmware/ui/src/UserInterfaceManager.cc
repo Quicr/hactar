@@ -260,8 +260,8 @@ void UserInterfaceManager::HandleIncomingPackets()
             {
                 // TODO move into a wifi handler
                 // Response from the esp32 will invoke this
-                uint8_t message[] = "Got a connection status\n\r";
-                HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), 1000);
+                Logger::Log(Logger::Level::Info, "Got a connection status");
+
                 is_connected_to_wifi = rx_packet->GetData<char>(6, 1);
                 if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
                 {
@@ -493,13 +493,12 @@ void UserInterfaceManager::SendCheckWifiPacket()
     // Set the data
     check_wifi->SetData(SerialPacket::Commands::WifiStatus, 5, 1);
 
-    uint8_t message[] = "UI: Send check wifi to esp\n\r";
-    HAL_UART_Transmit(&huart1, message, sizeof(message) / sizeof(char), HAL_MAX_DELAY);
+    Logger::Log(Logger::Level::Info, "Send check wifi to esp");
 
     unsigned char *buff = check_wifi->Data();
     for (uint16_t i = 0; i < check_wifi->NumBytes(); ++i)
     {
-        HAL_UART_Transmit(&huart1, buff + i, 1, 1000);
+        Logger::Log(Logger::Level::Debug, buff + i);
     }
 
     EnqueuePacket(std::move(check_wifi));
@@ -561,5 +560,7 @@ void UserInterfaceManager::HandleMessagePacket(
             ChangeView<ChatView>();
             break;
         }
+        default:
+            break;
     }
 }
