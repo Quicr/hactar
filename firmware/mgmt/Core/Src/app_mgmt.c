@@ -74,7 +74,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
     // There are 3 conditions that call this function.
 
     // 1. Half complete -- The rx buffer is half full
-    // 2. rx complete -- the rx buffer is full
+    // 2. rx complete -- The rx buffer is full
     // 3. idle  -- Nothing has been received in awhile
 
     // Need to have as separate if statements so we can loop back properly
@@ -82,23 +82,27 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
     if (huart->Instance == net_stream.from_uart->Instance)
     {
         HandleRx(&net_stream, size);
+        return;
     }
 
     if (huart->Instance == ui_stream.from_uart->Instance)
     {
         HandleRx(&ui_stream, size);
+        return;
     }
 
     if (huart->Instance == usb_stream.from_uart->Instance)
     {
         HandleRx(&usb_stream, size);
+        return;
     }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-    // Need to have as separate if statements so we can loop back properly
-    // Which doesn't make any sense to me, but it makes it work.
+    // Since net_stream.to_uart is usb AND ui_stream.to_uart is usb
+    // then when this is called during either ui upload or net upload
+    // then they both need to be notified that the usb is free. :shrug:
     if (huart->Instance == net_stream.to_uart->Instance)
     {
         net_stream.tx_free = 1;
@@ -169,6 +173,7 @@ void UINormalMode()
 
     // Power cycle
     HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
+    HAL_Delay(10);
     HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
 }
 
@@ -297,14 +302,10 @@ void UIUpload()
 void RunningMode()
 {
     // Set LEDS for ui
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
+    LEDB(HIGH, HIGH, HIGH);
 
     // Set LEDS for net
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_RESET);
+    LEDA(HIGH, HIGH, HIGH);
 
     CancelAllUart();
 
@@ -314,7 +315,7 @@ void RunningMode()
     // Init huart3
     Usart1_Net_Upload_Runnning_Debug_Reset();
 
-    usb_stream.to_uart = &huart3;
+    usb_stream.to_uart = &huart1;
     usb_stream.rx_buffer_size = COMMAND_BUFF_SZ;
     usb_stream.tx_buffer_size = COMMAND_BUFF_SZ;
 
@@ -340,14 +341,10 @@ void RunningMode()
         HAL_Delay(10);
     }
 
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+    LEDB(HIGH, HIGH, HIGH);
 
     // Set LEDS for net
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+    LEDA(HIGH, HIGH, HIGH);
 
     state = Running;
     while (state == Running)
@@ -376,7 +373,7 @@ void DebugMode()
     // Init huart3
     Usart1_Net_Upload_Runnning_Debug_Reset();
 
-    // usb_stream.to_uart = &huart3;
+    usb_stream.to_uart = &huart1;
     usb_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
     usb_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
     ui_stream.rx_buffer_size = UI_RECEIVE_BUFF_SZ;
@@ -424,15 +421,8 @@ void DebugMode()
 
 int app_main(void)
 {
-    // Set LEDS for ui
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
-
-    // Set LEDS for net
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+    LEDA(HIGH, HIGH, HIGH);
+    LEDB(HIGH, HIGH, HIGH);
 
     // TODO move these into functions for starting ui/net upload
     // Init uart structures
@@ -507,6 +497,10 @@ int app_main(void)
     return 0;
 }
 
+/**
+ * @brief TODO
+ *
+ */
 void Usart1_Net_Upload_Runnning_Debug_Reset(void)
 {
     huart1.Instance = USART1;
@@ -523,9 +517,12 @@ void Usart1_Net_Upload_Runnning_Debug_Reset(void)
     {
         Error_Handler();
     }
-
 }
 
+/**
+ * @brief TODO
+ *
+ */
 void Usart1_UI_Upload_Init(void)
 {
     huart1.Instance = USART1;
@@ -542,7 +539,30 @@ void Usart1_UI_Upload_Init(void)
     {
         Error_Handler();
     }
+}
 
+/**
+ * @brief TODO
+ *
+ */
+void LEDA(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b)
+{
+    // Set LEDS for net
+    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, r);
+    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, g);
+    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, b);
+}
+
+/**
+ * @brief TODO
+ *
+ */
+void LEDB(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b)
+{
+    // Set LEDS for ui
+    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, r);
+    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, g);
+    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, b);
 }
 
 #ifdef  USE_FULL_ASSERT

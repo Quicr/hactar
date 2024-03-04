@@ -32,7 +32,7 @@ void HandleRx(uart_stream_t* rx_stream, uint16_t num_received)
     rx_stream->tx_write += num_bytes;
 
     // rx read head is at the end
-    if (rx_stream->rx_read == rx_stream->rx_buffer_size)
+    if (rx_stream->rx_read >= rx_stream->rx_buffer_size)
     {
         rx_stream->rx_read = 0;
     }
@@ -51,41 +51,40 @@ void HandleRx(uart_stream_t* rx_stream, uint16_t num_received)
 
 void HandleTx(uart_stream_t* tx_stream, enum State* state)
 {
-    if (tx_stream->pending_bytes > 0 && tx_stream->tx_free)
+    if ((tx_stream->pending_bytes > 0 && tx_stream->tx_free) &&
+        (tx_stream->pending_bytes >= tx_stream->rx_buffer_size ||
+            tx_stream->idle_receive ||
+            tx_stream->tx_read_overflow))
     {
-        if (tx_stream->pending_bytes >= tx_stream->rx_buffer_size || tx_stream->idle_receive || tx_stream->tx_read_overflow)
+        uint16_t send_bytes = tx_stream->pending_bytes;
+
+        // Should only occur on an idle
+        if (tx_stream->idle_receive || tx_stream->tx_read_overflow)
         {
-            uint16_t send_bytes = tx_stream->rx_buffer_size;
-
-            // Should only occur on an idle
-            if (tx_stream->idle_receive || tx_stream->tx_read_overflow)
-            {
-                send_bytes = tx_stream->pending_bytes;
-                tx_stream->tx_read_overflow = 0;
-            }
-
-            if (send_bytes > tx_stream->tx_buffer_size - tx_stream->tx_read)
-            {
-                send_bytes = tx_stream->tx_buffer_size - tx_stream->tx_read;
-                tx_stream->tx_read_overflow = 1;
-            }
-            else if (send_bytes > tx_stream->pending_bytes)
-            {
-                send_bytes = tx_stream->pending_bytes;
-            }
-
-            // Technically this should be lower, but it makes it work for the ui stream...
-            // because... good question
-            if (tx_stream->idle_receive && tx_stream->pending_bytes == 0)
-            {
-                tx_stream->idle_receive = 0;
-            }
-
-            tx_stream->tx_free = 0;
-            HAL_UART_Transmit_DMA(tx_stream->to_uart, (tx_stream->tx_buffer + tx_stream->tx_read), send_bytes);
-            tx_stream->pending_bytes -= send_bytes;
-            tx_stream->tx_read += send_bytes;
+            tx_stream->tx_read_overflow = 0;
         }
+
+        if (send_bytes > tx_stream->tx_buffer_size - tx_stream->tx_read)
+        {
+            send_bytes = tx_stream->tx_buffer_size - tx_stream->tx_read;
+            tx_stream->tx_read_overflow = 1;
+        }
+        else if (send_bytes > tx_stream->pending_bytes)
+        {
+            send_bytes = tx_stream->pending_bytes;
+        }
+
+        // Technically this should be lower, but it makes it work for the ui stream...
+        // because... good question
+        if (tx_stream->idle_receive && tx_stream->pending_bytes == 0)
+        {
+            tx_stream->idle_receive = 0;
+        }
+
+        tx_stream->tx_free = 0;
+        HAL_UART_Transmit_DMA(tx_stream->to_uart, (tx_stream->tx_buffer + tx_stream->tx_read), send_bytes);
+        tx_stream->pending_bytes -= send_bytes;
+        tx_stream->tx_read += send_bytes;
 
         if (tx_stream->tx_read >= tx_stream->tx_buffer_size)
         {
@@ -161,39 +160,37 @@ void HandleCommands(uart_stream_t* rx_uart_stream,
     UART_HandleTypeDef* tx_uart,
     enum State* state)
 {
-    if (rx_uart_stream->pending_bytes > 0)
+    if (rx_uart_stream->pending_bytes >= rx_uart_stream->rx_buffer_size ||
+        rx_uart_stream->idle_receive)
     {
-        if (rx_uart_stream->pending_bytes >= rx_uart_stream->rx_buffer_size || rx_uart_stream->idle_receive || rx_uart_stream->tx_read_overflow)
+        rx_uart_stream->has_received = 1;
+        uint16_t send_bytes = rx_uart_stream->pending_bytes;
+
+        // Should only occur on an idle and overflow
+        if (rx_uart_stream->idle_receive || rx_uart_stream->tx_read_overflow)
         {
-            rx_uart_stream->has_received = 1;
-            uint16_t send_bytes = rx_uart_stream->rx_buffer_size;
+            send_bytes = rx_uart_stream->pending_bytes;
+            rx_uart_stream->tx_read_overflow = 0;
+        }
 
-            // Should only occur on an idle
-            if (rx_uart_stream->idle_receive || rx_uart_stream->tx_read_overflow)
-            {
-                send_bytes = rx_uart_stream->pending_bytes;
-                rx_uart_stream->tx_read_overflow = 0;
-            }
+        if (send_bytes > rx_uart_stream->tx_buffer_size - rx_uart_stream->tx_read)
+        {
+            send_bytes = rx_uart_stream->tx_buffer_size - rx_uart_stream->tx_read;
+            rx_uart_stream->tx_read_overflow = 1;
+        }
+        else if (send_bytes > rx_uart_stream->pending_bytes)
+        {
+            send_bytes = rx_uart_stream->pending_bytes;
+        }
 
-            if (send_bytes > rx_uart_stream->tx_buffer_size - rx_uart_stream->tx_read)
-            {
-                send_bytes = rx_uart_stream->tx_buffer_size - rx_uart_stream->tx_read;
-                rx_uart_stream->tx_read_overflow = 1;
-            }
-            else if (send_bytes > rx_uart_stream->pending_bytes)
-            {
-                send_bytes = rx_uart_stream->pending_bytes;
-            }
+        rx_uart_stream->pending_bytes -= send_bytes;
+        rx_uart_stream->tx_read += send_bytes;
 
-            rx_uart_stream->pending_bytes -= send_bytes;
-            rx_uart_stream->tx_read += send_bytes;
-
-            if (rx_uart_stream->idle_receive || rx_uart_stream->pending_bytes == 0)
-            {
-                // End of transmission
-                rx_uart_stream->idle_receive = 0;
-                rx_uart_stream->command_complete = 1;
-            }
+        if (rx_uart_stream->idle_receive || rx_uart_stream->pending_bytes == 0)
+        {
+            // End of transmission
+            rx_uart_stream->idle_receive = 0;
+            rx_uart_stream->command_complete = 1;
         }
 
         if (rx_uart_stream->tx_read >= rx_uart_stream->tx_buffer_size)
