@@ -24,33 +24,36 @@
 
 #ifdef __cplusplus
 extern "C" {
-    #endif
+#endif
 
-    /* Includes ------------------------------------------------------------------*/
-    #include "main.h"
-    #include "stm32f0xx_hal.h"
+#define HIGH GPIO_PIN_SET
+#define LOW GPIO_PIN_RESET
 
-    int app_main(void);
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
+#include "stm32f0xx_hal.h"
 
-    void CancelAllUart();
-    void Usart1_Net_Upload_Runnning_Debug_Reset(void);
-    void Usart1_UI_Upload_Init(void);
-    void NetBootloaderMode();
-    void NetNormalMode();
-    void NetHoldInReset();
-    void UIBootloaderMode();
-    void UINormalMode();
-    void UIHoldInReset();
-    void UIHoldInReset();
-    void NetUpload();
-    void UIUpload();
-    void RunningMode();
-    void DebugMode();
+int app_main(void);
 
-    #define HIGH GPIO_PIN_SET
-    #define LOW GPIO_PIN_RESET
+void CancelAllUart();
+void NetBootloaderMode();
+void NetNormalMode();
+void NetHoldInReset();
+void UIBootloaderMode();
+void UINormalMode();
+void UIHoldInReset();
+void UIHoldInReset();
+void NetUpload();
+void UIUpload();
+void RunningMode();
+void DebugMode();
+void Usart1_Net_Upload_Runnning_Debug_Reset(void);
+void Usart1_UI_Upload_Init(void);
 
-    #ifdef __cplusplus
+void LEDA(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
+void LEDB(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
+
+#ifdef __cplusplus
 }
 #endif
 
