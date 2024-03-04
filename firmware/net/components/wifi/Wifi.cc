@@ -108,12 +108,12 @@ esp_err_t Wifi::Disconnect()
 esp_err_t Wifi::ScanNetworks(Vector<String>* ssids)
 {
     // TODO
-    wifi_scan_config_t scan_config = {
-        .ssid = 0,
-        .bssid = 0,
-        .channel = 0,
-        .show_hidden = true
-    };
+    // wifi_scan_config_t scan_config = {
+    //     .ssid = 0,
+    //     .bssid = 0,
+    //     .channel = 0,
+    //     .show_hidden = true
+    // };
 
     esp_err_t res = esp_wifi_scan_start(NULL, true);
     if (res != ESP_OK) return res;

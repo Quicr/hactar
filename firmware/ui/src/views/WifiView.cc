@@ -50,7 +50,7 @@ void WifiView::Update()
         {
             while (ssid_packets->Unread() > 0)
             {
-                auto rx_packet = std::move(ssid_packets->Read());
+                auto rx_packet = ssid_packets->Read();
                 // Get the packet len
                 uint16_t packet_data_len = rx_packet->GetData<uint16_t>(3, 2);
 

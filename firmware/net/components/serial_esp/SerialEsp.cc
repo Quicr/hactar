@@ -54,12 +54,6 @@ void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 
-    // printf("NET: Send to ui");
-    // for (int i =0; i <  buff_size; ++i )
-    // {
-    //     printf("%d", (int)buff[i]);
-    // }
-    // printf("\n\r");
     uint8_t start[] = {0xFF};
     uart_write_bytes(uart, start, 1);
 

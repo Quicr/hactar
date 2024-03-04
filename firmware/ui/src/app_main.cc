@@ -196,12 +196,10 @@ int app_main()
     // tx_sound_buff[SOUND_BUFFER_SZ - 2] = 0x00AA;
 
     // Initialize the cryptographic library
-    Logger log;
     const auto rv = cmox_initialize(nullptr);
-    Logger::Log("init", rv == CMOX_INIT_SUCCESS);
+    Logger::Log(Logger::Level::Info, "app init:", rv == CMOX_INIT_SUCCESS);
 
     // Delayed condition
-    auto first_run = true;
     uint32_t blink = HAL_GetTick() + 5000;
     uint32_t tx_sound = 0;
     // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));

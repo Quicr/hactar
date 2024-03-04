@@ -181,9 +181,9 @@ private:
             rx_packet->SetData(uart->Read(), 3, 1);
             rx_packet->SetData(uart->Read(), 4, 1);
 
-            Logger::Log("RX Packet Header, Type=", rx_packet->GetData<uint16_t>(0, 1));
-            Logger::Log("RX Packet Header, ID=", rx_packet->GetData<uint16_t>(1, 2));
-            Logger::Log("RX Packet Header, Length=", rx_packet->GetData<uint16_t>(3, 2));
+            Logger::Log(Logger::Level::Debug, "RX Packet Header, Type=", rx_packet->GetData<uint16_t>(0, 1));
+            Logger::Log(Logger::Level::Debug, "RX Packet Header, ID=", rx_packet->GetData<uint16_t>(1, 2));
+            Logger::Log(Logger::Level::Debug, "RX Packet Header, Length=", rx_packet->GetData<uint16_t>(3, 2));
         }
 
         // Get the length of the incoming message
@@ -269,7 +269,7 @@ private:
                     ok_packet->SetData<unsigned short>(
                         rx_packet->GetData<unsigned short>(1, 2), 5, 2);
 
-                    Logger::Log("Packet=", Logger::to_hex(rx_packet->Data(), rx_packet->NumBytes()));
+                    Logger::Log(Logger::Level::Debug, "Packet=", Logger::to_hex(rx_packet->Data(), rx_packet->NumBytes()));
 
                     // Push the ok packet
                     EnqueuePacket(std::move(ok_packet));
@@ -357,11 +357,11 @@ private:
         uint16_t tx_buffer_sz =
             tx_packet->GetData<unsigned short>(3, 2) + Start_Bytes;
 
-        Logger::Log("TX Packet Header, Type=", tx_packet->GetData<uint16_t>(0, 1));
-        Logger::Log("TX Packet Header, ID=", tx_packet->GetData<uint16_t>(1, 2));
-        Logger::Log("TX Packet Header, Length=", tx_packet->GetData<uint16_t>(3, 2));
+        Logger::Log(Logger::Level::Debug, "TX Packet Header, Type=", tx_packet->GetData<uint16_t>(0, 1));
+        Logger::Log(Logger::Level::Debug, "TX Packet Header, ID=", tx_packet->GetData<uint16_t>(1, 2));
+        Logger::Log(Logger::Level::Debug, "TX Packet Header, Length=", tx_packet->GetData<uint16_t>(3, 2));
 
-        Logger::Log("Packet=", Logger::to_hex(tx_packet->Data(), tx_packet->NumBytes()));
+        Logger::Log(Logger::Level::Debug, "Packet=", Logger::to_hex(tx_packet->Data(), tx_packet->NumBytes()));
         uart->Write(tx_buffer, tx_buffer_sz);
 
         // Check the type of packet sent

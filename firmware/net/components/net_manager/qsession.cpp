@@ -17,7 +17,7 @@
 static const uint16_t default_ttl_ms = 1000;
 
 
-static esp_pthread_cfg_t create_config(const char* name, int core_id, int stack, int prio)
+[[maybe_unused]] static esp_pthread_cfg_t create_config(const char* name, int core_id, int stack, int prio)
 {
   auto cfg = esp_pthread_get_default_config();
   cfg.thread_name = name;
