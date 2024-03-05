@@ -1,14 +1,14 @@
 #pragma once
 
-#include <cstring>
-#include <mutex>
 
 #include "nvs_flash.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
 
-#include "Vector.hh"
-#include "String.hh"
+#include <cstring>
+#include <mutex>
+#include <string>
+#include <vector>
 
 // TODO scrolling
 #define MAX_AP 10
@@ -42,7 +42,7 @@ public:
         const char* password,
         const size_t password_len);
     esp_err_t Disconnect();
-    esp_err_t ScanNetworks(Vector<String>* ssids);
+    esp_err_t ScanNetworks(std::vector<std::string>* ssids);
 
     State GetState() const;
     bool IsConnected() const;
