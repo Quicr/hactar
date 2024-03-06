@@ -57,7 +57,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t gpio_pin)
 {
     if (gpio_pin == USB_RTS_Pin)
     {
-        if ((state == Net_Upload || state == UI_Upload) && usb_stream.idle_receive)
+        if ((state == Net_Upload || state == UI_Upload) && usb_stream.bytes_ready)
         {
             state = Reset;
         }

@@ -37,11 +37,8 @@ void HandleRx(uart_stream_t* rx_stream, uint16_t num_received)
         rx_stream->rx_read = 0;
     }
 
-    if (rx_stream->from_uart->RxEventType == HAL_UART_RXEVENT_IDLE)
-    {
-        // Set the idle receive flag
-        rx_stream->idle_receive = 1;
-    }
+    // Flag to tell the handle tx to begin writing.
+    rx_stream->bytes_ready = 1;
 
     // Update the number of pending bytes
     rx_stream->pending_bytes += pending_bytes;
@@ -52,33 +49,13 @@ void HandleRx(uart_stream_t* rx_stream, uint16_t num_received)
 void HandleTx(uart_stream_t* tx_stream, enum State* state)
 {
     if ((tx_stream->pending_bytes > 0 && tx_stream->tx_free) &&
-        (tx_stream->pending_bytes >= tx_stream->rx_buffer_size ||
-            tx_stream->idle_receive ||
-            tx_stream->tx_read_overflow))
+        (tx_stream->bytes_ready))
     {
         uint16_t send_bytes = tx_stream->pending_bytes;
-
-        // Should only occur on an idle
-        if (tx_stream->idle_receive || tx_stream->tx_read_overflow)
-        {
-            tx_stream->tx_read_overflow = 0;
-        }
 
         if (send_bytes > tx_stream->tx_buffer_size - tx_stream->tx_read)
         {
             send_bytes = tx_stream->tx_buffer_size - tx_stream->tx_read;
-            tx_stream->tx_read_overflow = 1;
-        }
-        else if (send_bytes > tx_stream->pending_bytes)
-        {
-            send_bytes = tx_stream->pending_bytes;
-        }
-
-        // Technically this should be lower, but it makes it work for the ui stream...
-        // because... good question
-        if (tx_stream->idle_receive && tx_stream->pending_bytes == 0)
-        {
-            tx_stream->idle_receive = 0;
         }
 
         tx_stream->tx_free = 0;
@@ -106,12 +83,12 @@ void HandlePacketTx(uart_stream_t* tx_stream, enum State* state)
 {
     if (tx_stream->pending_bytes > 0 && tx_stream->tx_free)
     {
-        if (tx_stream->pending_bytes >= tx_stream->rx_buffer_size || tx_stream->idle_receive || tx_stream->tx_read_overflow)
+        if (tx_stream->pending_bytes >= tx_stream->rx_buffer_size || tx_stream->bytes_ready || tx_stream->tx_read_overflow)
         {
             uint16_t send_bytes = tx_stream->rx_buffer_size;
 
             // Should only occur on an idle
-            if (tx_stream->idle_receive || tx_stream->tx_read_overflow)
+            if (tx_stream->bytes_ready || tx_stream->tx_read_overflow)
             {
                 send_bytes = tx_stream->pending_bytes;
                 tx_stream->tx_read_overflow = 0;
@@ -129,9 +106,9 @@ void HandlePacketTx(uart_stream_t* tx_stream, enum State* state)
 
             // Technically this should be lower, but it makes it work for the ui stream...
             // because... good question
-            if (tx_stream->idle_receive && tx_stream->pending_bytes == 0)
+            if (tx_stream->bytes_ready && tx_stream->pending_bytes == 0)
             {
-                tx_stream->idle_receive = 0;
+                tx_stream->bytes_ready = 0;
             }
 
             tx_stream->tx_free = 0;
@@ -161,13 +138,13 @@ void HandleCommands(uart_stream_t* rx_uart_stream,
     enum State* state)
 {
     if (rx_uart_stream->pending_bytes >= rx_uart_stream->rx_buffer_size ||
-        rx_uart_stream->idle_receive)
+        rx_uart_stream->bytes_ready)
     {
         rx_uart_stream->has_received = 1;
         uint16_t send_bytes = rx_uart_stream->pending_bytes;
 
         // Should only occur on an idle and overflow
-        if (rx_uart_stream->idle_receive || rx_uart_stream->tx_read_overflow)
+        if (rx_uart_stream->bytes_ready || rx_uart_stream->tx_read_overflow)
         {
             send_bytes = rx_uart_stream->pending_bytes;
             rx_uart_stream->tx_read_overflow = 0;
@@ -186,10 +163,10 @@ void HandleCommands(uart_stream_t* rx_uart_stream,
         rx_uart_stream->pending_bytes -= send_bytes;
         rx_uart_stream->tx_read += send_bytes;
 
-        if (rx_uart_stream->idle_receive || rx_uart_stream->pending_bytes == 0)
+        if (rx_uart_stream->bytes_ready || rx_uart_stream->pending_bytes == 0)
         {
             // End of transmission
-            rx_uart_stream->idle_receive = 0;
+            rx_uart_stream->bytes_ready = 0;
             rx_uart_stream->command_complete = 1;
         }
 
@@ -199,8 +176,7 @@ void HandleCommands(uart_stream_t* rx_uart_stream,
         }
     }
 
-    if (rx_uart_stream->command_complete ||
-        (HAL_GetTick() > rx_uart_stream->last_transmission_time + COMMAND_TIMEOUT
+    if ((HAL_GetTick() > rx_uart_stream->last_transmission_time + COMMAND_TIMEOUT
             && rx_uart_stream->has_received))
     {
         // Add a null terminator to the end of the string for strcmp
@@ -253,7 +229,7 @@ void InitUartStreamParameters(uart_stream_t* uart_stream)
     uart_stream->tx_read_overflow = 0;
     uart_stream->tx_free = 1;
     uart_stream->pending_bytes = 0;
-    uart_stream->idle_receive = 0;
+    uart_stream->bytes_ready = 0;
     uart_stream->last_transmission_time = HAL_GetTick();
     uart_stream->has_received = 0;
     uart_stream->command_complete = 0;

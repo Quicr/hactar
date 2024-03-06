@@ -19,10 +19,11 @@ typedef struct _uart_stream_t
     uint16_t rx_read;
     uint16_t tx_write;
     uint16_t tx_read;
-    uint8_t tx_read_overflow;
+    uint8_t tx_read_overflow; // TODO remove
     uint8_t tx_free;
     uint16_t pending_bytes;
-    uint8_t idle_receive; // Data received without hitting half or complete buff
+    uint8_t bytes_ready; // Data received without hitting half or complete buff
+    uint8_t first_flow; // TODO remove
     uint32_t last_transmission_time;
     uint8_t has_received;
     uint8_t is_listening;
