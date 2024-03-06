@@ -34,12 +34,12 @@ static std::pair<MlsMessageType, bytes> unframe(const bytes& framed) {
   return { msg_type, msg_data };
 }
 
-PreJoinedState::PreJoinedState()
+PreJoinedState::PreJoinedState(const std::string& username)
   : identity_priv(SignaturePrivateKey::generate(cipher_suite))
   , init_priv(HPKEPrivateKey::generate(cipher_suite))
   , leaf_priv(HPKEPrivateKey::generate(cipher_suite))
 {
-  auto credential = Credential::basic(from_ascii("bob"));
+  auto credential = Credential::basic(from_ascii(username));
   leaf_node = LeafNode{ cipher_suite,
                         leaf_priv.public_key,
                         identity_priv.public_key,
@@ -116,7 +116,7 @@ ChatView::ChatView(UserInterfaceManager& manager,
     Q10Keyboard& keyboard,
     SettingManager& setting_manager)
     : ViewInterface(manager, screen, keyboard, setting_manager)
-    , pre_joined_state(PreJoinedState())
+    , pre_joined_state(PreJoinedState(*setting_manager.Username()))
 {
     redraw_messages = true;
     const auto framed = frame(MlsMessageType::key_package,
@@ -130,7 +130,6 @@ void ChatView::Update()
 
 void ChatView::AnimatedDraw()
 {
-
 }
 
 void ChatView::Draw()
@@ -152,11 +151,8 @@ void ChatView::Draw()
     // TODO move into ViewInterface?
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
-        // Shift over and draw the input that is currently in the buffer
-        std::string draw_str;
-        draw_str = usr_input.substr(last_drawn_idx);
+        ViewInterface::DrawInputString(usr_input.substr(last_drawn_idx));
         last_drawn_idx = usr_input.length();
-        ViewInterface::DrawInputString(draw_str);
     }
 
     if (manager.HasNewMessages() || redraw_messages)

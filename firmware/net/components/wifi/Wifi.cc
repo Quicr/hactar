@@ -105,7 +105,7 @@ esp_err_t Wifi::Disconnect()
     return status;
 }
 
-esp_err_t Wifi::ScanNetworks(Vector<String>* ssids)
+esp_err_t Wifi::ScanNetworks(std::vector<std::string>* ssids)
 {
     // TODO
     // wifi_scan_config_t scan_config = {
@@ -124,13 +124,7 @@ esp_err_t Wifi::ScanNetworks(Vector<String>* ssids)
     res = esp_wifi_scan_get_ap_records(&num_aps, wifi_records);
     for (uint16_t i = 0; i < num_aps; ++i)
     {
-        String str;
-        char* ch = (char*)wifi_records[i].ssid;
-        while (*ch != '\0')
-        {
-            str.push_back(*ch);
-            ch++;
-        }
+        std::string str = (char*)wifi_records[i].ssid;
         ssids->push_back(str);
     }
 
