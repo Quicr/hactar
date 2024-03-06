@@ -5,3 +5,9 @@
 [submodule "firmware/net/components/numero_uri/lib"]
 	path = firmware/net/components/numero_uri/lib
 	url = git@github.com:Quicr/numero-uri.git
+[submodule "cmd/moctar/dependencies/libquicr"]
+	path = cmd/moctar/dependencies/libquicr
+	url = https://github.com/quicr/libquicr
+[submodule "cmd/moctar/dependencies/mlspp"]
+	path = cmd/moctar/dependencies/mlspp
+	url = https://github.com/cisco/mlspp
