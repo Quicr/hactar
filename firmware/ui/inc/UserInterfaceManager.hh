@@ -1,7 +1,5 @@
 #pragma once
 
-#include <map>
-
 #include "stm32.h"
 
 #include "EEPROM.hh"
@@ -15,7 +13,11 @@
 
 #include "QChat.hh"
 
-#include "Vector.hh"
+#include <deque>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #define VIEW_ADDRESS 0x00
 #define FIRST_BOOT_STARTED 0x01
@@ -97,7 +99,7 @@ private:
     ViewInterface* view;
     std::vector<std::string> received_messages;
     bool has_new_messages;
-    Vector<qchat::Ascii*> ascii_messages;
+    std::deque<qchat::Ascii> ascii_messages;
     bool force_redraw;
     uint32_t current_time;
 

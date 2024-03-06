@@ -31,7 +31,7 @@ struct PreJoinedState {
   KeyPackage key_package;
   bytes key_package_data;
 
-  PreJoinedState();
+  PreJoinedState(const std::string& username);
   MLSState create();
   MLSState join(const bytes& welcome_data);
 };
