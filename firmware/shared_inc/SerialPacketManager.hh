@@ -1,14 +1,14 @@
 #pragma once
 
-#include <memory>
-#include <map>
-
 #include "SerialInterface.hh"
 #include "SerialPacket.hh"
 #include "RingBuffer.hh"
 #include "logger.hh"
 
-#include "Vector.hh"
+#include <deque>
+#include <map>
+#include <memory>
+#include <vector>
 
 #define Front_Bytes 6U
 #define Start_Bytes Front_Bytes - 1U
@@ -98,7 +98,7 @@ public:
         return rx_packets.size();
     }
 
-    Vector<std::unique_ptr<SerialPacket>>& GetRxPackets()
+    std::deque<std::unique_ptr<SerialPacket>>& GetRxPackets()
     {
         return rx_packets;
     }
@@ -129,14 +129,6 @@ public:
     {
         rx_packets.push_back(std::move(packet));
     }
-
-    // DEPRECATED
-    void DestroyRxPacket(unsigned int idx)
-    {
-        // delete rx_packets[idx];
-        rx_packets.erase(idx);
-    }
-
 
 private:
     SerialStatus ReadSerial(const unsigned long current_time)
@@ -348,7 +340,7 @@ private:
             tx_buffer = nullptr;
         }
 
-        std::unique_ptr<SerialPacket> tx_packet = std::move(tx_packets.front());
+        auto&& tx_packet = std::move(tx_packets.front());
 
         // Get the buffer, with a eristart byte of 0xFF
         unsigned char* tx_buffer = tx_packet->Buffer();
@@ -385,24 +377,22 @@ private:
         }
 
         // Remove the packet from tx_packets
-        tx_packets.erase(0);
+        tx_packets.pop_front();
 
         return SerialStatus::OK;
     }
 
     SerialInterface* uart;
 
-    // THINK should I have a map of vector of packets?
-    // THINK linked list?
     // rx
-    Vector<std::unique_ptr<SerialPacket>> rx_packets;
+    std::deque<std::unique_ptr<SerialPacket>> rx_packets;
     std::unique_ptr<SerialPacket> rx_packet;
     unsigned long rx_packet_timeout;
     SerialStatus rx_status;
 
     // tx
     byte_t* tx_buffer;
-    Vector<std::unique_ptr<SerialPacket>> tx_packets;
+    std::deque<std::unique_ptr<SerialPacket>> tx_packets;
     std::map<uint16_t, std::unique_ptr<SerialPacket>> tx_pending_packets; // TODO max packets
     SerialStatus tx_status;
 
