@@ -4,12 +4,14 @@
 #include "freertos/task.h"
 
 #include "SerialPacket.hh"
-#include "Vector.hh"
-#include "String.hh"
 #include "QChat.hh"
 
 #include <transport/transport.h>
 #include "esp_log.h"
+
+#include <cstdint>
+#include <vector>
+#include <string>
 
 typedef struct
 {
@@ -34,7 +36,6 @@ void NetManager::HandleSerial(void* param)
     // TODO add a mutex
     NetManager* self = (NetManager*)param;
 
-    // Vector<std::unique_ptr<Packet>>* rx_packets = nullptr;
     while (true)
     {
         // Delay at the start
@@ -44,7 +45,7 @@ void NetManager::HandleSerial(void* param)
 
         if (!self->ui_layer->HasRxPackets()) continue;
 
-        const Vector<std::unique_ptr<SerialPacket>>& rx_packets = self->ui_layer->GetRxPackets();
+        auto& rx_packets = self->ui_layer->GetRxPackets();
         uint32_t timeout = (xTaskGetTickCount() / portTICK_PERIOD_MS) + 10000;
 
         Logger::Log(Logger::Level::Info, "Packet available");
@@ -57,21 +58,19 @@ void NetManager::HandleSerial(void* param)
             if (packet_type == SerialPacket::Types::Message)
             {
                 Logger::Log(Logger::Level::Info, "NetManager: Handle for Packet:Type:Message");
+
                 // skip the packetId and go to the next part of the packet data
                 // 6 + 8 = 14, skip to 14,
                 // Mesages have sub-types whuch is encoded in the first byte
                 uint8_t sub_message_type = rx_packet->GetData<uint8_t>(5, 1);
-                    // qchat message handler
-                    //handle_qchat_message(sub_message_type, rx_packet);
-                    self->HandleQChatMessages(sub_message_type, rx_packet, 6);
-
+                self->HandleQChatMessages(sub_message_type, rx_packet, 6);
             }
             else if (packet_type == SerialPacket::Types::Command)
             {
                 self->HandleSerialCommands(rx_packet);
             }
 
-            self->ui_layer->DestroyRxPacket(0);
+            rx_packets.pop_front();
         }
     }
 }
@@ -87,7 +86,7 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
 
     if (quicr_session == nullptr)
     {
-        ESP_LOGE(TAG, "Quicr session is null");
+        Logger::Log(Logger::Level::Error, "Quicr session is null");
         return;
     }
 
@@ -318,7 +317,7 @@ void NetManager::HandleSerialCommands(const std::unique_ptr<SerialPacket>& rx_pa
 void NetManager::GetSSIDsCommand()
 {
     // Get the ssids
-    Vector<String> ssids;
+    std::vector<std::string> ssids;
     esp_err_t res = Wifi::GetInstance()->ScanNetworks(&ssids);
 
     // ERROR Here for some reason...
@@ -340,7 +339,7 @@ void NetManager::GetSSIDsCommand()
     // Put ssids into a vector of packets and enqueue them
     for (uint16_t i = 0; i < ssids.size(); ++i)
     {
-        String& ssid = ssids[i];
+        std::string& ssid = ssids[i];
         if (ssid.length() == 0) continue;
         Logger::Log(Logger::Level::Info, i, "length -", ssid.length());
 
@@ -378,12 +377,11 @@ void NetManager::ConnectToWifiCommand(const std::unique_ptr<SerialPacket>& packe
     Logger::Log(Logger::Level::Info, "SSID length -", ssid_len);
 
     // Build the ssid
-    String ssid;
+    std::string ssid;
     unsigned short offset = 8;
-    for (uint16_t i = 0; i < ssid_len; ++i)
+    for (uint16_t i = 0; i < ssid_len; ++i, offset += 1)
     {
         ssid += packet->GetData<char>(offset, 1);
-        offset += 1;
     }
     Logger::Log(Logger::Level::Info, "SSID -", ssid.c_str());
 
@@ -391,11 +389,10 @@ void NetManager::ConnectToWifiCommand(const std::unique_ptr<SerialPacket>& packe
     offset += 2;
     Logger::Log(Logger::Level::Info, "Password length -", ssid_password_len);
 
-    String ssid_password;
-    for (uint16_t j = 0; j < ssid_password_len; ++j)
+    std::string ssid_password;
+    for (uint16_t j = 0; j < ssid_password_len; ++j, offset += 1)
     {
         ssid_password += packet->GetData<char>(offset, 1);
-        offset += 1;
     }
     Logger::Log(Logger::Level::Info, "SSID Password -", ssid_password.c_str());
 

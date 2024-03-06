@@ -1,5 +1,4 @@
 #include "UserInterfaceManager.hh"
-#include <string>
 #include "FirstBootView.hh"
 #include "LoginView.hh"
 #include "ChatView.hh"
@@ -9,6 +8,10 @@
 #include "QChat.hh"
 
 #include "main.h"
+
+#include <string>
+#include <vector>
+
 extern UART_HandleTypeDef huart1;
 
 // Init the static var
@@ -182,16 +185,9 @@ void UserInterfaceManager::HandleIncomingPackets()
     if (!net_layer.HasRxPackets())
         return;
 
-    // Get the packets
-    const Vector<std::unique_ptr<SerialPacket>> &packets = net_layer.GetRxPackets();
-
-    // Handle incoming packets
-    while (packets.size() > 0)
+    auto& packets = net_layer.GetRxPackets();
+    for (auto& rx_packet : packets)
     {
-        // Get the type
-        std::unique_ptr<SerialPacket> rx_packet = std::move(packets[0]);
-        net_layer.DestroyRxPacket(0);
-
         uint8_t p_type = rx_packet->GetData<uint8_t>(0, 1);
         switch (p_type)
         {
@@ -202,34 +198,10 @@ void UserInterfaceManager::HandleIncomingPackets()
 
             if (ascii_messages.size() > 0)
             {
-                // HACK remove later
-                qchat::Ascii *ascii = ascii_messages[0];
-
-                received_messages.push_back(std::move(ascii->message));
-                has_new_messages = true;
-
-                // HACK remove later
-                delete ascii;
-                ascii_messages.erase(0);
+                auto&& ascii = ascii_messages.front();
+                PushMessage(std::move(ascii.message));
+                ascii_messages.pop_front();
             }
-
-            // Write a message to the screen
-            // Message in_msg;
-            // // TODO The message should be parsed some how here.
-            // in_msg.Timestamp("00:00");
-            // in_msg.Sender("Server");
-
-            // std::string body;
-
-            // // Skip the type and length, add the whole message
-            // uint16_t packet_len = rx_packet->GetData(14, 10);
-            // for (uint32_t j = 0; j < packet_len; ++j)
-            // {
-            //     body.push_back((char)rx_packet->GetData(24 + (j * 8), 8));
-            // }
-
-            // in_msg.Body(body);
-            // received_messages.push_back(in_msg);
             break;
         }
         case (SerialPacket::Types::Setting):
@@ -289,12 +261,8 @@ void UserInterfaceManager::HandleIncomingPackets()
             break;
         }
         }
-
-        // delete rx_packet;
-        // packets.erase(0);
-
-        // net_layer.DestroyRxPacket(0);
     }
+    packets.clear();
 }
 
 uint32_t UserInterfaceManager::GetTxStatusColour() const
@@ -519,14 +487,14 @@ void UserInterfaceManager::HandleMessagePacket(
         case qchat::MessageTypes::Ascii:
         {
             // Make a new the ascii message pointer
-            qchat::Ascii *ascii = new qchat::Ascii();
+            qchat::Ascii ascii;
 
             // message uri
             uint32_t uri_len = packet->GetData<uint32_t>(6, 4);
             uint32_t offset = 10;
             for (uint16_t i = 0; i < uri_len; ++i)
             {
-                ascii->message_uri.push_back(
+                ascii.message_uri.push_back(
                     packet->GetData<char>(offset, 1));
                 offset += 1;
             }
@@ -537,22 +505,13 @@ void UserInterfaceManager::HandleMessagePacket(
 
             for (uint16_t i = 0; i < msg_len; ++i)
             {
-                ascii->message.push_back(static_cast<char>(
+                ascii.message.push_back(static_cast<char>(
                     packet->GetData<uint32_t>(offset, 1)));
                 offset += 1;
             }
 
-            // Decode the packet
-            // const bool res = qchat::Codec::decode(*ascii, packet, 32);
-
-            // if (!res)
-            // {
-            //     // TODO some error state
-            //     return;
-            // }
-
             // Do something with the ascii message
-            ascii_messages.push_back(ascii);
+            ascii_messages.push_back(std::move(ascii));
             break;
         }
         case (qchat::MessageTypes::WatchOk):
