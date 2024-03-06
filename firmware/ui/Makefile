@@ -39,8 +39,8 @@ BUILD_DIR = ./build
 #######################################
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
-PORT = /dev/cu.usbserial-10
-BAUD = 115200
+PORT = /dev/ttyUSB0
+BAUD = 114200
 CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
 CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
 

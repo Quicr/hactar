@@ -448,106 +448,108 @@ class stm32_flasher:
             returns self.ACK if successful
         """
 
-        Max_Num_Bytes = 256
+        try:
 
-        # Send the address and the checksum
-        addr = address
-        file_addr = 0
+            Max_Num_Bytes = 256
 
-        percent_flashed = 0
+            # Send the address and the checksum
+            addr = address
+            file_addr = 0
 
-        total_bytes = len(data)
-        self.uart.timeout = 5
+            percent_flashed = 0
 
-        print(f"Write to Memory: {BB}STARTED{NW}")
-        print(f"Address: {BW}{address:04x}{NW}")
-        print(f"Byte Stream Size: {BW}{total_bytes}{NW}")
+            total_bytes = len(data)
+            self.uart.timeout = 5
 
-        while file_addr < total_bytes:
-            percent_flashed = (file_addr / total_bytes) * 100
-            print(f"Flashing: {BG}{percent_flashed:2.2f}{NW}%", end="\r")
+            print(f"Write to Memory: {BB}STARTED{NW}")
+            print(f"Address: {BW}{address:04x}{NW}")
+            print(f"Byte Stream Size: {BW}{total_bytes}{NW}")
 
-            reply = uart_utils.WriteByteWaitForACK(
-                self.uart, self.Commands.write_memory, 1)
-            if (reply == self.NACK):
-                raise Exception("NACK was received after sending write "
-                                "command")
-            elif (reply == -1):
-                raise Exception("No reply was received after sending write "
-                                "command")
+            while file_addr < total_bytes:
+                percent_flashed = (file_addr / total_bytes) * 100
+                print(f"Flashing: {BG}{percent_flashed:2.2f}{NW}%", end="\r")
 
-            checksum = self.CalculateChecksum(addr.to_bytes(4, "big"))
-            write_address_bytes = addr.to_bytes(4, "big") + checksum
-            reply = uart_utils.WriteBytesWaitForACK(self.uart,
-                                                    write_address_bytes, 1)
+                reply = uart_utils.WriteByteWaitForACK(
+                    self.uart, self.Commands.write_memory, 1)
+                if (reply == self.NACK):
+                    raise Exception("NACK was received after sending write "
+                                    "command")
+                elif (reply == -1):
+                    raise Exception("No reply was received after sending write "
+                                    "command")
 
-            if (reply == self.NACK):
-                print("")
-                for b in write_address_bytes:
-                    print(b)
-                raise Exception("NACK was received after sending write"
-                                f"address bytes command for address"
-                                f"{addr:04x}")
-            elif (reply == -1):
-                raise Exception("No reply was received after sending write"
-                                f"address bytes command for address"
-                                f"{addr:04x}")
+                checksum = self.CalculateChecksum(addr.to_bytes(4, "big"))
+                write_address_bytes = addr.to_bytes(4, "big") + checksum
+                reply = uart_utils.WriteBytesWaitForACK(self.uart,
+                                                        write_address_bytes, 1)
 
-            # Get the contents of the binary
-            chunk = data[file_addr:file_addr+Max_Num_Bytes]
-            # Chunk size before extra bytes are appended
-            chunk_size = len(chunk)
+                if (reply == self.NACK):
+                    print("")
+                    for b in write_address_bytes:
+                        print(b)
+                    raise Exception("NACK was received after sending write"
+                                    f"address bytes command for address"
+                                    f"{addr:04x}")
+                elif (reply == -1):
+                    raise Exception("No reply was received after sending write"
+                                    f"address bytes command for address"
+                                    f"{addr:04x}")
 
-            # Pad the chunk to be a multiple of 4 bytes
-            while len(chunk) % 4 != 0:
-                chunk += bytes([0xFF])
+                # Get the contents of the binary
+                chunk = data[file_addr:file_addr+Max_Num_Bytes]
+                # Chunk size before extra bytes are appended
+                chunk_size = len(chunk)
 
-            # Front append the number of bytes to be received. 0 start
-            chunk = (len(chunk) - 1).to_bytes(1, "big") + chunk
+                # Pad the chunk to be a multiple of 4 bytes
+                while len(chunk) % 4 != 0:
+                    chunk += bytes([0xFF])
 
-            # Add the checksum
-            chunk = chunk + self.CalculateChecksum(chunk)
+                # Front append the number of bytes to be received. 0 start
+                chunk = (len(chunk) - 1).to_bytes(1, "big") + chunk
 
-            # Write the chunk to the chip
-            reply = uart_utils.WriteBytesWaitForACK(self.uart, chunk, 1)
-            if (reply == self.NACK):
-                raise Exception(f"NACK was received while writing to "
-                                f"addr: {addr}")
-            elif (reply == -1):
-                raise Exception(f"No reply was received while writing to "
-                                f"addr: {addr}")
+                # Add the checksum
+                chunk = chunk + self.CalculateChecksum(chunk)
 
-            # Shift over by the amount of byte stream bytes were sent
-            file_addr += chunk_size
-            addr += chunk_size
+                # Write the chunk to the chip
+                reply = uart_utils.WriteBytesWaitForACK(self.uart, chunk, 1)
+                if (reply == self.NACK):
+                    raise Exception(f"NACK was received while writing to "
+                                    f"addr: {addr}")
+                elif (reply == -1):
+                    raise Exception(f"No reply was received while writing to "
+                                    f"addr: {addr}")
 
-        # Don't need to calculate it here it finished
-        print(f"Flashing: {BG}100.00{NW}%")
+                # Shift over by the amount of byte stream bytes were sent
+                file_addr += chunk_size
+                addr += chunk_size
 
-        # Verify the written memory by reading the size of the file
-        addr = address
-        file_addr = 0
+            # Don't need to calculate it here it finished
+            print(f"Flashing: {BG}100.00{NW}%")
 
-        while file_addr < total_bytes:
-            percent_verified = (file_addr / total_bytes)*100
-            print(f"Verifying write: {BG}{percent_verified:2.2f}{NW}"
-                  f"% verified", end="\r")
+            # Verify the written memory by reading the size of the file
+            addr = address
+            file_addr = 0
 
-            chunk = data[file_addr:file_addr+Max_Num_Bytes]
-            mem = bytes(self.SendReadMemory(addr.to_bytes(4, "big"),
-                        len(chunk)))
+            while file_addr < total_bytes:
+                percent_verified = (file_addr / total_bytes)*100
+                print(f"Verifying write: {BG}{percent_verified:2.2f}{NW}"
+                    f"% verified", end="\r")
 
-            if chunk != mem:
-                raise Exception(
-                    f"Failed to verify at memory address {hex(addr)}")
+                chunk = data[file_addr:file_addr+Max_Num_Bytes]
+                mem = bytes(self.SendReadMemory(addr.to_bytes(4, "big"),
+                            len(chunk)))
 
-            addr += len(mem)
-            file_addr += len(chunk)
+                if chunk != mem:
+                    raise Exception(
+                        f"Failed to verify at memory address {hex(addr)}")
 
-        print(f"Verifying write: {BG}100.00{NW}% verified")
-        print(f"Write: {BG}COMPLETE{NW}")
+                addr += len(mem)
+                file_addr += len(chunk)
 
-        return self.ACK
+            print(f"Verifying write: {BG}100.00{NW}% verified")
+            print(f"Write: {BG}COMPLETE{NW}")
+
+            return self.ACK
 
     def ProgramSTM(self, chip: str, binary_path: str):
         # Determine which chip will be flashed
