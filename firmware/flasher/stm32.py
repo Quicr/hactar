@@ -47,10 +47,17 @@ class stm32_flasher:
         self.available_commands = None #TODO
         self.use_exception = True
 
+        self.write_started = False
         self.last_write_addr = 0
         self.last_data_addr = 0
         self.write_data = None
-        self.percent_flashed = 0
+        self.last_verify_addr = 0
+        self.last_verify_data_addr = 0
+
+        self.erase_started = False
+        self.sectors_to_delete = []
+        self.sectors_deleted = []
+
 
         config_path = f"{os.path.dirname(os.path.abspath(sys.argv[0]))}/"
         config_path += "stm32_configurations.json"
@@ -266,61 +273,74 @@ class stm32_flasher:
 
         return recv_data
 
-    def SendExtendedEraseMemory(self, sectors: [int],
+    def SendExtendedEraseMemory(self, sectors_to_delete: [int],
                                 special: bool,
-                                fast_verify: bool = True,
-                                retry_num: int = 5):
+                                fast_verify: bool,
+                                recover: bool):
         """ Sends the Erase memory command and it's compliment.
             Command = 0x44
             Compliment = 0xBB = 0x44 ^ 0xFF
 
-            returns self.ACK/self.NACK/0
+            returns true
         """
-        # TODO recoverable
+        if recover:
+            if (not self.erase_started):
+                self.sectors_to_delete = sectors_to_delete
+                self.sectors_deleted = []
+                self.erase_started = True
+        else:
+                self.sectors_to_delete = sectors_to_delete
+                self.sectors_deleted = []
+                self.erase_started = True
+
         self.CheckInit()
 
-        reply = uart_utils.WriteByteWaitForACK(
-            self.uart, self.Commands.extended_erase, 5)
-        if (reply == self.NACK):
-            raise Exception("NACK was received after sending erase command")
-        elif (reply == self.NO_REPLY):
-            raise Exception("No reply was received after sending erase"
-                            " command")
-
-        # Number of sectors starts at 0x00 0x00. So 0x00 0x00 means
-        # delete 1 sector
-        # An exception is thrown if the number is bigger than 2 bytes
-        # TODO delete one sector at a time and report back with an ACK
-        num_sectors = [(len(sectors) - 1).to_bytes(2, "big")]
-
-        # Turn the sectors received into two byte elements
-        byte_sectors = [x.to_bytes(2, "big") for x in sectors]
-
-        # Join the num sectors and the byte sectors into one list
-        data = b''.join(num_sectors + byte_sectors)
-
-        # Calculate the checksum
-        checksum = [self.CalculateChecksum(data)]
-
-        # Join all the data together
-        data = b''.join(num_sectors + byte_sectors + checksum)
-
-        print(f"Erase: Sectors {NY}{sectors}{NW}")
         print(f"Erase: {BB}STARTED{NW}")
+        print(f"Erase  {BB}SECTORS{NW} {NY}{self.sectors_to_delete}{NW}")
+        print(f"Erased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}", end="")
+        while self.sectors_to_delete:
+            reply = uart_utils.WriteByteWaitForACK(
+                self.uart, self.Commands.extended_erase, 1)
 
-        # TODO send 1 erase at a time
-        # Give more time to reply with the deleted sectors
-        self.uart.timeout = 30
-        reply = uart_utils.WriteBytesWaitForACK(self.uart, data, 1)
-        # Revert the change back to two seconds
-        self.uart.timeout = 2
-        self.HandleReply(reply, "Erase memory", "Failed to Erase", False)
+            self.HandleReply(reply, "\nExtended Erase", "Extended erase failed")
+
+            # Number of sectors starts at 0x00 0x00. So 0x00 0x00 means
+            # delete 1 sector
+            # An exception is thrown if the number is bigger than 2 bytes
+            num_sectors = [int(0).to_bytes(2, "big")]
+
+            # Turn the sectors received into two byte elements
+            sector_in_bytes = [self.sectors_to_delete[0].to_bytes(2, "big")]
+
+            # Join the num sectors and the byte sectors into one list
+            data = b''.join(num_sectors + sector_in_bytes)
+
+            # Calculate the checksum
+            checksum = [self.CalculateChecksum(data)]
+
+            # Join all the data together
+            data = b''.join(num_sectors + sector_in_bytes + checksum)
+
+            print(f"\rErased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}", end="")
+
+            # TODO send 1 erase at a time
+            # Give more time to reply with the deleted sectors
+            self.uart.timeout = 5
+            reply = uart_utils.WriteBytesWaitForACK(self.uart, data, 1)
+            # Revert the change back to two seconds
+            self.uart.timeout = 2
+            self.HandleReply(reply, "\nErase memory", "Failed to Erase", False)
+
+            # Update the number of deleted sectors and remove the deleted sector
+            self.sectors_deleted.append(self.sectors_to_delete.pop(0))
+
+        print(f"\rErased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}")
 
         if (fast_verify):
-            return self.FastEraseVerify(sectors)
+            return self.FastEraseVerify(self.sectors_deleted)
         else:
             total_bytes = 0
-            for sector in sectors:
+            for sector in self.sectors_deleted:
                 total_bytes += self.chip_config["sectors"][sector]["size"]
                 print(total_bytes)
 
@@ -331,11 +351,12 @@ class stm32_flasher:
 
                 if (verify_status["failed"]):
                     print(f"\nVerifying Erase: {BR}Failed to verify address "
-                          f"{hex(verify_status['addr'])}{NW}")
+                        f"{hex(verify_status['addr'])}{NW}")
                     return False
 
             print(f"Verifying erase: {BG}100{NW}% verified")
 
+        self.erase_started = False
         return True
 
     def FullVerify(self, data:bytes):
@@ -442,11 +463,11 @@ class stm32_flasher:
                                                 num_retry)
 
 
-        self.HandleReply(reply, f"Jump to address {BBL}{hex(address)}{BW}",
+        self.HandleReply(reply, f"Jump to address {BB}{hex(address)}{BW}",
             f"Failed to jump to address {hex(address)}", True)
 
     def SendWriteMemory(self, data: bytes, address: int,
-            recover: bool, num_retry: int = 5):
+            recover: bool):
         """ Sends the Write memory command and it's compliment.
             Then writes the address bytes and its checksum
             Then writes the entire data stream
@@ -458,15 +479,24 @@ class stm32_flasher:
 
         Max_Num_Bytes = 256
 
-        # Check if this function has been ran before by checking the write_data
-        if (self.write_data == None and recover):
-            raise Exception("Send write memory has not ran before, cannot run with the recover flag initially")
 
-        if (not recover):
-            self.last_write_addr = address
-            self.last_data_addr = 0
-            self.write_data = data
-            self.percent_flashed = 0
+        # Check if this function has been ran before by checking the write_data
+        # Also allow a first run in the case where its a new flash
+        if recover:
+            if (not self.write_started):
+                self.last_write_addr = address
+                self.last_data_addr = 0
+                self.write_data = data
+                self.write_started = True
+                self.last_verify_addr = address
+                self.last_verify_data_addr = 0
+        else:
+                self.last_write_addr = address
+                self.last_data_addr = 0
+                self.write_data = data
+                self.write_started = True
+                self.last_verify_addr = address
+                self.last_verify_data_addr = 0
 
         total_bytes = len(self.write_data)
 
@@ -480,8 +510,8 @@ class stm32_flasher:
         self.uart.timeout = 1
 
         while self.last_data_addr < total_bytes:
-            self.percent_flashed = (self.last_data_addr / total_bytes) * 100
-            print(f"\rFlashing: {BG}{self.percent_flashed:2.2f}{NW}%", end="")
+            percent_flashed = (self.last_data_addr / total_bytes) * 100
+            print(f"\rFlashing: {BG}{percent_flashed:2.2f}{NW}%", end="")
 
             reply = uart_utils.WriteByteWaitForACK(
                 self.uart, self.Commands.write_memory, 1)
@@ -520,51 +550,27 @@ class stm32_flasher:
             self.last_write_addr += chunk_size
 
         # Don't need to calculate it here it finished
-        print(f"Flashing: {BG}100.00{NW}%")
+        print(f"\rFlashing: {BG}100.00{NW}%")
 
-        # Verify the written memory by reading the size of the file
-        # TODO move into a different function
-        self.last_write_addr = address
-        self.last_data_addr = 0
+        # TODO verify function?
+        while self.last_verify_data_addr < total_bytes:
+            percent_verified = (self.last_verify_data_addr / total_bytes)*100
+            print(f"\rVerifying write: {BG}{percent_verified:2.2f}{NW}"
+                f"% verified", end="")
 
-        while self.last_data_addr < total_bytes:
-            percent_verified = (self.last_data_addr / total_bytes)*100
-            print(f"Verifying write: {BG}{percent_verified:2.2f}{NW}"
-                f"% verified", end="\r")
-
-            chunk = self.write_data[self.last_data_addr:self.last_data_addr+Max_Num_Bytes]
-            mem = bytes(self.SendReadMemory(self.last_write_addr.to_bytes(4, "big"),
+            chunk = self.write_data[self.last_verify_data_addr:self.last_verify_data_addr+Max_Num_Bytes]
+            mem = bytes(self.SendReadMemory(self.last_verify_addr.to_bytes(4, "big"),
                         len(chunk)))
 
             if chunk != mem:
                 raise Exception(
-                    f"Failed to verify at memory address {hex(self.last_write_addr)}")
+                    f"\nFailed to verify at memory address {hex(self.last_verify_addr)}")
 
-            self.last_write_addr += len(mem)
-            self.last_data_addr += len(chunk)
+            self.last_verify_addr += len(mem)
+            self.last_verify_data_addr += len(chunk)
 
-        print(f"Verifying write: {BG}100.00{NW}% verified")
+        print(f"\rVerifying write: {BG}100.00{NW}% verified")
         print(f"Write: {BG}COMPLETE{NW}")
 
-        return True
-
-    # TODO move this out?
-    def ProgramHactarSTM(self, hactar_chip: str, binary_path: str):
-        # Determine which chip will be flashed
-        self.chip_config_set = hactar_chip
-
-        uart_utils.FlashSelection(self.uart, hactar_chip)
-
-        firmware = open(binary_path, "rb").read()
-
-        # Get the size of memory that we need to erase
-        sectors = self.GetSectorsForFirmware(len(firmware))
-
-        self.SendExtendedEraseMemory(sectors, False)
-
-        self.SendWriteMemory(firmware, self.chip_config["usr_start_addr"], False, 5)
-
-        if (chip == "mgmt"):
-            self.SendGo(self.chip_config["usr_start_addr"])
-
+        self.write_started = False
         return True
