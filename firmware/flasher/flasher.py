@@ -4,7 +4,9 @@ import glob
 import time
 import serial
 import serial.tools.list_ports
+import uart_utils
 import stm32
+import hactar_stm32
 import esp32
 from ansi_colours import BB, BG, BR, BW, NW
 
@@ -40,12 +42,12 @@ def SerialPorts(uart_config):
 
             s.close()
 
-
             if (resp == HELLO_RES):
                 result.append(port)
         except (OSError, serial.SerialException):
             pass
     return result
+
 
 def main():
     try:
@@ -96,6 +98,7 @@ def main():
         for port in ports:
             programmed = False
             while not programmed:
+                programmed = True
                 try:
                     uart = serial.Serial(
                         port=port,
@@ -103,20 +106,20 @@ def main():
                     )
 
                     print(f"Opened port: {BB}{port}{NW} "
-                        f"baudrate: {BG}{args.baud}{NW}")
+                          f"baudrate: {BG}{args.baud}{NW}")
 
                     # TODO use oop inheritance
                     if ("mgmt" in args.chip):
                         print(f"{BW}Starting MGMT Upload{NW}")
                         stm32_flasher = stm32.stm32_flasher(uart)
-                        programmed = stm32_flasher.ProgramSTM(args.chip,
-                            args.binary_path)
+                        programmed = stm32_flasher.ProgramHactarSTM(args.chip,
+                                                                    args.binary_path)
 
                     if ("ui" in args.chip):
                         print(f"{BW}Starting UI Upload{NW}")
                         stm32_flasher = stm32.stm32_flasher(uart)
-                        programmed = stm32_flasher.ProgramSTM(args.chip,
-                            args.binary_path)
+                        programmed = ProgramHactarSTM(stm32_flasher, args.chip,
+                                                      args.binary_path, True)
 
                     if ("net" in args.chip):
                         print(f"{BW}Starting Net Upload{NW}")
@@ -132,6 +135,43 @@ def main():
             # End while
     except Exception as ex:
         print(f"{BR}[Error]{NW} {ex}")
+
+
+def ProgramHactarSTM(flasher, chip, binary_path, recover):
+    uart_utils.FlashSelection(flasher.uart, chip)
+
+    # Get the firmware
+    firmware = open(binary_path, "rb").read()
+
+    # Get the size of memory that we need to erase
+    sectors = flasher.GetSectorsForFirmware(len(firmware))
+
+    flasher.SendExtendedEraseMemory(sectors, False)
+
+    finished_writing = False
+    in_recovery = False
+    while (not finished_writing):
+        try:
+            print("Try to write")
+            # TODO add a function for getting the start of the address?
+            finished_writing = flasher.SendWriteMemory(
+                firmware, flasher.chip_config["usr_start_addr"], in_recovery, 5)
+        except Exception as ex:
+            if (not recover):
+                raise ex
+            print(f"Flashing: {BB}Recovery mode{NW}")
+            flasher.uart.close()
+            flasher.uart.timeout = 5
+            flasher.uart.parity = serial.PARITY_NONE
+            time.sleep(4)
+            flasher.uart.open()
+            uart_utils.FlashSelection(flasher.uart, chip)
+            in_recovery = True
+
+    if (chip == "mgmt"):
+        flasher.SendGo(flasher.chip_config["usr_start_addr"])
+
+    return True
 
 
 main()
