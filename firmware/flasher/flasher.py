@@ -112,8 +112,9 @@ def main():
                     if ("mgmt" in args.chip):
                         print(f"{BW}Starting MGMT Upload{NW}")
                         stm32_flasher = stm32.stm32_flasher(uart)
-                        programmed = stm32_flasher.ProgramHactarSTM(args.chip,
-                                                                    args.binary_path)
+                        programmed = ProgramHactarSTM(stm32_flasher,
+                                                      args.chip,
+                                                      args.binary_path, False)
 
                     if ("ui" in args.chip):
                         print(f"{BW}Starting UI Upload{NW}")
@@ -137,6 +138,51 @@ def main():
         print(f"{BR}[Error]{NW} {ex}")
 
 
+def RecoverFlashSelection(flasher, chip, recover):
+    trying_to_select = True
+    while trying_to_select:
+        try:
+            flasher.uart.close()
+            flasher.uart.timeout = 2
+            flasher.uart.parity = serial.PARITY_NONE
+            time.sleep(4)
+            flasher.uart.open()
+            uart_utils.FlashSelection(flasher.uart, chip)
+            trying_to_select = False
+        except Exception as ex:
+            if not recover:
+                raise ex
+
+
+def RecoverableEraseMemory(flasher, sectors, chip, recover):
+    finished_erasing = False
+    while (not finished_erasing):
+        try:
+            finished_erasing = flasher.SendExtendedEraseMemory(
+                sectors, False, True, True)
+        except Exception as ex:
+            if (not recover):
+                raise ex
+            print(ex)
+            print(f"Erase: {BB}Recovery mode{NW}")
+            RecoverFlashSelection(flasher, chip, recover)
+
+
+def RecoverableFlashMemory(flasher, firmware, chip, recover):
+    finished_writing = False
+    while (not finished_writing):
+        try:
+            # TODO add a function for getting the start of the address?
+            finished_writing = flasher.SendWriteMemory(
+                firmware, flasher.chip_config["usr_start_addr"], recover)
+        except Exception as ex:
+            if (not recover):
+                raise ex
+            print(ex)
+            print(f"Flashing: {BB}Recovery mode{NW}")
+            RecoverFlashSelection(flasher, chip, recover)
+
+
 def ProgramHactarSTM(flasher, chip, binary_path, recover):
     uart_utils.FlashSelection(flasher.uart, chip)
 
@@ -146,27 +192,9 @@ def ProgramHactarSTM(flasher, chip, binary_path, recover):
     # Get the size of memory that we need to erase
     sectors = flasher.GetSectorsForFirmware(len(firmware))
 
-    flasher.SendExtendedEraseMemory(sectors, False)
+    RecoverableEraseMemory(flasher, sectors, chip, recover)
 
-    finished_writing = False
-    in_recovery = False
-    while (not finished_writing):
-        try:
-            print("Try to write")
-            # TODO add a function for getting the start of the address?
-            finished_writing = flasher.SendWriteMemory(
-                firmware, flasher.chip_config["usr_start_addr"], in_recovery, 5)
-        except Exception as ex:
-            if (not recover):
-                raise ex
-            print(f"Flashing: {BB}Recovery mode{NW}")
-            flasher.uart.close()
-            flasher.uart.timeout = 5
-            flasher.uart.parity = serial.PARITY_NONE
-            time.sleep(4)
-            flasher.uart.open()
-            uart_utils.FlashSelection(flasher.uart, chip)
-            in_recovery = True
+    RecoverableFlashMemory(flasher, firmware, chip, recover)
 
     if (chip == "mgmt"):
         flasher.SendGo(flasher.chip_config["usr_start_addr"])
