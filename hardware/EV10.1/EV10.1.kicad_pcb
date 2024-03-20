@@ -852,7 +852,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "90"
+		(property "JLCPCB Rotation Offset" "-90"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -8833,7 +8833,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Position Offset" "2.66,1.8"
+		(property "JLCPCB Position Offset" "2.59,1.73"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -9303,6 +9303,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "1b1a7da4-da11-4ccd-b964-0c98714f027b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB Rotation Offset" "180"
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "df9f47df-6c57-45c0-88fe-8309a290bb9d")
 			(effects
 				(font
 					(size 1 1)
@@ -11087,6 +11100,19 @@
 				)
 			)
 		)
+		(property "JLCPCB Position Offset" "0, 1.0"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "202b3423-8bcf-4cab-a333-ac356b53ff3a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(path "/dff417fd-fd82-43b9-afa6-701f6438534f")
 		(sheetname "Root")
 		(sheetfile "EV10.1.kicad_sch")
@@ -11381,13 +11407,13 @@
 		)
 		(model "dev/tools/kicad/footprint/packages3d/USB-C_SMD-TYPE-C-31-M-12.step"
 			(offset
-				(xyz 0 0 0)
+				(xyz 0 -2.5 0)
 			)
 			(scale
 				(xyz 1 1 1)
 			)
 			(rotate
-				(xyz 0 0 0)
+				(xyz 0 0 180)
 			)
 		)
 	)
@@ -21788,7 +21814,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Position Offset" "2.50,2.2"
+		(property "JLCPCB Position Offset" "2.59,1.73"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -28369,6 +28395,19 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB Rotation Offset" "-90"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9e8cffbe-5d3e-4b68-9956-3b8a08251a4c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
 				)
 			)
 		)
