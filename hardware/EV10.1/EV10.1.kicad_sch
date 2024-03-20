@@ -4951,6 +4951,121 @@
 				)
 			)
 		)
+		(symbol "Connector:TestPoint_Probe"
+			(pin_numbers hide)
+			(pin_names
+				(offset 0.762) hide)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "TP"
+				(at 1.651 5.842 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "TestPoint_Probe"
+				(at 1.651 4.064 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 5.08 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 5.08 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "test point (alternative probe-style design)"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "test point tp"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Pin* Test*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "TestPoint_Probe_0_1"
+				(polyline
+					(pts
+						(xy 1.27 0.762) (xy 0 0) (xy 0.762 1.27) (xy 1.27 0.762)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.397 0.635) (xy 0.635 1.397) (xy 2.413 3.175) (xy 3.175 2.413) (xy 1.397 0.635)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "TestPoint_Probe_1_1"
+				(pin passive line
+					(at 0 0 90)
+					(length 0)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 		(symbol "Device:C"
 			(pin_numbers hide)
 			(pin_names
@@ -18828,6 +18943,16 @@
 	)
 	(wire
 		(pts
+			(xy 466.09 212.09) (xy 466.09 229.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "04010571-a26d-4ff7-9641-2b31119c0863")
+	)
+	(wire
+		(pts
 			(xy 36.83 311.15) (xy 40.64 311.15)
 		)
 		(stroke
@@ -19158,6 +19283,16 @@
 	)
 	(wire
 		(pts
+			(xy 210.82 227.33) (xy 220.98 227.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0fed1e7a-73b8-4abf-9363-cb6af6fc2e00")
+	)
+	(wire
+		(pts
 			(xy 342.9 222.25) (xy 354.33 222.25)
 		)
 		(stroke
@@ -19165,6 +19300,16 @@
 			(type default)
 		)
 		(uuid "1003ec61-f290-40f8-8e3d-4e5e3cf55868")
+	)
+	(wire
+		(pts
+			(xy 116.84 214.63) (xy 130.81 214.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "10173407-8da4-4e3e-9459-07dbba605df6")
 	)
 	(wire
 		(pts
@@ -19205,6 +19350,16 @@
 			(type default)
 		)
 		(uuid "13019111-6e0a-4a2d-932d-14b8960a1d12")
+	)
+	(wire
+		(pts
+			(xy 431.8 270.51) (xy 447.04 270.51)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "13a9c39f-9fc6-4df7-804b-f72f139d6d0b")
 	)
 	(wire
 		(pts
@@ -19658,6 +19813,16 @@
 	)
 	(wire
 		(pts
+			(xy 116.84 217.17) (xy 130.81 217.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "269fa0e5-6ff6-4d76-9d4c-5f6bf74da7ac")
+	)
+	(wire
+		(pts
 			(xy 187.96 342.9) (xy 187.96 346.71)
 		)
 		(stroke
@@ -19745,6 +19910,16 @@
 			(type default)
 		)
 		(uuid "2b0e9e55-54d6-4bfd-976d-4537d68b2062")
+	)
+	(wire
+		(pts
+			(xy 457.2 284.48) (xy 457.2 294.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2b35056b-15e0-4263-a6bf-f9ad65aeb0be")
 	)
 	(wire
 		(pts
@@ -20045,16 +20220,6 @@
 			(type default)
 		)
 		(uuid "348ff051-873a-490a-8b26-c4fd02e17350")
-	)
-	(wire
-		(pts
-			(xy 210.82 227.33) (xy 220.98 227.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "34e36fc4-b082-482a-82f1-c6e3c28c36c4")
 	)
 	(polyline
 		(pts
@@ -20416,6 +20581,16 @@
 		)
 		(uuid "449d2c27-4cd3-488b-96bb-58caa33886f0")
 	)
+	(wire
+		(pts
+			(xy 430.53 248.92) (xy 457.2 248.92)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "450b0550-eeed-4836-bca2-ffcc3c4b68c1")
+	)
 	(polyline
 		(pts
 			(xy 342.9 240.03) (xy 365.76 240.03)
@@ -20535,16 +20710,6 @@
 			(type default)
 		)
 		(uuid "4884f525-ab71-480b-a832-5203b3ebfd99")
-	)
-	(wire
-		(pts
-			(xy 210.82 229.87) (xy 220.98 229.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "49a2865c-c1cc-4c22-883c-6725405671ae")
 	)
 	(wire
 		(pts
@@ -20675,6 +20840,16 @@
 			(type default)
 		)
 		(uuid "51740697-6de4-4399-aaef-be134a70d29b")
+	)
+	(wire
+		(pts
+			(xy 445.77 217.17) (xy 445.77 224.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "52964739-2efd-46d0-9f07-82917c5a834f")
 	)
 	(wire
 		(pts
@@ -21348,6 +21523,16 @@
 	)
 	(wire
 		(pts
+			(xy 447.04 270.51) (xy 447.04 279.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "72e35940-e79d-4718-8fa9-e9cd8f79c7e9")
+	)
+	(wire
+		(pts
 			(xy 54.61 109.22) (xy 54.61 111.76)
 		)
 		(stroke
@@ -21758,6 +21943,16 @@
 	)
 	(wire
 		(pts
+			(xy 430.53 214.63) (xy 455.93 214.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "81eac552-f97b-4033-a2d2-f77ab6256893")
+	)
+	(wire
+		(pts
 			(xy 180.34 346.71) (xy 187.96 346.71)
 		)
 		(stroke
@@ -21825,6 +22020,16 @@
 			(type default)
 		)
 		(uuid "84209fb4-2493-4499-931c-94c06ba4c0d8")
+	)
+	(wire
+		(pts
+			(xy 447.04 252.73) (xy 447.04 261.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "84703a39-8581-4d60-8aba-80f6c2b08b16")
 	)
 	(polyline
 		(pts
@@ -22215,6 +22420,16 @@
 			(type default)
 		)
 		(uuid "91e7d653-f559-4d4c-b4eb-2f26f7ad2747")
+	)
+	(wire
+		(pts
+			(xy 430.53 217.17) (xy 445.77 217.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "923d2033-8d50-4ba8-a3ba-77ad0b9445d8")
 	)
 	(wire
 		(pts
@@ -22848,16 +23063,6 @@
 	)
 	(wire
 		(pts
-			(xy 116.84 217.17) (xy 130.81 217.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a9b7820b-2e2b-4269-8ba1-67a932f0c557")
-	)
-	(wire
-		(pts
 			(xy 50.8 378.46) (xy 50.8 379.73)
 		)
 		(stroke
@@ -22965,6 +23170,16 @@
 			(type default)
 		)
 		(uuid "afd40dc9-7694-4106-a4a4-3a192dc66647")
+	)
+	(wire
+		(pts
+			(xy 457.2 248.92) (xy 457.2 264.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b08b0c85-c144-4246-95b1-05b6a891c302")
 	)
 	(wire
 		(pts
@@ -23088,6 +23303,16 @@
 	)
 	(wire
 		(pts
+			(xy 431.8 229.87) (xy 457.2 229.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b3d6d22e-63f0-47f1-aecf-9445bb003442")
+	)
+	(wire
+		(pts
 			(xy 46.99 105.41) (xy 46.99 106.68)
 		)
 		(stroke
@@ -23155,6 +23380,16 @@
 			(type default)
 		)
 		(uuid "b546616a-da5c-4060-8cd5-4a7a69713081")
+	)
+	(wire
+		(pts
+			(xy 431.8 288.29) (xy 447.04 288.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b5500291-cd82-4123-8b63-02d12736e55d")
 	)
 	(wire
 		(pts
@@ -23278,6 +23513,16 @@
 	)
 	(wire
 		(pts
+			(xy 431.8 266.7) (xy 457.2 266.7)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "babb7c35-eee3-4a1f-91e8-f42f3ed16a74")
+	)
+	(wire
+		(pts
 			(xy 187.96 335.28) (xy 187.96 325.12)
 		)
 		(stroke
@@ -23395,6 +23640,16 @@
 			(type default)
 		)
 		(uuid "c3a7ab8d-1da5-4145-89fe-309fd1eec3a5")
+	)
+	(wire
+		(pts
+			(xy 457.2 245.11) (xy 457.2 229.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c3ae7f55-5af7-4e3e-8e93-e08149e664ce")
 	)
 	(wire
 		(pts
@@ -23528,6 +23783,16 @@
 	)
 	(wire
 		(pts
+			(xy 447.04 288.29) (xy 447.04 292.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cc30c925-30c2-4fbe-afda-02fdb525dae5")
+	)
+	(wire
+		(pts
 			(xy 194.31 237.49) (xy 194.31 236.22)
 		)
 		(stroke
@@ -23565,6 +23830,16 @@
 			(type default)
 		)
 		(uuid "cf93ee88-f5a9-44ba-97f3-85c7e3c3a7dd")
+	)
+	(wire
+		(pts
+			(xy 455.93 214.63) (xy 455.93 227.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cfa70956-a30c-4681-b9e3-a158acaedefe")
 	)
 	(polyline
 		(pts
@@ -23685,6 +23960,16 @@
 			(type default)
 		)
 		(uuid "d41126a9-79d5-44c8-940d-a453eae1c1bb")
+	)
+	(wire
+		(pts
+			(xy 431.8 233.68) (xy 447.04 233.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d4b1a294-36c2-4d40-af2e-cc519f42898a")
 	)
 	(wire
 		(pts
@@ -23948,13 +24233,13 @@
 	)
 	(wire
 		(pts
-			(xy 116.84 214.63) (xy 130.81 214.63)
+			(xy 457.2 266.7) (xy 457.2 281.94)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "dc02ab12-c30c-4336-a1cd-8611c37e9ebb")
+		(uuid "dc2887a2-da1a-40d4-99a8-34d1decca217")
 	)
 	(wire
 		(pts
@@ -24055,6 +24340,16 @@
 			(type default)
 		)
 		(uuid "dfcdd8c2-b7ff-4b4c-873c-7add637d54ea")
+	)
+	(wire
+		(pts
+			(xy 431.8 284.48) (xy 457.2 284.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dfd3cc94-8924-48bb-8e4e-14134a7ca23c")
 	)
 	(wire
 		(pts
@@ -24228,6 +24523,16 @@
 	)
 	(wire
 		(pts
+			(xy 447.04 233.68) (xy 447.04 242.57)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e51bcc43-295d-477a-8482-551bd0574ed9")
+	)
+	(wire
+		(pts
 			(xy 72.39 109.22) (xy 72.39 111.76)
 		)
 		(stroke
@@ -24235,6 +24540,16 @@
 			(type default)
 		)
 		(uuid "e5d0ae6f-3ca7-402a-8abb-bc1508d064f9")
+	)
+	(wire
+		(pts
+			(xy 210.82 229.87) (xy 220.98 229.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e68b0097-cfe1-439f-8222-bc2b0cbe14d0")
 	)
 	(wire
 		(pts
@@ -24608,6 +24923,16 @@
 	)
 	(wire
 		(pts
+			(xy 430.53 252.73) (xy 447.04 252.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f4ddba56-a842-4045-925f-63812f610c99")
+	)
+	(wire
+		(pts
 			(xy 332.74 167.64) (xy 344.17 167.64)
 		)
 		(stroke
@@ -24795,6 +25120,16 @@
 			(type default)
 		)
 		(uuid "fc77bc2b-8ba6-4f76-867b-d2619f2876f3")
+	)
+	(wire
+		(pts
+			(xy 430.53 212.09) (xy 466.09 212.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fc7ee9c3-fc0f-4bfe-90e1-56d6449d861a")
 	)
 	(wire
 		(pts
@@ -25419,6 +25754,17 @@
 		)
 		(uuid "0a5e8946-3387-432a-90b6-a1fe158ebf16")
 	)
+	(label "USB_RX1_MGMT"
+		(at 431.8 233.68 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "0c65a084-343e-4b82-8836-a6a65e21244d")
+	)
 	(label "HP_R"
 		(at 287.02 204.47 180)
 		(fields_autoplaced yes)
@@ -25859,6 +26205,17 @@
 		)
 		(uuid "4c458358-d7da-4df7-96f9-bfbcfcdb2e4b")
 	)
+	(label "UI_RX2_NET"
+		(at 431.8 284.48 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "4e48f1b1-9f31-4af3-a08a-ab36daad29af")
+	)
 	(label "UI_SDA"
 		(at 391.16 157.48 180)
 		(fields_autoplaced yes)
@@ -25990,6 +26347,17 @@
 			(justify left bottom)
 		)
 		(uuid "67b93707-5ff0-4b97-aa92-83fb44517409")
+	)
+	(label "UI_RX1_MGMT"
+		(at 430.53 248.92 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "6a4cca92-661b-426f-a084-3b1be925ce2d")
 	)
 	(label "BTN_UI"
 		(at 68.58 116.84 0)
@@ -26189,6 +26557,17 @@
 		)
 		(uuid "89f92437-f50a-43a0-acd6-38ad7f3f65dd")
 	)
+	(label "USB_TX1_MGMT"
+		(at 431.8 229.87 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8e5a970c-2bc8-445a-94af-d912a0fa9d28")
+	)
 	(label "MGMT_NRST"
 		(at 151.13 135.89 270)
 		(fields_autoplaced yes)
@@ -26221,6 +26600,17 @@
 			(justify right bottom)
 		)
 		(uuid "92721f73-3233-423a-aeed-88dd27cfa317")
+	)
+	(label "I2S_ADCDAT"
+		(at 430.53 217.17 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "934b4b3d-dba4-4a57-ad77-159092ef2c8c")
 	)
 	(label "BTN_NET"
 		(at 391.16 222.25 0)
@@ -26320,6 +26710,17 @@
 			(justify right bottom)
 		)
 		(uuid "9d7670ad-e3a2-40da-ad5d-aa939e0f6ecd")
+	)
+	(label "UI_TX1_MGMT"
+		(at 430.53 252.73 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "9ec2bc11-a421-4f06-b87a-7c83adb0b3aa")
 	)
 	(label "USB_RTS"
 		(at 127 234.95 180)
@@ -26651,6 +27052,17 @@
 		)
 		(uuid "caddeab6-12e8-4cf0-a353-e9eaacc2302a")
 	)
+	(label "UI_TX2_NET"
+		(at 431.8 288.29 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "cd10e312-996c-45d7-a26e-78730f32a71b")
+	)
 	(label "KB_ROW1"
 		(at 381 306.07 0)
 		(fields_autoplaced yes)
@@ -26705,6 +27117,17 @@
 			(justify left bottom)
 		)
 		(uuid "d3f1e087-cd57-41bd-88e7-20b199038294")
+	)
+	(label "NET_RX1_MGMT"
+		(at 431.8 266.7 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d48fe99b-97a0-41a5-8112-79557fe3e91f")
 	)
 	(label "USB_D+"
 		(at 96.52 259.08 0)
@@ -26826,6 +27249,17 @@
 			(justify left bottom)
 		)
 		(uuid "dcf8b2b8-91d6-425b-aac6-89573455574b")
+	)
+	(label "NET_TX1_MGMT"
+		(at 431.8 270.51 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "dfafbbb2-4a1b-4b2a-8d42-217607388845")
 	)
 	(label "KB_LED"
 		(at 368.3 332.74 0)
@@ -27036,6 +27470,17 @@
 		)
 		(uuid "eea54fad-be0f-43af-8783-b065816271fe")
 	)
+	(label "I2S_DACLRC"
+		(at 430.53 212.09 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "eeca59db-68ab-4da0-bb11-a2e880b1b83e")
+	)
 	(label "UI_BOOT"
 		(at 68.58 132.08 0)
 		(fields_autoplaced yes)
@@ -27090,6 +27535,17 @@
 			(justify right bottom)
 		)
 		(uuid "f6e8478f-f55e-4a05-bde8-8f94df19d96a")
+	)
+	(label "I2S_DACDAT"
+		(at 430.53 214.63 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "f7d9918d-a9ec-490a-b7e9-cbad3ed11a56")
 	)
 	(label "MIC_N"
 		(at 345.44 246.38 0)
@@ -27499,6 +27955,152 @@
 			(project "Buckboost converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "R3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 447.04 242.57 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "03a81b33-334f-4d96-82c3-0afab5f955e1")
+		(property "Reference" "TP2"
+			(at 446.024 235.966 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 445.4525 237.49 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 447.04 237.49 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 447.04 237.49 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 447.04 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 447.04 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "dac95661-b6a5-494f-bed1-d65f952746b1")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 457.2 264.16 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "072545f5-4605-49fe-8070-3c41cb1f7e39")
+		(property "Reference" "TP7"
+			(at 456.184 257.556 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 455.6125 259.08 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 457.2 259.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 457.2 259.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 457.2 264.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 457.2 264.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ca6dc261-8492-4dbc-9634-398bff871585")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP7")
 					(unit 1)
 				)
 			)
@@ -28014,6 +28616,79 @@
 			(project "Buckboost converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "L1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 457.2 294.64 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "1965ab56-832e-45d7-970d-8b7dedac495c")
+		(property "Reference" "TP11"
+			(at 456.184 288.036 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 455.6125 289.56 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 457.2 289.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 457.2 289.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 457.2 294.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 457.2 294.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d92bac22-3040-4240-871c-64d3c0c687e6")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP11")
 					(unit 1)
 				)
 			)
@@ -32809,6 +33484,79 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 457.2 281.94 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "624a40c5-5221-4ffc-885a-8b64beec6568")
+		(property "Reference" "TP9"
+			(at 456.184 275.336 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 455.6125 276.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 457.2 276.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 457.2 276.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 457.2 281.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 457.2 281.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7950b5c3-ecb4-4dbc-8b43-b81e23be6a15")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP9")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C")
 		(at 149.86 167.64 180)
 		(unit 1)
@@ -33322,6 +34070,152 @@
 			(project "EV10.1"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR0114")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 466.09 229.87 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "67915ded-3197-4eb7-aedc-1e0411414aa5")
+		(property "Reference" "TP5"
+			(at 464.82 223.266 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 464.5025 224.79 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 466.09 224.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 466.09 224.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 466.09 229.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 466.09 229.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "5656133e-8e59-41a8-93b0-3b9b8a6d2c38")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 455.93 227.33 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "687cd2bb-cb40-41cd-8a35-d20abcac28c3")
+		(property "Reference" "TP4"
+			(at 454.66 220.726 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 454.3425 222.25 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 455.93 222.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 455.93 222.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 455.93 227.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 455.93 227.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "92f509dd-dcda-414b-bd09-494e0736ee93")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP4")
 					(unit 1)
 				)
 			)
@@ -34212,6 +35106,79 @@
 			(project "EV10.1"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR0156")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 445.77 224.79 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "7a2840f4-008c-4fad-b5bf-4c1ab19a98b0")
+		(property "Reference" "TP3"
+			(at 444.5 218.186 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 444.1825 219.71 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 445.77 219.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 445.77 219.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 445.77 224.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 445.77 224.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "b1ca9d73-3eba-4b64-9026-6cd99c8919a4")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP3")
 					(unit 1)
 				)
 			)
@@ -36153,6 +37120,79 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 447.04 292.1 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "9cef0b27-43cf-4c0f-9e58-8414a96a158e")
+		(property "Reference" "TP10"
+			(at 446.024 285.496 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 445.4525 287.02 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 447.04 287.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 447.04 287.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 447.04 292.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 447.04 292.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "1b3b7e71-254b-4884-b3bc-1480bf4018ec")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP10")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C")
 		(at 226.06 339.09 0)
 		(unit 1)
@@ -36900,6 +37940,79 @@
 			(project "EV10.1"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "U5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 447.04 279.4 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "aacdea55-15e2-4db7-b5a5-8187e92da377")
+		(property "Reference" "TP8"
+			(at 446.024 272.796 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 445.4525 274.32 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 447.04 274.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 447.04 274.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 447.04 279.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 447.04 279.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ac815470-b97c-402a-92a0-3d4fe42cfef3")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP8")
 					(unit 1)
 				)
 			)
@@ -40088,6 +41201,79 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 457.2 245.11 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "e78aead1-6ac8-4be7-a68b-36c052a994c3")
+		(property "Reference" "TP1"
+			(at 456.184 238.506 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 455.6125 240.03 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 457.2 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 457.2 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 457.2 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 457.2 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "35f07397-9f3f-4381-aba4-248a94b14262")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "GND_10")
 		(lib_id "power:GND")
 		(at 359.41 186.69 0)
@@ -41073,6 +42259,79 @@
 			(project "EV10.1"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR0117")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 447.04 261.62 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "f23166b6-d5ce-428a-b082-606a5b77eca4")
+		(property "Reference" "TP6"
+			(at 446.024 255.016 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint_Probe"
+			(at 445.4525 256.54 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 447.04 256.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 447.04 256.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 447.04 261.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 447.04 261.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "207342e6-edc2-4f0f-be9c-a93ef70a2127")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP6")
 					(unit 1)
 				)
 			)
