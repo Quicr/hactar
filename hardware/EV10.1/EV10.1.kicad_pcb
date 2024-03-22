@@ -336,6 +336,7 @@
 	(net 185 "Net-(U7-L2)")
 	(net 186 "Net-(U7-L1)")
 	(net 187 "Net-(U7-FB)")
+	(net 188 "unconnected-(USB-C1-SH-Pad0)")
 	(footprint "Capacitor_SMD:C_0805_2012Metric"
 		(layer "F.Cu")
 		(uuid "029f0196-975d-4553-ae16-01b13c2a7ea6")
@@ -11980,9 +11981,9 @@
 			(drill oval 0.8 1.600025)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 4 "GND")
+			(net 188 "unconnected-(USB-C1-SH-Pad0)")
 			(pinfunction "SH")
-			(pintype "unspecified")
+			(pintype "unspecified+no_connect")
 			(uuid "f87f30d7-526c-4371-af39-72e11a9a148f")
 		)
 		(pad "1" thru_hole oval
@@ -35899,14 +35900,6 @@
 		(uuid "0c5c1c6d-9a64-4ca7-b0b4-fe66c39b3d8e")
 	)
 	(segment
-		(start 146.749544 139.133936)
-		(end 145.981192 139.902288)
-		(width 0.127)
-		(layer "F.Cu")
-		(net 4)
-		(uuid "0e18daab-537f-48c9-bf8b-7810fd43badb")
-	)
-	(segment
 		(start 181.452 77.18)
 		(end 181.48 77.208)
 		(width 0.25)
@@ -36529,14 +36522,6 @@
 		(layer "F.Cu")
 		(net 4)
 		(uuid "6aa8cfa0-e1cf-44e7-9d4c-fb5961795fb6")
-	)
-	(segment
-		(start 146.9563 139.133936)
-		(end 146.749544 139.133936)
-		(width 0.127)
-		(layer "F.Cu")
-		(net 4)
-		(uuid "6cbe39b1-60ea-40ad-9782-7866cba4b606")
 	)
 	(segment
 		(start 164.6 104.9)
