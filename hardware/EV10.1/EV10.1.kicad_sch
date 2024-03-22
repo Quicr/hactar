@@ -18106,12 +18106,6 @@
 		(uuid "262110df-ff36-4ef9-9e66-e2a16e699980")
 	)
 	(junction
-		(at 346.71 303.53)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "265c7999-7ed9-4e1b-b7ef-5bc512e1a4ac")
-	)
-	(junction
 		(at 57.15 153.67)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -18508,12 +18502,6 @@
 		(uuid "e87fae82-53d3-4dde-bd6b-3dc077034c63")
 	)
 	(junction
-		(at 346.71 306.07)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "e8cc3ed5-9624-4f8f-bc4a-73a2c48b3305")
-	)
-	(junction
 		(at 359.41 78.74)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -18524,12 +18512,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ebea4793-14b4-45b9-833b-a189dd4505d4")
-	)
-	(junction
-		(at 381 303.53)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "ec5e4a67-c820-490c-a388-0618be6fbf42")
 	)
 	(junction
 		(at 226.06 346.71)
@@ -21443,16 +21425,6 @@
 	)
 	(wire
 		(pts
-			(xy 346.71 300.99) (xy 346.71 303.53)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6db65fdb-6dc1-450c-b14f-b95f5f385af9")
-	)
-	(wire
-		(pts
 			(xy 146.05 163.83) (xy 149.86 163.83)
 		)
 		(stroke
@@ -23513,6 +23485,16 @@
 	)
 	(wire
 		(pts
+			(xy 447.04 298.45) (xy 447.04 302.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ba830c1d-52fa-4710-984e-213214d263a2")
+	)
+	(wire
+		(pts
 			(xy 431.8 266.7) (xy 457.2 266.7)
 		)
 		(stroke
@@ -23600,16 +23582,6 @@
 			(type default)
 		)
 		(uuid "c03cb9a5-21db-49d9-a8d0-a58787cafb86")
-	)
-	(wire
-		(pts
-			(xy 381 300.99) (xy 381 303.53)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c11e1514-317a-4406-a7d5-755d33049eec")
 	)
 	(polyline
 		(pts
@@ -23720,6 +23692,16 @@
 			(type default)
 		)
 		(uuid "c7c78c2c-98b1-4e4b-9116-2afdcab44643")
+	)
+	(wire
+		(pts
+			(xy 346.71 299.72) (xy 346.71 300.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c7d5d1ab-33ce-4e42-84b7-4530ebe8c083")
 	)
 	(polyline
 		(pts
@@ -24833,6 +24815,16 @@
 	)
 	(wire
 		(pts
+			(xy 431.8 298.45) (xy 447.04 298.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f0f4423a-a358-4e3d-8981-4b5da8152d78")
+	)
+	(wire
+		(pts
 			(xy 264.16 224.79) (xy 285.75 224.79)
 		)
 		(stroke
@@ -25070,16 +25062,6 @@
 			(type default)
 		)
 		(uuid "f9e60960-6c94-45c7-8d78-4446a350ee3a")
-	)
-	(wire
-		(pts
-			(xy 346.71 303.53) (xy 346.71 306.07)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fa643d22-d78d-40f9-92bb-ae531f464745")
 	)
 	(wire
 		(pts
@@ -25896,6 +25878,17 @@
 			(justify right bottom)
 		)
 		(uuid "1cb4d043-f144-492f-afa8-e0c6a6c33301")
+	)
+	(label "KB_MIC"
+		(at 346.71 303.53 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "20533f49-85d0-433c-8646-d0546bee40b6")
 	)
 	(label "KB_ROW2"
 		(at 381 308.61 0)
@@ -27977,7 +27970,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_USB_RX_MGMT"
 			(at 445.4525 237.49 90)
 			(effects
 				(font
@@ -28050,7 +28043,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_UI_RX_MGMT"
 			(at 455.6125 259.08 90)
 			(effects
 				(font
@@ -28638,7 +28631,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_UI_RX_NET"
 			(at 455.6125 289.56 90)
 			(effects
 				(font
@@ -28754,6 +28747,72 @@
 			(project "EV10.1"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR01")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "+3.3V_6")
+		(lib_id "power:+3.3V")
+		(at 381 300.99 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "19d965cf-ee55-49a9-98ef-00023f6c9030")
+		(property "Reference" "#PWR028"
+			(at 377.19 300.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3.3V"
+			(at 386.588 300.99 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 381 300.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 381 300.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 381 300.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "9eea3dbf-c437-4f37-9879-630c17b7f7d2")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "#PWR028")
 					(unit 1)
 				)
 			)
@@ -29460,6 +29519,79 @@
 			(project "EV10.1"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR0105")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 447.04 302.26 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "2246612d-4247-4bb6-9280-e707e78acdef")
+		(property "Reference" "TP12"
+			(at 446.024 295.656 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "P_GND"
+			(at 445.4525 297.18 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 447.04 297.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 447.04 297.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 447.04 302.26 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 447.04 302.26 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "e4c4c0d3-4d3c-4c3a-b4df-ea0f2b9558f2")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP12")
 					(unit 1)
 				)
 			)
@@ -33500,7 +33632,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_NET_RX_MGMT"
 			(at 455.6125 276.86 90)
 			(effects
 				(font
@@ -34092,7 +34224,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_I2S_DACLRC"
 			(at 464.5025 224.79 90)
 			(effects
 				(font
@@ -34165,7 +34297,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_I2S_DACDAT"
 			(at 454.3425 222.25 90)
 			(effects
 				(font
@@ -35128,7 +35260,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_I2S_ADCDAT"
 			(at 444.1825 219.71 90)
 			(effects
 				(font
@@ -36552,6 +36684,73 @@
 		)
 	)
 	(symbol
+		(lib_name "GND_46")
+		(lib_id "power:GND")
+		(at 346.71 299.72 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "92830e72-8ecb-43bb-80ae-a83e198cbd0e")
+		(property "Reference" "#PWR027"
+			(at 340.36 299.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 340.36 299.72 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 346.71 299.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 346.71 299.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 346.71 299.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "631b5e8d-0ac7-485f-b016-bc61b65c11e0")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "#PWR027")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "GND_22")
 		(lib_id "power:GND")
 		(at 381 318.77 90)
@@ -37136,7 +37335,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_UI_RX_NET"
 			(at 445.4525 287.02 90)
 			(effects
 				(font
@@ -37962,7 +38161,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_NET_TX_MGMT"
 			(at 445.4525 274.32 90)
 			(effects
 				(font
@@ -38105,7 +38304,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 387.35 303.53 90)
+			(at 387.604 303.53 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -39280,6 +39479,72 @@
 			(project "EV10.1"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR0129")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "GND_9")
+		(lib_id "power:GND")
+		(at 431.8 298.45 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c94e8c31-7075-43e2-b68e-1e91c92a8473")
+		(property "Reference" "#PWR026"
+			(at 425.45 298.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 427.99 298.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 431.8 298.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 431.8 298.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 431.8 298.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "f536d8b4-107a-4a90-93f1-75a1d181aac9")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "#PWR026")
 					(unit 1)
 				)
 			)
@@ -41217,7 +41482,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_USB_TX_MGMT"
 			(at 455.6125 240.03 90)
 			(effects
 				(font
@@ -42281,7 +42546,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint_Probe"
+		(property "Value" "P_UI_TX_MGMT"
 			(at 445.4525 256.54 90)
 			(effects
 				(font
