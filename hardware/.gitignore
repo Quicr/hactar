@@ -1,1 +1,8 @@
+production
 * Board Design-backups
+*.zip
+*bak
+*-backups
+*.lck
+*#auto_saved_files#
+_autosave*
