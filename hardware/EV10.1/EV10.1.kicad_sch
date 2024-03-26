@@ -20257,6 +20257,16 @@
 	)
 	(wire
 		(pts
+			(xy 477.52 209.55) (xy 477.52 232.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "414ef307-ec0a-4f4e-82a5-076785cb3281")
+	)
+	(wire
+		(pts
 			(xy 67.31 111.76) (xy 67.31 113.03)
 		)
 		(stroke
@@ -23227,6 +23237,16 @@
 	)
 	(wire
 		(pts
+			(xy 430.53 209.55) (xy 477.52 209.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b8a86a01-f84e-48fb-8134-0dadd2fbcd03")
+	)
+	(wire
+		(pts
 			(xy 40.64 226.06) (xy 40.64 229.87)
 		)
 		(stroke
@@ -25562,6 +25582,17 @@
 			(justify right bottom)
 		)
 		(uuid "10c2acc2-437d-4f8a-bafa-276dc9c9ef26")
+	)
+	(label "I2S_BCLK"
+		(at 430.53 209.55 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "11e3d242-e1eb-4e1f-8faa-da50013691c7")
 	)
 	(label "LEDA_R"
 		(at 129.54 77.47 0)
@@ -37040,7 +37071,7 @@
 				)
 			)
 		)
-		(property "Value" "P_UI_RX_NET"
+		(property "Value" "P_UI_TX_NET"
 			(at 445.4525 287.02 90)
 			(effects
 				(font
@@ -38973,6 +39004,79 @@
 			(project "EV10.1"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR0122")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint_Probe")
+		(at 477.52 232.41 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "bcc0b4c2-b18d-4cd9-8f9a-e79207ab3211")
+		(property "Reference" "TP13"
+			(at 476.25 225.806 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "P_I2S_BCLK"
+			(at 475.9325 227.33 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Keystone_5000-5004_Miniature"
+			(at 477.52 227.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 477.52 227.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point (alternative probe-style design)"
+			(at 477.52 232.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5199900"
+			(at 477.52 232.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "8f16c925-dced-40d7-b264-0075d7cd3866")
+		)
+		(instances
+			(project "EV10.1"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "TP13")
 					(unit 1)
 				)
 			)
