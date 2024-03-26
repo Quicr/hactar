@@ -21,6 +21,8 @@ extern Font font6x8;
 extern Font font7x12;
 extern Font font11x16;
 
+
+static Font& GetFont(Fonts font) __attribute__((unused));
 static Font& GetFont(Fonts font)
 {
     switch (font)

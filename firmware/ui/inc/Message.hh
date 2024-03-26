@@ -1,30 +1,30 @@
 #pragma once
 
-#include "String.hh"
+#include <string>
 
 class Message
 {
 public:
     Message();
-    Message(const String& timestamp, const String& sender, const String& body);
+    Message(const std::string& timestamp, const std::string& sender, const std::string& body);
     Message(const char* c_str);
 
-    String Concatenate();
-    void Timestamp(const String& timestamp);
-    void Sender(const String& sender);
-    void Body(const String& body);
+    std::string Concatenate();
+    void Timestamp(const std::string& timestamp);
+    void Sender(const std::string& sender);
+    void Body(const std::string& body);
 
-    const String& Timestamp() const;
-    const String& Sender() const;
-    const String& Body() const;
+    const std::string& Timestamp() const;
+    const std::string& Sender() const;
+    const std::string& Body() const;
     unsigned int Length();
 
 private:
     void Parse(const char* c_str);
     void CalculateLength();
 
-    String timestamp;
-    String sender;
-    String body;
+    std::string timestamp;
+    std::string sender;
+    std::string body;
     unsigned int total_length;
 };

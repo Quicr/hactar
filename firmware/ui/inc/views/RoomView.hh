@@ -31,5 +31,5 @@ private:
     uint32_t last_num_rooms;
 
     // UI variables
-    String request_msg;
+    std::string request_msg;
 };

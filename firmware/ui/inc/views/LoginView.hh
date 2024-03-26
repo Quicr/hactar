@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ViewInterface.hh"
-#include "String.hh"
+#include <string>
 
 class LoginView : public ViewInterface
 {

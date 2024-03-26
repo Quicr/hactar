@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory } from "vue-router";
-import HomeView from "../views/HomeView.vue";
+import FlasherView from "../views/FlasherView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: "/",
-      name: "home",
-      component: HomeView,
+      name: "flasher",
+      component: FlasherView,
     },
     // {
     //   path: "/about",

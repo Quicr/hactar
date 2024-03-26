@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Packet.hh"
+#include <cstddef>
 
 class SerialInterface
 {

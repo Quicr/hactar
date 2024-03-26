@@ -5,4 +5,4 @@ class Setting
 public:
 
 private:
-}
+};

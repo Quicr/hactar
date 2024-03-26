@@ -18,13 +18,14 @@
 #include "Logging.hh"
 #include "SerialLogger.hh"
 #include "SerialEsp.hh"
-#include "SerialManager.hh"
+#include "SerialPacketManager.hh"
 #include "NetManager.hh"
 
 #include "Wifi.hh"
 #include "NetPins.hh"
 
 #include <qsession.h>
+#include "logger.hh"
 
 // Forward declare functions
 void Setup(const uart_config_t&);
@@ -52,7 +53,6 @@ extern "C" void app_main(void)
 
     Setup();
 
-    int32_t count = 0;
     while (1)
     {
         gpio_set_level(LED_R_Pin, next);
@@ -107,10 +107,10 @@ void UartInit()
     };
 
     // Setup serial interface for ui
-    ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 256);
+    ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 2048);
 
     // UART to the ui
-    ui_layer = new SerialManager(ui_uart1);
+    ui_layer = new SerialPacketManager(ui_uart1);
 
     // TODO remove this and convert it into a mgmt chip serialmanager.
     // setup logger
@@ -125,7 +125,7 @@ void Setup()
     wifi = Wifi::GetInstance();
 
     inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
-    char default_relay [] = "192.168.50.19";
+    char default_relay [] = "192.168.50.141";
     auto relay_name = default_relay;
     uint16_t port = 1234;
     quicr::RelayInfo relay{

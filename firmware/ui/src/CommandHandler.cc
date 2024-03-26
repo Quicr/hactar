@@ -14,7 +14,7 @@ CommandHandler::CommandHandler(UserInterfaceManager* manager) :
 
 }
 
-bool CommandHandler::ChangeViewCommand(const String& command)
+bool CommandHandler::ChangeViewCommand(const std::string& command)
 {
     if (command == "/login")
         return manager->ChangeView<LoginView>();

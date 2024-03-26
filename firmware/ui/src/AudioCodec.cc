@@ -1,7 +1,7 @@
 #include "AudioCodec.hh"
 
 // NOTE MCLK = 12Mhz
-#include "main.hh"
+#include "app_main.hh"
 
 #include <cmath>
 
@@ -15,73 +15,96 @@ void DebugPins(int output)
 
 
 AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
-    i2s(i2s), i2c(&hi2c)
+    i2s(&hi2s), i2c(&hi2c), rx_buffer{0}, rx_busy(false)
 {
-    // Reset the chip
-    WriteRegisterSeries(0x2F, 0x0000, 1);
+    // Reset the wm8960
+    SetRegister(0x0F, 0b0'0000'0000);
+    HAL_Delay(100);
 
     // Set the power
-    WriteRegisterSeries(0x19, 0b111000000, 2);
+    // NOTE DO NOT CHANGE BITS [3,2]!! on EV10
+    SetRegister(0x19, 0b1'1100'0000);
 
-    // Add 0x0001 for pll
-    WriteRegisterSeries(0x1A, 0b111111001, 3);
+    // Enable outputs
+    SetRegister(0x1A, 0b1'1111'1001);
 
     // Enable lr mixer ctrl
-    WriteRegisterSeries(0x2F, 0b000001100, 4);
-
-    // Set the clock division
-    // D_Clock = sysclk / 16 = 12Mhz / 16
-    WriteRegisterSeries(0x08, 0b111000001, 5);
-
-    // Set the clock (Select the PLL)
-    WriteRegisterSeries(0x04, 0b000000001, 6);
+    // TODO NOTE DO NOT ENABLE BITS [3,2] will require
+    // turning off the mgmt master clock and then updating the UI
+    SetRegister(0x2F, 0b0'0000'0000);
+    // SetRegister(0x2F, 0b0'0000'1100);
 
     // Enable PLL integer mode.
-    /** MCLK = 12MHz, ReqCLK = 12.288MHz
+    /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
     *   5 < PLLN < 13
     *   int R = f2 / 12
     *   PLLN = int R.
-    *   f2 = 4 * 2 * ReqCLK = 94.304Mhz
+    *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
     *   R = 98.304 / 12 = 8.192
-    *   int R = 8.
+    *   int R = 0x8
     *   K = int(2^24 * (R - PLLN))
     *     = int(2^24 * (8.192 - 8))
     *     = 3221225
-    *     = 0x3126E9
+    *     = 0x3126E9 -> but the table says 0x3126E8
+    *                                       = 0b0011'0001'0010'0110'1110'1001
     **/
-    WriteRegisterSeries(0x34, 0b000101000, 7);
+    SetRegister(0x34, 0b0'0001'1000);
 
     // Write the fractional K into the registers
-    WriteRegisterSeries(0x35, 0b000110001, 8);
-    WriteRegisterSeries(0x36, 0b000100110, 9);
-    WriteRegisterSeries(0x37, 0b011101001, 10);
+    SetRegister(0x35, 0b0'0000'1100);
+    SetRegister(0x36, 0b0'1001'0011);
+    SetRegister(0x37, 0b0'1110'1001);
+
+// TODO verify math
+    // Set ADCDIV to get 16Khz from SYSCLK (0x03)
+    // Set DACDIV to get 16Khz from SYSCLK (0x03)
+    // Post scale the PLL to be divided by 2
+    // Set the clock (Select the PLL) (0x01)
+    SetRegister(0x04, 0b0'1101'1101);
+
+    // Set the clock division
+    // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
+    // BCLKDIV = SYSCLK / 6 = 2.048Mhz
+    SetRegister(0x08, 0b1'1100'0110);
 
     // Disable soft mute and ADC high pass filter
-    WriteRegisterSeries(0x05, 0b000000000, 11);
+    SetRegister(0x05, 0b0'0000'0000);
 
-    // Set the I2S to 16 bit words
-    // TODO maybe use 24 bit words
-    WriteRegisterSeries(0x07, 0b000000010, 12);
+    // Set the Master mode (1), I2S to 16 bit words
+    // Set audio data format to i2s mode
+    SetRegister(0x07, 0b0'0100'0010);
 
     // Set the left and right headphone volumes
-    WriteRegisterSeries(0x02, 0b101101111, 13);
-    WriteRegisterSeries(0x03, 0b101101111, 14);
+    SetRegister(0x02, 0b1'0111'1111);
+    SetRegister(0x03, 0b1'0111'1111);
 
     // Set the left and right speaker volumes
-    WriteRegisterSeries(0x28, 0b101101111, 15);
-    WriteRegisterSeries(0x29, 0b101101111, 1);
+    SetRegister(0x28, 0b1'0111'1111);
+    SetRegister(0x29, 0b1'0111'1111);
 
     // Enable the outputs
-    WriteRegisterSeries(0x31, 0b011110111, 2);
+    SetRegister(0x31, 0b0'0111'0111);
 
     // Set DAC left and right volumes
-    WriteRegisterSeries(0x0A, 0b101101111, 3);
-    WriteRegisterSeries(0x0B, 0b101101111, 4);
+    SetRegister(0x0A, 0b1'1111'1111);
+    SetRegister(0x0B, 0b1'1111'1111);
 
     // Set left and right mixer
-    WriteRegisterSeries(0x22, 0b110000000, 5);
-    WriteRegisterSeries(0x25, 0b110000000, 15);
+    SetRegister(0x22, 0b1'1000'0000);
+    SetRegister(0x25, 0b1'1000'0000);
 
+    // Change the ALC sample rate
+    SetRegister(0x1B, 0b0'0000'0011);
+
+
+}
+
+// TODO read the I2C value to make sure it is writing correctly!
+bool AudioCodec::TestRegister()
+{
+    // return SetRegister(0x34, 0b0'0001'1000);
+
+    return SetRegister(0x0A, 0b1'1111'1111);
 }
 
 AudioCodec::~AudioCodec()
@@ -89,44 +112,46 @@ AudioCodec::~AudioCodec()
     i2c = nullptr;
 }
 
-bool AudioCodec::WriteRegister(uint8_t address, uint16_t data)
+HAL_StatusTypeDef AudioCodec::WriteRegister(uint8_t address)
+{
+    HAL_StatusTypeDef result = HAL_I2C_Master_Transmit(i2c,
+        Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
+
+    HAL_Delay(2);
+
+    return result;
+}
+
+bool AudioCodec::SetRegister(uint8_t address, uint16_t data)
 {
     if (address > Max_Address)
     {
         return false;
     }
-    // Update the data
-    registers[address].bytes[0] |= uint8_t((data >> 1) & Top_Bit_Mask);
+
+    // Reset the top bit
+    registers[address].bytes[0] &= ~Top_Bit_Mask;
+
+    // Set the register data
+    registers[address].bytes[0] |= uint8_t((data >> 8) & Top_Bit_Mask);
     registers[address].bytes[1] = uint8_t(data & 0x00FF);
 
     // Write the register to the chip
-    return (WriteRegisterToCodec(address) == HAL_OK);
+    return (WriteRegister(address) == HAL_OK);
 }
 
-bool AudioCodec::WriteRegisterSeries(uint8_t address, uint16_t data, uint8_t debug)
+bool AudioCodec::XorRegister(uint8_t address, uint16_t data)
 {
-    bool res = WriteRegister(address, data);
-    HAL_Delay(10);
-
-    if (res == false)
+    if (address > Max_Address)
     {
-        DebugPins(0);
-    }
-    else
-    {
-        DebugPins(debug);
+        return false;
     }
 
-    return res;
-}
+    // Update the register data
+    registers[address].bytes[0] ^= uint8_t((data >> 8) & Top_Bit_Mask);
+    registers[address].bytes[1] ^= uint8_t(data & 0x00FF);
 
-HAL_StatusTypeDef AudioCodec::WriteRegisterToCodec(uint8_t address)
-{
-    // const uint8_t read_condition = 0x34 + 1;
-    HAL_StatusTypeDef audio_select = HAL_I2C_Master_Transmit(i2c,
-        Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
-
-    return audio_select;
+    return (WriteRegister(address) == HAL_OK);
 }
 
 bool AudioCodec::ReadRegister(uint8_t address, uint16_t& value)
@@ -136,10 +161,36 @@ bool AudioCodec::ReadRegister(uint8_t address, uint16_t& value)
         return false;
     }
 
-    // Deep magic.
-    uint8_t* bytes = registers[address].bytes;
-    value = (*(reinterpret_cast<uint16_t*>(bytes))) & Data_Mask;
+    value = (uint16_t)((registers[address].bytes[0] & 0x0001) << 8);
+    value += registers[address].bytes[1];
     return true;
+}
+
+void AudioCodec::RxAudio(Screen* screen)
+{
+    if (rx_busy)
+        return;
+    // We need this because if the mic stays on it will write to USART3 in
+    // bootloader mode which locks up the main chip
+    // TODO remove enable mic bits [2,3]
+    XorRegister(0x19, 0b0'0000'1100);
+
+    rx_busy = true;
+
+    // TODO Rx_Buffer_Sz might need to be in bytes not element sz.
+    auto output = HAL_I2S_Receive_DMA(i2s, rx_buffer, Rx_Buffer_Sz*2);
+    screen->DrawText(0, 100, std::to_string((int)output), font7x12, C_GREEN, C_BLACK);
+
+}
+
+void AudioCodec::RxComplete()
+{
+    rx_busy = false;
+
+    // We need this because if the mic stays on it will write to USART3 in
+    // bootloader mode which locks up the main chip
+    // TODO remove disable mic bits [2,3]
+    XorRegister(0x19, 0b0'0000'1100);
 }
 
 void AudioCodec::Send1KHzSignal()
@@ -148,11 +199,10 @@ void AudioCodec::Send1KHzSignal()
     const float amplitude = 0.5;
     const float PI = 3.14159265358979311599796346854;
 
-    uint16_t sample_rate = static_cast<uint16_t>(32767.0 * std::sin(2 * PI * freq * HAL_GetTick() / 1000.0));
+    uint16_t sample_rate[1] = {static_cast<uint16_t>(32767.0 * std::sin(2 * PI * freq * HAL_GetTick() / 1000.0))};
     // uint16_t sample = static_cast<uint16_t>(32767.0 * sin(2 * 3.141592653589793 * 1000.0 * HAL_GetTick() / 1000.0))
 
-    HAL_Delay(1000);
-    HAL_I2S_Transmit(i2s, &sample_rate, 1, HAL_MAX_DELAY);
+    HAL_I2S_Transmit_DMA(i2s, sample_rate, 1);
 
     // for (int i = 0; i < sample_rate; ++i)
     // {

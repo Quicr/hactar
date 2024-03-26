@@ -15,15 +15,9 @@ Hardware design for test device
     2. [Python Serial Monitor](#serial_monitor)
 5. [STM32 Toolchain](#stm_installation)
 6. [ESP32 Toolchain](#esp_installation)
-7. [Hactar Installation](#hactar_installation)
-    1. [EV1](#ev1) - WIP
-    2. [EV2](#ev2) - WIP
-    3. [EV3](#ev3) - WIP
-    4. [EV4](#ev4) - WIP
-    5. [EV5](#ev5) - WIP
-    6. [EV6](#ev6) - WIP
-    7. [EV7](#ev7) - WIP
-    8. [EV8](#ev8) - Current
+7. [Hactar Setup](#hactar_setup)
+8. [Fully Assembled Hactar Setup - cliff notes](#hactar_upload)
+
 
 <h2 id="where">Where To Find Things</h2>
 
@@ -144,15 +138,38 @@ WIP
 
 <h2 id="tools">Tools</h2>
 
+<h3 id="flasher"><b>Python Flasher</b></h3>
+A firmware flashing tool designed to work with Hactar by collating STM32 and
+ESP32 flashing specifications.
+
+<h4>Requirements</h4>
+
+- pyserial
+
+<h4>How to use</h4>
+Generally the flasher is used automatically in the Makefile. However, you can flash whatever binary you want onto a chip that the flasher is designed for by running it as python script in the firmware/flasher folder.
+
+ex.
+
+```sh
+python3 flasher.py --port=/dev/ttyUSB0 --baud=115200 --chip="generic_stm" -bin="./build/app.bin"
+```
+
+You can omit passing a port and the flasher will attempt to find a Hactar board by searching your active usb serial ports.
+
+```sh
+python3 flasher.py --baud=115200 --chip="ui" -bin="./build/ui.bin"
+```
+
 <h3 id="echo_server"><b>Echo Server</b></h3>
-    Very basic server that echo's the message it receives.
+Very basic server that echo's the message it receives.
 
 <h3 id="serial_monitor"><b>Python Serial Monitor</b></h3>
 
 Located in firmware/tools
 
 Requirements
-- py_serial - ```pip install py_serial```
+- pyserial - ```pip install pyserial```
 
 This monitor can be used by the following command:
 `python monitor.py \[port] \[baudrate]`
@@ -166,7 +183,7 @@ ex.
 The following tools are used for Management and User Interface.
 - [Make](ui_make) \[required]
 - [ARM GNU Toolchain](arm-gnu) \[required]
-- [STM32_Programmer_CLI](stm_prog_cli) \[required]
+- [STM32_Programmer_CLI](stm_prog_cli) \[optional]
 - [OpenOCD](openocd) \[optional]
 
 <b id="ui_make">Make \[required]</b>
@@ -216,11 +233,13 @@ sudo apt install gcc-arm-none-eabi binutils-arm-none-eabi
 
 <i>MacOS</i>
 
-- TODO
+```sh
+brew install --cask gcc-arm-embedded
+```
 
 <br/>
 
-<b id="stm_prog_cli">STM32 Programmer CLI \[required]</b>
+<b id="stm_prog_cli">STM32 Programmer CLI \[Optional]</b>
 
 The STM32 Programmer CLI comes packages with the STM32 Cube Programmer. You'll need to download and install The STM32 Cube Programmer and add the STM32_Programmer_CLI binary to your path.
 ```
@@ -380,66 +399,51 @@ brew install make
 - https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html
 
 
-<h2 id="hactar_installation">Hactar Installation</h2>
+<h2 id="hactar_setup">Hactar Setup</h2>
+<i>Display connector</i>
 
-<h3 id="EV1">EV1</h2>
-
-WIP
-
-<h3 id="EV2">EV2</h2>
-
-WIP
-
-<h3 id="EV3">EV3</h2>
-
-WIP
-
-<h3 id="EV4">EV4</h2>
-
-WIP
-
-<h3 id="EV5">EV5</h2>
-
-WIP
-
-<h3 id="EV6">EV6</h2>
-
-WIP
-
-<h3 id="EV7">EV7</h2>
-
-WIP
-
-<h3 id="EV8">EV8 - Current</h2>
+- Required hardware
+    - 2.4 inch LCD Module from Waveshare
+    - Connector for display and Hactar board.
+- From the display match the connector's pins with the associated pins on the connector.
+    - VCC -- VCC
+    - GND -- GND
+    - DIN -- DISP_DIN
+    - CLK -- DISP_CLK
+    - CS  -- DISP_CS
+    - DC  -- DISP_DC
+    - RST -- DISP_RST
+    - BL  -- DISP_BL
 
 <i>Management Chip</i>
 
 - Prerequisites
-    - Stlink-v2
-    - STM32 Cube Programmer CLI
+    - USB-C Cable
+    - Python3
+        - PySerial
     - arm-none-eabi-g++
     - make
-- Hook up the stlink-v2 to the connector beside the usb-c connector.
-    - Note, you will probably want to make a connector that has female dupoint headers on one end and a PH 2.0 connector on the other end.
 - Build the mgmt code by navigating to `hactar/firmware/mgmt` and entering `make compile`
+- Plug in a USB-C
+- Press and hold the BOOT button Press and release the RESET button. Release the BOOT button.
 - Upload the mgmt code by entering `make upload`
 - After this you should see a couple of LED's light up
 
-<i>Userinterface Chip</i>
+<i>Main Chip</i>
 
 - Prerequisites
     - A programmed `management chip`
     - USB-C Cable
-    - STM32 Cube Programmer CLI
+    - Python3
+        - PySerial
     - arm-none-eabi-g++
     - make
 - Plug in the USB-C cable to the Hactar board.
 - Build the ui code by navigating to the `hactar/firmware/ui` folder and entering `make compile`
 - Upload the ui code by entering `make upload`
-    - **NOTE** - Update your the `port` variable, based on your OS and usb input, in the `hactar/firmware/ui/makefile`
-    - Once the process begins, a python script is called to send the command `ui_upload` to the management chip, turns off other LED's and turns on the third LED from the left, and puts the ui chip into bootloader mode.
-    - Then the stm32 cube programmer cli is called to upload the firmware.
-- After finishing uploading the firmware to the ui chip, it will return to running mode after 5 seconds.
+    - The python script "flasher.py" is called to upload to the main chip.
+    - NOTE - For some reason the Main STM32 chip doesn't like being put into bootloader mode this way. Fixing it is a WIP. You just need to keep trying... sorry.
+- After finishing uploading the firmware to the main chip, the management chip will return to running mode.
 
 <i>Network Chip</i>
 
@@ -451,9 +455,8 @@ WIP
 - Plug in the USB-C cable to the Hactar board.
 - Build the net code by navigating to the `hactar/firmware/net` folder and entering `make compile`
 - Upload the net code by entering `make upload`
-    - **NOTE** - Update your the `port` variable, based on your OS and usb input, in the `hactar/firmware/net/makefile`
-    - Once the process begins, a python script is called to send the command `net_upload` to the management chip, turns off other LED's and turns on the first LED from the left, and puts the net chip into bootloader mode.
-    - Then the stm32 cube programmer cli is called to upload the firmware.
+    - The python script "flasher.py" is called to upload to the net chip
+    - NOTE - The size is quite large, takes about 4 minutes to upload.
 - After finishing uploading the firmware to the net chip, the management chip will return to running mode.
 
 <i>Debug mode example</i>
@@ -471,3 +474,55 @@ WIP
     - See [Management Commands](#management_commands) for more commands that can be sent to the hactar board.
 - The first and third LED from the left will turn blue indicating debug mode and your console will receive serial debug messages from the UI and Net chips.
 - Enter `exit` to leave the monitor
+
+<h2 id="hactar_upload">Fully Assembled Hactar Setup</h2>
+
+<i>Silly pre-requisites:</i>
+- verify that your hactar folder and esp-if folders are peers
+- not within each other (usually hactar within esp-if)
+
+ARM:
+- brew install --cask gcc-arm-embedded
+
+Esp-idf:
+- brew install cmake ninja dfu-util
+- mkdir -p esp
+- cd esp
+- git clone -b v5.2 --recursive https://github.com/espressif/esp-idf.git --depth 1
+- cd esp-idf
+- ./install.sh esp32s3
+
+Add esp-idf to your path in ~/.zshrc    /* or equivalent */
+- alias get_idf='. $HOME/esp/esp-idf/export.sh'
+- (not the path of the export.sh is likely different for you)
+- source ~/.zshrc
+
+Flasher:
+- pip3 install pyserial
+
+Hactar:
+- git clone git@github.com/quicr/hactar
+- git submodule update --init --recursive
+- cd hactar
+- git checkout ev10
+
+<i>Mgmt:</i>
+- cd hactar/firmware/mgmt
+- conenct the hactar via USB
+- you might need to edit the Makefile to ensure that PORT is pointing to the correct USB (where the hactar is connected)
+- make compile
+- make upload
+
+
+<i>ui:</i>
+- cd hactar/firmware/ui
+- make compile
+- make upload
+
+<i>net:</i>
+- Ensure your esp-idf is on your path   /* which we set above */
+- cd hactar/firmware/net
+- make compile
+- make upload
+
+If it works (watch for the % progress, it retries if it fails so be patient), you're done!

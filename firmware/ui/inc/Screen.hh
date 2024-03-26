@@ -3,59 +3,60 @@
 #include "stm32.h"
 #include "PortPin.hh"
 #include "Font.hh"
-#include "String.hh"
 #include "RingMatrix.hh"
 
-#define SF_RST 0x01 // Software reset
-#define PWRC_A 0xCB // Power control A
-#define PWRC_B 0xCF // Power control B
-#define TIMC_A 0xE8 // Timer control A
-#define TIMC_B 0xEA // Timer control B
-#define PWR_ON 0xED // Power on sequence control
-#define PMP_RA 0xF7 // Pump ratio command
-#define PC_VRH 0xC0 // Power control VRH[5:0]
-#define PC_SAP 0xC1 // Power control SAP[2:0];BT[3:0]
-#define VCM_C1 0xC5 // VCM Control 1
-#define VCM_C2 0xC7 // VCM Control 2
-#define MEM_CR 0x36 // Memory access control
-#define PIX_FM 0x3A // Pixel format
-#define FR_CTL 0xB1 // Frame ratio control. RGB Color
-#define DIS_CT 0xB6 // Display function control
-#define GAMM_3 0xF2 // 3 Gamma function display
-#define GAMM_C 0x26 // Gamma curve selected
-#define GAM_PC 0xE0 // Positive gamma correction
-#define GAM_NC 0xE1 // Negative gamma correction
-#define END_SL 0x11 // Exit sleep
-#define DIS_ON 0x29 // Display on
-#define MAD_CT 0x36 // Rotation control
+#include <string>
 
-#define CA_SET 0x2A // Column address set
-#define RA_SET 0x2B // Row address set
-#define WR_RAM 0x2C // Write to RAM
+#define SF_RST 0x01U // Software reset
+#define PWRC_A 0xCBU // Power control A
+#define PWRC_B 0xCFU // Power control B
+#define TIMC_A 0xE8U // Timer control A
+#define TIMC_B 0xEAU // Timer control B
+#define PWR_ON 0xEDU // Power on sequence control
+#define PMP_RA 0xF7U // Pump ratio command
+#define PC_VRH 0xC0U // Power control VRH[5:0]
+#define PC_SAP 0xC1U // Power control SAP[2:0];BT[3:0]
+#define VCM_C1 0xC5U // VCM Control 1
+#define VCM_C2 0xC7U // VCM Control 2
+#define MEM_CR 0x36U // Memory access control
+#define PIX_FM 0x3AU // Pixel format
+#define FR_CTL 0xB1U // Frame ratio control. RGB Color
+#define DIS_CT 0xB6U // Display function control
+#define GAMM_3 0xF2U // 3 Gamma function display
+#define GAMM_C 0x26U // Gamma curve selected
+#define GAM_PC 0xE0U // Positive gamma correction
+#define GAM_NC 0xE1U // Negative gamma correction
+#define END_SL 0x11U // Exit sleep
+#define DIS_ON 0x29U // Display on
+#define MAD_CT 0x36U // Rotation control
 
-#define MAD_CTL_MY  0x80
-#define MAD_CTL_MX  0x40
-#define MAD_CTL_MV  0x20
-#define MAD_CTL_ML  0x10
-#define MAD_CTL_RGB 0x00
-#define MAD_CTL_BGR 0x08
-#define MAD_CTL_MH  0x04
+#define CA_SET 0x2AU // Column address set
+#define RA_SET 0x2BU // Row address set
+#define WR_RAM 0x2CU // Write to RAM
+
+#define MAD_CTL_MY  0x80U
+#define MAD_CTL_MX  0x40U
+#define MAD_CTL_MV  0x20U
+#define MAD_CTL_ML  0x10U
+#define MAD_CTL_RGB 0x00U
+#define MAD_CTL_BGR 0x08U
+#define MAD_CTL_MH  0x04U
 
 // Some basic colours
-#define	C_BLACK         0x0000
-#define	C_BLUE          0x001F
-#define	C_RED           0xF800
-#define C_LIGHT_GREEN   0x3626
-#define	C_GREEN         0x07E0
-#define C_CYAN          0x07FF
-#define C_MAGENTA       0xF81F
-#define C_YELLOW        0xFFE0
-#define C_WHITE         0xFFFF
-#define C_GREY          0xCE59
+#define	C_BLACK         0x0000U
+#define	C_BLUE          0x001FU
+#define	C_RED           0xF800U
+#define C_LIGHT_GREEN   0x3626U
+#define	C_GREEN         0x07E0U
+#define C_CYAN          0x07FFU
+#define C_MAGENTA       0xF81FU
+#define C_YELLOW        0xFFE0U
+#define C_WHITE         0xFFFFU
+#define C_GREY          0xCE59U
 
 // Default orientation
-#define WIDTH                240
-#define HEIGHT               320
+#define WIDTH                240U
+#define HEIGHT               320U
 #define PORTRAIT_DATA        (MAD_CTL_MY | MAD_CTL_BGR)
 #define LEFT_LANDSCAPE_DATA  (MAD_CTL_MV | MAD_CTL_BGR)
 #define RIGHT_LANDSCAPE_DATA (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
@@ -133,11 +134,11 @@ public:
                        const uint16_t thickness, const uint16_t colour);
 
     void DrawBlockAnimateString(const uint16_t x, const uint16_t y,
-                                const String &str, const Font &font,
+                                const std::string &str, const Font &font,
                                 const uint16_t fg, const uint16_t bg,
                                 const uint16_t delay);
 
-    void DrawText(const uint16_t x, const uint16_t y, const String &str,
+    void DrawText(const uint16_t x, const uint16_t y, const std::string &str,
                     const Font &font, const uint16_t fg, const uint16_t bg,
                     const bool wordwrap = false,
                     uint32_t max_chunk_size=Max_Chunk_Size);
@@ -148,7 +149,7 @@ public:
                      const uint16_t y_window_start,
                      const uint16_t x_window_end,
                      const uint16_t y_window_end,
-                     const String &str,
+                     const std::string &str,
                      const Font &font,
                      const uint16_t fg,
                      const uint16_t bg);

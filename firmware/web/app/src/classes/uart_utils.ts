@@ -8,7 +8,7 @@ export function FromByteArray(array: number[], endian: string = "big")
 {
     if (array.length > 4)
         throw "JS can't handle more than like 6 byte integers because \
-                precision";
+                'precision'";
 
     endian = endian.toLowerCase();
 

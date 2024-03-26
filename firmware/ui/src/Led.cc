@@ -5,11 +5,12 @@ Led::Led(GPIO_TypeDef* port,
     uint16_t _on_value,
     uint16_t _off_value,
     uint32_t duration) :
-    group((port_pin){ port, pin }),
-    duration(duration),
-    is_on(false),
+    port(port),
+    pin(pin),
     on_value(_on_value),
     off_value(_off_value),
+    duration(duration),
+    is_on(false),
     timeout(0)
 {
 
@@ -24,16 +25,16 @@ void Led::On()
 {
     timeout = HAL_GetTick() + duration;
     is_on = true;
-    HAL_GPIO_WritePin(group.port,
-        group.pin,
+    HAL_GPIO_WritePin(port,
+        pin,
         (GPIO_PinState)on_value);
 }
 
 void Led::Off()
 {
     is_on = false;
-    HAL_GPIO_WritePin(group.port,
-        group.pin,
+    HAL_GPIO_WritePin(port,
+        pin,
         (GPIO_PinState)off_value);
 }
 

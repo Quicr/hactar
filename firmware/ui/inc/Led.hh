@@ -19,10 +19,11 @@ public:
     void Timeout();
 
 private:
-    port_pin group;
+    GPIO_TypeDef* port;
+    uint32_t pin;
+    uint16_t on_value;
+    uint16_t off_value;
     uint32_t duration;
     bool is_on;
     uint32_t timeout;
-    uint16_t on_value;
-    uint16_t off_value;
 };
