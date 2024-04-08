@@ -60,6 +60,8 @@
         }
       ],
       "drc_exclusions": [
+        "footprint_type_mismatch|122140000|129110000|f60cc17f-31ab-48cb-bbfa-c77f244c3abc|00000000-0000-0000-0000-000000000000",
+        "footprint_type_mismatch|154825000|76150000|c03c4963-8fdd-448e-a8dc-8782b55793ff|00000000-0000-0000-0000-000000000000",
         "silk_edge_clearance|145837326|145435654|2d87eab7-53df-48ff-adee-e13353dc5b34|153b3dd1-d5fa-4b33-b6a9-d2f7a969e8cd",
         "silk_edge_clearance|154777332|145434353|2d87eab7-53df-48ff-adee-e13353dc5b34|ac44e03b-bb02-49cf-8482-c2b5fb419f89"
       ],
@@ -537,10 +539,10 @@
           "group_by": false,
           "label": "Datasheet",
           "name": "Datasheet",
-          "show": true
+          "show": false
         },
         {
-          "group_by": false,
+          "group_by": true,
           "label": "Footprint",
           "name": "Footprint",
           "show": true
@@ -549,20 +551,68 @@
           "group_by": false,
           "label": "Qty",
           "name": "${QUANTITY}",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "DNP",
+          "name": "${DNP}",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "#",
+          "name": "${ITEM_NUMBER}",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "JLCPCB Position Offset",
+          "name": "JLCPCB Position Offset",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "JLCPCB Rotation Offset",
+          "name": "JLCPCB Rotation Offset",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "JLCPCB#",
+          "name": "JLCPCB#",
           "show": true
         },
         {
-          "group_by": true,
-          "label": "DNP",
-          "name": "${DNP}",
+          "group_by": false,
+          "label": "MF",
+          "name": "MF",
           "show": true
+        },
+        {
+          "group_by": false,
+          "label": "MP",
+          "name": "MP",
+          "show": true
+        },
+        {
+          "group_by": false,
+          "label": "Package",
+          "name": "Package",
+          "show": true
+        },
+        {
+          "group_by": false,
+          "label": "Description",
+          "name": "Description",
+          "show": false
         }
       ],
       "filter_string": "",
       "group_symbols": true,
-      "name": "Grouped By Value",
+      "name": "",
       "sort_asc": true,
-      "sort_field": "Reference"
+      "sort_field": "JLCPCB#"
     },
     "connection_grid_size": 50.0,
     "drawing": {
