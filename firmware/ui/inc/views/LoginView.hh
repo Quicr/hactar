@@ -7,9 +7,10 @@ class LoginView : public ViewInterface
 {
 public:
     LoginView(UserInterfaceManager& manager,
-              Screen& screen,
-              Q10Keyboard& keyboard,
-              SettingManager& setting_manager);
+             Screen& screen,
+             Q10Keyboard& keyboard,
+             SettingManager& setting_manager,
+             Network& network);
     ~LoginView();
 protected:
     void AnimatedDraw();

@@ -114,8 +114,9 @@ bytes MLSState::unprotect(const bytes& ciphertext) {
 ChatView::ChatView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
-    SettingManager& setting_manager)
-    : ViewInterface(manager, screen, keyboard, setting_manager)
+    SettingManager& setting_manager,
+    Network& network)
+    : ViewInterface(manager, screen, keyboard, setting_manager, network)
     , pre_joined_state(PreJoinedState(*setting_manager.Username()))
 {
     redraw_messages = true;
@@ -210,7 +211,7 @@ void ChatView::SendPacket(const bytes& msg) {
     // TODO move into encode...
     // TODO packet should maybe have a static next_packet_id?
     std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 1);
-    packet->SetData(SerialPacket::Types::Message, 0, 1);
+    packet->SetData(SerialPacket::Types::QMessage, 0, 1);
     packet->SetData(manager.NextPacketId(), 1, 2);
 
     // The packet length is set in the encode function

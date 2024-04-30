@@ -53,7 +53,8 @@ public:
     ChatView(UserInterfaceManager& manager,
              Screen& screen,
              Q10Keyboard& keyboard,
-             SettingManager& setting_manager);
+             SettingManager& setting_manager,
+             Network& network);
     ~ChatView() = default;
 
     void SetActiveRoom(const struct Room &room);

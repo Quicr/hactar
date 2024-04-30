@@ -1,12 +1,12 @@
 #include "LoginView.hh"
 #include "UserInterfaceManager.hh"
-#include "ChatView.hh"
 
 LoginView::LoginView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
-    SettingManager& setting_manager) :
-    ViewInterface(manager, screen, keyboard, setting_manager),
+    SettingManager& setting_manager,
+    Network& network)
+    : ViewInterface(manager, screen, keyboard, setting_manager, network),
     incorrect_passcode_entered(false)
 {
 }

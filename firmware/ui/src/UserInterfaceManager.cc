@@ -1,8 +1,8 @@
 #include "UserInterfaceManager.hh"
 #include "FirstBootView.hh"
 #include "LoginView.hh"
-#include "ChatView.hh"
 #include "TeamView.hh"
+#include "ChatView.hh"
 
 #include "SettingManager.hh"
 #include "QChat.hh"
@@ -24,9 +24,10 @@ UserInterfaceManager::UserInterfaceManager(Screen &screen,
                                                              net_layer(&net_interface),
                                                              setting_manager(eeprom),
                                                              view(nullptr),
+                                                             network(setting_manager, net_layer, screen),
                                                              received_messages(), // TODO limit?
                                                              force_redraw(false),
-                                                             current_time(HAL_GetTick()),
+                                                             current_tick(HAL_GetTick()),
                                                              last_wifi_check(10000),
                                                              is_connected_to_wifi(false),
                                                              attempt_to_connect_timeout(0),
@@ -51,26 +52,32 @@ UserInterfaceManager::~UserInterfaceManager()
 // TODO should update this to be a draw/update architecture
 void UserInterfaceManager::Run()
 {
-    current_time = HAL_GetTick();
+    current_tick = HAL_GetTick();
 
+    // TODO rename to update
     view->Run();
 
+    // TODO move into view
     if (RedrawForced())
     {
         force_redraw = false;
         return;
     }
 
-    SendCheckWifiPacket();
+    // TODO move into wifi update.
+    // SendCheckWifiPacket();
 
     // Run the receive and transmit
-    net_layer.RxTx(current_time);
+    // TODO rename to Update
+    net_layer.RxTx(current_tick);
+
+    network.Update(current_tick);
 
     // TODO we probably should keep a small list of the most recent messages
     //      in the user interface manager instead of chat view
     //      otherwise it will be bizarre having to get all of the old messages.
     // TODO this should only occur in the chat view mode?
-    HandleIncomingPackets();
+    HandleIncomingPackets(); // TODO remake this function
 
     // TODO Clear pending packets after a certain amount of time
 }
@@ -137,7 +144,7 @@ void UserInterfaceManager::ChangeRoom(std::unique_ptr<qchat::Room> new_room)
         unwatch.room_uri = active_room->room_uri;
 
         std::unique_ptr<SerialPacket> unwatch_packet = std::make_unique<SerialPacket>();
-        unwatch_packet->SetData(SerialPacket::Types::Message, 0, 1);
+        unwatch_packet->SetData(SerialPacket::Types::QMessage, 0, 1);
         unwatch_packet->SetData(NextPacketId(), 1, 2);
 
         qchat::Codec::encode(unwatch_packet, unwatch);
@@ -159,7 +166,7 @@ void UserInterfaceManager::ChangeRoom(std::unique_ptr<qchat::Room> new_room)
     qchat::WatchRoom watch(active_room->publisher_uri + user_name + "/", active_room->room_uri);
 
     std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 5);
-    packet->SetData(SerialPacket::Types::Message, 0, 1);
+    packet->SetData(SerialPacket::Types::QMessage, 0, 1);
     packet->SetData(NextPacketId(), 1, 2);
 
     qchat::Codec::encode(packet, watch);
@@ -182,17 +189,19 @@ const std::unique_ptr<qchat::Room> &UserInterfaceManager::ActiveRoom() const
 
 void UserInterfaceManager::HandleIncomingPackets()
 {
+    // TODO move this into the serialpacketmanager.
     if (!net_layer.HasRxPackets())
         return;
 
     auto& packets = net_layer.GetRxPackets();
     for (auto& rx_packet : packets)
     {
-        uint8_t p_type = rx_packet->GetData<uint8_t>(0, 1);
+        SerialPacket::Types p_type = static_cast<SerialPacket::Types>(
+            rx_packet->GetData<uint8_t>(0, 1));
         switch (p_type)
         {
         // P_type will only be message or debug by this point
-        case (SerialPacket::Types::Message):
+        case (SerialPacket::Types::QMessage):
         {
             HandleMessagePacket(std::move(rx_packet));
 
@@ -220,38 +229,39 @@ void UserInterfaceManager::HandleIncomingPackets()
 
             break;
         }
+        // THIS WILL NEVER BE CALLED NOW
         case (SerialPacket::Types::Command):
         {
-            // TODO move into a function too many tabs deeeeep
-            SerialPacket::Commands command_type = static_cast<SerialPacket::Commands>(
-                rx_packet->GetData<uint8_t>(5, 1));
+            // // TODO move into a function too many tabs deeeeep
+            // SerialPacket::Commands command_type = static_cast<SerialPacket::Commands>(
+            //     rx_packet->GetData<uint8_t>(5, 2));
 
-            switch (command_type)
-            {
-            case SerialPacket::Commands::WifiStatus:
-            {
-                // TODO move into a wifi handler
-                // Response from the esp32 will invoke this
-                Logger::Log(Logger::Level::Info, "Got a connection status");
+            // switch (command_type)
+            // {
+            // case SerialPacket::Commands::Wifi:
+            // {
+            //     // TODO move into a wifi handler
+            //     // Response from the esp32 will invoke this
+            //     Logger::Log(Logger::Level::Info, "Got a connection status");
 
-                is_connected_to_wifi = rx_packet->GetData<char>(6, 1);
-                if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
-                {
-                    ConnectToWifi();
+            //     is_connected_to_wifi = rx_packet->GetData<char>(6, 1);
+            //     if (!is_connected_to_wifi && HAL_GetTick() > attempt_to_connect_timeout)
+            //     {
+            //         ConnectToWifi();
 
-                    // Wait a long time before trying to connect again
-                    attempt_to_connect_timeout = HAL_GetTick() + 10000;
-                }
-                break;
-            }
-            default:
-            {
-                // Every other command type should be put into the
-                // pending command packets.
-                pending_command_packets[command_type].Write(std::move(rx_packet));
-                break;
-            }
-            }
+            //         // Wait a long time before trying to connect again
+            //         attempt_to_connect_timeout = HAL_GetTick() + 10000;
+            //     }
+            //     break;
+            // }
+            // default:
+            // {
+            //     // Every other command type should be put into the
+            //     // pending command packets.
+            //     pending_command_packets[command_type].Write(std::move(rx_packet));
+            //     break;
+            // }
+            // }
 
             break;
         }
@@ -291,116 +301,6 @@ bool UserInterfaceManager::GetReadyPackets(
     return true;
 }
 
-void UserInterfaceManager::ConnectToWifi()
-{
-    // TODO error checking
-    //  Load the ssid and password from eeprom
-    int8_t *ssid;
-    int16_t ssid_len = 0;
-    if (!setting_manager.LoadSetting(SettingManager::SettingAddress::SSID,
-                                     &ssid, ssid_len))
-        return;
-
-    int8_t *ssid_password;
-    int16_t ssid_password_len = 0;
-    if (!setting_manager.LoadSetting(
-            SettingManager::SettingAddress::SSID_Password, &ssid_password,
-            ssid_password_len))
-        return;
-
-    std::string ssid_str;
-    for (int i = 0; i < ssid_len; i++)
-        ssid_str += ssid[i];
-    std::string password_str;
-    for (int i = 0; i < ssid_password_len; i++)
-        password_str += ssid_password[i];
-
-    delete[] ssid;
-    delete[] ssid_password;
-
-    ConnectToWifi(ssid_str, password_str);
-
-    // Create the packet
-    // std::unique_ptr<SerialPacket> connect_packet = std::make_unique<SerialPacket>();
-    // connect_packet->SetData(SerialPacket::Types::Command, 0, 1);
-    // connect_packet->SetData(UserInterfaceManager::NextPacketId(), 1, 2);
-    // // THINK should these be separate packets?
-    // // +3 for the length of the ssid, length of the password
-    // uint16_t length = ssid_len + ssid_password_len + 3;
-    // connect_packet->SetData(length, 3, 2);
-
-    // connect_packet->SetData(SerialPacket::Commands::WifiConnect, 5, 1);
-
-    // // Set the length of the ssid
-    // connect_packet->SetData(ssid_len, 6, 2);
-
-    // // Populate with the ssid
-    // uint16_t i;
-    // uint16_t offset = 8;
-    // for (i = 0; i < ssid_len; ++i)
-    // {
-    //     connect_packet->SetData(ssid[i], offset, 1);
-    //     offset += 1;
-    // }
-
-    // // Set the length of the password
-    // connect_packet->SetData(ssid_password_len, offset, 2);
-    // offset += 2;
-
-    // // Populate with the password
-    // uint16_t j;
-    // for (j = 0; j < ssid_password_len; ++j)
-    // {
-    //     connect_packet->SetData(ssid_password[j], offset, 1);
-    //     offset += 1;
-    // }
-
-    // // Enqueue the message
-    // EnqueuePacket(std::move(connect_packet));
-}
-
-void UserInterfaceManager::ConnectToWifi(const std::string &ssid,
-                                         const std::string &password)
-{
-    std::unique_ptr<SerialPacket> connect_packet = std::make_unique<SerialPacket>(HAL_GetTick());
-    connect_packet->SetData(SerialPacket::Types::Command, 0, 1);
-    connect_packet->SetData(UserInterfaceManager::NextPacketId(), 1, 2);
-
-    uint16_t ssid_len = ssid.length();
-    uint16_t ssid_password_len = password.length();
-    uint16_t length = ssid_len + ssid_password_len + 5;
-    connect_packet->SetData(length, 3, 2);
-
-    connect_packet->SetData(SerialPacket::Commands::WifiConnect, 5, 1);
-
-    // Set the length of the ssid
-    connect_packet->SetData(ssid_len, 6, 2);
-
-    // Populate with the ssid
-    uint16_t i;
-    uint16_t offset = 8;
-    for (i = 0; i < ssid_len; ++i)
-    {
-        connect_packet->SetData(ssid[i], offset, 1);
-        offset += 1;
-    }
-
-    // Set the length of the password
-    connect_packet->SetData(ssid_password_len, offset, 2);
-    offset += 2;
-
-    // Populate with the password
-    uint16_t j;
-    for (j = 0; j < ssid_password_len; ++j)
-    {
-        connect_packet->SetData(password[j], offset, 1);
-        offset += 1;
-    }
-
-    // Enqueue the message
-    EnqueuePacket(std::move(connect_packet));
-}
-
 bool UserInterfaceManager::IsConnectedToWifi() const
 {
     return is_connected_to_wifi;
@@ -429,7 +329,7 @@ void UserInterfaceManager::SendTestPacket()
 {
     std::unique_ptr<SerialPacket> test_packet = std::make_unique<SerialPacket>();
 
-    test_packet->SetData(SerialPacket::Types::Message, 0, 1);
+    test_packet->SetData(SerialPacket::Types::QMessage, 0, 1);
     test_packet->SetData(NextPacketId(), 1, 2);
     test_packet->SetData(5, 3, 2);
     test_packet->SetData('H', 5, 1);
@@ -439,39 +339,6 @@ void UserInterfaceManager::SendTestPacket()
     test_packet->SetData('o', 9, 1);
 
     EnqueuePacket(std::move(test_packet));
-}
-
-void UserInterfaceManager::SendCheckWifiPacket()
-{
-    if (current_time < last_wifi_check)
-        return;
-
-    // Check a check wifi status packet
-    std::unique_ptr<SerialPacket> check_wifi = std::make_unique<SerialPacket>(HAL_GetTick());
-
-    // Set the command
-    check_wifi->SetData(SerialPacket::Types::Command, 0, 1);
-
-    // Set the id
-    check_wifi->SetData(NextPacketId(), 1, 2);
-
-    // Set the size
-    check_wifi->SetData(1, 3, 2);
-
-    // Set the data
-    check_wifi->SetData(SerialPacket::Commands::WifiStatus, 5, 1);
-
-    Logger::Log(Logger::Level::Info, "Send check wifi to esp");
-
-    unsigned char *buff = check_wifi->Data();
-    for (uint16_t i = 0; i < check_wifi->NumBytes(); ++i)
-    {
-        Logger::Log(Logger::Level::Debug, buff + i);
-    }
-
-    EnqueuePacket(std::move(check_wifi));
-
-    last_wifi_check = current_time + 10000;
 }
 
 void UserInterfaceManager::HandleMessagePacket(

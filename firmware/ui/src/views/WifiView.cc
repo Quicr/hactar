@@ -2,16 +2,15 @@
 
 #include "WifiView.hh"
 #include "UserInterfaceManager.hh"
-#include "ChatView.hh"
 
 #include "main.h"
-extern UART_HandleTypeDef huart1;
 
 WifiView::WifiView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
-    SettingManager& setting_manager)
-    : ViewInterface(manager, screen, keyboard, setting_manager),
+    SettingManager& setting_manager,
+    Network& network)
+    : ViewInterface(manager, screen, keyboard, setting_manager, network),
     last_num_ssids(0),
     next_get_ssid_timeout(0),
     state(SSID),
@@ -36,7 +35,7 @@ void WifiView::Update()
     if (current_tick > next_get_ssid_timeout && state == WifiState::SSID)
     {
         ssids.clear();
-        SendGetSSIDPacket();
+        // SendGetSSIDPacket();
 
         // Get the list again after 30 seconds
         next_get_ssid_timeout = current_tick + 30000;
@@ -44,29 +43,29 @@ void WifiView::Update()
 
     if (state == WifiState::SSID && current_tick > state_update_timeout)
     {
-        RingBuffer<std::unique_ptr<SerialPacket>>* ssid_packets;
+        // RingBuffer<std::unique_ptr<SerialPacket>>* ssid_packets;
 
-        if (manager.GetReadyPackets(&ssid_packets, SerialPacket::Commands::SSIDs))
-        {
-            while (ssid_packets->Unread() > 0)
-            {
-                auto rx_packet = ssid_packets->Read();
-                // Get the packet len
-                uint16_t packet_data_len = rx_packet->GetData<uint16_t>(3, 2);
+        // if (manager.GetReadyPackets(&ssid_packets, SerialPacket::Commands::SSIDs))
+        // {
+        //     while (ssid_packets->Unread() > 0)
+        //     {
+        //         auto rx_packet = ssid_packets->Read();
+        //         // Get the packet len
+        //         uint16_t packet_data_len = rx_packet->GetData<uint16_t>(3, 2);
 
-                // Get the ssid id
-                uint8_t ssid_id = rx_packet->GetData<uint8_t>(6, 1);
+        //         // Get the ssid id
+        //         uint8_t ssid_id = rx_packet->GetData<uint8_t>(6, 1);
 
-                // Build the string
-                std::string str;
-                for (uint8_t i = 0; i < packet_data_len - 2; ++i)
-                {
-                    str.push_back(rx_packet->GetData<char>(7 + i, 1));
-                }
+        //         // Build the string
+        //         std::string str;
+        //         for (uint8_t i = 0; i < packet_data_len - 2; ++i)
+        //         {
+        //             str.push_back(rx_packet->GetData<char>(7 + i, 1));
+        //         }
 
-                ssids[ssid_id] = std::move(str);
-            }
-        }
+        //         ssids[ssid_id] = std::move(str);
+        //     }
+        // }
 
         state_update_timeout = current_tick + 500;
     }
@@ -202,7 +201,7 @@ void WifiView::HandleInput()
         {
             ssids.clear();
             last_num_ssids = -1;
-            SendGetSSIDPacket();
+            // SendGetSSIDPacket();
             std::string msg = "UI: Refresh ssids\n\r";
             HAL_UART_Transmit(&huart1, (const uint8_t*)msg.c_str(), msg.length(), HAL_MAX_DELAY);
         }
@@ -270,16 +269,6 @@ void WifiView::HandleWifiInput()
         request_msg = "Connecting";
         redraw_menu = true;
 
-        manager.ConnectToWifi();
+        // manager.ConnectToWifi();
     }
-}
-
-void WifiView::SendGetSSIDPacket()
-{
-    std::unique_ptr<SerialPacket> ssid_req_packet = std::make_unique<SerialPacket>();
-    ssid_req_packet->SetData(SerialPacket::Types::Command, 0, 1);
-    ssid_req_packet->SetData(manager.NextPacketId(), 1, 2);
-    ssid_req_packet->SetData(1, 3, 2);
-    ssid_req_packet->SetData(SerialPacket::Commands::SSIDs, 5, 1);
-    manager.EnqueuePacket(std::move(ssid_req_packet));
 }
