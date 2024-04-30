@@ -101,8 +101,8 @@ void Error_Handler(void);
 #define KB_ROW4_GPIO_Port GPIOB
 #define KB_ROW5_Pin GPIO_PIN_8
 #define KB_ROW5_GPIO_Port GPIOC
-#define ADC_UI_STAT_Pin GPIO_PIN_8
-#define ADC_UI_STAT_GPIO_Port GPIOA
+#define UI_STAT_Pin GPIO_PIN_8
+#define UI_STAT_GPIO_Port GPIOA
 #define UI_TX1_MGMT_Pin GPIO_PIN_9
 #define UI_TX1_MGMT_GPIO_Port GPIOA
 #define UI_RX1_MGMT_Pin GPIO_PIN_10

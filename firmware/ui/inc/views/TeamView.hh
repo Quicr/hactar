@@ -9,7 +9,8 @@ public:
     TeamView(UserInterfaceManager& manager,
              Screen& screen,
              Q10Keyboard& keyboard,
-             SettingManager& setting_manager);
+             SettingManager& setting_manager,
+             Network& network);
     ~TeamView();
 protected:
     void Update();

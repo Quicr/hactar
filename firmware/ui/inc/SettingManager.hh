@@ -182,7 +182,7 @@ public:
 
         if (!LoadSetting(addr, &data, len))
         {
-            delete* str;
+            delete *str;
             *str = nullptr;
             return;
         }
@@ -336,6 +336,13 @@ public:
         ClearSetting(setting);
     }
 
+    void ClearEeprom()
+    {
+        eeprom.Clear();
+    }
+
+private:
+
     void ShiftMemory(const SettingAddress setting, const int16_t addr, const int16_t len)
     {
         // Stuff the address that can change size into an array
@@ -396,12 +403,6 @@ public:
         }
     }
 
-    void ClearEeprom()
-    {
-        eeprom.Clear();
-    }
-
-private:
     void ClearSetting(const SettingAddress setting)
     {
         switch (setting)

@@ -129,14 +129,11 @@ int app_main()
 
     ui_manager = new UserInterfaceManager(screen, *keyboard, *net_serial_interface, *eeprom);
 
-    SerialPacketManager mgmt_serial(mgmt_serial_interface);
+    // SerialPacketManager mgmt_serial(mgmt_serial_interface);
 
-    uint8_t start_message [] = "UI: start\n\r";
-    HAL_UART_Transmit(&huart1, start_message, 12, 1000);
     HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(ADC_UI_STAT_GPIO_Port, ADC_UI_STAT_Pin, GPIO_PIN_SET);
 
 
     // HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
@@ -203,6 +200,10 @@ int app_main()
     uint32_t blink = HAL_GetTick() + 5000;
     uint32_t tx_sound = 0;
     // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
+
+    WaitForNetReady();
+    Logger::Log(Logger::Level::Info, "Hactar is ready");
+
     while (1)
     {
         ui_manager->Run();
@@ -275,6 +276,14 @@ int app_main()
     }
 
     return 0;
+}
+
+void WaitForNetReady()
+{
+    while (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_RESET)
+    {
+        HAL_Delay(10);
+    }
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)

@@ -7,8 +7,9 @@
 RoomView::RoomView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
-    SettingManager& setting_manager):
-    ViewInterface(manager, screen, keyboard, setting_manager),
+    SettingManager& setting_manager,
+    Network& network)
+    : ViewInterface(manager, screen, keyboard, setting_manager, network),
     selected_room_id(-1),
     connecting_to_room(false),
     next_get_rooms_time(0),

@@ -7,6 +7,7 @@
 #include "Q10Keyboard.hh"
 #include "EEPROM.hh"
 #include "CommandHandler.hh"
+#include "network.hh"
 #include <string>
 
 
@@ -18,12 +19,14 @@ public:
     ViewInterface(UserInterfaceManager& manager,
         Screen& screen,
         Q10Keyboard& keyboard,
-        SettingManager& setting_manager) :
+        SettingManager& setting_manager,
+        Network& network) :
         manager(manager),
         screen(screen),
         keyboard(keyboard),
         setting_manager(setting_manager),
-        command_handler(new CommandHandler(&manager)),
+        network(network),
+        command_handler(&manager),
         first_load(true),
         redraw_menu(true),
         cursor_animate_timeout(0),
@@ -48,7 +51,6 @@ public:
 
     virtual ~ViewInterface()
     {
-        delete command_handler;
     }
 
     virtual void Run()
@@ -83,7 +85,7 @@ protected:
         Update();
 
         // Change view if set
-        if (command_handler->ChangeViewCommand(new_view))
+        if (command_handler.ChangeViewCommand(new_view))
         {
             return true;
         }
@@ -275,7 +277,8 @@ protected:
     Screen& screen;
     Q10Keyboard& keyboard;
     SettingManager& setting_manager;
-    CommandHandler* command_handler;
+    Network& network;
+    CommandHandler command_handler;
 
     // If this is the first load, then we should
     // Run the first load draw

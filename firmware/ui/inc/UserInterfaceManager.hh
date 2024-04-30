@@ -10,6 +10,7 @@
 #include "SerialInterface.hh"
 #include "SettingManager.hh"
 #include "Screen.hh"
+#include "network.hh"
 
 #include "QChat.hh"
 
@@ -43,8 +44,6 @@ public:
     void LoopbackPacket(std::unique_ptr<SerialPacket> packet);
     void ForceRedraw();
     bool RedrawForced();
-    void ConnectToWifi();
-    void ConnectToWifi(const std::string& ssid, const std::string& password);
 
     uint32_t GetTxStatusColour() const;
     uint32_t GetRxStatusColour() const;
@@ -73,7 +72,7 @@ public:
             delete view;
         }
 
-        view = new T(*this, *screen, *keyboard, setting_manager);
+        view = new T(*this, *screen, *keyboard, setting_manager, network);
 
         return true;
     }
@@ -97,11 +96,12 @@ private:
     SerialPacketManager net_layer;
     SettingManager setting_manager;
     ViewInterface* view;
+    Network network;
     std::vector<std::string> received_messages;
     bool has_new_messages;
     std::deque<qchat::Ascii> ascii_messages;
     bool force_redraw;
-    uint32_t current_time;
+    uint32_t current_tick;
 
 
     std::map<SerialPacket::Commands, RingBuffer<std::unique_ptr<SerialPacket>>> pending_command_packets;

@@ -6,13 +6,15 @@
 // TODO make sure the usr input is not empty
 
 FirstBootView::FirstBootView(UserInterfaceManager& manager,
-                             Screen& screen,
-                             Q10Keyboard& keyboard,
-                             SettingManager& setting_manager) :
-    ViewInterface(manager, screen, keyboard, setting_manager),
+    Screen& screen,
+    Q10Keyboard& keyboard,
+    SettingManager& setting_manager,
+    Network& network)
+    : ViewInterface(manager, screen, keyboard, setting_manager, network),
     state(State::Username),
     request_message("Please enter your name:"),
     wifi_state(WifiState::SSID),
+    ssids(nullptr),
     ssid(),
     password(),
     state_update_timeout(0),
@@ -67,31 +69,11 @@ void FirstBootView::Draw()
 
     screen.DrawText(1,
         screen.ViewHeight() - (usr_font.height * 2), request_message,
-            usr_font, fg, bg);
+        usr_font, fg, bg);
 
     if (wifi_state == WifiState::SSID)
     {
-        // TODO move into function
-        uint16_t idx = 0;
-        for (auto ssid : ssids)
-        {
-            const uint16_t y_start = 50;
-
-            // convert the ssid int val to a string
-            const std::string ssid_id_str = std::to_string(ssid.first);
-
-            screen.FillRectangle(1 + usr_font.width * ssid_id_str.length(),
-                y_start + (idx * usr_font.height),
-                1 + usr_font.width * 3,
-                y_start + ((idx + 1) * usr_font.height), C_BLACK);
-
-            screen.DrawText(1, y_start + (idx * usr_font.height),
-                ssid_id_str, usr_font, C_WHITE, C_BLACK);
-
-            screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
-                ssid.second, usr_font, C_WHITE, C_BLACK);
-            ++idx;
-        }
+        DrawSSIDs();
     }
 
     if (usr_input.length() > last_drawn_idx || redraw_input)
@@ -132,12 +114,8 @@ void FirstBootView::HandleInput()
 
             request_message = "Please select SSID by number:";
 
-            std::unique_ptr<SerialPacket> ssid_req_packet = std::make_unique<SerialPacket>();
-            ssid_req_packet->SetData(SerialPacket::Types::Command, 0, 1);
-            ssid_req_packet->SetData(manager.NextPacketId(), 1, 2);
-            ssid_req_packet->SetData(1, 3, 2);
-            ssid_req_packet->SetData(SerialPacket::Commands::SSIDs, 5, 1);
-            manager.EnqueuePacket(std::move(ssid_req_packet));
+            network.RequestSSIDs();
+
             state = State::Wifi;
             break;
         }
@@ -157,29 +135,7 @@ void FirstBootView::Update()
 {
     if (state == State::Wifi)
     {
-        RingBuffer<std::unique_ptr<SerialPacket>>* ssid_packets;
-
-        if (manager.GetReadyPackets(&ssid_packets, SerialPacket::Commands::SSIDs))
-        {
-            while (ssid_packets->Unread() > 0)
-            {
-                auto rx_packet = ssid_packets->Read();
-                // Get the packet len
-                uint16_t packet_data_len = rx_packet->GetData<uint16_t>(3, 2);
-
-                // Get the ssid id
-                uint8_t ssid_id = rx_packet->GetData<uint8_t>(6, 1);
-
-                // Build the string
-                std::string str;
-                for (uint8_t i = 0; i < packet_data_len - 2; ++i)
-                {
-                    str.push_back(rx_packet->GetData<char>(7 + i, 1));
-                }
-
-                ssids[ssid_id] = std::move(str);
-            }
-        }
+        ssids = &network.GetSSIDs();
 
         if (wifi_state == WifiState::Connecting)
         {
@@ -191,9 +147,6 @@ void FirstBootView::Update()
         // Save to the eeprom that we finished the first boot
         if (HAL_GetTick() > state_update_timeout)
         {
-            // FIX sometimes crashes here
-            // because we need to return true all the way upwards
-            // manager.ChangeView<LoginView>();
             ChangeView("/login");
         }
     }
@@ -201,7 +154,7 @@ void FirstBootView::Update()
 
 void FirstBootView::SetWifi()
 {
-    if (wifi_state == SSID)
+    if (wifi_state == WifiState::SSID)
     {
         // Get the ssid selection
         if (usr_input == "skip")
@@ -217,13 +170,19 @@ void FirstBootView::SetWifi()
             return;
         }
 
+
+        // Nothing to do with empty ssids
+        if (ssids == nullptr)
+        {
+            return;
+        }
+
         // My String class had a built in ToNumber that doesn't had exceptions
         // but instead would return a -1...
         // Read the value that was entered by the user
         // int32_t room_id = usr_input.ToNumber();
-
         // To avoid exceptions for now
-        char *str_part;
+        char* str_part;
         int32_t ssid_id = strtol(usr_input.c_str(), &str_part, 10);
 
         // May never get called now..
@@ -233,13 +192,13 @@ void FirstBootView::SetWifi()
             return;
         }
 
-        if (ssids.find(ssid_id) == ssids.end())
+        if (ssids->find(ssid_id) == ssids->end())
         {
             request_message = "Error. Please select SSID number:";
             return;
         }
 
-        ssid = ssids.at(ssid_id);
+        ssid = ssids->at(ssid_id);
         setting_manager.SaveSetting(
             SettingManager::SettingAddress::SSID,
             ssid.data(), ssid.length());
@@ -259,13 +218,13 @@ void FirstBootView::SetWifi()
             SettingManager::SettingAddress::SSID_Password,
             password.data(), password.length());
 
-        manager.ConnectToWifi();
+        network.ConnectToNetwork();
 
         // Set the state to waiting
         request_message = "Connecting";
 
         // TODO consider making a draw queue
-        screen.FillRectangle(0, HEIGHT - usr_font.height*2, WIDTH,
+        screen.FillRectangle(0, HEIGHT - usr_font.height * 2, WIDTH,
             HEIGHT - usr_font.height, C_BLACK);
 
         wifi_state = WifiState::Connecting;
@@ -312,4 +271,34 @@ void FirstBootView::UpdateConnecting()
 void FirstBootView::SetAllDefaults()
 {
 
+}
+
+void FirstBootView::DrawSSIDs()
+{
+    uint16_t idx = 0;
+
+    if (ssids == nullptr)
+    {
+        return;
+    }
+
+    for (auto ssid : *ssids)
+    {
+        const uint16_t y_start = 50;
+
+        // convert the ssid int val to a string
+        const std::string ssid_id_str = std::to_string(ssid.first);
+
+        screen.FillRectangle(1 + usr_font.width * ssid_id_str.length(),
+            y_start + (idx * usr_font.height),
+            1 + usr_font.width * 3,
+            y_start + ((idx + 1) * usr_font.height), C_BLACK);
+
+        screen.DrawText(1, y_start + (idx * usr_font.height),
+            ssid_id_str, usr_font, C_WHITE, C_BLACK);
+
+        screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
+            ssid.second, usr_font, C_WHITE, C_BLACK);
+        ++idx;
+    }
 }

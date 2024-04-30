@@ -1,12 +1,12 @@
 #include "TeamView.hh"
 #include "UserInterfaceManager.hh"
-#include "ChatView.hh"
 
 TeamView::TeamView(UserInterfaceManager& manager,
-                   Screen& screen,
-                   Q10Keyboard& keyboard,
-                   SettingManager& setting_manager)
-    : ViewInterface(manager, screen, keyboard, setting_manager)
+    Screen& screen,
+    Q10Keyboard& keyboard,
+    SettingManager& setting_manager,
+    Network& network)
+    : ViewInterface(manager, screen, keyboard, setting_manager, network)
 {
 }
 
