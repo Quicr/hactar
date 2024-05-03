@@ -12,6 +12,8 @@ enum State
     Net_Upload_Reset,
     Net_Upload,
     Debug_Reset,
+    UI_Debug_Reset,
+    Net_Debug_Reset,
     Debug_Running
 };
 

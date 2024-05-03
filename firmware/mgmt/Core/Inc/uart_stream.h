@@ -34,6 +34,8 @@ typedef struct _uart_stream_t
 static const char ui_upload_cmd [] = "ui_upload";
 static const char net_upload_cmd [] = "net_upload";
 static const char debug_cmd [] = "debug";
+static const char ui_debug_cmd [] = "ui_debug";
+static const char net_debug_cmd [] = "net_debug";
 static const char reset_cmd [] = "reset";
 
 static const uint8_t ACK [] = { 0x79 };

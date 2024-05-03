@@ -147,7 +147,7 @@ struct Codec
         packet->SetData(extra_bytes + field_bytes, 2);
 
         // Set the message type, starts at byte 5
-        packet->SetData(SerialPacket::Commands::RoomsGet, 1);
+        packet->SetData(SerialPacket::Commands::RoomsGet, 2);
 
         // Append the is_default field len and value
         packet->SetData(1, Field_Len_Bytes);

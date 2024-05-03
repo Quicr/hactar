@@ -40,20 +40,12 @@ public:
     std::vector<std::string> TakeMessages();
     void PushMessage(std::string&& str);
     void ClearMessages();
-    void EnqueuePacket(std::unique_ptr<SerialPacket> packet);
     void LoopbackPacket(std::unique_ptr<SerialPacket> packet);
     void ForceRedraw();
     bool RedrawForced();
 
-    uint32_t GetTxStatusColour() const;
-    uint32_t GetRxStatusColour() const;
-
-    bool GetReadyPackets(
-        RingBuffer<std::unique_ptr<SerialPacket>>** buff,
-        const SerialPacket::Commands command_type) const;
-    bool IsConnectedToWifi() const;
-
-    uint16_t NextPacketId();
+    // uint32_t GetTxStatusColour() const;
+    // uint32_t GetRxStatusColour() const;
 
     void ChangeRoom(std::unique_ptr<qchat::Room> new_room);
     const std::unique_ptr<qchat::Room>& ActiveRoom() const;
@@ -72,7 +64,7 @@ public:
             delete view;
         }
 
-        view = new T(*this, *screen, *keyboard, setting_manager, network);
+        view = new T(*this, *screen, *keyboard, setting_manager, net_layer, network);
 
         return true;
     }
@@ -80,8 +72,8 @@ public:
 private:
     void HandleIncomingPackets();
     void TimeoutPackets();
-    uint32_t GetStatusColour(
-        const SerialPacketManager::SerialStatus status) const;
+    // uint32_t GetStatusColour(
+    //     const SerialPacketManager::SerialStatus status) const;
 
     void SendTestPacket();
     void SendCheckWifiPacket();
@@ -102,12 +94,6 @@ private:
     std::deque<qchat::Ascii> ascii_messages;
     bool force_redraw;
     uint32_t current_tick;
-
-
-    std::map<SerialPacket::Commands, RingBuffer<std::unique_ptr<SerialPacket>>> pending_command_packets;
-    uint32_t last_wifi_check;
-    bool is_connected_to_wifi;
-    uint32_t attempt_to_connect_timeout;
 
     uint32_t last_test_packet = 0;
 

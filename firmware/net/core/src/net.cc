@@ -15,8 +15,6 @@
 #include "nvs_flash.h"
 #include "esp_event.h"
 
-#include "Logging.hh"
-#include "SerialLogger.hh"
 #include "SerialEsp.hh"
 #include "SerialPacketManager.hh"
 #include "NetManager.hh"
@@ -27,17 +25,10 @@
 #include <qsession.h>
 #include "logger.hh"
 
-// Forward declare functions
-void Setup(const uart_config_t&);
-void Run();
-
 extern "C" void app_main(void)
 {
-    esp_log_level_set(TAG, ESP_LOG_INFO);
-
-    GpioInit();
-    UartInit();
-
+    SetupPins();
+    SetupComponents();
 
     gpio_set_level(LED_R_Pin, 1);
     gpio_set_level(LED_G_Pin, 1);
@@ -51,20 +42,32 @@ extern "C" void app_main(void)
     // Ready for normal operations
     gpio_set_level(NET_STAT_Pin, 1);
 
-    Setup();
-
+    // This is the lazy way of doing it, otherwise we should use a esp_timer.
+    uint32_t blink_cnt = 0;
     while (1)
     {
-        gpio_set_level(LED_R_Pin, next);
-        next = next ? 0 : 1;
+        if (blink_cnt++ == 100)
+        {
+            gpio_set_level(LED_R_Pin, next);
+            next = next ? 0 : 1;
+            blink_cnt = 0;
+        }
 
-        Run();
+        manager->Update();
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        auto state = wifi->GetState();
+        if (state == Wifi::State::Connected && !qsession_connected)
+        {
+            Logger::Log(Logger::Level::Info, "Net app_main Connecting to QSession");
+            qsession->connect();
+            qsession_connected = true;
+        }
+
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
 
-void GpioInit()
+static void SetupPins()
 {
     gpio_config_t io_conf = {};
     io_conf.intr_type = GPIO_INTR_DISABLE;
@@ -91,10 +94,7 @@ void GpioInit()
     io_conf.pull_down_en = (gpio_pulldown_t)0;
     io_conf.pull_up_en = (gpio_pullup_t)0;
     gpio_config(&io_conf);
-}
 
-void UartInit()
-{
     // Configure the uart
     uart_config_t uart_config = {
         .baud_rate = 115200,
@@ -109,20 +109,14 @@ void UartInit()
     // Setup serial interface for ui
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 2048);
 
-    // UART to the ui
-    ui_layer = new SerialPacketManager(ui_uart1);
-
-    // TODO remove this and convert it into a mgmt chip serialmanager.
-    // setup logger
-    logger = hactar_utils::LogManager::GetInstance();
-    logger->add_logger(new hactar_utils::ESP32SerialLogger());
-    ESP_LOGI(TAG, "Net app_main start");
+    Logger::Log(Logger::Level::Info, "Pin setup complete");
 }
 
-void Setup()
+void SetupComponents()
 {
-    // Wifi will manage itself and keep it connected if it disconnects.
-    wifi = Wifi::GetInstance();
+    // UART to the ui
+    ui_layer = new SerialPacketManager(ui_uart1);
+    wifi = new Wifi(*ui_layer);
 
     inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
     char default_relay [] = "192.168.50.141";
@@ -135,37 +129,13 @@ void Setup()
     };
     qsession = std::make_shared<QSession>(relay, inbound_queue);
 
-    ESP_LOGI(TAG, "Starting net manager");
-    manager = new NetManager(ui_layer, qsession, inbound_queue);
-}
+    manager = new NetManager(*ui_layer, *wifi, qsession, inbound_queue);
 
-void Run()
-{
-    auto state = Wifi::GetInstance()->GetState();
-    if (state == Wifi::State::Connected && !qsession_connected)
+    // Wait for wifi to finish initializing
+    while (!wifi->IsInitialized())
     {
-        ESP_LOGI(TAG, "Net app_main Connecting to QSession");
-        qsession->connect();
-        qsession_connected = true;
-
-        //quicr::Namespace ns = qsession->to_namespace("quicr://webex.cisco.com/version/1/appId/1/org/1/channel/100/room/1");
-        // quicr::Namespace nspace(0xA11CEE00000001010007000000000000_name, 80);
-        // std::cout << "Subscribing to " << nspace << std::endl;
-        // bool res = qsession->subscribe(nspace);
-
-        // if (res)
-        // {
-        //     std::cout << "Subscribed!!" << std::endl;
-        // }
-
-        // res = qsession->publish_intent(nspace);
-        // if (res)
-        // {
-        //     std::cout << "Publish intent ready" << std::endl;
-        // }
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 
-
-
-
+    Logger::Log(Logger::Level::Info, "Components ready");
 }

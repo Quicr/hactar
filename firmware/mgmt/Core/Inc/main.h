@@ -66,10 +66,10 @@ void Error_Handler(void);
 #define BTN_NET_Pin GPIO_PIN_15
 #define BTN_NET_GPIO_Port GPIOC
 #define BTN_NET_EXTI_IRQn EXTI4_15_IRQn
-#define ADC_UI_STAT_Pin GPIO_PIN_0
-#define ADC_UI_STAT_GPIO_Port GPIOA
-#define ADC_NET_STAT_Pin GPIO_PIN_1
-#define ADC_NET_STAT_GPIO_Port GPIOA
+#define UI_STAT_Pin GPIO_PIN_0
+#define UI_STAT_GPIO_Port GPIOA
+#define NET_STAT_Pin GPIO_PIN_1
+#define NET_STAT_GPIO_Port GPIOA
 #define UI_RX1_MGMT_Pin GPIO_PIN_2
 #define UI_RX1_MGMT_GPIO_Port GPIOA
 #define UI_TX1_MGMT_Pin GPIO_PIN_3

@@ -9,6 +9,7 @@ public:
              Screen& screen,
              Q10Keyboard& keyboard,
              SettingManager& setting_manager,
+             SerialPacketManager& serial,
              Network& network);
     ~RoomView();
 protected:

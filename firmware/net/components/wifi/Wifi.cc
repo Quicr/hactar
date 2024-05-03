@@ -5,24 +5,16 @@
 
 #include "esp_log.h"
 
-static const char* TAG = "[net-wifi]";
 
-Wifi* Wifi::instance;
-
-Wifi* Wifi::GetInstance()
-{
-    if (instance == nullptr)
-    {
-        instance = new Wifi();
-    }
-
-    return instance;
-}
-
-Wifi::Wifi():
+Wifi::Wifi(SerialPacketManager& serial):
+    serial(serial),
     wifi_init_cfg(WIFI_INIT_CONFIG_DEFAULT()),
     wifi_cfg({}),
-    state(State::NotInitialized)
+    state(State::NotInitialized),
+    failed_attempts(0),
+    is_initialized(false),
+    connect_semaphore(),
+    connect_task()
 {
     connect_semaphore = xSemaphoreCreateBinary();
 
@@ -34,14 +26,14 @@ Wifi::Wifi():
     xTaskCreate(ConnectTask,
         "wifi_connect_task",
         4096,
-        NULL,
+        (void*)this,
         12,
         &connect_task);
 }
 
 Wifi::~Wifi()
 {
-    ESP_LOGI(TAG, "Delete wifi");
+    Logger::Log(Logger::Level::Info, "Delete wifi");
     vTaskDelete(connect_task);
 }
 
@@ -71,21 +63,21 @@ void Wifi::Connect(const char* ssid,
         password,
         password_len);
 
-    ESP_LOGE(TAG, "ssid %s password %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
+    Logger::Log(Logger::Level::Error, "ssid %s password %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
 
-    while (!xSemaphoreTake(connect_semaphore, 1000)) { ESP_LOGW(TAG,"Connect() Waiting for semaphore");}
+    while (!xSemaphoreTake(connect_semaphore, 1000)) { Logger::Log(Logger::Level::Warn,"Connect() Waiting for semaphore");}
 
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
 
     state = State::ReadyToConnect;
 
     xSemaphoreGive(connect_semaphore);
-    ESP_LOGI(TAG, "SetCredentialsTask() Ready to connect state: %d", (int)state);
+    Logger::Log(Logger::Level::Info, "SetCredentialsTask() Ready to connect state: %d", (int)state);
 }
 
 esp_err_t Wifi::Deinitialize()
 {
-    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY)) { ESP_LOGW(TAG,"Deinitialize() Waiting for semaphore"); }
+    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY)) { Logger::Log(Logger::Level::Warn,"Deinitialize() Waiting for semaphore"); }
 
     state = State::NotInitialized;
     esp_err_t status = esp_wifi_deinit();
@@ -96,7 +88,7 @@ esp_err_t Wifi::Deinitialize()
 
 esp_err_t Wifi::Disconnect()
 {
-    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY)) {ESP_LOGW(TAG,"Disconnect() Waiting for semaphore"); }
+    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY)) {Logger::Log(Logger::Level::Warn,"Disconnect() Waiting for semaphore"); }
 
     state = State::Disconnected;
     esp_err_t status = esp_wifi_disconnect();
@@ -136,14 +128,14 @@ esp_err_t Wifi::Initialize()
 
     while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY))
     {
-        ESP_LOGE(TAG, "Semaphore should not be in use now????");
+        Logger::Log(Logger::Level::Error, "Semaphore should not be in use now????");
     };
 
-    ESP_LOGI(TAG, "Begin initialization:");
+    Logger::Log(Logger::Level::Info, "Begin initialization:");
 
     if (state != State::NotInitialized)
     {
-        ESP_LOGE(TAG, "Failed to initialized, not in state NotInitialized but in state: %d", (int)state);
+        Logger::Log(Logger::Level::Error, "Failed to initialized, not in state NotInitialized but in state: %d", (int)state);
         return ESP_ERR_INVALID_STATE;
     }
 
@@ -151,7 +143,7 @@ esp_err_t Wifi::Initialize()
     ESP_ERROR_CHECK(status);
 
     // Init the nvs
-    ESP_LOGI(TAG, "Init the nvs");
+    Logger::Log(Logger::Level::Info, "Init the nvs");
     status = nvs_flash_init();
     if (status == ESP_ERR_NVS_NO_FREE_PAGES || status == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
@@ -160,7 +152,7 @@ esp_err_t Wifi::Initialize()
         ESP_ERROR_CHECK(status);
     }
 
-    ESP_LOGI(TAG, "Init netif");
+    Logger::Log(Logger::Level::Info, "Init netif");
     status = esp_netif_init();
     ESP_ERROR_CHECK(status);
 
@@ -174,19 +166,19 @@ esp_err_t Wifi::Initialize()
 
     status = esp_wifi_init(&wifi_init_cfg);
     ESP_ERROR_CHECK(status);
-    ESP_LOGI(TAG, "Init complete, status %d", (int)state);
+    Logger::Log(Logger::Level::Info, "Init complete, status %d", (int)state);
 
     status = esp_event_handler_instance_register(WIFI_EVENT,
         ESP_EVENT_ANY_ID,
         &EventHandler,
-        nullptr,
+        (void*)this,
         nullptr);
     ESP_ERROR_CHECK(status);
 
     status = esp_event_handler_instance_register(IP_EVENT,
         IP_EVENT_STA_GOT_IP,
         &EventHandler,
-        nullptr,
+        (void*)this,
         nullptr);
     ESP_ERROR_CHECK(status);
 
@@ -200,7 +192,7 @@ esp_err_t Wifi::Initialize()
     status = esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg);
     ESP_ERROR_CHECK(status);
 
-    ESP_LOGI(TAG, "Start wifi");
+    Logger::Log(Logger::Level::Info, "Start wifi");
     status = esp_wifi_start();
     ESP_ERROR_CHECK(status);
 
@@ -217,10 +209,17 @@ bool Wifi::IsConnected() const
     return state == State::Connected;
 }
 
+bool Wifi::IsInitialized() const
+{
+    return is_initialized;
+}
+
 /** Private functions **/
 
 void Wifi::ConnectTask(void* params)
 {
+    Wifi* instance = (Wifi*)params;
+
     while (true)
     {
         // Delay for a second
@@ -230,16 +229,16 @@ void Wifi::ConnectTask(void* params)
         if (instance->state != State::ReadyToConnect) continue;
 
         // Try to take the semaphore
-        while (!xSemaphoreTake(instance->connect_semaphore, portMAX_DELAY)) { ESP_LOGW(TAG,"ConnectTask() Waiting for semaphore"); }
+        while (!xSemaphoreTake(instance->connect_semaphore, portMAX_DELAY)) { Logger::Log(Logger::Level::Warn,"ConnectTask() Waiting for semaphore"); }
         // Give semaphore in IP/HTTP events
 
-        ESP_LOGI(TAG, "connect() state %d", (int)instance->state);
+        Logger::Log(Logger::Level::Info, "connect() state %d", (int)instance->state);
 
         esp_err_t status = { ESP_OK };
         ESP_ERROR_CHECK(esp_wifi_connect());
         if (status == ESP_OK)
         {
-            ESP_LOGI(TAG, "moving to connecting state");
+            Logger::Log(Logger::Level::Info, "moving to connecting state");
             instance->state = State::Connecting;
         }
     }
@@ -248,6 +247,8 @@ void Wifi::ConnectTask(void* params)
 void Wifi::EventHandler(void* arg, esp_event_base_t event_base,
     int32_t event_id, void* event_data)
 {
+    Wifi* instance = (Wifi*)arg;
+
     if (event_base == WIFI_EVENT)
     {
         instance->WifiEvents(event_id, event_data);
@@ -260,28 +261,30 @@ void Wifi::EventHandler(void* arg, esp_event_base_t event_base,
 
 inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
 {
-    ESP_LOGI(TAG, "Wifi Event -- event %d", (int)event_id);
     const wifi_event_t event_type{ static_cast<wifi_event_t>(event_id) };
+    Logger::Log(Logger::Level::Info, "Wifi Event -- event %d", (int)event_id);
 
     switch (event_type)
     {
         case WIFI_EVENT_STA_START:
         {
             state = State::Initialized;
-            ESP_LOGI(TAG, "Wifi Event - Initialized");
+            is_initialized = true;
+            Logger::Log(Logger::Level::Info, "Wifi Event - Initialized");
             xSemaphoreGive(connect_semaphore);
             break;
         }
         case WIFI_EVENT_STA_CONNECTED:
         {
             state = State::WaitingForIP;
-            ESP_LOGI(TAG, "Wifi Event - Waiting for IP");
+            SendWifiConnectedPacket();
+            Logger::Log(Logger::Level::Info, "Wifi Event - Waiting for IP");
             xSemaphoreGive(connect_semaphore);
             break;
         }
         case WIFI_EVENT_STA_DISCONNECTED:
         {
-            ESP_LOGI(TAG, "Wifi Event - Disconnected");
+            Logger::Log(Logger::Level::Info, "Wifi Event - Disconnected");
             // Every time the wifi fails to connect to a network
             // a disconnected event is called
             if (state == State::Connecting)
@@ -291,7 +294,8 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
                     // Reset to ready to connect
                     state = State::InvalidCredentials;
                     failed_attempts = 0;
-                    ESP_LOGE(TAG, "Max failed attempts, invalid credentials");
+                    SendWifiFailedToConnectPacket();
+                    Logger::Log(Logger::Level::Error, "Max failed attempts, invalid credentials");
                 }
                 else
                 {
@@ -302,8 +306,18 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
             {
                 // If we just decide to disconnect the wifi
                 state = State::Disconnected;
+                SendWifiDisconnectPacket();
             }
 
+            xSemaphoreGive(connect_semaphore);
+            break;
+        }
+        case WIFI_EVENT_STA_STOP:
+        {
+            state = State::NotInitialized;
+            is_initialized = false;
+
+            // This is assuming this is how it works.
             xSemaphoreGive(connect_semaphore);
             break;
         }
@@ -314,13 +328,13 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
 
 inline void Wifi::IpEvents(int32_t event_id)
 {
-    ESP_LOGI(TAG, "IP Event - %d", (int)event_id);
+    Logger::Log(Logger::Level::Info, "IP Event - %d", (int)event_id);
 
     switch (event_id)
     {
         case IP_EVENT_STA_GOT_IP:
         {
-            ESP_LOGI(TAG, "IP Event - Got IP");
+            Logger::Log(Logger::Level::Info, "IP Event - Got IP");
             failed_attempts = 0;
             state = State::Connected;
             xSemaphoreGive(connect_semaphore);
@@ -332,11 +346,71 @@ inline void Wifi::IpEvents(int32_t event_id)
             {
                 state = State::WaitingForIP;
             }
-            ESP_LOGI(TAG, "IP Event - Lost IP");
+            Logger::Log(Logger::Level::Info, "IP Event - Lost IP");
             xSemaphoreGive(connect_semaphore);
             break;
         }
         default:
             break;
     }
+}
+
+void Wifi::SendWifiConnectedPacket()
+{
+    auto packet = std::make_unique<SerialPacket>(8);
+
+    // Type
+    packet->SetData(SerialPacket::Types::Command, 0, 1);
+
+    // Id
+    packet->SetData(serial.NextPacketId(), 1, 2);
+
+    // Size
+    packet->SetData(3, 3, 2);
+
+    packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
+
+    packet->SetData(SerialPacket::WifiTypes::Connect, 7, 1);
+
+    serial.EnqueuePacket(std::move(packet));
+}
+
+void Wifi::SendWifiDisconnectPacket()
+{
+    auto packet = std::make_unique<SerialPacket>(8);
+
+    // Type
+    packet->SetData(SerialPacket::Types::Command, 0, 1);
+
+    // Id
+    packet->SetData(serial.NextPacketId(), 1, 2);
+
+    // Size
+    packet->SetData(3, 3, 2);
+
+    packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
+
+    packet->SetData(SerialPacket::WifiTypes::Disconnect, 7, 1);
+
+    serial.EnqueuePacket(std::move(packet));
+}
+
+void Wifi::SendWifiFailedToConnectPacket()
+{
+    auto packet = std::make_unique<SerialPacket>(8);
+
+    // Type
+    packet->SetData(SerialPacket::Types::Command, 0, 1);
+
+    // Id
+    packet->SetData(serial.NextPacketId(), 1, 2);
+
+    // Size
+    packet->SetData(3, 3, 2);
+
+    packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
+
+    packet->SetData(SerialPacket::WifiTypes::FailedToConnect, 7, 1);
+
+    serial.EnqueuePacket(std::move(packet));
 }

@@ -5,8 +5,9 @@ LoginView::LoginView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
     SettingManager& setting_manager,
+    SerialPacketManager& serial,
     Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, network),
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network),
     incorrect_passcode_entered(false)
 {
 }

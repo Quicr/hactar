@@ -19,16 +19,22 @@ typedef struct
     NetManager* manager;
 } WatchRoomParams;
 
-NetManager::NetManager(SerialPacketManager* _ui_layer,
+NetManager::NetManager(SerialPacketManager& ui_layer,
+    Wifi& wifi,
     std::shared_ptr<QSession> qsession,
     std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects)
-    : ui_layer(_ui_layer),
+    : ui_layer(ui_layer),
+    wifi(wifi),
     quicr_session(qsession),
     inbound_objects(inbound_objects)
 {
-
     xTaskCreate(HandleSerial, "handle_serial_task", 8192 * 2, (void*)this, 13, NULL);
     xTaskCreate(HandleNetwork, "handle_network", 4096, (void*)this, 13, NULL);
+}
+
+void NetManager::Update()
+{
+
 }
 
 void NetManager::HandleSerial(void* param)
@@ -41,11 +47,15 @@ void NetManager::HandleSerial(void* param)
         // Delay at the start
         vTaskDelay(50 / portTICK_PERIOD_MS);
 
-        self->ui_layer->RxTx(xTaskGetTickCount() / portTICK_PERIOD_MS);
+        self->ui_layer.RxTx(xTaskGetTickCount() / portTICK_PERIOD_MS);
 
-        if (!self->ui_layer->HasRxPackets()) continue;
 
-        auto& rx_packets = self->ui_layer->GetRxPackets();
+        self->HandleSerialCommands();
+
+
+        if (!self->ui_layer.HasRxPackets()) continue;
+
+        auto& rx_packets = self->ui_layer.GetRxPackets();
         uint32_t timeout = (xTaskGetTickCount() / portTICK_PERIOD_MS) + 10000;
 
         Logger::Log(Logger::Level::Info, "Packet available");
@@ -53,9 +63,10 @@ void NetManager::HandleSerial(void* param)
             xTaskGetTickCount() / portTICK_PERIOD_MS < timeout)
         {
             std::unique_ptr<SerialPacket> rx_packet = std::move(rx_packets[0]);
-            uint8_t packet_type = rx_packet->GetData<uint8_t>(0, 1);
+            SerialPacket::Types packet_type = static_cast<SerialPacket::Types>(
+                rx_packet->GetData<uint8_t>(0, 1));
 
-            if (packet_type == SerialPacket::Types::Message)
+            if (packet_type == SerialPacket::Types::QMessage)
             {
                 Logger::Log(Logger::Level::Info, "NetManager: Handle for Packet:Type:Message");
 
@@ -64,10 +75,6 @@ void NetManager::HandleSerial(void* param)
                 // Mesages have sub-types whuch is encoded in the first byte
                 uint8_t sub_message_type = rx_packet->GetData<uint8_t>(5, 1);
                 self->HandleQChatMessages(sub_message_type, rx_packet, 6);
-            }
-            else if (packet_type == SerialPacket::Types::Command)
-            {
-                self->HandleSerialCommands(rx_packet);
             }
 
             rx_packets.pop_front();
@@ -90,7 +97,7 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
         return;
     }
 
-    if (!Wifi::GetInstance()->IsConnected())
+    if (!wifi.IsConnected())
     {
         // Not connected to wifi just skip
 
@@ -186,13 +193,13 @@ void NetManager::HandleWatchMessage(void* params)
         vTaskDelay(2000 / portTICK_PERIOD_MS);
 
         auto watch_ok_packet = std::make_unique<SerialPacket>(xTaskGetTickCount());
-        watch_ok_packet->SetData(SerialPacket::Types::Message, 0, 1);
-        watch_ok_packet->SetData(self->ui_layer->NextPacketId(), 1, 2);
+        watch_ok_packet->SetData(SerialPacket::Types::QMessage, 0, 1);
+        watch_ok_packet->SetData(self->ui_layer.NextPacketId(), 1, 2);
         watch_ok_packet->SetData(1, 3, 2);
         watch_ok_packet->SetData(qchat::MessageTypes::WatchOk, 5, 1);
 
         Logger::Log(Logger::Level::Debug, "Sending WatchOk to UI");
-        self->ui_layer->EnqueuePacket(std::move(watch_ok_packet));
+        self->ui_layer.EnqueuePacket(std::move(watch_ok_packet));
     }
     catch (std::runtime_error& ex)
     {
@@ -234,7 +241,7 @@ void NetManager::HandleNetwork(void* param)
             std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>();
 
             // Set the type
-            packet->SetData(SerialPacket::Types::Message, 0, 1);
+            packet->SetData(SerialPacket::Types::QMessage, 0, 1);
 
             // Set the id
             packet->SetData(0, 1, 2);
@@ -275,7 +282,7 @@ void NetManager::HandleNetwork(void* param)
             }
             Logger::Log(Logger::Level::Info, "Enqueue serial packet that came from the network");
             // Enqueue the packet to go to the UI
-            self->ui_layer->EnqueuePacket(std::move(packet));
+            self->ui_layer.EnqueuePacket(std::move(packet));
             packet = nullptr;
         }
         catch (const std::exception& ex)
@@ -289,28 +296,99 @@ void NetManager::HandleNetwork(void* param)
 }
 
 /**                          Private Functions                               **/
-void NetManager::HandleSerialCommands(const std::unique_ptr<SerialPacket>& rx_packet)
+void NetManager::HandleSerialCommands()
 {
     // Get the command type
-    uint8_t command_type = rx_packet->GetData<uint8_t>(5, 1);
-    Logger::Log(Logger::Level::Info, "Packet command received -", static_cast<int>(command_type));
+    // uint8_t command_type = rx_packet->GetData<uint8_t>(5, 1);
+    // Logger::Log(Logger::Level::Info, "Packet command received -", static_cast<int>(command_type));
 
-    switch (command_type)
+    // switch (command_type)
+    // {
+        // case SerialPacket::Commands::SSIDs:
+        //     GetSSIDsCommand();
+        //     break;
+        // case SerialPacket::Commands::WifiConnect:
+        //     ConnectToWifiCommand(rx_packet);
+        //     break;
+        // case SerialPacket::Commands::WifiStatus:
+        //     GetWifiStatusCommand();
+        //     break;
+        // case SerialPacket::Commands::RoomsGet:
+        //     GetRoomsCommand();
+        //     break;
+        // default:
+        //     break;
+    // }
+
+    // TODO move into wifi module
+    RingBuffer<std::unique_ptr<SerialPacket>>* wifi_packets;
+
+    if (!ui_layer.GetCommandPackets(&wifi_packets, SerialPacket::Commands::Wifi))
     {
-        case SerialPacket::Commands::SSIDs:
-            GetSSIDsCommand();
-            break;
-        case SerialPacket::Commands::WifiConnect:
-            ConnectToWifiCommand(rx_packet);
-            break;
-        case SerialPacket::Commands::WifiStatus:
-            GetWifiStatusCommand();
-            break;
-        case SerialPacket::Commands::RoomsGet:
-            GetRoomsCommand();
-            break;
-        default:
-            break;
+        return;
+    }
+
+    while (wifi_packets->Unread() > 0)
+    {
+        Logger::Log(Logger::Level::Info, "Wifi packets available: ", wifi_packets->Unread());
+        auto packet = std::move(wifi_packets->Read());
+        // Get the type
+        SerialPacket::WifiTypes wifi_cmd_type = static_cast<SerialPacket::WifiTypes>(
+            packet->GetData<uint16_t>(7, 1));
+
+        switch (wifi_cmd_type)
+        {
+            case SerialPacket::WifiTypes::Status:
+            {
+                GetWifiStatusCommand();
+                break;
+            }
+            case SerialPacket::WifiTypes::SSIDs:
+            {
+                GetSSIDsCommand();
+                break;
+            }
+            case SerialPacket::WifiTypes::Connect:
+            {
+                ConnectToWifiCommand(packet);
+                break;
+            }
+            case SerialPacket::WifiTypes::Disconnect:
+            {
+
+                break;
+            }
+            case SerialPacket::WifiTypes::Disconnected:
+            {
+
+                break;
+            }
+            case SerialPacket::WifiTypes::SignalStrength:
+            {
+
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+    }
+
+    // TODO move this into some sort of qchat instance.
+    RingBuffer<std::unique_ptr<SerialPacket>>* room_packets;
+
+    if (!ui_layer.GetCommandPackets(&room_packets, SerialPacket::Commands::RoomsGet))
+    {
+        return;
+    }
+
+    while (room_packets->Unread() > 0)
+    {
+        Logger::Log(Logger::Level::Info, "Wifi packets available: ", room_packets->Unread());
+        auto packet = std::move(room_packets->Read());
+
+        GetRoomsCommand();
     }
 }
 
@@ -318,7 +396,7 @@ void NetManager::GetSSIDsCommand()
 {
     // Get the ssids
     std::vector<std::string> ssids;
-    esp_err_t res = Wifi::GetInstance()->ScanNetworks(&ssids);
+    esp_err_t res = wifi.ScanNetworks(&ssids);
 
     // ERROR Here for some reason...
     if (res != ESP_OK)
@@ -349,36 +427,42 @@ void NetManager::GetSSIDsCommand()
         packet->SetData(SerialPacket::Types::Command, 0, 1);
 
         // Set the packet id
-        packet->SetData(ui_layer->NextPacketId(), 1, 2);
+        packet->SetData(ui_layer.NextPacketId(), 1, 2);
 
-        // Add 1 for the command type
-        // Add 1 for the ssid id
-        packet->SetData(ssid.length() + 2, 3, 2);
+        // + 2 for command type
+        // + 1 for wifi type
+        // + 1 for the ssid id
+        // + 1 for ssid len
+        packet->SetData(ssid.length() + 5, 3, 2);
 
         // Set the first byte to the command type
-        packet->SetData(SerialPacket::Commands::SSIDs, 5, 1);
+        packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
+        packet->SetData(SerialPacket::WifiTypes::SSIDs, 7, 1);
 
         // Set the ssid id
-        packet->SetData(i + 1, 6, 1);
+        packet->SetData(i + 1, 8, 1);
+
+        // Set the string length
+        packet->SetData(ssid.length(), 9, 1);
 
         // Add each character of the string to the packet
         for (uint16_t j = 0; j < ssid.length(); j++)
         {
-            packet->SetData(ssid[j], 7 + j, 1);
+            packet->SetData(ssid[j], 10 + j, 1);
         }
-        ui_layer->EnqueuePacket(std::move(packet));
+        ui_layer.EnqueuePacket(std::move(packet));
     }
 }
 
 
 void NetManager::ConnectToWifiCommand(const std::unique_ptr<SerialPacket>& packet)
 {        // Get the ssid value, followed by the ssid_password
-    uint16_t ssid_len = packet->GetData<uint16_t>(6, 2);
+    uint16_t ssid_len = packet->GetData<uint16_t>(8, 2);
     Logger::Log(Logger::Level::Info, "SSID length -", ssid_len);
 
     // Build the ssid
     std::string ssid;
-    unsigned short offset = 8;
+    unsigned short offset = 10;
     for (uint16_t i = 0; i < ssid_len; ++i, offset += 1)
     {
         ssid += packet->GetData<char>(offset, 1);
@@ -396,23 +480,23 @@ void NetManager::ConnectToWifiCommand(const std::unique_ptr<SerialPacket>& packe
     }
     Logger::Log(Logger::Level::Info, "SSID Password -", ssid_password.c_str());
 
-    Wifi::GetInstance()->Connect(ssid.c_str(), ssid_password.c_str());
+    wifi.Connect(ssid.c_str(), ssid_password.c_str());
 }
 
 void NetManager::GetWifiStatusCommand()
 {
-    auto wifi = Wifi::GetInstance();
-    Logger::Log(Logger::Level::Info, "Connection status -", static_cast<int>(wifi->GetState()));
+    Logger::Log(Logger::Level::Info, "Connection status -", static_cast<int>(wifi.GetState()));
 
     // Create a packet that tells the current status
     std::unique_ptr<SerialPacket> connected_packet = std::make_unique<SerialPacket>();
     connected_packet->SetData(SerialPacket::Types::Command, 0, 1);
-    connected_packet->SetData(ui_layer->NextPacketId(), 1, 2);
-    connected_packet->SetData(2, 3, 2);
-    connected_packet->SetData(SerialPacket::Commands::WifiStatus, 5, 1);
-    connected_packet->SetData(wifi->GetState() == Wifi::State::Connected, 6, 1);
+    connected_packet->SetData(ui_layer.NextPacketId(), 1, 2);
+    connected_packet->SetData(4, 3, 2);
+    connected_packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
+    connected_packet->SetData((int)SerialPacket::WifiTypes::Status, 7, 1);
+    connected_packet->SetData(wifi.GetState() == Wifi::State::Connected, 8, 1);
 
-    ui_layer->EnqueuePacket(std::move(connected_packet));
+    ui_layer.EnqueuePacket(std::move(connected_packet));
 
 }
 
@@ -436,8 +520,8 @@ void NetManager::GetRoomsCommand()
 
     std::unique_ptr<SerialPacket> room_packet = std::make_unique<SerialPacket>();
     room_packet->SetData(SerialPacket::Types::Command, 0, 1);
-    room_packet->SetData(ui_layer->NextPacketId(), 1, 2);
+    room_packet->SetData(ui_layer.NextPacketId(), 1, 2);
     qchat::Codec::encode(room_packet, CreateFakeRoom());
 
-    ui_layer->EnqueuePacket(std::move(room_packet));
+    ui_layer.EnqueuePacket(std::move(room_packet));
 }

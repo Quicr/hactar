@@ -115,8 +115,9 @@ ChatView::ChatView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
     SettingManager& setting_manager,
+    SerialPacketManager& serial,
     Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, network)
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network)
     , pre_joined_state(PreJoinedState(*setting_manager.Username()))
 {
     redraw_messages = true;
@@ -212,7 +213,7 @@ void ChatView::SendPacket(const bytes& msg) {
     // TODO packet should maybe have a static next_packet_id?
     std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(HAL_GetTick(), 1);
     packet->SetData(SerialPacket::Types::QMessage, 0, 1);
-    packet->SetData(manager.NextPacketId(), 1, 2);
+    packet->SetData(serial.NextPacketId(), 1, 2);
 
     // The packet length is set in the encode function
     // TODO encode probably could just generate a packet instead...
@@ -227,8 +228,7 @@ void ChatView::SendPacket(const bytes& msg) {
     packet->SetData(0, new_offset, 4);
     new_offset += 4;
 
-    // TODO ENABLE
-    manager.EnqueuePacket(std::move(packet));
+    serial.EnqueuePacket(std::move(packet));
 }
 
 void ChatView::PushMessage(std::string&& msg)
@@ -240,6 +240,7 @@ void ChatView::PushMessage(std::string&& msg)
 void ChatView::IngestMessages()
 try
 {
+    // TODO use serial instead of manager?
     const auto raw_messages = manager.TakeMessages();
     for (const auto& msg : raw_messages) {
         const auto msg_bytes = from_ascii(msg);

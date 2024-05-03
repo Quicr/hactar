@@ -9,8 +9,9 @@ WifiView::WifiView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
     SettingManager& setting_manager,
+    SerialPacketManager& serial,
     Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, network),
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network),
     last_num_ssids(0),
     next_get_ssid_timeout(0),
     state(SSID),
@@ -80,7 +81,7 @@ void WifiView::Update()
             return;
         }
 
-        if (manager.IsConnectedToWifi())
+        if (network.IsConnected())
         {
             request_msg = "Connected to ";
             request_msg += ssid;

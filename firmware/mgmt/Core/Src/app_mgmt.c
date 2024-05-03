@@ -187,13 +187,11 @@ void NetUpload()
     NetHoldInReset();
     UIHoldInReset();
 
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+    // Set LEDS for ui
+    LEDB(HIGH, HIGH, HIGH);
 
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
+    // Set LEDS for net
+    LEDA(HIGH, HIGH, LOW);
 
     CancelAllUart();
 
@@ -217,13 +215,11 @@ void NetUpload()
     UIHoldInReset();
     NetBootloaderMode();
 
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+    // Set LEDS for ui
+    LEDB(HIGH, HIGH, HIGH);
 
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+    // Set LEDS for net
+    LEDA(HIGH, LOW, HIGH);
 
     state = Net_Upload;
 
@@ -245,13 +241,12 @@ void NetUpload()
 
 void UIUpload()
 {
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+    // Set LEDS for ui
+    LEDB(HIGH, HIGH, HIGH);
+
+    // Set LEDS for net
+    LEDA(LOW, HIGH, HIGH);
 
     CancelAllUart();
 
@@ -274,13 +269,12 @@ void UIUpload()
     NetHoldInReset();
     UIBootloaderMode();
 
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+    // Set LEDS for ui
+    LEDB(HIGH, HIGH, HIGH);
+
+    // Set LEDS for net
+    LEDA(LOW, HIGH, HIGH);
 
     state = UI_Upload;
 
@@ -322,24 +316,10 @@ void RunningMode()
     InitUartStreamParameters(&usb_stream);
     StartUartReceive(&usb_stream);
 
-    UINormalMode();
-    uint32_t timeout = HAL_GetTick() + 3000;
-    while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(ADC_UI_STAT_GPIO_Port, ADC_UI_STAT_Pin) != GPIO_PIN_SET)
-    {
-        // Stay here until the UI is finished booting
-        HAL_Delay(10);
-    }
-
     NetNormalMode();
-    // Refresh the timeout
-    timeout = HAL_GetTick() + 3000;
-    while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(ADC_NET_STAT_GPIO_Port, ADC_NET_STAT_Pin) != GPIO_PIN_SET)
-    {
-        // Stay here until the Net is done booting
-        HAL_Delay(10);
-    }
+    UINormalMode();
+
+    WaitForNetReady(&state);
 
     LEDB(HIGH, HIGH, HIGH);
 
@@ -356,14 +336,10 @@ void RunningMode()
 void DebugMode()
 {
     // Set LEDS for ui
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+    LEDB(LOW, HIGH, HIGH);
 
     // Set LEDS for net
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+    LEDA(LOW, HIGH, HIGH);
 
     CancelAllUart();
 
@@ -390,31 +366,104 @@ void DebugMode()
 
     HAL_Delay(100);
 
+    NetNormalMode();
     UINormalMode();
 
-    uint32_t timeout = HAL_GetTick() + 3000;
-    while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(ADC_UI_STAT_GPIO_Port, ADC_UI_STAT_Pin) != GPIO_PIN_SET)
-    {
-        // Stay here until the UI is finished booting
-        HAL_Delay(10);
-    }
-
-    NetNormalMode();
-    // Refresh the timeout
-    timeout = HAL_GetTick() + 3000;
-    while (HAL_GetTick() < timeout &&
-        HAL_GPIO_ReadPin(ADC_NET_STAT_GPIO_Port, ADC_NET_STAT_Pin) != GPIO_PIN_SET)
-    {
-        // Stay here until the Net is done booting
-        HAL_Delay(10);
-    }
+    WaitForNetReady(&state);
 
     state = Debug_Running;
     while (state == Debug_Running)
     {
         HandleCommands(&usb_stream, &huart1, &state);
         HandleTx(&ui_stream, &state);
+        HandleTx(&net_stream, &state);
+    }
+}
+void UIDebugMode()
+{
+    // Set LEDS for ui
+    LEDB(LOW, HIGH, HIGH);
+
+    // Set LEDS for net
+    LEDA(HIGH, HIGH, HIGH);
+
+    CancelAllUart();
+
+    // Init uart3 for UI upload
+    HAL_UART_DeInit(usb_stream.from_uart);
+
+    // Init huart3
+    Usart1_Net_Upload_Runnning_Debug_Reset();
+
+    usb_stream.to_uart = &huart1;
+    usb_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
+    usb_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
+    ui_stream.rx_buffer_size = UI_RECEIVE_BUFF_SZ;
+    ui_stream.tx_buffer_size = UI_TRANSMIT_BUFF_SZ;
+
+    InitUartStreamParameters(&usb_stream);
+    InitUartStreamParameters(&ui_stream);
+    StartUartReceive(&usb_stream);
+    StartUartReceive(&ui_stream);
+
+    HAL_Delay(100);
+
+    NetNormalMode();
+    UINormalMode();
+
+    WaitForNetReady(&state);
+
+    state = Debug_Running;
+    while (state == Debug_Running)
+    {
+        HandleCommands(&usb_stream, &huart1, &state);
+        HandleTx(&ui_stream, &state);
+        // HandleTx(&net_stream, &state);
+    }
+}
+
+void NetDebugMode()
+{
+    // Set LEDS for ui
+    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
+
+    // Set LEDS for net
+    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+
+    CancelAllUart();
+
+    // Init uart3 for UI upload
+    HAL_UART_DeInit(usb_stream.from_uart);
+
+    // Init huart3
+    Usart1_Net_Upload_Runnning_Debug_Reset();
+
+    usb_stream.to_uart = &huart1;
+    usb_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
+    usb_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
+    net_stream.rx_buffer_size = NET_RECEIVE_BUFF_SZ;
+    net_stream.tx_buffer_size = NET_TRANSMIT_BUFF_SZ;
+
+    InitUartStreamParameters(&usb_stream);
+    InitUartStreamParameters(&net_stream);
+    StartUartReceive(&usb_stream);
+    StartUartReceive(&net_stream);
+
+    HAL_Delay(100);
+
+    NetNormalMode();
+    UINormalMode();
+
+    WaitForNetReady(&state);
+
+    state = Debug_Running;
+    while (state == Debug_Running)
+    {
+        HandleCommands(&usb_stream, &huart1, &state);
         HandleTx(&net_stream, &state);
     }
 }
@@ -485,6 +534,14 @@ int app_main(void)
         {
             DebugMode();
         }
+        else if (state == UI_Debug_Reset)
+        {
+            UIDebugMode();
+        }
+        else if (state == Net_Debug_Reset)
+        {
+            NetDebugMode();
+        }
         else if (state == UI_Upload_Reset)
         {
             UIUpload();
@@ -539,6 +596,26 @@ void Usart1_UI_Upload_Init(void)
     {
         Error_Handler();
     }
+}
+
+/**
+ * @brief Waits for the network chip to send a ready signal
+ *
+ */
+void WaitForNetReady(const enum State* state)
+{
+    // Read from the Net chip
+    uint32_t timeout = HAL_GetTick() + 3000;
+    while (state != Reset
+        && HAL_GetTick() < timeout
+        && HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
+    {
+        // Stay here until the Net is done booting
+        HAL_Delay(10);
+    }
+
+    // Tell the UI the net is ready
+    HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, HIGH);
 }
 
 /**

@@ -98,7 +98,7 @@ def main():
         for port in ports:
             programmed = False
             while not programmed:
-                programmed = True
+                # programmed = True
                 try:
                     uart = serial.Serial(
                         port=port,

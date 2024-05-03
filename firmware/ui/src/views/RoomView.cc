@@ -8,8 +8,9 @@ RoomView::RoomView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
     SettingManager& setting_manager,
+    SerialPacketManager& serial,
     Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, network),
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network),
     selected_room_id(-1),
     connecting_to_room(false),
     next_get_rooms_time(0),
@@ -93,7 +94,7 @@ void RoomView::Update()
     if (current_tick > state_update_timeout)
     {
         RingBuffer<std::unique_ptr<SerialPacket>>* room_packets;
-        if (manager.GetReadyPackets(&room_packets, SerialPacket::Commands::RoomsGet))
+        if (serial.GetCommandPackets(&room_packets, SerialPacket::Commands::RoomsGet))
         {
             while (room_packets->Unread() > 0)
             {
@@ -104,7 +105,7 @@ void RoomView::Update()
                 std::unique_ptr<qchat::Room> room =
                     std::make_unique<qchat::Room>();
 
-                qchat::Codec::decode(room, rx_packet, 6);
+                qchat::Codec::decode(room, rx_packet, 7);
 
                 rooms[rooms.size()+1] = std::move(room);
             }
@@ -120,10 +121,10 @@ void RoomView::RequestRooms()
     // Send request to the esp32 to get the rooms
     std::unique_ptr<SerialPacket> room_req_packet = std::make_unique<SerialPacket>(HAL_GetTick());
     room_req_packet->SetData(SerialPacket::Types::Command, 0, 1);
-    room_req_packet->SetData(manager.NextPacketId(), 1, 2);
+    room_req_packet->SetData(serial.NextPacketId(), 1, 2);
     room_req_packet->SetData(1, 3, 2);
     room_req_packet->SetData(SerialPacket::Commands::RoomsGet, 5, 1);
-    manager.EnqueuePacket(std::move(room_req_packet));
+    serial.EnqueuePacket(std::move(room_req_packet));
 }
 
 void RoomView::DisplayRooms()

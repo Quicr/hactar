@@ -7,6 +7,7 @@
 #include "Q10Keyboard.hh"
 #include "EEPROM.hh"
 #include "CommandHandler.hh"
+#include "SerialPacketManager.hh"
 #include "network.hh"
 #include <string>
 
@@ -20,11 +21,13 @@ public:
         Screen& screen,
         Q10Keyboard& keyboard,
         SettingManager& setting_manager,
-        Network& network) :
+        SerialPacketManager& serial,
+        Network& network):
         manager(manager),
         screen(screen),
         keyboard(keyboard),
         setting_manager(setting_manager),
+        serial(serial),
         network(network),
         command_handler(&manager),
         first_load(true),
@@ -118,18 +121,18 @@ protected:
 
         // Draw Tx and Rx
 
-        if (tx_colour != manager.GetTxStatusColour() &&
+        if (tx_colour != TxStatusColour() &&
             HAL_GetTick() > tx_redraw_timeout)
         {
-            tx_colour = manager.GetTxStatusColour();
+            tx_colour = TxStatusColour();
             screen.FillArrow(screen.ViewWidth() - 12, 0, 10, 4, Screen::ArrowDirection::Up, tx_colour);
             tx_redraw_timeout = HAL_GetTick() + 200;
         }
 
-        if (rx_colour != manager.GetRxStatusColour() &&
+        if (rx_colour != RxStatusColour() &&
             HAL_GetTick() > rx_redraw_timeout)
         {
-            rx_colour = manager.GetRxStatusColour();
+            rx_colour = RxStatusColour();
             screen.FillArrow(screen.ViewWidth() - 6, 10, 10, 4, Screen::ArrowDirection::Down, rx_colour);
             rx_redraw_timeout = HAL_GetTick() + 200;
         }
@@ -277,6 +280,7 @@ protected:
     Screen& screen;
     Q10Keyboard& keyboard;
     SettingManager& setting_manager;
+    SerialPacketManager& serial;
     Network& network;
     CommandHandler command_handler;
 
@@ -320,10 +324,39 @@ protected:
 private:
     std::string new_view;
 
+    inline uint32_t TxStatusColour() const
+    {
+        return ConvertSerialStatusToColour(serial.GetTxStatus());
+    }
+
+    inline uint32_t RxStatusColour() const
+    {
+        return ConvertSerialStatusToColour(serial.GetRxStatus());
+    }
+
+    uint32_t ConvertSerialStatusToColour(
+        const SerialPacketManager::SerialStatus status) const
+    {
+        if (status == SerialPacketManager::SerialStatus::OK)
+            return C_GREEN;
+        else if (status == SerialPacketManager::SerialStatus::PARTIAL)
+            return C_CYAN;
+        else if (status == SerialPacketManager::SerialStatus::TIMEOUT)
+            return C_MAGENTA;
+        else if (status == SerialPacketManager::SerialStatus::BUSY)
+            return C_YELLOW;
+        else if (status == SerialPacketManager::SerialStatus::ERROR)
+            return C_RED;
+        else if (status == SerialPacketManager::SerialStatus::CRITICAL_ERROR)
+            return C_BLUE;
+        else
+            return C_WHITE;
+    }
+
     void DrawWifiSymbol()
     {
         uint16_t colour = C_GREY;
-        if (manager.IsConnectedToWifi())
+        if (network.IsConnected())
         {
             colour = C_LIGHT_GREEN;
         }

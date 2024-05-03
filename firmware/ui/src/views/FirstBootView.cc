@@ -9,8 +9,9 @@ FirstBootView::FirstBootView(UserInterfaceManager& manager,
     Screen& screen,
     Q10Keyboard& keyboard,
     SettingManager& setting_manager,
+    SerialPacketManager& serial,
     Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, network),
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network),
     state(State::Username),
     request_message("Please enter your name:"),
     wifi_state(WifiState::SSID),
@@ -235,7 +236,7 @@ void FirstBootView::UpdateConnecting()
 {
     if (HAL_GetTick() < state_update_timeout) return;
 
-    if (manager.IsConnectedToWifi())
+    if (network.IsConnected())
     {
         request_message = "Device setup successful";
 
@@ -262,7 +263,7 @@ void FirstBootView::UpdateConnecting()
     {
         request_message = "Connecting";
         const uint16_t y_start = 50;
-        screen.FillRectangle(request_message.length() * usr_font.width, y_start,
+        screen.FillRectangle(0, y_start,
             WIDTH, HEIGHT, C_BLACK, 32);
     }
     state_update_timeout = HAL_GetTick() + 1000;

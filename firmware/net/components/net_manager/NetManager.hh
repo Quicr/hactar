@@ -10,14 +10,16 @@
 class NetManager
 {
 public:
-    NetManager(SerialPacketManager* _ui_layer,
+    NetManager(SerialPacketManager& ui_layer,
+                Wifi& wifi,
                 std::shared_ptr<QSession> qsession,
                 std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects);
 
+    void Update();
     static void HandleSerial(void* param);
     static void HandleNetwork(void* param);
 private:
-    void HandleSerialCommands(const std::unique_ptr<SerialPacket>& rx_packet);
+    void HandleSerialCommands();
     void HandleQChatMessages(uint8_t message_type, const std::unique_ptr<SerialPacket>& rx_packet, size_t offset);
     static void HandleWatchMessage(void* watch);
 
@@ -28,7 +30,8 @@ private:
     void GetWifiStatusCommand();
     void GetRoomsCommand();
 
-    SerialPacketManager* ui_layer;
+    SerialPacketManager& ui_layer;
+    Wifi& wifi;
     std::optional<std::thread> handler_thread;
     static constexpr auto inbound_object_timeout = std::chrono::milliseconds(100);
     std::shared_ptr<QSession> quicr_session;

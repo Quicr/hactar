@@ -1,14 +1,16 @@
 #pragma once
 
-
 #include "nvs_flash.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
+
+#include "SerialPacketManager.hh"
 
 #include <cstring>
 #include <mutex>
 #include <string>
 #include <vector>
+
 
 // TODO scrolling
 #define MAX_AP 10
@@ -31,9 +33,10 @@ public:
         InvalidCredentials
     };
 
+    Wifi(SerialPacketManager& serial);
     Wifi(Wifi& other) = delete;
+    ~Wifi();
     void operator=(const Wifi& other) = delete;
-    static Wifi* GetInstance();
 
     void Connect(const char* ssid, const char* password);
     void Connect(
@@ -46,11 +49,7 @@ public:
 
     State GetState() const;
     bool IsConnected() const;
-
-protected:
-    Wifi();
-    ~Wifi();
-
+    bool IsInitialized() const;
 
 private:
     typedef struct
@@ -73,20 +72,25 @@ private:
         int32_t event_id,
         void* event_data);
 
-    // Static variables
-    // For singleton
-    static Wifi* instance;
 
     // Private functions
     inline void WifiEvents(int32_t event_id, void* event_data);
     inline void IpEvents(int32_t event_id);
 
+    inline void SendWifiConnectedPacket();
+    inline void SendWifiDisconnectPacket();
+    inline void SendWifiFailedToConnectPacket();
+
+
     // Private variables
+    SerialPacketManager& serial;
     wifi_init_config_t wifi_init_cfg;
     wifi_config_t wifi_cfg;
     State state;
-    TaskHandle_t connect_task;
-    SemaphoreHandle_t connect_semaphore;
 
-    uint8_t failed_attempts = 0;
+    uint8_t failed_attempts;
+    bool is_initialized;
+
+    SemaphoreHandle_t connect_semaphore;
+    TaskHandle_t connect_task;
 };
