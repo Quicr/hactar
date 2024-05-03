@@ -32,6 +32,7 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f0xx_hal.h"
+#include "state.h"
 
 int app_main(void);
 
@@ -50,6 +51,7 @@ void DebugMode();
 void Usart1_Net_Upload_Runnning_Debug_Reset(void);
 void Usart1_UI_Upload_Init(void);
 
+void WaitForNetReady(const enum State* state);
 void LEDA(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
 void LEDB(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
 

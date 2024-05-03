@@ -35,8 +35,8 @@ upload_esptool:
 program: compile upload
 
 monitor:
-	python3 ../tools/command_sender.py ${PORT} ${BAUD} debug
-	screen ${PORT} ${BAUD}
+	python3 ../tools/command_sender.py ${PORT} ${BAUD} net_debug
+	idf.py monitor
 
 py_monitor:
 	python3 ../tools/monitor.py ${PORT} ${BAUD}

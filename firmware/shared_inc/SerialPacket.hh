@@ -34,37 +34,65 @@ creation_time = 6 bytes
 
 // TODO add start patterns
 
-// TODO rewrite SerialPacket to use 8 bits instead of 32 bits
-
+// TODO move all other enum classes into appropriate classes
 
 // @note This is assumed to be little endian architectures
 class SerialPacket
 {
 public:
-    enum Types
+    enum class Types
     {
         Ok = 1,
         Error,
         Busy,
         Debug,
         LocalDebug,
-        Message,
+        QMessage,
         Setting,
         Command
     };
 
-    enum Settings
+    enum class QMessages
+    {
+        // TODO use this instead?
+        // pretty much move it to qchat.
+        Text = 1,
+        GetRooms,
+        WatchRoom,
+        UnwatchRoom
+        // TODO
+    };
+
+    enum class Settings
     {
         // TODO
     };
 
-    enum Commands
+    enum class Commands
     {
-        SSIDs = 1,
-        WifiConnect,
-        WifiDisconnect,
-        WifiStatus,
+        // Commands for wifi
+        Wifi = 1,
+
+        // TODO move into qmessages
         RoomsGet
+    };
+
+    enum class User
+    {
+        UserGet = 1,
+        UserLogin,
+        UserLogout
+    };
+
+    enum class WifiTypes
+    {
+        Status = 1,
+        SSIDs,
+        Connect,
+        Disconnect,
+        Disconnected,
+        FailedToConnect,
+        SignalStrength,
     };
 
     SerialPacket(const unsigned int created_at = 0,
@@ -208,7 +236,7 @@ public:
         }
     }
 
-    template <typename T>
+    template <typename T, typename std::enable_if<std::is_fundamental<T>::value, T>::type=0>
     T GetData(const unsigned int offset, const int num_bytes) const
     {
         size_t byte_width = sizeof(T);

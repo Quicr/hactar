@@ -197,6 +197,14 @@ void HandleCommands(uart_stream_t* rx_uart_stream,
         {
             *state = Debug_Reset;
         }
+        else if (strcmp((const char*)rx_uart_stream->tx_buffer, ui_debug_cmd) == 0)
+        {
+            *state = UI_Debug_Reset;
+        }
+        else if (strcmp((const char*)rx_uart_stream->tx_buffer, net_debug_cmd) == 0)
+        {
+            *state = Net_Debug_Reset;
+        }
         else if (strcmp((const char*)rx_uart_stream->tx_buffer, reset_cmd) == 0)
         {
             *state = Reset;

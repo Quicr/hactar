@@ -10,7 +10,7 @@ Network::Network(SettingManager& settings, SerialPacketManager& serial, Screen& 
     is_connected(false),
     connection_attempt(false),
     next_connection_check(0),
-    next_attempt_to_connect(0),
+    num_connection_attempts(0),
     next_handle_packets(0)
 {
 
@@ -23,13 +23,6 @@ void Network::Update(uint32_t tick)
         SendStatusPacket();
         next_connection_check = tick + 10000;
     }
-
-    // TODO shouldn't this be somewhere else?
-    // if (tick > next_attempt_to_connect && !is_connected)
-    // {
-    //     ConnectToNetwork();
-    //     next_attempt_to_connect = tick + 5000;
-    // }
 
     if (tick > next_handle_packets)
     {
@@ -82,6 +75,7 @@ void Network::ConnectToNetwork(const std::string& ssid, const std::string& pwd)
 
 void Network::RequestSSIDs()
 {
+    ssids.clear();
     std::unique_ptr<SerialPacket> ssid_req_packet = std::make_unique<SerialPacket>();
     ssid_req_packet->SetData(SerialPacket::Types::Command, 0, 1);
     ssid_req_packet->SetData(serial.NextPacketId(), 1, 2);
@@ -89,6 +83,11 @@ void Network::RequestSSIDs()
     ssid_req_packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
     ssid_req_packet->SetData(SerialPacket::WifiTypes::SSIDs, 7, 1);
     serial.EnqueuePacket(std::move(ssid_req_packet));
+}
+
+bool Network::IsConnected() const
+{
+    return is_connected;
 }
 
 const std::map<uint8_t, std::string>& Network::GetSSIDs() const
@@ -206,12 +205,11 @@ void Network::IngestNetworkPackets()
                 screen.DrawText(0, 176, "status:", font6x8, C_WHITE, C_BLACK);
                 screen.DrawText(0 + 7 * 6, 176, std::to_string(status), font6x8, C_WHITE, C_BLACK);
 
-
-                if (status)
+                is_connected = status;
+                if (is_connected)
                 {
-                    is_connected = true;
                     connection_attempt = false;
-                    continue; //?
+                    continue;
                 }
 
                 if (connection_attempt)
@@ -220,8 +218,20 @@ void Network::IngestNetworkPackets()
                     continue;
                 }
 
-                // Not connected so send a connect packet.
-                ConnectToNetwork();
+                if (num_connection_attempts < 3)
+                {
+                    num_connection_attempts++;
+                    // Not connected so send a connect packet.
+                    ConnectToNetwork();
+                }
+                else
+                {
+                    Logger::Log(Logger::Level::Info, "Failed to connect over 3 times");
+                    ConnectUsingFallback();
+
+                    // Go back to trying the original way
+                    num_connection_attempts = 0;
+                }
 
                 break;
             }
@@ -229,7 +239,6 @@ void Network::IngestNetworkPackets()
             {
                 // Got the new ssids in range, so clear the old ones.
                 screen.DrawText(0, 184, "got ssid", font6x8, C_WHITE, C_BLACK);
-                ssids.clear();
 
                 // Get the ssid id
                 uint8_t ssid_id = packet->GetData<uint8_t>(8, 1);
@@ -239,7 +248,7 @@ void Network::IngestNetworkPackets()
 
                 // Build the string
                 std::string str;
-                for (uint8_t i = 0; i < ssid_length - 2; ++i)
+                for (uint8_t i = 0; i < ssid_length; ++i)
                 {
                     str.push_back(packet->GetData<char>(10 + i, 1));
                 }
@@ -249,12 +258,19 @@ void Network::IngestNetworkPackets()
             }
             case SerialPacket::WifiTypes::Connect:
             {
+                // Since we got a connect packet it means we've connected
+                screen.DrawText(0, 192, "connected to wifi", font6x8, C_WHITE, C_BLACK);
 
+                is_connected = true;
+                num_connection_attempts = 0;
+                connection_attempt = false;
                 break;
             }
             case SerialPacket::WifiTypes::Disconnect:
             {
-
+                is_connected = false;
+                num_connection_attempts = 0;
+                connection_attempt = false;
                 break;
             }
             case SerialPacket::WifiTypes::Disconnected:
@@ -265,6 +281,7 @@ void Network::IngestNetworkPackets()
             case SerialPacket::WifiTypes::FailedToConnect:
             {
                 connection_attempt = false;
+                is_connected = false;
                 break;
             }
             case SerialPacket::WifiTypes::SignalStrength:
