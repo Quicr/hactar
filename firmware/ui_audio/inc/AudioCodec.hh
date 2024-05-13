@@ -19,10 +19,11 @@ public:
     AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c);
     ~AudioCodec();
 
-    // void ReadAudio();
-
     bool SetRegister(uint8_t address, uint16_t data);
+    bool OrRegister(uint8_t address, uint16_t data);
     bool XorRegister(uint8_t address, uint16_t data);
+    bool SetBit(uint8_t address, uint8_t bit, uint8_t set);
+    bool SetBits(const uint8_t address, const uint16_t bits, const uint16_t set);
     // TODO remove the "debug" param.
     bool WriteRegisterSeries(uint8_t address, uint16_t data, uint8_t debug);
 
@@ -31,9 +32,22 @@ public:
     bool ReadRegister(uint8_t address, uint16_t& value);
 
     void RxAudio();
+    void RxAudioBlocking(uint16_t* buffer, uint16_t size);
     void RxComplete();
     void Send1KHzSignal();
     void SendAllOnes();
+    void SendSawToothWave();
+
+    void TurnOnLeftInput3();
+    void TurnOffLeftInput3();
+    void TurnOnLeftDifferentialInput();
+    void TurnOffLeftDifferentialInput();
+
+    void EnableLeftMicPGA();
+    void DisableLeftMicPGA();
+
+    void MuteMic();
+    void UnmuteMic();
 
 private:
 
@@ -99,6 +113,7 @@ private:
     static constexpr uint8_t Num_Registers = 56;
     static constexpr uint8_t Addr_Mask = 0xFE;
     static constexpr uint16_t Top_Bit_Mask = 0x0001;
+    static constexpr uint16_t Bot_Bit_Mask = 0x00FF;
     static constexpr uint16_t Data_Mask = 0x01FF;
     static constexpr uint8_t Max_Address = 0x37;
 
