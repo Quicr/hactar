@@ -3,6 +3,8 @@
 
 #include "AudioCodec.hh"
 
+#include <cmath>
+
 extern I2C_HandleTypeDef hi2c1;
 extern I2S_HandleTypeDef hi2s3;
 
@@ -38,6 +40,8 @@ void int_to_string(const unsigned long input, uint8_t* str, uint16_t& size)
     } while (value > 0);
 
 }
+
+
 
 void generateTriangleWave(uint16_t* buffer, int numSamples, int sampleRate, float amplitude, float frequency)
 {
@@ -75,7 +79,7 @@ int app_main()
 {
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
 
-    HAL_Delay(5000);
+    HAL_Delay(1000);
     const uint8_t start [] = "Start\n";
     HAL_UART_Transmit(&huart1, start, 7, HAL_MAX_DELAY);
     audio = new AudioCodec(hi2s3, hi2c1);
@@ -94,74 +98,68 @@ int app_main()
         // Add more values as needed to cover a complete cycle
     };
 
-    const uint16_t SOUND_BUFFER_SZ = 16000;
+    const uint16_t SOUND_BUFFER_SZ = 256;
     uint16_t rx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
     uint16_t tx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
-    int i = 0;
-    while (i < SOUND_BUFFER_SZ)
-    {
-        tx_sound_buff[i++] = 0x00FF;
-        // for (unsigned int j = 0; j < sizeof(sine_wave) / sizeof(sine_wave[0]); ++j)
-        // {
-        //     tx_sound_buff[i++] = sine_wave[j];
-        // }
-    }
-
-    const uint16_t Constant_Sound_Sz = 256;
-    uint16_t constant_sound_buff[Constant_Sound_Sz] = { 0 };
-
-    for (i = 0; i < Constant_Sound_Sz; ++i)
-    {
-        constant_sound_buff[i] = i + 0xFF;
-    }
 
     audio->EnableLeftMicPGA();
     audio->TurnOnLeftInput3();
     audio->UnmuteMic();
-
-    uint16_t buff[256];
+    // audio->MuteMic();
 
     HAL_UART_Transmit(&huart1, (uint8_t*)"Loopstart\n", 10, HAL_MAX_DELAY);
 
+    // audio->RxAudio();
+
+    audio->SampleSineWave(tx_sound_buff, 256,
+        0, 16'000, 1000, 440, audio->phase);
+
+    audio->TxRxAudio();
 
     while (true)
     {
 
 
         // audio.Send1KHzSignal();
-        audio->SendSawToothWave();
+        // audio->SendSawToothWave();
         // HAL_I2S_Transmit(&hi2s3, constant_sound_buff, Constant_Sound_Sz, HAL_MAX_DELAY);
 
         // HAL_Delay(10);
 
-
-
-        // audio->RxAudioBlocking(buff, 256);
         // HAL_UART_Transmit(&huart1, (uint8_t*)"Donerecv\n", 9, HAL_MAX_DELAY);
 
-        // for (int i = 0; i < 256; ++i)
+        // if (audio->DataAvailable())
         // {
-        //     uint8_t* bytes = (uint8_t*)buff[i];
+        //     for (int i = 0; i < sz; ++i)
+        //     {
+        //         audio->GetAudio(buff, 256);
+        //         uint8_t num_str[64]{};
+        //         uint16_t len = 0;
+        //         int_to_string(buff[i], num_str, len);
+        //         HAL_UART_Transmit(&huart1, num_str, len, HAL_MAX_DELAY);
 
-        //     uint8_t num_str[64]{};
-        //     uint16_t len = 0;
-        //     int_to_string(bytes[0], num_str, len);
-        //     HAL_UART_Transmit(&huart1, num_str, len, HAL_MAX_DELAY);
+        //         // HAL_UART_Transmit(&huart1, bytes, 2, HAL_MAX_DELAY);
+        //         HAL_UART_Transmit(&huart1, (uint8_t*)("\n"), 1, HAL_MAX_DELAY);
 
-        //     int_to_string(bytes[1], num_str, len);
-        //     HAL_UART_Transmit(&huart1, num_str, len, HAL_MAX_DELAY);
+        //         HAL_Delay(50);
+        //     }
+        //     HAL_UART_Transmit(&huart1, (uint8_t*)("Done\n"), 5, HAL_MAX_DELAY);
 
-        //     // HAL_UART_Transmit(&huart1, bytes, 2, HAL_MAX_DELAY);
-        //     HAL_UART_Transmit(&huart1, (uint8_t*)("\n"), 1, HAL_MAX_DELAY);
-
-        //     HAL_Delay(10);
+        //     audio->RxAudio();
         // }
 
     }
     return 0;
 }
 
-void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
+void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef* hi2s)
 {
+    HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+    audio->HalfCompleteCallback();
+}
 
+void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
+{
+    HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+    audio->CompleteCallback();
 }

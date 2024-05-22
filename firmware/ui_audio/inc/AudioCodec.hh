@@ -31,10 +31,8 @@ public:
 
     bool ReadRegister(uint8_t address, uint16_t& value);
 
-    void RxAudio();
-    void RxAudioBlocking(uint16_t* buffer, uint16_t size);
-    void RxComplete();
-    void Send1KHzSignal();
+    void TxRxAudio();
+    void GetAudio(uint16_t* buffer, uint16_t size);
     void SendAllOnes();
     void SendSawToothWave();
 
@@ -49,7 +47,18 @@ public:
     void MuteMic();
     void UnmuteMic();
 
+    bool DataAvailable();
+
+    void HalfCompleteCallback();
+    void CompleteCallback();
+    void SampleSineWave(uint16_t* buff, uint16_t num_samples,
+        uint16_t start_idx, uint16_t sample_rate,
+        double amplitutde, double freq, double& phase);
+    double phase;
+
 private:
+
+    static constexpr uint16_t sample_rate = 16'000; // 16khz
 
 // TODO clean this up a bit.
     uint8_t* ToBinaryString(const uint8_t* data, size_t size)
@@ -117,12 +126,18 @@ private:
     static constexpr uint16_t Data_Mask = 0x01FF;
     static constexpr uint8_t Max_Address = 0x37;
 
-    static constexpr uint16_t Rx_Buffer_Sz = 256;
+    static constexpr uint16_t Audio_Buffer_Sz = 256;
 
     I2S_HandleTypeDef* i2s;
     I2C_HandleTypeDef* i2c;
-    uint16_t rx_buffer[Rx_Buffer_Sz];
+    uint16_t tx_buffer[Audio_Buffer_Sz];
+    size_t tx_buff_idx;
+    uint16_t rx_buffer[Audio_Buffer_Sz];
+    bool audio_busy;
+
+    // TODO bitize these
     bool rx_busy;
+    bool data_available;
 
     // TODO label all of the registers
     Register registers[Max_Address + 1] = {

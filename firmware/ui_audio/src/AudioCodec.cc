@@ -19,18 +19,18 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     i2s(&hi2s), i2c(&hi2c), rx_buffer{ 0 }, rx_busy(false)
 {
     // Reset the wm8960
-    SetRegister(0x0F, 0b0'0000'0000);
+    SetRegister(0x0F, 0b1'0000'0000);
     HAL_Delay(100);
 
     // Set the power
-    SetRegister(0x19, 0b1'1111'1110);
+    SetRegister(0x19, 0b0'1111'1110);
 
     // Enable outputs
     SetRegister(0x1A, 0b1'1110'0001);
 
     // Enable lr mixer ctrl
     // SetRegister(0x2F, 0b0'0000'0000);
-    SetRegister(0x2F, 0b0'0011'1100);
+    SetRegister(0x2F, 0b0'0010'1100);
 
     // Enable PLL integer mode.
     /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
@@ -99,13 +99,6 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
 
     // Change the ALC sample rate -> 16K
     SetRegister(0x1B, 0b0'0000'0011);
-
-
-    for (int i = 0 ; i <= Max_Address; ++i)
-    {
-        PrintRegisterData(i);
-        HAL_Delay(100);
-    }
 }
 
 AudioCodec::~AudioCodec()
@@ -124,10 +117,12 @@ bool AudioCodec::TestRegister()
 
 HAL_StatusTypeDef AudioCodec::WriteRegister(uint8_t address)
 {
+    // PrintRegisterData(address);
+
     HAL_StatusTypeDef result = HAL_I2C_Master_Transmit(i2c,
         Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
 
-    HAL_Delay(2);
+    HAL_Delay(10);
 
     return result;
 }
@@ -235,7 +230,7 @@ bool AudioCodec::SetBits(const uint8_t address, const uint16_t bits, const uint1
 
     // Only use the bits that we said we would be using in bits.
     // masked set = 0x00F2 & 0x1FF = 0x00F2 & 0x01F1 = 0x00F0
-    const uint16_t masked_set =  masked_bits & (set & 0x1FF);
+    const uint16_t masked_set = masked_bits & (set & 0x1FF);
 
     registers[address].bytes[0] &= uint8_t(reset_bits >> 8);
     registers[address].bytes[1] &= uint8_t(reset_bits & 0x00FF);
@@ -266,6 +261,7 @@ void AudioCodec::TurnOnLeftInput3()
     EnableLeftMicPGA();
 
     SetBit(0x20, 7, 1);
+    SetBit(0x20, 8, 1);
 }
 
 void AudioCodec::TurnOffLeftInput3()
@@ -296,6 +292,7 @@ void AudioCodec::EnableLeftMicPGA()
     // Set bits for all left input pgas
     SetBit(0x19, 5, 1);
     SetBit(0x2f, 5, 1);
+    SetBit(0x20, 3, 1);
 }
 
 void AudioCodec::DisableLeftMicPGA()
@@ -316,57 +313,41 @@ void AudioCodec::MuteMic()
 
 void AudioCodec::UnmuteMic()
 {
+    // Disable LINMUTE
     SetBits(0x00, 0b1'1000'0000, 0b1'0000'0000);
-    // +0dB
+
+    // Set LIN3BOOST to +0dB
     SetBits(0x2B, 0b0'0111'0000, 0b0'0101'0000);
 
+    // Enable MIC bias
     SetBit(0x19, 1, 1);
 }
 
-// TODO
-void AudioCodec::RxAudio()
+bool AudioCodec::DataAvailable()
 {
-    if (rx_busy)
+    return data_available;
+}
+
+// TODO
+void AudioCodec::TxRxAudio()
+{
+    auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, Audio_Buffer_Sz);
+
+
+    uint8_t res[2];
+    res[0] = (uint8_t)((char)output + '0');
+    res[1] = '\n';
+    HAL_UART_Transmit(&huart1, res, 2, HAL_MAX_DELAY);
+}
+
+void AudioCodec::GetAudio(uint16_t* buffer, uint16_t size)
+{
+    for (uint16_t i = 0; i < size && i < Audio_Buffer_Sz; ++i)
     {
-        return;
+        buffer[i] = rx_buffer[i];
     }
 
-    rx_busy = true;
-
-    auto output = HAL_I2S_Receive_DMA(i2s, rx_buffer, Rx_Buffer_Sz);
-}
-
-void AudioCodec::RxAudioBlocking(uint16_t* buffer, uint16_t size)
-{
-    HAL_UART_Transmit(&huart1, (uint8_t*)"rx\n", 3, HAL_MAX_DELAY);
-    auto output = HAL_I2S_Receive(i2s, buffer, size, 200);
-
-    HAL_UART_Transmit(&huart1, (uint8_t*)"done\n", 5, HAL_MAX_DELAY);
-}
-
-void AudioCodec::RxComplete()
-{
-    rx_busy = false;
-}
-
-void AudioCodec::Send1KHzSignal()
-{
-    const float freq = 1000.0;
-    const float amplitude = 0.5;
-    const float PI = 3.14159265358979311599796346854;
-
-    uint16_t sample_rate[1] = { static_cast<uint16_t>(32767.0 * std::sin(2 * PI * freq * HAL_GetTick() / 1000.0)) };
-    // uint16_t sample = static_cast<uint16_t>(32767.0 * sin(2 * 3.141592653589793 * 1000.0 * HAL_GetTick() / 1000.0))
-
-    HAL_I2S_Transmit_DMA(i2s, sample_rate, 1);
-
-    // for (int i = 0; i < sample_rate; ++i)
-    // {
-    //     float value = amplitude * std::sin((2 * PI * i) / sample_rate);
-    //     int16_t sample = static_cast<int16_t>(value * 32767);
-
-    //     HAL_I2S_
-    // }
+    data_available = false;
 }
 
 void AudioCodec::SendAllOnes()
@@ -427,3 +408,40 @@ void AudioCodec::SendSawToothWave()
 
     HAL_Delay(10);
 }
+
+void AudioCodec::HalfCompleteCallback()
+{
+    SampleSineWave(tx_buffer, Audio_Buffer_Sz/2, 0,
+        sample_rate, 1000, 440, phase);
+
+    if (phase > M_PI * 2)
+    {
+        phase = 0;
+    }
+}
+
+void AudioCodec::CompleteCallback()
+{
+    SampleSineWave(tx_buffer, Audio_Buffer_Sz/2,
+        Audio_Buffer_Sz/2, sample_rate, 1000, 440, phase);
+
+    if (phase > M_PI * 2)
+    {
+        phase = 0;
+    }
+}
+
+void AudioCodec::SampleSineWave(uint16_t* buff, uint16_t num_samples,
+    uint16_t start_idx, uint16_t sample_rate,
+    double amplitutde, double freq, double& phase)
+{
+    double angular_freq = 2 * M_PI * freq;
+    for (uint16_t i = start_idx; i < num_samples; ++i)
+    {
+        double step = (double)i / sample_rate;
+        double sample = amplitutde * sin(angular_freq * step + phase);
+        buff[i] = uint16_t(sample);
+    }
+    phase += angular_freq * (double(num_samples - start_idx) / sample_rate);
+}
+
