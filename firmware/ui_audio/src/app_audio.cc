@@ -79,7 +79,7 @@ int app_main()
 {
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
 
-    HAL_Delay(1000);
+    HAL_Delay(5000);
     const uint8_t start [] = "Start\n";
     HAL_UART_Transmit(&huart1, start, 7, HAL_MAX_DELAY);
     audio = new AudioCodec(hi2s3, hi2c1);
@@ -109,16 +109,25 @@ int app_main()
 
     HAL_UART_Transmit(&huart1, (uint8_t*)"Loopstart\n", 10, HAL_MAX_DELAY);
 
-    // audio->RxAudio();
 
-    audio->SampleSineWave(tx_sound_buff, 256,
-        0, 16'000, 1000, 440, audio->phase);
+    // audio->SampleSineWave(tx_sound_buff, 256,
+    //     0, 16'000, 100, 440, audio->phase, true);
+
+    HAL_Delay(1000);
+    // for (int i =0 ; i < 256; ++i)
+    // {
+    //     AudioCodec::PrintInt(tx_sound_buff[i]);
+    //     HAL_Delay(100);
+    // }
 
     audio->TxRxAudio();
 
     while (true)
     {
+        unsigned int x = 0x8000;
+        unsigned int z = 0xFFFF;
 
+        unsigned int y = 0xEFFF;
 
         // audio.Send1KHzSignal();
         // audio->SendSawToothWave();

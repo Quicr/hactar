@@ -4,6 +4,8 @@
 #include "stm32f4xx_hal_i2c.h"
 #include "stm32f4xx_hal_i2s.h"
 
+extern UART_HandleTypeDef huart1;
+
 class AudioCodec
 {
 private:
@@ -53,15 +55,14 @@ public:
     void CompleteCallback();
     void SampleSineWave(uint16_t* buff, uint16_t num_samples,
         uint16_t start_idx, uint16_t sample_rate,
-        double amplitutde, double freq, double& phase);
-    double phase;
+        float amplitutde, float freq, float& phase, bool stereo);
+    float phase;
 
-private:
 
-    static constexpr uint16_t sample_rate = 16'000; // 16khz
+    static constexpr uint16_t Sample_Rate = 16'000; // 16khz
 
 // TODO clean this up a bit.
-    uint8_t* ToBinaryString(const uint8_t* data, size_t size)
+    static uint8_t* ToBinaryString(const uint8_t* data, size_t size)
     {
         uint8_t* bin_string = new uint8_t[(size * 8) + 1] { 0 };
 
@@ -82,12 +83,12 @@ private:
         return bin_string;
     }
 
-    void int_to_string(const unsigned long input, uint8_t* str, uint16_t& size)
+    static void int_to_string(const unsigned long long input, uint8_t* str, uint16_t& size)
     {
-        unsigned long value = input;
+        unsigned long long value = input;
         // Get the num of powers
-        unsigned long tmp = value;
-        unsigned long sz = 0;
+        unsigned long long tmp = value;
+        unsigned long long sz = 0;
         do
         {
             sz++;
@@ -100,7 +101,7 @@ private:
         size = sz + 1;
 
         str[sz] = '\n';
-        unsigned long mod = 0;
+        unsigned long long mod = 0;
         do
         {
             mod = value % 10;
@@ -111,6 +112,17 @@ private:
 
     }
 
+    static void PrintInt(const unsigned long input)
+    {
+
+        const uint8_t newline [] = "\n";
+        uint8_t num_str[64]{};
+        uint16_t len = 0;
+        int_to_string(input, num_str, len);
+        HAL_UART_Transmit(&huart1, num_str, len, HAL_MAX_DELAY);
+    }
+
+private:
     void PrintRegisterData(const uint8_t addr);
 
     //1111'1111
@@ -138,6 +150,7 @@ private:
     // TODO bitize these
     bool rx_busy;
     bool data_available;
+    bool stereo;
 
     // TODO label all of the registers
     Register registers[Max_Address + 1] = {
