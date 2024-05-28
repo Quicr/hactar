@@ -3,7 +3,6 @@
 // NOTE MCLK = 12Mhz
 #include <cmath>
 
-
 extern UART_HandleTypeDef huart1;
 
 void DebugPins(int output)
@@ -331,13 +330,17 @@ bool AudioCodec::DataAvailable()
 // TODO
 void AudioCodec::TxRxAudio()
 {
+    SampleSineWave(tx_buffer, Audio_Buffer_Sz,
+        0, Sample_Rate, 500, 440, phase, true);
+
+    // for (int i =0 ; i < 256; ++i)
+    // {
+    //     AudioCodec::PrintInt(tx_buffer[i]);
+    //     HAL_Delay(100);
+    // }
+
     auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, Audio_Buffer_Sz);
 
-
-    uint8_t res[2];
-    res[0] = (uint8_t)((char)output + '0');
-    res[1] = '\n';
-    HAL_UART_Transmit(&huart1, res, 2, HAL_MAX_DELAY);
 }
 
 void AudioCodec::GetAudio(uint16_t* buffer, uint16_t size)
@@ -373,7 +376,6 @@ void AudioCodec::PrintRegisterData(const uint8_t addr)
     HAL_UART_Transmit(&huart1, ToBinaryString(&registers[addr].bytes[1], 1), 9, HAL_MAX_DELAY);
 
     HAL_UART_Transmit(&huart1, newline, 1, HAL_MAX_DELAY);
-
 }
 
 void AudioCodec::SendSawToothWave()
@@ -412,7 +414,7 @@ void AudioCodec::SendSawToothWave()
 void AudioCodec::HalfCompleteCallback()
 {
     SampleSineWave(tx_buffer, Audio_Buffer_Sz/2, 0,
-        sample_rate, 1000, 440, phase);
+        Sample_Rate, 10, 440, phase, true);
 
     if (phase > M_PI * 2)
     {
@@ -423,25 +425,49 @@ void AudioCodec::HalfCompleteCallback()
 void AudioCodec::CompleteCallback()
 {
     SampleSineWave(tx_buffer, Audio_Buffer_Sz/2,
-        Audio_Buffer_Sz/2, sample_rate, 1000, 440, phase);
+        Audio_Buffer_Sz/2, Sample_Rate, 10, 440, phase, true);
 
     if (phase > M_PI * 2)
     {
         phase = 0;
     }
+
+
 }
 
 void AudioCodec::SampleSineWave(uint16_t* buff, uint16_t num_samples,
     uint16_t start_idx, uint16_t sample_rate,
-    double amplitutde, double freq, double& phase)
+    float amplitude, float freq, float& phase, bool stereo)
 {
-    double angular_freq = 2 * M_PI * freq;
-    for (uint16_t i = start_idx; i < num_samples; ++i)
+    if (stereo)
     {
-        double step = (double)i / sample_rate;
-        double sample = amplitutde * sin(angular_freq * step + phase);
-        buff[i] = uint16_t(sample);
+        float angular_freq = 2 * M_PI * freq;
+        uint16_t actual_samples = num_samples / 2;
+        for (uint16_t i = start_idx; i < actual_samples; ++i)
+        {
+            float step = (float)i / sample_rate;
+            float sample = amplitude * sin(angular_freq * step + phase);
+
+            // Add 0xFFFF to handle negative numbers and overflow back around
+            // to their regular values for the positive numbers
+            buff[i*2] = uint16_t(0x8000 + sample);
+            buff[i*2+1] = uint16_t(0x8000 + sample);
+        }
+        phase += angular_freq * (float(actual_samples - start_idx) / sample_rate);
     }
-    phase += angular_freq * (double(num_samples - start_idx) / sample_rate);
+    else
+    {
+        float angular_freq = 2 * M_PI * freq;
+        for (uint16_t i = start_idx; i < num_samples; ++i)
+        {
+            float step = (float)i / sample_rate;
+            float sample = amplitude * sin(angular_freq * step + phase);
+
+            // Add 0xFFFF to handle negative numbers and overflow back around
+            // to their regular values for the positive numbers
+            buff[i] = uint16_t(0xFFFF + sample);
+        }
+        phase += angular_freq * (float(num_samples - start_idx) / sample_rate);
+    }
 }
 
