@@ -138,7 +138,8 @@ private:
     static constexpr uint16_t Data_Mask = 0x01FF;
     static constexpr uint8_t Max_Address = 0x37;
 
-    static constexpr uint16_t Audio_Buffer_Sz = 76;
+    // static constexpr uint16_t Audio_Buffer_Sz = 4;
+    static constexpr uint16_t Audio_Buffer_Sz = 256;
 
     I2S_HandleTypeDef* i2s;
     I2C_HandleTypeDef* i2c;
