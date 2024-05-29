@@ -75,7 +75,7 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
 
     // Set the Master mode (1), I2S to 16 bit words
     // Set audio data format to i2s mode
-    SetRegister(0x07, 0b0'0100'0000);
+    SetRegister(0x07, 0b0'0100'0010);
 
     // Set the left and right headphone volumes
     SetRegister(0x02, 0b1'0111'1111);
@@ -330,10 +330,30 @@ bool AudioCodec::DataAvailable()
 // TODO
 void AudioCodec::TxRxAudio()
 {
-    SampleSineWave(tx_buffer, Audio_Buffer_Sz,
-        0, Sample_Rate, 500, 440, phase, true);
+    // SampleSineWave(tx_buffer, Audio_Buffer_Sz,
+    //     0, Sample_Rate, 1000, 440, phase, true);
 
-    // for (int i =0 ; i < 256; ++i)
+    for (int i = 0; i < 8; ++i)
+    {
+        tx_buffer[i] = 0b00110;
+    }
+
+    for (int i = 8; i < 20; ++i)
+    {
+        tx_buffer[i] = 0b11010;
+    }
+
+    for (int i = 20; i < 44; ++i)
+    {
+        tx_buffer[i] = 0b00110 << 8;
+    }
+
+    for (int i = 44; i < 76; ++i)
+    {
+        tx_buffer[i] = 0b11010 << 8;
+    }
+
+    // for (int i =0 ; i < Audio_Buffer_Sz; ++i)
     // {
     //     AudioCodec::PrintInt(tx_buffer[i]);
     //     HAL_Delay(100);
@@ -413,24 +433,24 @@ void AudioCodec::SendSawToothWave()
 
 void AudioCodec::HalfCompleteCallback()
 {
-    SampleSineWave(tx_buffer, Audio_Buffer_Sz/2, 0,
-        Sample_Rate, 10, 440, phase, true);
+    // SampleSineWave(tx_buffer, Audio_Buffer_Sz/2, 0,
+    //     Sample_Rate, 1000, 440, phase, true);
 
-    if (phase > M_PI * 2)
-    {
-        phase = 0;
-    }
+    // if (phase > M_PI * 2)
+    // {
+    //     phase = 0;
+    // }
 }
 
 void AudioCodec::CompleteCallback()
 {
-    SampleSineWave(tx_buffer, Audio_Buffer_Sz/2,
-        Audio_Buffer_Sz/2, Sample_Rate, 10, 440, phase, true);
+    // SampleSineWave(tx_buffer, Audio_Buffer_Sz/2,
+    //     Audio_Buffer_Sz/2, Sample_Rate, 1000, 440, phase, true);
 
-    if (phase > M_PI * 2)
-    {
-        phase = 0;
-    }
+    // if (phase > M_PI * 2)
+    // {
+    //     phase = 0;
+    // }
 
 
 }
@@ -450,8 +470,15 @@ void AudioCodec::SampleSineWave(uint16_t* buff, uint16_t num_samples,
 
             // Add 0xFFFF to handle negative numbers and overflow back around
             // to their regular values for the positive numbers
-            buff[i*2] = uint16_t(0x8000 + sample);
-            buff[i*2+1] = uint16_t(0x8000 + sample);
+            uint16_t int_sample = uint16_t(2000 + sample);
+
+            // uint8_t* bytes = (uint8_t*)&int_sample;
+            // uint8_t tmp = bytes[0];
+            // bytes[0] = bytes[1];
+            // bytes[1] = tmp;
+
+            buff[i*2] = int_sample;
+            buff[i*2+1] = buff[i*2];
         }
         phase += angular_freq * (float(actual_samples - start_idx) / sample_rate);
     }
