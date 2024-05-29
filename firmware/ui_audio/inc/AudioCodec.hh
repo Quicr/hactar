@@ -53,10 +53,15 @@ public:
 
     void HalfCompleteCallback();
     void CompleteCallback();
-    void SampleSineWave(uint16_t* buff, uint16_t num_samples,
+    void SampleSineWave(uint16_t* buff, const uint16_t num_samples,
         uint16_t start_idx, uint16_t sample_rate,
         float amplitutde, float freq, float& phase, bool stereo);
+    void SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
+        uint16_t start_idx, uint16_t sample_rate,
+        float amplitutde, float freqs[], float phases[],
+        const uint16_t num_freqs, bool stereo);
     float phase;
+    float phases[3] = {0, 0, 0};
 
 
     static constexpr uint16_t Sample_Rate = 16'000; // 16khz
@@ -123,6 +128,7 @@ public:
     }
 
 private:
+
     void PrintRegisterData(const uint8_t addr);
 
     //1111'1111

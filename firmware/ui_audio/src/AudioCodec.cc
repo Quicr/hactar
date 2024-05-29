@@ -15,7 +15,7 @@ void DebugPins(int output)
 
 
 AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
-    i2s(&hi2s), i2c(&hi2c), tx_buffer{0}, rx_buffer{ 0 }, rx_busy(false)
+    i2s(&hi2s), i2c(&hi2c), tx_buffer{ 0 }, rx_buffer{ 0 }, rx_busy(false)
 {
     // Reset the wm8960
     SetRegister(0x0F, 0b1'0000'0000);
@@ -80,10 +80,6 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     // Set the left and right headphone volumes
     SetRegister(0x02, 0b1'0111'1111);
     SetRegister(0x03, 0b1'0111'1111);
-
-    // Set the left and right speaker volumes
-    // SetRegister(0x28, 0b1'0111'1111);
-    // SetRegister(0x29, 0b1'0111'1111);
 
     // Enable the outputs
     SetRegister(0x31, 0b0'0111'0111);
@@ -330,37 +326,8 @@ bool AudioCodec::DataAvailable()
 // TODO
 void AudioCodec::TxRxAudio()
 {
-    SampleSineWave(tx_buffer, Audio_Buffer_Sz,
-        0, Sample_Rate, 1000, 440, phase, true);
-
-    // tx_buffer[0] = 0x70FF;
-    // tx_buffer[2] = 0x0001;
-
-    // for (int i = 0; i < 8; ++i)
-    // {
-    //     tx_buffer[i] = 0b00001;
-    // }
-
-    // for (int i = 8; i < 20; ++i)
-    // {
-    //     tx_buffer[i] = 0b11010;
-    // }
-
-    // for (int i = 20; i < 44; ++i)
-    // {
-    //     tx_buffer[i] = 0b00110 << 8;
-    // }
-
-    // for (int i = 44; i < 76; ++i)
-    // {
-    //     tx_buffer[i] = 0b11010 << 8;
-    // }
-
-    // for (int i =0 ; i < Audio_Buffer_Sz; ++i)
-    // {
-    //     AudioCodec::PrintInt(tx_buffer[i]);
-    //     HAL_Delay(100);
-    // }
+    // SampleSineWave(tx_buffer, Audio_Buffer_Sz,
+    //     0, Sample_Rate, 1000, 440, phase, true);
 
     auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, Audio_Buffer_Sz);
 
@@ -436,56 +403,50 @@ void AudioCodec::SendSawToothWave()
 
 void AudioCodec::HalfCompleteCallback()
 {
-    SampleSineWave(tx_buffer, Audio_Buffer_Sz/2,
-        0, Sample_Rate, 1000,
-        440, phase, true);
+    float freqs [] = { 523.25f, 659.26f, 783.99f };
+    SampleHarmonic(tx_buffer, Audio_Buffer_Sz / 2,
+        0, Sample_Rate,
+        1000, freqs, phases, 3, true);
 
-    if (phase > M_PI * 2)
-    {
-        phase -= M_PI *2;
-    }
 }
 
 void AudioCodec::CompleteCallback()
 {
-    SampleSineWave(tx_buffer, Audio_Buffer_Sz/2,
-        Audio_Buffer_Sz/2, Sample_Rate, 1000,
-        440, phase, true);
-
-    if (phase > M_PI * 2)
-    {
-        phase -= M_PI *2;
-    }
+    float freqs [] = { 523.25f, 659.26f, 783.99f};
+    SampleHarmonic(tx_buffer, Audio_Buffer_Sz / 2,
+        Audio_Buffer_Sz / 2, Sample_Rate,
+        1000, freqs, phases, 3, true);
 }
 
-void AudioCodec::SampleSineWave(uint16_t* buff, uint16_t num_samples,
+void AudioCodec::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
     uint16_t start_idx, uint16_t sample_rate,
     float amplitude, float freq, float& phase, bool stereo)
 {
-    constexpr uint16_t offset = 5000;
+    constexpr uint16_t offset = 2000;
     constexpr float TWO_PI = M_PI * 2;
     const float angular_freq = TWO_PI * freq;
     float current_phase = 0.0f;
+    uint16_t samples = num_samples;
     if (stereo)
     {
-        num_samples = num_samples / 2;
+        samples = samples / 2;
 
-        for (uint16_t i = 0; i < num_samples; ++i)
+        for (uint16_t i = 0; i < samples; ++i)
         {
             const float step = (float)i / sample_rate;
             const float sample = amplitude * sin(angular_freq * step + phase);
 
             // Add offset to handle negative numbers and overflow back around
             // to their regular values for the positive numbers
-            const uint16_t int_sample = uint16_t(offset + sample);
+            const uint16_t int_sample = uint16_t(offset + sample) + 1;
 
-            buff[start_idx + (i*2)] = int_sample;
-            buff[start_idx + (i*2+1)] = int_sample;
+            buff[start_idx + (i * 2)] = int_sample;
+            buff[start_idx + (i * 2 + 1)] = int_sample;
         }
     }
     else
     {
-        for (uint16_t i = 0; i < num_samples; ++i)
+        for (uint16_t i = 0; i < samples; ++i)
         {
             const float step = (float)i / sample_rate;
             const float sample = amplitude * sin(angular_freq * step + phase);
@@ -496,6 +457,35 @@ void AudioCodec::SampleSineWave(uint16_t* buff, uint16_t num_samples,
         }
     }
 
-    phase += angular_freq * (float(num_samples) / sample_rate);
+    phase += angular_freq * (float(samples) / sample_rate);
+    while (phase > TWO_PI)
+    {
+        phase -= TWO_PI;
+    }
+}
+
+void AudioCodec::SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
+    uint16_t start_idx, uint16_t sample_rate,
+    float amplitutde, float freqs [], float phases [],
+    const uint16_t num_freqs, bool stereo)
+{
+
+    // Clear the buffer first
+    for (uint16_t i = 0; i < num_samples; ++i)
+    {
+        buff[start_idx + i] = 0;
+    }
+
+    for (uint16_t i = 0 ; i < num_freqs; ++i)
+    {
+        uint16_t harmonic[num_samples] = { 0 };
+        SampleSineWave(harmonic, num_samples, 0, sample_rate,
+            amplitutde, freqs[i], phases[i], stereo);
+
+        for (uint16_t i = 0; i < num_samples; ++i)
+        {
+            buff[start_idx + i] += harmonic[i];
+        }
+    }
 }
 
