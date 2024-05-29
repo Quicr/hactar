@@ -15,7 +15,7 @@ void DebugPins(int output)
 
 
 AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
-    i2s(&hi2s), i2c(&hi2c), rx_buffer{ 0 }, rx_busy(false)
+    i2s(&hi2s), i2c(&hi2c), tx_buffer{0}, rx_buffer{ 0 }, rx_busy(false)
 {
     // Reset the wm8960
     SetRegister(0x0F, 0b1'0000'0000);
@@ -68,14 +68,14 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     // Set the clock division
     // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
     // BCLKDIV = SYSCLK / 6 = 2.048Mhz
-    SetRegister(0x08, 0b1'1100'0110);
+    SetRegister(0x08, 0b1'1100'1001);
 
     // Disable soft mute and ADC high pass filter
     SetRegister(0x05, 0b0'0000'0000);
 
     // Set the Master mode (1), I2S to 16 bit words
     // Set audio data format to i2s mode
-    SetRegister(0x07, 0b0'0100'0010);
+    SetRegister(0x07, 0b0'0100'1110);
 
     // Set the left and right headphone volumes
     SetRegister(0x02, 0b1'0111'1111);
@@ -330,28 +330,31 @@ bool AudioCodec::DataAvailable()
 // TODO
 void AudioCodec::TxRxAudio()
 {
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz,
-    //     0, Sample_Rate, 1000, 440, phase, true);
+    SampleSineWave(tx_buffer, Audio_Buffer_Sz,
+        0, Sample_Rate, 1000, 440, phase, true);
 
-    for (int i = 0; i < 8; ++i)
-    {
-        tx_buffer[i] = 0b00110;
-    }
+    // tx_buffer[0] = 0x70FF;
+    // tx_buffer[2] = 0x0001;
 
-    for (int i = 8; i < 20; ++i)
-    {
-        tx_buffer[i] = 0b11010;
-    }
+    // for (int i = 0; i < 8; ++i)
+    // {
+    //     tx_buffer[i] = 0b00001;
+    // }
 
-    for (int i = 20; i < 44; ++i)
-    {
-        tx_buffer[i] = 0b00110 << 8;
-    }
+    // for (int i = 8; i < 20; ++i)
+    // {
+    //     tx_buffer[i] = 0b11010;
+    // }
 
-    for (int i = 44; i < 76; ++i)
-    {
-        tx_buffer[i] = 0b11010 << 8;
-    }
+    // for (int i = 20; i < 44; ++i)
+    // {
+    //     tx_buffer[i] = 0b00110 << 8;
+    // }
+
+    // for (int i = 44; i < 76; ++i)
+    // {
+    //     tx_buffer[i] = 0b11010 << 8;
+    // }
 
     // for (int i =0 ; i < Audio_Buffer_Sz; ++i)
     // {
@@ -433,68 +436,66 @@ void AudioCodec::SendSawToothWave()
 
 void AudioCodec::HalfCompleteCallback()
 {
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz/2, 0,
-    //     Sample_Rate, 1000, 440, phase, true);
+    SampleSineWave(tx_buffer, Audio_Buffer_Sz/2,
+        0, Sample_Rate, 1000,
+        440, phase, true);
 
-    // if (phase > M_PI * 2)
-    // {
-    //     phase = 0;
-    // }
+    if (phase > M_PI * 2)
+    {
+        phase -= M_PI *2;
+    }
 }
 
 void AudioCodec::CompleteCallback()
 {
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz/2,
-    //     Audio_Buffer_Sz/2, Sample_Rate, 1000, 440, phase, true);
+    SampleSineWave(tx_buffer, Audio_Buffer_Sz/2,
+        Audio_Buffer_Sz/2, Sample_Rate, 1000,
+        440, phase, true);
 
-    // if (phase > M_PI * 2)
-    // {
-    //     phase = 0;
-    // }
-
-
+    if (phase > M_PI * 2)
+    {
+        phase -= M_PI *2;
+    }
 }
 
 void AudioCodec::SampleSineWave(uint16_t* buff, uint16_t num_samples,
     uint16_t start_idx, uint16_t sample_rate,
     float amplitude, float freq, float& phase, bool stereo)
 {
+    constexpr uint16_t offset = 5000;
+    constexpr float TWO_PI = M_PI * 2;
+    const float angular_freq = TWO_PI * freq;
+    float current_phase = 0.0f;
     if (stereo)
     {
-        float angular_freq = 2 * M_PI * freq;
-        uint16_t actual_samples = num_samples / 2;
-        for (uint16_t i = start_idx; i < actual_samples; ++i)
+        num_samples = num_samples / 2;
+
+        for (uint16_t i = 0; i < num_samples; ++i)
         {
-            float step = (float)i / sample_rate;
-            float sample = amplitude * sin(angular_freq * step + phase);
+            const float step = (float)i / sample_rate;
+            const float sample = amplitude * sin(angular_freq * step + phase);
 
-            // Add 0xFFFF to handle negative numbers and overflow back around
+            // Add offset to handle negative numbers and overflow back around
             // to their regular values for the positive numbers
-            uint16_t int_sample = uint16_t(2000 + sample);
+            const uint16_t int_sample = uint16_t(offset + sample);
 
-            // uint8_t* bytes = (uint8_t*)&int_sample;
-            // uint8_t tmp = bytes[0];
-            // bytes[0] = bytes[1];
-            // bytes[1] = tmp;
-
-            buff[i*2] = int_sample;
-            buff[i*2+1] = buff[i*2];
+            buff[start_idx + (i*2)] = int_sample;
+            buff[start_idx + (i*2+1)] = int_sample;
         }
-        phase += angular_freq * (float(actual_samples - start_idx) / sample_rate);
     }
     else
     {
-        float angular_freq = 2 * M_PI * freq;
-        for (uint16_t i = start_idx; i < num_samples; ++i)
+        for (uint16_t i = 0; i < num_samples; ++i)
         {
-            float step = (float)i / sample_rate;
-            float sample = amplitude * sin(angular_freq * step + phase);
+            const float step = (float)i / sample_rate;
+            const float sample = amplitude * sin(angular_freq * step + phase);
 
-            // Add 0xFFFF to handle negative numbers and overflow back around
+            // Add offset to handle negative numbers and overflow back around
             // to their regular values for the positive numbers
-            buff[i] = uint16_t(0xFFFF + sample);
+            buff[start_idx + i] = uint16_t(offset + sample);
         }
-        phase += angular_freq * (float(num_samples - start_idx) / sample_rate);
     }
+
+    phase += angular_freq * (float(num_samples) / sample_rate);
 }
 
