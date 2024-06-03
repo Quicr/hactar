@@ -237,8 +237,8 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s)
     hdma_i2s3_ext_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
     hdma_i2s3_ext_rx.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_i2s3_ext_rx.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_i2s3_ext_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    hdma_i2s3_ext_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_i2s3_ext_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    hdma_i2s3_ext_rx.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
     hdma_i2s3_ext_rx.Init.Mode = DMA_CIRCULAR;
     hdma_i2s3_ext_rx.Init.Priority = DMA_PRIORITY_LOW;
     hdma_i2s3_ext_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
