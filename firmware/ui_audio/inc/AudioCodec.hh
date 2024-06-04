@@ -4,6 +4,8 @@
 #include "stm32f4xx_hal_i2c.h"
 #include "stm32f4xx_hal_i2s.h"
 
+#include "memory"
+
 extern UART_HandleTypeDef huart1;
 
 class AudioCodec
@@ -26,17 +28,13 @@ public:
     bool XorRegister(uint8_t address, uint16_t data);
     bool SetBit(uint8_t address, uint8_t bit, uint8_t set);
     bool SetBits(const uint8_t address, const uint16_t bits, const uint16_t set);
-    // TODO remove the "debug" param.
-    bool WriteRegisterSeries(uint8_t address, uint16_t data, uint8_t debug);
-
-    bool TestRegister();
 
     bool ReadRegister(uint8_t address, uint16_t& value);
 
-    void TxRxAudio();
+    void StartI2S();
+    void StopI2S();
+
     void GetAudio(uint16_t* buffer, uint16_t size);
-    void SendAllOnes();
-    void SendSawToothWave();
 
     void TurnOnLeftInput3();
     void TurnOffLeftInput3();
@@ -60,13 +58,14 @@ public:
         uint16_t start_idx, uint16_t sample_rate,
         float amplitutde, float freqs[], float phases[],
         const uint16_t num_freqs, bool stereo);
+    void SendSawToothWave();
+
     float phase;
     float phases[3] = {0, 0, 0};
 
 
     static constexpr uint16_t Sample_Rate = 16'000; // 16khz
 
-// TODO clean this up a bit.
     static uint8_t* ToBinaryString(const uint8_t* data, size_t size)
     {
         uint8_t* bin_string = new uint8_t[(size * 8) + 1] { 0 };
@@ -128,10 +127,7 @@ public:
     }
 
 private:
-
     void PrintRegisterData(const uint8_t addr);
-
-    //1111'1111
 
     HAL_StatusTypeDef WriteRegister(uint8_t address);
 
@@ -144,7 +140,6 @@ private:
     static constexpr uint16_t Data_Mask = 0x01FF;
     static constexpr uint8_t Max_Address = 0x37;
 
-    // static constexpr uint16_t Audio_Buffer_Sz = 4;
     static constexpr uint16_t Audio_Buffer_Sz = 256;
 
     I2S_HandleTypeDef* i2s;
@@ -152,14 +147,18 @@ private:
     uint16_t tx_buffer[Audio_Buffer_Sz];
     size_t tx_buff_idx;
     uint16_t rx_buffer[Audio_Buffer_Sz];
-    bool audio_busy;
 
-    // TODO bitize these
-    bool rx_busy;
     bool data_available;
     bool stereo;
 
-    // TODO label all of the registers
+    static constexpr uint16_t running_flag = 0x00;
+    static constexpr uint16_t half_complete_flag = 0x01;
+    static constexpr uint16_t complete_flag = 0x02;
+    static constexpr uint16_t stereo_flag = 0x03;
+    static constexpr uint16_t mic_mute_flag = 0x04;
+
+    uint16_t flags = 0x00;
+
     Register registers[Max_Address + 1] = {
         { Register(0x00, 0xa7) }, // 0x00 - 0000 0000, 1010 0111
         { Register(0x02, 0xa7) }, // 0x01 - 0000 0010, 1010 0111

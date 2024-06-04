@@ -68,11 +68,6 @@ void generateTriangleWave(uint16_t* buffer, int numSamples, int sampleRate, floa
     }
 }
 
-// void GenerateSawtoothWave(uint16_t* buffer, )
-// {
-
-// }
-
 AudioCodec* audio;
 
 int app_main()
@@ -103,7 +98,8 @@ int app_main()
     uint16_t tx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
 
     audio->EnableLeftMicPGA();
-    audio->TurnOnLeftInput3();
+    audio->TurnOnLeftDifferentialInput();
+    // audio->TurnOnLeftInput3();
     audio->UnmuteMic();
     // audio->MuteMic();
 
@@ -120,7 +116,7 @@ int app_main()
     //     HAL_Delay(100);
     // }
 
-    audio->TxRxAudio();
+    audio->StartI2S();
 
     while (true)
     {

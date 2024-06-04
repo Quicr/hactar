@@ -5,17 +5,8 @@
 
 extern UART_HandleTypeDef huart1;
 
-void DebugPins(int output)
-{
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PinState((output & 0x01) >> 0));
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PinState((output & 0x02) >> 1));
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PinState((output & 0x04) >> 2));
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PinState((output & 0x08) >> 3));
-}
-
-
 AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
-    i2s(&hi2s), i2c(&hi2c), tx_buffer{ 0 }, rx_buffer{ 0 }, rx_busy(false)
+    i2s(&hi2s), i2c(&hi2c), tx_buffer{ 0 }, rx_buffer{ 0 }
 {
     // Reset the wm8960
     SetRegister(0x0F, 0b1'0000'0000);
@@ -47,22 +38,15 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     **/
     SetRegister(0x34, 0b0'0001'1000);
 
-    // Write the fractional K into the registers
-    // Pg 64 version
-    // SetRegister(0x35, 0b0'0000'1100);
-    // SetRegister(0x36, 0b0'1001'0011);
-    // SetRegister(0x37, 0b0'1110'1001);
-
     // Pg 85 version
     SetRegister(0x35, 0b0'0011'0001);
     SetRegister(0x36, 0b0'0010'0110);
     SetRegister(0x37, 0b0'1110'1001);
 
-    // TODO verify math
-        // Set ADCDIV to get 16Khz from SYSCLK (0x03)
-        // Set DACDIV to get 16Khz from SYSCLK (0x03)
-        // Post scale the PLL to be divided by 2
-        // Set the clock (Select the PLL) (0x01)
+    // Set ADCDIV to get 16Khz from SYSCLK (0x03)
+    // Set DACDIV to get 16Khz from SYSCLK (0x03)
+    // Post scale the PLL to be divided by 2
+    // Set the clock (Select the PLL) (0x01)
     SetRegister(0x04, 0b0'1101'1101);
 
     // Set the clock division
@@ -94,20 +78,29 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
 
     // Change the ALC sample rate -> 16K
     SetRegister(0x1B, 0b0'0000'0011);
+
+    // Enable DAC softmute
+    SetBit(0x06, 3, 1);
+
+    // Noise gate threshold
+    // SetRegister(0x14, 0b0'1111'1001);
+
+    // Slow close enable
+    // SetRegister(0x17, 0b1'1100'0001);
+
+    // // Headphone switch enabled
+    // SetRegister(0x18, 0b0'0100'0000);
+
+    // // Vmid soft start for anti-pop
+    // SetRegister(0x1C, 0b0'0000'0100);
+
+    // SetRegister(0x1D, 0b0'0100'0000);
 }
 
 AudioCodec::~AudioCodec()
 {
     i2c = nullptr;
     i2s = nullptr;
-}
-
-// TODO read the I2C value to make sure it is writing correctly!
-bool AudioCodec::TestRegister()
-{
-    // return SetRegister(0x34, 0b0'0001'1000);
-
-    return SetRegister(0x0A, 0b1'1111'1111);
 }
 
 HAL_StatusTypeDef AudioCodec::WriteRegister(uint8_t address)
@@ -273,7 +266,7 @@ void AudioCodec::TurnOnLeftDifferentialInput()
 
     SetBit(0x20, 6, 1);
     SetBit(0x20, 8, 1);
-
+    // SetBit(0x20, 5, 1);
 }
 
 void AudioCodec::TurnOffLeftDifferentialInput()
@@ -323,13 +316,18 @@ bool AudioCodec::DataAvailable()
     return data_available;
 }
 
-// TODO
-void AudioCodec::TxRxAudio()
+void AudioCodec::StartI2S()
 {
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz,
-    //     0, Sample_Rate, 1000, 440, phase, true);
-
     auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, Audio_Buffer_Sz);
+
+    if (output == HAL_OK)
+    {
+        flags |= (1 << running_flag);
+    }
+}
+
+void AudioCodec::StopI2S()
+{
 
 }
 
@@ -341,18 +339,6 @@ void AudioCodec::GetAudio(uint16_t* buffer, uint16_t size)
     }
 
     data_available = false;
-}
-
-void AudioCodec::SendAllOnes()
-{
-    uint32_t sz = 256;
-    uint16_t sample_data[sz];
-    for (int i = 0; i < sz; ++i)
-    {
-        sample_data[i] = 0xFF;
-    }
-
-    HAL_I2S_Transmit(i2s, sample_data, sz, HAL_MAX_DELAY);
 }
 
 void AudioCodec::PrintRegisterData(const uint8_t addr)
@@ -368,54 +354,43 @@ void AudioCodec::PrintRegisterData(const uint8_t addr)
     HAL_UART_Transmit(&huart1, newline, 1, HAL_MAX_DELAY);
 }
 
-void AudioCodec::SendSawToothWave()
-{
-    uint32_t sample_rate = 16'000;
-    float amplitude = 2;
-    float freq = 1000.0;
-    float period = sample_rate / freq;
-
-    uint16_t num_samples = 256;
-    static uint16_t buff[256];
-
-    for (int i = 0; i < num_samples; ++i)
-    {
-        float phase = fmod(i, period) / period;
-
-        float sawtooth_value = amplitude * (2 * phase - 1);
-
-        if (sawtooth_value > 1.0f)
-        {
-            sawtooth_value = 1.0f;
-        }
-        else if (sawtooth_value < -1.0f)
-        {
-            sawtooth_value = -1.0f;
-        }
-
-        buff[i] = (uint16_t)((sawtooth_value + 1.0f) * 32767);
-    }
-
-    HAL_I2S_Transmit(i2s, buff, num_samples, HAL_MAX_DELAY);
-
-    HAL_Delay(10);
-}
-
 void AudioCodec::HalfCompleteCallback()
 {
-    float freqs [] = { 523.25f, 659.26f, 783.99f };
-    SampleHarmonic(tx_buffer, Audio_Buffer_Sz / 2,
-        0, Sample_Rate,
-        1000, freqs, phases, 3, true);
+    // float freqs [] = { 523.25f, 659.26f, 783.99f };
+    // SampleHarmonic(tx_buffer, Audio_Buffer_Sz / 2,
+    //     0, Sample_Rate,
+    //     1000, freqs, phases, 3, true);
 
+    // SampleSineWave(tx_buffer, Audio_Buffer_Sz / 2,
+    //     0, Sample_Rate,
+    //     1000, 1000, phase, true);
+
+
+    // copy rx to tx
+    for (uint16_t i = 0; i < Audio_Buffer_Sz / 2; i+=2)
+    {
+        tx_buffer[i] = rx_buffer[i] + 5000;
+        tx_buffer[i+1] = rx_buffer[i] + 5000;
+    }
 }
 
 void AudioCodec::CompleteCallback()
 {
-    float freqs [] = { 523.25f, 659.26f, 783.99f};
-    SampleHarmonic(tx_buffer, Audio_Buffer_Sz / 2,
-        Audio_Buffer_Sz / 2, Sample_Rate,
-        1000, freqs, phases, 3, true);
+    // float freqs [] = { 523.25f, 659.26f, 783.99f};
+    // SampleHarmonic(tx_buffer, Audio_Buffer_Sz / 2,
+    //     Audio_Buffer_Sz / 2, Sample_Rate,
+    //     1000, freqs, phases, 3, true);
+
+    // SampleSineWave(tx_buffer, Audio_Buffer_Sz / 2,
+    //     Audio_Buffer_Sz / 2, Sample_Rate,
+    //     1000, 1000, phase, true);
+
+    // copy rx to tx
+    for (uint16_t i = Audio_Buffer_Sz / 2; i < Audio_Buffer_Sz; i+=2)
+    {
+        tx_buffer[i] = rx_buffer[i] + 5000;
+        tx_buffer[i+1] = rx_buffer[i] + 5000;
+    }
 }
 
 void AudioCodec::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
@@ -489,3 +464,35 @@ void AudioCodec::SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
     }
 }
 
+void AudioCodec::SendSawToothWave()
+{
+    uint32_t sample_rate = 16'000;
+    float amplitude = 2;
+    float freq = 1000.0;
+    float period = sample_rate / freq;
+
+    uint16_t num_samples = 256;
+    static uint16_t buff[256];
+
+    for (int i = 0; i < num_samples; ++i)
+    {
+        float phase = fmod(i, period) / period;
+
+        float sawtooth_value = amplitude * (2 * phase - 1);
+
+        if (sawtooth_value > 1.0f)
+        {
+            sawtooth_value = 1.0f;
+        }
+        else if (sawtooth_value < -1.0f)
+        {
+            sawtooth_value = -1.0f;
+        }
+
+        buff[i] = (uint16_t)((sawtooth_value + 1.0f) * 32767);
+    }
+
+    HAL_I2S_Transmit(i2s, buff, num_samples, HAL_MAX_DELAY);
+
+    HAL_Delay(10);
+}
