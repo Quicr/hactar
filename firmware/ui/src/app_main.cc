@@ -13,7 +13,7 @@
 
 #include "SerialStm.hh"
 #include "Led.hh"
-#include "AudioCodec.hh"
+#include "audio_chip.hh"
 
 #include <hpke/random.h>
 #include <hpke/digest.h>
@@ -53,7 +53,7 @@ SerialStm* mgmt_serial_interface = nullptr;
 SerialStm* net_serial_interface = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
-AudioCodec* audio = nullptr;
+AudioChip* audio = nullptr;
 bool rx_busy = false;
 
 uint8_t random_byte() {
@@ -89,7 +89,7 @@ uint16_t GenerateTriangleWavePoint(double frequency, double amplitude, double ti
 // TODO Get the osc working correctly from an external signal
 int app_main()
 {
-    // audio = new AudioCodec(hi2s3, hi2c1);
+    audio = new AudioChip(hi2s3, hi2c1);
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
@@ -127,70 +127,12 @@ int app_main()
     mgmt_serial_interface = new SerialStm(&huart1);
     net_serial_interface = new SerialStm(&huart2, 2048);
 
-    ui_manager = new UserInterfaceManager(screen, *keyboard, *net_serial_interface, *eeprom);
-
-    // SerialPacketManager mgmt_serial(mgmt_serial_interface);
+    ui_manager = new UserInterfaceManager(screen, *keyboard,
+        *net_serial_interface, *eeprom, *audio);
 
     HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
-
-
-    // HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
-
-    // TODO figure out how to send a small sound??
-    // Generate a simple triangle wave
-    // double frequency = 1000; // Hz
-    // double amplitude = 1000.0;
-    // double duration = 1.0;  //seconds
-    // double sample_rate = 16'000; // samples per second5
-    uint32_t i = 0;
-    // for (double t = 0.0; t < duration && i < SOUND_BUFFER_SZ; t += 1.0 / sample_rate)
-    // {
-    //     tx_sound_buff[i++] = GenerateTriangleWavePoint(frequency, amplitude, t);
-    // }
-
-    #define SAMPLE_RATE 44100
-    #define DAC_RESOLUTION 4095 // 12-bit DAC
-
-    // Lookup table for sine wave generation (values are between 0 and DAC_RESOLUTION)
-    const uint16_t sine_wave[] = {
-        2048, 2447, 2831, 3185, 3495, 3750, 3939, 4056,
-        4095, 4056, 3939, 3750, 3495, 3185, 2831, 2447,
-        2048, 1648, 1264, 910, 600, 345, 156, 39,
-        0, 39, 156, 345, 600, 910, 1264, 1648
-        // Add more values as needed to cover a complete cycle
-    };
-
-    while (i < SOUND_BUFFER_SZ)
-    {
-        for (unsigned int j = 0; j < sizeof(sine_wave) / sizeof(sine_wave[0]); ++j)
-        {
-            tx_sound_buff[i++] = sine_wave[j];
-        }
-    }
-
-
-
-    // for (i = 0; i < SOUND_BUFFER_SZ; ++i)
-    // {
-    //     // uint32_t val = (i * (0xFFFF / SOUND_BUFFER_SZ)) % 0xFFFF;
-    //     // uint32_t val = i;
-    //     // tx_sound_buff[i] = val;
-    //     tx_sound_buff[i] = GenerateTriangleWavePoint(frequency, amplitude, duration);
-    // }
-
-    tx_sound_buff[SOUND_BUFFER_SZ - 1] = 0x7FFF;
-    // tx_sound_buff[SOUND_BUFFER_SZ-1] = 0x00;
-
-    // Sanity check numbers
-    // tx_sound_buff[0] = 1;
-    // tx_sound_buff[1] = 0xF0F0;
-    // tx_sound_buff[2] = 65535;
-    // tx_sound_buff[4] = 0xAAAA;
-    // tx_sound_buff[5] = 0x5555;
-    // tx_sound_buff[SOUND_BUFFER_SZ - 1] = 1;
-    // tx_sound_buff[SOUND_BUFFER_SZ - 2] = 0x00AA;
 
     // Initialize the cryptographic library
     const auto rv = cmox_initialize(nullptr);
@@ -198,80 +140,33 @@ int app_main()
 
     // Delayed condition
     uint32_t blink = HAL_GetTick() + 5000;
-    uint32_t tx_sound = 0;
-    // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
 
     WaitForNetReady();
     Logger::Log(Logger::Level::Info, "Hactar is ready");
+
+    bool sound_inited = false;
+    uint32_t wait_to_enable_audio_codec = HAL_GetTick() + 5000;
+
+    const size_t tx_buff_sz = 256;
+    uint16_t tx_buff[tx_buff_sz] = {0};
+    float phase = 0;
 
     while (1)
     {
         ui_manager->Run();
 
-        if (HAL_GetTick() > tx_sound)
-        {
-            // audio->Send1KHzSignal();
-            // HAL_I2SEx_TransmitReceive_DMA(&hi2s3, tx_sound_buff, rx_sound_buff, SOUND_BUFFER_SZ);
-            // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
-            // screen.DrawText(0, 100, std::to_string((int)tx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
-
-            // audio->TestRegister();
-            // uint16_t reg_value = 0;
-            // uint16_t value = 0x01FF;
-            // audio->ReadRegister(0x0A, reg_value);
-            // screen.DrawText(0, 100, std::to_string((int)reg_value), font7x12, C_GREEN, C_BLACK);
-
-            tx_sound = HAL_GetTick() + 10;
-        }
-
-        // // mgmt_serial.RxTx(HAL_GetTick());
-
-        // // screen.FillRectangle(0, 200, 20, 220, C_YELLOW);
         if (HAL_GetTick() > blink)
         {
 
-            //     // auto packet = std::make_unique<SerialPacket>();
-            //     // packet->SetData(SerialPacket::Types::Debug, 0, 1);
-            //     // packet->SetData(mgmt_serial.NextPacketId(), 1, 2);
-            //     // packet->SetData(5, 1, 2);
-            //     // packet->SetData('h', 1);
-            //     // packet->SetData('e', 1);
-            //     // packet->SetData('l', 1);
-            //     // packet->SetData('l', 1);
-            //     // packet->SetData('o', 1);
-            //     // mgmt_serial.EnqueuePacket(std::move(packet));
-            // audio->Send1KHzSignal();
+        }
 
-            // HAL_StatusTypeDef res = HAL_I2S_Transmit_DMA(&hi2s3, buff, BUFFER_SIZE * sizeof(uint16_t));
-            // screen.DrawText(0, 100, std::to_string((int)res), font7x12, C_WHITE, C_BLACK);
-            // if (res == HAL_OK)
-            // {
-            // }
-            // blink = HAL_GetTick() + 5000;
-            // uint32_t num = 0;
-            // HAL_RNG_GenerateRandomNumber(&hrng, &num);
-            // screen.DrawText(0, 82, std::to_string(num), font7x12, C_GREEN, C_BLACK);
-
-            if (rx_busy) {
-                continue;
-            }
-
-            // We need this because if the mic stays on it will write to USART3 in
-            // bootloader mode which locks up the main chip
-            // TODO remove enable mic bits [2,3]
-            // audio->XorRegister(0x19, 0b0'0000'1100);
-
-            rx_busy = true;
-
-            // TODO Rx_Buffer_Sz might need to be in bytes not element sz.
-            // auto output = HAL_I2SEx_TransmitReceive_DMA(&hi2s3, tx_sound_buff, rx_sound_buff, SOUND_BUFFER_SZ);
-
-            // screen.DrawText(0, 100, std::to_string((int)output), font7x12, C_GREEN, C_BLACK);
-            // screen.DrawText(0, 112, std::to_string((int)rx_sound_buff[0]), font7x12, C_GREEN, C_BLACK);
-            // screen.DrawText(0, 124, std::to_string((int)rx_sound_buff[1]), font7x12, C_GREEN, C_BLACK);
-            // screen.DrawText(0, 136, std::to_string((int)rx_sound_buff[2]), font7x12, C_GREEN, C_BLACK);
-            // screen.DrawText(0, 148, std::to_string((int)rx_sound_buff[3]), font7x12, C_GREEN, C_BLACK);
-
+        // NOTE DO NOT REMOVE ON EV10
+        // TODO eventually remove
+        if (HAL_GetTick() > wait_to_enable_audio_codec && !sound_inited)
+        {
+            audio->Init();
+            audio->StartI2S();
+            sound_inited = true;
         }
     }
 
@@ -297,34 +192,18 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
         mgmt_serial_interface->RxEvent(size);
     }
 }
-
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
+        HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
     if (huart->Instance == USART2)
     {
         net_serial_interface->TxEvent();
     }
     else if (huart->Instance == USART1)
     {
-        HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+        // HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
         mgmt_serial_interface->TxEvent();
     }
-}
-
-void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* /* hi2s */)
-{
-    // audio->RxComplete();
-    // rx_busy = false;
-    // audio->XorRegister(0x19, 0b0'0000'1100);
-
-    HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
-}
-
-void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef* /* hi2s */)
-{
-    // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
-
-    HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
@@ -352,6 +231,21 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
         mgmt_serial_interface->StartRx();
     }
 }
+
+void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef* hi2s)
+{
+    UNUSED(hi2s);
+    // HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+    audio->HalfCompleteCallback();
+}
+
+void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
+{
+    UNUSED(hi2s);
+    // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+    audio->CompleteCallback();
+}
+
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {

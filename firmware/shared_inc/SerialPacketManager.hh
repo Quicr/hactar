@@ -67,16 +67,16 @@ public:
 
     void Tx(const unsigned long current_time)
     {
-        // Don't try to send if we are reading
-        if (uart->Unread() >= Front_Bytes)
-        {
-            return;
-        }
+        // // Don't try to send if we are reading
+        // if (uart->Unread() >= Front_Bytes)
+        // {
+        //     return;
+        // }
 
-        if (rx_packet != nullptr)
-        {
-            return;
-        }
+        // if (rx_packet != nullptr)
+        // {
+        //     return;
+        // }
 
         // Check pending tx packets
         HandlePendingTx(current_time);
@@ -87,9 +87,8 @@ public:
 
     void EnqueuePacket(std::unique_ptr<SerialPacket> packet)
     {
-        if (tx_packets.size() >= 100)
+        if (tx_packets.size() >= 0xFF)
         {
-            packet.reset();
             return;
         }
 
@@ -190,13 +189,19 @@ private:
             return SerialStatus::TIMEOUT;
         }
 
-        if (!uart->Unread()) return SerialStatus::EMPTY;
+        if (!uart->Unread())
+        {
+            return SerialStatus::EMPTY;
+        }
 
         if (!rx_packet)
         {
             // Enough bytes to determine the start of a packet and
             // packet id, type, and length
-            if (uart->Unread() < Front_Bytes) return SerialStatus::EMPTY;
+            if (uart->Unread() < Front_Bytes)
+            {
+                return SerialStatus::EMPTY;
+            }
 
             // Read the next byte if it is the start of a packet then continue on
             // TODO enqueue an error response?
@@ -207,26 +212,28 @@ private:
                 return SerialStatus::CRITICAL_ERROR;
             }
 
-            // Found the start, so create a packet
-            rx_packet = std::make_unique<SerialPacket>(current_time);
+            // Type
+            uint8_t type = uart->Read();
+
+            uint16_t id = uint16_t(uart->Read()) | (uint16_t(uart->Read()) << 8);
+            uint16_t length = uint16_t(uart->Read()) | (uint16_t(uart->Read()) << 8);
 
             // Timeout the packet in 5 seconds after it has started.
             rx_packet_timeout = current_time + 5000;
 
-            // Type
-            rx_packet->SetData(uart->Read(), 0, 1);
+            // Found the start, so create a packet
+            rx_packet = std::make_unique<SerialPacket>(
+                current_time,
+                length + Start_Bytes
+            );
+
+            rx_packet->SetData(type, 0, 1);
 
             // Id
-            rx_packet->SetData(uart->Read(), 1, 1);
-            rx_packet->SetData(uart->Read(), 2, 1);
+            rx_packet->SetData(id, 1, 2);
 
             // Length
-            rx_packet->SetData(uart->Read(), 3, 1);
-            rx_packet->SetData(uart->Read(), 4, 1);
-
-            // Logger::Log(Logger::Level::Debug, "RX Packet Header, Type=", rx_packet->GetData<uint16_t>(0, 1));
-            // Logger::Log(Logger::Level::Debug, "RX Packet Header, ID=", rx_packet->GetData<uint16_t>(1, 2));
-            // Logger::Log(Logger::Level::Debug, "RX Packet Header, Length=", rx_packet->GetData<uint16_t>(3, 2));
+            rx_packet->SetData(length, 3, 2);
         }
 
         // Get the length of the incoming message
@@ -255,8 +262,6 @@ private:
 
             SerialStatus status;
 
-            Logger::Log(Logger::Level::Info, "rx packet type: ", (int)rx_type);
-
             switch (rx_type)
             {
                 case SerialPacket::Types::LocalDebug:
@@ -275,8 +280,6 @@ private:
 
                     // Remove the pointer from the map
                     auto num = tx_pending_packets.erase(ok_id);
-
-                    Logger::Log(Logger::Level::Debug, "num deleted from id", ok_id, num);
 
                     rx_packet.reset();
                     status = SerialStatus::OK;
@@ -308,7 +311,6 @@ private:
 
                     auto command_type = static_cast<SerialPacket::Commands>(
                         rx_packet->GetData<unsigned short>(5, 2));
-                    Logger::Log(Logger::Level::Info, "Command type", (int)command_type);
 
                     command_packets[command_type].Write(std::move(rx_packet));
                     status = SerialStatus::OK;
@@ -322,13 +324,13 @@ private:
 
                     // Now that we got this packet, we will respond
                     SendOkPacket(rx_id);
-                    Logger::Log(Logger::Level::Info, "All other packets received");
 
                     rx_packets.push_back(std::move(rx_packet));
                     status = SerialStatus::OK;
                     break;
                 }
             }
+
             return status;
         }
 
@@ -339,7 +341,10 @@ private:
     inline void HandlePendingTx(const unsigned long current_time)
     {
         // Check the pending packets
-        if (tx_pending_packets.size() == 0) return;
+        if (tx_pending_packets.size() == 0)
+        {
+            return;
+        }
 
         std::vector<unsigned short> delete_ids;
         std::vector<unsigned short> resend_ids;
@@ -391,10 +396,16 @@ private:
 
     SerialStatus WriteSerial()
     {
-        if (tx_packets.size() == 0) return SerialStatus::EMPTY;
+        if (tx_packets.size() == 0)
+        {
+            return SerialStatus::EMPTY;
+        }
 
         // Wait until the last transmission was sent
-        if (!uart->ReadyToWrite()) return SerialStatus::BUSY;
+        if (!uart->TransmitReady())
+        {
+            return SerialStatus::BUSY;
+        }
 
         if (tx_buffer != nullptr)
         {
@@ -412,12 +423,12 @@ private:
         uint16_t tx_buffer_sz =
             tx_packet->GetData<unsigned short>(3, 2) + Start_Bytes;
 
-        Logger::Log(Logger::Level::Debug, "Tx Packet=", Logger::to_hex(tx_packet->Data(), tx_packet->NumBytes()));
+        // Logger::Log(Logger::Level::Debug, "Tx Packet=", Logger::to_hex(tx_packet->Data(), tx_packet->NumBytes()));
         // Logger::Log(Logger::Level::Debug, "TX Packet Header, Type=", tx_packet->GetData<uint16_t>(0, 1));
         // Logger::Log(Logger::Level::Debug, "TX Packet Header, ID=", tx_packet->GetData<uint16_t>(1, 2));
         // Logger::Log(Logger::Level::Debug, "TX Packet Header, Length=", tx_packet->GetData<uint16_t>(3, 2));
 
-        uart->Write(tx_buffer, tx_buffer_sz);
+        uart->Transmit(tx_buffer, tx_buffer_sz);
 
         // Check the type of packet sent
         SerialPacket::Types packet_type = static_cast<SerialPacket::Types>(tx_packet->GetData<byte_t>(0, 1));
@@ -427,7 +438,7 @@ private:
             packet_type != SerialPacket::Types::Busy &&
             packet_type != SerialPacket::Types::LocalDebug)
         {
-            Logger::Log(Logger::Level::Debug, "Push packet onto stack. Type=", (int)packet_type);
+            // Logger::Log(Logger::Level::Debug, "Push packet onto stack. Type=", (int)packet_type);
             // Get the packet id
             uint16_t packet_id = tx_packet->GetData<uint16_t>(1, 2);
 
@@ -436,7 +447,7 @@ private:
         }
         else
         {
-            Logger::Log(Logger::Level::Debug, "Destroy packet. Type=", (int)packet_type);
+            // Logger::Log(Logger::Level::Debug, "Destroy packet. Type=", (int)packet_type);
             // Otherwise just delete the packet
             tx_packet.reset();
         }

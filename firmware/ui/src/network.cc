@@ -54,9 +54,11 @@ void Network::ConnectToNetwork()
     // TODO check if the ssid is in range.
     RequestSSIDs();
 
+    // TODO
     // Get the ssids from the manager
 
     // Check if our ssid is in the list.
+    // TODO
     if (true)
     {
         ConnectToNetwork(*ssid, *pwd);
@@ -179,18 +181,20 @@ void Network::SendConnectPacket(const std::string& ssid, const std::string& pwd)
 
 void Network::IngestNetworkPackets()
 {
-    RingBuffer<std::unique_ptr<SerialPacket>>* Network_packets;
+    RingBuffer<std::unique_ptr<SerialPacket>>* network_packets;
 
-    if (!serial.GetCommandPackets(&Network_packets, SerialPacket::Commands::Wifi))
+    if (!serial.GetCommandPackets(&network_packets, SerialPacket::Commands::Wifi))
     {
         return;
     }
 
     screen.DrawText(0, 160, "We have packets!", font6x8, C_WHITE, C_BLACK);
+    screen.DrawText(17*6, 160, std::to_string(network_packets->Unread()), font6x8, C_WHITE, C_BLACK);
     // Ingest packets
-    while (Network_packets->Unread() > 0)
+    while (network_packets->Unread() > 0)
     {
-        auto packet = std::move(Network_packets->Read());
+        screen.DrawText(0, 168, "Get packet!", font6x8, C_WHITE, C_BLACK);
+        auto packet = std::move(network_packets->Read());
 
         auto Network_type = static_cast<SerialPacket::WifiTypes>(
             packet->GetData<uint8_t>(7, 1));

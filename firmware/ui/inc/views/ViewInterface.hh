@@ -9,6 +9,7 @@
 #include "CommandHandler.hh"
 #include "SerialPacketManager.hh"
 #include "network.hh"
+#include "audio_chip.hh"
 #include <string>
 
 
@@ -22,13 +23,16 @@ public:
         Q10Keyboard& keyboard,
         SettingManager& setting_manager,
         SerialPacketManager& serial,
-        Network& network):
+        Network& network,
+        AudioChip& audio
+    ):
         manager(manager),
         screen(screen),
         keyboard(keyboard),
         setting_manager(setting_manager),
         serial(serial),
         network(network),
+        audio(audio),
         command_handler(&manager),
         first_load(true),
         redraw_menu(true),
@@ -79,6 +83,7 @@ protected:
     static constexpr uint16_t Cursor_Animate_Duration = 2500;
     static constexpr uint16_t Cursor_Hollow_Thickness = 1;
 
+    // TODO add current tick
     bool BaseUpdate()
     {
         // Handle input updates
@@ -282,6 +287,7 @@ protected:
     SettingManager& setting_manager;
     SerialPacketManager& serial;
     Network& network;
+    AudioChip& audio;
     CommandHandler command_handler;
 
     // If this is the first load, then we should

@@ -41,12 +41,12 @@ unsigned char SerialEsp::Read()
     return rx_ring.Read();
 }
 
-bool SerialEsp::ReadyToWrite()
+bool SerialEsp::TransmitReady()
 {
     return tx_free;
 }
 
-void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
+void SerialEsp::Transmit(unsigned char* buff, const unsigned short buff_size)
 {
     // Wait until the previous message is sent
     while (uart_wait_tx_done(uart, 100))
