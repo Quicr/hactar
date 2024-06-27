@@ -20,8 +20,8 @@ public:
 
     size_t Unread() override;
     unsigned char Read() override;
-    bool ReadyToWrite() override;
-    void Write(unsigned char* buff, const unsigned short buff_size) override;
+    bool TransmitReady() override;
+    void Transmit(unsigned char* buff, const unsigned short buff_size) override;
 
     // un-inherited functions
     static void RxEvent(void* parameter);

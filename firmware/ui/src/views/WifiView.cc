@@ -6,12 +6,13 @@
 #include "main.h"
 
 WifiView::WifiView(UserInterfaceManager& manager,
-    Screen& screen,
-    Q10Keyboard& keyboard,
-    SettingManager& setting_manager,
-    SerialPacketManager& serial,
-    Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network),
+        Screen& screen,
+        Q10Keyboard& keyboard,
+        SettingManager& setting_manager,
+        SerialPacketManager& serial,
+        Network& network,
+        AudioChip& audio)
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio),
     last_num_ssids(0),
     next_get_ssid_timeout(0),
     state(SSID),

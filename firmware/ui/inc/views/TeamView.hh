@@ -7,11 +7,12 @@ class TeamView : public ViewInterface
 {
 public:
     TeamView(UserInterfaceManager& manager,
-             Screen& screen,
-             Q10Keyboard& keyboard,
-             SettingManager& setting_manager,
-             SerialPacketManager& serial,
-             Network& network);
+        Screen& screen,
+        Q10Keyboard& keyboard,
+        SettingManager& setting_manager,
+        SerialPacketManager& serial,
+        Network& network,
+        AudioChip& audio);
     ~TeamView();
 protected:
     void Update();

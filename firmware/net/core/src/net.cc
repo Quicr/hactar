@@ -107,7 +107,7 @@ static void SetupPins()
     };
 
     // Setup serial interface for ui
-    ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 2048);
+    ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart_config, 4096);
 
     Logger::Log(Logger::Level::Info, "Pin setup complete");
 }
@@ -119,7 +119,7 @@ void SetupComponents()
     wifi = new Wifi(*ui_layer);
 
     inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
-    char default_relay [] = "192.168.50.141";
+    char default_relay [] = "192.168.50.20";
     auto relay_name = default_relay;
     uint16_t port = 1234;
     quicr::RelayInfo relay{

@@ -7,11 +7,12 @@ class FirstBootView : public ViewInterface
 {
 public:
     FirstBootView(UserInterfaceManager& manager,
-             Screen& screen,
-             Q10Keyboard& keyboard,
-             SettingManager& setting_manager,
-             SerialPacketManager& serial,
-             Network& network);
+        Screen& screen,
+        Q10Keyboard& keyboard,
+        SettingManager& setting_manager,
+        SerialPacketManager& serial,
+        Network& network,
+        AudioChip& audio);
     ~FirstBootView();
 
 protected:

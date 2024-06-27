@@ -42,12 +42,14 @@ struct Room
     std::string room_uri; //quicr namespace as URI
     std::string root_channel_uri; // Owner of this room
 
-    Room(bool is_default=false, std::string friendly_name="", std::string publisher_uri="", std::string room_uri="", std::string root_channel_uri="") :
+    Room(bool is_default = false, std::string friendly_name = "", std::string publisher_uri = "", std::string room_uri = "", std::string root_channel_uri = ""):
         is_default(is_default),
         friendly_name(friendly_name),
         publisher_uri(publisher_uri),
         room_uri(room_uri),
-        root_channel_uri(root_channel_uri) {}
+        root_channel_uri(root_channel_uri)
+    {
+    }
 };
 
 //
@@ -60,7 +62,8 @@ enum struct MessageTypes: uint8_t
     Watch = 0,
     WatchOk,
     Unwatch,
-    Ascii
+    Ascii,
+    Audio
 };
 
 // Watch messages from a given room
@@ -69,8 +72,8 @@ struct WatchRoom
     std::string publisher_uri; // quicr namespacee matching the publisher
     std::string room_uri; // matches quicr namespace for the room namespace
 
-    WatchRoom() : publisher_uri(), room_uri() {}
-    WatchRoom(std::string publisher_uri, std::string room_uri) : publisher_uri(publisher_uri), room_uri(room_uri) {}
+    WatchRoom(): publisher_uri(), room_uri() {}
+    WatchRoom(std::string publisher_uri, std::string room_uri): publisher_uri(publisher_uri), room_uri(room_uri) {}
 };
 
 // Express no interest in receiving messages from a given room
@@ -220,6 +223,44 @@ struct Codec
         AppendStringFieldToPacket(unwatch.room_uri, Field_Len_Bytes, packet);
     }
 
+    static std::unique_ptr<SerialPacket> encode(const uint16_t packet_id,
+        const std::string& room_uri, const uint16_t* audio_data,
+        const uint16_t audio_length)
+    {
+        // +1 for type
+        // +2 for audio_length
+        // +4 for room_uri length
+        // Audio length is in half-words so *2
+        const uint16_t audio_length_in_bytes = audio_length * 2;
+        const uint16_t len = 1 + 2 + Field_Len_Bytes + room_uri.length() + audio_length_in_bytes;
+
+        std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(len);
+        Logger::Log(Logger::Level::Info, "Make audio packet len=", len);
+
+        SetHeader(packet, packet_id, len);
+        Logger::Log(Logger::Level::Info, "Set header");
+
+        packet->SetData(qchat::MessageTypes::Audio, 1);
+        Logger::Log(Logger::Level::Info, "Set type", packet->GetData<uint16_t>(5, 1));
+
+        AppendStringFieldToPacket(room_uri, Field_Len_Bytes, packet);
+        Logger::Log(Logger::Level::Info, "append room uri=", room_uri);
+
+        // Append the length of the audio
+        packet->SetData(audio_length, 2);
+        Logger::Log(Logger::Level::Info, "Append audio length", audio_length);
+
+        // Append the audio
+        for (uint16_t i = 0; i < audio_length; ++i)
+        {
+            packet->SetData(audio_data[i], 2);
+        }
+        Logger::Log(Logger::Level::Info, "Append actual audio");
+
+
+        return packet;
+    }
+
     static bool decode(std::unique_ptr<Room>& room,
         const std::unique_ptr<SerialPacket>& encoded,
         const uint32_t current_offset)
@@ -303,6 +344,33 @@ struct Codec
             Field_Len_Bytes, encoded);
 
         return true;
+    }
+
+    // static std::unique_ptr<SerialPacket> decode()
+    // {
+    //     // +1 for type
+    //     const uint16_t len = 1 + audio_length;
+
+    //     std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>();
+
+    //     SetHeader(packet, packet_id, len);
+
+    //     packet->SetData(qchat::MessageTypes::Audio, 1);
+
+    //     for (uint16_t i = 0; i < audio_length; ++i)
+    //     {
+    //         packet->SetData(audio_data[i], 2);
+    //     }
+
+    //     return packet;
+    // }
+
+    static void SetHeader(std::unique_ptr<SerialPacket>& packet,
+        const uint16_t packet_id, const uint16_t length)
+    {
+        packet->SetData(SerialPacket::Types::QMessage, 0, 1);
+        packet->SetData(packet_id, 1, 2);
+        packet->SetData(length, 3, 2);
     }
 };
 
