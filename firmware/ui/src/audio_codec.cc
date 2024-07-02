@@ -4,25 +4,32 @@
 
 // https://www.ti.com/lit/an/spra163a/spra163a.pdf
 
-AudioCodec::AudioCodec(AudioChip& audio):
-    audio(audio)
+// AudioCodec::AudioCodec(AudioChip& audio):
+//     audio(audio)
+// {
+// }
+
+AudioCodec::AudioCodec()
 {
 }
 
-bool AudioCodec::ALawEncode(uint16_t* input, size_t in_size, uint8_t* output, size_t out_size)
+void AudioCodec::ALawEncode(uint16_t* input, uint8_t* output, size_t len)
 {
-    // for (size_t i = 0; i < in_size; ++i)
-    // {
-    //     if (input[i])
-    // }
+    for (size_t i = 0; i < len; ++i)
+    {
+        output[i] = ALawCompend(input[i]);
+    }
 }
 
-bool AudioCodec::ALawDecode(uint8_t* input, size_t in_size, uint16_t* output, size_t out_size)
+void AudioCodec::ALawDecode(uint8_t* input, uint16_t* output, size_t len)
 {
-
+    for (size_t i = 0; i < len; ++i)
+    {
+        output[i] = ALawExpand(input[i]);
+    }
 }
 
-inline uint8_t AudioCodec::ALawCompend(uint16_t sample)
+uint8_t AudioCodec::ALawCompend(uint16_t sample)
 {
     // Heavily influenced from
     // https://en.wikipedia.org/wiki/G.711
@@ -83,7 +90,7 @@ inline uint8_t AudioCodec::ALawCompend(uint16_t sample)
     return (sign + exponent + mantissa) ^ 0x55;
 }
 
-inline uint16_t AudioCodec::ALawExpand(uint8_t sample)
+uint16_t AudioCodec::ALawExpand(uint8_t sample)
 {
     // Heavily influenced from
     // https://en.wikipedia.org/wiki/G.711
@@ -107,18 +114,8 @@ inline uint16_t AudioCodec::ALawExpand(uint8_t sample)
     else
     {
         mantissa += 33;
-        mantissa << (exponent - 1);
+        mantissa <<= (exponent - 1);
     }
 
     return mantissa+sign;
-}
-
-bool AudioCodec::G711Encode(uint16_t* input, size_t in_size, uint8_t* output, size_t out_size)
-{
-
-}
-
-bool AudioCodec::G711Decode(uint8_t* input, size_t in_size, uint16_t* output, size_t out_size)
-{
-
 }
