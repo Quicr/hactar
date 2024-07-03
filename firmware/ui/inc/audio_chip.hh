@@ -108,6 +108,7 @@ private:
     uint16_t tx_buffer[Audio_Buffer_Sz];
     size_t tx_buff_idx;
     uint16_t rx_buffer[Audio_Buffer_Sz];
+    uint8_t byte_buff[Audio_Buffer_Sz_2];
 
     bool first_half;
 

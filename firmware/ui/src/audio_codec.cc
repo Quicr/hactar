@@ -2,18 +2,11 @@
 
 #include <math.h>
 
-// https://www.ti.com/lit/an/spra163a/spra163a.pdf
-
-// AudioCodec::AudioCodec(AudioChip& audio):
-//     audio(audio)
-// {
-// }
-
 AudioCodec::AudioCodec()
 {
 }
 
-void AudioCodec::ALawEncode(uint16_t* input, uint8_t* output, size_t len)
+void AudioCodec::ALawCompand(uint16_t* input, uint8_t* output, size_t len)
 {
     for (size_t i = 0; i < len; ++i)
     {
@@ -21,7 +14,7 @@ void AudioCodec::ALawEncode(uint16_t* input, uint8_t* output, size_t len)
     }
 }
 
-void AudioCodec::ALawDecode(uint8_t* input, uint16_t* output, size_t len)
+void AudioCodec::ALawExpand(uint8_t* input, uint16_t* output, size_t len)
 {
     for (size_t i = 0; i < len; ++i)
     {
@@ -56,11 +49,14 @@ uint8_t AudioCodec::ALawCompand(uint16_t u_sample)
     }
 
     // Clip the sample to 12 bits
-    sample &= 0x0FFF;
+    if (sample > 0x0FFF)
+    {
+        sample = 0x0FFF;
+    }
 
     int i = 0;
     // Find the first bit set in our 12 bits
-    for (; i < 8; ++i)
+    for (; i < 7; ++i)
     {
         if ((sample << i) & 0x0800)
         {
@@ -92,9 +88,11 @@ uint16_t AudioCodec::ALawExpand(uint8_t sample)
     // https://en.wikipedia.org/wiki/G.711
     // https://www.ti.com/lit/an/spra634/spra634.pdf
 
-    sample ^= 0x55;
+    // Restore the value and invert the sign
+    sample ^= 0xD5;
+
     // Get the first bit of the sample
-    uint16_t sign = (sample & 0x80) << 8;
+    uint16_t sign = (sample & 0x80);
 
     // Get bits [6:4]
     uint8_t exponent = (sample & 0x70) >> 4;
@@ -109,9 +107,15 @@ uint16_t AudioCodec::ALawExpand(uint8_t sample)
     }
     else
     {
-        mantissa += 0x0021;
-        mantissa <<= (exponent - 1);
+        mantissa = (mantissa + 0x0021) << (exponent - 1);
     }
 
-    return mantissa+sign;
+    if (sign)
+    {
+        return -mantissa;
+    }
+    else
+    {
+        return mantissa;
+    }
 }
