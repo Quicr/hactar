@@ -17,7 +17,7 @@ void AudioCodec::ALawEncode(uint16_t* input, uint8_t* output, size_t len)
 {
     for (size_t i = 0; i < len; ++i)
     {
-        output[i] = ALawCompend(input[i]);
+        output[i] = ALawCompand(input[i]);
     }
 }
 
@@ -29,53 +29,49 @@ void AudioCodec::ALawDecode(uint8_t* input, uint16_t* output, size_t len)
     }
 }
 
-uint8_t AudioCodec::ALawCompend(uint16_t sample)
+uint8_t AudioCodec::ALawCompand(uint16_t u_sample)
 {
     // Heavily influenced from
     // https://en.wikipedia.org/wiki/G.711
     // https://www.ti.com/lit/an/spra634/spra634.pdf
+
+    int16_t sample = u_sample;
 
     int16_t exponent = 0;
     uint16_t mantissa = 0;
     uint16_t sign = 0;
 
     // Get the sign
-    if (sample < 0x8000)
+    if (sample > 0)
     {
         // Sample is positive
         // put the sign in the 8th bit
-        sign = 1 << 7;
+        sign = 0x80;
     }
     else
     {
         // Sample is negative
         // Get the abs of the val
-        sample = 0xFFFF - sample;
+        sample = -sample;
     }
 
     // Clip the sample to 12 bits
     sample &= 0x0FFF;
 
-
-    uint16_t tmp = sample << 4;
-    int i;
+    int i = 0;
     // Find the first bit set in our 12 bits
-    for (i = 4; i < 16; ++i)
+    for (; i < 8; ++i)
     {
-        if (tmp & 0x8000)
+        if ((sample << i) & 0x0800)
         {
             break;
         }
-
-        // Shift left
-        tmp  <<= 1;
     }
-    exponent = 11 - i;
+    exponent = 7 - i;
 
     // Get our mantissa (abcd)
-    if (sample < 256)
+    if (exponent == 0)
     {
-        exponent = 0;
         mantissa = (sample >> 1) & 0x0F;
     }
     else
@@ -96,9 +92,9 @@ uint16_t AudioCodec::ALawExpand(uint8_t sample)
     // https://en.wikipedia.org/wiki/G.711
     // https://www.ti.com/lit/an/spra634/spra634.pdf
 
-    sample ^= 0xD5;
+    sample ^= 0x55;
     // Get the first bit of the sample
-    uint16_t sign = (sample & 0x80) << 16;
+    uint16_t sign = (sample & 0x80) << 8;
 
     // Get bits [6:4]
     uint8_t exponent = (sample & 0x70) >> 4;
@@ -106,14 +102,14 @@ uint16_t AudioCodec::ALawExpand(uint8_t sample)
     // Gets bits [3:0]
     uint16_t mantissa = (sample & 0x0F) << 1;
 
-    // Some spooky magic addition here that is not explained anywhere
+    // Some spooky m̸̹̫̅͑́a̷̺̪͑̔g̷̛͈̩̪͋͗ī̴̹c̷̲͔̈̓ ȃ̵̘͙d̶̮͘d̵̮͐͠i̷͇̔t̵̡͌̀ͅì̸̥̊o̸͈̬̾̈́n̵̤̤̈́ here that is not explained anywhere
     if (exponent == 0)
     {
-        mantissa += 1;
+        mantissa += 0x0001;
     }
     else
     {
-        mantissa += 33;
+        mantissa += 0x0021;
         mantissa <<= (exponent - 1);
     }
 

@@ -15,7 +15,7 @@ public:
     void ALawDecode(uint8_t* input, uint16_t* output, size_t len);
 
 
-private:
-    uint8_t ALawCompend(uint16_t sample);
+    uint8_t ALawCompand(uint16_t sample);
     uint16_t ALawExpand(uint8_t sample);
+private:
 };
