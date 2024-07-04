@@ -47,7 +47,8 @@ public:
         rx_colour(0),
         tx_redraw_timeout(0),
         rx_redraw_timeout(0),
-        general_refresh_timeout(0)
+        general_refresh_timeout(0),
+        mic_last_state(true)
     {
         // TODO load settings from eeprom
 
@@ -145,6 +146,22 @@ protected:
         if (HAL_GetTick() > general_refresh_timeout)
         {
             DrawWifiSymbol();
+        }
+
+        if (mic_last_state != keyboard.MicPressed())
+        {
+            mic_last_state = keyboard.MicPressed();
+
+            // Draw the symbol
+            uint16_t colour = C_WHITE;
+            if (mic_last_state)
+            {
+                colour = C_GREEN;
+            }
+
+            screen.FillCircle(screen.ViewWidth() - 48, 4, 3, colour, C_BLACK);
+            screen.FillCircle(screen.ViewWidth() - 48, 8, 3, colour, C_BLACK);
+            screen.FillRectangle(screen.ViewWidth() - 51, 4, screen.ViewWidth() - 44, 8, colour);
         }
     }
 
@@ -318,6 +335,8 @@ protected:
     uint32_t rx_redraw_timeout;
 
     uint32_t general_refresh_timeout;
+
+    bool mic_last_state;
 
     // TODO EEPROM setting
     Font& menu_font = font11x16;
