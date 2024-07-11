@@ -37,6 +37,12 @@ public:
     void StartI2S();
     void StopI2S();
 
+    const uint16_t* GetRxBuffer(const size_t offset=0) const;
+
+    uint16_t* GetOutputBuffer(const size_t offset);
+    // Returns a pointer to the buffer either at the start or half way
+    uint16_t* GetOutputBuffer();
+
     void GetAudio(uint16_t* buffer, uint16_t size);
 
     void TurnOnLeftInput3();
@@ -69,21 +75,21 @@ public:
     void ReadSecondHalf(uint16_t* buff, const size_t start_idx, const size_t size);
 
     void SampleSineWave(const uint16_t num_samples,
-        const uint16_t start_idx, const float amplitude, const float freq,
-        float& phase, const bool stereo);
+        const uint16_t start_idx, const double amplitude, const double freq,
+        double& phase, const bool stereo);
     static void SampleSineWave(uint16_t* buff, const uint16_t num_samples,
-        const uint16_t start_idx, const float amplitude, const float freq,
-        float& phase, const bool stereo);
+        const uint16_t start_idx, const double amplitude, const double freq,
+        double& phase, const bool stereo);
     void SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
-        const uint16_t start_idx, const float amplitutde, float freqs [], float phases [],
+        const uint16_t start_idx, const double amplitutde, double freqs [], double phases [],
         const uint16_t num_freqs, const bool stereo);
     void SendSawToothWave();
 
     const uint16_t* TxBuffer();
     const uint16_t* RxBuffer();
 
-    float phase;
-    float phases[3] = { 0, 0, 0 };
+    double phase;
+    double phases[3] = { 0, 0, 0 };
 
 
     static constexpr uint16_t Sample_Rate = 16'000; // 16khz

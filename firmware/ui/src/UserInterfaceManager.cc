@@ -7,6 +7,8 @@
 #include "SettingManager.hh"
 #include "QChat.hh"
 
+#include "audio_codec.hh"
+
 #include "main.h"
 
 #include <string>
@@ -56,7 +58,7 @@ void UserInterfaceManager::Run()
 
     // TODO rename to update
     // TODO send update every 1/60 of a second?
-    view->Run();
+    view->Run(current_tick);
 
     // TODO move into view
     if (RedrawForced())
@@ -187,7 +189,11 @@ void UserInterfaceManager::HandleIncomingPackets()
 {
     // TODO move this into the serial packet manager.
     if (!net_layer.HasRxPackets())
+    {
         return;
+    }
+
+    Logger::Log(Logger::Level::Info,"Handle incoming packets ", net_layer.GetRxPackets().size());
 
     auto& packets = net_layer.GetRxPackets();
     for (auto& rx_packet : packets)
@@ -295,22 +301,18 @@ void UserInterfaceManager::HandleMessagePacket(
                 }
                 case (qchat::MessageTypes::Audio):
                 {
-                    for (int i = 0; i < 32; ++i)
-                    {
-                        Logger::Log(Logger::Level::Info, "byte [", i, "] = ", packet->GetData<int>(i, 1));
-                    }
+                    Logger::Log(Logger::Level::Info, "offset ", offset);
 
-                    // Get the length of the sound
-                    auto audio_len = packet->GetData<uint16_t>(offset, 2);
-                    offset += 2;
+                    Logger::Log(Logger::Level::Info, "Audio message len = ", (int)data_len);
 
-                    Logger::Log(Logger::Level::Info, "Audio message len = ", (int)audio_len);
+                    uint8_t* audio_data = (packet->Data() + offset);
 
-                    uint16_t* audio_data = (uint16_t*)(packet->Data() + offset);
+                    uint16_t* tx_buffer = audio.GetOutputBuffer();
 
-                    audio.WriteHalf(audio_data, 0, audio_len);
+                    AudioCodec::ALawExpand(audio_data, tx_buffer, data_len);
 
                     audio_data = nullptr;
+                    tx_buffer = nullptr;
 
                     break;
                 }

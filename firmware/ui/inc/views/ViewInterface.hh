@@ -61,11 +61,11 @@ public:
     {
     }
 
-    virtual void Run()
+    virtual void Run(uint32_t current_tick)
     {
         AnimatedDraw();
         Draw();
-        BaseUpdate();
+        BaseUpdate(current_tick);
     }
 
     void Clear()
@@ -85,13 +85,13 @@ protected:
     static constexpr uint16_t Cursor_Hollow_Thickness = 1;
 
     // TODO add current tick
-    bool BaseUpdate()
+    bool BaseUpdate(uint32_t current_tick)
     {
         // Handle input updates
         InputUpdate();
 
         // Run defined view Update
-        Update();
+        Update(current_tick);
 
         // Change view if set
         if (command_handler.ChangeViewCommand(new_view))
@@ -109,8 +109,17 @@ protected:
     {
         GetInput();
 
-        if (!keyboard.EnterPressed()) return;
-        if (!(usr_input.length() > 0)) return;
+        if (!keyboard.EnterPressed())
+        {
+            return;
+        }
+
+        if (!(usr_input.length() > 0))
+        {
+            return;
+        }
+
+        Logger::Log(Logger::Level::Info, "Enter was pressed");
 
         // Actual view code goes here
         HandleInput();
@@ -118,7 +127,7 @@ protected:
         ClearInput();
     }
 
-    virtual void Update() = 0;
+    virtual void Update(uint32_t current_tick) = 0;
     virtual void HandleInput() = 0;
     virtual void AnimatedDraw() = 0;
     virtual void Draw()

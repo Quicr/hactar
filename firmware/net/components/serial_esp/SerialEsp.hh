@@ -4,7 +4,7 @@
 #include "SerialInterface.hh"
 #include "RingBuffer.hh"
 
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 512
 
 class SerialEsp : public SerialInterface
 {

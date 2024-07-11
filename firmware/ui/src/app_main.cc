@@ -30,6 +30,8 @@
 #include <sstream>
 
 #include "logger.hh"
+#include <stdio.h>
+#include <stdlib.h>
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -59,31 +61,22 @@ bool rx_busy = false;
 uint8_t random_byte() {
     // XXX(RLB) This is 4x slower than it could be, because we only take the
     // low-order byte of the four bytes in a uint32_t.
+    /// BER, I don't know if that is necessarily true, since we would be
+    // pulling a 32 bit number from hardware anyways.
     auto value = uint32_t(0);
     HAL_RNG_GenerateRandomNumber(&hrng, &value);
     return value;
 }
 
-// buffer size = 0.1s * freq
-const uint16_t SOUND_BUFFER_SZ = 16000;
-uint16_t rx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
-uint16_t tx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
+extern char _end;  // End of BSS section
+extern char _estack;  // Start of stack
 
-uint16_t GenerateTriangleWavePoint(double frequency, double amplitude, double time)
-{
-    double period = 1.0 / frequency;
-    double phase = fmod(time, period) / period;
+static char *heap_end = &_end;
 
-    double triangle_point = 0;
-
-    if (phase < 0.25)
-        triangle_point = 4.0 * amplitude * phase;
-    else if (phase < 0.75)
-        triangle_point = 2.0 * amplitude - 4.0 * amplitude * phase;
-    else
-        triangle_point = -4.0 * amplitude + 4.0 * amplitude * phase;
-
-    return static_cast<uint16_t>((triangle_point + 1.0) * 32767.5);
+// Function to get the remaining heap size
+size_t getFreeHeapSize(void) {
+    char *current_heap_end = heap_end;
+    return &_estack - current_heap_end;
 }
 
 // TODO Get the osc working correctly from an external signal
@@ -139,7 +132,7 @@ int app_main()
     Logger::Log(Logger::Level::Info, "app init:", rv == CMOX_INIT_SUCCESS);
 
     // Delayed condition
-    uint32_t blink = HAL_GetTick() + 5000;
+    uint32_t blink = HAL_GetTick();
 
     WaitForNetReady();
     Logger::Log(Logger::Level::Info, "Hactar is ready");
@@ -147,17 +140,14 @@ int app_main()
     bool sound_inited = false;
     uint32_t wait_to_enable_audio_codec = HAL_GetTick() + 5000;
 
-    const size_t tx_buff_sz = 256;
-    uint16_t tx_buff[tx_buff_sz] = {0};
-    float phase = 0;
-
     while (1)
     {
         ui_manager->Run();
 
         if (HAL_GetTick() > blink)
         {
-
+            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+            blink = HAL_GetTick() + 1000;
         }
 
         // NOTE DO NOT REMOVE ON EV10

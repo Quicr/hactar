@@ -58,7 +58,7 @@ void SerialEsp::Transmit(unsigned char* buff, const unsigned short buff_size)
     uart_write_bytes(uart, start, 1);
 
     // Wait until the previous message is sent
-    while (uart_wait_tx_done(uart, 100))
+    while (uart_wait_tx_done(uart, 5))
     {
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
@@ -71,7 +71,6 @@ void SerialEsp::Transmit(unsigned char* buff, const unsigned short buff_size)
 void SerialEsp::RxEvent(void* parameter)
 {
     SerialEsp* serial = (SerialEsp*)parameter;
-    printf("net-serial[%d]: Event begin\n", serial->uart);
 
     uart_event_t event;
     unsigned char buff[BUFFER_SIZE];
@@ -79,7 +78,9 @@ void SerialEsp::RxEvent(void* parameter)
     while (true)
     {
         if (!xQueueReceive(serial->uart_queue, (void*)&event, portMAX_DELAY))
+        {
             continue;
+        }
 
         printf("net-serial[%d]: Event size: %d, type: %d\n", serial->uart, event.size, event.type);
 
@@ -87,11 +88,33 @@ void SerialEsp::RxEvent(void* parameter)
         {
             case UART_DATA:
             {
-                uart_read_bytes(serial->uart, buff, event.size, portMAX_DELAY);
+                size_t write_idx;
+                size_t space_remain;
+                size_t len_to_read;
 
-                for (size_t i = 0; i < event.size; ++i)
+                unsigned char* ring_buff;
+
+                int num_bytes = 0;
+                int total_read = 0;
+                while (total_read < event.size)
                 {
-                    serial->rx_ring.Write(buff[i]);
+                    write_idx = serial->rx_ring.WriteIdx();
+
+                    space_remain = serial->rx_ring.Size() - write_idx;
+
+                    len_to_read = space_remain < event.size ? space_remain : event.size;
+
+                    ring_buff = serial->rx_ring.Buffer() + write_idx;
+                    num_bytes = uart_read_bytes(serial->uart, ring_buff, len_to_read, portMAX_DELAY);
+
+                    if (num_bytes < 0)
+                    {
+                        break;
+                    }
+
+                    total_read += num_bytes;
+
+                    serial->rx_ring.UpdateWriteHead(num_bytes);
                 }
 
                 break;

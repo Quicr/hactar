@@ -38,23 +38,24 @@ bool SerialStm::TransmitReady()
 
 void SerialStm::Transmit(unsigned char* buff, const unsigned short buff_sz)
 {
+    tx_free = false;
     // TODO remove start byte and send packet length first.
     uint8_t start_byte[1] = { 0xFF };
     HAL_UART_Transmit(uart, start_byte, 1, HAL_MAX_DELAY);
 
     // HAL_UART_Transmit_IT(uart, buff, buff_sz);
     HAL_UART_Transmit_DMA(uart, buff, buff_sz);
-    tx_free = false;
 }
 
 // un-inherited functions
 
-void SerialStm::RxEvent(uint16_t num_received)
+void SerialStm::RxEvent(uint16_t received_idx)
 {
+    uint16_t num_received = received_idx - rx_ring.WriteIdx();
     rx_ring.UpdateWriteHead(num_received);
-    uint8_t recv_msg[] = "UI: Received from ESP\n\r";
+    // uint8_t recv_msg[] = "UI: Received from ESP\n\r";
     // // TODO dma
-    HAL_UART_Transmit(&huart1, recv_msg, sizeof(recv_msg)/sizeof(*recv_msg), HAL_MAX_DELAY);
+    // HAL_UART_Transmit(&huart1, recv_msg, sizeof(recv_msg)/sizeof(*recv_msg), HAL_MAX_DELAY);
 }
 
 void SerialStm::StartRx()

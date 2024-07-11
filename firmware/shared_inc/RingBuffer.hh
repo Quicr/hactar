@@ -95,6 +95,11 @@ public:
         return buffer;
     }
 
+    uint16_t WriteIdx() const
+    {
+        return write_idx;
+    }
+
     inline unsigned short Size() const
     {
         return size;
@@ -113,9 +118,8 @@ public:
 
     inline void UpdateWriteHead(unsigned short num_received)
     {
-        uint16_t delta_bytes = num_received - write_idx;
-        write_idx += delta_bytes;
-        unread_values += delta_bytes;
+        write_idx += num_received;
+        unread_values += num_received;
 
         if (write_idx >= size)
         {

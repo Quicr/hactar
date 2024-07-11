@@ -42,11 +42,7 @@ class SerialPacket
 public:
     enum class Types
     {
-        Ok = 1,
-        Error,
-        Busy,
-        Debug,
-        LocalDebug,
+        LocalDebug = 1,
         QMessage,
         Setting,
         Command,

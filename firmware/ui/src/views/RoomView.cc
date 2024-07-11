@@ -81,11 +81,10 @@ void RoomView::HandleInput()
     SelectRoom();
 }
 
-void RoomView::Update()
+void RoomView::Update(uint32_t current_tick)
 {
-    uint32_t current_tick = HAL_GetTick();
     // Occasionally request for the current rooms
-    if (HAL_GetTick() >= next_get_rooms_time)
+    if (current_tick >= next_get_rooms_time)
     {
         RequestRooms();
         rooms.clear();

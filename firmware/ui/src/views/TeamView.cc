@@ -17,7 +17,7 @@ TeamView::~TeamView()
 
 }
 
-void TeamView::Update()
+void TeamView::Update(uint32_t current_tick)
 {
     // Periodically get the list of teams.
     return;

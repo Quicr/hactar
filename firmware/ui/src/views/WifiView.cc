@@ -30,9 +30,8 @@ WifiView::~WifiView()
 
 }
 
-void WifiView::Update()
+void WifiView::Update(uint32_t current_tick)
 {
-    uint32_t current_tick = HAL_GetTick();
     // Periodically get the list of teams.
     if (current_tick > next_get_ssid_timeout && state == WifiState::SSID)
     {

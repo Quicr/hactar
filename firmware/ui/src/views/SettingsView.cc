@@ -78,7 +78,7 @@ void SettingsView::HandleInput()
     ClearInput();
 }
 
-void SettingsView::Update()
+void SettingsView::Update(uint32_t current_tick)
 {
     return;
 }
