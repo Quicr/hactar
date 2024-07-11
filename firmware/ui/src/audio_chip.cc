@@ -1,5 +1,7 @@
 #include "audio_chip.hh"
 
+#include "logger.hh"
+
 // NOTE MCLK = 12Mhz
 #include <math.h>
 // For some reason M_PI is not defined when including math.h even though it
@@ -349,6 +351,28 @@ void AudioChip::StopI2S()
     flags &= ~(1 << Running_Flag);
 }
 
+const uint16_t* AudioChip::GetRxBuffer(const size_t offset) const
+{
+    return rx_buffer + offset;
+}
+
+uint16_t* AudioChip::GetOutputBuffer(const size_t offset)
+{
+    return tx_buffer + offset;
+}
+
+uint16_t* AudioChip::GetOutputBuffer()
+{
+    if (flags & (1 << Half_Complete_Flag))
+    {
+        return tx_buffer;
+    }
+    else
+    {
+        return tx_buffer + Audio_Buffer_Sz_2;
+    }
+}
+
 void AudioChip::GetAudio(uint16_t* buffer, uint16_t size)
 {
     for (uint16_t i = 0; i < size && i < Audio_Buffer_Sz; ++i)
@@ -376,10 +400,8 @@ void AudioChip::HalfCompleteCallback()
     //     0, Sample_Rate,
     //     1000, freqs, phases, 3, true);
 
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz / 2,
-    //     0, Sample_Rate,
-    //     1000, 1000, phase, true);
-
+    // SampleSineWave(tx_buffer, Audio_Buffer_Sz_2, 0,
+    //     1000, 440, phase, true);
 
     // copy rx to tx
     // for (uint16_t i = 0; i < Audio_Buffer_Sz / 2; i+=2)
@@ -405,9 +427,9 @@ void AudioChip::CompleteCallback()
     //     Audio_Buffer_Sz / 2, Sample_Rate,
     //     1000, freqs, phases, 3, true);
 
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz / 2,
-    //     Audio_Buffer_Sz / 2, Sample_Rate,
-    //     1000, 1000, phase, true);
+    // SampleSineWave(tx_buffer, Audio_Buffer_Sz_2, Audio_Buffer_Sz_2,
+    //     1000, 440, phase, true);
+
 
     // copy rx to tx
     // for (uint16_t i = Audio_Buffer_Sz / 2; i < Audio_Buffer_Sz; i+=2)
@@ -425,7 +447,8 @@ void AudioChip::CompleteCallback()
 
     // Set complete flag
     // flags |= (1 << Complete_Flag);
-    flags &= ~(1 << Half_Complete_Flag);
+
+    flags |= (1 << Complete_Flag);
 }
 
 bool AudioChip::IsHalfComplete()
@@ -533,13 +556,13 @@ void AudioChip::ReadSecondHalf(uint16_t* buff, const size_t start_idx,
 }
 
 void AudioChip::SampleSineWave(const uint16_t num_samples,
-    const uint16_t start_idx, const float amplitude, const float freq,
-    float& phase, const bool stereo)
+    const uint16_t start_idx, const double amplitude, const double freq,
+    double& phase, const bool stereo)
 {
     constexpr uint16_t offset = 2000;
-    constexpr float TWO_PI = M_PI * 2;
-    const float angular_freq = TWO_PI * freq;
-    float current_phase = 0.0f;
+    constexpr double TWO_PI = M_PI * 2;
+    const double angular_freq = TWO_PI * freq;
+    double current_phase = 0.0f;
     uint16_t samples = num_samples;
     if (stereo)
     {
@@ -547,8 +570,8 @@ void AudioChip::SampleSineWave(const uint16_t num_samples,
 
         for (uint16_t i = 0; i < samples; ++i)
         {
-            const float step = (float)i / Sample_Rate;
-            const float sample = amplitude * sin(angular_freq * step + phase);
+            const double step = (double)i / Sample_Rate;
+            const double sample = amplitude * sin(angular_freq * step + phase);
 
             // Add offset to handle negative numbers and overflow back around
             // to their regular values for the positive numbers
@@ -562,8 +585,8 @@ void AudioChip::SampleSineWave(const uint16_t num_samples,
     {
         for (uint16_t i = 0; i < samples; ++i)
         {
-            const float step = (float)i / Sample_Rate;
-            const float sample = amplitude * sin(angular_freq * step + phase);
+            const double step = (double)i / Sample_Rate;
+            const double sample = amplitude * sin(angular_freq * step + phase);
 
             // Add offset to handle negative numbers and overflow back around
             // to their regular values for the positive numbers
@@ -571,7 +594,7 @@ void AudioChip::SampleSineWave(const uint16_t num_samples,
         }
     }
 
-    phase += angular_freq * (float(samples) / Sample_Rate);
+    phase += angular_freq * (double(samples) / Sample_Rate);
     while (phase > TWO_PI)
     {
         phase -= TWO_PI;
@@ -580,13 +603,13 @@ void AudioChip::SampleSineWave(const uint16_t num_samples,
 
 // Static version
 void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
-    const uint16_t start_idx, const float amplitude, const float freq,
-    float& phase, const bool stereo)
+    const uint16_t start_idx, const double amplitude, const double freq,
+    double& phase, const bool stereo)
 {
     constexpr uint16_t offset = 2000;
-    constexpr float TWO_PI = M_PI * 2;
-    const float angular_freq = TWO_PI * freq;
-    float current_phase = 0.0f;
+    constexpr double TWO_PI = M_PI * 2;
+    const double angular_freq = TWO_PI * freq;
+    double current_phase = 0.0f;
     uint16_t samples = num_samples;
     if (stereo)
     {
@@ -594,8 +617,8 @@ void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
 
         for (uint16_t i = 0; i < samples; ++i)
         {
-            const float step = (float)i / Sample_Rate;
-            const float sample = amplitude * sin(angular_freq * step + phase);
+            const double step = (double)i / Sample_Rate;
+            const double sample = amplitude * sin(angular_freq * step + phase);
 
             // Add offset to handle negative numbers and overflow back around
             // to their regular values for the positive numbers
@@ -609,8 +632,8 @@ void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
     {
         for (uint16_t i = 0; i < samples; ++i)
         {
-            const float step = (float)i / Sample_Rate;
-            const float sample = amplitude * sin(angular_freq * step + phase);
+            const double step = (double)i / Sample_Rate;
+            const double sample = amplitude * sin(angular_freq * step + phase);
 
             // Add offset to handle negative numbers and overflow back around
             // to their regular values for the positive numbers
@@ -618,7 +641,7 @@ void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
         }
     }
 
-    phase += angular_freq * (float(samples) / Sample_Rate);
+    phase += angular_freq * (double(samples) / Sample_Rate);
     while (phase > TWO_PI)
     {
         phase -= TWO_PI;
@@ -626,7 +649,7 @@ void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
 }
 
 void AudioChip::SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
-    const uint16_t start_idx, const float amplitutde, float freqs [], float phases [],
+    const uint16_t start_idx, const double amplitutde, double freqs [], double phases [],
     const uint16_t num_freqs, const bool stereo)
 {
 

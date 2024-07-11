@@ -17,5 +17,5 @@ protected:
     void AnimatedDraw();
     void Draw();
     void HandleInput();
-    void Update();
+    void Update(uint32_t current_tick);
 };

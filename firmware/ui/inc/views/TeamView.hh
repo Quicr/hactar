@@ -15,7 +15,7 @@ public:
         AudioChip& audio);
     ~TeamView();
 protected:
-    void Update();
+    void Update(uint32_t current_tick);
     void AnimatedDraw();
     void Draw();
     void HandleInput();

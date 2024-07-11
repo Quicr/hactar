@@ -70,9 +70,7 @@ void NetManager::HandleSerial(void* param)
             {
                 Logger::Log(Logger::Level::Info, "NetManager: Handle for Packet:Type:Message");
 
-                // skip the packetId and go to the next part of the packet data
-                // 6 + 8 = 14, skip to 14,
-                // Mesages have sub-types whuch is encoded in the first byte
+                // Skip the packetId and go to the next part of the packet data
                 uint8_t sub_message_type = rx_packet->GetData<uint8_t>(5, 1);
                 self->HandleQChatMessages(sub_message_type, rx_packet, 6);
             }
@@ -174,16 +172,15 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
                 off += 1;
             }
 
-            // Get the audio len * 2
+            // Get the audio len
             uint16_t audio_len = rx_packet->GetData<uint16_t>(off, 2);
-            uint16_t audio_len_in_bytes = audio_len * 2;
             off += 2;
 
             std::vector<uint8_t> msg;
-            msg.reserve(audio_len_in_bytes + 1); // +1 for type
+            msg.reserve(audio_len + 1); // +1 for type
             msg.push_back((uint8_t)qchat::MessageTypes::Audio);
             Logger::Log(Logger::Level::Info, "Audio len ", audio_len);
-            for (uint16_t i = 0; i < audio_len_in_bytes; ++i)
+            for (uint16_t i = 0; i < audio_len; ++i)
             {
                 msg.push_back(rx_packet->GetData<uint8_t>(off, 1));
                 off+=1;

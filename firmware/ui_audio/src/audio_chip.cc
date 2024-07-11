@@ -1,16 +1,20 @@
-#include "AudioCodec.hh"
+#include "audio_chip.hh"
 
 // NOTE MCLK = 12Mhz
 #include <cmath>
 
 extern UART_HandleTypeDef huart1;
 
-AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
+AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     i2s(&hi2s), i2c(&hi2c), tx_buffer{ 0 }, rx_buffer{ 0 }
 {
-    // Reset the wm8960
-    SetRegister(0x0F, 0b1'0000'0000);
-    HAL_Delay(100);
+    // Reset();
+    // Init();
+}
+
+void AudioChip::Init()
+{
+    Reset();
 
     // Set the power
     SetRegister(0x19, 0b0'1111'1110);
@@ -97,13 +101,20 @@ AudioCodec::AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     // SetRegister(0x1D, 0b0'0100'0000);
 }
 
-AudioCodec::~AudioCodec()
+AudioChip::~AudioChip()
 {
     i2c = nullptr;
     i2s = nullptr;
 }
 
-HAL_StatusTypeDef AudioCodec::WriteRegister(uint8_t address)
+void AudioChip::Reset()
+{
+    // Reset the wm8960
+    SetRegister(0x0F, 0b1'0000'0000);
+    HAL_Delay(50);
+}
+
+HAL_StatusTypeDef AudioChip::WriteRegister(uint8_t address)
 {
     // PrintRegisterData(address);
 
@@ -115,7 +126,7 @@ HAL_StatusTypeDef AudioCodec::WriteRegister(uint8_t address)
     return result;
 }
 
-bool AudioCodec::SetRegister(uint8_t address, uint16_t data)
+bool AudioChip::SetRegister(uint8_t address, uint16_t data)
 {
     if (address > Max_Address)
     {
@@ -141,7 +152,7 @@ bool AudioCodec::SetRegister(uint8_t address, uint16_t data)
     return (WriteRegister(address) == HAL_OK);
 }
 
-bool AudioCodec::OrRegister(uint8_t address, uint16_t data)
+bool AudioChip::OrRegister(uint8_t address, uint16_t data)
 {
     if (address > Max_Address)
     {
@@ -154,7 +165,7 @@ bool AudioCodec::OrRegister(uint8_t address, uint16_t data)
     return true;
 }
 
-bool AudioCodec::XorRegister(uint8_t address, uint16_t data)
+bool AudioChip::XorRegister(uint8_t address, uint16_t data)
 {
     if (address > Max_Address)
     {
@@ -168,7 +179,7 @@ bool AudioCodec::XorRegister(uint8_t address, uint16_t data)
     return (WriteRegister(address) == HAL_OK);
 }
 
-bool AudioCodec::SetBit(uint8_t address, uint8_t bit, uint8_t set)
+bool AudioChip::SetBit(uint8_t address, uint8_t bit, uint8_t set)
 {
     if (address > Max_Address)
     {
@@ -201,7 +212,7 @@ bool AudioCodec::SetBit(uint8_t address, uint8_t bit, uint8_t set)
     return WriteRegister(address) == HAL_OK;
 }
 
-bool AudioCodec::SetBits(const uint8_t address, const uint16_t bits, const uint16_t set)
+bool AudioChip::SetBits(const uint8_t address, const uint16_t bits, const uint16_t set)
 {
     if (address > Max_Address)
     {
@@ -229,7 +240,7 @@ bool AudioCodec::SetBits(const uint8_t address, const uint16_t bits, const uint1
     return WriteRegister(address) == HAL_OK;
 }
 
-bool AudioCodec::ReadRegister(uint8_t address, uint16_t& value)
+bool AudioChip::ReadRegister(uint8_t address, uint16_t& value)
 {
     if (address > Max_Address)
     {
@@ -241,7 +252,7 @@ bool AudioCodec::ReadRegister(uint8_t address, uint16_t& value)
     return true;
 }
 
-void AudioCodec::TurnOnLeftInput3()
+void AudioChip::TurnOnLeftInput3()
 {
     // Turn off differential input
     TurnOffLeftDifferentialInput();
@@ -252,12 +263,12 @@ void AudioCodec::TurnOnLeftInput3()
     SetBit(0x20, 8, 1);
 }
 
-void AudioCodec::TurnOffLeftInput3()
+void AudioChip::TurnOffLeftInput3()
 {
     SetBit(0x20, 7, 0);
 }
 
-void AudioCodec::TurnOnLeftDifferentialInput()
+void AudioChip::TurnOnLeftDifferentialInput()
 {
     // Turn off single input
     TurnOffLeftInput3();
@@ -269,13 +280,13 @@ void AudioCodec::TurnOnLeftDifferentialInput()
     // SetBit(0x20, 5, 1);
 }
 
-void AudioCodec::TurnOffLeftDifferentialInput()
+void AudioChip::TurnOffLeftDifferentialInput()
 {
     SetBit(0x20, 6, 0);
     SetBit(0x20, 8, 0);
 }
 
-void AudioCodec::EnableLeftMicPGA()
+void AudioChip::EnableLeftMicPGA()
 {
     // Set bits for all left input pgas
     SetBit(0x19, 5, 1);
@@ -283,14 +294,14 @@ void AudioCodec::EnableLeftMicPGA()
     SetBit(0x20, 3, 1);
 }
 
-void AudioCodec::DisableLeftMicPGA()
+void AudioChip::DisableLeftMicPGA()
 {
     // Set bits for all left input pgas
     SetBit(0x19, 5, 0);
     SetBit(0x2f, 5, 0);
 }
 
-void AudioCodec::MuteMic()
+void AudioChip::MuteMic()
 {
     SetBits(0x00, 0b1'1000'0000, 0b0'1000'0000);
 
@@ -299,7 +310,7 @@ void AudioCodec::MuteMic()
     SetBit(0x19, 1, 0);
 }
 
-void AudioCodec::UnmuteMic()
+void AudioChip::UnmuteMic()
 {
     // Disable LINMUTE
     SetBits(0x00, 0b1'1000'0000, 0b1'0000'0000);
@@ -311,12 +322,12 @@ void AudioCodec::UnmuteMic()
     SetBit(0x19, 1, 1);
 }
 
-bool AudioCodec::DataAvailable()
+bool AudioChip::DataAvailable()
 {
     return data_available;
 }
 
-void AudioCodec::StartI2S()
+void AudioChip::StartI2S()
 {
     auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, Audio_Buffer_Sz);
 
@@ -326,12 +337,12 @@ void AudioCodec::StartI2S()
     }
 }
 
-void AudioCodec::StopI2S()
+void AudioChip::StopI2S()
 {
 
 }
 
-void AudioCodec::GetAudio(uint16_t* buffer, uint16_t size)
+void AudioChip::GetAudio(uint16_t* buffer, uint16_t size)
 {
     for (uint16_t i = 0; i < size && i < Audio_Buffer_Sz; ++i)
     {
@@ -341,7 +352,7 @@ void AudioCodec::GetAudio(uint16_t* buffer, uint16_t size)
     data_available = false;
 }
 
-void AudioCodec::PrintRegisterData(const uint8_t addr)
+void AudioChip::PrintRegisterData(const uint8_t addr)
 {
     const uint8_t newline [] = "\n";
     uint8_t num_str[64]{};
@@ -354,46 +365,50 @@ void AudioCodec::PrintRegisterData(const uint8_t addr)
     HAL_UART_Transmit(&huart1, newline, 1, HAL_MAX_DELAY);
 }
 
-void AudioCodec::HalfCompleteCallback()
+void AudioChip::HalfCompleteCallback()
 {
     // float freqs [] = { 523.25f, 659.26f, 783.99f };
     // SampleHarmonic(tx_buffer, Audio_Buffer_Sz / 2,
     //     0, Sample_Rate,
     //     1000, freqs, phases, 3, true);
 
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz / 2,
-    //     0, Sample_Rate,
-    //     1000, 1000, phase, true);
+    SampleSineWave(tx_buffer, Audio_Buffer_Sz / 2,
+        0, Sample_Rate,
+        1000, 1000, phase, true);
 
 
     // copy rx to tx
-    for (uint16_t i = 0; i < Audio_Buffer_Sz / 2; i+=2)
-    {
-        tx_buffer[i] = rx_buffer[i] + 5000;
-        tx_buffer[i+1] = rx_buffer[i] + 5000;
-    }
+    // for (uint16_t i = 0; i < Audio_Buffer_Sz / 2; i += 2)
+    // {
+    //     tx_buffer[i] = rx_buffer[i];
+    //     tx_buffer[i + 1] = rx_buffer[i];
+    // }
+    codec.ALawCompand(tx_buffer, byte_buff, Audio_Buffer_Sz/2);
+    codec.ALawExpand(byte_buff, tx_buffer, Audio_Buffer_Sz/2);
 }
 
-void AudioCodec::CompleteCallback()
+void AudioChip::CompleteCallback()
 {
     // float freqs [] = { 523.25f, 659.26f, 783.99f};
     // SampleHarmonic(tx_buffer, Audio_Buffer_Sz / 2,
     //     Audio_Buffer_Sz / 2, Sample_Rate,
     //     1000, freqs, phases, 3, true);
 
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz / 2,
-    //     Audio_Buffer_Sz / 2, Sample_Rate,
-    //     1000, 1000, phase, true);
+    SampleSineWave(tx_buffer, Audio_Buffer_Sz / 2,
+        Audio_Buffer_Sz / 2, Sample_Rate,
+        1000, 1000, phase, true);
 
     // copy rx to tx
-    for (uint16_t i = Audio_Buffer_Sz / 2; i < Audio_Buffer_Sz; i+=2)
-    {
-        tx_buffer[i] = rx_buffer[i] + 5000;
-        tx_buffer[i+1] = rx_buffer[i] + 5000;
-    }
+    // for (uint16_t i = Audio_Buffer_Sz / 2; i < Audio_Buffer_Sz; i += 2)
+    // {
+    //     tx_buffer[i] = rx_buffer[i];
+    //     tx_buffer[i + 1] = rx_buffer[i];
+    // }
+    codec.ALawCompand(tx_buffer+(Audio_Buffer_Sz/2), byte_buff, Audio_Buffer_Sz/2);
+    codec.ALawExpand(byte_buff, tx_buffer+(Audio_Buffer_Sz/2), Audio_Buffer_Sz/2);
 }
 
-void AudioCodec::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
+void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
     uint16_t start_idx, uint16_t sample_rate,
     float amplitude, float freq, float& phase, bool stereo)
 {
@@ -439,7 +454,7 @@ void AudioCodec::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
     }
 }
 
-void AudioCodec::SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
+void AudioChip::SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
     uint16_t start_idx, uint16_t sample_rate,
     float amplitutde, float freqs [], float phases [],
     const uint16_t num_freqs, bool stereo)
@@ -464,7 +479,7 @@ void AudioCodec::SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
     }
 }
 
-void AudioCodec::SendSawToothWave()
+void AudioChip::SendSawToothWave()
 {
     uint32_t sample_rate = 16'000;
     float amplitude = 2;

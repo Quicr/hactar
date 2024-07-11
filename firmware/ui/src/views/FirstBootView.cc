@@ -133,7 +133,7 @@ void FirstBootView::HandleInput()
     }
 }
 
-void FirstBootView::Update()
+void FirstBootView::Update(uint32_t current_tick)
 {
     if (state == State::Wifi)
     {

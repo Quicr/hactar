@@ -130,7 +130,8 @@ ChatView::ChatView(UserInterfaceManager& manager,
     AudioChip& audio
 ):
     ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio),
-    pre_joined_state(PreJoinedState(*setting_manager.Username()))
+    pre_joined_state(PreJoinedState(*setting_manager.Username())),
+    last_audio_buffer_used(1)
 {
     redraw_messages = true;
     const auto framed = frame(MlsMessageType::key_package,
@@ -138,11 +139,11 @@ ChatView::ChatView(UserInterfaceManager& manager,
     SendPacket(framed);
 }
 
-void ChatView::Update()
+void ChatView::Update(uint32_t current_tick)
 {
-    if (send_audio)
+    if (keyboard.MicPressed())
     {
-        SendAudio();
+        SendAudio(current_tick);
     }
 }
 
@@ -192,11 +193,6 @@ void ChatView::HandleInput()
         ChangeView(usr_input);
         return;
     }
-    if (usr_input[0] == 's')
-    {
-        send_audio = !send_audio;
-        return;
-    }
 
     // TODO switch to using C strings so we don;t need to extend
     // strings for each added character
@@ -215,6 +211,8 @@ void ChatView::HandleInput()
         const auto ciphertext = mls_state->protect(plaintext_data);
         const auto framed = frame(MlsMessageType::message, ciphertext);
 
+        Logger::Log(Logger::Level::Info, "Send mls message");
+
         // Send the message out on the wire
         SendPacket(framed);
     }
@@ -229,7 +227,7 @@ void ChatView::SendPacket(const bytes& msg)
     // XXX(RLB): This should use a null-safe message type.
     qchat::Ascii ascii{
         manager.ActiveRoom()->room_uri,
-        std::string { msg.begin(), msg.end() }
+        std::string { msg.begin(), msg.end()}
     };
 
     // TODO move into encode...
@@ -260,7 +258,7 @@ void ChatView::PushMessage(std::string&& msg)
     redraw_messages = true;
 }
 
-void ChatView::IngestMessages()
+void ChatView::IngestMlsMessages()
 try
 {
     // TODO use serial instead of manager?
@@ -367,9 +365,14 @@ catch (const std::exception& e)
     Logger::Log(Logger::Level::Error, "[EXCEPT] Caught exception: ", e.what());
 }
 
+void ChatView::IngestPlainMessages()
+{
+    // TODO
+}
+
 void ChatView::DrawMessages()
 {
-    IngestMessages();
+    IngestMlsMessages();
 
     int32_t msg_idx = messages.size() - 1;
 
@@ -500,73 +503,45 @@ void ChatView::DrawUsrInputSeperator()
     screen.FillRectangle(Margin_0, screen.ViewHeight() - usr_font.height - Padding_3, screen.ViewWidth(), screen.ViewHeight() - usr_font.height - Padding_2, fg);
 }
 
-void ChatView::SendAudio()
+void ChatView::SendAudio(uint32_t current_tick)
 {
-
-    if (HAL_GetTick() > next_audio_send)
-    {
-        // Try to send every 10s.
-        next_audio_send = HAL_GetTick() + 10000;
-        num_audio_sent = 0;
-    }
-
-    if (num_audio_sent >= 1)
+    if (!mls_state)
     {
         return;
     }
-
-    if (mls_state)
+    if (audio.IsHalfComplete())
     {
-        // if (audio.IsHalfComplete())
-        // {
-        //     // Sample sine wave
+        // Get audio at the start
+        const uint16_t* raw_buff = audio.GetRxBuffer(0);
 
-        //     AudioChip::SampleSineWave(tmp_audio_buff, audio.AudioBufferSize() / 2,
-        //         0, 1000, 440,
-        //         phase, true);
+        auto packet = std::move(qchat::Codec::encode(
+            serial.NextPacketId(),
+            manager.ActiveRoom()->room_uri,
+            raw_buff,
+            audio.AudioBufferSize_2(),
+            current_tick
+        ));
 
-        //     // Send wave
-        //     auto packet = std::move(qchat::Codec::encode(serial.NextPacketId(),
-        //         manager.ActiveRoom()->room_uri,
-        //         tmp_audio_buff,
-        //         audio.AudioBufferSize_2()));
+        serial.EnqueuePacket(std::move(packet));
 
-        //     serial.EnqueuePacket(std::move(packet));
-        //     num_audio_sent++;
-        // }
+        last_audio_buffer_used = 0;
+    }
+    if (audio.IsComplete())
+    {
+        // Get the raw audio half way through
+        const uint16_t* raw_buff = audio.GetRxBuffer(audio.AudioBufferSize_2());
 
-        if (audio.IsHalfComplete())
-        {
-            // Sample sine wave
+        // Send wave
+        auto packet = std::move(qchat::Codec::encode(
+            serial.NextPacketId(),
+            manager.ActiveRoom()->room_uri,
+            raw_buff,
+            audio.AudioBufferSize_2(),
+            current_tick
+        ));
 
-            AudioChip::SampleSineWave(tmp_audio_buff, audio.AudioBufferSize_2(),
-                0, 1000, 440,
-                phase, true);
+        serial.EnqueuePacket(std::move(packet));
 
-            // Send wave
-            auto packet = std::move(qchat::Codec::encode(serial.NextPacketId(),
-                manager.ActiveRoom()->room_uri,
-                tmp_audio_buff,
-                audio.AudioBufferSize_2()));
-
-            serial.EnqueuePacket(std::move(packet));
-            num_audio_sent++;
-        }
-
-        if (audio.IsComplete())
-        {
-            AudioChip::SampleSineWave(tmp_audio_buff, audio.AudioBufferSize_2(),
-                audio.AudioBufferSize_2(), 1000, 440,
-                phase, true);
-
-            // Send wave
-            auto packet = std::move(qchat::Codec::encode(serial.NextPacketId(),
-                manager.ActiveRoom()->room_uri,
-                tmp_audio_buff + audio.AudioBufferSize_2(),
-                audio.AudioBufferSize_2()));
-
-            serial.EnqueuePacket(std::move(packet));
-            num_audio_sent++;
-        }
+        last_audio_buffer_used = 1;
     }
 }

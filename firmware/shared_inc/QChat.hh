@@ -6,6 +6,8 @@
 #include "SerialPacket.hh"
 #include "logger.hh"
 
+#include "audio_codec.hh"
+
 // Quicr based chat protocol
 namespace qchat
 {
@@ -225,16 +227,16 @@ struct Codec
 
     static std::unique_ptr<SerialPacket> encode(const uint16_t packet_id,
         const std::string& room_uri, const uint16_t* audio_data,
-        const uint16_t audio_length)
+        const uint16_t audio_length, uint32_t current_tick)
     {
-        // +1 for type
-        // +2 for audio_length
+        // +1 for audio type
         // +4 for room_uri length
-        // Audio length is in half-words so *2
-        const uint16_t audio_length_in_bytes = audio_length * 2;
-        const uint16_t len = 1 + 2 + Field_Len_Bytes + room_uri.length() + audio_length_in_bytes;
+        // + room_uri len
+        // +2 for audio_length
+        // Audio length is compressed to 1 byte
+        const uint16_t len = 1 + Field_Len_Bytes + room_uri.length() + 2 + audio_length;
 
-        std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(len);
+        std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(current_tick, len+5);
         Logger::Log(Logger::Level::Info, "Make audio packet len=", len);
 
         SetHeader(packet, packet_id, len);
@@ -250,13 +252,19 @@ struct Codec
         packet->SetData(audio_length, 2);
         Logger::Log(Logger::Level::Info, "Append audio length", audio_length);
 
-        // Append the audio
-        for (uint16_t i = 0; i < audio_length; ++i)
-        {
-            packet->SetData(audio_data[i], 2);
-        }
-        Logger::Log(Logger::Level::Info, "Append actual audio");
+        // 5 for the start bytes
+        // 1 for the sub-type
+        // 2 for the audio len
+        uint16_t offset = 5 + 1 + 2 + room_uri.length() + Field_Len_Bytes;
 
+        // Append the audio
+        // Shift the buffer to where the audio will be inserted
+        uint8_t* buff = packet->Data() + offset;
+        AudioCodec::ALawCompand(audio_data, buff, audio_length);
+
+        Logger::Log(Logger::Level::Info, "cap ", packet->Capacity(), " size ", packet->NumBytes());
+
+        Logger::Log(Logger::Level::Info, "Append actual audio");
 
         return packet;
     }

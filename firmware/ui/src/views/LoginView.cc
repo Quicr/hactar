@@ -85,7 +85,7 @@ void LoginView::Draw()
     }
 }
 
-void LoginView::Update()
+void LoginView::Update(uint32_t current_tick)
 {
 
 }

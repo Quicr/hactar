@@ -4,11 +4,13 @@
 #include "stm32f4xx_hal_i2c.h"
 #include "stm32f4xx_hal_i2s.h"
 
+#include "audio_codec.hh"
+
 #include "memory"
 
 extern UART_HandleTypeDef huart1;
 
-class AudioCodec
+class AudioChip
 {
 private:
     typedef union register_t
@@ -20,8 +22,11 @@ private:
     } Register;
 
 public:
-    AudioCodec(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c);
-    ~AudioCodec();
+    AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c);
+    ~AudioChip();
+
+    void Init();
+    void Reset();
 
     bool SetRegister(uint8_t address, uint16_t data);
     bool OrRegister(uint8_t address, uint16_t data);
@@ -147,6 +152,10 @@ private:
     uint16_t tx_buffer[Audio_Buffer_Sz];
     size_t tx_buff_idx;
     uint16_t rx_buffer[Audio_Buffer_Sz];
+
+
+    AudioCodec codec;
+    uint8_t byte_buff[Audio_Buffer_Sz];
 
     bool data_available;
     bool stereo;

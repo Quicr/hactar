@@ -1,6 +1,9 @@
- #include "audio_codec.hh"
+#include "audio_codec.hh"
 
 #include <math.h>
+
+// https://www.ti.com/lit/an/spra163a/spra163a.pdf
+
 
 void AudioCodec::ALawCompand(const uint16_t* input, uint8_t* output, const size_t len)
 {
@@ -44,6 +47,9 @@ uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
         sample = -sample;
     }
 
+    // printf("sign = %d\n", sign);
+    // printf("sample = %d\n", sample);
+
     // Clip the sample to 12 bits
     if (sample > 0x0FFF)
     {
@@ -60,6 +66,7 @@ uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
         }
     }
     exponent = 7 - i;
+    // printf("i = %d, exponent = %d\n", i, exponent);
 
     // Get our mantissa (abcd)
     if (exponent == 0)
@@ -73,6 +80,9 @@ uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
         // for our bit values
         exponent <<= 4;
     }
+    // printf("mantissa = %d\n", mantissa);
+    // printf("exponent = %d\n", exponent);
+    // printf("together = %d\n", (sign + exponent + mantissa) ^ 0x55);
 
     // Put together and xor by 0x55;
     return (sign + exponent + mantissa) ^ 0x55;
