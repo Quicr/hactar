@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "Keyboard")(type "Legacy")(uri "/home/brett/cisco/code/hactar/hardware/kicad_libraries/bbq10keyboard/library/Keyboard.lib")(options "")(descr ""))
+)
