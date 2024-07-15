@@ -38,8 +38,8 @@
         "other_text_upright": false,
         "pads": {
           "drill": 0.0,
-          "height": 0.3,
-          "width": 1.55
+          "height": 1.5,
+          "width": 1.5
         },
         "silk_line_width": 0.12,
         "silk_text_italic": false,
@@ -497,7 +497,7 @@
       "plot": "",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "EV10 Board Design.step",
+      "step": "EV11 Board Design.step",
       "svg": "",
       "vrml": "EV6 Board Design.wrl"
     },

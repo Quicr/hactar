@@ -1,4 +1,7 @@
 (sym_lib_table
   (version 7)
   (lib (name "Keyboard")(type "Legacy")(uri "/home/brett/cisco/code/hactar/hardware/kicad_libraries/bbq10keyboard/library/Keyboard.lib")(options "")(descr ""))
+  (lib (name "MSK12C02-HB")(type "KiCad")(uri "/home/brett/cisco/code/hactar/hardware/kicad_libraries/MSK12C02-HB/MSK12C02-HB.kicad_sym")(options "")(descr ""))
+  (lib (name "TS-1037-A11B3-D2")(type "KiCad")(uri "/home/brett/cisco/code/hactar/hardware/kicad_libraries/TS-1037-A11B3-D2/TS-1037-A11B3-D2.kicad_sym")(options "")(descr ""))
+  (lib (name "PJ-313E-8A")(type "KiCad")(uri "/home/brett/cisco/code/hactar/hardware/kicad_libraries/PJ-313E-8A/PJ-313E-8A.kicad_sym")(options "")(descr ""))
 )
