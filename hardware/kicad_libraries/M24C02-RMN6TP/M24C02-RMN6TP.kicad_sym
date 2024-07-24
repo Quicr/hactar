@@ -49,7 +49,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C83836"
+		(property "JLCPCB#" "C83836"
 			(at 0 -16.51 0)
 			(effects
 				(font

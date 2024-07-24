@@ -97,7 +97,7 @@
         "padstack": "error",
         "pth_inside_courtyard": "ignore",
         "shorting_items": "error",
-        "silk_edge_clearance": "warning",
+        "silk_edge_clearance": "ignore",
         "silk_over_copper": "ignore",
         "silk_overlap": "ignore",
         "skew_out_of_range": "error",
@@ -129,12 +129,12 @@
         "min_resolved_spokes": 2,
         "min_silk_clearance": 0.0,
         "min_text_height": 0.1,
-        "min_text_thickness": 0.08,
+        "min_text_thickness": 0.05,
         "min_through_hole_diameter": 0.15,
         "min_track_width": 0.1,
         "min_via_annular_width": 0.13,
         "min_via_diameter": 0.3,
-        "solder_mask_to_copper_clearance": 0.0,
+        "solder_mask_to_copper_clearance": 0.005,
         "use_height_for_length_calcs": true
       },
       "teardrop_options": [
@@ -220,6 +220,10 @@
         {
           "diameter": 0.35,
           "drill": 0.2
+        },
+        {
+          "diameter": 0.5,
+          "drill": 0.3
         },
         {
           "diameter": 0.6,
@@ -497,9 +501,9 @@
       "plot": "~/cisco/ev11.pdf",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "../../../../ev11_pcb.svg",
+      "step": "../../../../ev11_pcb.step",
       "svg": "~/cisco/ev11.svg",
-      "vrml": "EV6 Board Design.wrl"
+      "vrml": "EV11 Board Design.wrl"
     },
     "page_layout_descr_file": ""
   },
