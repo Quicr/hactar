@@ -266,7 +266,7 @@
 		(remove_unused_layers no)
 		(uuid "8099c5b9-ec51-4d9a-bb82-8d0064c2f407")
 	)
-	(model "/home/brett/cisco/code/hactar/hardware/kicad_libraries/TS-1037-A11B3-D2/TS-1037-A11B3-D2.3dshapes/KEY-SMD_2P-L7.1-W10.6-P4.00-LS9.0.wrl"
+	(model "${KIPRJMOD}/../kicad_libraries/TS-1037-A11B3-D2/TS-1037-A11B3-D2.3dshapes/KEY-SMD_2P-L7.1-W10.6-P4.00-LS9.0.wrl"
 		(offset
 			(xyz 0 -0.6 7.4)
 		)

@@ -265,7 +265,7 @@
 		(layers "F.Cu" "F.Paste" "F.Mask")
 		(uuid "ee578a7a-69e6-4013-8211-30f60ed24bdb")
 	)
-	(model "/home/brett/cisco/code/hactar/hardware/kicad_libraries/WAFER-SH1.0-6PWB/WAFER-SH1.0-6PWB.3dshapes/CONN-SMD_6P-P1.00_XUNPU_WAFER-SH1.0-6PWB.wrl"
+	(model "${KIPRJMOD}/../kicad_libraries/WAFER-SH1.0-6PWB/WAFER-SH1.0-6PWB.3dshapes/CONN-SMD_6P-P1.00_XUNPU_WAFER-SH1.0-6PWB.wrl"
 		(offset
 			(xyz 0 -0.5 1.5)
 		)

@@ -501,7 +501,7 @@
       "plot": "~/cisco/ev11.pdf",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "../../../../ev11_pcb.step",
+      "step": "EV11 Board Design.step",
       "svg": "~/cisco/ev11.svg",
       "vrml": "EV11 Board Design.wrl"
     },

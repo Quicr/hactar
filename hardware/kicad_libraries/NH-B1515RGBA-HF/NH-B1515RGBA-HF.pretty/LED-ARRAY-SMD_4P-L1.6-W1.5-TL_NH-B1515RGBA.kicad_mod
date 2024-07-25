@@ -1,29 +1,194 @@
-(module easyeda2kicad:LED-ARRAY-SMD_4P-L1.6-W1.5-TL_NH-B1515RGBA (layer F.Cu) (tedit 5DC5F6A4)
+(footprint "LED-ARRAY-SMD_4P-L1.6-W1.5-TL_NH-B1515RGBA"
+	(version 20240108)
+	(generator "pcbnew")
+	(generator_version "8.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 0 -4.4 0)
+		(layer "F.SilkS")
+		(uuid "0d4b3592-0a73-4bf6-9eec-f60eff4ea423")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "LED-ARRAY-SMD_4P-L1.6-W1.5-TL_NH-B1515RGBA"
+		(at 0 4.4 0)
+		(layer "F.Fab")
+		(uuid "4368f6c7-4ec8-42d2-af1e-614d1e14d3e1")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Footprint" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "80266d95-9497-432b-9a0b-ce09e9b35a8b")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "24add023-9aca-4bc2-ab26-21623dfe04e9")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "60d2ec0d-4c12-43b4-bf23-f8c9e3ff870e")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
 	(attr smd)
-	(fp_text reference REF** (at 0 -4.4) (layer F.SilkS)
-		(effects (font (size 1 1) (thickness 0.15)))
+	(fp_line
+		(start -1.4 0.4)
+		(end -1.2 0.4)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "a9dbd460-db7b-46f1-93ff-dc68d28157b3")
 	)
-	(fp_text value LED-ARRAY-SMD_4P-L1.6-W1.5-TL_NH-B1515RGBA (at 0 4.4) (layer F.Fab)
-		(effects (font (size 1 1) (thickness 0.15)))
+	(fp_line
+		(start -0.8 -0.75)
+		(end 0.8 -0.75)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "d168eab6-169a-41ad-b862-d85b6bc171b6")
 	)
-	(fp_text user %R (at 0 0) (layer F.Fab)
-		(effects (font (size 1 1) (thickness 0.15)))
+	(fp_line
+		(start -0.8 0.75)
+		(end 0.8 0.75)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "00726664-e4b0-478f-975b-9b3d0ebb3e39")
 	)
-	(fp_line (start -1.40 0.40) (end -1.20 0.40) (layer F.SilkS) (width 0.15))
-	(fp_line (start 1.22 -0.40) (end 1.58 -0.40) (layer F.SilkS) (width 0.15))
-	(fp_line (start 1.40 -0.20) (end 1.40 -0.57) (layer F.SilkS) (width 0.15))
-	(fp_line (start -0.80 0.75) (end 0.80 0.75) (layer F.SilkS) (width 0.15))
-	(fp_line (start -0.80 -0.75) (end 0.80 -0.75) (layer F.SilkS) (width 0.15))
-	(pad 1 smd rect (at -0.70 -0.40 -90.00) (size 0.40 0.60) (layers F.Cu F.Paste F.Mask))
-	(pad 4 smd rect (at -0.70 0.40 -90.00) (size 0.40 0.60) (layers F.Cu F.Paste F.Mask))
-	(pad 3 smd rect (at 0.70 0.40 -90.00) (size 0.40 0.60) (layers F.Cu F.Paste F.Mask))
-	(pad 2 smd rect (at 0.70 -0.40 -90.00) (size 0.40 0.60) (layers F.Cu F.Paste F.Mask))
-	(fp_circle (center -1.27 -0.38) (end -1.20 -0.38) (layer F.SilkS) (width 0.15))
-	(fp_circle (center -0.80 -0.75) (end -0.77 -0.75) (layer F.Fab) (width 0.06))
-	(fp_circle (center -1.30 -0.40) (end -1.23 -0.40) (layer Cmts.User) (width 0.15))
-	(model "/home/brett/cisco/code/hactar/hardware/kicad_libraries/NH-B1515RGBA-HF/NH-B1515RGBA-HF.3dshapes/LED-ARRAY-SMD_4P-L1.6-W1.5-TL_NH-B1515RGBA.wrl"
-		(offset (xyz 0.000 -0.000 -0.000))
-		(scale (xyz 1 1 1))
-		(rotate (xyz 0 0 0))
+	(fp_line
+		(start 1.22 -0.4)
+		(end 1.58 -0.4)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "24408953-3126-4689-8964-e3f2a17b58b9")
+	)
+	(fp_line
+		(start 1.4 -0.2)
+		(end 1.4 -0.57)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "6cfbb911-e0b7-466b-a0df-ff790d65d3d0")
+	)
+	(fp_circle
+		(center -1.27 -0.38)
+		(end -1.2 -0.38)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(fill none)
+		(layer "F.SilkS")
+		(uuid "f2e2c444-e5d1-4c03-bd96-541792905610")
+	)
+	(fp_circle
+		(center -1.3 -0.4)
+		(end -1.23 -0.4)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(fill none)
+		(layer "Cmts.User")
+		(uuid "daa33c00-62ce-4fee-ab57-922b87e6570f")
+	)
+	(fp_circle
+		(center -0.8 -0.75)
+		(end -0.77 -0.75)
+		(stroke
+			(width 0.06)
+			(type solid)
+		)
+		(fill none)
+		(layer "F.Fab")
+		(uuid "904221b0-e552-4d74-a690-8b29a0ac3185")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "ccc143b1-cffa-443d-92ef-c1fe9c54958e")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd rect
+		(at -0.7 -0.4 270)
+		(size 0.4 0.6)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "2975dbf1-88c7-4be3-a839-7272c7f62162")
+	)
+	(pad "2" smd rect
+		(at 0.7 -0.4 270)
+		(size 0.4 0.6)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "5db7c4c8-1361-4342-9bd6-07ef1b997c32")
+	)
+	(pad "3" smd rect
+		(at 0.7 0.4 270)
+		(size 0.4 0.6)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "60daa57c-67c5-4e8d-84eb-4f63467fa879")
+	)
+	(pad "4" smd rect
+		(at -0.7 0.4 270)
+		(size 0.4 0.6)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "8782860e-9655-4ad6-8bb2-78ce3fc54ce5")
+	)
+	(model "${KIPRJMOD}/../kicad_libraries/NH-B1515RGBA-HF/NH-B1515RGBA-HF.3dshapes/LED-ARRAY-SMD_4P-L1.6-W1.5-TL_NH-B1515RGBA.wrl"
+		(offset
+			(xyz 0 -0 -0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
 	)
 )

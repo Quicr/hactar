@@ -320,7 +320,7 @@
 		(layers "F.Cu" "F.Paste" "F.Mask")
 		(uuid "1ba76fdb-fa1d-4c63-a7e1-bf87d65a4be8")
 	)
-	(model "/home/brett/cisco/code/hactar/hardware/kicad_libraries/PJ-313E-8A/PJ-313E-8A.3dshapes/AUDIO-SMD_PJ-313E-8A-EH.wrl"
+	(model "${KIPRJMOD}/../kicad_libraries/PJ-313E-8A/PJ-313E-8A.3dshapes/AUDIO-SMD_PJ-313E-8A-EH.wrl"
 		(offset
 			(xyz 0 0.68 1.5)
 		)
