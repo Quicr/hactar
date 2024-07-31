@@ -17303,7 +17303,7 @@
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C20"
-			(at -0.02 -1.75 360)
+			(at -0.02 -1.75 0)
 			(layer "F.SilkS")
 			(uuid "5291e39a-74ab-4755-8890-764414fe863c")
 			(effects
@@ -17314,7 +17314,7 @@
 			)
 		)
 		(property "Value" "100n"
-			(at 0 -1.25 360)
+			(at 0 -1.25 0)
 			(layer "F.Fab")
 			(uuid "ca64ac65-9cdd-4f98-8425-c5c04dcc7dc1")
 			(effects
@@ -17325,7 +17325,7 @@
 			)
 		)
 		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "69244db6-8c24-4053-942d-94c65c84e6c4")
@@ -17337,7 +17337,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "28ba5140-6414-44dc-bdc6-78fe550d0daf")
@@ -17349,7 +17349,7 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "1626f478-f843-458e-bdf7-02c5f3df7e51")
@@ -17479,7 +17479,7 @@
 			(uuid "e3bf7b90-d622-48a2-84be-49bf788ad61e")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "363847e4-bde8-4844-84bc-b49faa146843")
 			(effects
@@ -30482,7 +30482,7 @@
 		(uuid "e211e040-8ec2-4af9-bc5b-4aa161d129d7")
 		(at 116.71 63.69 -90)
 		(property "Reference" "SW2"
-			(at 0 -5.7 -90)
+			(at 0 -5.7 90)
 			(layer "F.SilkS")
 			(uuid "b5ab6924-0546-43bb-84b4-27dc75daff82")
 			(effects
@@ -30493,7 +30493,7 @@
 			)
 		)
 		(property "Value" "MSK12C02-HB"
-			(at 0 5.7 -90)
+			(at 0 5.7 90)
 			(layer "F.Fab")
 			(uuid "a6ef9cb5-b83c-4a82-b48b-c479c725fadd")
 			(effects
@@ -30504,7 +30504,7 @@
 			)
 		)
 		(property "Footprint" ":SW-TH_MSK12C02-HB-1"
-			(at 0 0 -90)
+			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "165862bf-afc4-4696-a1c1-03f7fc3e1fee")
@@ -30516,7 +30516,7 @@
 			)
 		)
 		(property "Datasheet" "https://lcsc.com/product-detail/Toggle-Switches_SHOU-HAN-MSK12C02-HB_C431541.html"
-			(at 0 0 -90)
+			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "b3a9ce75-5b65-4b36-a5cd-9e143503e812")
@@ -30528,7 +30528,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 0 0 -90)
+			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "52c4978d-5b48-43e8-a7d2-536009d304ab")
@@ -30706,7 +30706,7 @@
 			(uuid "7930589f-d2c0-48e1-9178-facf19d24f3e")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 -90)
+			(at 0 0 90)
 			(layer "F.Fab")
 			(uuid "092bfe11-06dc-4cd4-a633-af59ebc0b77f")
 			(effects
