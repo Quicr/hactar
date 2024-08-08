@@ -15,4 +15,5 @@
   (lib (name "NH-B1515RGBA-HF")(type "KiCad")(uri "${KIPRJMOD}/../kicad_libraries/NH-B1515RGBA-HF/NH-B1515RGBA-HF.pretty")(options "")(descr ""))
   (lib (name "2.54-1*3P")(type "KiCad")(uri "${KIPRJMOD}/../kicad_libraries/2.54-1*3P/2.54-1*3P.pretty")(options "")(descr ""))
   (lib (name "MCL2016A1R0MT")(type "KiCad")(uri "${KIPRJMOD}/../kicad_libraries/MCL2016A1R0MT/MCL2016A1R0MT.pretty")(options "")(descr ""))
+  (lib (name "Hactar_Footprints")(type "KiCad")(uri "${KIPRJMOD}/../kicad_libraries/Hactar_Footprints.pretty")(options "")(descr ""))
 )
