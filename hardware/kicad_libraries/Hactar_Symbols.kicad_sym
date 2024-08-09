@@ -461,7 +461,7 @@
 					)
 				)
 			)
-			(pin input line
+			(pin output line
 				(at -2.54 26.67 0)
 				(length 2.54)
 				(name ""
