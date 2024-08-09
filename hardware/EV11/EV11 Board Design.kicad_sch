@@ -21525,7 +21525,7 @@
 		)
 		(uuid "23ecb78f-ad91-473d-ad93-4448bea14188")
 	)
-	(label "BOOT1"
+	(label "UI_BOOT1"
 		(at 325.12 142.24 0)
 		(fields_autoplaced yes)
 		(effects
@@ -23274,7 +23274,7 @@
 		)
 		(uuid "e2cd0f62-97de-4b42-adf9-58b265d6676c")
 	)
-	(label "BOOT1"
+	(label "UI_BOOT1"
 		(at 39.37 144.78 0)
 		(fields_autoplaced yes)
 		(effects
@@ -27691,7 +27691,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "BM14B(0.B)-24DS-0:BM14B(0.B)-24DS-0.4V(53)"
+		(property "Footprint" "Hactar_Footprints:BM14B(0.B)-24DS-0.4V(53)"
 			(at 355.6 306.07 0)
 			(effects
 				(font
