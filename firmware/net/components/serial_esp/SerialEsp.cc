@@ -1,6 +1,8 @@
 #include "SerialEsp.hh"
 #include "Error.hh"
 
+#include "logger.hh"
+
 SerialEsp::SerialEsp(uart_port_t uart,
     unsigned long long tx_pin,
     unsigned long long rx_pin,
@@ -15,13 +17,13 @@ SerialEsp::SerialEsp(uart_port_t uart,
 {
     esp_err_t res;
     // NOTE rx buff is MINIMUM 128
-    res = uart_driver_install(uart, BUFFER_SIZE * 2, BUFFER_SIZE * 2, 20, &uart_queue, 0);
+    res = uart_driver_install(uart, BUFFER_SIZE * 4, BUFFER_SIZE * 4, 20, &uart_queue, 0);
     printf("install res=%d\n", res);
     res = uart_set_pin(uart, tx_pin, rx_pin, rts_pin, cts_pin);
     printf("uart set pin res=%d\n", res);
     res = uart_param_config(uart, &uart_config);
     printf("install res=%d\n", res);
-    xTaskCreate(RxEvent, "uart_event_task", 4096, (void*)this, 12, NULL);
+    xTaskCreate(RxEvent, "uart_event_task", 8192, (void*)this, 12, NULL);
 }
 
 SerialEsp::~SerialEsp()
@@ -52,12 +54,6 @@ void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 
-    // printf("NET: Send to ui");
-    // for (int i =0; i <  buff_size; ++i )
-    // {
-    //     printf("%d", (int)buff[i]);
-    // }
-    // printf("\n\r");
     uint8_t start[] = {0xFF};
     uart_write_bytes(uart, start, 1);
 
@@ -75,7 +71,7 @@ void SerialEsp::Write(unsigned char* buff, const unsigned short buff_size)
 void SerialEsp::RxEvent(void* parameter)
 {
     SerialEsp* serial = (SerialEsp*)parameter;
-    printf("net-serial[%d]: Event begin!\n", serial->uart);
+    printf("net-serial[%d]: Event begin\n", serial->uart);
 
     uart_event_t event;
     unsigned char buff[BUFFER_SIZE];
@@ -85,7 +81,7 @@ void SerialEsp::RxEvent(void* parameter)
         if (!xQueueReceive(serial->uart_queue, (void*)&event, portMAX_DELAY))
             continue;
 
-        printf("net-serial[%d]: event size: %d, type: %d\n", serial->uart, event.size, event.type);
+        printf("net-serial[%d]: Event size: %d, type: %d\n", serial->uart, event.size, event.type);
 
         switch (event.type)
         {

@@ -6,6 +6,7 @@ import logger from "./logger";
 
 // TODO typescript types
 import stm32_flasher from "./stm32_flasher";
+import stm32_serial from "./stm32_serial";
 import esp32_flasher from "./esp32_flasher";
 import Sleep from "./sleep";
 
@@ -22,15 +23,10 @@ class HactarFlasher
         this.serial = new Serial();
     }
 
-    async ConnectToHactar(filters: Object[])
-    {
-        return await this.serial.ConnectToDevice(filters);
-    }
-
-    async GetBinary(url: string)
+    async GetBinary(firmware: string)
     {
         // Get a binary from the server
-        let res = await axios.get(`http://localhost:7775/${url}`);
+        let res = await axios.get(`http://localhost:7775/firmware?bin=${firmware}`);
         return res.data;
     }
 
@@ -39,9 +35,21 @@ class HactarFlasher
         try
         {
             let sleep_before_net_upload = false;
+
+            if (mode.includes("mgmt"))
+            {
+                const binary = await this.GetBinary("mgmt");
+
+                await this.SendUploadSelectionCommand("mgmt_upload");
+                await stm32_flasher.FlashSTM(this.serial, binary, true);
+                await this.serial.ClosePortAndNull();
+                return;
+            }
+
             if (mode.includes("ui"))
             {
-                const binary = await this.GetBinary("get_ui_bins");
+                const binary = await this.GetBinary("ui");
+
                 await this.SendUploadSelectionCommand("ui_upload");
                 await stm32_flasher.FlashSTM(this.serial, binary);
                 await this.serial.ClosePort();
@@ -55,7 +63,7 @@ class HactarFlasher
                     await Sleep(2000);
                 }
 
-                const binaries = await this.GetBinary("get_net_bins");
+                const binaries = await this.GetBinary("net");
 
                 if (binaries.length == 0)
                 {
@@ -82,27 +90,42 @@ class HactarFlasher
         // commands to the mgmt
         await this.serial.OpenPort("none");
 
-        if (command != 'ui_upload' && command != 'net_upload')
+        if (command != "mgmt_upload" &&
+            command != 'ui_upload' &&
+            command != 'net_upload')
         {
             logger.Error(`Error. ${command} is an invalid command`);
             throw `Error. ${command} is an invalid command`;
         }
 
+        if (command == "mgmt_upload")
+        {
+            await this.serial.OpenPort("even");
+
+            // TODO optional
+            this.PulseSignals(false, false);
+
+            logger.Info("Activating MGMT Upload Mode: SUCCESS");
+            logger.Debug("Update uart to parity: EVEN");
+            return;
+        }
+
         let enc = new TextEncoder()
 
         // Get the response
-        let reply = await this.serial.WriteBytesWaitForACK(enc.encode(command), 4000, 5);
+        let reply = await stm32_serial.WriteBytesWaitForACK(this.serial,
+            enc.encode(command), 4000, 5);
+
         if (reply == NO_REPLY)
         {
             logger.Error("Failed to move Hactar into upload mode");
             throw "Failed to move Hactar into upload mode";
         }
-
-        if (command == "ui_upload")
+        else if (command == "ui_upload")
         {
             await this.serial.OpenPort("even");
 
-            for (let i = 0; i < 5; i++)
+            for (let i = 0; i < 5; ++i)
             {
                 reply = await this.serial.ReadByte(5000);
 
@@ -148,6 +171,20 @@ class HactarFlasher
             logger.Info("Activating NET Upload Mode: SUCCESS");
             logger.Info("Update uart to parity: NONE");
         }
+    }
+
+    async PulseSignals(rts: boolean = false,
+        dtr: boolean = false,
+        toggle_speed_ms: number = 1)
+    {
+        await this.serial.port.setSignals({ requestToSend: rts });
+        await this.serial.port.setSignals({ dataTerminalReady: dtr });
+        await new Promise(resolve => setTimeout(resolve, toggle_speed_ms));
+        await this.serial.port.setSignals({ requestToSend: !rts });
+        await this.serial.port.setSignals({ dataTerminalReady: !dtr });
+        await new Promise(resolve => setTimeout(resolve, toggle_speed_ms));
+        await this.serial.port.setSignals({ requestToSend: rts });
+        await this.serial.port.setSignals({ dataTerminalReady: dtr });
     }
 
 };

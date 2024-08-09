@@ -12,5 +12,9 @@ fp-info-cache
 *.kicad_pcb-bak
 *.sch-bak
 *~
+hardware/**/*backups
+hardware/**/*~*
+hardware/**/#auto_saved_files#
 
+dist/
 .vscode

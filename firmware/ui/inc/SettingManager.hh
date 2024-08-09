@@ -3,8 +3,8 @@
 #include <map>
 #include <any>
 #include "EEPROM.hh"
-#include "Vector.hh"
-#include "main.hh"
+#include <vector>
+#include "app_main.hh"
 #include "Font.hh"
 
 // TODO use
@@ -142,31 +142,31 @@ public:
         return bg;
     }
 
-    const String* Username()
+    const std::string* Username()
     {
         LoadString(&username, SettingAddress::Username);
         return username;
     }
 
-    const String* Password()
+    const std::string* Password()
     {
         LoadString(&password, SettingAddress::Password);
         return password;
     }
 
-    const String* SSID()
+    const std::string* SSID()
     {
         LoadString(&ssid, SettingAddress::SSID);
         return ssid;
     }
 
-    const String* SSIDPassword()
+    const std::string* SSIDPassword()
     {
         LoadString(&ssid_password, SettingAddress::SSID_Password);
         return ssid_password;
     }
 
-    inline void LoadString(String** str, SettingAddress addr)
+    inline void LoadString(std::string** str, SettingAddress addr)
     {
         if (*str != nullptr)
         {
@@ -174,15 +174,15 @@ public:
             return;
         }
 
-        *str = new String();
+        *str = new std::string();
 
         // Load the data
-        uint8_t* data;
-        int16_t len;
+        uint8_t* data = nullptr;
+        int16_t len = 0;
 
         if (!LoadSetting(addr, &data, len))
         {
-            delete* str;
+            delete *str;
             *str = nullptr;
             return;
         }
@@ -336,6 +336,13 @@ public:
         ClearSetting(setting);
     }
 
+    void ClearEeprom()
+    {
+        eeprom.Clear();
+    }
+
+private:
+
     void ShiftMemory(const SettingAddress setting, const int16_t addr, const int16_t len)
     {
         // Stuff the address that can change size into an array
@@ -345,7 +352,7 @@ public:
             SettingAddress::SSID,
             SettingAddress::SSID_Password
         };
-        // HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_RESET);
+        // HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
 
 
     // We save the settings in order according to the enum order.
@@ -377,7 +384,7 @@ public:
                 continue;
 
             if (o_setting == SettingAddress::SSID_Password)
-                HAL_GPIO_WritePin(LED_R_Port, LED_R_Pin, GPIO_PIN_RESET);
+                HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
 
             // Overlaps, move the next setting and update the
             // curr_addr and curr_len
@@ -396,12 +403,6 @@ public:
         }
     }
 
-    void ClearEeprom()
-    {
-        eeprom.Clear();
-    }
-
-private:
     void ClearSetting(const SettingAddress setting)
     {
         switch (setting)
@@ -500,8 +501,8 @@ private:
     uint8_t* menu_font;
     uint16_t* fg;
     uint16_t* bg;
-    String* username;
-    String* password;
-    String* ssid;
-    String* ssid_password;
+    std::string* username;
+    std::string* password;
+    std::string* ssid;
+    std::string* ssid_password;
 };
