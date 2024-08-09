@@ -10,7 +10,7 @@ dotenv.config();
 const app: Express = express();
 const port = process.env.PORT;
 
-function GetFiles()
+function GetEspFiles()
 {
     const build_dir = "../../net/build"
     const files: any = [];
@@ -18,7 +18,6 @@ function GetFiles()
     // Get all the binary files
     try
     {
-
         const flasher_args: any = JSON.parse(
             fs.readFileSync(`${build_dir}/flasher_args.json`, "utf-8"));
         const flash_files_by_offset = flasher_args["flash_files"];
@@ -54,24 +53,47 @@ function GetFiles()
 
 app.use(cors());
 
-app.all('/auth', (req: Request, res: Response) => 
+app.all('/auth', (req: Request, res: Response) =>
 {
     // TODO authentication
 });
 
-app.get('/get_net_bins', (req: Request, res: Response) =>
+// TODO expand to use github repos
+app.get('/firmware', (req: Request, res: Response) =>
 {
-    const files = GetFiles();
-    res.json(files);
+    console.log(req.query)
+
+    // TODO use a db connection to query the location of the bin,
+    // given the version
+
+    // but for now lets just if statement and grab latest
+    if (req.query["bin"] == "mgmt")
+    {
+        const bin = fs.readFileSync("../../mgmt/build/mgmt.bin", null);
+        res.json(bin.toJSON().data);
+    }
+    else if (req.query["bin"] == "ui")
+    {
+        const bin = fs.readFileSync("../../ui/build/ui.bin", null);
+        res.json(bin.toJSON().data);
+    }
+    else if (req.query["bin"] == "net")
+    {
+        const bin = GetEspFiles();
+        res.json(bin);
+    }
 });
 
-app.get('/get_ui_bins', (req: Request, res: Response) =>
+app.get('/stm_configuration', (req: Request, res: Response) =>
 {
-    let bin = fs.readFileSync("../../ui/build/ui.bin", null);
+    // TODO error if the configuration exists
+    let device_id:any = req.query.uid;
+    let configs = JSON.parse(fs.readFileSync("stm32_configurations.json", "utf8"));
+    let config = configs[device_id]
+    console.log(`Returning configuration for ${config['name']}`);
+    res.json(config);
 
-    res.json(bin.toJSON().data);
 });
-
 
 app.listen(port, () =>
 {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ViewInterface.hh"
-#include "String.hh"
+#include <string>
 
 class TeamView : public ViewInterface
 {
@@ -9,7 +9,9 @@ public:
     TeamView(UserInterfaceManager& manager,
              Screen& screen,
              Q10Keyboard& keyboard,
-             SettingManager& setting_manager);
+             SettingManager& setting_manager,
+             SerialPacketManager& serial,
+             Network& network);
     ~TeamView();
 protected:
     void Update();

@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "mgmt.h"
+#include "main.h"
 #include "stm32f0xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -156,7 +156,7 @@ void EXTI0_1_IRQHandler(void)
   /* USER CODE BEGIN EXTI0_1_IRQn 0 */
 
   /* USER CODE END EXTI0_1_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(RTS_Pin);
+  HAL_GPIO_EXTI_IRQHandler(USB_RTS_Pin);
   /* USER CODE BEGIN EXTI0_1_IRQn 1 */
 
   /* USER CODE END EXTI0_1_IRQn 1 */

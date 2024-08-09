@@ -6,9 +6,11 @@ class SettingsView : public ViewInterface
 {
 public:
     SettingsView(UserInterfaceManager& manager,
-                 Screen& screen,
-                 Q10Keyboard& keyboard,
-                 SettingManager& setting_manager);
+             Screen& screen,
+             Q10Keyboard& keyboard,
+             SettingManager& setting_manager,
+             SerialPacketManager& serial,
+             Network& network);
     ~SettingsView();
 protected:
     void AnimatedDraw();

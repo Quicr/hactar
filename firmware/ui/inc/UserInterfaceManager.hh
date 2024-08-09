@@ -1,19 +1,24 @@
 #pragma once
 
-#include <map>
-
 #include "stm32.h"
 
 #include "EEPROM.hh"
 #include "Message.hh"
-#include "Packet.hh"
 #include "Q10Keyboard.hh"
-#include "SerialManager.hh"
+#include "SerialPacketManager.hh"
+#include "SerialPacket.hh"
 #include "SerialInterface.hh"
 #include "SettingManager.hh"
 #include "Screen.hh"
+#include "network.hh"
 
 #include "QChat.hh"
+
+#include <deque>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #define VIEW_ADDRESS 0x00
 #define FIRST_BOOT_STARTED 0x01
@@ -32,26 +37,15 @@ public:
 
     void Run();
     bool HasNewMessages();
-    const Vector<String>& GetMessages();
-    void PushMessage(String&& str);
+    std::vector<std::string> TakeMessages();
+    void PushMessage(std::string&& str);
     void ClearMessages();
-    void EnqueuePacket(std::unique_ptr<Packet> packet);
-    void LoopbackPacket(std::unique_ptr<Packet> packet);
+    void LoopbackPacket(std::unique_ptr<SerialPacket> packet);
     void ForceRedraw();
     bool RedrawForced();
-    void ConnectToWifi();
-    void ConnectToWifi(const String& ssid, const String& password);
 
-    uint32_t GetTxStatusColour() const;
-    uint32_t GetRxStatusColour() const;
-
-    const bool GetReadyPackets(
-        RingBuffer<std::unique_ptr<Packet>>** buff,
-        const Packet::Commands command_type) const;
-    const bool HasReadyPackets(const Packet::Commands command_type) const;
-    bool IsConnectedToWifi() const;
-
-    uint8_t NextPacketId();
+    // uint32_t GetTxStatusColour() const;
+    // uint32_t GetRxStatusColour() const;
 
     void ChangeRoom(std::unique_ptr<qchat::Room> new_room);
     const std::unique_ptr<qchat::Room>& ActiveRoom() const;
@@ -70,7 +64,7 @@ public:
             delete view;
         }
 
-        view = new T(*this, *screen, *keyboard, setting_manager);
+        view = new T(*this, *screen, *keyboard, setting_manager, net_layer, network);
 
         return true;
     }
@@ -78,33 +72,28 @@ public:
 private:
     void HandleIncomingPackets();
     void TimeoutPackets();
-    uint32_t GetStatusColour(
-        const SerialManager::SerialStatus status) const;
+    // uint32_t GetStatusColour(
+    //     const SerialPacketManager::SerialStatus status) const;
 
     void SendTestPacket();
     void SendCheckWifiPacket();
     void LoadSettings();
     void LoadUsername();
-    void HandleMessagePacket(std::unique_ptr<Packet> packet);
+    void HandleMessagePacket(std::unique_ptr<SerialPacket> packet);
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
     Screen* screen;
     Q10Keyboard* keyboard;
-    SerialManager net_layer;
+    SerialPacketManager net_layer;
     SettingManager setting_manager;
     ViewInterface* view;
-    Vector<String> received_messages;
+    Network network;
+    std::vector<std::string> received_messages;
     bool has_new_messages;
-    Vector<qchat::Ascii*> ascii_messages;
+    std::deque<qchat::Ascii> ascii_messages;
     bool force_redraw;
-    uint32_t current_time;
-
-
-    std::map<Packet::Commands, RingBuffer<std::unique_ptr<Packet>>> pending_command_packets;
-    uint32_t last_wifi_check;
-    bool is_connected_to_wifi;
-    uint32_t attempt_to_connect_timeout;
+    uint32_t current_tick;
 
     uint32_t last_test_packet = 0;
 

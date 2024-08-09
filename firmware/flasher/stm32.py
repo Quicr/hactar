@@ -1,12 +1,17 @@
 import serial
 import time
 import functools
+import os
+import sys
+import json
 from types import SimpleNamespace
 import uart_utils
 from ansi_colours import BW, BC, BG, BR, BB, BY, BM, NW, NY
 
-# https://www.manualslib.com/download/1764455/St-An3155.html
+# https://www.st.com/resource/en/application_note/an3155-usart-protocol-used-in-the-stm32-bootloader-stmicroelectronics.pdf
 
+# TODO Put the sector verify code somewhere
+# TODO clean up full verify and write flash
 
 class stm32_flasher:
     ACK = 0x79
@@ -30,29 +35,90 @@ class stm32_flasher:
         "readout_unprotect": 0x92
     })
 
-    # Depending on the sector, we can add the bytes together iteratively.
-    User_Sector_Start_Address = 0x08000000
-
-    Sectors = [
-        SimpleNamespace(**{"size": 0x004000, "addr": 0x08000000}),
-        SimpleNamespace(**{"size": 0x004000, "addr": 0x08004000}),
-        SimpleNamespace(**{"size": 0x004000, "addr": 0x08008000}),
-        SimpleNamespace(**{"size": 0x004000, "addr": 0x0800C000}),
-        SimpleNamespace(**{"size": 0x010000, "addr": 0x08010000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x08020000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x08040000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x08060000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x08080000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x080A0000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x080C0000}),
-        SimpleNamespace(**{"size": 0x020000, "addr": 0x080E0000}),
-    ]
+    config_file: dict = None
+    chip_config: dict = None
 
     def __init__(self, uart: serial.Serial):
         self.uart = uart
+        self.upload_enabled = False
+        self.synced = False
+        self.uid = None
+        self.chip_config_config = None
+        self.available_commands = None #TODO
+        self.use_exception = True
+
+        self.write_started = False
+        self.last_write_addr = 0
+        self.last_data_addr = 0
+        self.write_data = None
+        self.last_verify_addr = 0
+        self.last_verify_data_addr = 0
+
+        self.erase_started = False
+        self.sectors_to_delete = []
+        self.sectors_deleted = []
+
+
+        config_path = f"{os.path.dirname(os.path.abspath(sys.argv[0]))}/"
+        config_path += "stm32_configurations.json"
+
+        if (not os.path.isfile(config_path)):
+            raise Exception(
+                f"Failed to find configuration ${config_path} in program directory")
+
+        self.configs_file = json.load(open(f"{config_path}"))
+
+    def SetChipConfig(self, pid: int):
+        print(f"Retrieving configurations for chip ID: {BC}{hex(pid)}{NW}")
+        # Get the config from file returns an error if its missing
+        if str(pid) not in self.configs_file.keys():
+            raise Exception(f"Chip ID: {pid}. Not in configuration file")
+
+        self.chip_config = self.configs_file[str(pid)]
 
     def CalculateChecksum(self, arr: [int]):
         return functools.reduce(lambda a, b: a ^ b, arr).to_bytes(1, "big")
+
+    def GetSectorsForFirmware(self, data_len: int):
+        """ Gets the sectors, starting from zero, that the firmware will fill.
+
+        """
+        # Attempt to get the chip uid
+        self.CheckInit()
+
+        if (self.chip_config == None):
+            raise Exception("Chip configuration has not been set")
+
+        sectors = 0
+        total_sectors = len(self.chip_config["sectors"])
+        while (data_len > 0):
+            data_len -= self.chip_config["sectors"][sectors]["size"]
+            sectors += 1
+
+            if (sectors >= total_sectors):
+                raise Exception("Not enough flash memory for binary")
+
+        return [i for i in range(sectors)]
+
+    def HandleReply(self, reply_res, caller, exception_str:str, output_suc=False):
+        if (reply_res == self.NACK):
+            print(f"{caller}: {BR}FAILED{NW}")
+            self.synced = False
+            if (self.use_exception):
+                raise Exception(f"{exception_str} - type: NACK")
+            else:
+                return False
+        elif (reply_res == self.NO_REPLY):
+            print(f"{caller}: {BY}NO REPLY{NW}")
+            self.synced = False
+            if (self.use_exception):
+                raise Exception(f"{exception_str} - type: NO REPLY")
+            else:
+                return False
+
+        if (output_suc):
+            print(f"{caller}: {BG}SUCCESSFUL{NW}")
+        return True
 
     def SendSync(self, retry_num: int = 5):
         """ Sends the sync byte 0x7F and waits for an self.ACK from the device.
@@ -61,15 +127,30 @@ class stm32_flasher:
         reply = uart_utils.WriteByteWaitForACK(self.uart, self.Commands.sync,
                                                retry_num, False)
 
-        # Check if ack or self.nack
-        if (reply == self.NACK):
-            print(f"Activating device: {BR}FAILED{NW}")
-            raise Exception("Failed to Activate device")
-        elif (reply == -1):
-            print(f"Activating device: {BY}NO REPLY{NW}")
-            raise Exception("Failed to Activate device")
+        self.synced = self.HandleReply(reply, "Sync", "Failed to activate device", True)
 
-        print(f"Activating device: {BG}SUCCESS{NW}")
+        return self.synced
+
+    def CheckSync(self):
+        if (self.synced):
+            return True
+
+        return self.SendSync()
+
+    def CheckUid(self):
+        if (self.uid != None):
+            return True
+
+        return self.SendGetID()
+
+    def CheckInit(self):
+        if (not self.CheckSync()):
+            return False
+
+        if (not self.CheckUid()):
+            return False
+
+        return True
 
     def SendGetID(self, retry_num: int = 5):
         """ Sends the GetID command and it's compliment.
@@ -78,42 +159,41 @@ class stm32_flasher:
 
             returns pid
         """
-        res = uart_utils.WriteByteWaitForACK(
+
+        self.CheckSync()
+
+        reply = uart_utils.WriteByteWaitForACK(
             self.uart, self.Commands.get_id, 1)
 
-        if res == self.NACK:
-            raise Exception("NACK was received during GetID")
-        elif res == -1:
-            raise Exception("No reply was received during GetID")
+        self.HandleReply(reply, "Command GetID", "Failed to GetID", False)
 
         # Read the next byte which should be the num of bytes - 1
-
         num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
 
         # NOTE there is a bug in the bootloader for stm, or there is a
-        # inaccuracy in the an3155 datasheet that says that a single self.ACK
+        # inaccuracy in the an3155 datasheet that says that a single ACK
         # is sent after receiving the get_id command.
-        # But in reality 90% of the time two self.ACK bytes are sent
+        # But in reality 90% of the time two ACK bytes are sent
         if (num_bytes == self.ACK):
             num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
-        elif (num_bytes == self.NACK):
-            raise Exception("NACK was received while trying to get the "
-                            "num bytes in GetID")
+        else:
+            self.HandleReply(num_bytes, "GetID num bytes to receive",
+                "Failed to get the number of bytes to receive for the chip's uid")
+
 
         # Get the pid which should be N+1 bytes
-        pid = uart_utils.WaitForBytesExcept(self.uart, num_bytes+1)
+        pid_bytes = uart_utils.WaitForBytesExcept(self.uart, num_bytes+1)
 
         # Wait for an ack
         res = uart_utils.WaitForBytesExcept(self.uart, 1)
-        if (res == self.NACK):
-            raise Exception("A self.NACK was received at the end of GetID")
-        elif res == -1:
-            raise Exception("No reply was received during GetID")
+        self.HandleReply(res, "GetID PID ACK", "Failed to get PID", False)
 
-        h_pid = hex(int.from_bytes(bytes(pid), "big"))
-        print(f"Chip ID: {BC}{h_pid}{NW}")
+        self.uid = int.from_bytes(bytes(pid_bytes), "big")
+        print(f"Chip ID: {BC}{hex(self.uid)}{NW}")
 
-        return pid
+        self.SetChipConfig(self.uid)
+
+        return True
 
     def SendGet(self, retry_num: int = 5):
         """ Sends the Get command and it's compliment.
@@ -122,11 +202,12 @@ class stm32_flasher:
 
             returns all available commands
         """
+        self.CheckInit()
+
         reply = uart_utils.WriteByteWaitForACK(
             self.uart, self.Commands.get, retry_num)
-        if (reply == self.NACK):
-            raise Exception("NACK was received during Get Commands")
 
+        self.HandleReply(reply, "Get Commands", "Failed to retrieve commands available to this chip", False)
         # Read the next byte which should be the num of bytes - 1
         #  for some reason they minus off one even tho 2 bytes come in
         num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
@@ -146,8 +227,7 @@ class stm32_flasher:
                 if (val == cmd):
                     available_commands.append(key)
 
-        if (reply == self.NACK):
-            raise Exception("A self.NACK was received at the end of GetID")
+        self.HandleReply(reply, "Get Commands Receive", "Failed to get available commands", False)
 
         print(f"Bootloader version: {BM}{bootloader_verison}{NW}")
 
@@ -169,24 +249,23 @@ class stm32_flasher:
             returns [bytes] contents of memory [address:address + num_bytes]
 
         """
+        self.CheckInit()
+
         reply = uart_utils.WriteByteWaitForACK(self.uart,
                                                self.Commands.read_memory,
                                                retry_num)
-        if (reply == self.NACK):
-            raise Exception("NACK was received during Read Memory command")
+
+        self.HandleReply(reply, "Read memory command", "Failed to read memory command", False)
 
         memory_addr = address + self.CalculateChecksum(address)
 
         # Write the memory we want to read from and the checksum
         reply = uart_utils.WriteBytesWaitForACK(self.uart, memory_addr, 1)
-        if (reply == self.NACK):
-            raise Exception("NACK was received after sending memory address to"
-                            " read")
+
+        self.HandleReply(reply, "Read memory set address", "Failed to set address for read memory command", False)
 
         reply = uart_utils.WriteByteWaitForACK(self.uart, num_bytes-1, 1)
-        if (reply == self.NACK):
-            raise Exception("NACK was received after sending how many bytes to"
-                            " read")
+        self.HandleReply(reply, "Read memory num bytes available", "Failed to read number of bytes for memory command", False)
 
         recv_data = uart_utils.WaitForBytesExcept(self.uart, num_bytes)
         if type(recv_data) is int:
@@ -194,160 +273,262 @@ class stm32_flasher:
 
         return recv_data
 
-    def SendExtendedEraseMemory(self, sectors: [int],
-                                special: bool, retry_num: int = 5):
+    def SendExtendedEraseMemory(self, sectors_to_delete: [int],
+                                special: bool,
+                                fast_verify: bool,
+                                recover: bool):
         """ Sends the Erase memory command and it's compliment.
             Command = 0x44
             Compliment = 0xBB = 0x44 ^ 0xFF
 
-            returns self.ACK/self.NACK/0
+            returns true
         """
-        reply = uart_utils.WriteByteWaitForACK(
-            self.uart, self.Commands.extended_erase, 5)
-        if (reply == self.NACK):
-            raise Exception("NACK was received after sending erase command")
-        elif (reply == self.NO_REPLY):
-            raise Exception("No reply was received after sending erase"
-                            " command")
+        if recover:
+            if (not self.erase_started):
+                self.sectors_to_delete = sectors_to_delete
+                self.sectors_deleted = []
+                self.erase_started = True
+        else:
+                self.sectors_to_delete = sectors_to_delete
+                self.sectors_deleted = []
+                self.erase_started = True
 
-        # TODO error check sectors?
+        self.CheckInit()
 
-        # Number of sectors starts at 0x00 0x00. So 0x00 0x00 means
-        # delete 1 sector
-        # An exception is thrown if the number is bigger than 2 bytes
-        num_sectors = [(len(sectors) - 1).to_bytes(2, "big")]
-
-        # Turn the sectors received into two byte elements
-        byte_sectors = [x.to_bytes(2, "big") for x in sectors]
-
-        # Join the num sectors and the byte sectors into one list
-        data = b''.join(num_sectors + byte_sectors)
-
-        # Calculate the checksum
-        checksum = [self.CalculateChecksum(data)]
-
-        # Join all the data together
-        data = b''.join(num_sectors + byte_sectors + checksum)
-
-        print(f"Erase: Sectors {NY}{sectors}{NW}")
         print(f"Erase: {BB}STARTED{NW}")
+        print(f"Erase  {BB}SECTORS{NW} {NY}{self.sectors_to_delete}{NW}")
+        print(f"Erased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}", end="")
+        while self.sectors_to_delete:
+            reply = uart_utils.WriteByteWaitForACK(
+                self.uart, self.Commands.extended_erase, 1)
 
-        # Give more time to reply with the deleted sectors
-        self.uart.timeout = 10
-        reply = uart_utils.WriteBytesWaitForACK(self.uart, data, 1)
-        # Revert the change back to two seconds
-        self.uart.timeout = 2
-        if (reply == -1):
-            raise Exception("Failed to erase, no reply received")
-        elif (reply == self.NACK):
-            raise Exception("Failed to erase")
+            self.HandleReply(reply, "\nExtended Erase", "Extended erase failed")
 
+            # Number of sectors starts at 0x00 0x00. So 0x00 0x00 means
+            # delete 1 sector
+            # An exception is thrown if the number is bigger than 2 bytes
+            num_sectors = [int(0).to_bytes(2, "big")]
 
-        # TODO verify erase but just check the first 256 bytes of each
-        # Sector
-        print(f"Erase Verify: {BB}BEGIN{NW}")
+            # Turn the sectors received into two byte elements
+            sector_in_bytes = [self.sectors_to_delete[0].to_bytes(2, "big")]
 
-        mem_bytes_sz = 256
-        expected_mem = [255] * mem_bytes_sz
-        mem = [0] * mem_bytes_sz
-        read_count = 0
-        bytes_verified = 0
-        total_bytes_to_verify = 0
-        for sector in sectors:
-            total_bytes_to_verify += self.Sectors[sector].size
-        percent_verified = int((bytes_verified / total_bytes_to_verify)*100)
+            # Join the num sectors and the byte sectors into one list
+            data = b''.join(num_sectors + sector_in_bytes)
 
-        for sector in sectors:
-            memory_address = self.Sectors[sector].addr
-            end_of_sector = (self.Sectors[sector].addr + 1024)
-            while (memory_address != end_of_sector):
-                read_count = 0
-                mem = [0] * mem_bytes_sz
-                percent_verified = int(
-                    (bytes_verified / total_bytes_to_verify)*100)
-                print(f"Verifying erase: {BG}{percent_verified:2}"
-                      f"{NW}% verified", end="\r")
-                while (mem != expected_mem) and read_count != 10:
-                    mem = self.SendReadMemory(memory_address.to_bytes(
-                        4, "big"),
-                        mem_bytes_sz)
-                    read_count += 1
-                    if (mem != expected_mem):
-                        print(f"Sector not verified {sector} retry"
-                              f" {read_count}")
+            # Calculate the checksum
+            checksum = [self.CalculateChecksum(data)]
 
-                if (read_count == 10 and mem != expected_mem):
-                    print(f"Verifying: {BR}Failed to verify sector "
-                          f"[{sector}]{NW}")
+            # Join all the data together
+            data = b''.join(num_sectors + sector_in_bytes + checksum)
+
+            print(f"\rErased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}", end="")
+
+            # TODO send 1 erase at a time
+            # Give more time to reply with the deleted sectors
+            self.uart.timeout = 5
+            reply = uart_utils.WriteBytesWaitForACK(self.uart, data, 1)
+            # Revert the change back to two seconds
+            self.uart.timeout = 2
+            self.HandleReply(reply, "\nErase memory", "Failed to Erase", False)
+
+            # Update the number of deleted sectors and remove the deleted sector
+            self.sectors_deleted.append(self.sectors_to_delete.pop(0))
+
+        print(f"\rErased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}")
+
+        if (fast_verify):
+            return self.FastEraseVerify(self.sectors_deleted)
+        else:
+            total_bytes = 0
+            for sector in self.sectors_deleted:
+                total_bytes += self.chip_config["sectors"][sector]["size"]
+                print(total_bytes)
+
+            data = bytes([255] * total_bytes)
+            for verify_status in self.FullVerify(data):
+                print(f"Verifying erase: {BG}{verify_status['percent']:.2f}"
+                        f"{NW}% verified", end="\r")
+
+                if (verify_status["failed"]):
+                    print(f"\nVerifying Erase: {BR}Failed to verify address "
+                        f"{hex(verify_status['addr'])}{NW}")
                     return False
 
-                memory_address += mem_bytes_sz
-                bytes_verified += mem_bytes_sz
+            print(f"Verifying erase: {BG}100{NW}% verified")
 
-        # Don't actually need to do the math here
-        print(f"Verifying erase: {BG}100{NW}% verified")
-        print(f"Erase: {BG}COMPLETE{NW}")
+        self.erase_started = False
         return True
 
+    def FullVerify(self, data:bytes):
+        """ Takes a chunk of memory and verifies it sequentially from the start addr
+
+        """
+        # TODO recoverable
+        self.CheckInit()
+
+        Max_Num_Bytes = 256
+        addr = self.chip_config["usr_start_addr"]
+        data_addr = 0
+        data_len = len(data)
+        verify_status = {"addr": addr, "failed": 0, "percent": 0}
+
+        while (data_addr < data_len):
+            verify_status['addr'] = addr
+            verify_status['percent'] = (data_addr / data_len) * 100
+            yield verify_status
+
+            chunk = data[data_addr:data_addr+Max_Num_Bytes]
+            if (not self.FlashCompare(chunk, addr)):
+                verify_status['failed'] = True
+                break
+
+            addr += len(chunk)
+            data_addr += len(chunk)
+
+        verify_status['percent'] = 100
+        yield verify_status
+
+    def FastEraseVerify(self, sectors:[int]):
+        # TODO recoverable
+        self.CheckInit()
+        print(f"Erase Verify: {BB}BEGIN{NW}")
+        Mem_Bytes_Sz = 256
+        expected_mem = bytes([255] * Mem_Bytes_Sz)
+        num_sectors = len(sectors)
+        num_sectors_verified = 0
+
+        for sector in sectors:
+            # Print how much has been verified
+            percent_verified = int(
+                (num_sectors_verified / num_sectors)*100)
+            print(f"Verifying erase: {BG}{percent_verified:2}"
+                    f"{NW}% verified", end="\r")
+
+            # Get the next address to verify
+            addr = self.chip_config["sectors"][sector]["addr"]
+
+            # Verify the flash at that memory location
+            if not (self.FlashCompare(expected_mem, addr)):
+                print(f"Verifying: {BR}Failed to verify sector "
+                        f"[{sector}]{NW}")
+                return False
+
+            # Verified that sector, continue on
+            num_sectors_verified += 1
+        print(f"Verifying erase: {BG}100{NW}% verified")
+        print(f"Erase: {BG}COMPLETE{NW}")
+
+        return True
+
+
+    def FlashCompare(self, chunk:bytes, addr:int):
+        """ Compares a byte array to the flash at the provided addr.
+            True if equal, False otherwise
+        """
+        self.CheckInit()
+
+        # Get the flash chunk from the address of equal size to chunk
+        Max_Attempts = 10
+        read_count = 0
+        mem = [0] * len(chunk)
+
+        while (mem != chunk and read_count < Max_Attempts):
+            mem = bytes(self.SendReadMemory(addr.to_bytes(4, "big"), len(chunk)))
+            read_count += 1
+
+        return chunk == mem
+
+    def SendGo(self, address: int, num_retry: int = 1):
+        """ Sends the Go command according to the passed in address
+        """
+        self.CheckInit()
+
+        reply = uart_utils.WriteByteWaitForACK(self.uart,
+            self.Commands.go, num_retry)
+
+        self.HandleReply(reply, "Go Command", "Failed to send Go Command")
+
+        # Convert the address to bytes
+        addr_bytes = (address).to_bytes(4, "big")
+
+        # Get the checksum for the address
+        checksum = self.CalculateChecksum(addr_bytes)
+
+        # Append the checksum to the address bytes
+        addr_bytes += checksum
+
+        # Send the data and get a reply
+        reply = uart_utils.WriteBytesWaitForACK(self.uart,
+                                                addr_bytes,
+                                                num_retry)
+
+
+        self.HandleReply(reply, f"Jump to address {BB}{hex(address)}{BW}",
+            f"Failed to jump to address {hex(address)}", True)
+
     def SendWriteMemory(self, data: bytes, address: int,
-                        num_retry: int = 5):
+            recover: bool):
         """ Sends the Write memory command and it's compliment.
             Then writes the address bytes and its checksum
             Then writes the entire data stream
             Command = 0x31
             Compliment = 0xCE = 0x31 ^ 0xFF
 
-            returns self.ACK if successful
+            returns true if successful
         """
 
         Max_Num_Bytes = 256
 
-        # Send the address and the checksum
-        addr = address
-        file_addr = 0
 
-        percent_flashed = 0
+        # Check if this function has been ran before by checking the write_data
+        # Also allow a first run in the case where its a new flash
+        if recover:
+            if (not self.write_started):
+                self.last_write_addr = address
+                self.last_data_addr = 0
+                self.write_data = data
+                self.write_started = True
+                self.last_verify_addr = address
+                self.last_verify_data_addr = 0
+        else:
+                self.last_write_addr = address
+                self.last_data_addr = 0
+                self.write_data = data
+                self.write_started = True
+                self.last_verify_addr = address
+                self.last_verify_data_addr = 0
 
-        total_bytes = len(data)
-        self.uart.timeout = 5
+        total_bytes = len(self.write_data)
 
         print(f"Write to Memory: {BB}STARTED{NW}")
-        print(f"Address: {BW}{address:04x}{NW}")
+        print(f"Address: {BW}{self.last_write_addr:04x}{NW}")
         print(f"Byte Stream Size: {BW}{total_bytes}{NW}")
 
-        while file_addr < total_bytes:
-            percent_flashed = (file_addr / total_bytes) * 100
-            print(f"Flashing: {BG}{percent_flashed:2.2f}{NW}%", end="\r")
+        # Either a exception or a positive return will break out
+        self.CheckInit()
+
+        self.uart.timeout = 1
+
+        while self.last_data_addr < total_bytes:
+            percent_flashed = (self.last_data_addr / total_bytes) * 100
+            print(f"\rFlashing: {BG}{percent_flashed:2.2f}{NW}%", end="")
 
             reply = uart_utils.WriteByteWaitForACK(
                 self.uart, self.Commands.write_memory, 1)
-            if (reply == self.NACK):
-                raise Exception("NACK was received after sending write "
-                                "command")
-            elif (reply == -1):
-                raise Exception("No reply was received after sending write "
-                                "command")
+            self.HandleReply(reply, "Write Command", "Failed to send Write command", False)
 
-            checksum = self.CalculateChecksum(addr.to_bytes(4, "big"))
-            write_address_bytes = addr.to_bytes(4, "big") + checksum
+            # Send the address and the checksum
+            checksum = self.CalculateChecksum(self.last_write_addr.to_bytes(4, "big"))
+            write_address_bytes = self.last_write_addr.to_bytes(4, "big") + checksum
             reply = uart_utils.WriteBytesWaitForACK(self.uart,
                                                     write_address_bytes, 1)
 
-            if (reply == self.NACK):
-                print("")
-                for b in write_address_bytes:
-                    print(b)
-                raise Exception("NACK was received after sending write"
-                                f"address bytes command for address"
-                                f"{addr:04x}")
-            elif (reply == -1):
-                raise Exception("No reply was received after sending write"
-                                f"address bytes command for address"
-                                f"{addr:04x}")
+            self.HandleReply(reply, "\nWrite address bytes", "Failed to write the address bytes to the chip");
 
             # Get the contents of the binary
-            chunk = data[file_addr:file_addr+Max_Num_Bytes]
-            # Chunk size before extra bytes are appended
+            chunk = self.write_data[self.last_data_addr:self.last_data_addr+Max_Num_Bytes]
+
+            # Get the chunk size before padding
             chunk_size = len(chunk)
 
             # Pad the chunk to be a multiple of 4 bytes
@@ -362,72 +543,34 @@ class stm32_flasher:
 
             # Write the chunk to the chip
             reply = uart_utils.WriteBytesWaitForACK(self.uart, chunk, 1)
-            if (reply == self.NACK):
-                raise Exception(f"NACK was received while writing to "
-                                f"addr: {addr}")
-            elif (reply == -1):
-                raise Exception(f"No reply was received while writing to "
-                                f"addr: {addr}")
+            self.HandleReply(reply, f"\nWrite to address {hex(self.last_write_addr)}", f"Failed to write to address {hex(self.last_write_addr)}")
 
             # Shift over by the amount of byte stream bytes were sent
-            file_addr += chunk_size
-            addr += chunk_size
+            self.last_data_addr += chunk_size
+            self.last_write_addr += chunk_size
 
         # Don't need to calculate it here it finished
-        print(f"Flashing: {BG}100.00{NW}%")
+        print(f"\rFlashing: {BG}100.00{NW}%")
 
-        # Verify the written memory by reading the size of the file
-        addr = address
-        file_addr = 0
+        # TODO verify function?
+        while self.last_verify_data_addr < total_bytes:
+            percent_verified = (self.last_verify_data_addr / total_bytes)*100
+            print(f"\rVerifying write: {BG}{percent_verified:2.2f}{NW}"
+                f"% verified", end="")
 
-        while file_addr < total_bytes:
-            percent_verified = (file_addr / total_bytes)*100
-            print(f"Verifying write: {BG}{percent_verified:2.2f}{NW}"
-                  f"% verified", end="\r")
-
-            chunk = data[file_addr:file_addr+Max_Num_Bytes]
-            mem = bytes(self.SendReadMemory(addr.to_bytes(4, "big"),
+            chunk = self.write_data[self.last_verify_data_addr:self.last_verify_data_addr+Max_Num_Bytes]
+            mem = bytes(self.SendReadMemory(self.last_verify_addr.to_bytes(4, "big"),
                         len(chunk)))
 
             if chunk != mem:
                 raise Exception(
-                    f"Failed to verify at memory address {hex(addr)}")
+                    f"\nFailed to verify at memory address {hex(self.last_verify_addr)}")
 
-            addr += len(mem)
-            file_addr += len(chunk)
+            self.last_verify_addr += len(mem)
+            self.last_verify_data_addr += len(chunk)
 
-        print(f"Verifying write: {BG}100.00{NW}% verified")
+        print(f"\rVerifying write: {BG}100.00{NW}% verified")
         print(f"Write: {BG}COMPLETE{NW}")
 
-        return self.ACK
-
-    def ProgramSTM(self, binary_path):
-
-        # Send the command to the mgmt chip that we want to program the UI chip
-        uart_utils.SendUploadSelectionCommand(self.uart, "ui_upload")
-        # time.sleep(0.5)
-        self.SendSync(2)
-        time.sleep(0.5)
-        # Sometimes a small delay is required otherwise it won't
-        # continue on correctly
-
-        self.SendGetID(1)
-
-        self.SendGet()
-
-        mem = self.SendReadMemory(bytes([0x08, 0x00, 0x00, 0x00]), 256)
-        print(f"Reading memory: {BG}SUCCESSFUL{NW}")
-        print(f"Number of bytes read from memory: {BM}{len(mem)}\
-            {NW}")
-
-        time.sleep(1)
-
-        # TODO get the size of our binary file and erase the
-        # sectors that it would fit into
-        sectors = [x for x in range(6)]
-        self.SendExtendedEraseMemory(sectors, False)
-
-        firmware = open(binary_path, "rb").read()
-        self.SendWriteMemory(firmware, self.User_Sector_Start_Address, 5)
-
+        self.write_started = False
         return True

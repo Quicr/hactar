@@ -8,7 +8,9 @@ public:
     RoomView(UserInterfaceManager& manager,
              Screen& screen,
              Q10Keyboard& keyboard,
-             SettingManager& setting_manager);
+             SettingManager& setting_manager,
+             SerialPacketManager& serial,
+             Network& network);
     ~RoomView();
 protected:
     void AnimatedDraw();
@@ -31,5 +33,5 @@ private:
     uint32_t last_num_rooms;
 
     // UI variables
-    String request_msg;
+    std::string request_msg;
 };

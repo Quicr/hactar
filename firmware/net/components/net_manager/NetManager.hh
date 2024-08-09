@@ -1,6 +1,7 @@
 #pragma once
 
-#include "SerialManager.hh"
+#include "SerialPacketManager.hh"
+#include "SerialPacket.hh"
 #include "Wifi.hh"
 #include "qsession.h"
 
@@ -9,25 +10,28 @@
 class NetManager
 {
 public:
-    NetManager(SerialManager* _ui_layer,
+    NetManager(SerialPacketManager& ui_layer,
+                Wifi& wifi,
                 std::shared_ptr<QSession> qsession,
                 std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects);
 
+    void Update();
     static void HandleSerial(void* param);
     static void HandleNetwork(void* param);
 private:
-    void HandleSerialCommands(const std::unique_ptr<Packet>& rx_packet);
-    void HandleQChatMessages(uint8_t message_type, const std::unique_ptr<Packet>& rx_packet, size_t offset);
+    void HandleSerialCommands();
+    void HandleQChatMessages(uint8_t message_type, const std::unique_ptr<SerialPacket>& rx_packet, size_t offset);
     static void HandleWatchMessage(void* watch);
 
     void HandleQSessionMessages(QuicrObject&& obj);
 
     void GetSSIDsCommand();
-    void ConnectToWifiCommand(const std::unique_ptr<Packet>& packet);
+    void ConnectToWifiCommand(const std::unique_ptr<SerialPacket>& packet);
     void GetWifiStatusCommand();
     void GetRoomsCommand();
 
-    SerialManager* ui_layer;
+    SerialPacketManager& ui_layer;
+    Wifi& wifi;
     std::optional<std::thread> handler_thread;
     static constexpr auto inbound_object_timeout = std::chrono::milliseconds(100);
     std::shared_ptr<QSession> quicr_session;

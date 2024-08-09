@@ -2,15 +2,26 @@
 #include <utility>
 // TODO function for is network, or is debug
 // TODO Make a inherited class that generally knows the data and type positions
+// TODO flip a bit in type to determine if the message is main or net?
+// or a couple bits.
 
 /* Standard SerialPacket
 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  type   |      id      |       len        |.......data........|
+|      type      |               id              |    len...    |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                          data                                 |
-|                          ....                                 |
+|      ...len  |                 data...                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                          ...data...                           |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+type = 1 byte
+id = 2 bytes
+len = 2 bytes
+data = len bytes
+
 */
 
 /* Message SerialPacket
@@ -23,68 +34,110 @@ creation_time = 6 bytes
 
 // TODO add start patterns
 
-// TODO rewrite SerialPacket to use 8 bits instead of 32 bits
-
+// TODO move all other enum classes into appropriate classes
 
 // @note This is assumed to be little endian architectures
 class SerialPacket
 {
 public:
-    enum Types
+    enum class Types
     {
         Ok = 1,
         Error,
         Busy,
         Debug,
         LocalDebug,
-        Message,
+        QMessage,
         Setting,
-        Command,
+        Command
     };
 
-    enum Settings
+    enum class QMessages
+    {
+        // TODO use this instead?
+        // pretty much move it to qchat.
+        Text = 1,
+        GetRooms,
+        WatchRoom,
+        UnwatchRoom
+        // TODO
+    };
+
+    enum class Settings
     {
         // TODO
     };
 
-    enum Commands
+    enum class Commands
     {
-        SSIDs = 1,
-        WifiConnect,
-        WifiStatus
+        // Commands for wifi
+        Wifi = 1,
+
+        // TODO move into qmessages
+        RoomsGet
     };
 
-    enum MessageTypes
+    enum class User
     {
-        Ascii = 1,
-        Watch,
-        Unwatch
+        UserGet = 1,
+        UserLogin,
+        UserLogout
     };
 
-    // TODO important to have different data lengths for each type..
+    enum class WifiTypes
+    {
+        Status = 1,
+        SSIDs,
+        Connect,
+        Disconnect,
+        Disconnected,
+        FailedToConnect,
+        SignalStrength,
+    };
 
     SerialPacket(const unsigned int created_at = 0,
-        const unsigned int capacity = 8,
+        const unsigned int capacity = 1,
         const bool dynamic = true):
         created_at(created_at),
         capacity(capacity),
-        size(0),
         dynamic(dynamic),
+        size(0),
         retries(0),
-        data(new unsigned char[capacity]())
+        data(new unsigned char[capacity]{0})
     {
     }
 
     // Copy
-    SerialPacket(const SerialPacket& other)
+    SerialPacket(const SerialPacket& other) :
+        created_at(other.created_at),
+        capacity(other.capacity),
+        dynamic(other.dynamic),
+        size(other.size),
+        retries(other.retries),
+        data(new unsigned char[capacity]{0})
     {
-        *this = other;
+        for (unsigned int i = 0; i < capacity; ++i)
+        {
+            data[i] = other.data[i];
+        }
+
     }
 
     // Move
-    SerialPacket(SerialPacket&& other) noexcept
+    SerialPacket(SerialPacket&& other) noexcept :
+        created_at(other.created_at),
+        capacity(other.capacity),
+        dynamic(other.dynamic),
+        size(other.size),
+        retries(other.retries),
+        data(other.data)
     {
-        *this = std::move(other);
+        other.created_at = 0;
+        other.capacity = 0;
+        other.dynamic = 0;
+        other.size = 0;
+        other.retries = 0;
+        other.data = nullptr;
     }
 
     ~SerialPacket()
@@ -94,7 +147,10 @@ public:
 
     SerialPacket& operator=(const SerialPacket& other)
     {
-        delete [] data;
+        if (data)
+        {
+            delete [] data;
+        }
         created_at = other.created_at;
         capacity = other.capacity;
         size = other.size;
@@ -113,7 +169,10 @@ public:
     SerialPacket& operator=(SerialPacket&& other)
     {
         // Move operator
-        delete [] data;
+        if (data)
+        {
+            delete [] data;
+        }
 
         created_at = other.created_at;
         capacity = other.capacity;
@@ -131,14 +190,26 @@ public:
         return data[idx];
     }
 
+    // template<typename T, bool = std::is_arithmetic<T>::value>
+    // inline void SetData(const T val)
+    // {
+    //     UpdateData(val, size, -1);
+    // }
+
     template<typename T, bool = std::is_arithmetic<T>::value>
     inline void SetData(const T val,
-        unsigned int& offset,
-        const int num_bytes = -1)
+        unsigned int num_bytes)
     {
-        offset += UpdateData(val, offset, num_bytes);
+        UpdateData(val, size, num_bytes);
     }
 
+    template<typename T, bool = std::is_arithmetic<T>::value>
+    inline void SetData(const T val,
+        unsigned int offset,
+        const int num_bytes)
+    {
+        UpdateData(val, offset, num_bytes);
+    }
 
     template <typename T, typename K, bool = std::is_integral<K>::value>
     typename std::enable_if<!std::is_lvalue_reference<K>::value, void>::type
@@ -165,7 +236,7 @@ public:
         }
     }
 
-    template <typename T>
+    template <typename T, typename std::enable_if<std::is_fundamental<T>::value, T>::type=0>
     T GetData(const unsigned int offset, const int num_bytes) const
     {
         size_t byte_width = sizeof(T);
@@ -175,7 +246,7 @@ public:
         }
 
         T output = 0;
-        GetData(output, offset, num_bytes);
+        GetData(output, offset, byte_width);
 
         return output;
     }
@@ -206,11 +277,16 @@ public:
     {
         unsigned char* buffer = new unsigned char[capacity];
 
-        for (int i = 0; i < capacity; ++i)
+        for (unsigned int i = 0; i < capacity; ++i)
         {
             buffer[i] = data[i];
         }
         return buffer;
+    }
+
+    unsigned char* Data() const
+    {
+        return data;
     }
 
     void SetCapacity(unsigned int new_capacity)
@@ -219,7 +295,7 @@ public:
             new_capacity = 1;
 
         // Make new data
-        unsigned char* new_data = new unsigned char[new_capacity] {};
+        unsigned char* new_data = new unsigned char[new_capacity]{0};
 
         // Copy the data
         unsigned int iter = 0;
@@ -286,7 +362,7 @@ protected:
         {
             // Resize
             if (!dynamic) return 0;
-            while (offset + in_sz > capacity)
+            while (offset + in_sz >= capacity)
             {
                 // Double the size lazily
                 DoubleCapacity();
@@ -323,8 +399,8 @@ protected:
     // TODO rename created_at
     unsigned int created_at;
     unsigned int capacity;
-    unsigned int size; // last byte used
     bool dynamic;
+    unsigned int size; // last byte used
     unsigned int retries;
     unsigned char* data;
 };

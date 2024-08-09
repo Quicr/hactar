@@ -1,12 +1,13 @@
 #include "TeamView.hh"
 #include "UserInterfaceManager.hh"
-#include "ChatView.hh"
 
 TeamView::TeamView(UserInterfaceManager& manager,
-                   Screen& screen,
-                   Q10Keyboard& keyboard,
-                   SettingManager& setting_manager)
-    : ViewInterface(manager, screen, keyboard, setting_manager)
+    Screen& screen,
+    Q10Keyboard& keyboard,
+    SettingManager& setting_manager,
+    SerialPacketManager& serial,
+    Network& network)
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network)
 {
 }
 
@@ -43,8 +44,8 @@ void TeamView::Draw()
     if (usr_input.length() > last_drawn_idx || redraw_input)
     {
         // Shift over and draw the input that is currently in the buffer
-        String draw_str;
-        draw_str = usr_input.substring(last_drawn_idx);
+        std::string draw_str;
+        draw_str = usr_input.substr(last_drawn_idx);
         last_drawn_idx = usr_input.length();
         DrawInputString(draw_str);
     }

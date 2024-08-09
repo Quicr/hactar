@@ -1,26 +1,28 @@
 #pragma once
 
 #include "ViewInterface.hh"
-#include "String.hh"
+#include <string>
 
 class FirstBootView : public ViewInterface
 {
 public:
     FirstBootView(UserInterfaceManager& manager,
-                  Screen& screen,
-                  Q10Keyboard& keyboard,
-                  SettingManager& setting_manager);
+             Screen& screen,
+             Q10Keyboard& keyboard,
+             SettingManager& setting_manager,
+             SerialPacketManager& serial,
+             Network& network);
     ~FirstBootView();
 
 protected:
-    enum State {
+    enum class State {
         Username,
         Passcode,
         Wifi,
         Final
     };
 
-    enum WifiState {
+    enum class WifiState {
         SSID,
         Password,
         Connecting,
@@ -37,15 +39,19 @@ private:
     void SetWifi();
     void SetAllDefaults();
 
+    void DrawSSIDs();
+
+    void SetSSID();
+
     // Update functions
     void UpdateConnecting();
 
     State state;
-    String request_message;
+    std::string request_message;
     WifiState wifi_state;
-    std::map<uint8_t, String> ssids;
-    String ssid;
-    String password;
+    const std::map<uint8_t, std::string>* ssids;
+    std::string ssid;
+    std::string password;
     uint32_t state_update_timeout;
     uint8_t num_connection_checks;
 };

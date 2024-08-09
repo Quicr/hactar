@@ -1,15 +1,17 @@
 #pragma once
 
 #include "ViewInterface.hh"
-#include "String.hh"
+#include <string>
 
 class LoginView : public ViewInterface
 {
 public:
     LoginView(UserInterfaceManager& manager,
-              Screen& screen,
-              Q10Keyboard& keyboard,
-              SettingManager& setting_manager);
+             Screen& screen,
+             Q10Keyboard& keyboard,
+             SettingManager& setting_manager,
+             SerialPacketManager& serial,
+             Network& network);
     ~LoginView();
 protected:
     void AnimatedDraw();

@@ -3,7 +3,10 @@ import sys
 import glob
 import time
 import serial
+import serial.tools.list_ports
+import uart_utils
 import stm32
+import hactar_stm32
 import esp32
 from ansi_colours import BB, BG, BR, BW, NW
 
@@ -15,7 +18,8 @@ def SerialPorts(uart_config):
     # Get all ports
     ports = []
     if sys.platform.startswith("win"):
-        ports = [f'COM{i}' for i in range(1, 256)]
+        coms = list(serial.tools.list_ports.comports())
+        ports = [port for (port, _, _) in coms]
     elif (sys.platform.startswith('linux') or
           sys.platform.startswith('cygwin')):
         ports = glob.glob('/dev/ttyUSB[0-9]*')
@@ -24,6 +28,7 @@ def SerialPorts(uart_config):
     else:
         raise EnvironmentError("Unsupported platform")
 
+    print(f"Ports available: {len(ports)} [{ports}]")
     result = []
     for port in ports:
         try:
@@ -62,15 +67,10 @@ def main():
                                  "Multiple chips: ui+net, or ui+net+mgmt, etc",
                                  default="",
                                  required=True)
-        parser.add_argument("--mgmt_binary_path",
-                            help="Path to the mgmt binary",
-                            default="")
-        parser.add_argument("--ui_binary_path",
-                            help="Path to where the ui binary",
-                            default="")
-        parser.add_argument("--net_build_path",
-                            help="Path to where the net binaries can be found",
-                            default="")
+        parser.add_argument("-bin", "--binary_path",
+                            help="Path to the binary",
+                            default="",
+                            required=True)
 
         args = parser.parse_args()
 
@@ -98,6 +98,7 @@ def main():
         for port in ports:
             programmed = False
             while not programmed:
+                # programmed = True
                 try:
                     uart = serial.Serial(
                         port=port,
@@ -107,32 +108,98 @@ def main():
                     print(f"Opened port: {BB}{port}{NW} "
                           f"baudrate: {BG}{args.baud}{NW}")
 
-                    if ("mgmt" in args.chip and args.mgmt_binary_path != ""):
+                    # TODO use oop inheritance
+                    if ("mgmt" in args.chip):
+                        print(f"{BW}Starting MGMT Upload{NW}")
+                        stm32_flasher = stm32.stm32_flasher(uart)
+                        programmed = ProgramHactarSTM(stm32_flasher,
+                                                      args.chip,
+                                                      args.binary_path, False)
+
+                    if ("ui" in args.chip):
                         print(f"{BW}Starting UI Upload{NW}")
                         stm32_flasher = stm32.stm32_flasher(uart)
-                        programmed = stm32_flasher.ProgramSTM(
-                            args.mgmt_binary_path)
+                        programmed = ProgramHactarSTM(stm32_flasher, args.chip,
+                                                      args.binary_path, True)
 
-                    if ("ui" in args.chip and args.ui_binary_path != ""):
-                        print(f"{BW}Starting UI Upload{NW}")
-                        stm32_flasher = stm32.stm32_flasher(uart)
-                        programmed = stm32_flasher.ProgramSTM(
-                            args.ui_binary_path)
-
-                    if ("net" in args.chip and args.net_build_path != ""):
+                    if ("net" in args.chip):
                         print(f"{BW}Starting Net Upload{NW}")
                         esp32_flasher = esp32.esp32_flasher(uart)
                         programmed = esp32_flasher.ProgramESP(
-                            args.net_build_path)
+                            args.binary_path)
 
-                    print(f"Done flashing {BR}GOODBYE{NW}")
-
+                    print(f"Done Flashing {BR}GOODBYE{NW}")
                     uart.close()
                 except Exception as ex:
-                    print(f"{BR}{ex}{NW}")
+                    print(f"{BR}[Error]{NW} {ex}")
                     uart.close()
+            # End while
     except Exception as ex:
-        print(f"{BR}{ex}{NW}")
+        print(f"{BR}[Error]{NW} {ex}")
+
+
+def RecoverFlashSelection(flasher, chip, recover):
+    trying_to_select = True
+    while trying_to_select:
+        try:
+            flasher.uart.close()
+            flasher.uart.timeout = 2
+            flasher.uart.parity = serial.PARITY_NONE
+            time.sleep(4)
+            flasher.uart.open()
+            uart_utils.FlashSelection(flasher.uart, chip)
+            trying_to_select = False
+        except Exception as ex:
+            if not recover:
+                raise ex
+
+
+def RecoverableEraseMemory(flasher, sectors, chip, recover):
+    finished_erasing = False
+    while (not finished_erasing):
+        try:
+            finished_erasing = flasher.SendExtendedEraseMemory(
+                sectors, False, True, True)
+        except Exception as ex:
+            if (not recover):
+                raise ex
+            print(ex)
+            print(f"Erase: {BB}Recovery mode{NW}")
+            RecoverFlashSelection(flasher, chip, recover)
+
+
+def RecoverableFlashMemory(flasher, firmware, chip, recover):
+    finished_writing = False
+    while (not finished_writing):
+        try:
+            # TODO add a function for getting the start of the address?
+            finished_writing = flasher.SendWriteMemory(
+                firmware, flasher.chip_config["usr_start_addr"], recover)
+        except Exception as ex:
+            if (not recover):
+                raise ex
+            print(ex)
+            print(f"Flashing: {BB}Recovery mode{NW}")
+            RecoverFlashSelection(flasher, chip, recover)
+
+
+def ProgramHactarSTM(flasher, chip, binary_path, recover):
+    uart_utils.FlashSelection(flasher.uart, chip)
+
+    # Get the firmware
+    firmware = open(binary_path, "rb").read()
+
+    # Get the size of memory that we need to erase
+    sectors = flasher.GetSectorsForFirmware(len(firmware))
+
+    RecoverableEraseMemory(flasher, sectors, chip, recover)
+
+    RecoverableFlashMemory(flasher, firmware, chip, recover)
+
+    if (chip == "mgmt"):
+        flasher.SendGo(flasher.chip_config["usr_start_addr"])
+
+    return True
 
 
 main()
