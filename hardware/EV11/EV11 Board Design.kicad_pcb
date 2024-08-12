@@ -423,7 +423,7 @@
 		(path "/f05d56e2-e8c6-4b14-9cb7-536b6e5aff05")
 		(sheetname "Root")
 		(sheetfile "EV11 Board Design.kicad_sch")
-		(attr exclude_from_pos_files)
+		(attr exclude_from_pos_files exclude_from_bom)
 		(fp_circle
 			(center 0 0)
 			(end 0 0.95)
@@ -4828,7 +4828,7 @@
 		(path "/6c88d2b5-58db-4d5d-b22a-63e77a5a3694")
 		(sheetname "Root")
 		(sheetfile "EV11 Board Design.kicad_sch")
-		(attr exclude_from_pos_files)
+		(attr exclude_from_pos_files exclude_from_bom)
 		(fp_circle
 			(center 0 0)
 			(end 0 0.95)
@@ -5348,12 +5348,12 @@
 				)
 			)
 		)
-		(property "JLCPCB Position Offset" "2.2225,0.889"
+		(property "JLCPCB Position Offset" "2.9800,1.2065"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "9e1eb690-e4e8-407b-a5db-8e5ccf64dab5")
+			(uuid "d4f97339-042b-4712-b424-b3c266869169")
 			(effects
 				(font
 					(size 1 1)
@@ -11247,7 +11247,7 @@
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R30"
-			(at -0.5 -1.17 360)
+			(at -0.5 -1.17 0)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "dd0916cd-f4c0-41e5-bd55-5b867d3fcc99")
@@ -11259,7 +11259,7 @@
 			)
 		)
 		(property "Value" "0"
-			(at 0 1.17 360)
+			(at 0 1.17 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "ab5acfd1-d09c-427d-87c7-8ea726d0bc35")
@@ -11271,7 +11271,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "2eb6cd3b-a414-4133-81c9-de4479303729")
@@ -11283,7 +11283,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "3a3f1c69-62f7-4d88-9067-62864fdcb60a")
@@ -11295,7 +11295,7 @@
 			)
 		)
 		(property "Description" "Resistor, US symbol"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "40d5977c-f161-4368-9f08-e7983fe367ab")
@@ -11425,7 +11425,7 @@
 			(uuid "2efb8239-7a92-4d8d-a5b0-e138e355e1c1")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "b3c94691-9c38-472f-8310-53f9f7abaf90")
 			(effects
@@ -20367,6 +20367,19 @@
 				)
 			)
 		)
+		(property "JLCPCB Rotation Offset" "-90"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3d6a9fd7-2c06-4d39-84e8-71c9df2903fd")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(path "/33c256e0-48fe-44e0-8a8e-c3b6cd0d86a1")
 		(sheetname "Root")
 		(sheetfile "EV11 Board Design.kicad_sch")
@@ -25255,6 +25268,45 @@
 				)
 			)
 		)
+		(property "MPN" "PJ-320D"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9e8012f6-1170-4665-a202-4ac6f5fd8012")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB Rotation Offset" "90"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6559dccd-40e3-409b-bc90-0f90d2c32851")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB Position Offset" "0.889,0"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "41023f8c-17a3-43a3-b918-864254337b34")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "Jack*")
 		(path "/5063fd51-5fd5-48b4-bb12-b995d33231a7")
 		(sheetname "Root")
@@ -28228,7 +28280,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Position Offset" "0,-0.254"
+		(property "JLCPCB Position Offset" "0,-0.508"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -29509,7 +29561,7 @@
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C32"
-			(at 0 -1.16 360)
+			(at 0 -1.16 0)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "373100cf-110c-4709-afe5-a26b58af840e")
@@ -29521,7 +29573,7 @@
 			)
 		)
 		(property "Value" "100n"
-			(at 0 1.16 360)
+			(at 0 1.16 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "9c25dbdf-5597-4a34-bc44-6651cbff6ada")
@@ -29533,7 +29585,7 @@
 			)
 		)
 		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "5fa49815-0089-43dd-9552-cdf75656d468")
@@ -29545,7 +29597,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "d5fb5494-892b-495d-b601-33b0c6613542")
@@ -29557,7 +29609,7 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "a9aed5a8-b94c-4e36-aefd-1d1a46330a0b")
@@ -29687,7 +29739,7 @@
 			(uuid "4f67dc84-8434-4bbf-b3b1-adfe93019e06")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "9088ae26-7dce-4bbc-91e8-f97d44ff5f72")
@@ -31781,7 +31833,7 @@
 				)
 			)
 		)
-		(property "Value" "STM32F070CBTx"
+		(property "Value" "STM32F072CBTx"
 			(at 0 5.85 0)
 			(layer "F.Fab")
 			(uuid "4195f996-1c11-4d23-b20a-9b9b65ea799d")
@@ -31805,7 +31857,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://www.st.com/resource/en/datasheet/stm32f070cb.pdf"
+		(property "Datasheet" "https://www.st.com/resource/en/datasheet/stm32f072c8.pdf"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -31818,7 +31870,7 @@
 				)
 			)
 		)
-		(property "Description" "STMicroelectronics Arm Cortex-M0 MCU, 128KB flash, 16KB RAM, 48 MHz, 2.4-3.6V, 37 GPIO, LQFP48"
+		(property "Description" "STMicroelectronics Arm Cortex-M0 MCU, 64KB flash, 16KB RAM, 48 MHz, 2.0-3.6V, 37 GPIO, LQFP48"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -31827,6 +31879,19 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB Part #" "C80488"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9e7bebd1-fef7-495d-909b-174bcdd45041")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -32235,7 +32300,7 @@
 			(layers "F.Cu" "F.Paste" "F.Mask")
 			(roundrect_rratio 0.25)
 			(net 2 "+3.3V")
-			(pinfunction "VDD")
+			(pinfunction "VBAT")
 			(pintype "power_in")
 			(uuid "e107c65a-1e8c-4a0e-ab13-c312a1d4eb28")
 		)
@@ -32585,7 +32650,7 @@
 			(layers "F.Cu" "F.Paste" "F.Mask")
 			(roundrect_rratio 0.25)
 			(net 2 "+3.3V")
-			(pinfunction "VDD")
+			(pinfunction "VDDIO2")
 			(pintype "power_in")
 			(uuid "218ffef8-2471-4b9b-b8b2-73f40370f0e9")
 		)
@@ -58833,8 +58898,8 @@
 				(xy 138.352611 122.297281) (xy 138.449543 122.143015) (xy 138.509717 121.971047) (xy 138.530116 121.79)
 				(xy 138.516849 121.672255) (xy 138.529098 121.602326) (xy 138.575022 121.551462) (xy 138.628826 121.517656)
 				(xy 138.713137 121.433344) (xy 138.775447 121.399321) (xy 138.846263 121.404385) (xy 138.891326 121.433346)
-				(xy 139.401813 121.943833) (xy 139.490051 122.032071) (xy 139.593809 122.1014) (xy 139.709099 122.149155)
-				(xy 139.83149 122.1735) (xy 147.061522 122.1735) (xy 147.129643 122.193502) (xy 147.150617 122.210405)
+				(xy 139.490051 122.032071) (xy 139.593809 122.1014) (xy 139.709099 122.149155) (xy 139.83149 122.1735)
+				(xy 139.956278 122.1735) (xy 147.061522 122.1735) (xy 147.129643 122.193502) (xy 147.150617 122.210405)
 				(xy 150.341055 125.400843) (xy 150.375081 125.463155) (xy 150.370016 125.53397) (xy 150.358648 125.556974)
 				(xy 150.276956 125.686986) (xy 150.223024 125.841116) (xy 150.216783 125.858953) (xy 150.196384 126.04)
 				(xy 150.216783 126.221047) (xy 150.216783 126.221049) (xy 150.216784 126.22105) (xy 150.276957 126.393015)
