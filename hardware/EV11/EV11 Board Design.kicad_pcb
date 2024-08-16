@@ -12651,7 +12651,7 @@
 		(descr "SMD Solder Jumper, 1x1.5mm, rounded Pads, 0.3mm gap, bridged with 1 copper strip")
 		(tags "net tie solder jumper bridged")
 		(property "Reference" "JP3"
-			(at 0.1 -1.8 360)
+			(at 0.1 -1.8 0)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "f1cc2d59-2763-4d2b-b016-a03a3d6c1ec0")
@@ -12663,7 +12663,7 @@
 			)
 		)
 		(property "Value" "SolderJumper_2_Bridged"
-			(at 0 1.9 360)
+			(at 0 1.9 0)
 			(layer "F.Fab")
 			(uuid "d651b8c1-6990-4d80-8fa5-6782f844163e")
 			(effects
@@ -30036,7 +30036,7 @@
 			(pintype "passive")
 			(uuid "88f26305-5ab9-44af-9b69-9c73cc2c5f64")
 		)
-		(model "${KICAD8_3DMODEL_DIR}/RF_Module.3dshapes/ESP32-S3-WROOM-1U.wrl"
+		(model "${KIPRJMOD}/../kicad_libraries/Hactar_Footprints.pretty/ESP32-S3-WROOM-1U.3dshapes/ESP32-S3-WROOM-1U.step"
 			(offset
 				(xyz 0 0 0)
 			)
