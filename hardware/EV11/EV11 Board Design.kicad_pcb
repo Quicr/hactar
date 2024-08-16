@@ -8773,25 +8773,12 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" "C3029345"
+		(property "JLCPCB Part #" "C3029336"
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "05a34781-ec89-42c3-8340-d0c6961e4f5d")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "JLCPCB#" "C3029345"
-			(at 0 0 -90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "0f1feb2e-ab77-4cf9-bae1-780dcb61d235")
 			(effects
 				(font
 					(size 1 1)
@@ -25604,25 +25591,12 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" "C3029345"
+		(property "JLCPCB Part #" "C3029336"
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "aa1b0b1b-9895-4738-96aa-33d4e28437e1")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "JLCPCB#" "C3029345"
-			(at 0 0 -90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "1817c22e-b60e-4340-8ac0-575b42589b8d")
 			(effects
 				(font
 					(size 1 1)
