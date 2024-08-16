@@ -26389,17 +26389,8 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C3029345"
+		(property "JLCPCB Part #" "C3029336"
 			(at 420.37 259.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB#" "C3029345"
-			(at 420.37 280.67 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -33072,17 +33063,8 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C3029345"
+		(property "JLCPCB Part #" "C3029336"
 			(at 420.37 224.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB#" "C3029345"
-			(at 420.37 246.38 0)
 			(effects
 				(font
 					(size 1.27 1.27)
