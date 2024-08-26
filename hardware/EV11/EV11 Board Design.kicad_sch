@@ -27028,7 +27028,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Button_Switch_THT:SW_E-Switch_EG1224_SPDT_Angled"
+		(property "Footprint" "Hactar_Footprints:SW-TH_SS-12D11G5R"
 			(at 96.52 311.15 0)
 			(effects
 				(font
@@ -27055,7 +27055,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C273395"
+		(property "JLCPCB Part #" "C388633"
 			(at 96.52 311.15 0)
 			(effects
 				(font
@@ -27064,7 +27064,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Position Offset" "0.1, 4.1"
+		(property "JLCPCB Position Offset" "0,-3.556"
 			(at 96.52 311.15 0)
 			(effects
 				(font
