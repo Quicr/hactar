@@ -4,6 +4,7 @@
 #include "PortPin.hh"
 #include "Font.hh"
 #include "RingMatrix.hh"
+#include "RingMemoryPool.hh"
 
 #include <string>
 
@@ -63,6 +64,50 @@
 
 class Screen
 {
+private:
+    static constexpr uint32_t Max_Chunk_Size = 16384U;
+    static constexpr uint32_t Chunk_Buffer_Size = 2048UL;
+
+    static constexpr uint32_t Num_Interactions = 20;
+    static constexpr uint32_t Num_Memories = 20;
+    // Guesstimate
+
+    static constexpr uint32_t Memory_Size = 64;
+
+    enum class MemoryStatus
+    {
+        Unused = 0,
+        Not_Started,
+        In_Progress,
+        Complete
+    };
+
+    // TODO packed
+    struct ScreenInteraction
+    {
+        GPIO_PinState dc_level;
+        uint32_t len;
+        bool is_busy;
+        bool use_static;
+        union
+        {
+            uint8_t* data;
+            uint8_t static_data[4];
+        };
+    };
+
+    struct ScreenMemory
+    {
+        // TODO make a callback type.
+        bool (*callback)(Screen& screen, ScreenMemory& memory);
+        uint32_t idx; // Which memory is being used
+        uint32_t len; // How much of the pre-defined memory is being used
+        bool is_busy;
+        MemoryStatus status;
+        uint32_t data_remaining;
+        uint8_t parameters[Memory_Size]; // A bunch of data params to run the next command
+    };
+
 public:
     enum Orientation {
         portrait,
@@ -86,9 +131,7 @@ public:
            Orientation _orientation);
     ~Screen();
 
-    // TODO pg 129 add vertical scroll
-    //https://www.waveshare.com/w/upload/e/e3/ILI9341_DS.pdf
-
+    void Update(uint32_t current_tick);
     void Begin();
     inline void Select();
     inline void Deselect();
@@ -177,10 +220,10 @@ public:
                        const uint16_t colour,
                        uint32_t max_chunk_size=Max_Chunk_Size);
 
-    void FillRectangleAsync(const uint16_t x_start,
-                            const uint16_t y_start,
-                            uint16_t x_end,
-                            uint16_t y_end,
+    void FillRectangleAsync(uint16_t x1,
+                            uint16_t x2,
+                            uint16_t y1,
+                            uint16_t y2,
                             const uint16_t colour);
 
     void FillScreen(const uint16_t colour, bool async=false);
@@ -211,16 +254,29 @@ public:
     uint16_t Convert32ColorTo16(const uint32_t colour);
 
     inline void DrawNext();
+
+
 private:
+    ScreenInteraction* RetrieveFreeInteraction();
+    void HandleReadyInteraction();
+
+    ScreenMemory* RetrieveFreeMemory();
+    void HandleReadyMemory();
+
+    void SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
+    static bool WriteCommandAsync(Screen& screen, ScreenMemory& memory);
+    static bool WriteDataAsync(Screen& screen, ScreenMemory& memory);
+
+    void EnqueueCommand(uint8_t cmd);
+    void EnqueueCommandData(uint8_t cmd, uint8_t* data, uint32_t data_size);
+
+
     void PushDrawingFunction(void* func);
     void UpdateDrawingFunction(void* func);
     void PopDrawingFunction();
 
+    static bool FillRectangleAsyncProcedure2(Screen& screen, ScreenMemory& memory);
     static void FillRectangleAsyncProcedure(Screen* screen);
-
-
-    static constexpr uint32_t Max_Chunk_Size = 16384U;
-    static constexpr uint32_t Chunk_Buffer_Size = 1024UL;
 
     void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
               uint16_t &y_end);
@@ -236,14 +292,33 @@ private:
     Orientation orientation;
     uint16_t view_height;
     uint16_t view_width;
-    uint8_t chunk_buffer[Chunk_Buffer_Size * 2]; // TODO use this more
     volatile bool spi_busy;
     volatile bool draw_async;
     volatile bool draw_async_stop;
+    volatile bool spi_running;
     bool buffer_overwritten_by_sync;
     uint32_t drawing_func_read;
     uint32_t drawing_func_write;
     bool async_draw_ready;
     RingMatrix draw_matrix;
     void** Drawing_Func_Ring;
+
+    uint8_t chunk_buffer[Chunk_Buffer_Size]; // TODO use this more
+    uint32_t chunk_write = 0;
+    uint32_t chunk_read = 0;
+
+    RingMemoryPool large_pool;
+    RingMemoryPool small_pool;
+
+    // TODO data structure like a ring buffer
+    ScreenInteraction interactions[Num_Interactions];
+    ScreenInteraction* next_interaction;
+    uint32_t interaction_write_idx = 0;
+    uint32_t interaction_read_idx = 0;
+    uint32_t available_interactions = 0;
+
+    ScreenMemory memories[Num_Memories];
+    uint32_t memories_write_idx = 0;
+    uint32_t memories_read_idx = 0;
+    uint32_t available_memories = 0;
 };
