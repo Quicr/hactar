@@ -70,9 +70,7 @@ void NetManager::HandleSerial(void* param)
             {
                 Logger::Log(Logger::Level::Info, "NetManager: Handle for Packet:Type:Message");
 
-                // skip the packetId and go to the next part of the packet data
-                // 6 + 8 = 14, skip to 14,
-                // Mesages have sub-types whuch is encoded in the first byte
+                // Skip the packetId and go to the next part of the packet data
                 uint8_t sub_message_type = rx_packet->GetData<uint8_t>(5, 1);
                 self->HandleQChatMessages(sub_message_type, rx_packet, 6);
             }
@@ -138,6 +136,7 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
             Logger::Log(Logger::Level::Info, "Got an ascii message");
 
             qchat::Ascii ascii;
+            ascii.message.push_back((uint8_t)qchat::MessageTypes::Ascii);
             bool result = qchat::Codec::decode(ascii, rx_packet, offset);
             Logger::Log(Logger::Level::Debug, "Decoded an ascii message");
 
@@ -154,6 +153,43 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
 
             Logger::Log(Logger::Level::Info, "Send to quicr session to publish");
             quicr_session->publish(nspace, bytes);
+            break;
+        }
+        case qchat::MessageTypes::Audio:
+        {
+
+            Logger::Log(Logger::Level::Info, "Got an audio message");
+
+            // Get the room len
+            uint32_t room_len = rx_packet->GetData<uint32_t>(offset, 4);
+            uint32_t off = offset + 4;
+
+            // Get the room uri
+            std::string room_uri;
+            for (int i =0; i < room_len; ++i)
+            {
+                room_uri.push_back(rx_packet->GetData<char>(off, 1));
+                off += 1;
+            }
+
+            // Get the audio len
+            uint16_t audio_len = rx_packet->GetData<uint16_t>(off, 2);
+            off += 2;
+
+            std::vector<uint8_t> msg;
+            msg.reserve(audio_len + 1); // +1 for type
+            msg.push_back((uint8_t)qchat::MessageTypes::Audio);
+            Logger::Log(Logger::Level::Info, "Audio len ", audio_len);
+            for (uint16_t i = 0; i < audio_len; ++i)
+            {
+                msg.push_back(rx_packet->GetData<uint8_t>(off, 1));
+                off+=1;
+            }
+
+            auto nspace = quicr_session->to_namespace(room_uri);
+
+            Logger::Log(Logger::Level::Info, "Send audio to quicr session to publish");
+            quicr_session->publish(nspace, msg);
             break;
         }
         default:
@@ -190,6 +226,7 @@ void NetManager::HandleWatchMessage(void* params)
 
         Logger::Log(Logger::Level::Debug, "Subscribed");
 
+        // why is this here?
         vTaskDelay(2000 / portTICK_PERIOD_MS);
 
         auto watch_ok_packet = std::make_unique<SerialPacket>(xTaskGetTickCount());
@@ -221,7 +258,7 @@ void NetManager::HandleNetwork(void* param)
     {
         try
         {
-
+            // TODO use a conditional variable
             // Set the delay
             vTaskDelay(50 / portTICK_PERIOD_MS);
 
@@ -244,10 +281,10 @@ void NetManager::HandleNetwork(void* param)
             packet->SetData(SerialPacket::Types::QMessage, 0, 1);
 
             // Set the id
-            packet->SetData(0, 1, 2);
+            packet->SetData(self->ui_layer.NextPacketId(), 1, 2);
 
             // Set the length
-            uint16_t total_len = 9 + Bytes_In_128_Bits + qobj.data.size();
+            uint16_t total_len = 10 + Bytes_In_128_Bits + qobj.data.size();
             packet->SetData(total_len, 3, 2);
 
             // Set the message type
@@ -275,24 +312,20 @@ void NetManager::HandleNetwork(void* param)
                 offset += 1;
             }
 
-            Logger::Log(Logger::Level::Debug, "Packet data total len %d", total_len);
-            for (size_t i = 0; i < total_len + 3; ++i)
-            {
-                Logger::Log(Logger::Level::Info, packet->GetData<int>(i, 1));
-            }
-            Logger::Log(Logger::Level::Info, "Enqueue serial packet that came from the network");
+            // Logger::Log(Logger::Level::Info, "Packet data total len %d", total_len);
+            // for (size_t i = 0; i < total_len; ++i)
+            // {
+            //     Logger::Log(Logger::Level::Info, (int)i, packet->GetData<int>(i, 1));
+            // }
+            // Logger::Log(Logger::Level::Info, "Enqueue serial packet that came from the network");
             // Enqueue the packet to go to the UI
             self->ui_layer.EnqueuePacket(std::move(packet));
-            packet = nullptr;
         }
         catch (const std::exception& ex)
         {
             Logger::Log(Logger::Level::Info, "[HandleNetworkError]", ex.what());
         }
     }
-
-    //Ascii ascii;
-    // part2 encode into qchat message and send to ui chip
 }
 
 /**                          Private Functions                               **/

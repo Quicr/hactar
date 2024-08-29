@@ -2,12 +2,13 @@
 #include "UserInterfaceManager.hh"
 
 SettingsView::SettingsView(UserInterfaceManager& manager,
-    Screen& screen,
-    Q10Keyboard& keyboard,
-    SettingManager& setting_manager,
-    SerialPacketManager& serial,
-    Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network)
+        Screen& screen,
+        Q10Keyboard& keyboard,
+        SettingManager& setting_manager,
+        SerialPacketManager& serial,
+        Network& network,
+        AudioChip& audio)
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio)
 {
 }
 
@@ -77,7 +78,7 @@ void SettingsView::HandleInput()
     ClearInput();
 }
 
-void SettingsView::Update()
+void SettingsView::Update(uint32_t current_tick)
 {
     return;
 }

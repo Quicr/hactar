@@ -61,6 +61,7 @@ public:
     bool BackPressed();
     void ClearInternalBuffer(unsigned long start = 0, unsigned long end = 0);
     bool EnterPressed();
+    bool MicPressed();
     void Read();
     bool Read(std::string &buffer);
     bool Read(char* buffer, size_t &buffer_ptr, const size_t buffer_max_size);

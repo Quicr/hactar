@@ -13,7 +13,7 @@
 
 #include "SerialStm.hh"
 #include "Led.hh"
-#include "AudioCodec.hh"
+#include "audio_chip.hh"
 
 #include <hpke/random.h>
 #include <hpke/digest.h>
@@ -30,6 +30,8 @@
 #include <sstream>
 
 #include "logger.hh"
+#include <stdio.h>
+#include <stdlib.h>
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -53,43 +55,34 @@ SerialStm* mgmt_serial_interface = nullptr;
 SerialStm* net_serial_interface = nullptr;
 UserInterfaceManager* ui_manager = nullptr;
 EEPROM* eeprom = nullptr;
-AudioCodec* audio = nullptr;
+AudioChip* audio = nullptr;
 bool rx_busy = false;
 
 uint8_t random_byte() {
     // XXX(RLB) This is 4x slower than it could be, because we only take the
     // low-order byte of the four bytes in a uint32_t.
+    /// BER, I don't know if that is necessarily true, since we would be
+    // pulling a 32 bit number from hardware anyways.
     auto value = uint32_t(0);
     HAL_RNG_GenerateRandomNumber(&hrng, &value);
     return value;
 }
 
-// buffer size = 0.1s * freq
-const uint16_t SOUND_BUFFER_SZ = 16000;
-uint16_t rx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
-uint16_t tx_sound_buff[SOUND_BUFFER_SZ] = { 0 };
+extern char _end;  // End of BSS section
+extern char _estack;  // Start of stack
 
-uint16_t GenerateTriangleWavePoint(double frequency, double amplitude, double time)
-{
-    double period = 1.0 / frequency;
-    double phase = fmod(time, period) / period;
+static char *heap_end = &_end;
 
-    double triangle_point = 0;
-
-    if (phase < 0.25)
-        triangle_point = 4.0 * amplitude * phase;
-    else if (phase < 0.75)
-        triangle_point = 2.0 * amplitude - 4.0 * amplitude * phase;
-    else
-        triangle_point = -4.0 * amplitude + 4.0 * amplitude * phase;
-
-    return static_cast<uint16_t>((triangle_point + 1.0) * 32767.5);
+// Function to get the remaining heap size
+size_t getFreeHeapSize(void) {
+    char *current_heap_end = heap_end;
+    return &_estack - current_heap_end;
 }
 
 // TODO Get the osc working correctly from an external signal
 int app_main()
 {
-    // audio = new AudioCodec(hi2s3, hi2c1);
+    audio = new AudioChip(hi2s3, hi2c1);
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
@@ -140,12 +133,13 @@ int app_main()
     Logger::Log(Logger::Level::Info, "app init:", rv == CMOX_INIT_SUCCESS);
 
     // Delayed condition
-    uint32_t blink = HAL_GetTick() + 5000;
-    uint32_t tx_sound = 0;
-    // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
+    uint32_t blink = HAL_GetTick();
 
     WaitForNetReady();
     Logger::Log(Logger::Level::Info, "Hactar is ready");
+
+    bool sound_inited = false;
+    uint32_t wait_to_enable_audio_codec = HAL_GetTick() + 5000;
 
     while (1)
     {
@@ -176,34 +170,18 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
         mgmt_serial_interface->RxEvent(size);
     }
 }
-
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
+        HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
     if (huart->Instance == USART2)
     {
         net_serial_interface->TxEvent();
     }
     else if (huart->Instance == USART1)
     {
-        HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+        // HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
         mgmt_serial_interface->TxEvent();
     }
-}
-
-void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* /* hi2s */)
-{
-    // audio->RxComplete();
-    // rx_busy = false;
-    // audio->XorRegister(0x19, 0b0'0000'1100);
-
-    HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
-}
-
-void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef* /* hi2s */)
-{
-    // auto output = HAL_I2S_Transmit_DMA(&hi2s3, tx_sound_buff, SOUND_BUFFER_SZ * sizeof(uint16_t));
-
-    HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
@@ -231,6 +209,21 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
         mgmt_serial_interface->StartRx();
     }
 }
+
+void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef* hi2s)
+{
+    UNUSED(hi2s);
+    // HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+    audio->HalfCompleteCallback();
+}
+
+void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
+{
+    UNUSED(hi2s);
+    // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+    audio->CompleteCallback();
+}
+
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
