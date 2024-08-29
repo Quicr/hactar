@@ -369,14 +369,11 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s)
     hdma_spi3_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
     hdma_spi3_tx.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_spi3_tx.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_spi3_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    hdma_spi3_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    hdma_spi3_tx.Init.Mode = DMA_NORMAL;
+    hdma_spi3_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    hdma_spi3_tx.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_spi3_tx.Init.Mode = DMA_CIRCULAR;
     hdma_spi3_tx.Init.Priority = DMA_PRIORITY_VERY_HIGH;
-    hdma_spi3_tx.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
-    hdma_spi3_tx.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-    hdma_spi3_tx.Init.MemBurst = DMA_MBURST_SINGLE;
-    hdma_spi3_tx.Init.PeriphBurst = DMA_PBURST_SINGLE;
+    hdma_spi3_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi3_tx) != HAL_OK)
     {
       Error_Handler();
@@ -390,14 +387,11 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s)
     hdma_i2s3_ext_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
     hdma_i2s3_ext_rx.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_i2s3_ext_rx.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_i2s3_ext_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    hdma_i2s3_ext_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    hdma_i2s3_ext_rx.Init.Mode = DMA_NORMAL;
+    hdma_i2s3_ext_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    hdma_i2s3_ext_rx.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_i2s3_ext_rx.Init.Mode = DMA_CIRCULAR;
     hdma_i2s3_ext_rx.Init.Priority = DMA_PRIORITY_VERY_HIGH;
-    hdma_i2s3_ext_rx.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
-    hdma_i2s3_ext_rx.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-    hdma_i2s3_ext_rx.Init.MemBurst = DMA_MBURST_SINGLE;
-    hdma_i2s3_ext_rx.Init.PeriphBurst = DMA_PBURST_SINGLE;
+    hdma_i2s3_ext_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_i2s3_ext_rx) != HAL_OK)
     {
       Error_Handler();
@@ -405,9 +399,6 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s)
 
     __HAL_LINKDMA(hi2s,hdmarx,hdma_i2s3_ext_rx);
 
-    /* I2S3 interrupt Init */
-    HAL_NVIC_SetPriority(SPI3_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(SPI3_IRQn);
   /* USER CODE BEGIN SPI3_MspInit 1 */
 
   /* USER CODE END SPI3_MspInit 1 */
@@ -444,9 +435,6 @@ void HAL_I2S_MspDeInit(I2S_HandleTypeDef* hi2s)
     /* I2S3 DMA DeInit */
     HAL_DMA_DeInit(hi2s->hdmatx);
     HAL_DMA_DeInit(hi2s->hdmarx);
-
-    /* I2S3 interrupt DeInit */
-    HAL_NVIC_DisableIRQ(SPI3_IRQn);
   /* USER CODE BEGIN SPI3_MspDeInit 1 */
 
   /* USER CODE END SPI3_MspDeInit 1 */

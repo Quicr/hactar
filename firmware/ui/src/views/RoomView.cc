@@ -5,12 +5,13 @@
 #include <stdlib.h>
 
 RoomView::RoomView(UserInterfaceManager& manager,
-    Screen& screen,
-    Q10Keyboard& keyboard,
-    SettingManager& setting_manager,
-    SerialPacketManager& serial,
-    Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network),
+        Screen& screen,
+        Q10Keyboard& keyboard,
+        SettingManager& setting_manager,
+        SerialPacketManager& serial,
+        Network& network,
+        AudioChip& audio)
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio),
     selected_room_id(-1),
     connecting_to_room(false),
     next_get_rooms_time(0),
@@ -80,11 +81,10 @@ void RoomView::HandleInput()
     SelectRoom();
 }
 
-void RoomView::Update()
+void RoomView::Update(uint32_t current_tick)
 {
-    uint32_t current_tick = HAL_GetTick();
     // Occasionally request for the current rooms
-    if (HAL_GetTick() >= next_get_rooms_time)
+    if (current_tick >= next_get_rooms_time)
     {
         RequestRooms();
         rooms.clear();
@@ -122,8 +122,8 @@ void RoomView::RequestRooms()
     std::unique_ptr<SerialPacket> room_req_packet = std::make_unique<SerialPacket>(HAL_GetTick());
     room_req_packet->SetData(SerialPacket::Types::Command, 0, 1);
     room_req_packet->SetData(serial.NextPacketId(), 1, 2);
-    room_req_packet->SetData(1, 3, 2);
-    room_req_packet->SetData(SerialPacket::Commands::RoomsGet, 5, 1);
+    room_req_packet->SetData(2, 3, 2);
+    room_req_packet->SetData(SerialPacket::Commands::RoomsGet, 5, 2);
     serial.EnqueuePacket(std::move(room_req_packet));
 }
 

@@ -6,12 +6,13 @@
 #include "main.h"
 
 WifiView::WifiView(UserInterfaceManager& manager,
-    Screen& screen,
-    Q10Keyboard& keyboard,
-    SettingManager& setting_manager,
-    SerialPacketManager& serial,
-    Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network),
+        Screen& screen,
+        Q10Keyboard& keyboard,
+        SettingManager& setting_manager,
+        SerialPacketManager& serial,
+        Network& network,
+        AudioChip& audio)
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio),
     last_num_ssids(0),
     next_get_ssid_timeout(0),
     state(SSID),
@@ -29,9 +30,8 @@ WifiView::~WifiView()
 
 }
 
-void WifiView::Update()
+void WifiView::Update(uint32_t current_tick)
 {
-    uint32_t current_tick = HAL_GetTick();
     // Periodically get the list of teams.
     if (current_tick > next_get_ssid_timeout && state == WifiState::SSID)
     {

@@ -296,6 +296,11 @@ bool Q10Keyboard::BackPressed()
     return res;
 }
 
+bool Q10Keyboard::MicPressed()
+{
+    return mic_flag;
+}
+
 void Q10Keyboard::HandlePress(unsigned char col, unsigned char row, unsigned char read_v)
 {
     key_type press_type = key_type::ch;

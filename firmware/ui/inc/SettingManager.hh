@@ -397,6 +397,8 @@ private:
                 static_cast<uint8_t>(1 + curr_addr + curr_len));
             eeprom.Write(2 + curr_addr + curr_len, o_data, o_len);
 
+            delete [] o_data;
+
             // Update the curr_addr and curr_len
             curr_addr = curr_addr + curr_len;
             curr_len = curr_len;

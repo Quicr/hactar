@@ -63,7 +63,7 @@ void Wifi::Connect(const char* ssid,
         password,
         password_len);
 
-    Logger::Log(Logger::Level::Error, "ssid %s password %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
+    Logger::Log(Logger::Level::Error, "ssid ", wifi_cfg.sta.ssid, ", password ", wifi_cfg.sta.password);
 
     while (!xSemaphoreTake(connect_semaphore, 1000)) { Logger::Log(Logger::Level::Warn,"Connect() Waiting for semaphore");}
 
@@ -72,7 +72,7 @@ void Wifi::Connect(const char* ssid,
     state = State::ReadyToConnect;
 
     xSemaphoreGive(connect_semaphore);
-    Logger::Log(Logger::Level::Info, "SetCredentialsTask() Ready to connect state: %d", (int)state);
+    Logger::Log(Logger::Level::Info, "SetCredentialsTask() Ready to connect state: ", (int)state);
 }
 
 esp_err_t Wifi::Deinitialize()
@@ -232,7 +232,7 @@ void Wifi::ConnectTask(void* params)
         while (!xSemaphoreTake(instance->connect_semaphore, portMAX_DELAY)) { Logger::Log(Logger::Level::Warn,"ConnectTask() Waiting for semaphore"); }
         // Give semaphore in IP/HTTP events
 
-        Logger::Log(Logger::Level::Info, "connect() state %d", (int)instance->state);
+        Logger::Log(Logger::Level::Info, "connect() state ", (int)instance->state);
 
         esp_err_t status = { ESP_OK };
         ESP_ERROR_CHECK(esp_wifi_connect());
