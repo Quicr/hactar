@@ -3,12 +3,16 @@
 
 #include "audio_chip.hh"
 
+#include "Screen.hh"
+
 #include <cmath>
 
 extern I2C_HandleTypeDef hi2c1;
 extern I2S_HandleTypeDef hi2s3;
 
 extern UART_HandleTypeDef huart1;
+
+extern SPI_HandleTypeDef hspi1;
 
 
 
@@ -68,38 +72,64 @@ void generateTriangleWave(uint16_t* buffer, int numSamples, int sampleRate, floa
     }
 }
 
-AudioChip* audio;
+// AudioChip* audio;
+    port_pin cs = { DISP_CS_GPIO_Port, DISP_CS_Pin };
+    port_pin dc = { DISP_DC_GPIO_Port, DISP_DC_Pin };
+    port_pin rst = { DISP_RST_GPIO_Port, DISP_RST_Pin };
+    port_pin bl = { DISP_BL_GPIO_Port, DISP_BL_Pin };
+
+    Screen screen(
+        hspi1,
+        cs,
+        dc,
+        rst,
+        bl,
+        Screen::Orientation::left_landscape
+    );
 
 int app_main()
 {
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
 
-    audio = new AudioChip(hi2s3, hi2c1);
+    // audio = new AudioChip(hi2s3, hi2c1);
 
-    HAL_Delay(5000);
+    HAL_Delay(4000);
 
-    audio->Init();
+    // audio->Init();
 
-    audio->EnableLeftMicPGA();
-    audio->TurnOnLeftDifferentialInput();
-    // audio->TurnOnLeftInput3();
-    audio->UnmuteMic();
+    // audio->EnableLeftMicPGA();
+    // audio->TurnOnLeftDifferentialInput();
+    // // audio->TurnOnLeftInput3();
+    // audio->UnmuteMic();
     // audio->MuteMic();
 
     // Need about 1s delay before starting i2s
-    HAL_Delay(1000);
+    // HAL_Delay(1000);
 
-    audio->StartI2S();
+    // audio->StartI2S();
 
     uint32_t next = HAL_GetTick();
 
+
+    screen.Begin();
+    screen.EnableBackLight();
+    screen.FillScreen(C_BLACK);
+
+    screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_GREEN);
+    // screen.FillRectangleAsync(20, 30, 20, 30, C_BLUE);
+    // screen.FillRectangleAsync(0, screen.ViewWidth(), 0, 1, C_RED);
+    // screen.FillRectangleAsync(0, 10, 1, 11, C_GREEN);
+
+    uint32_t current_tick;
     while (true)
     {
+        current_tick = HAL_GetTick();
+        screen.Update(current_tick);
 
         if (HAL_GetTick() > next)
         {
             HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            next = HAL_GetTick() + 1000;
+            next = HAL_GetTick() + 5000;
         }
     }
     return 0;
@@ -108,11 +138,17 @@ int app_main()
 void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef* hi2s)
 {
     // HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-    audio->HalfCompleteCallback();
+    // audio->HalfCompleteCallback();
 }
 
 void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 {
     // HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-    audio->CompleteCallback();
+    // audio->CompleteCallback();
+}
+
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
+{
+    UNUSED(hspi);
+    screen.ReleaseSPI();
 }
