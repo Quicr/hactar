@@ -59,6 +59,14 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define UI_LED_G_Pin GPIO_PIN_0
 #define UI_LED_G_GPIO_Port GPIOC
+#define DISP_CS_Pin GPIO_PIN_1
+#define DISP_CS_GPIO_Port GPIOA
+#define DISP_RST_Pin GPIO_PIN_6
+#define DISP_RST_GPIO_Port GPIOA
+#define DISP_DC_Pin GPIO_PIN_0
+#define DISP_DC_GPIO_Port GPIOB
+#define DISP_BL_Pin GPIO_PIN_15
+#define DISP_BL_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

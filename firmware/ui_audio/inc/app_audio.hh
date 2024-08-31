@@ -9,6 +9,7 @@ extern "C" {
 #include "main.h"
 
 int app_main();
+void int_to_string(const unsigned long input, uint8_t* str, uint16_t& size);
 
 #ifdef __cplusplus
 }

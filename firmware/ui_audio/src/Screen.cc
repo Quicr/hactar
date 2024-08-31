@@ -1,0 +1,2012 @@
+#include <algorithm>
+#include "Helper.h"
+#include "Screen.hh"
+#include "RingBuffer.hh"
+#include "app_audio.hh"
+#include <vector>
+
+#define DELAY HAL_MAX_DELAY
+
+extern UART_HandleTypeDef huart1;
+
+
+// void int_to_string(const unsigned long input, uint8_t* str, uint16_t& size)
+// {
+//     unsigned long value = input;
+//     // Get the num of powers
+//     unsigned long tmp = value;
+//     unsigned long sz = 0;
+//     do
+//     {
+//         sz++;
+//         tmp = tmp / 10;
+//     } while (tmp > 0);
+//     //159 -> 15 sz 1
+//     //15  -> 1 sz 2
+//     //1   -> 0 sz 3
+
+//     size = sz + 1;
+
+//     str[sz] = '\n';
+//     unsigned long mod = 0;
+//     do
+//     {
+//         mod = value % 10;
+//         str[sz - 1] = '0' + (char)mod;
+//         sz--;
+//         value = value / 10;
+//     } while (value > 0);
+
+// }
+
+void Print(const char* data, uint32_t len)
+{
+    HAL_UART_Transmit(&huart1, (uint8_t*)data, len, HAL_MAX_DELAY);
+}
+
+
+Screen::Screen(SPI_HandleTypeDef& hspi,
+    port_pin cs,
+    port_pin dc,
+    port_pin rst,
+    port_pin bl,
+    Orientation _orientation):
+    spi_handle(&hspi),
+    cs(cs),
+    dc(dc),
+    rst(rst),
+    bl(bl),
+    orientation(_orientation),
+    view_height(0),
+    view_width(0),
+    chunk_buffer{ 0 },
+    spi_busy(0),
+    draw_async(0),
+    draw_async_stop(0),
+    buffer_overwritten_by_sync(0),
+    drawing_func_read(0),
+    drawing_func_write(0),
+    async_draw_ready(0),
+    draw_matrix(32),
+    Drawing_Func_Ring(new void* [32]),
+    large_pool(10, 256),
+    small_pool(10, 32)
+{
+}
+
+Screen::~Screen()
+{
+    delete [] Drawing_Func_Ring;
+}
+
+void Screen::Update(uint32_t current_tick)
+{
+    HandleReadyMemory();
+    // TODO only send them every x ticks
+
+    if (!spi_running)
+    {
+        HandleReadyInteraction();
+    }
+}
+
+void Screen::Begin()
+{
+    // Ensure the spi is initialize at this point
+    if (spi_handle == nullptr) return;
+
+    // Setup GPIO for the screen.
+    GPIO_InitTypeDef GPIO_InitStruct = {};
+
+    EnablePortIf(cs.port);
+    HAL_GPIO_WritePin(cs.port, cs.pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = cs.pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(cs.port, &GPIO_InitStruct);
+
+    EnablePortIf(rst.port);
+    HAL_GPIO_WritePin(rst.port, rst.pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = rst.pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(rst.port, &GPIO_InitStruct);
+
+    EnablePortIf(dc.port);
+    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = dc.pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(dc.port, &GPIO_InitStruct);
+
+    EnablePortIf(bl.port);
+    HAL_GPIO_WritePin(bl.port, bl.pin, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = bl.pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(bl.port, &GPIO_InitStruct);
+
+    Deselect();
+    Select();
+    Reset();
+
+    WriteCommand(SF_RST);
+    HAL_Delay(5); // wait 5ms
+
+    // Set power control A
+    WriteCommand(PWRC_A);
+    uint8_t power_a_data[5] = { 0x39, 0x2C, 0x00, 0x34, 0x02 };
+    WriteData(power_a_data, 5);
+
+    // Set power control B
+    WriteCommand(PWRC_B);
+    uint8_t power_b_data[3] = { 0x00, 0xC1, 0x30 };
+    WriteData(power_b_data, 3);
+
+    // Driver timing control A
+    WriteCommand(TIMC_A);
+    uint8_t timer_a_data[3] = { 0x85, 0x00, 0x78 };
+    WriteData(timer_a_data, 3);
+
+    // Driver timing control B
+    WriteCommand(TIMC_B);
+    uint8_t timer_b_data[2] = { 0x00, 0x00 };
+    WriteData(timer_b_data, 2);
+
+    // Power on sequence control
+    WriteCommand(PWR_ON);
+    uint8_t power_data[4] = { 0x64, 0x03, 0x12, 0x81 };
+    WriteData(power_data, 4);
+
+    // Pump ratio control
+    WriteCommand(PMP_RA);
+    WriteData(0x20);
+
+    // Power control VRH[5:0]
+    WriteCommand(PC_VRH); // 0xC0
+    WriteData(0x23);
+
+    // Power control SAP[2:0];BT[3:0]
+    WriteCommand(PC_SAP); // 0xC1
+    WriteData(0x10);
+
+    // VCM Control 1
+    WriteCommand(VCM_C1);
+    uint8_t vcm_control[2] = { 0x3E, 0x28 };
+    WriteData(vcm_control, 2);
+
+    // VCM Control 2
+    WriteCommand(VCM_C2);
+    WriteData(0x86);
+
+    // Memory access control
+    WriteCommand(MEM_CR);
+    WriteData(0x48);
+
+    // Pixel format
+    WriteCommand(PIX_FM);
+    WriteData(0x55);
+
+    // Frame ratio control. RGB Color
+    WriteCommand(FR_CTL); // 0xB1
+    uint8_t fr_control_data[2] = { 0x00, 0x18 };
+    WriteData(fr_control_data, 2);
+
+    // Display function control
+    WriteCommand(DIS_CT); // 0xB6
+    uint8_t df_control_data[3] = { 0x08, 0x82, 0x27 };
+    WriteData(df_control_data, 3);
+
+    // 3Gamma function
+    WriteCommand(GAMM_3); // 0xF2
+    WriteData(0x00);
+
+    // Gamma curve selected
+    WriteCommand(GAMM_C); // 0x26
+    WriteData(0x01);
+
+    // Positive Gamma correction
+    WriteCommand(GAM_PC); // 0xE0
+    uint8_t positive_gamma_correction_data[15] = { 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1,
+                              0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00 };
+    WriteData(positive_gamma_correction_data, 15);
+
+    // Negative gamma correction
+    WriteCommand(GAM_NC);
+    uint8_t negative_gamma_correction_data[15] = { 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1,
+                              0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F };
+    WriteData(negative_gamma_correction_data, 15);
+
+    // Exit sleep
+    WriteCommand(END_SL); // 0x11
+
+    HAL_Delay(120);
+
+    // Display on
+    WriteCommand(DIS_ON); // 0x29
+
+    // Set the orientation of the screen
+    SetOrientation(orientation);
+
+    Deselect();
+}
+
+inline void Screen::Select()
+{
+    // Set pin LOW for selection
+    HAL_GPIO_WritePin(cs.port, cs.pin, GPIO_PIN_RESET);
+}
+
+inline void Screen::Deselect()
+{
+    // Set the pin to HIGH to deselect
+    HAL_GPIO_WritePin(cs.port, cs.pin, GPIO_PIN_SET);
+}
+
+void Screen::Reset()
+{
+    HAL_GPIO_WritePin(rst.port, rst.pin, GPIO_PIN_RESET);
+    HAL_Delay(50);
+    HAL_GPIO_WritePin(rst.port, rst.pin, GPIO_PIN_SET);
+}
+
+void Screen::WriteCommand(uint8_t command)
+{
+    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(spi_handle, &command, sizeof(command), HAL_MAX_DELAY);
+}
+
+// Note select needs to be called prior
+// and deselect following
+void Screen::WriteData(uint8_t* data, uint32_t data_size)
+{
+    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
+
+    // Split data into chunks
+    while (data_size > 0)
+    {
+        // Set the chunk size
+        uint32_t chunk_size = data_size > 32768 ? 32768 : data_size;
+
+        // Send the data to the spi interface
+        HAL_SPI_Transmit(spi_handle, data, chunk_size, HAL_MAX_DELAY);
+
+        // Slide the buffer over
+        data += chunk_size;
+
+        // Reduce the size of the buffer by the chunk size.
+        data_size -= chunk_size;
+    }
+}
+// TODO comments
+// Note Select needs to be called prior
+void Screen::WriteData(uint8_t data)
+{
+    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
+    HAL_SPI_Transmit(spi_handle, &data, 1, DELAY);
+}
+
+void Screen::WriteDataDMA(uint8_t* data, const uint32_t data_size)
+{
+    spi_busy = 1;
+    buffer_overwritten_by_sync = 1;
+    HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
+
+    // Wait for the SPI IT call complete to invoked
+    WaitUntilSPIFree();
+}
+
+
+/**
+ * SetWritablePixels
+ *
+ * Sets the addressable location that can be drawn on the screen, smaller
+ * updates are faster
+ *
+ */
+void Screen::SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_end, uint16_t y_end)
+{
+    uint8_t col_data [] = { static_cast<uint8_t>(x_start >> 8), static_cast<uint8_t>(x_start),
+                           static_cast<uint8_t>(x_end >> 8), static_cast<uint8_t>(x_end) };
+    uint8_t row_data [] = { static_cast<uint8_t>(y_start >> 8), static_cast<uint8_t>(y_start),
+                           static_cast<uint8_t>(y_end >> 8), static_cast<uint8_t>(y_end) };
+
+    // Set drawable column ILI9341 command
+    WriteCommand(CA_SET);
+    WriteData(col_data, sizeof(col_data));
+
+    // Set drawable row ILI9341 command
+    WriteCommand(RA_SET);
+    WriteData(row_data, sizeof(row_data));
+
+    WriteCommand(WR_RAM);
+
+    // Tell the ILI9341 that we are going to send data next
+    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
+}
+
+void Screen::EnableBackLight()
+{
+    HAL_GPIO_WritePin(bl.port, bl.pin, GPIO_PIN_SET);
+}
+
+void Screen::DisableBackLight()
+{
+    HAL_GPIO_WritePin(bl.port, bl.pin, GPIO_PIN_RESET);
+}
+
+void Screen::Sleep()
+{
+    // TODO
+    WriteCommand(0x10);
+}
+
+void Screen::Wake()
+{
+    // TODO
+    WriteCommand(0x11);
+}
+
+void Screen::DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
+    const uint16_t length, const uint16_t width,
+    const Screen::ArrowDirection direction, const uint16_t colour)
+{
+
+    const uint16_t half_width = width / 2;
+    const uint16_t quar_width = width / 4;
+    const uint16_t tip_len = (length * 4) / 10;
+    if (direction == ArrowDirection::Left)
+    {
+        // Left
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y - half_width)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x + length), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x + length), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y + half_width)}
+        };
+        DrawPolygon(7, points, colour);
+
+    }
+    else if (direction == ArrowDirection::Up)
+    {
+        // Up
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x + half_width), uint16_t(tip_y + tip_len)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y + tip_len)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y + length)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y + length)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y + tip_len)},
+                                  {uint16_t(tip_x - half_width), uint16_t(tip_y + tip_len)}
+        };
+        DrawPolygon(7, points, colour);
+    }
+    else if (direction == ArrowDirection::Right)
+    {
+        // Right
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y - half_width)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x - length), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x - length), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y + half_width)}
+        };
+        DrawPolygon(7, points, colour);
+    }
+    else if (direction == ArrowDirection::Down)
+    {
+        // Down
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x - half_width), uint16_t(tip_y - tip_len)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y - tip_len)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y - length)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y - length)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y - tip_len)},
+                                  {uint16_t(tip_x + half_width), uint16_t(tip_y - tip_len)}
+        };
+
+        DrawPolygon(7, points, colour);
+    }
+}
+
+void Screen::DrawHorizontalLine(const uint16_t x1, const uint16_t x2,
+    const uint16_t y, const uint16_t thickness,
+    const uint16_t colour)
+{
+    if (x2 <= x1) return;
+    if (thickness == 0) return;
+
+    FillRectangle(x1, y, x2, y + thickness, colour);
+}
+
+
+void Screen::DrawLine(uint16_t x1, uint16_t y1,
+    uint16_t x2, uint16_t y2,
+    const uint16_t colour)
+{
+    // Bresenham line algorithm
+    // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+
+    // Get the absolute difference
+    int16_t diff_x = (x2 >= x1) ? x2 - x1 : -(x2 - x1);
+    int16_t diff_y = (y2 >= y1) ? y2 - y1 : -(y2 - y1);
+
+    // If x1 > x2 negative slope
+    int16_t direction_x = (x1 < x2) ? 1 : -1;
+
+    // If y2 > y1 negative slope
+    int16_t direction_y = (y1 < y2) ? 1 : -1;
+
+    // Get the error on our differences
+    int16_t error = diff_x - diff_y;
+
+    // Error will hop back and forth until we hit our end points
+    while (x1 != x2 || y1 != y2)
+    {
+        DrawPixel(x1, y1, colour);
+
+        // Move x position
+        if (error * 2 > -diff_y)
+        {
+            error -= diff_y;
+            x1 += direction_x;
+        }
+        else
+        {
+            // Move x position
+            error += diff_x;
+            y1 += direction_y;
+        }
+    }
+}
+
+void Screen::DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour)
+{
+    if (x >= view_width || y >= view_height) return;
+    Select();
+
+    SetWritablePixels(x, y, x, y);
+
+    uint8_t data[2] = { static_cast<uint8_t>(colour >> 8),
+                        static_cast<uint8_t>(colour) };
+
+    // Draw pixel
+    WriteDataDMA(data, 2);
+
+    Deselect();
+}
+
+void Screen::DrawPolygon(const size_t count,
+    const uint16_t points [][2],
+    const uint16_t colour)
+{
+    if (count < 3)
+    {
+        // A polygon is defined by 3 points
+        return;
+    }
+
+    const uint8_t x = 0;
+    const uint8_t y = 1;
+
+    for (size_t i = 0; i < count - 1; ++i)
+    {
+        DrawLine(points[i][x], points[i][y],
+            points[i + 1][x], points[i + 1][y], colour);
+    }
+    // Connect the final line
+    DrawLine(points[count - 1][x], points[count - 1][y],
+        points[0][x], points[0][y], colour);
+}
+
+void Screen::FillPolygon(const size_t count,
+    const int16_t points [][2],
+    const uint16_t colour)
+{
+    if (count < 3)
+    {
+        // A polygon is defined by 3 points
+        return;
+    }
+
+    const uint8_t x = 0;
+    const uint8_t y = 1;
+
+    // Find the lowest and greatest pixel
+    uint16_t polygon_left = points[count - 1][x];
+    uint16_t polygon_right = points[count - 1][x];
+    uint16_t polygon_top = points[count - 1][y];
+    uint16_t polygon_bottom = points[count - 1][y];
+
+    uint16_t p1_x;
+    uint16_t p1_y;
+    for (size_t i = 0; i < count - 1; ++i)
+    {
+        p1_x = points[i][x];
+        p1_y = points[i][y];
+        if (p1_x < polygon_left)
+            polygon_left = p1_x;
+        if (p1_x > polygon_right)
+            polygon_right = p1_x;
+        if (p1_y < polygon_top)
+            polygon_top = p1_y;
+        if (p1_y > polygon_bottom)
+            polygon_bottom = p1_y;
+
+        DrawLine(points[i][x], points[i][y],
+            points[i + 1][x], points[i + 1][y], colour);
+    }
+    // Connect the final line
+    DrawLine(points[count - 1][x], points[count - 1][y],
+        points[0][x], points[0][y], colour);
+
+    // X intersections
+    uint16_t* intersections = new uint16_t[count]{ 0 };
+    uint8_t num_intersect = 0;
+    uint16_t curr_point = 0;
+    uint16_t next_point = 0;
+
+    uint16_t i;
+    uint16_t j;
+    uint16_t tmp;
+
+    /** Scan line fill algorithm *
+     * For each row of pixels that are in the upper and lower bounding box of
+     * the polygon, send a ray cast through the polygon and
+     * calculate the x intersection using the point-slope formulas
+     *
+     * Add the x intersections to an array and sort the list using
+     * insertion sort
+     *
+     * Draw the line of pixels
+    */
+
+    // Loop through the rows of the polygon
+    for (uint16_t pix_y = polygon_top; pix_y < polygon_bottom; ++pix_y)
+    {
+        // Get every x intersection
+        num_intersect = 0;
+
+        // Start at the end point
+        next_point = count - 1;
+
+        // Cycle around the points
+        for (curr_point = 0; curr_point < count; ++curr_point)
+        {
+            // Check for intersection
+            if ((points[curr_point][y] < (int16_t)pix_y && points[next_point][y] >= (int16_t)pix_y)
+                || (points[next_point][y] < (int16_t)pix_y && points[curr_point][y] >= (int16_t)pix_y))
+            {
+                // Get the point of intersection using point slope
+                // m = (y2 - y1) / (x2 - x1)
+                // y - y1 = m(x - x1)
+                // y = pix_y
+                // find x
+                intersections[num_intersect++] = (float)points[curr_point][x]
+                    + (float)(pix_y - points[curr_point][y])
+                    / (float)(points[next_point][y] - points[curr_point][y])
+                    * (float)(points[next_point][x] - points[curr_point][x]);
+            }
+
+            // Swap around the current point index
+            next_point = curr_point;
+        }
+
+        // Sort the intersections with insertion sort
+        i = 1;
+        while (i < num_intersect)
+        {
+            j = i;
+            while (j > 0 && intersections[j - 1] > intersections[j])
+            {
+                tmp = intersections[j];
+                intersections[j] = intersections[j - 1];
+                intersections[j - 1] = tmp;
+                --j;
+            }
+            ++i;
+        }
+
+        // Fill in the spaces between 2 intersections
+        for (i = 0; i < num_intersect; i += 2)
+        {
+            DrawHorizontalLine(intersections[i],
+                intersections[i + 1], pix_y, 1, colour);
+        }
+
+    }
+    delete [] intersections;
+}
+
+void Screen::DrawRectangle(const uint16_t x_start, const uint16_t y_start,
+    const uint16_t x_end, const uint16_t y_end,
+    const uint16_t thickness, const uint16_t colour)
+{
+    // Fill top
+    FillRectangle(x_start, y_start, x_end, y_start + thickness, colour);
+
+    // Fill left
+    FillRectangle(x_start, y_start, x_start + thickness, y_end, colour);
+
+    // Fill right
+    FillRectangle(x_end - thickness, y_start, x_end, y_end, colour);
+
+    // Fill bottom
+    FillRectangle(x_start, y_end - thickness, x_end, y_end, colour);
+}
+
+// TODO consider adding x2 and y2 so it has a bounding box.
+void Screen::DrawBlockAnimateString(const uint16_t x, const uint16_t y,
+    const std::string& str, const Font& font,
+    const uint16_t fg, const uint16_t bg,
+    const uint16_t delay)
+{
+    // TODO word wrap..
+    uint16_t x_pos = x;
+    uint16_t x_end = x + font.width;
+    uint16_t y_end = y + font.height;
+    for (unsigned int i = 0; i < str.length(); i++)
+    {
+        // Fill in a rectangle
+        FillRectangle(x_pos, y, x_end, y_end, fg);
+
+        HAL_Delay(delay);
+
+        // Clear the rectangle we drew
+        FillRectangle(x_pos, y, x_end, y_end, bg);
+
+        std::string letter;
+        letter.push_back(str[i]);
+        // Draw the string finally
+        DrawText(x_pos, y, letter, font, fg, bg);
+
+        x_pos += font.width;
+        x_end += font.width;
+    }
+}
+
+void Screen::DrawText(const uint16_t x, const uint16_t y, const std::string& str,
+    const Font& font, const uint16_t fg, const uint16_t bg,
+    const bool wordwrap, uint32_t max_chunk_size)
+{
+    // TODO
+    UNUSED(wordwrap);
+
+    // TODO clean up.
+    // If larger than the view port, it wouldn't be seen so skip
+    if (x > view_width || y > view_height) return;
+
+    // Bound the max size
+    if (max_chunk_size > Screen::Max_Chunk_Size)
+        max_chunk_size = Screen::Max_Chunk_Size;
+
+    Select();
+
+    uint32_t num_chr_per_line = (view_width - x) / font.width;
+    uint32_t num_chr_remaining = str.length();
+    uint32_t width = font.width * str.length();
+    const uint32_t height = font.height;
+    const uint32_t lines = 1 + ((font.width * str.length()) / (view_width - x));
+
+    // TODO move to using the chunk buffer instead of creating an array
+    // during runtime.
+    // Get the chunk size
+    const uint32_t chunk = std::min<uint32_t>(width * height, max_chunk_size);
+    uint32_t data_idx = 0;
+    uint8_t* data = new uint8_t[chunk * 2];
+
+    uint32_t ch_idx = 0;
+    uint32_t ch_idx_offset = 0;
+    char ch;
+    const uint8_t* ch_ptr = nullptr;
+    uint32_t ptr_offset = 0;
+    uint8_t bits_read = 0;
+    uint8_t bit_mask = 0;
+    uint16_t num_chrs;
+
+    for (uint32_t i = 0; i < lines; ++i)
+    {
+        num_chrs = std::min<uint32_t>(
+            num_chr_remaining, num_chr_per_line);
+        width = num_chrs * font.width;
+
+        SetWritablePixels(x, y + (font.height * i), x + width - 1,
+            y + (font.height * i) + height - 1);
+
+        for (uint32_t h_idx = 0; h_idx < height; h_idx++)
+        {
+            for (uint32_t w_idx = 0; w_idx < width; w_idx++)
+            {
+                // Get the next character in the string
+                if (bits_read % font.width == 0)
+                {
+                    ch = str[ch_idx + ch_idx_offset];
+                    ch_idx++;
+
+                    /*
+                    * Each Character is offset by the height number of bytes
+                    * multiplied by the number of bytes in the width - width/8
+                    * Then we need to account for what line we are currently
+                    * reading from based on the font height and width.
+                    */
+                    ptr_offset = ((ch - 32) * font.height * (font.width / 8 + 1))
+                        + (h_idx % font.height * (font.width / 8 + 1));
+
+                    // Get the pointer to the current row we are reading from
+                    ch_ptr = &font.data[ptr_offset];
+
+                    // Reset the bits we've read from the this row
+                    bits_read = 0;
+
+                    // Back to bit shift of 0
+                    bit_mask = 0;
+                }
+
+                // Check if the pixel is activated
+                if ((*ch_ptr << (bit_mask++ % 8)) & 0x80)
+                {
+                    data[data_idx++] = static_cast<uint8_t>(fg >> 8);
+                    data[data_idx++] = static_cast<uint8_t>(fg);
+                }
+                else
+                {
+                    data[data_idx++] = static_cast<uint8_t>(bg >> 8);
+                    data[data_idx++] = static_cast<uint8_t>(bg);
+                }
+
+                // If the buffer is full, send the data and clear it
+                if (data_idx >= chunk * 2)
+                {
+                    WriteDataDMA(data, data_idx);
+                    data_idx = 0;
+                }
+
+                // If we've exhausted the bits in the current byte then slide
+                // over to the next byte
+                if (++bits_read % 8 == 0)
+                {
+                    // Get the next byte if it is the end of the byte
+                    ch_ptr++;
+                    bit_mask = 0;
+                }
+            }
+
+            ch_idx = 0;
+        }
+
+
+        // If there is remaining data to send
+        if (data_idx > 0)
+        {
+            WriteDataDMA(data, data_idx);
+            data_idx = 0;
+        }
+
+        ch_idx_offset += num_chrs;
+        num_chr_remaining -= num_chrs;
+    }
+
+    delete [] data;
+    ch_ptr = nullptr;
+
+    Deselect();
+
+    return;
+}
+
+// TODO update
+void Screen::DrawTextbox(uint16_t x_pos,
+    uint16_t y_pos,
+    const uint16_t x_window_start,
+    const uint16_t y_window_start,
+    const uint16_t x_window_end,
+    const uint16_t y_window_end,
+    const std::string& str,
+    const Font& font,
+    const uint16_t fg,
+    const uint16_t bg)
+{
+    std::vector<std::string> words;
+
+    // Find each word in put into a vector
+    bool found_space = false;
+    char ch;
+    uint16_t sz = str.length();
+    std::string word;
+    for (uint16_t i = 0; i < sz; i++)
+    {
+        ch = str[i];
+        found_space = ch == ' ';
+        word.push_back(ch);
+
+        // If we found the space this is the end of the word (including the space)
+        if (found_space)
+        {
+            words.push_back(word);
+            word.clear();
+        }
+    }
+    if (word.length() > 0) words.push_back(word);
+
+    uint16_t num_words = words.size();
+
+    uint16_t i, j;
+
+    Select();
+
+    for (i = 0; i < num_words; i++)
+    {
+        word = words[i];
+
+        // If we are clipping the end of the box then just stop processing
+        // Minus the space at the end of the word
+        if (x_pos + ((word.length() - 1) * font.width) >= x_window_end)
+        {
+            x_pos = x_window_start;
+            y_pos += font.height;
+        }
+
+        if (y_pos >= y_window_end) break;
+
+        sz = word.length();
+        for (j = 0; j < sz; j++)
+        {
+            ch = word[j];
+            DrawCharacter(x_pos, y_pos, x_window_start, y_window_start,
+                x_window_end, y_window_end, ch, font, fg, bg);
+            x_pos += font.width;
+        }
+    }
+
+    Deselect();
+}
+
+void Screen::DrawTriangle(const uint16_t x1, const uint16_t y1,
+    const uint16_t x2, const uint16_t y2,
+    const uint16_t x3, const uint16_t y3,
+    const uint16_t colour)
+{
+    uint16_t points[3][2] = { { x1, y1 }, {x2, y2}, {x3, y3} };
+    DrawPolygon(3, points, colour);
+}
+
+void Screen::FillArrow(const uint16_t tip_x, const uint16_t tip_y,
+    const uint16_t length, const uint16_t width,
+    const Screen::ArrowDirection direction, const uint16_t colour)
+{
+
+    const uint16_t half_width = width / 2;
+    const uint16_t quar_width = width / 4;
+    const uint16_t tip_len = (length * 4) / 10;
+    if (direction == ArrowDirection::Left)
+    {
+        // Left
+        int16_t points[7][2] =
+        {
+            {(int16_t)tip_x, (int16_t)tip_y},
+            {(int16_t)(tip_x + tip_len), (int16_t)(tip_y - half_width)},
+            {(int16_t)(tip_x + tip_len), (int16_t)(tip_y - quar_width)},
+            {(int16_t)(tip_x + length),  (int16_t)(tip_y - quar_width)},
+            {(int16_t)(tip_x + length),  (int16_t)(tip_y + quar_width)},
+            {(int16_t)(tip_x + tip_len), (int16_t)(tip_y + quar_width)},
+            {(int16_t)(tip_x + tip_len), (int16_t)(tip_y + half_width)}
+        };
+        FillPolygon(7, points, colour);
+
+    }
+    else if (direction == ArrowDirection::Up)
+    {
+        // Up
+        int16_t points[7][2] =
+        {
+            {(int16_t)tip_x, (int16_t)tip_y},
+            {(int16_t)(tip_x + half_width), (int16_t)(tip_y + tip_len)},
+            {(int16_t)(tip_x + quar_width), (int16_t)(tip_y + tip_len)},
+            {(int16_t)(tip_x + quar_width), (int16_t)(tip_y + length)},
+            {(int16_t)(tip_x - quar_width), (int16_t)(tip_y + length)},
+            {(int16_t)(tip_x - quar_width), (int16_t)(tip_y + tip_len)},
+            {(int16_t)(tip_x - half_width), (int16_t)(tip_y + tip_len)}
+        };
+        FillPolygon(7, points, colour);
+    }
+    else if (direction == ArrowDirection::Right)
+    {
+        // Right
+        int16_t points[7][2] =
+        {
+            {(int16_t)tip_x, (int16_t)tip_y},
+            {(int16_t)(tip_x - tip_len), (int16_t)(tip_y - half_width)},
+            {(int16_t)(tip_x - tip_len), (int16_t)(tip_y - quar_width)},
+            {(int16_t)(tip_x - length),  (int16_t)(tip_y - quar_width)},
+            {(int16_t)(tip_x - length),  (int16_t)(tip_y + quar_width)},
+            {(int16_t)(tip_x - tip_len), (int16_t)(tip_y + quar_width)},
+            {(int16_t)(tip_x - tip_len), (int16_t)(tip_y + half_width)}
+        };
+        FillPolygon(7, points, colour);
+    }
+    else if (direction == ArrowDirection::Down)
+    {
+        // Down
+        int16_t points[7][2] =
+        {
+            {(int16_t)tip_x, (int16_t)tip_y},
+            {(int16_t)(tip_x - half_width), (int16_t)(tip_y - tip_len)},
+            {(int16_t)(tip_x - quar_width), (int16_t)(tip_y - tip_len)},
+            {(int16_t)(tip_x - quar_width), (int16_t)(tip_y - length)},
+            {(int16_t)(tip_x + quar_width), (int16_t)(tip_y - length)},
+            {(int16_t)(tip_x + quar_width), (int16_t)(tip_y - tip_len)},
+            {(int16_t)(tip_x + half_width), (int16_t)(tip_y - tip_len)}
+        };
+        FillPolygon(7, points, colour);
+    }
+}
+
+void Screen::FillCircle(const uint16_t x, const uint16_t y, const uint16_t r,
+    const uint16_t fg, const uint16_t bg)
+{
+    // TODO error checking
+
+    // Create the bounding box
+    int16_t left = x - r;
+    int16_t right = x + r;
+    int16_t top = y - r;
+    int16_t bottom = y + r;
+
+    // printf("left = %d, right = %d, top = %d, bottom = %d", left, right, top, bottom);
+
+    if (left < 0)
+    {
+        left = 0;
+    }
+    if (right > ViewWidth())
+    {
+        right = ViewWidth();
+    }
+    if (top < 0)
+    {
+        top = 0;
+    }
+    if (bottom > ViewHeight())
+    {
+        bottom = ViewHeight();
+    }
+
+    // Right now it is limited to 8 pixels per row
+    // Scan through the circle
+    const int16_t r_2 = r * r;
+    const uint16_t cols = right - left + 1;
+    const uint16_t rows = bottom - top + 1;
+
+    // Get the number of bytes required to draw
+    // TODO this math is wrong fix it.
+    const size_t num_bytes = (rows * cols) * 2;
+    uint8_t bytes[num_bytes] = { 0 };
+    size_t idx;
+    uint16_t row;
+    uint16_t col;
+    for (row = 0; row < rows; ++row)
+    {
+        for (col = 0; col < cols; ++col)
+        {
+            const uint16_t h_dis = ((left + col) - x) * ((left + col) - x);
+            const uint16_t v_dis = ((top + row) - y) * ((top + row) - y);
+            if (h_dis + v_dis <= r_2)
+            {
+                DrawPixel(left + col, top + row, fg);
+                // Point falls in the circle
+                // bytes[idx++] = static_cast<uint8_t>(fg >> 8);
+                // bytes[idx++] = static_cast<uint8_t>(fg);
+            }
+            else
+            {
+                DrawPixel(left + col, top + row, bg);
+                // bytes[idx++] = static_cast<uint8_t>(bg >> 8);
+                // bytes[idx++] = static_cast<uint8_t>(bg);
+            }
+        }
+    }
+    // WaitUntilSPIFree();
+    // Select();
+
+    // SetWritablePixels(left, top, right - 1, bottom - 1);
+
+    // HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
+    // WriteDataDMA(bytes, num_bytes);
+
+    // Deselect();
+}
+
+void Screen::FillRectangle(const uint16_t x_start,
+    const uint16_t y_start,
+    uint16_t x_end,
+    uint16_t y_end,
+    const uint16_t colour,
+    uint32_t max_chunk_size)
+{
+    // Clip to the size of the screen
+    if (x_start >= view_width || y_start >= view_height) return;
+
+    if (x_end >= view_width) x_end = view_width;
+    if (y_end >= view_height) y_end = view_height;
+
+    if (max_chunk_size > Screen::Max_Chunk_Size)
+        max_chunk_size = Screen::Max_Chunk_Size;
+
+    WaitUntilSPIFree();
+
+    Select();
+    SetWritablePixels(x_start, y_start, x_end - 1, y_end - 1);
+    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
+
+    uint16_t y_pixels = y_end - y_start;
+    uint16_t x_pixels = x_end - x_start;
+
+    uint32_t total_pixels = y_pixels * x_pixels;
+
+    uint32_t chunk = std::min<uint32_t>(total_pixels, 128);
+
+    // Copy colour to data
+    for (uint32_t i = 0; i < chunk * 2; i += 2)
+    {
+        chunk_buffer[i] = static_cast<uint8_t>(colour >> 8);
+        chunk_buffer[i + 1] = static_cast<uint8_t>(colour);
+    }
+
+    while (total_pixels > 0)
+    {
+        WriteDataDMA(chunk_buffer, chunk * 2);
+
+        total_pixels -= chunk;
+
+        // Get the size of data we are sending that is remaining
+        chunk = std::min<uint32_t>(total_pixels, 128);
+    }
+
+    Deselect();
+}
+
+void Screen::FillTriangle(const uint16_t x1, const uint16_t y1,
+    const uint16_t x2, const uint16_t y2,
+    const uint16_t x3, const uint16_t y3,
+    const uint16_t colour)
+{
+    int16_t points[3][2] = { { int16_t(x1), int16_t(y1) },
+                             { int16_t(x2), int16_t(y2) },
+                             { int16_t(x3), int16_t(y3) }
+    };
+    FillPolygon(3, points, colour);
+}
+
+void Screen::FillScreen(const uint16_t colour, bool async)
+{
+    if (async)
+    {
+        FillRectangleAsync(0, 0, view_width, view_height, colour);
+    }
+    else
+    {
+        FillRectangle(0, 0, view_width, view_height, colour);
+    }
+}
+
+void Screen::SetOrientation(Orientation _orientation)
+{
+    switch (_orientation)
+    {
+        case Orientation::portrait:
+            view_width = WIDTH;
+            view_height = HEIGHT;
+
+            WriteCommand(MAD_CT);
+            WriteData(PORTRAIT_DATA);
+            break;
+        case Orientation::left_landscape:
+            view_width = HEIGHT;
+            view_height = WIDTH;
+
+            WriteCommand(MAD_CT);
+            WriteData(LEFT_LANDSCAPE_DATA);
+            break;
+        case Orientation::right_landscape:
+            view_width = HEIGHT;
+            view_height = WIDTH;
+
+            WriteCommand(MAD_CT);
+            WriteData(RIGHT_LANDSCAPE_DATA);
+            break;
+        default:
+            // Do nothing
+            break;
+    }
+    orientation = orientation;
+}
+
+void Screen::ReleaseSPI()
+{
+    static uint8_t str[32];
+    static uint16_t len;
+    spi_busy = false;
+    if (next_interaction != nullptr)
+    {
+        Deselect();
+        next_interaction->is_busy = false;
+
+        free_interactions++;
+        available_interactions--;
+
+        // Print("Available interactions: ", 24);
+        // int_to_string(available_interactions, str, len);
+        // Print((char*)str, 5);
+
+        // Get the next interaction
+        if (!HandleReadyInteraction())
+        {
+            // Print("No interactions left\n", 21);
+            // No interactions left
+            spi_running = false;
+        }
+    }
+    else
+    {
+        spi_running = false;
+    }
+
+}
+
+uint16_t Screen::GetStringWidth(const uint16_t str_len, const Font& font) const
+{
+    return str_len * font.width;
+}
+
+uint16_t Screen::GetStringCenter(const uint16_t str_len, const Font& font) const
+{
+    return GetStringWidth(str_len, font) / 2;
+}
+
+uint16_t Screen::GetStringCenterMargin(const uint16_t str_len, const Font& font) const
+{
+    return GetStringLeftDistanceFromRightEdge(str_len, font) / 2;
+}
+
+uint16_t Screen::GetStringLeftDistanceFromRightEdge(const uint16_t str_len,
+    const Font& font) const
+{
+    return ViewWidth() - GetStringWidth(str_len, font);
+}
+
+// Note - The select() and deselect() should be called before
+//        and after invoking this function, respectively.
+void Screen::DrawCharacter(uint16_t x_start,
+    uint16_t y_start,
+    const uint16_t x_window_begin,
+    const uint16_t y_window_begin,
+    const uint16_t x_window_end,
+    const uint16_t y_window_end,
+    const char ch,
+    const Font& font,
+    const uint16_t fg,
+    const uint16_t bg)
+{
+    // Clip to the window
+    uint16_t x_end = x_start + font.width;
+    uint16_t y_end = y_start + font.height;
+
+    if (x_start < x_window_begin) x_start = x_window_begin + 1;
+    if (y_start < y_window_begin) y_start = y_window_begin + 1;
+    if (x_end > x_window_end) x_end = x_window_end;
+    if (y_end > y_window_end) y_end = y_window_end;
+
+    SetWritablePixels(x_start, y_start, x_end - 1, y_end - 1);
+
+    // Get the offset based on the font height and width
+    // If the width > 8 we need to account for the extra bytes
+    uint32_t offset = (ch - 32) * font.height * (font.width / 8 + 1);
+
+    // Get the address for the start of the character
+    const uint8_t* ch_ptr = &font.data[offset];
+
+    uint8_t data[2]; // The pixel data
+    uint16_t idx_h;  // height index
+    uint16_t idx_w;  // Width index
+
+    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
+    for (idx_h = 0; idx_h < font.height; idx_h++)
+    {
+        // If the current row is *above* the window skip the whole row
+        if (y_start + idx_h < y_window_begin)
+        {
+            // Add how many bytes we would be skipping for the next row
+            // ex font.width = 15, therefore, it takes up 2 bytes, so we need
+            // to skip by 2 bytes to get the next row.
+            uint8_t num_bytes = 1 + static_cast<uint8_t>(font.width / 8);
+            ch_ptr += num_bytes;
+            continue;
+        }
+
+        // Going past the end of the window can just skip the remaining drawing
+        if (y_start + idx_h > y_window_end) break;
+
+        for (idx_w = 0; idx_w < font.width; idx_w++)
+        {
+            if (x_start + idx_w >= x_window_begin &&
+                x_start + idx_w <= x_window_end)
+            {
+                // Go through each bit in the data and shift it over by the
+                // current width index to get if the pixel is activated or not
+                // Important to modulus the idx so we don't shift past a byte on
+                // the next byte
+                if ((*ch_ptr << (idx_w % 8)) & 0x80)
+                {
+                    // Draw character fg
+                    data[0] = static_cast<uint8_t>(fg >> 8);
+                    data[1] = fg;
+                    WriteDataDMA(data, 2);
+                }
+                else
+                {
+                    // Draw character bg
+                    data[0] = static_cast<uint8_t>(bg >> 8);
+                    data[1] = bg;
+                    WriteDataDMA(data, 2);
+                }
+            }
+
+            // At the end of the byte for a pixel's width
+            // slide the ptr to the next byte
+            if (idx_w % 8 == 7)
+            {
+                ch_ptr++;
+            }
+        }
+
+        // Slide the pointer over to the next byte
+        ch_ptr++;
+    }
+}
+
+
+/***** PRIVATE FUNCTIONS *****/
+
+void Screen::Clip(const uint16_t x_start,
+    const uint16_t y_start,
+    uint16_t& x_end,
+    uint16_t& y_end)
+{
+    if (x_start + x_end - 1 >= view_width) x_end = view_width - x_start;
+    if (y_start + y_end - 1 >= view_height) y_end = view_height - y_start;
+}
+
+uint16_t Screen::ViewWidth() const
+{
+    return view_width;
+}
+
+uint16_t Screen::ViewHeight() const
+{
+    return view_height;
+}
+
+
+void Screen::FillRectangleAsync(uint16_t x1,
+    uint16_t x2,
+    uint16_t y1,
+    uint16_t y2,
+    const uint16_t colour)
+{
+    // Clip to the size of the screen
+    if (x1 >= view_width || y1 >= view_height)
+    {
+        return;
+    }
+
+    if (x2 >= view_width)
+    {
+        x2 = view_width;
+    }
+
+    if (y2 >= view_height)
+    {
+        y2 = view_height;
+    }
+
+    if (x1 > x2)
+    {
+        x1 = x2;
+    }
+
+    if (y1 > y2)
+    {
+        y1 = y2;
+    }
+
+    uint32_t num_pixels = (x2 - x1) * (y2 - y1);
+
+    ScreenMemory* memory = RetrieveFreeMemory();
+
+    if (memory == nullptr)
+    {
+        // TODO
+        // cry, but should error out meaning we need to
+        // give more memory
+
+        return;
+    }
+
+    memory->is_busy = true;
+
+    // Is this param needed??
+    memory->len = num_pixels;
+    memory->data_remaining = num_pixels * 2;
+    memory->callback = FillRectangleAsyncProcedure2;
+    memory->status = MemoryStatus::Not_Started;
+
+    memory->parameters[0] = x1 >> 8;
+    memory->parameters[1] = x1 & 0xFF;
+
+    memory->parameters[2] = x2 >> 8;
+    memory->parameters[3] = x2 & 0xFF;
+
+    memory->parameters[4] = y1 >> 8;
+    memory->parameters[5] = y1 & 0xFF;
+
+    memory->parameters[6] = y2 >> 8;
+    memory->parameters[7] = y2 & 0xFF;
+
+    memory->parameters[8] = colour >> 8;
+    memory->parameters[9] = colour & 0xFF;
+
+    // Current x position
+    memory->parameters[10] = x1 >> 8;
+    memory->parameters[11] = x1 & 0xFF;
+
+    // Current y position
+    memory->parameters[12] = y1 >> 8;
+    memory->parameters[13] = y1 & 0xFF;
+}
+
+void Screen::PushDrawingFunction(void* func)
+{
+    Drawing_Func_Ring[drawing_func_write++] = func;
+
+    if (drawing_func_write >= 8)
+    {
+        drawing_func_write = 0;
+    }
+}
+
+void Screen::UpdateDrawingFunction(void* func)
+{
+    Drawing_Func_Ring[drawing_func_read] = func;
+}
+
+inline void Screen::DrawNext()
+{
+    if (Drawing_Func_Ring[drawing_func_read] != nullptr)
+        ((void(*)(Screen*))Drawing_Func_Ring[drawing_func_read])(this);
+}
+
+void Screen::WriteDataDMAFree(uint8_t* data, const uint32_t data_size)
+{
+    HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
+}
+
+bool Screen::FillRectangleAsyncProcedure2(Screen& screen, ScreenMemory& memory)
+{
+    // No blocks available, have to wait
+    if (screen.free_interactions < 6)
+    {
+        return false;
+    }
+
+    screen.draw_async = true;
+
+    // Calculate the data
+    uint16_t x1 = memory.parameters[0] << 8 | memory.parameters[1];
+    uint16_t x2 = memory.parameters[2] << 8 | memory.parameters[3];
+
+    uint16_t y1 = memory.parameters[4] << 8 | memory.parameters[5];
+    uint16_t y2 = memory.parameters[6] << 8 | memory.parameters[7];
+
+    uint16_t colour = memory.parameters[8] << 8 | memory.parameters[9];
+
+    uint16_t curr_x = memory.parameters[10] << 8 | memory.parameters[11];
+    uint16_t curr_y = memory.parameters[12] << 8 | memory.parameters[13];
+
+    uint8_t str[64] = "here\n";
+    uint16_t len;
+    Print((char*)str, 5);
+    int_to_string(x1, str, len);
+    Print((char*)str, len);
+    int_to_string(x2, str, len);
+    Print((char*)str, len);
+    int_to_string(y1, str, len);
+    Print((char*)str, len);
+    int_to_string(y2, str, len);
+    Print((char*)str, len);
+    int_to_string(colour, str, len);
+    Print((char*)str, len);
+    int_to_string(curr_x, str, len);
+    Print((char*)str, len);
+    int_to_string(curr_y, str, len);
+    Print((char*)str, len);
+
+    uint16_t end_x = x2;
+    uint16_t end_y = y2;
+
+    uint16_t width;
+    uint16_t height;
+    uint32_t num_pixels;
+
+    memory.status = MemoryStatus::In_Progress;
+
+    while (true)
+    {
+
+        // Get a reservable chunk
+        const uint32_t pool_chunk_size = 512;
+
+
+        width = x2 - curr_x;
+        height = y2 - curr_y;
+        num_pixels = width * height;
+
+        if (pool_chunk_size >= (num_pixels * 2) && curr_x == x1)
+        {
+            // Big enough to do the entire rectangle
+            str[0] = 'f';
+            str[1] = 'u';
+            str[2] = 'l';
+            str[3] = 'l';
+            str[4] = '\n';
+            Print((char*)str, 5);
+            end_x = x2;
+            end_y = y2;
+        }
+        else if (pool_chunk_size / (width * 2) >= 1)
+        {
+            // Get the max number of lines we can calculate
+            uint32_t num_lines = pool_chunk_size / (width * 2);
+
+            end_x = x2;
+            end_y = curr_y + num_lines;
+
+            if (end_y > y2)
+            {
+                end_y = y2;
+            }
+        }
+        else
+        {
+            // Otherwise we can only do a partial line
+            end_x = curr_x + (pool_chunk_size / 2);
+            end_y = curr_y + 1;
+
+            if (end_x > x2)
+            {
+                end_x = x2;
+            }
+        }
+
+        uint16_t num_bytes = (end_x - curr_x) * (end_y - curr_y) * 2;
+
+
+
+        // Do as much of the line as possible
+        Print("Set writable pixels\n", 20);
+        Print("curr_x:", 7);
+        int_to_string(curr_x, str, len);
+        Print((char*)str, len);
+        Print("endd_x:", 7);
+        int_to_string(end_x - 1, str, len);
+        Print((char*)str, len);
+
+        Print("curr_y:", 7);
+        int_to_string(curr_y, str, len);
+        Print((char*)str, len);
+        Print("endd_y:", 7);
+        int_to_string(end_y - 1, str, len);
+        Print((char*)str, len);
+        screen.SetWritablePixelsAsync(curr_x, end_x - 1, curr_y, end_y - 1);
+
+        ScreenInteraction* interaction = screen.RetrieveFreeInteraction();
+
+        if (interaction == nullptr)
+        {
+            break;
+        }
+
+        // Fill the chunk buffer
+        for (uint32_t i = 0; i < num_bytes; i += 2)
+        {
+            interaction->data[i] = colour >> 8;
+            interaction->data[i + 1] = colour & 0xFF;
+        }
+
+        interaction->len = num_bytes;
+        interaction->dc_level = GPIO_PIN_SET;
+        interaction->is_busy = true;
+
+        // TODO make sure this is actually correct
+        memory.data_remaining -= num_bytes;
+
+        str[0] = 'd';
+        str[1] = 'o';
+        str[2] = 'n';
+        str[3] = 'e';
+        str[4] = '\n';
+        Print((char*)str, 5);
+        int_to_string(curr_x, str, len);
+        Print((char*)str, len);
+        int_to_string(curr_y, str, len);
+        Print((char*)str, len);
+
+        curr_x = end_x;
+
+        if (curr_x == x2)
+        {
+            curr_y = end_y;
+
+            if (curr_y == y2)
+            {
+                Print("Break\n", 6);
+                break;
+            }
+
+            curr_x = x1;
+        }
+    }
+
+    // Out of the while loop, if curr_x != x2 and curr_y != y2
+    // then save the state, otherwise, finish the memory?
+    if (curr_x != x2 || curr_y != y2)
+    {
+        // Save state
+        memory.parameters[10] = curr_x >> 8;
+        memory.parameters[11] = curr_x;
+
+        memory.parameters[12] = curr_y >> 8;
+        memory.parameters[13] = curr_y;
+    }
+
+    return true;
+}
+
+void Screen::FillRectangleAsyncProcedure(Screen* screen)
+{
+    screen->draw_async = 1;
+    uint16_t x_end = screen->draw_matrix.Read<uint16_t>(6);
+    uint16_t y_end = screen->draw_matrix.Read<uint16_t>(8);
+
+    if (!screen->draw_matrix.Read<uint8_t>(18) ||
+        screen->buffer_overwritten_by_sync)
+    {
+        screen->buffer_overwritten_by_sync = 0;
+        // uint16_t colour = *(uint16_t*)screen->PopVariable(0, 2);
+        uint16_t colour = screen->draw_matrix.Read<uint16_t>(0);
+
+        uint16_t x_start = screen->draw_matrix.Read<uint16_t>(2);
+        uint16_t y_start = screen->draw_matrix.Read<uint16_t>(4);
+
+        // Filled rectangles always use the same colour, so we can
+        // just fill the buffer now and reuse it.
+        uint32_t total_pixel_bytes = (((x_end - x_start) * (y_end - y_start)) * 2);
+
+        if (total_pixel_bytes > Chunk_Buffer_Size * 2)
+            total_pixel_bytes = Chunk_Buffer_Size * 2;
+
+        // This is big enough for a 64x64 rectangle
+        for (uint32_t i = 0; i < total_pixel_bytes; i += 2)
+        {
+            screen->chunk_buffer[i] = static_cast<uint8_t>(colour >> 8);
+            screen->chunk_buffer[i + 1] = static_cast<uint8_t>(colour);
+        }
+
+        screen->draw_matrix.Write<uint8_t>((uint8_t)1, 18);
+    }
+
+    uint16_t x_current = screen->draw_matrix.Read<uint16_t>(10);
+    uint16_t y_current = screen->draw_matrix.Read<uint16_t>(12);
+
+    const uint16_t Pixel_Distance = 32;
+    uint16_t x_width = x_current + Pixel_Distance;
+    if (x_width > x_end)
+        x_width = x_end;
+
+    uint16_t y_height = y_current + Pixel_Distance;
+    if (y_height > y_end)
+        y_height = y_end;
+
+    screen->Select();
+    screen->SetWritablePixels(x_current, y_current, x_width - 1, y_height - 1);
+
+    uint32_t remaining_pixels = screen->draw_matrix.Read<uint32_t>(14);
+
+    uint32_t num_pixels = (x_width - x_current) * (y_height - y_current);
+    if (num_pixels > remaining_pixels)
+        num_pixels = remaining_pixels;
+
+    remaining_pixels -= num_pixels;
+    if (remaining_pixels == 0)
+    {
+        screen->draw_async_stop = 1;
+    }
+    screen->WriteDataDMAFree(screen->chunk_buffer, num_pixels * 2);
+
+    x_current += x_width - x_current;
+    if (x_current >= x_end)
+    {
+        // Get the start x
+        x_current = screen->draw_matrix.Read<uint16_t>(2);
+        y_current += y_height - y_current;
+
+        if (y_current >= y_end)
+        {
+            // Get the start y
+            y_current = screen->draw_matrix.Read<uint16_t>(4);
+        }
+        screen->draw_matrix.Write(y_current, 12);
+    }
+
+    screen->draw_matrix.Write(x_current, 10);
+    screen->draw_matrix.Write(remaining_pixels, 14);
+}
+
+void Screen::Loop()
+{
+    // if (async_draw_ready && !spi_busy)
+    // {
+    //     spi_busy = 1;
+    //     async_draw_ready = 0;
+
+    //     DrawNext();
+    // }
+}
+
+inline void Screen::WaitUntilSPIFree()
+{
+    while (spi_busy)
+    {
+        __NOP();
+    }
+}
+
+
+// Async functions
+Screen::ScreenInteraction* Screen::RetrieveFreeInteraction()
+{
+    uint32_t inter_count = 0;
+
+    while (inter_count < Num_Interactions)
+    {
+        if (interaction_write_idx >= Num_Interactions)
+        {
+            interaction_write_idx = 0;
+        }
+
+        if (!interactions[interaction_write_idx].is_busy)
+        {
+            free_interactions--;
+            available_interactions++;
+            return &interactions[interaction_write_idx++];
+        }
+
+        interaction_write_idx++;
+        inter_count++;
+    }
+
+
+    return nullptr;
+}
+
+bool Screen::HandleReadyInteraction()
+{
+    if (spi_busy || available_interactions == 0)
+    {
+        // Print("no interactions\n", 16);
+        return false;
+    }
+
+    // Find an interaction
+    uint32_t interaction_count = 0;
+    bool got_interaction = false;
+
+    while (interaction_count < Num_Interactions)
+    {
+        if (interaction_read_idx >= Num_Interactions)
+        {
+            interaction_read_idx = 0;
+        }
+
+        // Get the interaction
+        // Update the read head
+        next_interaction = &interactions[interaction_read_idx++];
+
+        // This interaction is ready to be used
+        if (next_interaction->is_busy)
+        {
+            got_interaction = true;
+            break;
+        }
+
+        interaction_count++;
+    }
+
+    // No interaction ready just return
+    if (!got_interaction)
+    {
+        next_interaction = nullptr;
+        // Print("no interactions ready\n", 22);
+        return false;
+    }
+
+    // Send the interaction to the spi bus
+    draw_async = true;
+    spi_busy = true;
+    spi_running = true;
+    Select();
+    HAL_GPIO_WritePin(dc.port, dc.pin, next_interaction->dc_level);
+
+    // Print("Send spi\n", 9);
+
+    // Print("Send data\n", 10);
+    // int_to_string(next_interaction->len, str, len);
+    // Print((char*)str, len);
+
+    HAL_SPI_Transmit_DMA(spi_handle, next_interaction->data, next_interaction->len);
+
+    return true;
+}
+
+Screen::ScreenMemory* Screen::RetrieveFreeMemory()
+{
+    uint32_t memory_count = 0;
+
+    while (memory_count < Num_Memories)
+    {
+        if (memories_write_idx >= Num_Memories)
+        {
+            memories_write_idx = 0;
+        }
+
+        if (!memories[memories_write_idx].is_busy)
+        {
+            available_memories++;
+            return &memories[memories_write_idx];
+        }
+
+        memories_write_idx++;
+        memory_count++;
+    }
+
+
+    return nullptr;
+}
+
+void Screen::HandleReadyMemory()
+{
+    // Nothing to do skip
+    if (available_memories == 0)
+    {
+        return;
+    }
+
+    // Get the current memory if the memory is complete, get the next one etc
+    uint32_t memory_count = 0;
+    ScreenMemory* memory;
+    bool got_memory = false;
+
+    while (memory_count < Num_Memories)
+    {
+        if (memories_read_idx >= Num_Memories)
+        {
+            memories_read_idx = 0;
+        }
+
+        memory = &memories[memories_read_idx];
+
+        if (memory->status == MemoryStatus::Unused ||
+            memory->status == MemoryStatus::Complete)
+        {
+            // Go to the next memory
+            memories_read_idx++;
+
+            // TODO should this be here?
+            available_memories--;
+        }
+        else if (memory->status == MemoryStatus::In_Progress)
+        {
+            if (memory->data_remaining == 0)
+            {
+                memory->status = MemoryStatus::Complete;
+                memories_read_idx++;
+
+                Print("Complete\n", 9);
+                continue;
+            }
+
+            got_memory = true;
+            break;
+        }
+        else if (memory->status == MemoryStatus::Not_Started)
+        {
+            // Got a memory
+            got_memory = true;
+            break;
+        }
+        memory_count++;
+    }
+
+    if (!got_memory)
+    {
+        // No memory to handle
+        return;
+    }
+
+    // Now that we have a memory we can call the function and
+    // feed itself to the function
+    memory->callback(*this, *memory);
+}
+
+bool Screen::WriteCommandAsync(Screen& screen, ScreenMemory& memory)
+{
+    ScreenInteraction* interaction = screen.RetrieveFreeInteraction();
+
+    if (interaction == nullptr)
+    {
+        // Couldn't get an interaction
+        return false;
+    }
+
+    interaction->dc_level = GPIO_PIN_RESET;
+    interaction->len = 1;
+    interaction->is_busy = true;
+    interaction->data[0] = memory.parameters[0];
+
+    memory.status = MemoryStatus::In_Progress;
+    memory.data_remaining -= interaction->len;
+
+    return true;
+}
+
+
+// USED FOR COMMANDS
+bool Screen::WriteDataAsync(Screen& screen, ScreenMemory& memory)
+{
+
+    ScreenInteraction* interaction = screen.RetrieveFreeInteraction();
+
+    if (interaction == nullptr)
+    {
+        // Couldn't get an interaction
+        return false;
+    }
+
+    for (uint32_t i = 0; i < memory.len; i++)
+    {
+        interaction->data[i] = memory.parameters[i];
+    }
+
+    interaction->dc_level = GPIO_PIN_SET;
+    interaction->len = memory.len;
+    interaction->is_busy = true;
+
+    memory.status = MemoryStatus::In_Progress;
+    memory.data_remaining -= interaction->len;
+
+    return true;
+}
+
+bool Screen::WriteCommandAsync(uint8_t cmd)
+{
+    ScreenInteraction* interaction = RetrieveFreeInteraction();
+
+    if (interaction == nullptr)
+    {
+        // Couldn't get an interaction
+        return false;
+    }
+
+    interaction->data[0] = cmd;
+
+    interaction->dc_level = GPIO_PIN_RESET;
+    interaction->len = 1;
+    interaction->is_busy = true;
+
+    return true;
+}
+
+bool Screen::WriteDataAsync(uint8_t* data, uint32_t data_size)
+{
+    ScreenInteraction* interaction = RetrieveFreeInteraction();
+
+    if (interaction == nullptr)
+    {
+        // Couldn't get an interaction
+        return false;
+    }
+
+    for (uint32_t i = 0; i < data_size; ++i)
+    {
+        interaction->data[i] = data[i];
+    }
+
+    interaction->dc_level = GPIO_PIN_SET;
+    interaction->len = data_size;
+    interaction->is_busy = true;
+
+
+    return true;
+}
+
+bool Screen::WriteCommandDataAsync(uint8_t cmd, uint8_t* data, uint32_t data_size)
+{
+    if (!WriteCommandAsync(cmd))
+    {
+        return false;
+    }
+
+    if (!WriteDataAsync(data, data_size))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+
+void Screen::SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
+{
+    uint8_t col_data [] = { static_cast<uint8_t>(x1 >> 8), static_cast<uint8_t>(x1),
+                           static_cast<uint8_t>(x2 >> 8), static_cast<uint8_t>(x2) };
+    uint8_t row_data [] = { static_cast<uint8_t>(y1 >> 8), static_cast<uint8_t>(y1),
+                           static_cast<uint8_t>(y2 >> 8), static_cast<uint8_t>(y2) };
+
+    // TODO need to make sure there are enough memories for this
+    WriteCommandDataAsync(CA_SET, col_data, 4);
+
+    WriteCommandDataAsync(RA_SET, row_data, 4);
+
+    WriteCommandAsync(WR_RAM);
+}
+
+void Screen::EnqueueCommand(uint8_t cmd)
+{
+    ScreenMemory* memory = RetrieveFreeMemory();
+
+    memory->callback = &WriteCommandAsync;
+
+    memory->idx = memories_write_idx;
+    memory->len = 1;
+    memory->is_busy = true;
+    memory->status = MemoryStatus::Not_Started;
+    memory->parameters[0] = cmd;
+    memory->data_remaining = 1;
+}
+
+void Screen::EnqueueCommandData(uint8_t cmd, uint8_t* data, uint32_t data_size)
+{
+    EnqueueCommand(cmd);
+
+    ScreenMemory* data_memory = RetrieveFreeMemory();
+
+    // TODO something with the memories if we are full?
+
+    data_memory->callback = &WriteDataAsync;
+
+    data_memory->idx = memories_write_idx;
+    data_memory->is_busy = true;
+    data_memory->len = data_size;
+    data_memory->data_remaining = data_size;
+    data_memory->status = MemoryStatus::Not_Started;
+
+    for (int i = 0; i < data_size && i < Memory_Size; ++i)
+    {
+        data_memory->parameters[i] = data[i];
+    }
+}
