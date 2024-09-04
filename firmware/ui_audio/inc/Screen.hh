@@ -5,6 +5,7 @@
 #include "Font.hh"
 #include "RingMatrix.hh"
 #include "RingMemoryPool.hh"
+#include "SwapBuffer.hh"
 
 #include <string>
 
@@ -77,7 +78,6 @@ private:
     enum class MemoryStatus
     {
         Unused = 0,
-        Not_Started,
         In_Progress,
         Complete
     };
@@ -93,13 +93,8 @@ private:
 
     struct ScreenMemory
     {
-        // TODO make a callback type.
         bool (*callback)(Screen& screen, ScreenMemory& memory);
-        uint32_t idx; // Which memory is being used
-        uint32_t len; // How much of the pre-defined memory is being used
-        bool is_busy;
         MemoryStatus status;
-        uint32_t data_remaining;
         uint8_t parameters[Memory_Size]; // A bunch of data params to run the next command
     };
 
@@ -248,33 +243,24 @@ public:
     uint16_t GetStringLeftDistanceFromRightEdge(const uint16_t str_len, const Font& font) const;
     uint16_t Convert32ColorTo16(const uint32_t colour);
 
-    inline void DrawNext();
-
 
 private:
-    ScreenInteraction* RetrieveFreeInteraction();
-    bool HandleReadyInteraction();
-
     ScreenMemory* RetrieveFreeMemory();
     void HandleReadyMemory();
 
     void SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
-    static bool WriteCommandAsync(Screen& screen, ScreenMemory& memory);
-    static bool WriteDataAsync(Screen& screen, ScreenMemory& memory);
 
     bool WriteCommandAsync(uint8_t cmd);
     bool WriteDataAsync(uint8_t* data, uint32_t data_size);
     bool WriteCommandDataAsync(uint8_t cmd, uint8_t* data, uint32_t data_size);
-    void EnqueueCommand(uint8_t cmd);
-    void EnqueueCommandData(uint8_t cmd, uint8_t* data, uint32_t data_size);
 
+    static bool SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory);
+    static bool SetColumnsDataAsync(Screen& screen, ScreenMemory& memory);
+    static bool SetRowsCommandAsync(Screen& screen, ScreenMemory& memory);
+    static bool SetRowsDataAsync(Screen& screen, ScreenMemory& memory);
+    static bool WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory);
 
-    void PushDrawingFunction(void* func);
-    void UpdateDrawingFunction(void* func);
-    void PopDrawingFunction();
-
-    static bool FillRectangleAsyncProcedure2(Screen& screen, ScreenMemory& memory);
-    static void FillRectangleAsyncProcedure(Screen* screen);
+    static bool FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory);
 
     void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
               uint16_t &y_end);
@@ -305,18 +291,11 @@ private:
     uint32_t chunk_write = 0;
     uint32_t chunk_read = 0;
 
-    RingMemoryPool large_pool;
-    RingMemoryPool small_pool;
-
-    // TODO data structure like a ring buffer
-    ScreenInteraction interactions[Num_Interactions];
-    ScreenInteraction* next_interaction;
-    uint32_t free_interactions = Num_Interactions;
-    uint32_t interaction_write_idx = 0;
-    uint32_t interaction_read_idx = 0;
-    uint32_t available_interactions = 0;
+    SwapBuffer video_buff;
+    SwapBuffer::VideoBuffer* front_buff;
 
     ScreenMemory memories[Num_Memories];
+    ScreenMemory* live_memory;
     uint32_t memories_write_idx = 0;
     uint32_t memories_read_idx = 0;
     uint32_t available_memories = 0;

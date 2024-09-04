@@ -1,0 +1,67 @@
+#pragma once
+
+class SwapBuffer
+{
+public:
+    struct VideoBuffer
+    {
+        bool is_ready;
+        size_t len;
+        uint8_t* data;
+    };
+
+    SwapBuffer(size_t buffer_size):
+        buffer_size(buffer_size),
+        dual_buffers{ VideoBuffer{0, 0, new uint8_t[buffer_size]},
+                      VideoBuffer{0, 0, new uint8_t[buffer_size]} },
+        back_buff(&dual_buffers[0]),
+        front_buff(&dual_buffers[1])
+    {
+
+    }
+
+    ~SwapBuffer()
+    {
+        back_buff = nullptr;
+        front_buff = nullptr;
+        delete [] dual_buffers[0].data;
+        delete [] dual_buffers[1].data;
+    }
+
+    VideoBuffer* Swap()
+    {
+        VideoBuffer* tmp = back_buff;
+        back_buff = front_buff;
+        front_buff = tmp;
+
+        return front_buff;
+    }
+
+    VideoBuffer* GetFront()
+    {
+        return front_buff;
+    }
+
+    VideoBuffer* GetBack()
+    {
+        return back_buff;
+    }
+
+    bool BackIsReady() const
+    {
+        return back_buff->is_ready;
+    }
+
+    size_t BufferSize() const
+    {
+        return buffer_size;
+    }
+
+private:
+    size_t buffer_size;
+    VideoBuffer dual_buffers[2];
+    VideoBuffer* back_buff;
+    VideoBuffer* front_buff;
+
+
+};
