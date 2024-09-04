@@ -69,8 +69,8 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     async_draw_ready(0),
     draw_matrix(32),
     Drawing_Func_Ring(new void* [32]),
-    large_pool(10, 256),
-    small_pool(10, 32)
+    video_buff(1024),
+    live_memory(memories)
 {
 }
 
@@ -81,19 +81,29 @@ Screen::~Screen()
 
 void Screen::Update(uint32_t current_tick)
 {
-    HandleReadyMemory();
-    // TODO only send them every x ticks
-
-    if (!spi_running)
+    if (!spi_busy)
     {
-        HandleReadyInteraction();
+        // Check if the back buffer is ready
+        if (video_buff.BackIsReady())
+        {
+            // Back is ready, so swap it to the front
+            front_buff = video_buff.Swap();
+
+            // Send it off
+            WriteDataAsync(front_buff->data, front_buff->len);
+        }
     }
+
+    HandleReadyMemory();
 }
 
 void Screen::Begin()
 {
     // Ensure the spi is initialize at this point
-    if (spi_handle == nullptr) return;
+    if (spi_handle == nullptr)
+    {
+        return;
+    }
 
     // Setup GPIO for the screen.
     GPIO_InitTypeDef GPIO_InitStruct = {};
@@ -315,6 +325,8 @@ void Screen::SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_en
     uint8_t row_data [] = { static_cast<uint8_t>(y_start >> 8), static_cast<uint8_t>(y_start),
                            static_cast<uint8_t>(y_end >> 8), static_cast<uint8_t>(y_end) };
 
+    Select();
+
     // Set drawable column ILI9341 command
     WriteCommand(CA_SET);
     WriteData(col_data, sizeof(col_data));
@@ -327,6 +339,8 @@ void Screen::SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_en
 
     // Tell the ILI9341 that we are going to send data next
     HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
+
+    // Deselect();
 }
 
 void Screen::EnableBackLight()
@@ -1129,34 +1143,14 @@ void Screen::SetOrientation(Orientation _orientation)
 
 void Screen::ReleaseSPI()
 {
-    static uint8_t str[32];
-    static uint16_t len;
     spi_busy = false;
-    if (next_interaction != nullptr)
+
+    // TODO make this better
+    if (draw_async && front_buff->is_ready)
     {
-        Deselect();
-        next_interaction->is_busy = false;
-
-        free_interactions++;
-        available_interactions--;
-
-        // Print("Available interactions: ", 24);
-        // int_to_string(available_interactions, str, len);
-        // Print((char*)str, 5);
-
-        // Get the next interaction
-        if (!HandleReadyInteraction())
-        {
-            // Print("No interactions left\n", 21);
-            // No interactions left
-            spi_running = false;
-        }
+        front_buff->is_ready = false;
+        draw_async = false;
     }
-    else
-    {
-        spi_running = false;
-    }
-
 }
 
 uint16_t Screen::GetStringWidth(const uint16_t str_len, const Font& font) const
@@ -1325,7 +1319,9 @@ void Screen::FillRectangleAsync(uint16_t x1,
         y1 = y2;
     }
 
-    uint32_t num_pixels = (x2 - x1) * (y2 - y1);
+    SetWritablePixelsAsync(x1, x2, y1, y2);
+
+    uint32_t num_byte_pixels = ((x2 - x1) * (y2 - y1) * 2);
 
     ScreenMemory* memory = RetrieveFreeMemory();
 
@@ -1338,334 +1334,63 @@ void Screen::FillRectangleAsync(uint16_t x1,
         return;
     }
 
-    memory->is_busy = true;
-
     // Is this param needed??
-    memory->len = num_pixels;
-    memory->data_remaining = num_pixels * 2;
-    memory->callback = FillRectangleAsyncProcedure2;
-    memory->status = MemoryStatus::Not_Started;
+    memory->callback = FillRectangleAsyncProcedure;
 
-    memory->parameters[0] = x1 >> 8;
-    memory->parameters[1] = x1 & 0xFF;
+    memory->parameters[0] = colour >> 8;
+    memory->parameters[1] = colour & 0xFF;
 
-    memory->parameters[2] = x2 >> 8;
-    memory->parameters[3] = x2 & 0xFF;
+    memory->parameters[2] = num_byte_pixels >> 24;
+    memory->parameters[3] = num_byte_pixels >> 16;
+    memory->parameters[4] = num_byte_pixels >> 8;
+    memory->parameters[5] = num_byte_pixels & 0xFF;
 
-    memory->parameters[4] = y1 >> 8;
-    memory->parameters[5] = y1 & 0xFF;
-
-    memory->parameters[6] = y2 >> 8;
-    memory->parameters[7] = y2 & 0xFF;
-
-    memory->parameters[8] = colour >> 8;
-    memory->parameters[9] = colour & 0xFF;
-
-    // Current x position
-    memory->parameters[10] = x1 >> 8;
-    memory->parameters[11] = x1 & 0xFF;
-
-    // Current y position
-    memory->parameters[12] = y1 >> 8;
-    memory->parameters[13] = y1 & 0xFF;
+    memory->status = MemoryStatus::In_Progress;
 }
 
-void Screen::PushDrawingFunction(void* func)
+bool Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
 {
-    Drawing_Func_Ring[drawing_func_write++] = func;
+    uint16_t colour = memory.parameters[0] << 8 | memory.parameters[1];
 
-    if (drawing_func_write >= 8)
+    uint32_t bytes_remaining =
+        memory.parameters[2] << 24 |
+        memory.parameters[3] << 16 |
+        memory.parameters[4] << 8 |
+        memory.parameters[5];
+
+    // Get a buff
+    SwapBuffer::VideoBuffer* buff = screen.video_buff.GetBack();
+    buff->len = bytes_remaining > screen.video_buff.BufferSize()
+        ? screen.video_buff.BufferSize() : bytes_remaining;
+
+    // Fill the buff
+    for (size_t i = 0; i < buff->len; i += 2)
     {
-        drawing_func_write = 0;
-    }
-}
-
-void Screen::UpdateDrawingFunction(void* func)
-{
-    Drawing_Func_Ring[drawing_func_read] = func;
-}
-
-inline void Screen::DrawNext()
-{
-    if (Drawing_Func_Ring[drawing_func_read] != nullptr)
-        ((void(*)(Screen*))Drawing_Func_Ring[drawing_func_read])(this);
-}
-
-void Screen::WriteDataDMAFree(uint8_t* data, const uint32_t data_size)
-{
-    HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
-}
-
-bool Screen::FillRectangleAsyncProcedure2(Screen& screen, ScreenMemory& memory)
-{
-    // No blocks available, have to wait
-    if (screen.free_interactions < 6)
-    {
-        return false;
+        buff->data[i] = colour >> 8;
+        buff->data[i + 1] = colour & 0xFF;
     }
 
-    screen.draw_async = true;
+    buff->is_ready = true;
 
-    // Calculate the data
-    uint16_t x1 = memory.parameters[0] << 8 | memory.parameters[1];
-    uint16_t x2 = memory.parameters[2] << 8 | memory.parameters[3];
-
-    uint16_t y1 = memory.parameters[4] << 8 | memory.parameters[5];
-    uint16_t y2 = memory.parameters[6] << 8 | memory.parameters[7];
-
-    uint16_t colour = memory.parameters[8] << 8 | memory.parameters[9];
-
-    uint16_t curr_x = memory.parameters[10] << 8 | memory.parameters[11];
-    uint16_t curr_y = memory.parameters[12] << 8 | memory.parameters[13];
-
-    uint8_t str[64] = "here\n";
-    uint16_t len;
-    Print((char*)str, 5);
-    int_to_string(x1, str, len);
-    Print((char*)str, len);
-    int_to_string(x2, str, len);
-    Print((char*)str, len);
-    int_to_string(y1, str, len);
-    Print((char*)str, len);
-    int_to_string(y2, str, len);
-    Print((char*)str, len);
-    int_to_string(colour, str, len);
-    Print((char*)str, len);
-    int_to_string(curr_x, str, len);
-    Print((char*)str, len);
-    int_to_string(curr_y, str, len);
-    Print((char*)str, len);
-
-    uint16_t end_x = x2;
-    uint16_t end_y = y2;
-
-    uint16_t width;
-    uint16_t height;
-    uint32_t num_pixels;
-
-    memory.status = MemoryStatus::In_Progress;
-
-    while (true)
-    {
-
-        // Get a reservable chunk
-        const uint32_t pool_chunk_size = 512;
-
-
-        width = x2 - curr_x;
-        height = y2 - curr_y;
-        num_pixels = width * height;
-
-        if (pool_chunk_size >= (num_pixels * 2) && curr_x == x1)
-        {
-            // Big enough to do the entire rectangle
-            str[0] = 'f';
-            str[1] = 'u';
-            str[2] = 'l';
-            str[3] = 'l';
-            str[4] = '\n';
-            Print((char*)str, 5);
-            end_x = x2;
-            end_y = y2;
-        }
-        else if (pool_chunk_size / (width * 2) >= 1)
-        {
-            // Get the max number of lines we can calculate
-            uint32_t num_lines = pool_chunk_size / (width * 2);
-
-            end_x = x2;
-            end_y = curr_y + num_lines;
-
-            if (end_y > y2)
-            {
-                end_y = y2;
-            }
-        }
-        else
-        {
-            // Otherwise we can only do a partial line
-            end_x = curr_x + (pool_chunk_size / 2);
-            end_y = curr_y + 1;
-
-            if (end_x > x2)
-            {
-                end_x = x2;
-            }
-        }
-
-        uint16_t num_bytes = (end_x - curr_x) * (end_y - curr_y) * 2;
-
-
-
-        // Do as much of the line as possible
-        Print("Set writable pixels\n", 20);
-        Print("curr_x:", 7);
-        int_to_string(curr_x, str, len);
-        Print((char*)str, len);
-        Print("endd_x:", 7);
-        int_to_string(end_x - 1, str, len);
-        Print((char*)str, len);
-
-        Print("curr_y:", 7);
-        int_to_string(curr_y, str, len);
-        Print((char*)str, len);
-        Print("endd_y:", 7);
-        int_to_string(end_y - 1, str, len);
-        Print((char*)str, len);
-        screen.SetWritablePixelsAsync(curr_x, end_x - 1, curr_y, end_y - 1);
-
-        ScreenInteraction* interaction = screen.RetrieveFreeInteraction();
-
-        if (interaction == nullptr)
-        {
-            break;
-        }
-
-        // Fill the chunk buffer
-        for (uint32_t i = 0; i < num_bytes; i += 2)
-        {
-            interaction->data[i] = colour >> 8;
-            interaction->data[i + 1] = colour & 0xFF;
-        }
-
-        interaction->len = num_bytes;
-        interaction->dc_level = GPIO_PIN_SET;
-        interaction->is_busy = true;
-
-        // TODO make sure this is actually correct
-        memory.data_remaining -= num_bytes;
-
-        str[0] = 'd';
-        str[1] = 'o';
-        str[2] = 'n';
-        str[3] = 'e';
-        str[4] = '\n';
-        Print((char*)str, 5);
-        int_to_string(curr_x, str, len);
-        Print((char*)str, len);
-        int_to_string(curr_y, str, len);
-        Print((char*)str, len);
-
-        curr_x = end_x;
-
-        if (curr_x == x2)
-        {
-            curr_y = end_y;
-
-            if (curr_y == y2)
-            {
-                Print("Break\n", 6);
-                break;
-            }
-
-            curr_x = x1;
-        }
-    }
+    bytes_remaining -= buff->len;
 
     // Out of the while loop, if curr_x != x2 and curr_y != y2
     // then save the state, otherwise, finish the memory?
-    if (curr_x != x2 || curr_y != y2)
+    if (bytes_remaining != 0)
     {
-        // Save state
-        memory.parameters[10] = curr_x >> 8;
-        memory.parameters[11] = curr_x;
-
-        memory.parameters[12] = curr_y >> 8;
-        memory.parameters[13] = curr_y;
+        memory.parameters[2] = bytes_remaining >> 24;
+        memory.parameters[3] = bytes_remaining >> 16;
+        memory.parameters[4] = bytes_remaining >> 8;
+        memory.parameters[5] = bytes_remaining & 0xFF;
     }
+    else
+    {
+        memory.status = MemoryStatus::Complete;
+    }
+
+    // Print("rect\n",5);
 
     return true;
-}
-
-void Screen::FillRectangleAsyncProcedure(Screen* screen)
-{
-    screen->draw_async = 1;
-    uint16_t x_end = screen->draw_matrix.Read<uint16_t>(6);
-    uint16_t y_end = screen->draw_matrix.Read<uint16_t>(8);
-
-    if (!screen->draw_matrix.Read<uint8_t>(18) ||
-        screen->buffer_overwritten_by_sync)
-    {
-        screen->buffer_overwritten_by_sync = 0;
-        // uint16_t colour = *(uint16_t*)screen->PopVariable(0, 2);
-        uint16_t colour = screen->draw_matrix.Read<uint16_t>(0);
-
-        uint16_t x_start = screen->draw_matrix.Read<uint16_t>(2);
-        uint16_t y_start = screen->draw_matrix.Read<uint16_t>(4);
-
-        // Filled rectangles always use the same colour, so we can
-        // just fill the buffer now and reuse it.
-        uint32_t total_pixel_bytes = (((x_end - x_start) * (y_end - y_start)) * 2);
-
-        if (total_pixel_bytes > Chunk_Buffer_Size * 2)
-            total_pixel_bytes = Chunk_Buffer_Size * 2;
-
-        // This is big enough for a 64x64 rectangle
-        for (uint32_t i = 0; i < total_pixel_bytes; i += 2)
-        {
-            screen->chunk_buffer[i] = static_cast<uint8_t>(colour >> 8);
-            screen->chunk_buffer[i + 1] = static_cast<uint8_t>(colour);
-        }
-
-        screen->draw_matrix.Write<uint8_t>((uint8_t)1, 18);
-    }
-
-    uint16_t x_current = screen->draw_matrix.Read<uint16_t>(10);
-    uint16_t y_current = screen->draw_matrix.Read<uint16_t>(12);
-
-    const uint16_t Pixel_Distance = 32;
-    uint16_t x_width = x_current + Pixel_Distance;
-    if (x_width > x_end)
-        x_width = x_end;
-
-    uint16_t y_height = y_current + Pixel_Distance;
-    if (y_height > y_end)
-        y_height = y_end;
-
-    screen->Select();
-    screen->SetWritablePixels(x_current, y_current, x_width - 1, y_height - 1);
-
-    uint32_t remaining_pixels = screen->draw_matrix.Read<uint32_t>(14);
-
-    uint32_t num_pixels = (x_width - x_current) * (y_height - y_current);
-    if (num_pixels > remaining_pixels)
-        num_pixels = remaining_pixels;
-
-    remaining_pixels -= num_pixels;
-    if (remaining_pixels == 0)
-    {
-        screen->draw_async_stop = 1;
-    }
-    screen->WriteDataDMAFree(screen->chunk_buffer, num_pixels * 2);
-
-    x_current += x_width - x_current;
-    if (x_current >= x_end)
-    {
-        // Get the start x
-        x_current = screen->draw_matrix.Read<uint16_t>(2);
-        y_current += y_height - y_current;
-
-        if (y_current >= y_end)
-        {
-            // Get the start y
-            y_current = screen->draw_matrix.Read<uint16_t>(4);
-        }
-        screen->draw_matrix.Write(y_current, 12);
-    }
-
-    screen->draw_matrix.Write(x_current, 10);
-    screen->draw_matrix.Write(remaining_pixels, 14);
-}
-
-void Screen::Loop()
-{
-    // if (async_draw_ready && !spi_busy)
-    // {
-    //     spi_busy = 1;
-    //     async_draw_ready = 0;
-
-    //     DrawNext();
-    // }
 }
 
 inline void Screen::WaitUntilSPIFree()
@@ -1674,93 +1399,6 @@ inline void Screen::WaitUntilSPIFree()
     {
         __NOP();
     }
-}
-
-
-// Async functions
-Screen::ScreenInteraction* Screen::RetrieveFreeInteraction()
-{
-    uint32_t inter_count = 0;
-
-    while (inter_count < Num_Interactions)
-    {
-        if (interaction_write_idx >= Num_Interactions)
-        {
-            interaction_write_idx = 0;
-        }
-
-        if (!interactions[interaction_write_idx].is_busy)
-        {
-            free_interactions--;
-            available_interactions++;
-            return &interactions[interaction_write_idx++];
-        }
-
-        interaction_write_idx++;
-        inter_count++;
-    }
-
-
-    return nullptr;
-}
-
-bool Screen::HandleReadyInteraction()
-{
-    if (spi_busy || available_interactions == 0)
-    {
-        // Print("no interactions\n", 16);
-        return false;
-    }
-
-    // Find an interaction
-    uint32_t interaction_count = 0;
-    bool got_interaction = false;
-
-    while (interaction_count < Num_Interactions)
-    {
-        if (interaction_read_idx >= Num_Interactions)
-        {
-            interaction_read_idx = 0;
-        }
-
-        // Get the interaction
-        // Update the read head
-        next_interaction = &interactions[interaction_read_idx++];
-
-        // This interaction is ready to be used
-        if (next_interaction->is_busy)
-        {
-            got_interaction = true;
-            break;
-        }
-
-        interaction_count++;
-    }
-
-    // No interaction ready just return
-    if (!got_interaction)
-    {
-        next_interaction = nullptr;
-        // Print("no interactions ready\n", 22);
-        return false;
-    }
-
-    // Send the interaction to the spi bus
-    draw_async = true;
-    spi_busy = true;
-    spi_running = true;
-    Select();
-    HAL_GPIO_WritePin(dc.port, dc.pin, next_interaction->dc_level);
-
-    // Print("Send spi\n", 9);
-
-    // Print("Send data\n", 10);
-    // int_to_string(next_interaction->len, str, len);
-    // Print((char*)str, len);
-
-    HAL_SPI_Transmit_DMA(spi_handle, next_interaction->data, next_interaction->len);
-
-    return true;
 }
 
 Screen::ScreenMemory* Screen::RetrieveFreeMemory()
@@ -1774,9 +1412,10 @@ Screen::ScreenMemory* Screen::RetrieveFreeMemory()
             memories_write_idx = 0;
         }
 
-        if (!memories[memories_write_idx].is_busy)
+        if (memories[memories_write_idx].status == MemoryStatus::Unused)
         {
             available_memories++;
+            memories[memories_write_idx].status = MemoryStatus::In_Progress;
             return &memories[memories_write_idx];
         }
 
@@ -1790,15 +1429,26 @@ Screen::ScreenMemory* Screen::RetrieveFreeMemory()
 
 void Screen::HandleReadyMemory()
 {
+    // Back is ready to be sent so return
+    if (video_buff.BackIsReady())
+    {
+        return;
+    }
     // Nothing to do skip
     if (available_memories == 0)
     {
         return;
     }
 
+    if (live_memory->status != MemoryStatus::Unused &&
+        live_memory->status != MemoryStatus::Complete)
+    {
+        live_memory->callback(*this, *live_memory);
+        return;
+    }
+
     // Get the current memory if the memory is complete, get the next one etc
     uint32_t memory_count = 0;
-    ScreenMemory* memory;
     bool got_memory = false;
 
     while (memory_count < Num_Memories)
@@ -1808,34 +1458,26 @@ void Screen::HandleReadyMemory()
             memories_read_idx = 0;
         }
 
-        memory = &memories[memories_read_idx];
+        live_memory = &memories[memories_read_idx];
 
-        if (memory->status == MemoryStatus::Unused ||
-            memory->status == MemoryStatus::Complete)
+        if (live_memory->status == MemoryStatus::Unused)
         {
-            // Go to the next memory
+            // Go to the next live_memory
             memories_read_idx++;
 
             // TODO should this be here?
             available_memories--;
         }
-        else if (memory->status == MemoryStatus::In_Progress)
+        else if (live_memory->status == MemoryStatus::Complete)
         {
-            if (memory->data_remaining == 0)
-            {
-                memory->status = MemoryStatus::Complete;
-                memories_read_idx++;
+            memories_read_idx++;
 
-                Print("Complete\n", 9);
-                continue;
-            }
+            available_memories--;
 
-            got_memory = true;
-            break;
+            live_memory->status = MemoryStatus::Unused;
         }
-        else if (memory->status == MemoryStatus::Not_Started)
+        else if (live_memory->status == MemoryStatus::In_Progress)
         {
-            // Got a memory
             got_memory = true;
             break;
         }
@@ -1844,102 +1486,37 @@ void Screen::HandleReadyMemory()
 
     if (!got_memory)
     {
-        // No memory to handle
+        // No live_memory to handle
         return;
     }
 
-    // Now that we have a memory we can call the function and
+    // Now that we have a live_memory we can call the function and
     // feed itself to the function
-    memory->callback(*this, *memory);
-}
-
-bool Screen::WriteCommandAsync(Screen& screen, ScreenMemory& memory)
-{
-    ScreenInteraction* interaction = screen.RetrieveFreeInteraction();
-
-    if (interaction == nullptr)
-    {
-        // Couldn't get an interaction
-        return false;
-    }
-
-    interaction->dc_level = GPIO_PIN_RESET;
-    interaction->len = 1;
-    interaction->is_busy = true;
-    interaction->data[0] = memory.parameters[0];
-
-    memory.status = MemoryStatus::In_Progress;
-    memory.data_remaining -= interaction->len;
-
-    return true;
+    live_memory->callback(*this, *live_memory);
 }
 
 
-// USED FOR COMMANDS
-bool Screen::WriteDataAsync(Screen& screen, ScreenMemory& memory)
-{
-
-    ScreenInteraction* interaction = screen.RetrieveFreeInteraction();
-
-    if (interaction == nullptr)
-    {
-        // Couldn't get an interaction
-        return false;
-    }
-
-    for (uint32_t i = 0; i < memory.len; i++)
-    {
-        interaction->data[i] = memory.parameters[i];
-    }
-
-    interaction->dc_level = GPIO_PIN_SET;
-    interaction->len = memory.len;
-    interaction->is_busy = true;
-
-    memory.status = MemoryStatus::In_Progress;
-    memory.data_remaining -= interaction->len;
-
-    return true;
-}
 
 bool Screen::WriteCommandAsync(uint8_t cmd)
 {
-    ScreenInteraction* interaction = RetrieveFreeInteraction();
-
-    if (interaction == nullptr)
-    {
-        // Couldn't get an interaction
-        return false;
-    }
-
-    interaction->data[0] = cmd;
-
-    interaction->dc_level = GPIO_PIN_RESET;
-    interaction->len = 1;
-    interaction->is_busy = true;
+    static uint8_t command;
+    command = cmd;
+    spi_busy = true;
+    draw_async = true;
+    Select();
+    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit_DMA(spi_handle, &command, 1);
 
     return true;
 }
 
 bool Screen::WriteDataAsync(uint8_t* data, uint32_t data_size)
 {
-    ScreenInteraction* interaction = RetrieveFreeInteraction();
-
-    if (interaction == nullptr)
-    {
-        // Couldn't get an interaction
-        return false;
-    }
-
-    for (uint32_t i = 0; i < data_size; ++i)
-    {
-        interaction->data[i] = data[i];
-    }
-
-    interaction->dc_level = GPIO_PIN_SET;
-    interaction->len = data_size;
-    interaction->is_busy = true;
-
+    spi_busy = true;
+    draw_async = true;
+    Select();
+    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
+    HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
 
     return true;
 }
@@ -1962,51 +1539,82 @@ bool Screen::WriteCommandDataAsync(uint8_t cmd, uint8_t* data, uint32_t data_siz
 
 void Screen::SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
 {
-    uint8_t col_data [] = { static_cast<uint8_t>(x1 >> 8), static_cast<uint8_t>(x1),
-                           static_cast<uint8_t>(x2 >> 8), static_cast<uint8_t>(x2) };
-    uint8_t row_data [] = { static_cast<uint8_t>(y1 >> 8), static_cast<uint8_t>(y1),
-                           static_cast<uint8_t>(y2 >> 8), static_cast<uint8_t>(y2) };
-
     // TODO need to make sure there are enough memories for this
-    WriteCommandDataAsync(CA_SET, col_data, 4);
-
-    WriteCommandDataAsync(RA_SET, row_data, 4);
-
-    WriteCommandAsync(WR_RAM);
-}
-
-void Screen::EnqueueCommand(uint8_t cmd)
-{
+    // This will start the other ones when it completes
+    // Get a memory
     ScreenMemory* memory = RetrieveFreeMemory();
 
-    memory->callback = &WriteCommandAsync;
+    if (memory == nullptr)
+    {
+        // Cry?
+        return;
+    }
 
-    memory->idx = memories_write_idx;
-    memory->len = 1;
-    memory->is_busy = true;
-    memory->status = MemoryStatus::Not_Started;
-    memory->parameters[0] = cmd;
-    memory->data_remaining = 1;
+    memory->callback = SetColumnsCommandAsync;
+    memory->parameters[0] = x1 >> 8;
+    memory->parameters[1] = x1 & 0xFF;
+    memory->parameters[2] = x2 >> 8;
+    memory->parameters[3] = x2 & 0xFF;
+    memory->parameters[4] = y1 >> 8;
+    memory->parameters[5] = y1 & 0xFF;
+    memory->parameters[6] = y2 >> 8;
+    memory->parameters[7] = y2 & 0xFF;
+    memory->status = MemoryStatus::In_Progress;
 }
 
-void Screen::EnqueueCommandData(uint8_t cmd, uint8_t* data, uint32_t data_size)
+
+bool Screen::SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory)
 {
-    EnqueueCommand(cmd);
+    memory.callback = SetColumnsDataAsync;
+    screen.WriteCommandAsync(CA_SET);
 
-    ScreenMemory* data_memory = RetrieveFreeMemory();
+    return true;
+}
 
-    // TODO something with the memories if we are full?
+bool Screen::SetColumnsDataAsync(Screen& screen, ScreenMemory& memory)
+{
+    memory.callback = SetRowsCommandAsync;
 
-    data_memory->callback = &WriteDataAsync;
+    static uint8_t col_data[4];
 
-    data_memory->idx = memories_write_idx;
-    data_memory->is_busy = true;
-    data_memory->len = data_size;
-    data_memory->data_remaining = data_size;
-    data_memory->status = MemoryStatus::Not_Started;
+    col_data[0] = memory.parameters[0];
+    col_data[1] = memory.parameters[1];
+    col_data[2] = memory.parameters[2];
+    col_data[3] = memory.parameters[3];
 
-    for (int i = 0; i < data_size && i < Memory_Size; ++i)
-    {
-        data_memory->parameters[i] = data[i];
-    }
+    screen.WriteDataAsync(col_data, 4);
+
+    return true;
+}
+
+bool Screen::SetRowsCommandAsync(Screen& screen, ScreenMemory& memory)
+{
+    memory.callback = SetRowsDataAsync;
+    screen.WriteCommandAsync(RA_SET);
+
+    return true;
+}
+
+bool Screen::SetRowsDataAsync(Screen& screen, ScreenMemory& memory)
+{
+    memory.callback = WriteToRamCommandAsync;
+
+    static uint8_t row_data[4];
+
+    row_data[0] = memory.parameters[4];
+    row_data[1] = memory.parameters[5];
+    row_data[2] = memory.parameters[6];
+    row_data[3] = memory.parameters[7];
+
+    screen.WriteDataAsync(row_data, 4);
+
+    return true;
+}
+
+bool Screen::WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory)
+{
+    memory.status = MemoryStatus::Complete;
+    screen.WriteCommandAsync(WR_RAM);
+
+    return true;
 }
