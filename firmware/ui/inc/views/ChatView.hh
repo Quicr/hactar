@@ -51,11 +51,12 @@ class ChatView : public ViewInterface
 {
 public:
     ChatView(UserInterfaceManager& manager,
-             Screen& screen,
-             Q10Keyboard& keyboard,
-             SettingManager& setting_manager,
-             SerialPacketManager& serial,
-             Network& network);
+        Screen& screen,
+        Q10Keyboard& keyboard,
+        SettingManager& setting_manager,
+        SerialPacketManager& serial,
+        Network& network,
+        AudioChip& audio);
     ~ChatView() = default;
 
     void SetActiveRoom(const struct Room &room);
@@ -63,16 +64,18 @@ public:
 protected:
     void AnimatedDraw();
     void Draw();
-    void Update();
+    void Update(uint32_t current_tick);
     void HandleInput();
 
 private:
     void DrawTitle();
     void DrawUsrInputSeperator();
     void DrawMessages();
-    void IngestMessages();
+    void IngestMlsMessages();
+    void IngestPlainMessages();
     void SendPacket(const bytes& data);
     void PushMessage(std::string&& msg);
+    void SendAudio(uint32_t current_tick);
 
     // Consts
     const std::string name_seperator = ": ";
@@ -90,4 +93,6 @@ private:
 
     std::optional<PreJoinedState> pre_joined_state;
     std::optional<MLSState> mls_state;
+
+    int8_t last_audio_buffer_used;
 };
