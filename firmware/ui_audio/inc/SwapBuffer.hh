@@ -3,8 +3,9 @@
 class SwapBuffer
 {
 public:
-    struct VideoBuffer
+    struct swap_buffer_t
     {
+        GPIO_PinState dc_level;
         bool is_ready;
         size_t len;
         uint8_t* data;
@@ -12,8 +13,8 @@ public:
 
     SwapBuffer(size_t buffer_size):
         buffer_size(buffer_size),
-        dual_buffers{ VideoBuffer{0, 0, new uint8_t[buffer_size]},
-                      VideoBuffer{0, 0, new uint8_t[buffer_size]} },
+        dual_buffers{ swap_buffer_t{GPIO_PIN_RESET, 0, 0, new uint8_t[buffer_size]},
+                      swap_buffer_t{GPIO_PIN_RESET, 0, 0, new uint8_t[buffer_size]} },
         back_buff(&dual_buffers[0]),
         front_buff(&dual_buffers[1])
     {
@@ -28,21 +29,21 @@ public:
         delete [] dual_buffers[1].data;
     }
 
-    VideoBuffer* Swap()
+    swap_buffer_t* Swap()
     {
-        VideoBuffer* tmp = back_buff;
+        swap_buffer_t* tmp = back_buff;
         back_buff = front_buff;
         front_buff = tmp;
 
         return front_buff;
     }
 
-    VideoBuffer* GetFront()
+    swap_buffer_t* GetFront()
     {
         return front_buff;
     }
 
-    VideoBuffer* GetBack()
+    swap_buffer_t* GetBack()
     {
         return back_buff;
     }
@@ -59,9 +60,9 @@ public:
 
 private:
     size_t buffer_size;
-    VideoBuffer dual_buffers[2];
-    VideoBuffer* back_buff;
-    VideoBuffer* front_buff;
+    swap_buffer_t dual_buffers[2];
+    swap_buffer_t* back_buff;
+    swap_buffer_t* front_buff;
 
 
 };

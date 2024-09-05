@@ -115,12 +115,9 @@ int app_main()
     screen.EnableBackLight();
     screen.FillScreen(C_BLACK);
     screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_GREEN);
-    screen.FillScreen(C_BLACK);
-    screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_GREEN);
-
-    // screen.FillRectangleAsync(20, 30, 20, 30, C_BLUE);
-    // screen.FillRectangleAsync(0, screen.ViewWidth(), 0, 1, C_RED);
-    // screen.FillRectangleAsync(0, 10, 1, 11, C_GREEN);
+    screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_BLUE);
+    screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_RED);
+    screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_WHITE);
 
     uint32_t current_tick;
     while (true)

@@ -246,13 +246,17 @@ public:
 
 private:
     ScreenMemory* RetrieveFreeMemory();
+    void HandleVideoBuffer();
     void HandleReadyMemory();
 
     void SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
 
     bool WriteCommandAsync(uint8_t cmd);
     bool WriteDataAsync(uint8_t* data, uint32_t data_size);
-    bool WriteCommandDataAsync(uint8_t cmd, uint8_t* data, uint32_t data_size);
+
+    bool WriteAsync(SwapBuffer::swap_buffer_t* buff);
+
+    static bool EnqueueCommand(uint8_t cmd);
 
     static bool SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory);
     static bool SetColumnsDataAsync(Screen& screen, ScreenMemory& memory);
@@ -277,22 +281,10 @@ private:
     uint16_t view_height;
     uint16_t view_width;
     volatile bool spi_busy;
-    volatile bool draw_async;
-    volatile bool draw_async_stop;
-    volatile bool spi_running;
-    bool buffer_overwritten_by_sync;
-    uint32_t drawing_func_read;
-    uint32_t drawing_func_write;
-    bool async_draw_ready;
-    RingMatrix draw_matrix;
-    void** Drawing_Func_Ring;
-
-    uint8_t chunk_buffer[Chunk_Buffer_Size]; // TODO use this more
-    uint32_t chunk_write = 0;
-    uint32_t chunk_read = 0;
+    volatile bool spi_async;
 
     SwapBuffer video_buff;
-    SwapBuffer::VideoBuffer* front_buff;
+    SwapBuffer::swap_buffer_t* video_front_buff;
 
     ScreenMemory memories[Num_Memories];
     ScreenMemory* live_memory;
