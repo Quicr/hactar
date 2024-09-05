@@ -164,7 +164,7 @@ public:
                    const ArrowDirection direction, const uint16_t colour);
 
     void FillCircle(const uint16_t x, const uint16_t y, const uint16_t r,
-                    const uint16_t colour); // TODO
+                    const uint16_t fg, const uint16_t bg);
 
     void FillPolygon(const size_t count,
                      const int16_t points [][2],

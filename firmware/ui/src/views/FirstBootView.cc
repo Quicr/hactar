@@ -6,12 +6,13 @@
 // TODO make sure the usr input is not empty
 
 FirstBootView::FirstBootView(UserInterfaceManager& manager,
-    Screen& screen,
-    Q10Keyboard& keyboard,
-    SettingManager& setting_manager,
-    SerialPacketManager& serial,
-    Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network),
+        Screen& screen,
+        Q10Keyboard& keyboard,
+        SettingManager& setting_manager,
+        SerialPacketManager& serial,
+        Network& network,
+        AudioChip& audio)
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio),
     state(State::Username),
     request_message("Please enter your name:"),
     wifi_state(WifiState::SSID),
@@ -132,7 +133,7 @@ void FirstBootView::HandleInput()
     }
 }
 
-void FirstBootView::Update()
+void FirstBootView::Update(uint32_t current_tick)
 {
     if (state == State::Wifi)
     {

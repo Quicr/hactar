@@ -2,6 +2,7 @@
 
 #include "stm32.h"
 
+#include "audio_chip.hh"
 #include "EEPROM.hh"
 #include "Message.hh"
 #include "Q10Keyboard.hh"
@@ -32,7 +33,8 @@ public:
     UserInterfaceManager(Screen& screen,
                          Q10Keyboard& keyboard,
                          SerialInterface& net_interface,
-                         EEPROM& eeprom);
+                         EEPROM& eeprom,
+                         AudioChip& audio);
     ~UserInterfaceManager();
 
     void Run();
@@ -64,7 +66,7 @@ public:
             delete view;
         }
 
-        view = new T(*this, *screen, *keyboard, setting_manager, net_layer, network);
+        view = new T(*this, screen, keyboard, setting_manager, net_layer, network, audio);
 
         return true;
     }
@@ -83,10 +85,11 @@ private:
 
     static constexpr uint32_t Serial_Read_Wait_Duration = 1000;
 
-    Screen* screen;
-    Q10Keyboard* keyboard;
+    Screen& screen;
+    Q10Keyboard& keyboard;
     SerialPacketManager net_layer;
     SettingManager setting_manager;
+    AudioChip& audio;
     ViewInterface* view;
     Network network;
     std::vector<std::string> received_messages;
@@ -96,6 +99,11 @@ private:
     uint32_t current_tick;
 
     uint32_t last_test_packet = 0;
+
+    // TODO remove?
+    // Audio params
+    float phase = 0;
+    uint16_t* tmp_audio_buff = new uint16_t[256];
 
     // Chat state
     std::unique_ptr<qchat::Room> active_room;

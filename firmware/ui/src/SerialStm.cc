@@ -31,34 +31,40 @@ unsigned char SerialStm::Read()
     return rx_ring.Read();
 }
 
-bool SerialStm::ReadyToWrite()
+bool SerialStm::TransmitReady()
 {
     return tx_free;
 }
 
-void SerialStm::Write(unsigned char* buff, const unsigned short buff_sz)
+void SerialStm::Transmit(unsigned char* buff, const unsigned short buff_sz)
 {
+    tx_free = false;
+    // TODO remove start byte and send packet length first.
     uint8_t start_byte[1] = { 0xFF };
     HAL_UART_Transmit(uart, start_byte, 1, HAL_MAX_DELAY);
 
     // HAL_UART_Transmit_IT(uart, buff, buff_sz);
-    HAL_UART_Transmit(uart, buff, buff_sz, HAL_MAX_DELAY);
+    HAL_UART_Transmit_DMA(uart, buff, buff_sz);
 }
 
 // un-inherited functions
 
-void SerialStm::RxEvent(uint16_t num_received)
+void SerialStm::RxEvent(uint16_t received_idx)
 {
+    uint16_t num_received = received_idx - rx_ring.WriteIdx();
     rx_ring.UpdateWriteHead(num_received);
-    uint8_t recv_msg[] = "UI: Received from ESP\n\r";
-    HAL_UART_Transmit(&huart1, recv_msg, sizeof(recv_msg)/sizeof(*recv_msg), HAL_MAX_DELAY);
+    // uint8_t recv_msg[] = "UI: Received from ESP\n\r";
+    // // TODO dma
+    // HAL_UART_Transmit(&huart1, recv_msg, sizeof(recv_msg)/sizeof(*recv_msg), HAL_MAX_DELAY);
 }
 
 void SerialStm::StartRx()
 {
     // If rx is already running do nothing
     if (rx_activated)
+    {
         return;
+    }
 
     rx_activated = true;
     // Begin the receive IT
@@ -69,7 +75,9 @@ void SerialStm::Reset()
 {
     // If rx is not running do nothing
     if (!rx_activated)
+    {
         return;
+    }
 
     rx_activated = false;
 
