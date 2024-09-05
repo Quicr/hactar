@@ -30,7 +30,7 @@ UserInterfaceManager::UserInterfaceManager(Screen& screen,
     setting_manager(eeprom),
     audio(audio),
     view(nullptr),
-    network(setting_manager, net_layer, screen),
+    network(setting_manager, net_layer),
     received_messages(), // TODO limit?
     force_redraw(false),
     current_tick(HAL_GetTick()),
