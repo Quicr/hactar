@@ -59,16 +59,8 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     orientation(_orientation),
     view_height(0),
     view_width(0),
-    chunk_buffer{ 0 },
     spi_busy(0),
-    draw_async(0),
-    draw_async_stop(0),
-    buffer_overwritten_by_sync(0),
-    drawing_func_read(0),
-    drawing_func_write(0),
-    async_draw_ready(0),
-    draw_matrix(32),
-    Drawing_Func_Ring(new void* [32]),
+    spi_async(0),
     video_buff(1024),
     live_memory(memories)
 {
@@ -76,25 +68,18 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
 
 Screen::~Screen()
 {
-    delete [] Drawing_Func_Ring;
+    // delete [] Drawing_Func_Ring;
 }
 
 void Screen::Update(uint32_t current_tick)
 {
-    if (!spi_busy)
+    if (spi_async)
     {
-        // Check if the back buffer is ready
-        if (video_buff.BackIsReady())
-        {
-            // Back is ready, so swap it to the front
-            front_buff = video_buff.Swap();
-
-            // Send it off
-            WriteDataAsync(front_buff->data, front_buff->len);
-        }
+        return;
     }
 
     HandleReadyMemory();
+    HandleVideoBuffer();
 }
 
 void Screen::Begin()
@@ -303,7 +288,6 @@ void Screen::WriteData(uint8_t data)
 void Screen::WriteDataDMA(uint8_t* data, const uint32_t data_size)
 {
     spi_busy = 1;
-    buffer_overwritten_by_sync = 1;
     HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
 
     // Wait for the SPI IT call complete to invoked
@@ -1065,16 +1049,19 @@ void Screen::FillRectangle(const uint16_t x_start,
 
     uint32_t chunk = std::min<uint32_t>(total_pixels, 128);
 
+    // Get the video buffer
+    auto buff = video_buff.GetFront();
+
     // Copy colour to data
     for (uint32_t i = 0; i < chunk * 2; i += 2)
     {
-        chunk_buffer[i] = static_cast<uint8_t>(colour >> 8);
-        chunk_buffer[i + 1] = static_cast<uint8_t>(colour);
+        buff->data[i] = static_cast<uint8_t>(colour >> 8);
+        buff->data[i + 1] = static_cast<uint8_t>(colour);
     }
 
     while (total_pixels > 0)
     {
-        WriteDataDMA(chunk_buffer, chunk * 2);
+        WriteDataDMA(buff->data, chunk * 2);
 
         total_pixels -= chunk;
 
@@ -1145,11 +1132,13 @@ void Screen::ReleaseSPI()
 {
     spi_busy = false;
 
-    // TODO make this better
-    if (draw_async && front_buff->is_ready)
+    if (spi_async)
     {
-        front_buff->is_ready = false;
-        draw_async = false;
+        video_front_buff->is_ready = false;
+        spi_async = false;
+
+        HandleReadyMemory();
+        HandleVideoBuffer();
     }
 }
 
@@ -1346,6 +1335,8 @@ void Screen::FillRectangleAsync(uint16_t x1,
     memory->parameters[5] = num_byte_pixels & 0xFF;
 
     memory->status = MemoryStatus::In_Progress;
+
+    Print("Enqueue rect draw\n", 18);
 }
 
 bool Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
@@ -1359,7 +1350,7 @@ bool Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
         memory.parameters[5];
 
     // Get a buff
-    SwapBuffer::VideoBuffer* buff = screen.video_buff.GetBack();
+    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
     buff->len = bytes_remaining > screen.video_buff.BufferSize()
         ? screen.video_buff.BufferSize() : bytes_remaining;
 
@@ -1370,6 +1361,7 @@ bool Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
         buff->data[i + 1] = colour & 0xFF;
     }
 
+    buff->dc_level = GPIO_PIN_SET;
     buff->is_ready = true;
 
     bytes_remaining -= buff->len;
@@ -1387,8 +1379,6 @@ bool Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
     {
         memory.status = MemoryStatus::Complete;
     }
-
-    // Print("rect\n",5);
 
     return true;
 }
@@ -1429,27 +1419,21 @@ Screen::ScreenMemory* Screen::RetrieveFreeMemory()
 
 void Screen::HandleReadyMemory()
 {
-    // Back is ready to be sent so return
     if (video_buff.BackIsReady())
     {
         return;
     }
+
     // Nothing to do skip
     if (available_memories == 0)
     {
         return;
     }
 
-    if (live_memory->status != MemoryStatus::Unused &&
-        live_memory->status != MemoryStatus::Complete)
-    {
-        live_memory->callback(*this, *live_memory);
-        return;
-    }
-
     // Get the current memory if the memory is complete, get the next one etc
     uint32_t memory_count = 0;
     bool got_memory = false;
+    ScreenMemory* memory;
 
     while (memory_count < Num_Memories)
     {
@@ -1458,25 +1442,22 @@ void Screen::HandleReadyMemory()
             memories_read_idx = 0;
         }
 
-        live_memory = &memories[memories_read_idx];
+        memory = &memories[memories_read_idx];
 
-        if (live_memory->status == MemoryStatus::Unused)
+        if (memory->status == MemoryStatus::Unused)
         {
-            // Go to the next live_memory
+            // Go to the next memory
             memories_read_idx++;
-
-            // TODO should this be here?
-            available_memories--;
         }
-        else if (live_memory->status == MemoryStatus::Complete)
+        else if (memory->status == MemoryStatus::Complete)
         {
             memories_read_idx++;
 
             available_memories--;
 
-            live_memory->status = MemoryStatus::Unused;
+            memory->status = MemoryStatus::Unused;
         }
-        else if (live_memory->status == MemoryStatus::In_Progress)
+        else if (memory->status == MemoryStatus::In_Progress)
         {
             got_memory = true;
             break;
@@ -1490,19 +1471,35 @@ void Screen::HandleReadyMemory()
         return;
     }
 
+    live_memory = memory;
+
+
     // Now that we have a live_memory we can call the function and
     // feed itself to the function
     live_memory->callback(*this, *live_memory);
 }
 
+void Screen::HandleVideoBuffer()
+{
+    // Check if the back buffer is ready
+    if (spi_busy || !video_buff.BackIsReady())
+    {
+        return;
+    }
 
+    // Back is ready, so swap it to the front
+    video_front_buff = video_buff.Swap();
+
+    // Send it off
+    WriteAsync(video_front_buff);
+}
 
 bool Screen::WriteCommandAsync(uint8_t cmd)
 {
     static uint8_t command;
     command = cmd;
     spi_busy = true;
-    draw_async = true;
+    spi_async = true;
     Select();
     HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_RESET);
     HAL_SPI_Transmit_DMA(spi_handle, &command, 1);
@@ -1513,7 +1510,7 @@ bool Screen::WriteCommandAsync(uint8_t cmd)
 bool Screen::WriteDataAsync(uint8_t* data, uint32_t data_size)
 {
     spi_busy = true;
-    draw_async = true;
+    spi_async = true;
     Select();
     HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
     HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
@@ -1521,17 +1518,14 @@ bool Screen::WriteDataAsync(uint8_t* data, uint32_t data_size)
     return true;
 }
 
-bool Screen::WriteCommandDataAsync(uint8_t cmd, uint8_t* data, uint32_t data_size)
+bool Screen::WriteAsync(SwapBuffer::swap_buffer_t* buff)
 {
-    if (!WriteCommandAsync(cmd))
-    {
-        return false;
-    }
+    spi_busy = true;
+    spi_async = true;
 
-    if (!WriteDataAsync(data, data_size))
-    {
-        return false;
-    }
+    Select();
+    HAL_GPIO_WritePin(dc.port, dc.pin, buff->dc_level);
+    HAL_SPI_Transmit_DMA(spi_handle, buff->data, buff->len);
 
     return true;
 }
@@ -1566,7 +1560,11 @@ void Screen::SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint1
 bool Screen::SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = SetColumnsDataAsync;
-    screen.WriteCommandAsync(CA_SET);
+
+    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    buff->data[0] = CA_SET;
+    buff->len = 1;
+    buff->dc_level = GPIO_PIN_RESET;
 
     return true;
 }
@@ -1575,14 +1573,15 @@ bool Screen::SetColumnsDataAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = SetRowsCommandAsync;
 
-    static uint8_t col_data[4];
+    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
 
-    col_data[0] = memory.parameters[0];
-    col_data[1] = memory.parameters[1];
-    col_data[2] = memory.parameters[2];
-    col_data[3] = memory.parameters[3];
-
-    screen.WriteDataAsync(col_data, 4);
+    buff->dc_level = GPIO_PIN_SET;
+    buff->data[0] = memory.parameters[0];
+    buff->data[1] = memory.parameters[1];
+    buff->data[2] = memory.parameters[2];
+    buff->data[3] = memory.parameters[3];
+    buff->len = 4;
+    buff->is_ready = true;
 
     return true;
 }
@@ -1590,7 +1589,13 @@ bool Screen::SetColumnsDataAsync(Screen& screen, ScreenMemory& memory)
 bool Screen::SetRowsCommandAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = SetRowsDataAsync;
-    screen.WriteCommandAsync(RA_SET);
+
+    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+
+    buff->dc_level = GPIO_PIN_RESET;
+    buff->data[0] = RA_SET;
+    buff->len = 1;
+    buff->is_ready = true;
 
     return true;
 }
@@ -1599,22 +1604,36 @@ bool Screen::SetRowsDataAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = WriteToRamCommandAsync;
 
-    static uint8_t row_data[4];
+    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
 
-    row_data[0] = memory.parameters[4];
-    row_data[1] = memory.parameters[5];
-    row_data[2] = memory.parameters[6];
-    row_data[3] = memory.parameters[7];
+    buff->dc_level = GPIO_PIN_SET;
+    buff->data[0] = memory.parameters[4];
+    buff->data[1] = memory.parameters[5];
+    buff->data[2] = memory.parameters[6];
+    buff->data[3] = memory.parameters[7];
+    buff->len = 4;
+    buff->is_ready = true;
 
-    screen.WriteDataAsync(row_data, 4);
 
     return true;
 }
 
 bool Screen::WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory)
 {
+    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+
+    buff->dc_level = GPIO_PIN_RESET;
+    buff->data[0] = WR_RAM;
+    buff->len = 1;
+    buff->is_ready = true;
+
     memory.status = MemoryStatus::Complete;
-    screen.WriteCommandAsync(WR_RAM);
 
     return true;
+}
+
+
+bool Screen::EnqueueCommand(uint8_t cmd)
+{
+
 }
