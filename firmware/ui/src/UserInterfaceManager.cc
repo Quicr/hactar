@@ -7,6 +7,8 @@
 #include "SettingManager.hh"
 #include "QChat.hh"
 
+#include "audio_codec.hh"
+
 #include "main.h"
 
 #include <string>
@@ -19,12 +21,16 @@ extern UART_HandleTypeDef huart1;
 UserInterfaceManager::UserInterfaceManager(Screen& screen,
     Q10Keyboard& keyboard,
     SerialInterface& net_interface,
-    EEPROM& eeprom): screen(&screen),
-    keyboard(&keyboard),
+    EEPROM& eeprom,
+    AudioChip& audio
+):
+    screen(screen),
+    keyboard(keyboard),
     net_layer(&net_interface),
     setting_manager(eeprom),
+    audio(audio),
     view(nullptr),
-    network(setting_manager, net_layer, screen),
+    network(setting_manager, net_layer),
     received_messages(), // TODO limit?
     force_redraw(false),
     current_tick(HAL_GetTick()),
@@ -42,8 +48,7 @@ UserInterfaceManager::UserInterfaceManager(Screen& screen,
 
 UserInterfaceManager::~UserInterfaceManager()
 {
-    screen = nullptr;
-    keyboard = nullptr;
+    delete view;
 }
 
 // TODO should update this to be a draw/update architecture
@@ -52,7 +57,8 @@ void UserInterfaceManager::Run()
     current_tick = HAL_GetTick();
 
     // TODO rename to update
-    view->Run();
+    // TODO send update every 1/60 of a second?
+    view->Run(current_tick);
 
     // TODO move into view
     if (RedrawForced())
@@ -86,6 +92,7 @@ bool UserInterfaceManager::HasNewMessages()
 
 std::vector<std::string> UserInterfaceManager::TakeMessages()
 {
+    Logger::Log(Logger::Level::Debug, "take messages");
     has_new_messages = false;
     auto out = std::vector<std::string>{};
     received_messages.swap(out);
@@ -182,7 +189,11 @@ void UserInterfaceManager::HandleIncomingPackets()
 {
     // TODO move this into the serial packet manager.
     if (!net_layer.HasRxPackets())
+    {
         return;
+    }
+
+    Logger::Log(Logger::Level::Info,"Handle incoming packets ", net_layer.GetRxPackets().size());
 
     auto& packets = net_layer.GetRxPackets();
     for (auto& rx_packet : packets)
@@ -237,37 +248,79 @@ void UserInterfaceManager::HandleMessagePacket(
     qchat::MessageTypes message_type =
         (qchat::MessageTypes)packet->GetData<uint8_t>(5, 1);
 
+    Logger::Log(Logger::Level::Info, "Qmessage type = ", (int)message_type);
+
     // Check the message type
     switch (message_type)
     {
         case qchat::MessageTypes::Ascii:
         {
-            // Make a new the ascii message pointer
-            qchat::Ascii ascii;
-
-            // message uri
+            // This isn't being used.
+            std::string message_uri;
             uint32_t uri_len = packet->GetData<uint32_t>(6, 4);
             uint32_t offset = 10;
             for (uint16_t i = 0; i < uri_len; ++i)
             {
-                ascii.message_uri.push_back(
+                message_uri.push_back(
                     packet->GetData<char>(offset, 1));
                 offset += 1;
             }
 
-            // ascii
-            uint32_t msg_len = packet->GetData<uint32_t>(offset, 4);
+            // Get the length of the data
+            // -1 for the type
+            uint32_t data_len = packet->GetData<uint32_t>(offset, 4) - 1;
             offset += 4;
 
-            for (uint16_t i = 0; i < msg_len; ++i)
-            {
-                ascii.message.push_back(static_cast<char>(
-                    packet->GetData<uint32_t>(offset, 1)));
-                offset += 1;
-            }
+            // Get the real message type.
+            message_type = (qchat::MessageTypes)packet->GetData<uint8_t>(offset, 1);
+            offset++;
+            Logger::Log(Logger::Level::Info, "True message type = ", (int)message_type);
 
-            // Do something with the ascii message
-            ascii_messages.push_back(std::move(ascii));
+            switch (message_type)
+            {
+                case (qchat::MessageTypes::Ascii):
+                {
+                    // Make a new the ascii message pointer
+                    qchat::Ascii ascii;
+
+                    // message uri
+                    ascii.message_uri = message_uri;
+
+                    Logger::Log(Logger::Level::Info, "Message uri output = ", ascii.message_uri);
+
+                    for (uint16_t i = 0; i < data_len; ++i)
+                    {
+                        ascii.message.push_back(static_cast<char>(
+                            packet->GetData<uint32_t>(offset, 1)));
+                        offset += 1;
+                    }
+
+                    // Do something with the ascii message
+                    ascii_messages.push_back(std::move(ascii));
+                    break;
+                }
+                case (qchat::MessageTypes::Audio):
+                {
+                    Logger::Log(Logger::Level::Info, "offset ", offset);
+
+                    Logger::Log(Logger::Level::Info, "Audio message len = ", (int)data_len);
+
+                    uint8_t* audio_data = (packet->Data() + offset);
+
+                    uint16_t* tx_buffer = audio.GetOutputBuffer();
+
+                    AudioCodec::ALawExpand(audio_data, tx_buffer, data_len);
+
+                    audio_data = nullptr;
+                    tx_buffer = nullptr;
+
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            }
             break;
         }
         case (qchat::MessageTypes::WatchOk):
