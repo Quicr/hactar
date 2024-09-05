@@ -42,14 +42,10 @@ class SerialPacket
 public:
     enum class Types
     {
-        Ok = 1,
-        Error,
-        Busy,
-        Debug,
-        LocalDebug,
+        LocalDebug = 1,
         QMessage,
         Setting,
-        Command
+        Command,
     };
 
     enum class QMessages
@@ -59,7 +55,8 @@ public:
         Text = 1,
         GetRooms,
         WatchRoom,
-        UnwatchRoom
+        UnwatchRoom,
+        Audio
         // TODO
     };
 
@@ -161,7 +158,9 @@ public:
 
         // Copy over the the data
         for (unsigned int i = 0; i < capacity; i++)
+        {
             data[i] = other.data[i];
+        }
 
         return *this;
     }
@@ -352,7 +351,7 @@ protected:
         unsigned int offset,
         const int num_bytes)
     {
-        unsigned int in_sz = sizeof(val);
+        unsigned int in_sz = sizeof(T);
         if (num_bytes > 0)
         {
             in_sz = num_bytes;

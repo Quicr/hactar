@@ -14,101 +14,111 @@ static const CipherSuite cipher_suite = CipherSuite{
 
 static const bytes group_id = from_ascii("group_id");
 
-enum struct MlsMessageType : uint8_t {
+enum struct MlsMessageType: uint8_t
+{
     key_package = 1,
     welcome = 2,
     commit = 3,
     message = 4,
 };
 
-static bytes frame(MlsMessageType msg_type, const bytes& msg) {
-  const auto msg_type_8 = static_cast<uint8_t>(msg_type);
-  const auto type_vec = std::vector<uint8_t>(1, msg_type_8);
-  return bytes(type_vec) + msg;
+static bytes frame(MlsMessageType msg_type, const bytes& msg)
+{
+    const auto msg_type_8 = static_cast<uint8_t>(msg_type);
+    const auto type_vec = std::vector<uint8_t>(1, msg_type_8);
+    return bytes(type_vec) + msg;
 }
 
-static std::pair<MlsMessageType, bytes> unframe(const bytes& framed) {
-  const auto& data = framed.as_vec();
-  const auto msg_type = static_cast<MlsMessageType>(data.at(0));
-  const auto msg_data = bytes(std::vector<uint8_t>(data.begin() + 1, data.end()));
-  return { msg_type, msg_data };
+static std::pair<MlsMessageType, bytes> unframe(const bytes& framed)
+{
+    const auto& data = framed.as_vec();
+    const auto msg_type = static_cast<MlsMessageType>(data.at(0));
+    const auto msg_data = bytes(std::vector<uint8_t>(data.begin() + 1, data.end()));
+    return { msg_type, msg_data };
 }
 
 PreJoinedState::PreJoinedState(const std::string& username)
-  : identity_priv(SignaturePrivateKey::generate(cipher_suite))
-  , init_priv(HPKEPrivateKey::generate(cipher_suite))
-  , leaf_priv(HPKEPrivateKey::generate(cipher_suite))
+    : identity_priv(SignaturePrivateKey::generate(cipher_suite))
+    , init_priv(HPKEPrivateKey::generate(cipher_suite))
+    , leaf_priv(HPKEPrivateKey::generate(cipher_suite))
 {
-  auto credential = Credential::basic(from_ascii(username));
-  leaf_node = LeafNode{ cipher_suite,
-                        leaf_priv.public_key,
-                        identity_priv.public_key,
-                        credential,
-                        Capabilities::create_default(),
-                        Lifetime::create_default(),
-                        {},
-                        identity_priv };
+    auto credential = Credential::basic(from_ascii(username));
+    leaf_node = LeafNode{ cipher_suite,
+                          leaf_priv.public_key,
+                          identity_priv.public_key,
+                          credential,
+                          Capabilities::create_default(),
+                          Lifetime::create_default(),
+                          {},
+                          identity_priv };
 
-  key_package = KeyPackage{ cipher_suite,
-                            init_priv.public_key,
-                            leaf_node,
-                            {},
-                            identity_priv };
+    key_package = KeyPackage{ cipher_suite,
+                              init_priv.public_key,
+                              leaf_node,
+                              {},
+                              identity_priv };
 
-  key_package_data = tls::marshal(key_package);
+    key_package_data = tls::marshal(key_package);
 }
 
-MLSState PreJoinedState::create() {
-  return { State{ group_id,
-                  cipher_suite,
-                  leaf_priv,
-                  identity_priv,
-                  leaf_node,
-                  {} } };
+MLSState PreJoinedState::create()
+{
+    return { State{ group_id,
+                    cipher_suite,
+                    leaf_priv,
+                    identity_priv,
+                    leaf_node,
+                    {} } };
 }
 
-MLSState PreJoinedState::join(const bytes& welcome_data) {
-  const auto welcome = tls::get<Welcome>(welcome_data);
-  return MLSState{ State{ init_priv,
-                          leaf_priv,
-                          identity_priv,
-                          key_package,
-                          welcome,
-                          std::nullopt,
-                          {} } };
+MLSState PreJoinedState::join(const bytes& welcome_data)
+{
+    const auto welcome = tls::get<Welcome>(welcome_data);
+    return MLSState{ State{ init_priv,
+                            leaf_priv,
+                            identity_priv,
+                            key_package,
+                            welcome,
+                            std::nullopt,
+                            {} } };
 }
 
-bool MLSState::should_commit() const {
-  Logger::Log(Logger::Level::Debug, "[MLS] should commit?", state.index().val);
-  return state.index() == LeafIndex{ 0 };
+bool MLSState::should_commit() const
+{
+    Logger::Log(Logger::Level::Debug, "[MLS] should commit?", state.index().val);
+    return state.index() == LeafIndex{ 0 };
 }
 
-std::tuple<bytes, bytes> MLSState::add(const bytes& key_package_data) {
-  const auto fresh_secret = random_bytes(32);
-  const auto key_package = tls::get<KeyPackage>(key_package_data);
-  const auto add = state.add_proposal(key_package);
-  auto [commit, welcome, next_state] =
-    state.commit(fresh_secret, CommitOpts{ { add }, true, false, {} }, {});
+std::tuple<bytes, bytes> MLSState::add(const bytes& key_package_data)
+{
+    const auto fresh_secret = random_bytes(32);
+    const auto key_package = tls::get<KeyPackage>(key_package_data);
+    const auto add = state.add_proposal(key_package);
+    auto [commit, welcome, next_state] =
+        state.commit(fresh_secret, CommitOpts{ { add }, true, false, {} }, {});
 
-  state = std::move(next_state);
-  return { tls::marshal(commit), tls::marshal(welcome) };
+    state = std::move(next_state);
+    return { tls::marshal(commit), tls::marshal(welcome) };
 }
 
-void MLSState::handle(const bytes& commit_data) {
-  const auto commit = tls::get<MLSMessage>(commit_data);
-  auto maybe_next_state = state.handle(commit);
-  state = std::move(maybe_next_state.value());
+void MLSState::handle(const bytes& commit_data)
+{
+    const auto commit = tls::get<MLSMessage>(commit_data);
+    auto maybe_next_state = state.handle(commit);
+    state = std::move(maybe_next_state.value());
 }
 
-bytes MLSState::protect(const bytes& plaintext) {
-  const auto private_message = state.protect({}, plaintext, 0);
-  return tls::marshal(private_message);
+bytes MLSState::protect(const bytes& plaintext)
+{
+    const auto private_message = state.protect({}, plaintext, 0);
+    return tls::marshal(private_message);
 }
 
-bytes MLSState::unprotect(const bytes& ciphertext) {
-  const auto private_message = tls::get<MLSMessage>(ciphertext);
-  const auto [aad, pt] = state.unprotect(private_message);
-  return pt;
+bytes MLSState::unprotect(const bytes& ciphertext)
+{
+    const auto private_message = tls::get<MLSMessage>(ciphertext);
+    const auto [aad, pt] = state.unprotect(private_message);
+    return pt;
 }
 
 ChatView::ChatView(UserInterfaceManager& manager,
@@ -116,18 +126,25 @@ ChatView::ChatView(UserInterfaceManager& manager,
     Q10Keyboard& keyboard,
     SettingManager& setting_manager,
     SerialPacketManager& serial,
-    Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network)
-    , pre_joined_state(PreJoinedState(*setting_manager.Username()))
+    Network& network,
+    AudioChip& audio
+):
+    ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio),
+    pre_joined_state(PreJoinedState(*setting_manager.Username())),
+    last_audio_buffer_used(1)
 {
     redraw_messages = true;
     const auto framed = frame(MlsMessageType::key_package,
-                                pre_joined_state->key_package_data);
+        pre_joined_state->key_package_data);
     SendPacket(framed);
 }
 
-void ChatView::Update()
+void ChatView::Update(uint32_t current_tick)
 {
+    if (keyboard.MicPressed())
+    {
+        SendAudio(current_tick);
+    }
 }
 
 void ChatView::AnimatedDraw()
@@ -187,11 +204,14 @@ void ChatView::HandleInput()
     plaintext += usr_input;
 
     // If we have MLS state, encrypt and send the message
-    if (mls_state) {
+    if (mls_state)
+    {
         // Encrypt the message
         const auto plaintext_data = from_ascii(plaintext);
         const auto ciphertext = mls_state->protect(plaintext_data);
         const auto framed = frame(MlsMessageType::message, ciphertext);
+
+        Logger::Log(Logger::Level::Info, "Send mls message");
 
         // Send the message out on the wire
         SendPacket(framed);
@@ -201,12 +221,13 @@ void ChatView::HandleInput()
     PushMessage(std::move(plaintext));
 }
 
-void ChatView::SendPacket(const bytes& msg) {
+void ChatView::SendPacket(const bytes& msg)
+{
     // prepare ascii message, encode into Message + Packet
     // XXX(RLB): This should use a null-safe message type.
     qchat::Ascii ascii{
         manager.ActiveRoom()->room_uri,
-        std::string{ msg.begin(), msg.end() }
+        std::string { msg.begin(), msg.end()}
     };
 
     // TODO move into encode...
@@ -237,12 +258,13 @@ void ChatView::PushMessage(std::string&& msg)
     redraw_messages = true;
 }
 
-void ChatView::IngestMessages()
+void ChatView::IngestMlsMessages()
 try
 {
     // TODO use serial instead of manager?
     const auto raw_messages = manager.TakeMessages();
-    for (const auto& msg : raw_messages) {
+    for (const auto& msg : raw_messages)
+    {
         const auto msg_bytes = from_ascii(msg);
         const auto [msg_type, msg_data] = unframe(msg_bytes);
 
@@ -250,10 +272,12 @@ try
         Logger::Log(Logger::Level::Debug, "[MLS] Type", int(msg_type));
         Logger::Log(Logger::Level::Debug, "[MLS] Data", to_hex(msg_data));
 
-        switch (msg_type) {
+        switch (msg_type)
+        {
             case MlsMessageType::key_package: {
                 // If this is the initial creation, create the group
-                if (pre_joined_state) {
+                if (pre_joined_state)
+                {
                     Logger::Log(Logger::Level::Debug, "[MLS] Creating group");
                     auto state = pre_joined_state->create();
                     const auto [commit, welcome] = state.add(msg_data);
@@ -267,12 +291,14 @@ try
                 }
 
                 // Otherwise, we should have MLS state ready
-                if (!mls_state) {
+                if (!mls_state)
+                {
                     Logger::Log(Logger::Level::Debug, "[MLS] Ignoring KeyPackage; no MLS state");
                     break;
                 }
 
-                if (!mls_state->should_commit()){
+                if (!mls_state->should_commit())
+                {
                     // We are not the committer
                     Logger::Log(Logger::Level::Debug, "[MLS] Ignoring KeyPackage; not the committer");
                     break;
@@ -290,7 +316,8 @@ try
             }
 
             case MlsMessageType::welcome: {
-                if (!pre_joined_state) {
+                if (!pre_joined_state)
+                {
                     // Can't join by welcome
                     Logger::Log(Logger::Level::Error, "[MLS] Ignoring Welcome; not pre-joined");
                     break;
@@ -303,7 +330,8 @@ try
             }
 
             case MlsMessageType::commit: {
-                if (!mls_state) {
+                if (!mls_state)
+                {
                     // Can't handle commits before join
                     Logger::Log(Logger::Level::Error, "[MLS] Ignoring Commit; no MLS state");
                     break;
@@ -316,7 +344,8 @@ try
 
             case MlsMessageType::message: {
                 // If we don't have MLS state, we can't decrypt
-                if (!mls_state) {
+                if (!mls_state)
+                {
                     Logger::Log(Logger::Level::Error, "[MLS] Ignoring message; no MLS state");
                     PushMessage("[decryption failure]");
                     break;
@@ -331,19 +360,25 @@ try
         }
     }
 }
-catch(const std::exception& e)
+catch (const std::exception& e)
 {
     Logger::Log(Logger::Level::Error, "[EXCEPT] Caught exception: ", e.what());
 }
 
+void ChatView::IngestPlainMessages()
+{
+    // TODO
+}
+
 void ChatView::DrawMessages()
 {
-    IngestMessages();
+    IngestMlsMessages();
 
     int32_t msg_idx = messages.size() - 1;
 
     // If there are no messages just return
-    if (msg_idx < 0) {
+    if (msg_idx < 0)
+    {
         return;
     }
 
@@ -466,4 +501,47 @@ void ChatView::DrawUsrInputSeperator()
 {
     // Draw typing seperator
     screen.FillRectangle(Margin_0, screen.ViewHeight() - usr_font.height - Padding_3, screen.ViewWidth(), screen.ViewHeight() - usr_font.height - Padding_2, fg);
+}
+
+void ChatView::SendAudio(uint32_t current_tick)
+{
+    if (!mls_state)
+    {
+        return;
+    }
+    if (audio.IsHalfComplete())
+    {
+        // Get audio at the start
+        const uint16_t* raw_buff = audio.GetRxBuffer(0);
+
+        auto packet = std::move(qchat::Codec::encode(
+            serial.NextPacketId(),
+            manager.ActiveRoom()->room_uri,
+            raw_buff,
+            audio.AudioBufferSize_2(),
+            current_tick
+        ));
+
+        serial.EnqueuePacket(std::move(packet));
+
+        last_audio_buffer_used = 0;
+    }
+    if (audio.IsComplete())
+    {
+        // Get the raw audio half way through
+        const uint16_t* raw_buff = audio.GetRxBuffer(audio.AudioBufferSize_2());
+
+        // Send wave
+        auto packet = std::move(qchat::Codec::encode(
+            serial.NextPacketId(),
+            manager.ActiveRoom()->room_uri,
+            raw_buff,
+            audio.AudioBufferSize_2(),
+            current_tick
+        ));
+
+        serial.EnqueuePacket(std::move(packet));
+
+        last_audio_buffer_used = 1;
+    }
 }
