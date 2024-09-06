@@ -12,7 +12,7 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     port_pin dc,
     port_pin rst,
     port_pin bl,
-    Orientation _orientation) :
+    Orientation _orientation):
     spi_handle(&hspi),
     cs(cs),
     dc(dc),
@@ -422,8 +422,8 @@ void Screen::DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour
 
     SetWritablePixels(x, y, x, y);
 
-    uint8_t data[2] = { static_cast<uint8_t>(colour>>8),
-                        static_cast<uint8_t>(colour)};
+    uint8_t data[2] = { static_cast<uint8_t>(colour >> 8),
+                        static_cast<uint8_t>(colour) };
 
     // Draw pixel
     WriteDataDMA(data, 2);
@@ -496,7 +496,7 @@ void Screen::FillPolygon(const size_t count,
         points[0][x], points[0][y], colour);
 
     // X intersections
-    uint16_t* intersections = new uint16_t[count]{0};
+    uint16_t* intersections = new uint16_t[count]{ 0 };
     uint8_t num_intersect = 0;
     uint16_t curr_point = 0;
     uint16_t next_point = 0;
@@ -894,6 +894,81 @@ void Screen::FillArrow(const uint16_t tip_x, const uint16_t tip_y,
         };
         FillPolygon(7, points, colour);
     }
+}
+
+void Screen::FillCircle(const uint16_t x, const uint16_t y, const uint16_t r,
+    const uint16_t fg, const uint16_t bg)
+{
+    // TODO error checking
+
+    // Create the bounding box
+    int16_t left = x - r;
+    int16_t right = x + r;
+    int16_t top = y - r;
+    int16_t bottom = y + r;
+
+    // printf("left = %d, right = %d, top = %d, bottom = %d", left, right, top, bottom);
+
+    if (left < 0)
+    {
+        left = 0;
+    }
+    if (right > ViewWidth())
+    {
+        right = ViewWidth();
+    }
+    if (top < 0)
+    {
+        top = 0;
+    }
+    if (bottom > ViewHeight())
+    {
+        bottom = ViewHeight();
+    }
+
+    // Right now it is limited to 8 pixels per row
+    // Scan through the circle
+    const int16_t r_2 = r * r;
+    const uint16_t cols = right - left + 1;
+    const uint16_t rows = bottom - top + 1;
+
+    // Get the number of bytes required to draw
+    // TODO this math is wrong fix it.
+    const size_t num_bytes = (rows * cols) * 2;
+    uint8_t bytes[num_bytes] = { 0 };
+    size_t idx;
+    uint16_t row;
+    uint16_t col;
+    for (row = 0; row < rows; ++row)
+    {
+        for (col = 0; col < cols; ++col)
+        {
+            const uint16_t h_dis = ((left + col) - x) * ((left + col) - x);
+            const uint16_t v_dis = ((top + row) - y) * ((top + row) - y);
+            if (h_dis + v_dis <= r_2)
+            {
+                DrawPixel(left + col, top+row, fg);
+                // Point falls in the circle
+                // bytes[idx++] = static_cast<uint8_t>(fg >> 8);
+                // bytes[idx++] = static_cast<uint8_t>(fg);
+            }
+            else
+            {
+                DrawPixel(left + col, top+row, bg);
+                // bytes[idx++] = static_cast<uint8_t>(bg >> 8);
+                // bytes[idx++] = static_cast<uint8_t>(bg);
+            }
+        }
+    }
+    // WaitUntilSPIFree();
+    // Select();
+
+    // SetWritablePixels(left, top, right - 1, bottom - 1);
+
+    // HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
+    // WriteDataDMA(bytes, num_bytes);
+
+    // Deselect();
 }
 
 void Screen::FillRectangle(const uint16_t x_start,
