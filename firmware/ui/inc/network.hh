@@ -10,7 +10,7 @@
 class Network
 {
 public:
-    Network(SettingManager& settings, SerialPacketManager& serial, Screen& screen);
+    Network(SettingManager& settings, SerialPacketManager& serial);
     ~Network() = default;
 
     void Update(uint32_t tick);
@@ -20,8 +20,6 @@ public:
 
     bool IsConnected() const;
     const std::map<uint8_t, std::string>& GetSSIDs() const;
-
-    Screen& screen;
 
 private:
 

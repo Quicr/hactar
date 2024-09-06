@@ -9,6 +9,7 @@
 #include "CommandHandler.hh"
 #include "SerialPacketManager.hh"
 #include "network.hh"
+#include "audio_chip.hh"
 #include <string>
 
 
@@ -22,13 +23,16 @@ public:
         Q10Keyboard& keyboard,
         SettingManager& setting_manager,
         SerialPacketManager& serial,
-        Network& network):
+        Network& network,
+        AudioChip& audio
+    ):
         manager(manager),
         screen(screen),
         keyboard(keyboard),
         setting_manager(setting_manager),
         serial(serial),
         network(network),
+        audio(audio),
         command_handler(&manager),
         first_load(true),
         redraw_menu(true),
@@ -43,7 +47,8 @@ public:
         rx_colour(0),
         tx_redraw_timeout(0),
         rx_redraw_timeout(0),
-        general_refresh_timeout(0)
+        general_refresh_timeout(0),
+        mic_last_state(true)
     {
         // TODO load settings from eeprom
 
@@ -56,11 +61,11 @@ public:
     {
     }
 
-    virtual void Run()
+    virtual void Run(uint32_t current_tick)
     {
         AnimatedDraw();
         Draw();
-        BaseUpdate();
+        BaseUpdate(current_tick);
     }
 
     void Clear()
@@ -79,13 +84,14 @@ protected:
     static constexpr uint16_t Cursor_Animate_Duration = 2500;
     static constexpr uint16_t Cursor_Hollow_Thickness = 1;
 
-    bool BaseUpdate()
+    // TODO add current tick
+    bool BaseUpdate(uint32_t current_tick)
     {
         // Handle input updates
         InputUpdate();
 
         // Run defined view Update
-        Update();
+        Update(current_tick);
 
         // Change view if set
         if (command_handler.ChangeViewCommand(new_view))
@@ -103,8 +109,17 @@ protected:
     {
         GetInput();
 
-        if (!keyboard.EnterPressed()) return;
-        if (!(usr_input.length() > 0)) return;
+        if (!keyboard.EnterPressed())
+        {
+            return;
+        }
+
+        if (!(usr_input.length() > 0))
+        {
+            return;
+        }
+
+        Logger::Log(Logger::Level::Info, "Enter was pressed");
 
         // Actual view code goes here
         HandleInput();
@@ -112,7 +127,7 @@ protected:
         ClearInput();
     }
 
-    virtual void Update() = 0;
+    virtual void Update(uint32_t current_tick) = 0;
     virtual void HandleInput() = 0;
     virtual void AnimatedDraw() = 0;
     virtual void Draw()
@@ -140,6 +155,22 @@ protected:
         if (HAL_GetTick() > general_refresh_timeout)
         {
             DrawWifiSymbol();
+        }
+
+        if (mic_last_state != keyboard.MicPressed())
+        {
+            mic_last_state = keyboard.MicPressed();
+
+            // Draw the symbol
+            uint16_t colour = C_WHITE;
+            if (mic_last_state)
+            {
+                colour = C_GREEN;
+            }
+
+            screen.FillCircle(screen.ViewWidth() - 48, 4, 3, colour, C_BLACK);
+            screen.FillCircle(screen.ViewWidth() - 48, 8, 3, colour, C_BLACK);
+            screen.FillRectangle(screen.ViewWidth() - 51, 4, screen.ViewWidth() - 44, 8, colour);
         }
     }
 
@@ -282,6 +313,7 @@ protected:
     SettingManager& setting_manager;
     SerialPacketManager& serial;
     Network& network;
+    AudioChip& audio;
     CommandHandler command_handler;
 
     // If this is the first load, then we should
@@ -312,6 +344,8 @@ protected:
     uint32_t rx_redraw_timeout;
 
     uint32_t general_refresh_timeout;
+
+    bool mic_last_state;
 
     // TODO EEPROM setting
     Font& menu_font = font11x16;

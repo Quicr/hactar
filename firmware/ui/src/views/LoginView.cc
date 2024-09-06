@@ -2,12 +2,13 @@
 #include "UserInterfaceManager.hh"
 
 LoginView::LoginView(UserInterfaceManager& manager,
-    Screen& screen,
-    Q10Keyboard& keyboard,
-    SettingManager& setting_manager,
-    SerialPacketManager& serial,
-    Network& network)
-    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network),
+        Screen& screen,
+        Q10Keyboard& keyboard,
+        SettingManager& setting_manager,
+        SerialPacketManager& serial,
+        Network& network,
+        AudioChip& audio)
+    : ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio),
     incorrect_passcode_entered(false)
 {
 }
@@ -84,7 +85,7 @@ void LoginView::Draw()
     }
 }
 
-void LoginView::Update()
+void LoginView::Update(uint32_t current_tick)
 {
 
 }
