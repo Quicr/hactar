@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
-#include "Screen.hh"
-#include "Font.hh"
+#include "screen.hh"
+#include "font.hh"
 
 #define Margin_0 0
 

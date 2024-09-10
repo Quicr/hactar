@@ -1,4 +1,4 @@
-#include "sub_delegate.h"
+#include "sub_delegate.hh"
 #include <sstream>
 
 SubDelegate::SubDelegate(cantina::LoggerPointer logger_in,

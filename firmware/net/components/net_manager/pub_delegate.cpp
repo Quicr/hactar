@@ -1,4 +1,4 @@
-#include "pub_delegate.h"
+#include "pub_delegate.hh"
 #include <sstream>
 
 PubDelegate::PubDelegate(cantina::LoggerPointer logger_in,

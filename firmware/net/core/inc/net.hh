@@ -8,13 +8,13 @@
 #include "esp_event.h"
 
 #include "logger.hh"
-#include "SerialEsp.hh"
-#include "SerialPacketManager.hh"
-#include "NetManager.hh"
+#include "serial_esp.hh"
+#include "serial_packet_manager.hh"
+#include "net_manager.hh"
 
-#include "Wifi.hh"
+#include "wifi.hh"
 
-#include <qsession.h>
+#include "qsession.hh"
 
 static NetManager* manager = nullptr;
 static SerialEsp* ui_uart1 = nullptr;
