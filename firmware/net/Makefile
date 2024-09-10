@@ -1,5 +1,5 @@
 BAUD 				= 115200
-PORT 				= /dev/ttyUSB0
+PORT 				= /dev/cu.usbserial-10
 BUILD_PATH			= ./build
 TARGET				= net
 
