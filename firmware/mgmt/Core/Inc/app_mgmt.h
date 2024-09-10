@@ -48,8 +48,6 @@ void NetUpload();
 void UIUpload();
 void RunningMode();
 void DebugMode();
-void Usart1_Net_Upload_Runnning_Debug_Reset(void);
-void Usart1_UI_Upload_Init(void);
 
 void WaitForNetReady(const enum State* state);
 void LEDA(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);

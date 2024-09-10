@@ -351,29 +351,19 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, UI_STAT_Pin|LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin
-                          |UI_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, UI_STAT_Pin|LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LEDA_B_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT0_Pin
-                          |NET_RST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT0_Pin
+                          |NET_NRST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : BTN_RST_Pin BTN_UI_Pin BTN_NET_Pin */
-  GPIO_InitStruct.Pin = BTN_RST_Pin|BTN_UI_Pin|BTN_NET_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : UI_STAT_Pin LEDB_R_Pin LEDA_R_Pin LEDA_G_Pin
-                           UI_RST_Pin */
-  GPIO_InitStruct.Pin = UI_STAT_Pin|LEDB_R_Pin|LEDA_R_Pin|LEDA_G_Pin
-                          |UI_RST_Pin;
+  /*Configure GPIO pins : UI_STAT_Pin LEDA_R_Pin LEDA_G_Pin LEDA_B_Pin */
+  GPIO_InitStruct.Pin = UI_STAT_Pin|LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -385,10 +375,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(NET_STAT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDA_B_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT0_Pin
-                           NET_RST_Pin NET_BOOT_Pin UI_BOOT1_Pin */
-  GPIO_InitStruct.Pin = LEDA_B_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT0_Pin
-                          |NET_RST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin;
+  /*Configure GPIO pins : LEDB_R_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT0_Pin
+                           NET_NRST_Pin NET_BOOT_Pin UI_BOOT1_Pin */
+  GPIO_InitStruct.Pin = LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT0_Pin
+                          |NET_NRST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -414,12 +404,15 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
   HAL_GPIO_Init(MCLK_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : UI_NRST_Pin */
+  GPIO_InitStruct.Pin = UI_NRST_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(UI_NRST_GPIO_Port, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 1, 0);
-  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

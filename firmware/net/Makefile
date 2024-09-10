@@ -22,7 +22,7 @@ compile:
 
 upload:
 	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" \
-								 -bin=${BUILD_PATH}
+								 -bin=${BUILD_PATH} --port=/dev/ttyUSB0
 
 upload_esptool:
 	python3 ../tools/command_sender.py ${PORT} ${BAUD} net_upload

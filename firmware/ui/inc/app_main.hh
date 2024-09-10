@@ -22,6 +22,10 @@
 #ifndef __APP_MAIN_HH
 #define __APP_MAIN_HH
 
+#ifndef UNUSED
+#define UNUSED(expr) do { (void)(expr); } while(0)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -53,7 +53,7 @@ public:
     {
     }
 
-    void RxTx(const unsigned long current_time)
+    void Update(const unsigned long current_time)
     {
         Rx(current_time);
         Tx(current_time);

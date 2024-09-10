@@ -51,12 +51,12 @@ UserInterfaceManager::~UserInterfaceManager()
     delete view;
 }
 
-// TODO should update this to be a draw/update architecture
-void UserInterfaceManager::Run()
+void UserInterfaceManager::Update()
 {
     current_tick = HAL_GetTick();
 
-    // TODO rename to update
+    screen.Update(current_tick);
+
     // TODO send update every 1/60 of a second?
     view->Run(current_tick);
 
@@ -71,8 +71,7 @@ void UserInterfaceManager::Run()
     // SendCheckWifiPacket();
 
     // Run the receive and transmit
-    // TODO rename to Update
-    net_layer.RxTx(current_tick);
+    net_layer.Update(current_tick);
 
     network.Update(current_tick);
 
@@ -119,7 +118,7 @@ void UserInterfaceManager::ForceRedraw()
 {
     force_redraw = true;
     // TODO change this to draw
-    Run();
+    Update();
 }
 
 bool UserInterfaceManager::RedrawForced()

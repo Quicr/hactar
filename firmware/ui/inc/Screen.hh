@@ -4,6 +4,8 @@
 #include "PortPin.hh"
 #include "Font.hh"
 #include "RingMatrix.hh"
+#include "RingMemoryPool.hh"
+#include "SwapBuffer.hh"
 
 #include <string>
 
@@ -63,6 +65,39 @@
 
 class Screen
 {
+private:
+    static constexpr uint32_t Max_Chunk_Size = 16384U;
+    static constexpr uint32_t Chunk_Buffer_Size = 2048UL;
+
+    static constexpr uint32_t Num_Interactions = 20;
+    static constexpr uint32_t Num_Memories = 20;
+    // Guesstimate
+
+    static constexpr uint32_t Memory_Size = 64;
+
+    enum class MemoryStatus
+    {
+        Unused = 0,
+        In_Progress,
+        Complete
+    };
+
+    // TODO packed
+    struct ScreenInteraction
+    {
+        GPIO_PinState dc_level;
+        uint32_t len;
+        bool is_busy;
+        uint8_t data[1024];
+    };
+
+    struct ScreenMemory
+    {
+        bool (*callback)(Screen& screen, ScreenMemory& memory);
+        MemoryStatus status;
+        uint8_t parameters[Memory_Size]; // A bunch of data params to run the next command
+    };
+
 public:
     enum Orientation {
         portrait,
@@ -86,9 +121,7 @@ public:
            Orientation _orientation);
     ~Screen();
 
-    // TODO pg 129 add vertical scroll
-    //https://www.waveshare.com/w/upload/e/e3/ILI9341_DS.pdf
-
+    void Update(uint32_t current_tick);
     void Begin();
     inline void Select();
     inline void Deselect();
@@ -177,10 +210,10 @@ public:
                        const uint16_t colour,
                        uint32_t max_chunk_size=Max_Chunk_Size);
 
-    void FillRectangleAsync(const uint16_t x_start,
-                            const uint16_t y_start,
-                            uint16_t x_end,
-                            uint16_t y_end,
+    void FillRectangleAsync(uint16_t x1,
+                            uint16_t x2,
+                            uint16_t y1,
+                            uint16_t y2,
                             const uint16_t colour);
 
     void FillScreen(const uint16_t colour, bool async=false);
@@ -210,17 +243,28 @@ public:
     uint16_t GetStringLeftDistanceFromRightEdge(const uint16_t str_len, const Font& font) const;
     uint16_t Convert32ColorTo16(const uint32_t colour);
 
-    inline void DrawNext();
+
 private:
-    void PushDrawingFunction(void* func);
-    void UpdateDrawingFunction(void* func);
-    void PopDrawingFunction();
+    ScreenMemory* RetrieveFreeMemory();
+    void HandleVideoBuffer();
+    void HandleReadyMemory();
 
-    static void FillRectangleAsyncProcedure(Screen* screen);
+    void SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
 
+    bool WriteCommandAsync(uint8_t cmd);
+    bool WriteDataAsync(uint8_t* data, uint32_t data_size);
 
-    static constexpr uint32_t Max_Chunk_Size = 16384U;
-    static constexpr uint32_t Chunk_Buffer_Size = 1024UL;
+    bool WriteAsync(SwapBuffer::swap_buffer_t* buff);
+
+    static bool EnqueueCommand(uint8_t cmd);
+
+    static bool SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory);
+    static bool SetColumnsDataAsync(Screen& screen, ScreenMemory& memory);
+    static bool SetRowsCommandAsync(Screen& screen, ScreenMemory& memory);
+    static bool SetRowsDataAsync(Screen& screen, ScreenMemory& memory);
+    static bool WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory);
+
+    static bool FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory);
 
     void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
               uint16_t &y_end);
@@ -236,14 +280,18 @@ private:
     Orientation orientation;
     uint16_t view_height;
     uint16_t view_width;
-    uint8_t chunk_buffer[Chunk_Buffer_Size * 2]; // TODO use this more
     volatile bool spi_busy;
-    volatile bool draw_async;
-    volatile bool draw_async_stop;
-    bool buffer_overwritten_by_sync;
-    uint32_t drawing_func_read;
-    uint32_t drawing_func_write;
-    bool async_draw_ready;
-    RingMatrix draw_matrix;
-    void** Drawing_Func_Ring;
+    volatile bool spi_async;
+
+    SwapBuffer video_buff;
+    SwapBuffer::swap_buffer_t* video_front_buff;
+
+    ScreenMemory memories[Num_Memories];
+    ScreenMemory* live_memory;
+    uint32_t memories_write_idx = 0;
+    uint32_t memories_read_idx = 0;
+    uint32_t available_memories = 0;
+
+    uint8_t str[64];
+    uint16_t len;
 };

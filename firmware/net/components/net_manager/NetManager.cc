@@ -47,7 +47,7 @@ void NetManager::HandleSerial(void* param)
         // Delay at the start
         vTaskDelay(50 / portTICK_PERIOD_MS);
 
-        self->ui_layer.RxTx(xTaskGetTickCount() / portTICK_PERIOD_MS);
+        self->ui_layer.Update(xTaskGetTickCount() / portTICK_PERIOD_MS);
 
 
         self->HandleSerialCommands();

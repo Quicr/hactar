@@ -19,6 +19,7 @@ TeamView::~TeamView()
 
 void TeamView::Update(uint32_t current_tick)
 {
+    UNUSED(current_tick);
     // Periodically get the list of teams.
     return;
 }

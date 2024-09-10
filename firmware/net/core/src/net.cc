@@ -30,17 +30,18 @@ extern "C" void app_main(void)
     SetupPins();
     SetupComponents();
 
-    gpio_set_level(LED_R_Pin, 1);
-    gpio_set_level(LED_G_Pin, 1);
-    gpio_set_level(LED_B_Pin, 1);
-    gpio_set_level(NET_DBG5_Pin, 0);
-    gpio_set_level(NET_DBG6_Pin, 0);
+    gpio_set_level(NET_LED_R, 1);
+    gpio_set_level(NET_LED_G, 1);
+    gpio_set_level(NET_LED_B, 1);
+    gpio_set_level(NET_DEBUG_1, 0);
+    gpio_set_level(NET_DEBUG_2, 0);
+    gpio_set_level(NET_DEBUG_3, 0);
 
     int next = 0;
-    gpio_set_level(LED_R_Pin, 0);
+    gpio_set_level(NET_LED_R, 0);
 
     // Ready for normal operations
-    gpio_set_level(NET_STAT_Pin, 1);
+    gpio_set_level(NET_STAT, 1);
 
     // This is the lazy way of doing it, otherwise we should use a esp_timer.
     uint32_t blink_cnt = 0;
@@ -48,7 +49,7 @@ extern "C" void app_main(void)
     {
         if (blink_cnt++ == 100)
         {
-            gpio_set_level(LED_R_Pin, next);
+            gpio_set_level(NET_LED_R, next);
             next = next ? 0 : 1;
             blink_cnt = 0;
         }
@@ -63,7 +64,7 @@ extern "C" void app_main(void)
             qsession_connected = true;
         }
 
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
@@ -72,17 +73,17 @@ static void SetupPins()
     gpio_config_t io_conf = {};
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = NET_STAT_SEL;
+    io_conf.pin_bit_mask = NET_STAT_MASK;
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
     gpio_config(&io_conf);
 
-    gpio_set_level(NET_STAT_Pin, 0);
+    gpio_set_level(NET_STAT, 0);
 
     // LED init
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = LEDS_OUTPUT_SEL;
+    io_conf.pin_bit_mask = LED_MASK;
     io_conf.pull_down_en = (gpio_pulldown_t)0;
     io_conf.pull_up_en = (gpio_pullup_t)0;
     gpio_config(&io_conf);
@@ -90,7 +91,7 @@ static void SetupPins()
     // Debug init
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = NET_DBG_SEL;
+    io_conf.pin_bit_mask = NET_DEBUG_MASK;
     io_conf.pull_down_en = (gpio_pulldown_t)0;
     io_conf.pull_up_en = (gpio_pullup_t)0;
     gpio_config(&io_conf);

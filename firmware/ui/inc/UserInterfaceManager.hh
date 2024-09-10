@@ -37,7 +37,7 @@ public:
                          AudioChip& audio);
     ~UserInterfaceManager();
 
-    void Run();
+    void Update();
     bool HasNewMessages();
     std::vector<std::string> TakeMessages();
     void PushMessage(std::string&& str);

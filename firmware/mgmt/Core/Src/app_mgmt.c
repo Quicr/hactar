@@ -10,6 +10,7 @@
 #include <string.h>
 #include "stm32f0xx_hal_def.h"
 #include "uart_stream.h"
+#include "chip_control.h"
 /* USER CODE END Includes */
 
 extern TIM_HandleTypeDef htim3;
@@ -33,7 +34,6 @@ extern DMA_HandleTypeDef hdma_usart3_tx;
 
 #define CPU_FREQ 48'000'000
 
-#define BAUD 115200
 #define UI_RECEIVE_BUFF_SZ 20
 #define UI_TRANSMIT_BUFF_SZ UI_RECEIVE_BUFF_SZ * 2
 #define NET_RECEIVE_BUFF_SZ 1024
@@ -127,59 +127,6 @@ void CancelAllUart()
     CancelUart(&ui_stream);
     CancelUart(&net_stream);
     CancelUart(&usb_stream);
-}
-
-void NetBootloaderMode()
-{
-    // Bring the boot low for esp, bootloader mode (0)
-    HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
-
-    // Power cycle
-    HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-}
-
-void NetNormalMode()
-{
-    HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
-
-    // Power cycle
-    HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_SET);
-}
-
-void NetHoldInReset()
-{
-    // Reset
-    HAL_GPIO_WritePin(NET_RST_GPIO_Port, NET_RST_Pin, GPIO_PIN_RESET);
-}
-
-void UIBootloaderMode()
-{
-    // Normal boot mode (boot0 = 1 and boot1 = 0)
-    HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_RESET);
-
-    // Power cycle
-    HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
-}
-
-void UINormalMode()
-{
-    // Normal boot mode (boot0 = 0 and boot1 = 1)
-    HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_SET);
-
-    // Power cycle
-    HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
-    HAL_Delay(10);
-    HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_SET);
-}
-
-void UIHoldInReset()
-{
-    HAL_GPIO_WritePin(UI_RST_GPIO_Port, UI_RST_Pin, GPIO_PIN_RESET);
 }
 
 void NetUpload()
@@ -552,50 +499,6 @@ int app_main(void)
         }
     }
     return 0;
-}
-
-/**
- * @brief TODO
- *
- */
-void Usart1_Net_Upload_Runnning_Debug_Reset(void)
-{
-    huart1.Instance = USART1;
-    huart1.Init.BaudRate = BAUD;
-    huart1.Init.WordLength = UART_WORDLENGTH_8B;
-    huart1.Init.StopBits = UART_STOPBITS_1;
-    huart1.Init.Parity = UART_PARITY_NONE;
-    huart1.Init.Mode = UART_MODE_TX_RX;
-    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-    huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-    huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-    if (HAL_UART_Init(&huart1) != HAL_OK)
-    {
-        Error_Handler();
-    }
-}
-
-/**
- * @brief TODO
- *
- */
-void Usart1_UI_Upload_Init(void)
-{
-    huart1.Instance = USART1;
-    huart1.Init.BaudRate = BAUD;
-    huart1.Init.WordLength = UART_WORDLENGTH_9B;
-    huart1.Init.StopBits = UART_STOPBITS_1;
-    huart1.Init.Parity = UART_PARITY_EVEN;
-    huart1.Init.Mode = UART_MODE_TX_RX;
-    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-    huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-    huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-    if (HAL_UART_Init(&huart1) != HAL_OK)
-    {
-        Error_Handler();
-    }
 }
 
 /**

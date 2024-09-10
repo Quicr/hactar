@@ -49,7 +49,7 @@ port_pin dc = { DISP_DC_GPIO_Port, DISP_DC_Pin };
 port_pin rst = { DISP_RST_GPIO_Port, DISP_RST_Pin };
 port_pin bl = { DISP_BL_GPIO_Port, DISP_BL_Pin };
 
-Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::left_landscape);
+Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::portrait);
 Q10Keyboard* keyboard = nullptr;
 SerialStm* mgmt_serial_interface = nullptr;
 SerialStm* net_serial_interface = nullptr;
@@ -140,9 +140,11 @@ int app_main()
     bool sound_inited = false;
     uint32_t wait_to_enable_audio_codec = HAL_GetTick() + 5000;
 
+    screen.FillRectangleAsync(10, 20, 10, 20, C_BLUE);
+
     while (1)
     {
-        ui_manager->Run();
+        ui_manager->Update();
 
         if (HAL_GetTick() > blink)
         {
