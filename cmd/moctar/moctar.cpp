@@ -223,7 +223,7 @@ class SubDelegate : public quicr::SubscriberDelegate
                     break;
                 }
 
-                LOGGER_DEBUG(logger, "[MLS] Joining");
+                LOGGER_INFO(logger, "[MLS] Joining");
                 mls_state = pre_joined_state->join(msg_data);
                 pre_joined_state = std::nullopt;
                 break;
@@ -236,7 +236,7 @@ class SubDelegate : public quicr::SubscriberDelegate
                     break;
                 }
 
-                LOGGER_DEBUG(logger, "[MLS] Processing commit");
+                LOGGER_INFO(logger, "[MLS] Processing commit");
                 mls_state->handle(msg_data);
                 break;
             }
@@ -249,7 +249,7 @@ class SubDelegate : public quicr::SubscriberDelegate
                     break;
                 }
 
-                LOGGER_DEBUG(logger, "[MLS] Decrypting message");
+                LOGGER_INFO(logger, "[MLS] Decrypting message");
                 auto plaintext = mls_state->unprotect(msg_data);
                 auto plaintext_str = std::string(to_ascii(plaintext));
                 LOGGER_INFO(logger, plaintext_str);
@@ -347,7 +347,7 @@ try
     auto framed_key_package = frame(MlsMessageType::key_package, pre_joined_state->key_package_data);
     client.publishNamedObject(name, 0, 1000, false, std::move(framed_key_package));
 
-    while (pre_joined_state != std::nullopt)
+    while (mls_state == std::nullopt)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }

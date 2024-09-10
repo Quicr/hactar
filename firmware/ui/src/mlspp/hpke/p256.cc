@@ -135,7 +135,7 @@ bytes sign(const bytes& data, const PrivateKey& sk) {
 
   const auto r = sig.slice(0, half_size);
   auto r_header = bytes{0x02, static_cast<uint8_t>(r.size())};
-  if ((r.at(0) & 0x80) == 1)
+  if (r.at(0) >= 0x80)
   {
     r_header.at(1) += 1;
     r_header.push_back(0x00);
@@ -143,14 +143,14 @@ bytes sign(const bytes& data, const PrivateKey& sk) {
 
   const auto s = sig.slice(half_size, sig_size);
   auto s_header = bytes{0x02, static_cast<uint8_t>(s.size())};
-  if ((s.at(0) & 0x80) == 1)
+  if (s.at(0) >= 0x80)
   {
     s_header.at(1) += 1;
     s_header.push_back(0x00);
   }
 
   const auto sequence_data = r_header + r + s_header + s;
-  const auto sequence_header = bytes{0x80, static_cast<uint8_t>(sequence_data.size())};
+  const auto sequence_header = bytes{0x30, static_cast<uint8_t>(sequence_data.size())};
 
   return sequence_header + sequence_data;
 }
@@ -165,11 +165,15 @@ bool verify(const bytes& data, const bytes& sig, const PublicKey& pk) {
   const auto sequence_data = sig.slice(sequence_header_size, sig.size());
 
   const auto r_size = sequence_data.at(1);
-  auto r = sig.slice(sequence_header_size, r_size);
+  const auto r_data_start = sequence_header_size;
+  auto r = sequence_data.slice(r_data_start, r_data_start + r_size);
+
   if (r_size > sig_int_size) { r = r.slice(1, r.size()); }
 
   const auto s_size = sequence_data.at(sequence_header_size + r_size + 1);
-  auto s = sig.slice(sequence_header_size * 2 + r.size(), sequence_data.size());
+  const auto s_data_start = sequence_header_size * 2 +  r_size;
+  auto s = sequence_data.slice(s_data_start, sequence_data.size());
+
   if (s_size > sig_int_size) { s = s.slice(1, s.size()); }
 
   const auto real_sig = r + s;

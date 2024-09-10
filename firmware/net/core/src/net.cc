@@ -125,7 +125,7 @@ void Setup()
     wifi = Wifi::GetInstance();
 
     inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
-    char default_relay [] = "192.168.50.141";
+    char default_relay [] = "192.168.1.124";
     auto relay_name = default_relay;
     uint16_t port = 1234;
     quicr::RelayInfo relay{

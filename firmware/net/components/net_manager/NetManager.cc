@@ -269,11 +269,8 @@ void NetManager::HandleNetwork(void* param)
             }
 
             Logger::Log(Logger::Level::Debug, "Packet data total len %d", total_len);
-            for (size_t i = 0; i < total_len + 3; ++i)
-            {
-                Logger::Log(Logger::Level::Info, packet->GetData<int>(i, 1));
-            }
             Logger::Log(Logger::Level::Info, "Enqueue serial packet that came from the network");
+
             // Enqueue the packet to go to the UI
             self->ui_layer->EnqueuePacket(std::move(packet));
             packet = nullptr;
