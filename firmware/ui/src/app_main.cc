@@ -2,17 +2,17 @@
 #include "app_main.hh"
 
 #include <string>
-#include "Font.hh"
-#include "PortPin.hh"
-#include "PushReleaseButton.hh"
+#include "font.hh"
+#include "port_pin.hh"
+#include "push_release_button.hh"
 
-#include "Screen.hh"
-#include "Q10Keyboard.hh"
-#include "EEPROM.hh"
-#include "UserInterfaceManager.hh"
+#include "screen.hh"
+#include "q10_keyboard.hh"
+#include "eeprom.hh"
+#include "user_interface_manager.hh"
 
-#include "SerialStm.hh"
-#include "Led.hh"
+#include "serial_stm.hh"
+#include "led.hh"
 #include "audio_chip.hh"
 
 #include <hpke/random.h>

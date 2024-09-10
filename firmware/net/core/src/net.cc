@@ -15,14 +15,14 @@
 #include "nvs_flash.h"
 #include "esp_event.h"
 
-#include "SerialEsp.hh"
-#include "SerialPacketManager.hh"
-#include "NetManager.hh"
+#include "serial_esp.hh"
+#include "serial_packet_manager.hh"
+#include "net_manager.hh"
 
-#include "Wifi.hh"
-#include "NetPins.hh"
+#include "wifi.hh"
+#include "net_pins.hh"
 
-#include <qsession.h>
+#include "qsession.hh"
 #include "logger.hh"
 
 extern "C" void app_main(void)

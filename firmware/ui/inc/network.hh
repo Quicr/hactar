@@ -2,10 +2,10 @@
 
 #include <string>
 
-#include "SettingManager.hh"
-#include "SerialPacketManager.hh"
+#include "setting_manager.hh"
+#include "serial_packet_manager.hh"
 
-#include "Screen.hh"
+#include "screen.hh"
 
 class Network
 {

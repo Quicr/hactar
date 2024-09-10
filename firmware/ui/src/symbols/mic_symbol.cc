@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Font.hh"
+#include "font.hh"
 
 // typedef struct
 // {
