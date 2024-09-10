@@ -18,7 +18,8 @@ uart = serial.Serial(
     baudrate=baud,
     bytesize=serial.EIGHTBITS,
     parity=serial.PARITY_NONE,
-    stopbits=serial.STOPBITS_ONE
+    stopbits=serial.STOPBITS_ONE,
+    timeout=2
 )
 
 print(f"\033[92mOpened port: {port}, baudrate={baud}\033[0m")

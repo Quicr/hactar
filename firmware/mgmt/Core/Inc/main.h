@@ -57,15 +57,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define BTN_RST_Pin GPIO_PIN_13
-#define BTN_RST_GPIO_Port GPIOC
-#define BTN_RST_EXTI_IRQn EXTI4_15_IRQn
-#define BTN_UI_Pin GPIO_PIN_14
-#define BTN_UI_GPIO_Port GPIOC
-#define BTN_UI_EXTI_IRQn EXTI4_15_IRQn
-#define BTN_NET_Pin GPIO_PIN_15
-#define BTN_NET_GPIO_Port GPIOC
-#define BTN_NET_EXTI_IRQn EXTI4_15_IRQn
 #define UI_STAT_Pin GPIO_PIN_0
 #define UI_STAT_GPIO_Port GPIOA
 #define NET_STAT_Pin GPIO_PIN_1
@@ -74,14 +65,14 @@ void Error_Handler(void);
 #define UI_RX1_MGMT_GPIO_Port GPIOA
 #define UI_TX1_MGMT_Pin GPIO_PIN_3
 #define UI_TX1_MGMT_GPIO_Port GPIOA
-#define LEDB_R_Pin GPIO_PIN_4
-#define LEDB_R_GPIO_Port GPIOA
-#define LEDA_R_Pin GPIO_PIN_6
+#define LEDA_R_Pin GPIO_PIN_4
 #define LEDA_R_GPIO_Port GPIOA
-#define LEDA_G_Pin GPIO_PIN_7
+#define LEDA_G_Pin GPIO_PIN_6
 #define LEDA_G_GPIO_Port GPIOA
-#define LEDA_B_Pin GPIO_PIN_0
-#define LEDA_B_GPIO_Port GPIOB
+#define LEDA_B_Pin GPIO_PIN_7
+#define LEDA_B_GPIO_Port GPIOA
+#define LEDB_R_Pin GPIO_PIN_0
+#define LEDB_R_GPIO_Port GPIOB
 #define USB_RTS_Pin GPIO_PIN_1
 #define USB_RTS_GPIO_Port GPIOB
 #define USB_RTS_EXTI_IRQn EXTI0_1_IRQn
@@ -101,12 +92,12 @@ void Error_Handler(void);
 #define USB_RX1_MGMT_GPIO_Port GPIOA
 #define USB_TX1_MGMT_Pin GPIO_PIN_10
 #define USB_TX1_MGMT_GPIO_Port GPIOA
-#define UI_RST_Pin GPIO_PIN_15
-#define UI_RST_GPIO_Port GPIOA
+#define UI_NRST_Pin GPIO_PIN_15
+#define UI_NRST_GPIO_Port GPIOA
 #define UI_BOOT0_Pin GPIO_PIN_3
 #define UI_BOOT0_GPIO_Port GPIOB
-#define NET_RST_Pin GPIO_PIN_4
-#define NET_RST_GPIO_Port GPIOB
+#define NET_NRST_Pin GPIO_PIN_4
+#define NET_NRST_GPIO_Port GPIOB
 #define NET_BOOT_Pin GPIO_PIN_5
 #define NET_BOOT_GPIO_Port GPIOB
 #define UI_BOOT1_Pin GPIO_PIN_8

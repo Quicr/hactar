@@ -135,6 +135,7 @@ void FirstBootView::HandleInput()
 
 void FirstBootView::Update(uint32_t current_tick)
 {
+    UNUSED(current_tick);
     if (state == State::Wifi)
     {
         ssids = &network.GetSSIDs();
