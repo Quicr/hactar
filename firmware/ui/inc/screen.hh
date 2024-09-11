@@ -120,28 +120,19 @@ public:
            Orientation _orientation);
     ~Screen();
 
-    void Update(uint32_t current_tick);
+    // General interfacing functions
     void Begin();
-    inline void Select();
-    inline void Deselect();
-    void Reset();
-    void Loop();
+    void Update(uint32_t current_tick);
 
-    // TODO move these to private?
-    void WriteCommand(uint8_t command);
-    void WriteData(uint8_t* data, uint32_t data_size);
-    void WriteData(uint8_t data);
-    void WriteDataDMA(uint8_t* data, const uint32_t data_size);
-    void WriteDataDMAFree(uint8_t* data, const uint32_t data_size);
-    void SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_end,
-                           uint16_t y_end);
-    void SetOrientation(Orientation _orientation);
-    void EnableBackLight();
+    // Public command functions
     void DisableBackLight();
+    void EnableBackLight();
+    void Reset();
+    void SetOrientation(Orientation _orientation);
     void Sleep();
     void Wake();
 
-
+    // Sync functions
     void DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
                    const uint16_t length, const uint16_t width,
                    const ArrowDirection direction, const uint16_t colour);
@@ -209,12 +200,6 @@ public:
                        const uint16_t colour,
                        uint32_t max_chunk_size=Max_Chunk_Size);
 
-    void FillRectangleAsync(uint16_t x1,
-                            uint16_t x2,
-                            uint16_t y1,
-                            uint16_t y2,
-                            const uint16_t colour);
-
     void FillScreen(const uint16_t colour, bool async=false);
 
     void FillTriangle(const uint16_t x1, const uint16_t y1,
@@ -222,7 +207,6 @@ public:
                       const uint16_t x3, const uint16_t y3,
                       const uint16_t colour);
 
-    void ReleaseSPI();
     void DrawCharacter(uint16_t x_start,
                        uint16_t y_start,
                        const uint16_t x_window_begin,
@@ -234,6 +218,27 @@ public:
                        const uint16_t fg,
                        const uint16_t bg);
 
+    // Async functions
+    void DrawArrowAsync(const uint16_t tip_x, const uint16_t tip_y,
+                   const uint16_t length, const uint16_t width,
+                   const ArrowDirection direction, const uint16_t colour);
+
+    void DrawCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
+                    const uint16_t colour); // TODO
+
+    void DrawLineAsync(uint16_t x1, uint16_t x2,
+                       uint16_t y1, uint16_t y2,
+                       const uint16_t colour);
+
+    void FillRectangleAsync(uint16_t x1,
+                            uint16_t x2,
+                            uint16_t y1,
+                            uint16_t y2,
+                            const uint16_t colour);
+
+
+    // Helper Functions
+    void ReleaseSPI();
     uint16_t ViewWidth() const;
     uint16_t ViewHeight() const;
     uint16_t GetStringWidth(const uint16_t str_len, const Font& font) const;
@@ -244,31 +249,43 @@ public:
 
 
 private:
-    ScreenMemory* RetrieveFreeMemory();
-    void HandleVideoBuffer();
-    void HandleReadyMemory();
+    // Private gpio functions
+    inline void Select();
+    inline void Deselect();
 
+    // Private sync command functions
+    void SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_end,
+                           uint16_t y_end);
+    void WriteCommand(uint8_t command);
+    void WriteData(uint8_t* data, uint32_t data_size);
+    void WriteData(uint8_t data);
+    void WriteDataSyncDMA(uint8_t* data, const uint32_t data_size);
+
+    // Private async command functions
     void SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
-
-    bool WriteCommandAsync(uint8_t cmd);
-    bool WriteDataAsync(uint8_t* data, uint32_t data_size);
-
-    bool WriteAsync(SwapBuffer::swap_buffer_t* buff);
-
-    static bool EnqueueCommand(uint8_t cmd);
-
     static bool SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory);
     static bool SetColumnsDataAsync(Screen& screen, ScreenMemory& memory);
     static bool SetRowsCommandAsync(Screen& screen, ScreenMemory& memory);
     static bool SetRowsDataAsync(Screen& screen, ScreenMemory& memory);
     static bool WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory);
+    bool WriteCommandAsync(uint8_t cmd);
+    bool WriteDataAsync(uint8_t* data, uint32_t data_size);
+    bool WriteAsync(SwapBuffer::swap_buffer_t* buff);
 
+    ScreenMemory* RetrieveFreeMemory();
+    void HandleReadyMemory();
+    void HandleVideoBuffer();
+
+    // Async procedure functions
+    static bool DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory);
     static bool FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory);
 
+
+    // Private helpers
     void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
               uint16_t &y_end);
-
     inline void WaitUntilSPIFree();
+
 
     // Variables
     SPI_HandleTypeDef *spi_handle = nullptr;
