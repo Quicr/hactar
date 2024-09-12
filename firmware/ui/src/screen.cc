@@ -1246,20 +1246,6 @@ void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
     }
     else
     {
-
-        SetWritablePixelsAsync(x1, x1 + 1, y1, y1 + 1);
-
-        ScreenMemory* memory = RetrieveFreeMemory();
-        if (memory == nullptr)
-        {
-            // TODO
-            // cry, but should error out meaning we need to
-            // give more memory
-
-            return;
-        }
-
-
         // Bresenham line algorithm
         // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 
@@ -1288,7 +1274,7 @@ void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
 
         if (angle < 45)
         {
-            if (x1 > thickness/2)
+            if (x1 > thickness / 2)
             {
                 x1 -= thickness / 2;
                 x2 -= thickness / 2;
@@ -1301,7 +1287,7 @@ void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
         }
         else
         {
-            if (y1 > thickness/2)
+            if (y1 > thickness / 2)
             {
                 y1 -= thickness / 2;
                 y2 -= thickness / 2;
@@ -1313,170 +1299,47 @@ void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
             }
         }
 
-        uintptr_t callback = (uintptr_t)DrawLineAsyncProcedure;
+        // TODO this could return a nullptr...
+        ScreenMemory* memory = SetWritablePixelsAsync(x1, x1 + 1, y1, y1 + 1);
 
-        memory->callback = DrawLineAsyncProcedure;
-        memory->parameters[0] = x1 >> 8;
-        memory->parameters[1] = x1 & 0xFF;
-        memory->parameters[2] = x2 >> 8;
-        memory->parameters[3] = x2 & 0xFF;
-        memory->parameters[4] = y1 >> 8;
-        memory->parameters[5] = y1 & 0xFF;
-        memory->parameters[6] = y2 >> 8;
-        memory->parameters[7] = y2 & 0xFF;
-        memory->parameters[8] = 1; // Denote a callback
-        memory->parameters[9] = callback >> 24;
-        memory->parameters[10] = callback >> 16;
-        memory->parameters[11] = callback >> 8;
-        memory->parameters[12] = callback;
-        memory->parameters[13] = diff_x >> 8;
-        memory->parameters[14] = diff_x;
-        memory->parameters[15] = diff_y >> 8;
-        memory->parameters[16] = diff_y;
-        memory->parameters[17] = error >> 8;
-        memory->parameters[18] = error;
-        memory->parameters[19] = colour >> 8;
-        memory->parameters[20] = colour;
-        memory->parameters[21] = x1 >> 8;
-        memory->parameters[22] = x1 & 0xFF;
-        memory->parameters[23] = x2 >> 8;
-        memory->parameters[24] = x2 & 0xFF;
-        memory->parameters[25] = y1 >> 8;
-        memory->parameters[26] = y1 & 0xFF;
-        memory->parameters[27] = y2 >> 8;
-        memory->parameters[28] = y2 & 0xFF;
-        memory->parameters[29] = thickness >> 8;
-        memory->parameters[30] = thickness;
-        memory->parameters[31] = angle >> 8;
-        memory->parameters[32] = angle;
-        memory->status = MemoryStatus::In_Progress;
+        memory->post_callback = DrawLineAsyncProcedure;
+        memory->parameters[8] = diff_x >> 8;
+        memory->parameters[9] = diff_x;
+        memory->parameters[10] = diff_y >> 8;
+        memory->parameters[11] = diff_y;
+        memory->parameters[12] = error >> 8;
+        memory->parameters[13] = error;
+        memory->parameters[14] = colour >> 8;
+        memory->parameters[15] = colour;
+        memory->parameters[16] = x1 >> 8;
+        memory->parameters[17] = x1 & 0xFF;
+        memory->parameters[18] = x2 >> 8;
+        memory->parameters[19] = x2 & 0xFF;
+        memory->parameters[20] = y1 >> 8;
+        memory->parameters[21] = y1 & 0xFF;
+        memory->parameters[22] = y2 >> 8;
+        memory->parameters[23] = y2 & 0xFF;
+        memory->parameters[24] = thickness >> 8;
+        memory->parameters[25] = thickness;
+        memory->parameters[26] = angle >> 8;
+        memory->parameters[27] = angle;
     }
 }
 
-bool Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
+void Screen::DrawPixelAsync(const uint16_t x, const uint16_t y,
+    const uint16_t colour)
 {
-    int16_t diff_x = memory.parameters[13] << 8 | memory.parameters[14];
-    int16_t diff_y = memory.parameters[15] << 8 | memory.parameters[16];
-
-    // Error will hop back and forth until we hit our end points
-    int16_t error = memory.parameters[17] << 8 | memory.parameters[18];
-
-    uint16_t colour = memory.parameters[19] << 8 | memory.parameters[20];
-
-    uint16_t x1 = memory.parameters[0] << 8 | memory.parameters[1];
-    uint16_t x2 = memory.parameters[23] << 8 | memory.parameters[24];
-    uint16_t y1 = memory.parameters[4] << 8 | memory.parameters[5];
-    uint16_t y2 = memory.parameters[27] << 8 | memory.parameters[28];
-
-
-    uint16_t thickness = memory.parameters[29] << 8 | memory.parameters[30];
-
-    // If x1 > x2 negative slope
-    int16_t direction_x = (x1 < x2) ? 1 : -1;
-
-    // If y2 > y1 negative slope
-    int16_t direction_y = (y1 < y2) ? 1 : -1;
-
-    // Fill the array and then update stuff
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
-    buff->len = 2;
-    buff->dc_level = GPIO_PIN_SET;
-    buff->data[0] = colour >> 8;
-    buff->data[1] = colour & 0xFF;
-    buff->is_ready = true;
-
-    // Move x position
-    if (error * 2 > -diff_y)
+    if (x >= view_width || y > view_height)
     {
-        error -= diff_y;
-        x1 += direction_x;
-    }
-    else
-    {
-        // Move x position
-        error += diff_x;
-        y1 += direction_y;
+        return;
     }
 
-    if (x1 != x2 || y1 != y2)
-    {
-        memory.parameters[0] = x1 >> 8;
-        memory.parameters[1] = x1 & 0xFF;
-        memory.parameters[2] = (x1 + 1) >> 8;
-        memory.parameters[3] = (x1 + 1) & 0xFF;
-        memory.parameters[4] = y1 >> 8;
-        memory.parameters[5] = y1 & 0xFF;
-        memory.parameters[6] = (y1 + 1) >> 8;
-        memory.parameters[7] = (y1 + 1) & 0xFF;
-        memory.parameters[17] = error >> 8;
-        memory.parameters[18] = error;
-        memory.callback = SetColumnsCommandAsync;
-    }
-    else if (thickness > 0)
-    {
-        x1 = memory.parameters[21] << 8 | memory.parameters[22];
-        y1 = memory.parameters[25] << 8 | memory.parameters[26];
+    ScreenMemory* memory = SetWritablePixelsAsync(x, x+1, y, y+1);
 
-        uint16_t angle = memory.parameters[31] << 8 | memory.parameters[32];
-
-        if (angle < 45)
-        {
-            x1 += 1;
-            x2 += 1;
-        }
-        else
-        {
-            y1 += 1;
-            y2 += 1;
-        }
-
-        thickness--;
-
-        memory.parameters[0] = x1 >> 8;
-        memory.parameters[1] = x1 & 0xFF;
-        memory.parameters[2] = (x1 + 1) >> 8;
-        memory.parameters[3] = (x1 + 1) & 0xFF;
-        memory.parameters[4] = y1 >> 8;
-        memory.parameters[5] = y1 & 0xFF;
-        memory.parameters[6] = (y1 + 1) >> 8;
-        memory.parameters[7] = (y1 + 1) & 0xFF;
-        memory.parameters[17] = error >> 8;
-        memory.parameters[18] = error;
-        memory.parameters[21] = x1 >> 8;
-        memory.parameters[22] = x1 & 0xFF;
-        memory.parameters[23] = x2 >> 8;
-        memory.parameters[24] = x2 & 0xFF;
-        memory.parameters[25] = y1 >> 8;
-        memory.parameters[26] = y1 & 0xFF;
-        memory.parameters[27] = y2 >> 8;
-        memory.parameters[28] = y2 & 0xFF;
-        memory.parameters[29] = thickness >> 8;
-        memory.parameters[30] = thickness;
-        memory.callback = SetColumnsCommandAsync;
-    }
-    else
-    {
-        memory.status = MemoryStatus::Complete;
-    }
-
-    return true;
+    memory->post_callback = DrawPixelAsyncProcedure;
+    memory->parameters[8] = colour >> 8;
+    memory->parameters[9] = colour;
 }
-
-
-/*****************************************************************************/
-/**************************** Helper helpers *********************************/
-/*****************************************************************************/
-
-uint16_t Screen::ViewWidth() const
-{
-    return view_width;
-}
-
-uint16_t Screen::ViewHeight() const
-{
-    return view_height;
-}
-
 
 void Screen::FillRectangleAsync(uint16_t x1,
     uint16_t x2,
@@ -1510,78 +1373,35 @@ void Screen::FillRectangleAsync(uint16_t x1,
         y1 = y2;
     }
 
-    SetWritablePixelsAsync(x1, x2 - 1, y1, y2 - 1);
+    // TODO this can return a nullptr...
+    ScreenMemory* memory = SetWritablePixelsAsync(x1, x2 - 1, y1, y2 - 1);
 
     uint32_t num_byte_pixels = ((x2 - x1) * (y2 - y1) * 2);
 
-    ScreenMemory* memory = RetrieveFreeMemory();
-
-    if (memory == nullptr)
-    {
-        // TODO
-        // cry, but should error out meaning we need to
-        // give more memory
-
-        return;
-    }
-
     // Is this param needed??
-    memory->callback = FillRectangleAsyncProcedure;
+    memory->post_callback = FillRectangleAsyncProcedure;
 
-    memory->parameters[0] = colour >> 8;
-    memory->parameters[1] = colour & 0xFF;
+    memory->parameters[8] = colour >> 8;
+    memory->parameters[9] = colour & 0xFF;
 
-    memory->parameters[2] = num_byte_pixels >> 24;
-    memory->parameters[3] = num_byte_pixels >> 16;
-    memory->parameters[4] = num_byte_pixels >> 8;
-    memory->parameters[5] = num_byte_pixels & 0xFF;
-
-    memory->status = MemoryStatus::In_Progress;
-
+    memory->parameters[10] = num_byte_pixels >> 24;
+    memory->parameters[11] = num_byte_pixels >> 16;
+    memory->parameters[12] = num_byte_pixels >> 8;
+    memory->parameters[13] = num_byte_pixels & 0xFF;
 }
 
-bool Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
+/*****************************************************************************/
+/**************************** Helper helpers *********************************/
+/*****************************************************************************/
+
+uint16_t Screen::ViewWidth() const
 {
-    uint16_t colour = memory.parameters[0] << 8 | memory.parameters[1];
+    return view_width;
+}
 
-    uint32_t bytes_remaining =
-        memory.parameters[2] << 24 |
-        memory.parameters[3] << 16 |
-        memory.parameters[4] << 8 |
-        memory.parameters[5];
-
-    // Get a buff
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
-    buff->len = bytes_remaining > screen.video_buff.BufferSize()
-        ? screen.video_buff.BufferSize() : bytes_remaining;
-
-    // Fill the buff
-    for (size_t i = 0; i < buff->len; i += 2)
-    {
-        buff->data[i] = colour >> 8;
-        buff->data[i + 1] = colour & 0xFF;
-    }
-
-    buff->dc_level = GPIO_PIN_SET;
-    buff->is_ready = true;
-
-    bytes_remaining -= buff->len;
-
-    // Out of the while loop, if curr_x != x2 and curr_y != y2
-    // then save the state, otherwise, finish the memory?
-    if (bytes_remaining != 0)
-    {
-        memory.parameters[2] = bytes_remaining >> 24;
-        memory.parameters[3] = bytes_remaining >> 16;
-        memory.parameters[4] = bytes_remaining >> 8;
-        memory.parameters[5] = bytes_remaining & 0xFF;
-    }
-    else
-    {
-        memory.status = MemoryStatus::Complete;
-    }
-
-    return true;
+uint16_t Screen::ViewHeight() const
+{
+    return view_height;
 }
 
 /*****************************************************************************/
@@ -1685,7 +1505,7 @@ void Screen::WriteDataSyncDMA(uint8_t* data, const uint32_t data_size)
 /*****************************************************************************/
 
 
-void Screen::SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
+Screen::ScreenMemory* Screen::SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
 {
     // TODO need to make sure there are enough memories for this
     // This will start the other ones when it completes
@@ -1695,7 +1515,7 @@ void Screen::SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint1
     if (memory == nullptr)
     {
         // Cry?
-        return;
+        return nullptr;
     }
 
     memory->callback = SetColumnsCommandAsync;
@@ -1708,10 +1528,12 @@ void Screen::SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint1
     memory->parameters[6] = y2 >> 8;
     memory->parameters[7] = y2 & 0xFF;
     memory->status = MemoryStatus::In_Progress;
+
+    return memory;
 }
 
 
-bool Screen::SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory)
+void Screen::SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = SetColumnsDataAsync;
 
@@ -1720,11 +1542,9 @@ bool Screen::SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory)
     buff->len = 1;
     buff->dc_level = GPIO_PIN_RESET;
     buff->is_ready = true;
-
-    return true;
 }
 
-bool Screen::SetColumnsDataAsync(Screen& screen, ScreenMemory& memory)
+void Screen::SetColumnsDataAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = SetRowsCommandAsync;
 
@@ -1737,11 +1557,9 @@ bool Screen::SetColumnsDataAsync(Screen& screen, ScreenMemory& memory)
     buff->data[3] = memory.parameters[3];
     buff->len = 4;
     buff->is_ready = true;
-
-    return true;
 }
 
-bool Screen::SetRowsCommandAsync(Screen& screen, ScreenMemory& memory)
+void Screen::SetRowsCommandAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = SetRowsDataAsync;
 
@@ -1751,11 +1569,9 @@ bool Screen::SetRowsCommandAsync(Screen& screen, ScreenMemory& memory)
     buff->data[0] = RA_SET;
     buff->len = 1;
     buff->is_ready = true;
-
-    return true;
 }
 
-bool Screen::SetRowsDataAsync(Screen& screen, ScreenMemory& memory)
+void Screen::SetRowsDataAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = WriteToRamCommandAsync;
 
@@ -1768,12 +1584,9 @@ bool Screen::SetRowsDataAsync(Screen& screen, ScreenMemory& memory)
     buff->data[3] = memory.parameters[7];
     buff->len = 4;
     buff->is_ready = true;
-
-
-    return true;
 }
 
-bool Screen::WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory)
+void Screen::WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory)
 {
     SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
 
@@ -1782,24 +1595,14 @@ bool Screen::WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory)
     buff->len = 1;
     buff->is_ready = true;
 
-    if (memory.parameters[8] != 0)
+    if (memory.post_callback != nullptr)
     {
-        // If its not zero we got an address in the next 4 bytes
-        uintptr_t address = 0;
-        address |= memory.parameters[9] << 24;
-        address |= memory.parameters[10] << 16;
-        address |= memory.parameters[11] << 8;
-        address |= memory.parameters[12];
-
-        memory.callback = (bool (*)(Screen&, ScreenMemory&))address;
+        memory.callback = memory.post_callback;
     }
     else
     {
         memory.status = MemoryStatus::Complete;
     }
-
-
-    return true;
 }
 
 bool Screen::WriteCommandAsync(uint8_t cmd)
@@ -1941,6 +1744,172 @@ void Screen::HandleVideoBuffer()
 
     // Send it off
     WriteAsync(video_front_buff);
+}
+
+/*****************************************************************************/
+/********************* Async procedure functions *****************************/
+/*****************************************************************************/
+
+
+void Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
+{
+    int16_t diff_x = memory.parameters[8] << 8 | memory.parameters[9];
+    int16_t diff_y = memory.parameters[10] << 8 | memory.parameters[11];
+
+    // Error will hop back and forth until we hit our end points
+    int16_t error = memory.parameters[12] << 8 | memory.parameters[13];
+
+    uint16_t x1 = memory.parameters[0] << 8 | memory.parameters[1];
+    uint16_t x2 = memory.parameters[18] << 8 | memory.parameters[19];
+    uint16_t y1 = memory.parameters[4] << 8 | memory.parameters[5];
+    uint16_t y2 = memory.parameters[22] << 8 | memory.parameters[23];
+
+
+    uint16_t thickness = memory.parameters[24] << 8 | memory.parameters[25];
+
+    // If x1 > x2 negative slope
+    int16_t direction_x = (x1 < x2) ? 1 : -1;
+
+    // If y2 > y1 negative slope
+    int16_t direction_y = (y1 < y2) ? 1 : -1;
+
+    // Fill the array and then update stuff
+    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    buff->len = 2;
+    buff->dc_level = GPIO_PIN_SET;
+
+    // Colour is stored at these addresses
+    buff->data[0] = memory.parameters[14];
+    buff->data[1] = memory.parameters[15];
+    buff->is_ready = true;
+
+    // Move x position
+    if (error * 2 > -diff_y)
+    {
+        error -= diff_y;
+        x1 += direction_x;
+    }
+    else
+    {
+        // Move x position
+        error += diff_x;
+        y1 += direction_y;
+    }
+
+    if (x1 != x2 || y1 != y2)
+    {
+        memory.parameters[0] = x1 >> 8;
+        memory.parameters[1] = x1 & 0xFF;
+        memory.parameters[2] = (x1 + 1) >> 8;
+        memory.parameters[3] = (x1 + 1) & 0xFF;
+        memory.parameters[4] = y1 >> 8;
+        memory.parameters[5] = y1 & 0xFF;
+        memory.parameters[6] = (y1 + 1) >> 8;
+        memory.parameters[7] = (y1 + 1) & 0xFF;
+        memory.parameters[12] = error >> 8;
+        memory.parameters[13] = error;
+        memory.callback = SetColumnsCommandAsync;
+    }
+    else if (thickness > 0)
+    {
+        x1 = memory.parameters[16] << 8 | memory.parameters[17];
+        y1 = memory.parameters[20] << 8 | memory.parameters[21];
+
+        uint16_t angle = memory.parameters[26] << 8 | memory.parameters[27];
+
+        if (angle < 45)
+        {
+            x1 += 1;
+            x2 += 1;
+        }
+        else
+        {
+            y1 += 1;
+            y2 += 1;
+        }
+
+        thickness--;
+
+        memory.parameters[0] = x1 >> 8;
+        memory.parameters[1] = x1 & 0xFF;
+        memory.parameters[2] = (x1 + 1) >> 8;
+        memory.parameters[3] = (x1 + 1) & 0xFF;
+        memory.parameters[4] = y1 >> 8;
+        memory.parameters[5] = y1 & 0xFF;
+        memory.parameters[6] = (y1 + 1) >> 8;
+        memory.parameters[7] = (y1 + 1) & 0xFF;
+        memory.parameters[12] = error >> 8;
+        memory.parameters[13] = error;
+        memory.parameters[16] = x1 >> 8;
+        memory.parameters[17] = x1 & 0xFF;
+        memory.parameters[18] = x2 >> 8;
+        memory.parameters[19] = x2 & 0xFF;
+        memory.parameters[20] = y1 >> 8;
+        memory.parameters[21] = y1 & 0xFF;
+        memory.parameters[22] = y2 >> 8;
+        memory.parameters[23] = y2 & 0xFF;
+        memory.parameters[24] = thickness >> 8;
+        memory.parameters[25] = thickness;
+        memory.callback = SetColumnsCommandAsync;
+    }
+    else
+    {
+        memory.status = MemoryStatus::Complete;
+    }
+}
+
+void Screen::DrawPixelAsyncProcedure(Screen& screen, ScreenMemory& memory)
+{
+    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    buff->len = 2;
+    buff->data[0] = memory.parameters[8];
+    buff->data[1] = memory.parameters[9];
+    buff->dc_level = GPIO_PIN_SET;
+    buff->is_ready = true;
+
+    memory.status = MemoryStatus::Complete;
+}
+
+void Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
+{
+    uint16_t colour = memory.parameters[8] << 8 | memory.parameters[9];
+
+    uint32_t bytes_remaining =
+        memory.parameters[10] << 24 |
+        memory.parameters[11] << 16 |
+        memory.parameters[12] << 8 |
+        memory.parameters[13];
+
+    // Get a buff
+    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    buff->len = bytes_remaining > screen.video_buff.BufferSize()
+        ? screen.video_buff.BufferSize() : bytes_remaining;
+
+    // Fill the buff
+    for (size_t i = 0; i < buff->len; i += 2)
+    {
+        buff->data[i] = colour >> 8;
+        buff->data[i + 1] = colour & 0xFF;
+    }
+
+    buff->dc_level = GPIO_PIN_SET;
+    buff->is_ready = true;
+
+    bytes_remaining -= buff->len;
+
+    // Out of the while loop, if curr_x != x2 and curr_y != y2
+    // then save the state, otherwise, finish the memory?
+    if (bytes_remaining != 0)
+    {
+        memory.parameters[10] = bytes_remaining >> 24;
+        memory.parameters[11] = bytes_remaining >> 16;
+        memory.parameters[12] = bytes_remaining >> 8;
+        memory.parameters[13] = bytes_remaining & 0xFF;
+    }
+    else
+    {
+        memory.status = MemoryStatus::Complete;
+    }
 }
 
 /*****************************************************************************/
