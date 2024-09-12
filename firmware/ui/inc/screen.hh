@@ -226,8 +226,9 @@ public:
     void DrawCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
                     const uint16_t colour); // TODO
 
-    void DrawLineAsync(uint16_t x1, uint16_t x2,
-                       uint16_t y1, uint16_t y2,
+    void DrawLineAsync(const uint16_t x1, const uint16_t x2,
+                       const uint16_t y1, const uint16_t y2,
+                       const  uint16_t thickness,
                        const uint16_t colour);
 
     void FillRectangleAsync(uint16_t x1,
