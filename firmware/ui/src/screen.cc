@@ -4,6 +4,14 @@
 #include "ring_buffer.hh"
 #include "app_main.hh"
 #include <vector>
+#include <math.h>
+#include <memory.h>
+// For some reason M_PI is not defined when including math.h even though it
+// should be. Therefore, we need to do it ourselves.
+
+#ifndef  M_PI
+#define  M_PI  3.1415926535897932384626433
+#endif
 
 
 Screen::Screen(SPI_HandleTypeDef& hspi,
@@ -1212,70 +1220,141 @@ void Screen::DrawCircleAsync(const uint16_t x, const uint16_t y,
 }
 
 void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
-    uint16_t y1, uint16_t y2, const uint16_t colour)
+    uint16_t y1, uint16_t y2, const uint16_t thickness, const uint16_t colour)
 {
-    SetWritablePixelsAsync(x1, x1+1, y1, y1+1);
-
-    ScreenMemory* memory = RetrieveFreeMemory();
-    if (memory == nullptr)
+    if (x1 == x2)
     {
-        // TODO
-        // cry, but should error out meaning we need to
-        // give more memory
-
-        return;
+        // Horizontal line
+        uint16_t thick_x1 = thickness / 2;
+        uint16_t thick_x2 = thickness / 2;
+        if (2 == thickness)
+        {
+            thick_x1 = 0;
+        }
+        FillRectangleAsync(x1 - thick_x1, x2 + 1 + thick_x2, y1, y2, colour);
     }
+    else if (y1 == y2)
+    {
+        // Vertical line
+        uint16_t thick_y1 = thickness / 2;
+        uint16_t thick_y2 = thickness / 2;
+        if (2 == thickness)
+        {
+            thick_y1 = 0;
+        }
+        FillRectangleAsync(x1, x2, y1 - thick_y1, y2 + 1 + thick_y2, colour);
+    }
+    else
+    {
 
-    // Bresenham line algorithm
-    // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+        SetWritablePixelsAsync(x1, x1 + 1, y1, y1 + 1);
 
-    // Get the absolute difference
-    int16_t diff_x = (x2 >= x1) ? x2 - x1 : -(x2 - x1);
-    int16_t diff_y = (y2 >= y1) ? y2 - y1 : -(y2 - y1);
+        ScreenMemory* memory = RetrieveFreeMemory();
+        if (memory == nullptr)
+        {
+            // TODO
+            // cry, but should error out meaning we need to
+            // give more memory
 
-    // Get the error on our differences
-    int16_t error = diff_x - diff_y;
+            return;
+        }
 
-    uintptr_t callback = (uintptr_t)DrawLineAsyncProcedure;
 
-    memory->callback = DrawLineAsyncProcedure;
-    memory->parameters[0] = x1 >> 8;
-    memory->parameters[1] = x1 & 0xFF;
-    memory->parameters[2] = x2 >> 8;
-    memory->parameters[3] = x2 & 0xFF;
-    memory->parameters[4] = y1 >> 8;
-    memory->parameters[5] = y1 & 0xFF;
-    memory->parameters[6] = y2 >> 8;
-    memory->parameters[7] = y2 & 0xFF;
-    memory->parameters[8] = 1; // Denote a callback
-    memory->parameters[9] = callback >> 24;
-    memory->parameters[10] = callback >> 16;
-    memory->parameters[11] = callback >> 8;
-    memory->parameters[12] = callback;
-    memory->parameters[13] = diff_x >> 8;
-    memory->parameters[14] = diff_x;
-    memory->parameters[15] = diff_y >> 8;
-    memory->parameters[16] = diff_y;
-    memory->parameters[17] = error >> 8;
-    memory->parameters[18] = error;
-    memory->parameters[19] = colour >> 8;
-    memory->parameters[20] = colour;
-    memory->parameters[21] = x2 >> 8;
-    memory->parameters[22] = x2 & 0xFF;
-    memory->parameters[23] = y2 >> 8;
-    memory->parameters[24] = y2 & 0xFF;
-    memory->status = MemoryStatus::In_Progress;
+        // Bresenham line algorithm
+        // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+
+        // Get the absolute difference
+        int16_t diff_x = (x2 >= x1) ? x2 - x1 : -(x2 - x1);
+        int16_t diff_y = (y2 >= y1) ? y2 - y1 : -(y2 - y1);
+
+        // Get the error on our differences
+        int16_t error = diff_x - diff_y;
+
+        // If x1 > x2 negative slope
+        int16_t direction_x = (x1 < x2) ? 1 : -1;
+
+        // If y2 > y1 negative slope
+        int16_t direction_y = (y1 < y2) ? 1 : -1;
+
+        double rise = diff_y * direction_y;
+        double run = diff_x * direction_x;
+
+        uint16_t angle = (uint16_t)atan(rise / run) * (180 / M_PI);
+
+        if (angle < 0)
+        {
+            angle = angle * -1;
+        }
+
+        if (angle < 45)
+        {
+            if (x1 > thickness/2)
+            {
+                x1 -= thickness / 2;
+                x2 -= thickness / 2;
+            }
+            else
+            {
+                x2 -= x1;
+                x1 = 0;
+            }
+        }
+        else
+        {
+            if (y1 > thickness/2)
+            {
+                y1 -= thickness / 2;
+                y2 -= thickness / 2;
+            }
+            else
+            {
+                y2 -= y1;
+                y1 = 0;
+            }
+        }
+
+        uintptr_t callback = (uintptr_t)DrawLineAsyncProcedure;
+
+        memory->callback = DrawLineAsyncProcedure;
+        memory->parameters[0] = x1 >> 8;
+        memory->parameters[1] = x1 & 0xFF;
+        memory->parameters[2] = x2 >> 8;
+        memory->parameters[3] = x2 & 0xFF;
+        memory->parameters[4] = y1 >> 8;
+        memory->parameters[5] = y1 & 0xFF;
+        memory->parameters[6] = y2 >> 8;
+        memory->parameters[7] = y2 & 0xFF;
+        memory->parameters[8] = 1; // Denote a callback
+        memory->parameters[9] = callback >> 24;
+        memory->parameters[10] = callback >> 16;
+        memory->parameters[11] = callback >> 8;
+        memory->parameters[12] = callback;
+        memory->parameters[13] = diff_x >> 8;
+        memory->parameters[14] = diff_x;
+        memory->parameters[15] = diff_y >> 8;
+        memory->parameters[16] = diff_y;
+        memory->parameters[17] = error >> 8;
+        memory->parameters[18] = error;
+        memory->parameters[19] = colour >> 8;
+        memory->parameters[20] = colour;
+        memory->parameters[21] = x1 >> 8;
+        memory->parameters[22] = x1 & 0xFF;
+        memory->parameters[23] = x2 >> 8;
+        memory->parameters[24] = x2 & 0xFF;
+        memory->parameters[25] = y1 >> 8;
+        memory->parameters[26] = y1 & 0xFF;
+        memory->parameters[27] = y2 >> 8;
+        memory->parameters[28] = y2 & 0xFF;
+        memory->parameters[29] = thickness >> 8;
+        memory->parameters[30] = thickness;
+        memory->parameters[31] = angle >> 8;
+        memory->parameters[32] = angle;
+        memory->status = MemoryStatus::In_Progress;
+    }
 }
 
 bool Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
 {
-    bool done = false;
-
-    uint16_t x1 = memory.parameters[0] << 8 | memory.parameters[1];
-    uint16_t x2 = memory.parameters[21] << 8 | memory.parameters[22];
-    uint16_t y1 = memory.parameters[4] << 8 | memory.parameters[5];
-    uint16_t y2 = memory.parameters[23] << 8 | memory.parameters[24];
-
     int16_t diff_x = memory.parameters[13] << 8 | memory.parameters[14];
     int16_t diff_y = memory.parameters[15] << 8 | memory.parameters[16];
 
@@ -1283,6 +1362,14 @@ bool Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
     int16_t error = memory.parameters[17] << 8 | memory.parameters[18];
 
     uint16_t colour = memory.parameters[19] << 8 | memory.parameters[20];
+
+    uint16_t x1 = memory.parameters[0] << 8 | memory.parameters[1];
+    uint16_t x2 = memory.parameters[23] << 8 | memory.parameters[24];
+    uint16_t y1 = memory.parameters[4] << 8 | memory.parameters[5];
+    uint16_t y2 = memory.parameters[27] << 8 | memory.parameters[28];
+
+
+    uint16_t thickness = memory.parameters[29] << 8 | memory.parameters[30];
 
     // If x1 > x2 negative slope
     int16_t direction_x = (x1 < x2) ? 1 : -1;
@@ -1313,6 +1400,37 @@ bool Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
 
     if (x1 != x2 || y1 != y2)
     {
+        memory.parameters[0] = x1 >> 8;
+        memory.parameters[1] = x1 & 0xFF;
+        memory.parameters[2] = (x1 + 1) >> 8;
+        memory.parameters[3] = (x1 + 1) & 0xFF;
+        memory.parameters[4] = y1 >> 8;
+        memory.parameters[5] = y1 & 0xFF;
+        memory.parameters[6] = (y1 + 1) >> 8;
+        memory.parameters[7] = (y1 + 1) & 0xFF;
+        memory.parameters[17] = error >> 8;
+        memory.parameters[18] = error;
+        memory.callback = SetColumnsCommandAsync;
+    }
+    else if (thickness > 0)
+    {
+        x1 = memory.parameters[21] << 8 | memory.parameters[22];
+        y1 = memory.parameters[25] << 8 | memory.parameters[26];
+
+        uint16_t angle = memory.parameters[31] << 8 | memory.parameters[32];
+
+        if (angle < 45)
+        {
+            x1 += 1;
+            x2 += 1;
+        }
+        else
+        {
+            y1 += 1;
+            y2 += 1;
+        }
+
+        thickness--;
 
         memory.parameters[0] = x1 >> 8;
         memory.parameters[1] = x1 & 0xFF;
@@ -1324,6 +1442,16 @@ bool Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
         memory.parameters[7] = (y1 + 1) & 0xFF;
         memory.parameters[17] = error >> 8;
         memory.parameters[18] = error;
+        memory.parameters[21] = x1 >> 8;
+        memory.parameters[22] = x1 & 0xFF;
+        memory.parameters[23] = x2 >> 8;
+        memory.parameters[24] = x2 & 0xFF;
+        memory.parameters[25] = y1 >> 8;
+        memory.parameters[26] = y1 & 0xFF;
+        memory.parameters[27] = y2 >> 8;
+        memory.parameters[28] = y2 & 0xFF;
+        memory.parameters[29] = thickness >> 8;
+        memory.parameters[30] = thickness;
         memory.callback = SetColumnsCommandAsync;
     }
     else
@@ -1382,7 +1510,7 @@ void Screen::FillRectangleAsync(uint16_t x1,
         y1 = y2;
     }
 
-    SetWritablePixelsAsync(x1, x2-1, y1, y2-1);
+    SetWritablePixelsAsync(x1, x2 - 1, y1, y2 - 1);
 
     uint32_t num_byte_pixels = ((x2 - x1) * (y2 - y1) * 2);
 
@@ -1775,6 +1903,8 @@ void Screen::HandleReadyMemory()
             available_memories--;
 
             memory->status = MemoryStatus::Unused;
+
+            memset(memory->parameters, 0, Memory_Size);
         }
         else if (memory->status == MemoryStatus::In_Progress)
         {
