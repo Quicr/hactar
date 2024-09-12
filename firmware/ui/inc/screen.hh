@@ -65,13 +65,11 @@
 class Screen
 {
 private:
+    // TODO remove
     static constexpr uint32_t Max_Chunk_Size = 16384U;
     static constexpr uint32_t Chunk_Buffer_Size = 2048UL;
 
-    static constexpr uint32_t Num_Interactions = 20;
     static constexpr uint32_t Num_Memories = 20;
-    // Guesstimate
-
     static constexpr uint32_t Memory_Size = 64;
 
     enum class MemoryStatus
@@ -81,20 +79,12 @@ private:
         Complete
     };
 
-    // TODO packed
-    struct ScreenInteraction
-    {
-        GPIO_PinState dc_level;
-        uint32_t len;
-        bool is_busy;
-        uint8_t data[1024];
-    };
-
     struct ScreenMemory
     {
-        bool (*callback)(Screen& screen, ScreenMemory& memory);
-        MemoryStatus status;
-        uint8_t parameters[Memory_Size]; // A bunch of data params to run the next command
+        void (*callback)(Screen& screen, ScreenMemory& memory) = nullptr;
+        void (*post_callback)(Screen& screen, ScreenMemory& memory) = nullptr;
+        MemoryStatus status = MemoryStatus::Unused;
+        uint8_t parameters[Memory_Size]{0}; // A bunch of data params to run the next command
     };
 
 public:
@@ -230,12 +220,18 @@ public:
                        const uint16_t y1, const uint16_t y2,
                        const  uint16_t thickness,
                        const uint16_t colour);
+    void DrawPixelAsync(const uint16_t x, const uint16_t y,
+                        const uint16_t colour);
+
+    void DrawPolygonAsync(const size_t count, const uint16_t points[][2],
+                          const uint16_t colour);
 
     void FillRectangleAsync(uint16_t x1,
                             uint16_t x2,
                             uint16_t y1,
                             uint16_t y2,
                             const uint16_t colour);
+
 
 
     // Helper Functions
@@ -263,12 +259,12 @@ private:
     void WriteDataSyncDMA(uint8_t* data, const uint32_t data_size);
 
     // Private async command functions
-    void SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
-    static bool SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory);
-    static bool SetColumnsDataAsync(Screen& screen, ScreenMemory& memory);
-    static bool SetRowsCommandAsync(Screen& screen, ScreenMemory& memory);
-    static bool SetRowsDataAsync(Screen& screen, ScreenMemory& memory);
-    static bool WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory);
+    ScreenMemory* SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
+    static void SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory);
+    static void SetColumnsDataAsync(Screen& screen, ScreenMemory& memory);
+    static void SetRowsCommandAsync(Screen& screen, ScreenMemory& memory);
+    static void SetRowsDataAsync(Screen& screen, ScreenMemory& memory);
+    static void WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory);
     bool WriteCommandAsync(uint8_t cmd);
     bool WriteDataAsync(uint8_t* data, uint32_t data_size);
     bool WriteAsync(SwapBuffer::swap_buffer_t* buff);
@@ -278,8 +274,9 @@ private:
     void HandleVideoBuffer();
 
     // Async procedure functions
-    static bool DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory);
-    static bool FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory);
+    static void DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory);
+    static void DrawPixelAsyncProcedure(Screen& screen, ScreenMemory& memory);
+    static void FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory);
 
 
     // Private helpers
