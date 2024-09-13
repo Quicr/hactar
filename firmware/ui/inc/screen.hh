@@ -113,6 +113,7 @@ public:
     // General interfacing functions
     void Begin();
     void Update(uint32_t current_tick);
+    void Draw();
 
     // Public command functions
     void DisableBackLight();
@@ -190,7 +191,7 @@ public:
                        const uint16_t colour,
                        uint32_t max_chunk_size=Max_Chunk_Size);
 
-    void FillScreen(const uint16_t colour, bool async=false);
+    void FillScreen(const uint16_t colour, bool async=true);
 
     void FillTriangle(const uint16_t x1, const uint16_t y1,
                       const uint16_t x2, const uint16_t y2,
@@ -211,7 +212,8 @@ public:
     // Async functions
     void DrawArrowAsync(const uint16_t tip_x, const uint16_t tip_y,
                    const uint16_t length, const uint16_t width,
-                   const ArrowDirection direction, const uint16_t colour);
+                   const uint16_t thickness, const ArrowDirection direction,
+                   const uint16_t colour);
 
     void DrawCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
                     const uint16_t colour); // TODO
@@ -224,7 +226,11 @@ public:
                         const uint16_t colour);
 
     void DrawPolygonAsync(const size_t count, const uint16_t points[][2],
-                          const uint16_t colour);
+                          const uint16_t thickness, const uint16_t colour);
+
+    void DrawRectangleAsync(const uint16_t x1, const uint16_t x2,
+        const uint16_t y1, const uint16_t y2, const uint16_t thickness,
+        const uint16_t colour);
 
     void FillRectangleAsync(uint16_t x1,
                             uint16_t x2,
@@ -283,6 +289,7 @@ private:
     void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
               uint16_t &y_end);
     inline void WaitUntilSPIFree();
+    void WaitForFreeMemory(const uint16_t minimum = 1);
 
 
     // Variables
@@ -305,6 +312,7 @@ private:
     uint32_t memories_write_idx = 0;
     uint32_t memories_read_idx = 0;
     uint32_t available_memories = 0;
+    uint32_t free_memories = Num_Memories;
 
     uint8_t str[64];
     uint16_t len;
