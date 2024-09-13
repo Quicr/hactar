@@ -193,6 +193,11 @@ void Screen::Begin()
 
 void Screen::Update(uint32_t current_tick)
 {
+    Draw();
+}
+
+void Screen::Draw()
+{
     if (spi_async)
     {
         return;
@@ -1014,7 +1019,7 @@ void Screen::FillScreen(const uint16_t colour, bool async)
 {
     if (async)
     {
-        FillRectangleAsync(0, 0, view_width, view_height, colour);
+        FillRectangleAsync(0, view_width, 0, view_height, colour);
     }
     else
     {
@@ -1152,65 +1157,66 @@ void Screen::DrawCharacter(uint16_t x_start,
 /*****************************************************************************/
 void Screen::DrawArrowAsync(const uint16_t tip_x, const uint16_t tip_y,
     const uint16_t length, const uint16_t width,
-    const ArrowDirection direction, const uint16_t colour)
+    const uint16_t thickness, const ArrowDirection direction,
+    const uint16_t colour)
 {
-    // const uint16_t half_width = width / 2;
-    // const uint16_t quar_width = width / 4;
-    // const uint16_t tip_len = (length * 4) / 10;
-    // if (direction == ArrowDirection::Left)
-    // {
-    //     // Left
-    //     uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
-    //                               {uint16_t(tip_x + tip_len), uint16_t(tip_y - half_width)},
-    //                               {uint16_t(tip_x + tip_len), uint16_t(tip_y - quar_width)},
-    //                               {uint16_t(tip_x + length), uint16_t(tip_y - quar_width)},
-    //                               {uint16_t(tip_x + length), uint16_t(tip_y + quar_width)},
-    //                               {uint16_t(tip_x + tip_len), uint16_t(tip_y + quar_width)},
-    //                               {uint16_t(tip_x + tip_len), uint16_t(tip_y + half_width)}
-    //     };
-    //     DrawPolygonAsync(7, points, colour);
+    const uint16_t half_width = width / 2;
+    const uint16_t quar_width = width / 4;
+    const uint16_t tip_len = (length * 4) / 10;
+    if (direction == ArrowDirection::Left)
+    {
+        // Left
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y - half_width)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x + length), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x + length), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y + half_width)}
+        };
+        DrawPolygonAsync(7, points, thickness, colour);
 
-    // }
-    // else if (direction == ArrowDirection::Up)
-    // {
-    //     // Up
-    //     uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
-    //                               {uint16_t(tip_x + half_width), uint16_t(tip_y + tip_len)},
-    //                               {uint16_t(tip_x + quar_width), uint16_t(tip_y + tip_len)},
-    //                               {uint16_t(tip_x + quar_width), uint16_t(tip_y + length)},
-    //                               {uint16_t(tip_x - quar_width), uint16_t(tip_y + length)},
-    //                               {uint16_t(tip_x - quar_width), uint16_t(tip_y + tip_len)},
-    //                               {uint16_t(tip_x - half_width), uint16_t(tip_y + tip_len)}
-    //     };
-    //     DrawPolygonAsync(7, points, colour);
-    // }
-    // else if (direction == ArrowDirection::Right)
-    // {
-    //     // Right
-    //     uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
-    //                               {uint16_t(tip_x - tip_len), uint16_t(tip_y - half_width)},
-    //                               {uint16_t(tip_x - tip_len), uint16_t(tip_y - quar_width)},
-    //                               {uint16_t(tip_x - length), uint16_t(tip_y - quar_width)},
-    //                               {uint16_t(tip_x - length), uint16_t(tip_y + quar_width)},
-    //                               {uint16_t(tip_x - tip_len), uint16_t(tip_y + quar_width)},
-    //                               {uint16_t(tip_x - tip_len), uint16_t(tip_y + half_width)}
-    //     };
-    //     DrawPolygonAsync(7, points, colour);
-    // }
-    // else if (direction == ArrowDirection::Down)
-    // {
-    //     // Down
-    //     uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
-    //                               {uint16_t(tip_x - half_width), uint16_t(tip_y - tip_len)},
-    //                               {uint16_t(tip_x - quar_width), uint16_t(tip_y - tip_len)},
-    //                               {uint16_t(tip_x - quar_width), uint16_t(tip_y - length)},
-    //                               {uint16_t(tip_x + quar_width), uint16_t(tip_y - length)},
-    //                               {uint16_t(tip_x + quar_width), uint16_t(tip_y - tip_len)},
-    //                               {uint16_t(tip_x + half_width), uint16_t(tip_y - tip_len)}
-    //     };
+    }
+    else if (direction == ArrowDirection::Up)
+    {
+        // Up
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x + half_width), uint16_t(tip_y + tip_len)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y + tip_len)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y + length)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y + length)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y + tip_len)},
+                                  {uint16_t(tip_x - half_width), uint16_t(tip_y + tip_len)}
+        };
+        DrawPolygonAsync(7, points, thickness, colour);
+    }
+    else if (direction == ArrowDirection::Right)
+    {
+        // Right
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y - half_width)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x - length), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x - length), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y + half_width)}
+        };
+        DrawPolygonAsync(7, points, thickness, colour);
+    }
+    else if (direction == ArrowDirection::Down)
+    {
+        // Down
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x - half_width), uint16_t(tip_y - tip_len)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y - tip_len)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y - length)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y - length)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y - tip_len)},
+                                  {uint16_t(tip_x + half_width), uint16_t(tip_y - tip_len)}
+        };
 
-    //     DrawPolygonAsync(7, points, colour);
-    // }
+        DrawPolygonAsync(7, points, thickness, colour);
+    }
 }
 
 void Screen::DrawCircleAsync(const uint16_t x, const uint16_t y,
@@ -1262,15 +1268,10 @@ void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
         // If y2 > y1 negative slope
         int16_t direction_y = (y1 < y2) ? 1 : -1;
 
-        double rise = diff_y * direction_y;
-        double run = diff_x * direction_x;
+        double rise = abs(diff_y * direction_y);
+        double run = abs(diff_x * direction_x);
 
-        uint16_t angle = (uint16_t)atan(rise / run) * (180 / M_PI);
-
-        if (angle < 0)
-        {
-            angle = angle * -1;
-        }
+        uint16_t angle = uint16_t(atan(rise / run) * (180 / M_PI));
 
         if (angle < 45)
         {
@@ -1299,7 +1300,6 @@ void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
             }
         }
 
-        // TODO this could return a nullptr...
         ScreenMemory* memory = SetWritablePixelsAsync(x1, x1 + 1, y1, y1 + 1);
 
         memory->post_callback = DrawLineAsyncProcedure;
@@ -1334,11 +1334,40 @@ void Screen::DrawPixelAsync(const uint16_t x, const uint16_t y,
         return;
     }
 
-    ScreenMemory* memory = SetWritablePixelsAsync(x, x+1, y, y+1);
+    ScreenMemory* memory = SetWritablePixelsAsync(x, x + 1, y, y + 1);
 
     memory->post_callback = DrawPixelAsyncProcedure;
     memory->parameters[8] = colour >> 8;
     memory->parameters[9] = colour;
+}
+
+void Screen::DrawPolygonAsync(const size_t count, const uint16_t points [][2],
+    const uint16_t thickness, const uint16_t colour)
+{
+    constexpr uint8_t x = 0;
+    constexpr uint8_t y = 1;
+    // Its simple, since we could have many more polygons than what we can
+    // reasonably write at once, we should try to handle the memories
+    // if they aren't being sent currently
+    size_t i = 0;
+    size_t _count = count - 1;
+    while (i < _count)
+    {
+        DrawLineAsync(points[i][x], points[i + 1][x],
+            points[i][y], points[i + 1][y], thickness, colour);
+        i++;
+    }
+
+    DrawLineAsync(points[_count][x], points[0][x],
+        points[_count][y], points[0][y], thickness, colour);
+}
+
+
+void Screen::DrawRectangleAsync(const uint16_t x1, const uint16_t x2,
+    const uint16_t y1, const uint16_t y2, const uint16_t thickness,
+    const uint16_t colour)
+{
+
 }
 
 void Screen::FillRectangleAsync(uint16_t x1,
@@ -1365,15 +1394,18 @@ void Screen::FillRectangleAsync(uint16_t x1,
 
     if (x1 > x2)
     {
+        uint16_t tmp = x1;
         x1 = x2;
+        x2 = tmp;
     }
 
     if (y1 > y2)
     {
+        uint16_t tmp = y1;
         y1 = y2;
+        y2 = tmp;
     }
 
-    // TODO this can return a nullptr...
     ScreenMemory* memory = SetWritablePixelsAsync(x1, x2 - 1, y1, y2 - 1);
 
     uint32_t num_byte_pixels = ((x2 - x1) * (y2 - y1) * 2);
@@ -1512,12 +1544,6 @@ Screen::ScreenMemory* Screen::SetWritablePixelsAsync(uint16_t x1, uint16_t x2, u
     // Get a memory
     ScreenMemory* memory = RetrieveFreeMemory();
 
-    if (memory == nullptr)
-    {
-        // Cry?
-        return nullptr;
-    }
-
     memory->callback = SetColumnsCommandAsync;
     memory->parameters[0] = x1 >> 8;
     memory->parameters[1] = x1 & 0xFF;
@@ -1643,28 +1669,18 @@ bool Screen::WriteAsync(SwapBuffer::swap_buffer_t* buff)
 
 Screen::ScreenMemory* Screen::RetrieveFreeMemory()
 {
-    uint32_t memory_count = 0;
+    WaitForFreeMemory();
 
-    while (memory_count < Num_Memories)
+    if (memories_write_idx >= Num_Memories)
     {
-        if (memories_write_idx >= Num_Memories)
-        {
-            memories_write_idx = 0;
-        }
-
-        if (memories[memories_write_idx].status == MemoryStatus::Unused)
-        {
-            available_memories++;
-            memories[memories_write_idx].status = MemoryStatus::In_Progress;
-            return &memories[memories_write_idx];
-        }
-
-        memories_write_idx++;
-        memory_count++;
+        memories_write_idx = 0;
     }
 
+    free_memories--;
+    available_memories++;
+    memories[memories_write_idx].status = MemoryStatus::In_Progress;
+    return &memories[memories_write_idx++];
 
-    return nullptr;
 }
 
 void Screen::HandleReadyMemory()
@@ -1704,6 +1720,8 @@ void Screen::HandleReadyMemory()
             memories_read_idx++;
 
             available_memories--;
+
+            free_memories++;
 
             memory->status = MemoryStatus::Unused;
 
@@ -1810,7 +1828,7 @@ void Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
         memory.parameters[13] = error;
         memory.callback = SetColumnsCommandAsync;
     }
-    else if (thickness > 0)
+    else if (thickness > 1)
     {
         x1 = memory.parameters[16] << 8 | memory.parameters[17];
         y1 = memory.parameters[20] << 8 | memory.parameters[21];
@@ -1930,5 +1948,19 @@ inline void Screen::WaitUntilSPIFree()
     while (spi_busy)
     {
         __NOP();
+    }
+}
+
+void Screen::WaitForFreeMemory(const uint16_t minimum)
+{
+    const uint16_t min_mem = minimum > 0 ? minimum : 1;
+
+    // Connect the final line
+    while (free_memories < min_mem)
+    {
+        if (!spi_busy)
+        {
+            Draw();
+        }
     }
 }
