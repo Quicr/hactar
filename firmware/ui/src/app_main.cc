@@ -58,7 +58,8 @@ EEPROM* eeprom = nullptr;
 AudioChip* audio = nullptr;
 bool rx_busy = false;
 
-uint8_t random_byte() {
+uint8_t random_byte()
+{
     // XXX(RLB) This is 4x slower than it could be, because we only take the
     // low-order byte of the four bytes in a uint32_t.
     /// BER, I don't know if that is necessarily true, since we would be
@@ -71,11 +72,12 @@ uint8_t random_byte() {
 extern char _end;  // End of BSS section
 extern char _estack;  // Start of stack
 
-static char *heap_end = &_end;
+static char* heap_end = &_end;
 
 // Function to get the remaining heap size
-size_t getFreeHeapSize(void) {
-    char *current_heap_end = heap_end;
+size_t getFreeHeapSize(void)
+{
+    char* current_heap_end = heap_end;
     return &_estack - current_heap_end;
 }
 
@@ -139,12 +141,43 @@ int app_main()
 
     bool sound_inited = false;
     uint32_t wait_to_enable_audio_codec = HAL_GetTick() + 5000;
+    // wait_to_enable_audio_codec = 0;
 
+    screen.EnableBackLight();
+
+    screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_WHITE);
+    screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_BLACK);
     screen.FillRectangleAsync(10, 20, 10, 20, C_BLUE);
+    screen.FillRectangleAsync(0, 10, 0, 10, C_RED);
+    screen.DrawLineAsync(50, 60, 80, 45, 5, C_BLUE);
+    screen.DrawLineAsync(100, 90, 50, 30, 3, C_GREEN);
+    screen.DrawLineAsync(50, 63, 100, 115, 3, C_RED);
+    screen.DrawLineAsync(100, 88, 120, 140, 3, C_CYAN);
+
+    screen.DrawPixelAsync(200, 200, C_MAGENTA);
+
+    const uint16_t points[][2] = {{100, 100}, {120, 120}, {80, 120}};
+    screen.DrawPolygonAsync(3, points, 1, C_YELLOW);
+
+    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    screen.DrawArrowAsync(40, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    screen.DrawArrowAsync(60, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_YELLOW);
+
+    screen.DrawCharacterAsync(70, 200, 'H', font5x8, C_BLUE, C_BLACK);
+    screen.DrawCharacterAsync(80, 200, 'H', font6x8, C_BLUE, C_BLACK);
+    screen.DrawCharacterAsync(90, 200, 'H', font7x12, C_BLUE, C_BLACK);
+    screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
 
     while (1)
     {
-        ui_manager->Update();
+        screen.Update(0);
+        // ui_manager->Update();
 
         if (HAL_GetTick() > blink)
         {
@@ -157,6 +190,10 @@ int app_main()
         if (HAL_GetTick() > wait_to_enable_audio_codec && !sound_inited)
         {
             audio->Init();
+            audio->EnableLeftMicPGA();
+            audio->TurnOnLeftDifferentialInput();
+            audio->UnmuteMic();
+            HAL_Delay(1000);
             audio->StartI2S();
             sound_inited = true;
         }
@@ -186,7 +223,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 }
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-        HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
+    HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
     if (huart->Instance == USART2)
     {
         net_serial_interface->TxEvent();
@@ -243,6 +280,12 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
     UNUSED(hspi);
     screen.ReleaseSPI();
+}
+
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
+{
+    volatile int x = 10;
+    x += 10;
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)

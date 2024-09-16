@@ -15,7 +15,7 @@ extern UART_HandleTypeDef huart1;
 AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     i2s(&hi2s), i2c(&hi2c), tx_buffer{ 0 }, rx_buffer{ 0 }, first_half(true)
 {
-    Reset();
+    // Init();
 }
 
 AudioChip::~AudioChip()
@@ -395,60 +395,59 @@ const uint16_t* AudioChip::RxBuffer()
 
 void AudioChip::HalfCompleteCallback()
 {
-    // float freqs [] = { 523.25f, 659.26f, 783.99f };
-    // SampleHarmonic(tx_buffer, Audio_Buffer_Sz / 2,
-    //     0, Sample_Rate,
-    //     1000, freqs, phases, 3, true);
-
+    // UNCOMMENT THIS TO TEST THE AUDIO OUTPUT
     // SampleSineWave(tx_buffer, Audio_Buffer_Sz_2, 0,
     //     1000, 440, phase, true);
+    // END UNCOMMENT
 
-    // copy rx to tx
-    // for (uint16_t i = 0; i < Audio_Buffer_Sz / 2; i+=2)
+    // UNCOMMENT THIS TO TEST THE AUDIO MIC
+    // Copy the mic data to the speakers
+    for (uint16_t i = 0; i < Audio_Buffer_Sz_2; i+=2)
+    {
+        tx_buffer[i] = rx_buffer[i] + 5000;
+        tx_buffer[i+1] = rx_buffer[i] + 5000;
+    }
+    // END UNCOMMENT
+
+    // COMMENT THE BELOW OUT FOR TESTING
+    // Clear the first half of the buffer
+    // for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
     // {
-    //     tx_buffer[i] = rx_buffer[i] + 5000;
-    //     tx_buffer[i+1] = rx_buffer[i] + 5000;
+    //     tx_buffer[i] = 0;
     // }
 
-    // Clear the first half of the buffer
-    for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
-    {
-        tx_buffer[i] = 0;
-    }
-
     // Set half complete flag
-    flags |= (1 << Half_Complete_Flag);
+    // flags |= (1 << Half_Complete_Flag);
 }
 
 void AudioChip::CompleteCallback()
 {
-    // float freqs [] = { 523.25f, 659.26f, 783.99f};
-    // SampleHarmonic(tx_buffer, Audio_Buffer_Sz / 2,
-    //     Audio_Buffer_Sz / 2, Sample_Rate,
-    //     1000, freqs, phases, 3, true);
-
+    // UNCOMMENT THIS TO TEST THE AUDIO OUTPUT
     // SampleSineWave(tx_buffer, Audio_Buffer_Sz_2, Audio_Buffer_Sz_2,
     //     1000, 440, phase, true);
+    // END UNCOMMENT
 
-
-    // copy rx to tx
-    // for (uint16_t i = Audio_Buffer_Sz / 2; i < Audio_Buffer_Sz; i+=2)
-    // {
-    //     tx_buffer[i] = rx_buffer[i] + 5000;
-    //     tx_buffer[i+1] = rx_buffer[i] + 5000;
-    // }
-
-
-    // Clear the second half of the buffer
-    for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; ++i)
+    // UNCOMMENT THIS TO TEST THE AUDIO MIC
+    // Copy the mic data to the speakers
+    for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; i+=2)
     {
-        tx_buffer[i] = 0;
+        tx_buffer[i] = rx_buffer[i] + 5000;
+        tx_buffer[i+1] = rx_buffer[i] + 5000;
     }
+    // END UNCOMMENT
+
+
+    // COMMENT THE BELOW OUT FOR TESTING
+    // Clear the second half of the buffer
+    // for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; ++i)
+    // {
+    //     tx_buffer[i] = 0;
+    // }
 
     // Set complete flag
     // flags |= (1 << Complete_Flag);
 
-    flags |= (1 << Complete_Flag);
+    // flags |= (1 << Complete_Flag);
 }
 
 bool AudioChip::IsHalfComplete()

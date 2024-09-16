@@ -1219,6 +1219,29 @@ void Screen::DrawArrowAsync(const uint16_t tip_x, const uint16_t tip_y,
     }
 }
 
+void Screen::DrawCharacterAsync(uint16_t x, uint16_t y, const char ch,
+    const Font& font, const uint16_t fg, const uint16_t bg)
+{
+    const uint16_t x2 = x + font.width;
+    const uint16_t y2 = y + font.height;
+    const uint16_t offset = (ch - 32) * font.height * (font.width / 8 + 1);
+    const uintptr_t ch_addr = (uintptr_t)(font.data + offset);
+
+    ScreenMemory* memory = SetWritablePixelsAsync(x, x2, y, y2);
+
+    memory->post_callback = DrawCharacterProcedure;
+    memory->parameters[8] = font.width;
+    memory->parameters[9] = font.height;
+    memory->parameters[10] = ch_addr >> 24;
+    memory->parameters[11] = ch_addr >> 16;
+    memory->parameters[12] = ch_addr >> 8;
+    memory->parameters[13] = ch_addr;
+    memory->parameters[14] = fg >> 8;
+    memory->parameters[15] = fg;
+    memory->parameters[16] = bg >> 8;
+    memory->parameters[17] = bg;
+}
+
 void Screen::DrawCircleAsync(const uint16_t x, const uint16_t y,
     const uint16_t r, const uint16_t colour)
 {
@@ -1300,7 +1323,7 @@ void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
             }
         }
 
-        ScreenMemory* memory = SetWritablePixelsAsync(x1, x1 + 1, y1, y1 + 1);
+        ScreenMemory* memory = SetWritablePixelsAsync(x1, x1+1, y1, y1+1);
 
         memory->post_callback = DrawLineAsyncProcedure;
         memory->parameters[8] = diff_x >> 8;
@@ -1406,7 +1429,7 @@ void Screen::FillRectangleAsync(uint16_t x1,
         y2 = tmp;
     }
 
-    ScreenMemory* memory = SetWritablePixelsAsync(x1, x2 - 1, y1, y2 - 1);
+    ScreenMemory* memory = SetWritablePixelsAsync(x1, x2, y1, y2);
 
     uint32_t num_byte_pixels = ((x2 - x1) * (y2 - y1) * 2);
 
@@ -1576,11 +1599,12 @@ void Screen::SetColumnsDataAsync(Screen& screen, ScreenMemory& memory)
 
     SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
 
+    // Minus off 1 x2 because the screen expects a inclusive x1-x2
     buff->dc_level = GPIO_PIN_SET;
     buff->data[0] = memory.parameters[0];
     buff->data[1] = memory.parameters[1];
     buff->data[2] = memory.parameters[2];
-    buff->data[3] = memory.parameters[3];
+    buff->data[3] = memory.parameters[3] - 1;
     buff->len = 4;
     buff->is_ready = true;
 }
@@ -1603,11 +1627,12 @@ void Screen::SetRowsDataAsync(Screen& screen, ScreenMemory& memory)
 
     SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
 
+    // Minus off 1 y2 because the screen expects a inclusive y1-y2
     buff->dc_level = GPIO_PIN_SET;
     buff->data[0] = memory.parameters[4];
     buff->data[1] = memory.parameters[5];
     buff->data[2] = memory.parameters[6];
-    buff->data[3] = memory.parameters[7];
+    buff->data[3] = memory.parameters[7] - 1;
     buff->len = 4;
     buff->is_ready = true;
 }
@@ -1768,6 +1793,70 @@ void Screen::HandleVideoBuffer()
 /********************* Async procedure functions *****************************/
 /*****************************************************************************/
 
+void Screen::DrawCharacterProcedure(Screen& screen, ScreenMemory& memory)
+{
+    uint16_t x1 = memory.parameters[0] << 8 | memory.parameters[1];
+    uint16_t x2 = memory.parameters[2] << 8 | memory.parameters[3];
+    uint16_t y1 = memory.parameters[4] << 8 | memory.parameters[5];
+    uint16_t y2 = memory.parameters[6] << 8 | memory.parameters[7];
+
+    uint16_t font_width = memory.parameters[8];
+    uint16_t font_height = memory.parameters[9];
+    uint8_t* ch_ptr = (uint8_t*)(memory.parameters[10] << 24
+        | memory.parameters[11] << 16
+        | memory.parameters[12] << 8
+        | memory.parameters[13]);
+
+    uint16_t fg = memory.parameters[14] << 8 | memory.parameters[15];
+    uint16_t bg = memory.parameters[16] << 8 | memory.parameters[17];
+
+    uint16_t w_off = 0;
+    uint16_t buff_idx = 0;
+
+    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+
+    // 2 bytes per pixel
+    buff->len = font_height * font_width * 2;
+    buff->dc_level = GPIO_PIN_SET;
+    buff->is_ready = true;
+
+    for (uint16_t idx_h = 0; idx_h < font_height; ++idx_h)
+    {
+        w_off = 0;
+        for (uint16_t idx_w = 0; idx_w < font_width; ++idx_w)
+        {
+            // Go through each bit in the data and shift it over by the
+            // current width index to get if the pixel is activated or not
+            if ((*ch_ptr << w_off) & 0x80)
+            {
+                buff->data[buff_idx] = fg >> 8;
+                buff->data[buff_idx + 1] = fg & 0xFF;
+            }
+            else
+            {
+                buff->data[buff_idx] = bg >> 8;
+                buff->data[buff_idx + 1] = bg & 0xFF;
+            }
+
+            buff_idx += 2;
+
+            ++w_off;
+            if (w_off >= 8)
+            {
+                w_off = 0;
+
+                // At the end of the byte's bits, if a font > 8 bits
+                // then we need to slide to the next byte.
+                ++ch_ptr;
+            }
+        }
+
+        // Slide the pointer is the next row
+        ++ch_ptr;
+    }
+
+    memory.status = MemoryStatus::Complete;
+}
 
 void Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
 {

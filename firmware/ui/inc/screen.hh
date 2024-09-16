@@ -215,6 +215,9 @@ public:
                    const uint16_t thickness, const ArrowDirection direction,
                    const uint16_t colour);
 
+    void DrawCharacterAsync(uint16_t x, uint16_t y, const char ch,
+        const Font& font, const uint16_t fg, const uint16_t bg);
+
     void DrawCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
                     const uint16_t colour); // TODO
 
@@ -231,6 +234,11 @@ public:
     void DrawRectangleAsync(const uint16_t x1, const uint16_t x2,
         const uint16_t y1, const uint16_t y2, const uint16_t thickness,
         const uint16_t colour);
+
+    void DrawString(const uint16_t x, const uint16_t y, const char* str,
+        const uint16_t len, const Font& font, const uint16_t fg,
+        const uint16_t bg);
+
 
     void FillRectangleAsync(uint16_t x1,
                             uint16_t x2,
@@ -265,6 +273,8 @@ private:
     void WriteDataSyncDMA(uint8_t* data, const uint32_t data_size);
 
     // Private async command functions
+
+    // TODO RENAME SetWritablePixelsAsync
     ScreenMemory* SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
     static void SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory);
     static void SetColumnsDataAsync(Screen& screen, ScreenMemory& memory);
@@ -280,6 +290,7 @@ private:
     void HandleVideoBuffer();
 
     // Async procedure functions
+    static void DrawCharacterProcedure(Screen& screen, ScreenMemory& memory);
     static void DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory);
     static void DrawPixelAsyncProcedure(Screen& screen, ScreenMemory& memory);
     static void FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory);
