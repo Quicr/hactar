@@ -239,6 +239,11 @@ public:
         const uint16_t len, const Font& font, const uint16_t fg,
         const uint16_t bg);
 
+    void DrawStringBox(const uint16_t x1, const uint16_t x2,
+        const uint16_t y1, const uint16_t y2,
+        const char* str, const uint16_t len,
+        const Font& font, const uint16_t fg, const uint16_t bg);
+
 
     void FillRectangleAsync(uint16_t x1,
                             uint16_t x2,
@@ -320,9 +325,9 @@ private:
 
     ScreenMemory memories[Num_Memories];
     ScreenMemory* live_memory;
+    // TODO put into constructor
     uint32_t memories_write_idx = 0;
     uint32_t memories_read_idx = 0;
-    uint32_t available_memories = 0;
     uint32_t free_memories = Num_Memories;
 
     uint8_t str[64];

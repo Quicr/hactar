@@ -570,13 +570,11 @@ void Screen::DrawRectangle(const uint16_t x_start, const uint16_t y_start,
     FillRectangle(x_start, y_end - thickness, x_end, y_end, colour);
 }
 
-// TODO consider adding x2 and y2 so it has a bounding box.
 void Screen::DrawBlockAnimateString(const uint16_t x, const uint16_t y,
     const std::string& str, const Font& font,
     const uint16_t fg, const uint16_t bg,
     const uint16_t delay)
 {
-    // TODO word wrap..
     uint16_t x_pos = x;
     uint16_t x_end = x + font.width;
     uint16_t y_end = y + font.height;
@@ -604,10 +602,8 @@ void Screen::DrawText(const uint16_t x, const uint16_t y, const std::string& str
     const Font& font, const uint16_t fg, const uint16_t bg,
     const bool wordwrap, uint32_t max_chunk_size)
 {
-    // TODO
     UNUSED(wordwrap);
 
-    // TODO clean up.
     // If larger than the view port, it wouldn't be seen so skip
     if (x > view_width || y > view_height) return;
 
@@ -729,7 +725,6 @@ void Screen::DrawText(const uint16_t x, const uint16_t y, const std::string& str
     return;
 }
 
-// TODO update
 void Screen::DrawTextbox(uint16_t x_pos,
     uint16_t y_pos,
     const uint16_t x_window_start,
@@ -1390,7 +1385,17 @@ void Screen::DrawRectangleAsync(const uint16_t x1, const uint16_t x2,
     const uint16_t y1, const uint16_t y2, const uint16_t thickness,
     const uint16_t colour)
 {
+    // Top
+    FillRectangleAsync(x1, x2, y1, y1 + thickness, colour);
 
+    // Right
+    FillRectangleAsync(x2 - thickness, x2, y1, y2, colour);
+
+    // Bottom
+    FillRectangleAsync(x1, x2, y2 - thickness, y2, colour);
+
+    // Left
+    FillRectangleAsync(x1, x1 + thickness, y1, y2, colour);
 }
 
 void Screen::FillRectangleAsync(uint16_t x1,
@@ -1433,7 +1438,6 @@ void Screen::FillRectangleAsync(uint16_t x1,
 
     uint32_t num_byte_pixels = ((x2 - x1) * (y2 - y1) * 2);
 
-    // Is this param needed??
     memory->post_callback = FillRectangleAsyncProcedure;
 
     memory->parameters[8] = colour >> 8;
@@ -1701,11 +1705,9 @@ Screen::ScreenMemory* Screen::RetrieveFreeMemory()
         memories_write_idx = 0;
     }
 
-    free_memories--;
-    available_memories++;
+    --free_memories;
     memories[memories_write_idx].status = MemoryStatus::In_Progress;
     return &memories[memories_write_idx++];
-
 }
 
 void Screen::HandleReadyMemory()
@@ -1716,7 +1718,7 @@ void Screen::HandleReadyMemory()
     }
 
     // Nothing to do skip
-    if (available_memories == 0)
+    if (free_memories >= Num_Memories)
     {
         return;
     }
@@ -1735,18 +1737,14 @@ void Screen::HandleReadyMemory()
 
         memory = &memories[memories_read_idx];
 
-        if (memory->status == MemoryStatus::Unused)
+        // NOTE- we don't need to check for MemoryStatus::Unused
+        // because if there are memories waiting it will always
+        // be sequential
+        if (memory->status == MemoryStatus::Complete)
         {
-            // Go to the next memory
-            memories_read_idx++;
-        }
-        else if (memory->status == MemoryStatus::Complete)
-        {
-            memories_read_idx++;
+            ++memories_read_idx;
 
-            available_memories--;
-
-            free_memories++;
+            ++free_memories;
 
             memory->status = MemoryStatus::Unused;
 
