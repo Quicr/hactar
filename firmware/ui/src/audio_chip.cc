@@ -15,7 +15,7 @@ extern UART_HandleTypeDef huart1;
 AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     i2s(&hi2s), i2c(&hi2c), tx_buffer{ 0 }, rx_buffer{ 0 }, first_half(true)
 {
-    // Init();
+    Init();
 }
 
 AudioChip::~AudioChip()
@@ -112,6 +112,13 @@ void AudioChip::Init()
     // SetRegister(0x1C, 0b0'0000'0100);
 
     // SetRegister(0x1D, 0b0'0100'0000);
+
+    UnmuteMic();
+
+    // Need a 1s delay before starting I2S for some reason.
+    HAL_Delay(1000);
+
+    StartI2S();
 }
 
 void AudioChip::Reset()
@@ -128,7 +135,7 @@ HAL_StatusTypeDef AudioChip::WriteRegister(uint8_t address)
     HAL_StatusTypeDef result = HAL_I2C_Master_Transmit(i2c,
         Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
 
-    HAL_Delay(10);
+    HAL_Delay(100);
 
     return result;
 }
@@ -278,13 +285,12 @@ void AudioChip::TurnOffLeftInput3()
 void AudioChip::TurnOnLeftDifferentialInput()
 {
     // Turn off single input
-    TurnOffLeftInput3();
-
     EnableLeftMicPGA();
+
+    TurnOffLeftInput3();
 
     SetBit(0x20, 6, 1);
     SetBit(0x20, 8, 1);
-    // SetBit(0x20, 5, 1);
 }
 
 void AudioChip::TurnOffLeftDifferentialInput()
@@ -319,6 +325,8 @@ void AudioChip::MuteMic()
 
 void AudioChip::UnmuteMic()
 {
+    TurnOnLeftDifferentialInput();
+
     // Disable LINMUTE
     SetBits(0x00, 0b1'1000'0000, 0b1'0000'0000);
 
@@ -346,7 +354,7 @@ void AudioChip::StartI2S()
 
 void AudioChip::StopI2S()
 {
-
+    HAL_I2S_DMAStop(i2s);
     // TODO
     flags &= ~(1 << Running_Flag);
 }
@@ -402,22 +410,22 @@ void AudioChip::HalfCompleteCallback()
 
     // UNCOMMENT THIS TO TEST THE AUDIO MIC
     // Copy the mic data to the speakers
-    for (uint16_t i = 0; i < Audio_Buffer_Sz_2; i+=2)
-    {
-        tx_buffer[i] = rx_buffer[i] + 5000;
-        tx_buffer[i+1] = rx_buffer[i] + 5000;
-    }
+    // for (uint16_t i = 0; i < Audio_Buffer_Sz_2; i+=2)
+    // {
+    //     tx_buffer[i] = rx_buffer[i] + 5000;
+    //     tx_buffer[i+1] = rx_buffer[i] + 5000;
+    // }
     // END UNCOMMENT
 
     // COMMENT THE BELOW OUT FOR TESTING
     // Clear the first half of the buffer
-    // for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
-    // {
-    //     tx_buffer[i] = 0;
-    // }
+    for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
+    {
+        tx_buffer[i] = 0;
+    }
 
     // Set half complete flag
-    // flags |= (1 << Half_Complete_Flag);
+    flags |= (1 << Half_Complete_Flag);
 }
 
 void AudioChip::CompleteCallback()
@@ -429,25 +437,23 @@ void AudioChip::CompleteCallback()
 
     // UNCOMMENT THIS TO TEST THE AUDIO MIC
     // Copy the mic data to the speakers
-    for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; i+=2)
-    {
-        tx_buffer[i] = rx_buffer[i] + 5000;
-        tx_buffer[i+1] = rx_buffer[i] + 5000;
-    }
+    // for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; i+=2)
+    // {
+    //     tx_buffer[i] = rx_buffer[i] + 5000;
+    //     tx_buffer[i+1] = rx_buffer[i] + 5000;
+    // }
     // END UNCOMMENT
 
 
     // COMMENT THE BELOW OUT FOR TESTING
     // Clear the second half of the buffer
-    // for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; ++i)
-    // {
-    //     tx_buffer[i] = 0;
-    // }
+    for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; ++i)
+    {
+        tx_buffer[i] = 0;
+    }
 
     // Set complete flag
-    // flags |= (1 << Complete_Flag);
-
-    // flags |= (1 << Complete_Flag);
+    flags |= (1 << Complete_Flag);
 }
 
 bool AudioChip::IsHalfComplete()
