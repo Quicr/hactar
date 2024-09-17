@@ -139,10 +139,6 @@ int app_main()
     WaitForNetReady();
     Logger::Log(Logger::Level::Info, "Hactar is ready");
 
-    bool sound_inited = false;
-    uint32_t wait_to_enable_audio_codec = HAL_GetTick() + 5000;
-    // wait_to_enable_audio_codec = 0;
-
     screen.EnableBackLight();
 
     screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_WHITE);
@@ -183,19 +179,6 @@ int app_main()
         {
             HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
             blink = HAL_GetTick() + 1000;
-        }
-
-        // NOTE DO NOT REMOVE ON EV10
-        // TODO eventually remove
-        if (HAL_GetTick() > wait_to_enable_audio_codec && !sound_inited)
-        {
-            audio->Init();
-            audio->EnableLeftMicPGA();
-            audio->TurnOnLeftDifferentialInput();
-            audio->UnmuteMic();
-            HAL_Delay(1000);
-            audio->StartI2S();
-            sound_inited = true;
         }
     }
 
