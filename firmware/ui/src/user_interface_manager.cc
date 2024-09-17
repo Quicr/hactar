@@ -55,8 +55,6 @@ void UserInterfaceManager::Update()
 {
     current_tick = HAL_GetTick();
 
-    screen.Update(current_tick);
-
     // TODO send update every 1/60 of a second?
     view->Run(current_tick);
 

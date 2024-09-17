@@ -41,6 +41,7 @@ extern SPI_HandleTypeDef hspi1;
 extern I2C_HandleTypeDef hi2c1;
 extern I2S_HandleTypeDef hi2s3;
 extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
 extern RNG_HandleTypeDef hrng;
 
 
@@ -85,6 +86,7 @@ size_t getFreeHeapSize(void)
 int app_main()
 {
     audio = new AudioChip(hi2s3, hi2c1);
+    HAL_TIM_Base_Start_IT(&htim3);
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
@@ -169,10 +171,16 @@ int app_main()
     screen.DrawCharacterAsync(80, 200, 'H', font6x8, C_BLUE, C_BLACK);
     screen.DrawCharacterAsync(90, 200, 'H', font7x12, C_BLUE, C_BLACK);
     screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
+    screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
+    screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
+    screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
+    screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
+
+    screen.DrawRectangleAsync(110, 120, 200, 210, 2, C_BLUE);
+    screen.DrawRectangleAsync(125, 135, 200, 210, 2, C_RED);
 
     while (1)
     {
-        screen.Update(0);
         // ui_manager->Update();
 
         if (HAL_GetTick() > blink)
@@ -277,6 +285,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     if (htim->Instance == TIM2)
     {
         keyboard->Read();
+    }
+    else if (htim->Instance == TIM3)
+    {
+        screen.Update(HAL_GetTick());
     }
 }
 
