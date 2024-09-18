@@ -235,15 +235,20 @@ public:
         const uint16_t y1, const uint16_t y2, const uint16_t thickness,
         const uint16_t colour);
 
-    void DrawString(const uint16_t x, const uint16_t y, const char* str,
+    void DrawStringAsync(const uint16_t x, const uint16_t y, const char* str,
         const uint16_t len, const Font& font, const uint16_t fg,
-        const uint16_t bg);
+        const uint16_t bg, const bool word_wrap);
 
-    void DrawStringBox(const uint16_t x1, const uint16_t x2,
+    void DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
         const uint16_t y1, const uint16_t y2,
         const char* str, const uint16_t len,
-        const Font& font, const uint16_t fg, const uint16_t bg);
+        const Font& font, const uint16_t fg, const uint16_t bg,
+        const bool draw_box);
 
+    void DrawTriangleAsync(const uint16_t x1, const uint16_t y1,
+                           const uint16_t x2, const uint16_t y2,
+                           const uint16_t x3, const uint16_t y3,
+                           const uint16_t thickness, const uint16_t colour);
 
     void FillRectangleAsync(uint16_t x1,
                             uint16_t x2,
@@ -329,7 +334,4 @@ private:
     uint32_t memories_write_idx = 0;
     uint32_t memories_read_idx = 0;
     uint32_t free_memories = Num_Memories;
-
-    uint8_t str[64];
-    uint16_t len;
 };

@@ -86,12 +86,12 @@ size_t getFreeHeapSize(void)
 int app_main()
 {
     audio = new AudioChip(hi2s3, hi2c1);
-    HAL_TIM_Base_Start_IT(&htim3);
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
     eeprom = new EEPROM(hi2c1, 32, 255);
 
     screen.Begin();
+    HAL_TIM_Base_Start_IT(&htim3);
 
     // // Set the port pins and groups for the keyboard columns
     port_pin col_pins[Q10_COLS] =
@@ -179,6 +179,10 @@ int app_main()
     screen.DrawRectangleAsync(110, 120, 200, 210, 2, C_BLUE);
     screen.DrawRectangleAsync(125, 135, 200, 210, 2, C_RED);
 
+    screen.DrawStringBoxAsync(1, 95, 140, 200, "Hello world, look at my string!", 31, font5x8, C_YELLOW, C_BLACK, true);
+    screen.DrawStringBoxAsync(1, 36, 200, 220, "Hello Hello Hello", 17, font5x8, C_GREEN, C_BLACK, true);
+
+    screen.DrawTriangleAsync(100, 0, 110, 10, 95, 10, 1, C_YELLOW);
     while (1)
     {
         // ui_manager->Update();

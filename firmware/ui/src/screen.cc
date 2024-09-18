@@ -1318,7 +1318,7 @@ void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
             }
         }
 
-        ScreenMemory* memory = SetWritablePixelsAsync(x1, x1+1, y1, y1+1);
+        ScreenMemory* memory = SetWritablePixelsAsync(x1, x1 + 1, y1, y1 + 1);
 
         memory->post_callback = DrawLineAsyncProcedure;
         memory->parameters[8] = diff_x >> 8;
@@ -1396,6 +1396,113 @@ void Screen::DrawRectangleAsync(const uint16_t x1, const uint16_t x2,
 
     // Left
     FillRectangleAsync(x1, x1 + thickness, y1, y2, colour);
+}
+
+void Screen::DrawStringAsync(const uint16_t x, const uint16_t y,
+    const char* str, const uint16_t len,
+    const Font& font, const uint16_t fg,
+    const uint16_t bg, const bool word_wrap)
+{
+    if (word_wrap)
+    {
+        DrawStringBoxAsync(x, y, view_width, view_height, str, len, font, fg, bg, false);
+    }
+    else
+    {
+        DrawStringBoxAsync(x, y, view_width, y + font.height, str, len, font, fg, bg, false);
+    }
+}
+
+void Screen::DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
+    const uint16_t y1, const uint16_t y2,
+    const char* str, const uint16_t len,
+    const Font& font, const uint16_t fg, const uint16_t bg,
+    const bool draw_box)
+{
+    if (x1 + font.width >= x2)
+    {
+        return;
+    }
+
+    if (y1 + font.height >= y2)
+    {
+        return;
+    }
+
+    if (draw_box)
+    {
+        DrawRectangleAsync(x1, x2, y1, y2, 1, fg);
+    }
+
+    const uint16_t start_x = draw_box ? x1 + 1 : x1;
+    const uint16_t end_x = draw_box ? x2 - 1 : x2;
+    const uint16_t start_y = draw_box ? y1 + 1 : y1;
+    const uint16_t end_y = draw_box ? y2 - 1 : y2;
+
+    uint16_t x_curr = start_x;
+    uint16_t y_curr = start_y;
+
+    uint16_t spc_idx = 0;
+    uint16_t word_len = 0;
+
+    uint16_t i = 0;
+    uint16_t j = 0;
+    while (i < len)
+    {
+        if (x_curr == start_x && ' ' == str[i])
+        {
+            ++i;
+            continue;
+        }
+
+        // Find next space
+        for (spc_idx = i; spc_idx < len; ++spc_idx)
+        {
+            if (str[spc_idx] == ' ')
+            {
+                break;
+            }
+        }
+
+        word_len = ((spc_idx + 1) - i) * font.width;
+
+        if (word_len + x_curr > end_x)
+        {
+            // Go to next line
+            y_curr += font.height;
+            x_curr = start_x;
+        }
+
+        for (j = i; j <= spc_idx && j < len; ++j)
+        {
+            DrawCharacterAsync(x_curr, y_curr, str[j], font, fg, bg);
+
+            x_curr += font.width;
+            if (x_curr >= end_x)
+            {
+                x_curr = start_x;
+                y_curr += font.height;
+                if (y_curr + font.height >= end_y)
+                {
+                    // Force it to end
+                    j = len;
+                    break;
+                }
+            }
+        }
+
+        i += (j - i);
+    }
+}
+
+void Screen::DrawTriangleAsync(const uint16_t x1, const uint16_t y1,
+    const uint16_t x2, const uint16_t y2,
+    const uint16_t x3, const uint16_t y3,
+    const uint16_t thickness, const uint16_t colour)
+{
+    DrawLineAsync(x1, x2, y1, y2, thickness, colour);
+    DrawLineAsync(x2, x3, y2, y3, thickness, colour);
+    DrawLineAsync(x1, x3, y1, y3, thickness, colour);
 }
 
 void Screen::FillRectangleAsync(uint16_t x1,
