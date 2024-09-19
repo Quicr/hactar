@@ -250,6 +250,21 @@ public:
                            const uint16_t x3, const uint16_t y3,
                            const uint16_t thickness, const uint16_t colour);
 
+    void FillArrowAsync(const uint16_t tip_x, const uint16_t tip_y,
+                   const uint16_t length, const uint16_t width,
+                   const ArrowDirection direction, const uint16_t colour);
+
+    void FillCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
+                    const uint16_t colour); // TODO
+
+    void FillPolygonAsync(const size_t count, const uint16_t points[][2],
+                          const uint16_t colour);
+
+    void FillTriangleAsync(const uint16_t x1, const uint16_t y1,
+                           const uint16_t x2, const uint16_t y2,
+                           const uint16_t x3, const uint16_t y3,
+                           const uint16_t colour);
+
     void FillRectangleAsync(uint16_t x1,
                             uint16_t x2,
                             uint16_t y1,
@@ -331,7 +346,7 @@ private:
     ScreenMemory memories[Num_Memories];
     ScreenMemory* live_memory;
     // TODO put into constructor
-    uint32_t memories_write_idx = 0;
-    uint32_t memories_read_idx = 0;
-    uint32_t free_memories = Num_Memories;
+    volatile uint32_t memories_write_idx = 0;
+    volatile uint32_t memories_read_idx = 0;
+    volatile uint32_t free_memories = Num_Memories;
 };
