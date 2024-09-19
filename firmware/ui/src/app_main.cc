@@ -183,8 +183,33 @@ int app_main()
     screen.DrawStringBoxAsync(1, 36, 200, 220, "Hello Hello Hello", 17, font5x8, C_GREEN, C_BLACK, true);
 
     screen.DrawTriangleAsync(100, 0, 110, 10, 95, 10, 1, C_YELLOW);
+
+    screen.FillTriangleAsync(120, 0, 130, 10, 115, 10, C_YELLOW);
+
+    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    screen.FillTriangleAsync(20, 0, 25, 10, 15, 5, C_BLUE);
+    screen.FillTriangleAsync(35, 0, 40, 10, 30, 5, C_BLUE);
+    screen.FillTriangleAsync(100, 50, 110, 60, 90, 50, C_BLUE);
+
+    screen.FillArrowAsync(140, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    screen.FillArrowAsync(160, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+
+    screen.FillCircleAsync(0, 200, 10, C_CYAN);
+
     while (1)
     {
+        // screen.Update(HAL_GetTick());
         // ui_manager->Update();
 
         if (HAL_GetTick() > blink)

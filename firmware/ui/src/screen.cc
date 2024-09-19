@@ -1030,9 +1030,6 @@ void Screen::ReleaseSPI()
     {
         video_front_buff->is_ready = false;
         spi_async = false;
-
-        HandleReadyMemory();
-        HandleVideoBuffer();
     }
 }
 
@@ -1248,25 +1245,25 @@ void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
 {
     if (x1 == x2)
     {
-        // Horizontal line
-        uint16_t thick_x1 = thickness / 2;
-        uint16_t thick_x2 = thickness / 2;
+        // Vertical line
+        uint16_t thick_1 = thickness / 2;
+        uint16_t thick_2 = thickness / 2;
         if (2 == thickness)
         {
-            thick_x1 = 0;
+            thick_1 = 0;
         }
-        FillRectangleAsync(x1 - thick_x1, x2 + 1 + thick_x2, y1, y2, colour);
+        FillRectangleAsync(x1 - thick_1, x2 + 1 + thick_2, y1, y2, colour);
     }
     else if (y1 == y2)
     {
-        // Vertical line
-        uint16_t thick_y1 = thickness / 2;
-        uint16_t thick_y2 = thickness / 2;
+        // Horizontal line
+        uint16_t thick_1 = thickness / 2;
+        uint16_t thick_2 = thickness / 2;
         if (2 == thickness)
         {
-            thick_y1 = 0;
+            thick_1 = 0;
         }
-        FillRectangleAsync(x1, x2, y1 - thick_y1, y2 + 1 + thick_y2, colour);
+        FillRectangleAsync(x1, x2, y1 - thick_1, y2 + 1 + thick_2, colour);
     }
     else
     {
@@ -1368,7 +1365,7 @@ void Screen::DrawPolygonAsync(const size_t count, const uint16_t points [][2],
     // reasonably write at once, we should try to handle the memories
     // if they aren't being sent currently
     size_t i = 0;
-    size_t _count = count - 1;
+    const size_t _count = count - 1;
     while (i < _count)
     {
         DrawLineAsync(points[i][x], points[i + 1][x],
@@ -1482,7 +1479,8 @@ void Screen::DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
             {
                 x_curr = start_x;
                 y_curr += font.height;
-                if (y_curr + font.height >= end_y)
+                // TODO fix
+                if (y_curr >= end_y)
                 {
                     // Force it to end
                     j = len;
@@ -1500,9 +1498,219 @@ void Screen::DrawTriangleAsync(const uint16_t x1, const uint16_t y1,
     const uint16_t x3, const uint16_t y3,
     const uint16_t thickness, const uint16_t colour)
 {
-    DrawLineAsync(x1, x2, y1, y2, thickness, colour);
-    DrawLineAsync(x2, x3, y2, y3, thickness, colour);
-    DrawLineAsync(x1, x3, y1, y3, thickness, colour);
+    const uint16_t points [][2] = { {x1, y1}, {x2, y2}, {x3, y3} };
+    DrawPolygonAsync(3, points, thickness, colour);
+}
+
+void Screen::FillArrowAsync(const uint16_t tip_x, const uint16_t tip_y,
+    const uint16_t length, const uint16_t width,
+    const ArrowDirection direction, const uint16_t colour)
+{
+    const uint16_t half_width = width / 2;
+    const uint16_t quar_width = width / 4;
+    const uint16_t tip_len = (length * 4) / 10;
+    if (direction == ArrowDirection::Left)
+    {
+        // Left
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y - half_width)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x + length), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x + length), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x + tip_len), uint16_t(tip_y + half_width)}
+        };
+        FillPolygonAsync(7, points, colour);
+
+    }
+    else if (direction == ArrowDirection::Up)
+    {
+        // Up
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x + half_width), uint16_t(tip_y + tip_len)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y + tip_len)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y + length)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y + length)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y + tip_len)},
+                                  {uint16_t(tip_x - half_width), uint16_t(tip_y + tip_len)}
+        };
+        FillPolygonAsync(7, points, colour);
+    }
+    else if (direction == ArrowDirection::Right)
+    {
+        // Right
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y - half_width)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x - length), uint16_t(tip_y - quar_width)},
+                                  {uint16_t(tip_x - length), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y + quar_width)},
+                                  {uint16_t(tip_x - tip_len), uint16_t(tip_y + half_width)}
+        };
+        FillPolygonAsync(7, points, colour);
+    }
+    else if (direction == ArrowDirection::Down)
+    {
+        // Down
+        uint16_t points[7][2] = { {uint16_t(tip_x), uint16_t(tip_y)},
+                                  {uint16_t(tip_x - half_width), uint16_t(tip_y - tip_len)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y - tip_len)},
+                                  {uint16_t(tip_x - quar_width), uint16_t(tip_y - length)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y - length)},
+                                  {uint16_t(tip_x + quar_width), uint16_t(tip_y - tip_len)},
+                                  {uint16_t(tip_x + half_width), uint16_t(tip_y - tip_len)}
+        };
+
+        FillPolygonAsync(7, points, colour);
+    }
+}
+
+void Screen::FillCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
+    const uint16_t colour)
+{
+    // TODO
+
+    int16_t left = x - r;
+    int16_t right = x + r;
+    int16_t top = y - r;
+    int16_t bottom = y + r;
+
+    if (left < 0)
+    {
+        left = 0;
+    }
+    if (right > ViewWidth())
+    {
+        right = ViewWidth();
+    }
+    if (top < 0)
+    {
+        top = 0;
+    }
+    if (bottom > ViewHeight())
+    {
+        bottom = ViewHeight();
+    }
+}
+
+void Screen::FillPolygonAsync(const size_t count, const uint16_t points [][2],
+    const uint16_t colour)
+{
+    if (count < 3)
+    {
+        // A polygon is defined by 3 points
+        return;
+    }
+
+    const uint16_t x = 0;
+    const uint16_t y = 1;
+
+    // Find the y_min and y_max
+    const uint16_t _count = count - 1;
+    uint16_t y_min = points[_count][y];
+    uint16_t y_max = y_min;
+    for (size_t i = 0; i < _count; ++i)
+    {
+        if (points[i][y] > y_max)
+        {
+            y_max = points[i][y];
+        }
+
+        if (points[i][y] < y_min)
+        {
+            y_min = points[i][y];
+        }
+        // Draw the polygon while we are at it
+        DrawLineAsync(points[i][x], points[i + 1][x],
+            points[i][y], points[i + 1][y], 1, colour);
+    }
+    // Connect the final line
+    DrawLineAsync(points[_count][x], points[0][x],
+        points[_count][y], points[0][y], 1, colour);
+
+
+    /** Scan line fill algorithm *
+     * For each row of pixels that are in the upper and lower bounding box of
+     * the polygon, send a ray cast through the polygon and
+     * calculate the x intersection using the point-slope formulas
+     *
+     * Add the x intersections to an array and sort the list using
+     * insertion sort
+     *
+     * Draw the line of pixels
+    */
+
+    uint16_t intersections[count]{ 0 };
+    uint8_t num_intersect = 0;
+    uint16_t curr_point = 0;
+    uint16_t next_point = 0;
+
+    uint16_t i;
+    uint16_t j;
+    uint16_t tmp;
+
+    // Loop through the rows of the polygon
+    for (uint16_t pix_y = y_min; pix_y < y_max; ++pix_y)
+    {
+        // Get every x intersection
+        num_intersect = 0;
+
+        // Start at the end point
+        next_point = count - 1;
+
+        // Cycle around the points
+        for (curr_point = 0; curr_point < count; ++curr_point)
+        {
+            // Check for intersection
+            if ((points[curr_point][y] < (int16_t)pix_y && points[next_point][y] >= (int16_t)pix_y)
+                || (points[next_point][y] < (int16_t)pix_y && points[curr_point][y] >= (int16_t)pix_y))
+            {
+                // Get the point of intersection using point slope
+                // m = (y2 - y1) / (x2 - x1)
+                // y - y1 = m(x - x1)
+                // y = pix_y
+                // find x
+                intersections[num_intersect++] = (float)points[curr_point][x]
+                    + (float)(pix_y - points[curr_point][y])
+                    / (float)(points[next_point][y] - points[curr_point][y])
+                    * (float)(points[next_point][x] - points[curr_point][x]);
+            }
+
+            // Swap around the current point index
+            next_point = curr_point;
+        }
+
+        // Sort the intersections with insertion sort
+        i = 1;
+        while (i < num_intersect)
+        {
+            j = i;
+            while (j > 0 && intersections[j - 1] > intersections[j])
+            {
+                tmp = intersections[j];
+                intersections[j] = intersections[j - 1];
+                intersections[j - 1] = tmp;
+                --j;
+            }
+            ++i;
+        }
+
+        // Fill in the spaces between 2 intersections
+        for (i = 0; i < num_intersect; i += 2)
+        {
+            DrawLineAsync(intersections[i], intersections[i + 1]+1,
+                pix_y, pix_y, 1, colour);
+        }
+    }
+}
+
+void Screen::FillTriangleAsync(const uint16_t x1, const uint16_t y1,
+    const uint16_t x2, const uint16_t y2,
+    const uint16_t x3, const uint16_t y3,
+    const uint16_t colour)
+{
+    const uint16_t points [][2] = { {x1, y1}, {x2, y2}, {x3, y3} };
+    FillPolygonAsync(3, points, colour);
 }
 
 void Screen::FillRectangleAsync(uint16_t x1,
@@ -1900,11 +2108,6 @@ void Screen::HandleVideoBuffer()
 
 void Screen::DrawCharacterProcedure(Screen& screen, ScreenMemory& memory)
 {
-    uint16_t x1 = memory.parameters[0] << 8 | memory.parameters[1];
-    uint16_t x2 = memory.parameters[2] << 8 | memory.parameters[3];
-    uint16_t y1 = memory.parameters[4] << 8 | memory.parameters[5];
-    uint16_t y2 = memory.parameters[6] << 8 | memory.parameters[7];
-
     uint16_t font_width = memory.parameters[8];
     uint16_t font_height = memory.parameters[9];
     uint8_t* ch_ptr = (uint8_t*)(memory.parameters[10] << 24
@@ -1923,7 +2126,6 @@ void Screen::DrawCharacterProcedure(Screen& screen, ScreenMemory& memory)
     // 2 bytes per pixel
     buff->len = font_height * font_width * 2;
     buff->dc_level = GPIO_PIN_SET;
-    buff->is_ready = true;
 
     for (uint16_t idx_h = 0; idx_h < font_height; ++idx_h)
     {
@@ -1961,6 +2163,7 @@ void Screen::DrawCharacterProcedure(Screen& screen, ScreenMemory& memory)
     }
 
     memory.status = MemoryStatus::Complete;
+    buff->is_ready = true;
 }
 
 void Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
@@ -1993,7 +2196,6 @@ void Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
     // Colour is stored at these addresses
     buff->data[0] = memory.parameters[14];
     buff->data[1] = memory.parameters[15];
-    buff->is_ready = true;
 
     // Move x position
     if (error * 2 > -diff_y)
@@ -2068,6 +2270,7 @@ void Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
     {
         memory.status = MemoryStatus::Complete;
     }
+    buff->is_ready = true;
 }
 
 void Screen::DrawPixelAsyncProcedure(Screen& screen, ScreenMemory& memory)
@@ -2077,9 +2280,9 @@ void Screen::DrawPixelAsyncProcedure(Screen& screen, ScreenMemory& memory)
     buff->data[0] = memory.parameters[8];
     buff->data[1] = memory.parameters[9];
     buff->dc_level = GPIO_PIN_SET;
-    buff->is_ready = true;
 
     memory.status = MemoryStatus::Complete;
+    buff->is_ready = true;
 }
 
 void Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
@@ -2105,8 +2308,6 @@ void Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
     }
 
     buff->dc_level = GPIO_PIN_SET;
-    buff->is_ready = true;
-
     bytes_remaining -= buff->len;
 
     // Out of the while loop, if curr_x != x2 and curr_y != y2
@@ -2122,6 +2323,7 @@ void Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
     {
         memory.status = MemoryStatus::Complete;
     }
+    buff->is_ready = true;
 }
 
 /*****************************************************************************/
@@ -2152,9 +2354,6 @@ void Screen::WaitForFreeMemory(const uint16_t minimum)
     // Connect the final line
     while (free_memories < min_mem)
     {
-        if (!spi_busy)
-        {
-            Draw();
-        }
+        __NOP();
     }
 }
