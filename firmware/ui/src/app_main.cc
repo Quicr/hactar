@@ -205,7 +205,8 @@ int app_main()
     screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
     screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
 
-    screen.FillCircleAsync(0, 200, 10, C_CYAN);
+    screen.DrawCircleAsync(50, 250, 30, C_CYAN);
+    screen.FillCircleAsync(150, 250, 30, C_YELLOW);
 
     while (1)
     {

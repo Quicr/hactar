@@ -219,7 +219,7 @@ public:
         const Font& font, const uint16_t fg, const uint16_t bg);
 
     void DrawCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
-                    const uint16_t colour); // TODO
+                    const uint16_t colour);
 
     void DrawLineAsync(const uint16_t x1, const uint16_t x2,
                        const uint16_t y1, const uint16_t y2,
@@ -255,7 +255,7 @@ public:
                    const ArrowDirection direction, const uint16_t colour);
 
     void FillCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
-                    const uint16_t colour); // TODO
+                    const uint16_t colour);
 
     void FillPolygonAsync(const size_t count, const uint16_t points[][2],
                           const uint16_t colour);
