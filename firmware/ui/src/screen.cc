@@ -971,9 +971,9 @@ void Screen::FillRectangle(const uint16_t x_start,
     uint16_t y_pixels = y_end - y_start;
     uint16_t x_pixels = x_end - x_start;
 
-    uint32_t total_pixels = y_pixels * x_pixels;
+    uint32_t total_pixels = y_pixels * x_pixels * 2;
 
-    uint32_t chunk = std::min<uint32_t>(total_pixels, 128);
+    uint32_t chunk = std::min<uint32_t>(total_pixels, video_buff.BufferSize());
 
     // Get the video buffer
     auto buff = video_buff.GetFront();
@@ -1237,7 +1237,46 @@ void Screen::DrawCharacterAsync(uint16_t x, uint16_t y, const char ch,
 void Screen::DrawCircleAsync(const uint16_t x, const uint16_t y,
     const uint16_t r, const uint16_t colour)
 {
-    // TODO
+    // Midpoint circle drawing algorithm
+    // https://www.geeksforgeeks.org/mid-point-circle-drawing-algorithm/
+
+    // Draw the 4 pixels that will be skipped in the below algorithm
+    DrawPixelAsync(x + r, y, colour);
+    DrawPixelAsync(x - r, y, colour);
+    DrawPixelAsync(x, y + r, colour);
+    DrawPixelAsync(x, y - r, colour);
+
+    // Scan through the circle
+    const int16_t r_2 = r * r;
+    int16_t x_p = r;
+    int16_t y_p = 0;
+    int16_t p = 1 - r;
+
+    while (x_p > y_p)
+    {
+        ++y_p;
+
+        if (p <= 0)
+        {
+            // Mid point is inside of the circle
+            p = p + (y_p << 2) + 1;
+        }
+        else
+        {
+            // Mid point is outside of the perimeter
+            --x_p;
+            p = p + (y_p << 2) - (x_p << 2) + 1;
+        }
+
+        DrawPixelAsync(x + x_p, y + y_p, colour);
+        DrawPixelAsync(x - x_p, y + y_p, colour);
+        DrawPixelAsync(x + x_p, y - y_p, colour);
+        DrawPixelAsync(x - x_p, y - y_p, colour);
+        DrawPixelAsync(x + y_p, y + x_p, colour);
+        DrawPixelAsync(x - y_p, y + x_p, colour);
+        DrawPixelAsync(x + y_p, y - x_p, colour);
+        DrawPixelAsync(x - y_p, y - x_p, colour);
+    }
 }
 
 void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
@@ -1480,7 +1519,7 @@ void Screen::DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
                 x_curr = start_x;
                 y_curr += font.height;
                 // TODO fix
-                if (y_curr >= end_y)
+                if (y_curr + font.height >= end_y)
                 {
                     // Force it to end
                     j = len;
@@ -1568,29 +1607,42 @@ void Screen::FillArrowAsync(const uint16_t tip_x, const uint16_t tip_y,
 void Screen::FillCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
     const uint16_t colour)
 {
-    // TODO
+    const int16_t left = std::max(x - r, 0);
+    const int16_t right = std::min<int16_t>(x + r, view_width);
+    const int16_t top = std::max(y - r, 0);
+    const int16_t bottom = std::min<int16_t>(y + r, view_height);
 
-    int16_t left = x - r;
-    int16_t right = x + r;
-    int16_t top = y - r;
-    int16_t bottom = y + r;
+    const uint16_t cols = right - left + 1;
+    const uint16_t rows = (bottom - top + 1) / 2;
 
-    if (left < 0)
+    if (cols == 0)
     {
-        left = 0;
+        return;
     }
-    if (right > ViewWidth())
+    if (rows == 0)
     {
-        right = ViewWidth();
+        return;
     }
-    if (top < 0)
+
+    // Scan line algorithm
+    // Scan through the circle
+    const int16_t r_2 = r * r;
+    for (uint16_t row = 0; row < rows; ++row)
     {
-        top = 0;
+        for (uint16_t col = 0; col < cols; ++col)
+        {
+            const int16_t h_dis = int16_t(left + col - x) * int16_t(left + col - x);
+            const int16_t v_dis = int16_t(top + row - y) * int16_t(top + row - y);
+
+            if (h_dis + v_dis <= r_2)
+            {
+                FillRectangleAsync(left + col, (right - col) + 1, top + row, top + row + 1, colour);
+                FillRectangleAsync(left + col, (right - col) + 1, bottom - row, (bottom - row) + 1, colour);
+                break;
+            }
+        }
     }
-    if (bottom > ViewHeight())
-    {
-        bottom = ViewHeight();
-    }
+    FillRectangleAsync(left, right + 1, top + rows, top + rows + 1, colour);
 }
 
 void Screen::FillPolygonAsync(const size_t count, const uint16_t points [][2],
@@ -1662,8 +1714,11 @@ void Screen::FillPolygonAsync(const size_t count, const uint16_t points [][2],
         for (curr_point = 0; curr_point < count; ++curr_point)
         {
             // Check for intersection
-            if ((points[curr_point][y] < (int16_t)pix_y && points[next_point][y] >= (int16_t)pix_y)
-                || (points[next_point][y] < (int16_t)pix_y && points[curr_point][y] >= (int16_t)pix_y))
+            if ((points[curr_point][y] < (int16_t)pix_y &&
+                points[next_point][y] >= (int16_t)pix_y)
+                ||
+                (points[next_point][y] < (int16_t)pix_y &&
+                    points[curr_point][y] >= (int16_t)pix_y))
             {
                 // Get the point of intersection using point slope
                 // m = (y2 - y1) / (x2 - x1)
@@ -1698,7 +1753,7 @@ void Screen::FillPolygonAsync(const size_t count, const uint16_t points [][2],
         // Fill in the spaces between 2 intersections
         for (i = 0; i < num_intersect; i += 2)
         {
-            DrawLineAsync(intersections[i], intersections[i + 1]+1,
+            DrawLineAsync(intersections[i], intersections[i + 1] + 1,
                 pix_y, pix_y, 1, colour);
         }
     }
@@ -1881,8 +1936,6 @@ void Screen::WriteDataSyncDMA(uint8_t* data, const uint32_t data_size)
 
 Screen::ScreenMemory* Screen::SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
 {
-    // TODO need to make sure there are enough memories for this
-    // This will start the other ones when it completes
     // Get a memory
     ScreenMemory* memory = RetrieveFreeMemory();
 
