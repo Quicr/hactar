@@ -140,7 +140,8 @@ protected:
             HAL_GetTick() > tx_redraw_timeout)
         {
             tx_colour = TxStatusColour();
-            screen.FillArrow(screen.ViewWidth() - 12, 0, 10, 4, Screen::ArrowDirection::Up, tx_colour);
+            screen.FillArrowAsync(screen.ViewWidth() - 12, 0,
+                10, 4, Screen::ArrowDirection::Up, tx_colour);
             tx_redraw_timeout = HAL_GetTick() + 200;
         }
 
@@ -148,7 +149,8 @@ protected:
             HAL_GetTick() > rx_redraw_timeout)
         {
             rx_colour = RxStatusColour();
-            screen.FillArrow(screen.ViewWidth() - 6, 10, 10, 4, Screen::ArrowDirection::Down, rx_colour);
+            screen.FillArrowAsync(screen.ViewWidth() - 6, 10,
+                10, 4, Screen::ArrowDirection::Down, rx_colour);
             rx_redraw_timeout = HAL_GetTick() + 200;
         }
 
@@ -168,9 +170,10 @@ protected:
                 colour = C_GREEN;
             }
 
-            screen.FillCircle(screen.ViewWidth() - 48, 4, 3, colour, C_BLACK);
-            screen.FillCircle(screen.ViewWidth() - 48, 8, 3, colour, C_BLACK);
-            screen.FillRectangle(screen.ViewWidth() - 51, 4, screen.ViewWidth() - 44, 8, colour);
+            screen.FillCircleAsync(screen.ViewWidth() - 48, 4, 3, colour);
+            screen.FillCircleAsync(screen.ViewWidth() - 48, 8, 3, colour);
+            screen.FillRectangleAsync(screen.ViewWidth() - 51,
+                screen.ViewWidth() - 44, 4, 8, colour);
         }
     }
 
@@ -191,25 +194,25 @@ protected:
             if (cursor_fill)
             {
                 // Draw a filled in rectangle
-                screen.FillRectangle(cursor_pos.x,
-                    cursor_pos.y,
+                screen.FillRectangleAsync(cursor_pos.x,
                     cursor_pos.x + usr_font.width,
+                    cursor_pos.y,
                     cursor_pos.y + usr_font.height,
                     fg);
             }
             else
             {
                 // Clear the cursor
-                screen.FillRectangle(cursor_pos.x,
-                    cursor_pos.y,
+                screen.FillRectangleAsync(cursor_pos.x,
                     cursor_pos.x + usr_font.width,
+                    cursor_pos.y,
                     cursor_pos.y + usr_font.height,
                     bg);
 
                 // Draw a hollow rectangle
-                screen.DrawRectangle(cursor_pos.x,
-                    cursor_pos.y,
+                screen.DrawRectangleAsync(cursor_pos.x,
                     cursor_pos.x + usr_font.width,
+                    cursor_pos.y,
                     cursor_pos.y + usr_font.height,
                     Cursor_Hollow_Thickness,
                     fg);
@@ -229,9 +232,9 @@ protected:
             // Clear from the end to the front
             uint32_t clear_width = backspace_count * usr_font.width;
             cursor_pos.x -= clear_width;
-            screen.FillRectangle(cursor_pos.x,
-                cursor_pos.y,
+            screen.FillRectangleAsync(cursor_pos.x,
                 cursor_pos.x + clear_width + usr_font.width,
+                cursor_pos.y,
                 cursor_pos.y + usr_font.height,
                 bg);
             backspace_count = 0;
@@ -244,8 +247,8 @@ protected:
     void DrawInputString(const std::string& str)
     {
         last_drawn_idx = usr_input.length();
-        screen.DrawText(cursor_pos.x, cursor_pos.y, str,
-            usr_font, fg, bg);
+        screen.DrawStringAsync(cursor_pos.x, cursor_pos.y, str,
+            usr_font, fg, bg, true);
         // Set the cursor the the length of the input
         cursor_pos.x = usr_font.width * usr_input.length();
         redraw_cursor = true;
@@ -397,8 +400,8 @@ private:
 
         // Draw wifi symbol
         const uint16_t y_start_offset = 3;
-        screen.FillRectangle(screen.ViewWidth() - 30, y_start_offset + 0, screen.ViewWidth() - 20, y_start_offset + 1, colour);
-        screen.FillRectangle(screen.ViewWidth() - 28, y_start_offset + 2, screen.ViewWidth() - 22, y_start_offset + 3, colour);
-        screen.FillRectangle(screen.ViewWidth() - 26, y_start_offset + 4, screen.ViewWidth() - 24, y_start_offset + 5, colour);
+        screen.FillRectangleAsync(screen.ViewWidth() - 30, screen.ViewWidth() - 20, y_start_offset + 0, y_start_offset + 1, colour);
+        screen.FillRectangleAsync(screen.ViewWidth() - 28, screen.ViewWidth() - 22, y_start_offset + 2, y_start_offset + 3, colour);
+        screen.FillRectangleAsync(screen.ViewWidth() - 26, screen.ViewWidth() - 24, y_start_offset + 4, y_start_offset + 5, colour);
     }
 };

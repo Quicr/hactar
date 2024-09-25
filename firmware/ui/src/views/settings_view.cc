@@ -32,7 +32,7 @@ void SettingsView::Draw()
         {
             uint16_t speed = 0;
             std::string msg = "Settings";
-            screen.DrawBlockAnimateString(0, 6, msg, font11x16, fg, bg, speed);
+            screen.DrawBlockAnimateStringBlocking(0, 6, msg, font11x16, fg, bg, speed);
             first_load = false;
         }
     }

@@ -6,12 +6,12 @@
 // TODO make sure the usr input is not empty
 
 FirstBootView::FirstBootView(UserInterfaceManager& manager,
-        Screen& screen,
-        Q10Keyboard& keyboard,
-        SettingManager& setting_manager,
-        SerialPacketManager& serial,
-        Network& network,
-        AudioChip& audio)
+    Screen& screen,
+    Q10Keyboard& keyboard,
+    SettingManager& setting_manager,
+    SerialPacketManager& serial,
+    Network& network,
+    AudioChip& audio)
     : ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio),
     state(State::Username),
     request_message("Please enter your name:"),
@@ -53,13 +53,14 @@ void FirstBootView::AnimatedDraw()
         return;
 
     uint16_t speed = 10;
+    const uint16_t y = 16;
     std::string msg = "Welcome to Cisco";
-    screen.DrawBlockAnimateString(
-        screen.GetStringCenterMargin(msg.length(), font11x16), 6,
+    screen.DrawStringAsync(
+        screen.GetStringCenterMargin(msg.length(), font11x16), y,
         msg, font11x16, fg, bg, speed);
     msg = "Secure Messaging";
-    screen.DrawBlockAnimateString(
-        screen.GetStringCenterMargin(msg.length(), font11x16), 22,
+    screen.DrawStringAsync(
+        screen.GetStringCenterMargin(msg.length(), font11x16), y + font11x16.height,
         msg, font11x16, fg, bg, speed);
 
     first_load = false;
@@ -69,9 +70,9 @@ void FirstBootView::Draw()
 {
     ViewInterface::Draw();
 
-    screen.DrawText(1,
+    screen.DrawStringAsync(1,
         screen.ViewHeight() - (usr_font.height * 2), request_message,
-        usr_font, fg, bg);
+        usr_font, fg, bg, false);
 
     if (wifi_state == WifiState::SSID)
     {
@@ -209,7 +210,7 @@ void FirstBootView::SetWifi()
         // THINK should this be moved somewhere else?
         // Clear the area above the user input
         const uint16_t y_start = 50;
-        screen.FillRectangle(1, y_start, WIDTH, HEIGHT, C_BLACK, 32);
+        screen.FillRectangleAsync(1, WIDTH, y_start, HEIGHT, C_BLACK);
 
         request_message = "Please enter the wifi password";
         wifi_state = WifiState::Password;
@@ -226,9 +227,9 @@ void FirstBootView::SetWifi()
         // Set the state to waiting
         request_message = "Connecting";
 
-        // TODO consider making a draw queue
-        screen.FillRectangle(0, HEIGHT - usr_font.height * 2, WIDTH,
-            HEIGHT - usr_font.height, C_BLACK);
+        screen.FillRectangleAsync(0, WIDTH,
+            HEIGHT - usr_font.height * 2, HEIGHT - usr_font.height,
+            C_BLACK);
 
         wifi_state = WifiState::Connecting;
     }
@@ -265,8 +266,9 @@ void FirstBootView::UpdateConnecting()
     {
         request_message = "Connecting";
         const uint16_t y_start = 50;
-        screen.FillRectangle(0, y_start,
-            WIDTH, HEIGHT, C_BLACK, 32);
+        screen.FillRectangleAsync(0, WIDTH,
+            y_start, HEIGHT,
+            C_BLACK);
     }
     state_update_timeout = HAL_GetTick() + 1000;
 }
@@ -292,16 +294,16 @@ void FirstBootView::DrawSSIDs()
         // convert the ssid int val to a string
         const std::string ssid_id_str = std::to_string(ssid.first);
 
-        screen.FillRectangle(1 + usr_font.width * ssid_id_str.length(),
-            y_start + (idx * usr_font.height),
+        screen.FillRectangleAsync(1 + usr_font.width * ssid_id_str.length(),
             1 + usr_font.width * 3,
+            y_start + (idx * usr_font.height),
             y_start + ((idx + 1) * usr_font.height), C_BLACK);
 
-        screen.DrawText(1, y_start + (idx * usr_font.height),
-            ssid_id_str, usr_font, C_WHITE, C_BLACK);
+        screen.DrawStringAsync(1, y_start + (idx * usr_font.height),
+            ssid_id_str, usr_font, C_WHITE, C_BLACK, false);
 
-        screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
-            ssid.second, usr_font, C_WHITE, C_BLACK);
+        screen.DrawStringAsync(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
+            ssid.second, usr_font, C_WHITE, C_BLACK, false);
         ++idx;
     }
 }

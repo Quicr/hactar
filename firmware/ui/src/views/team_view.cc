@@ -38,7 +38,7 @@ void TeamView::Draw()
         if (first_load)
         {
             // screen.FillRectangle(0, 13, screen.ViewWidth(), 14, fg);
-            screen.DrawText(0, 1, "Teams", menu_font, fg, bg);
+            screen.DrawStringAsync(0, 1, "Teams", menu_font, fg, bg, false);
             first_load = false;
         }
     }
