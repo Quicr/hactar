@@ -124,40 +124,40 @@ public:
     void Wake();
 
     // Sync functions
-    void DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
+    void DrawArrowBlocking(const uint16_t tip_x, const uint16_t tip_y,
                    const uint16_t length, const uint16_t width,
                    const ArrowDirection direction, const uint16_t colour);
 
-    void DrawCircle(const uint16_t x, const uint16_t y, const uint16_t r,
+    void DrawCircleBlocking(const uint16_t x, const uint16_t y, const uint16_t r,
                     const uint16_t colour); // TODO
 
-    void DrawHorizontalLine(const uint16_t x1, const uint16_t x2,
+    void DrawHorizontalLineBlocking(const uint16_t x1, const uint16_t x2,
                             const uint16_t y, const uint16_t thickness,
                             const uint16_t colour);
 
-    void DrawLine(uint16_t x1, uint16_t y1,
+    void DrawLineBlocking(uint16_t x1, uint16_t y1,
                   uint16_t x2, uint16_t y2,
                   const uint16_t colour);
 
-    void DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour);
+    void DrawPixelBlocking(const uint16_t x, const uint16_t y, const uint16_t colour);
 
-    void DrawPolygon(const size_t count, const uint16_t points[][2], const uint16_t colour);
+    void DrawPolygonBlocking(const size_t count, const uint16_t points[][2], const uint16_t colour);
 
-    void DrawRectangle(const uint16_t x_start, const uint16_t y_start,
+    void DrawRectangleBlocking(const uint16_t x_start, const uint16_t y_start,
                        const uint16_t x_end, const uint16_t y_end,
                        const uint16_t thickness, const uint16_t colour);
 
-    void DrawBlockAnimateString(const uint16_t x, const uint16_t y,
+    void DrawBlockAnimateStringBlocking(const uint16_t x, const uint16_t y,
                                 const std::string &str, const Font &font,
                                 const uint16_t fg, const uint16_t bg,
                                 const uint16_t delay);
 
-    void DrawText(const uint16_t x, const uint16_t y, const std::string &str,
+    void DrawTextBlocking(const uint16_t x, const uint16_t y, const std::string &str,
                     const Font &font, const uint16_t fg, const uint16_t bg,
                     const bool wordwrap = false,
                     uint32_t max_chunk_size=Max_Chunk_Size);
 
-    void DrawTextbox(uint16_t x_pos,
+    void DrawTextboxBlocking(uint16_t x_pos,
                      uint16_t y_pos,
                      const uint16_t x_window_start,
                      const uint16_t y_window_start,
@@ -168,23 +168,23 @@ public:
                      const uint16_t fg,
                      const uint16_t bg);
 
-    void DrawTriangle(const uint16_t x1, const uint16_t y1,
+    void DrawTriangleBlocking(const uint16_t x1, const uint16_t y1,
                       const uint16_t x2, const uint16_t y2,
                       const uint16_t x3, const uint16_t y3,
                       const uint16_t colour);
 
-    void FillArrow(const uint16_t tip_x, const uint16_t tip_y,
+    void FillArrowBlocking(const uint16_t tip_x, const uint16_t tip_y,
                    const uint16_t length, const uint16_t width,
                    const ArrowDirection direction, const uint16_t colour);
 
-    void FillCircle(const uint16_t x, const uint16_t y, const uint16_t r,
+    void FillCircleBlocking(const uint16_t x, const uint16_t y, const uint16_t r,
                     const uint16_t fg, const uint16_t bg);
 
-    void FillPolygon(const size_t count,
+    void FillPolygonBlocking(const size_t count,
                      const int16_t points [][2],
                      const uint16_t colour);
 
-    void FillRectangle(const uint16_t x_start,
+    void FillRectangleBlocking(const uint16_t x_start,
                        const uint16_t y_start,
                        uint16_t x_end,
                        uint16_t y_end,
@@ -193,12 +193,12 @@ public:
 
     void FillScreen(const uint16_t colour, bool async=true);
 
-    void FillTriangle(const uint16_t x1, const uint16_t y1,
+    void FillTriangleBlocking(const uint16_t x1, const uint16_t y1,
                       const uint16_t x2, const uint16_t y2,
                       const uint16_t x3, const uint16_t y3,
                       const uint16_t colour);
 
-    void DrawCharacter(uint16_t x_start,
+    void DrawCharacterBlocking(uint16_t x_start,
                        uint16_t y_start,
                        const uint16_t x_window_begin,
                        const uint16_t y_window_begin,
@@ -239,10 +239,20 @@ public:
         const uint16_t len, const Font& font, const uint16_t fg,
         const uint16_t bg, const bool word_wrap);
 
+    void DrawStringAsync(const uint16_t x, const uint16_t y,
+        const std::string str, const Font& font, const uint16_t fg,
+        const uint16_t bg, const bool word_wrap);
+
     void DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
         const uint16_t y1, const uint16_t y2,
         const char* str, const uint16_t len,
         const Font& font, const uint16_t fg, const uint16_t bg,
+        const bool draw_box);
+
+    void DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
+        const uint16_t y1, const uint16_t y2,
+        const std::string str, const Font& font,
+        const uint16_t fg, const uint16_t bg,
         const bool draw_box);
 
     void DrawTriangleAsync(const uint16_t x1, const uint16_t y1,

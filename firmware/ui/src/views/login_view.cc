@@ -30,28 +30,30 @@ void LoginView::AnimatedDraw()
         return;
 
     uint16_t speed = 10;
+    const uint16_t y = 16;
     std::string msg = "Welcome to Cisco";
-    screen.DrawBlockAnimateString(
-        screen.GetStringCenterMargin(msg.length(), font11x16), 6, msg,
+    screen.DrawStringAsync(
+        screen.GetStringCenterMargin(msg.length(), font11x16), y, msg,
         font11x16, fg, bg, speed);
     msg = "Secure Messaging";
-    screen.DrawBlockAnimateString(
-        screen.GetStringCenterMargin(msg.length(), font11x16), 22, msg,
+    screen.DrawStringAsync(
+        screen.GetStringCenterMargin(msg.length(), font11x16),
+        y+font11x16.height, msg,
         font11x16, fg, bg, speed);
 
-    // TODO
-
     msg = "User: ";
-    screen.DrawBlockAnimateString(1, screen.ViewHeight() - (usr_font.height * 4),
+    screen.DrawStringAsync(1, screen.ViewHeight() - (usr_font.height * 4),
         msg, usr_font, fg, bg, speed);
 
-    screen.DrawBlockAnimateString(
+    screen.DrawStringAsync(
         1 + usr_font.width * msg.length(), screen.ViewHeight() - (usr_font.height * 4),
         setting_manager.Username()->c_str(), usr_font, fg, bg, speed);
 
     msg = "Enter your passcode";
-    screen.DrawBlockAnimateString(1, screen.ViewHeight() - (usr_font.height * 2),
+    screen.DrawStringAsync(1, screen.ViewHeight() - (usr_font.height * 2),
         msg, usr_font, fg, bg, speed);
+
+
 
     first_load = false;
 }
@@ -79,9 +81,10 @@ void LoginView::Draw()
     if (incorrect_passcode_entered)
     {
         std::string msg = "** Incorrect passcode **";
-        screen.DrawText(1,
-            screen.ViewHeight() - (usr_font.height * 3), msg, usr_font,
-            fg, bg);
+        screen.DrawStringAsync(1,
+            screen.ViewHeight() - (usr_font.height * 3),
+            msg, usr_font,
+            fg, bg, false);
     }
 }
 
@@ -115,9 +118,9 @@ void LoginView::HandleInput()
     else
     {
         std::string msg = "** Incorrect passcode **";
-        screen.DrawText(1,
+        screen.DrawStringAsync(1,
             screen.ViewHeight() - (usr_font.height * 3), msg, usr_font,
-            fg, bg);
+            fg, bg, false);
 
     }
 }

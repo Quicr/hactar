@@ -5,12 +5,12 @@
 #include <stdlib.h>
 
 RoomView::RoomView(UserInterfaceManager& manager,
-        Screen& screen,
-        Q10Keyboard& keyboard,
-        SettingManager& setting_manager,
-        SerialPacketManager& serial,
-        Network& network,
-        AudioChip& audio)
+    Screen& screen,
+    Q10Keyboard& keyboard,
+    SettingManager& setting_manager,
+    SerialPacketManager& serial,
+    Network& network,
+    AudioChip& audio)
     : ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio),
     selected_room_id(-1),
     connecting_to_room(false),
@@ -40,15 +40,18 @@ void RoomView::Draw()
         if (first_load)
         {
             DrawTitleBar("Rooms", menu_font, C_WHITE, C_BLACK, screen);
-            screen.FillRectangle(0, screen.ViewHeight() - usr_font.height - 3, screen.ViewWidth(), screen.ViewHeight() - usr_font.height - 2, fg);
+            screen.FillRectangleAsync(0, screen.ViewWidth(),
+                screen.ViewHeight() - usr_font.height - 3,
+                screen.ViewHeight() - usr_font.height - 2, fg);
 
             first_load = false;
         }
 
-        screen.FillRectangle(1,
-            screen.ViewHeight() - (usr_font.height * 3), screen.ViewWidth(), screen.ViewHeight() - (usr_font.height * 2), bg);
-        screen.DrawText(1, screen.ViewHeight() - (usr_font.height * 3),
-            request_msg, usr_font, fg, bg);
+        screen.FillRectangleAsync(1, screen.ViewWidth(),
+            screen.ViewHeight() - (usr_font.height * 3),
+            screen.ViewHeight() - (usr_font.height * 2), bg);
+        screen.DrawStringAsync(1, screen.ViewHeight() - (usr_font.height * 3),
+            request_msg, usr_font, fg, bg, false);
 
         redraw_menu = false;
     }
@@ -107,7 +110,7 @@ void RoomView::Update(uint32_t current_tick)
 
                 qchat::Codec::decode(room, rx_packet, 7);
 
-                rooms[rooms.size()+1] = std::move(room);
+                rooms[rooms.size() + 1] = std::move(room);
             }
         }
         state_update_timeout = current_tick + 500;
@@ -136,7 +139,7 @@ void RoomView::DisplayRooms()
 
     const uint16_t y_start = 50;
     // Clear the area for the rooms
-    screen.FillRectangle(0, y_start, screen.ViewWidth(), screen.ViewHeight() - 100, C_BLACK);
+    screen.FillRectangleAsync(0, screen.ViewWidth(), y_start, screen.ViewHeight() - 100, C_BLACK);
 
     uint16_t idx = 0;
     for (const auto& room : rooms)
@@ -144,13 +147,13 @@ void RoomView::DisplayRooms()
         // Convert the room id into a string
         const std::string room_id_str = std::to_string(room.first);
 
-        screen.DrawText(1, y_start + (idx * usr_font.height),
-            room_id_str, usr_font, C_WHITE, C_BLACK);
-        screen.DrawText(1 + usr_font.width, y_start + (idx * usr_font.height),
-            ".", usr_font, C_WHITE, C_BLACK);
+        screen.DrawStringAsync(1, y_start + (idx * usr_font.height),
+            room_id_str, usr_font, C_WHITE, C_BLACK, false);
+        screen.DrawStringAsync(1 + usr_font.width, y_start + (idx * usr_font.height),
+            ".", usr_font, C_WHITE, C_BLACK, false);
 
-        screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
-            room.second->friendly_name, usr_font, C_WHITE, C_BLACK);
+        screen.DrawStringAsync(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
+            room.second->friendly_name, usr_font, C_WHITE, C_BLACK, false);
         ++idx;
     }
 
@@ -165,7 +168,7 @@ void RoomView::SelectRoom()
     // int32_t room_id = usr_input.ToNumber();
 
     // To avoid exceptions for now
-    char *str_part;
+    char* str_part;
     int32_t room_id = strtol(usr_input.c_str(), &str_part, 10);
 
     // May never get called now..

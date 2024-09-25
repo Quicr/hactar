@@ -198,7 +198,7 @@ void Screen::Update(uint32_t current_tick)
 
 void Screen::Draw()
 {
-    if (spi_async)
+    if (spi_busy && spi_async)
     {
         return;
     }
@@ -280,7 +280,7 @@ void Screen::Wake()
 
 
 
-void Screen::DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
+void Screen::DrawArrowBlocking(const uint16_t tip_x, const uint16_t tip_y,
     const uint16_t length, const uint16_t width,
     const Screen::ArrowDirection direction, const uint16_t colour)
 {
@@ -300,7 +300,7 @@ void Screen::DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
                                   {uint16_t(tip_x + tip_len), uint16_t(tip_y + quar_width)},
                                   {uint16_t(tip_x + tip_len), uint16_t(tip_y + half_width)}
         };
-        DrawPolygon(7, points, colour);
+        DrawPolygonBlocking(7, points, colour);
 
     }
     else if (direction == ArrowDirection::Up)
@@ -314,7 +314,7 @@ void Screen::DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
                                   {uint16_t(tip_x - quar_width), uint16_t(tip_y + tip_len)},
                                   {uint16_t(tip_x - half_width), uint16_t(tip_y + tip_len)}
         };
-        DrawPolygon(7, points, colour);
+        DrawPolygonBlocking(7, points, colour);
     }
     else if (direction == ArrowDirection::Right)
     {
@@ -327,7 +327,7 @@ void Screen::DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
                                   {uint16_t(tip_x - tip_len), uint16_t(tip_y + quar_width)},
                                   {uint16_t(tip_x - tip_len), uint16_t(tip_y + half_width)}
         };
-        DrawPolygon(7, points, colour);
+        DrawPolygonBlocking(7, points, colour);
     }
     else if (direction == ArrowDirection::Down)
     {
@@ -341,21 +341,21 @@ void Screen::DrawArrow(const uint16_t tip_x, const uint16_t tip_y,
                                   {uint16_t(tip_x + half_width), uint16_t(tip_y - tip_len)}
         };
 
-        DrawPolygon(7, points, colour);
+        DrawPolygonBlocking(7, points, colour);
     }
 }
 
-void Screen::DrawHorizontalLine(const uint16_t x1, const uint16_t x2,
+void Screen::DrawHorizontalLineBlocking(const uint16_t x1, const uint16_t x2,
     const uint16_t y, const uint16_t thickness,
     const uint16_t colour)
 {
     if (x2 <= x1) return;
     if (thickness == 0) return;
 
-    FillRectangle(x1, y, x2, y + thickness, colour);
+    FillRectangleBlocking(x1, y, x2, y + thickness, colour);
 }
 
-void Screen::DrawLine(uint16_t x1, uint16_t y1,
+void Screen::DrawLineBlocking(uint16_t x1, uint16_t y1,
     uint16_t x2, uint16_t y2,
     const uint16_t colour)
 {
@@ -378,7 +378,7 @@ void Screen::DrawLine(uint16_t x1, uint16_t y1,
     // Error will hop back and forth until we hit our end points
     while (x1 != x2 || y1 != y2)
     {
-        DrawPixel(x1, y1, colour);
+        DrawPixelBlocking(x1, y1, colour);
 
         // Move x position
         if (error * 2 > -diff_y)
@@ -395,7 +395,7 @@ void Screen::DrawLine(uint16_t x1, uint16_t y1,
     }
 }
 
-void Screen::DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour)
+void Screen::DrawPixelBlocking(const uint16_t x, const uint16_t y, const uint16_t colour)
 {
     if (x >= view_width || y >= view_height) return;
     Select();
@@ -411,7 +411,7 @@ void Screen::DrawPixel(const uint16_t x, const uint16_t y, const uint16_t colour
     Deselect();
 }
 
-void Screen::DrawPolygon(const size_t count,
+void Screen::DrawPolygonBlocking(const size_t count,
     const uint16_t points [][2],
     const uint16_t colour)
 {
@@ -426,15 +426,15 @@ void Screen::DrawPolygon(const size_t count,
 
     for (size_t i = 0; i < count - 1; ++i)
     {
-        DrawLine(points[i][x], points[i][y],
+        DrawLineBlocking(points[i][x], points[i][y],
             points[i + 1][x], points[i + 1][y], colour);
     }
     // Connect the final line
-    DrawLine(points[count - 1][x], points[count - 1][y],
+    DrawLineBlocking(points[count - 1][x], points[count - 1][y],
         points[0][x], points[0][y], colour);
 }
 
-void Screen::FillPolygon(const size_t count,
+void Screen::FillPolygonBlocking(const size_t count,
     const int16_t points [][2],
     const uint16_t colour)
 {
@@ -468,11 +468,11 @@ void Screen::FillPolygon(const size_t count,
         if (p1_y > polygon_bottom)
             polygon_bottom = p1_y;
 
-        DrawLine(points[i][x], points[i][y],
+        DrawLineBlocking(points[i][x], points[i][y],
             points[i + 1][x], points[i + 1][y], colour);
     }
     // Connect the final line
-    DrawLine(points[count - 1][x], points[count - 1][y],
+    DrawLineBlocking(points[count - 1][x], points[count - 1][y],
         points[0][x], points[0][y], colour);
 
     // X intersections
@@ -545,7 +545,7 @@ void Screen::FillPolygon(const size_t count,
         // Fill in the spaces between 2 intersections
         for (i = 0; i < num_intersect; i += 2)
         {
-            DrawHorizontalLine(intersections[i],
+            DrawHorizontalLineBlocking(intersections[i],
                 intersections[i + 1], pix_y, 1, colour);
         }
 
@@ -553,52 +553,54 @@ void Screen::FillPolygon(const size_t count,
     delete [] intersections;
 }
 
-void Screen::DrawRectangle(const uint16_t x_start, const uint16_t y_start,
+void Screen::DrawRectangleBlocking(const uint16_t x_start, const uint16_t y_start,
     const uint16_t x_end, const uint16_t y_end,
     const uint16_t thickness, const uint16_t colour)
 {
     // Fill top
-    FillRectangle(x_start, y_start, x_end, y_start + thickness, colour);
+    FillRectangleBlocking(x_start, y_start, x_end, y_start + thickness, colour);
 
     // Fill left
-    FillRectangle(x_start, y_start, x_start + thickness, y_end, colour);
+    FillRectangleBlocking(x_start, y_start, x_start + thickness, y_end, colour);
 
     // Fill right
-    FillRectangle(x_end - thickness, y_start, x_end, y_end, colour);
+    FillRectangleBlocking(x_end - thickness, y_start, x_end, y_end, colour);
 
     // Fill bottom
-    FillRectangle(x_start, y_end - thickness, x_end, y_end, colour);
+    FillRectangleBlocking(x_start, y_end - thickness, x_end, y_end, colour);
 }
 
-void Screen::DrawBlockAnimateString(const uint16_t x, const uint16_t y,
+void Screen::DrawBlockAnimateStringBlocking(const uint16_t x, const uint16_t y,
     const std::string& str, const Font& font,
     const uint16_t fg, const uint16_t bg,
     const uint16_t delay)
 {
+    WaitUntilSPIFree();
+
     uint16_t x_pos = x;
     uint16_t x_end = x + font.width;
     uint16_t y_end = y + font.height;
     for (unsigned int i = 0; i < str.length(); i++)
     {
         // Fill in a rectangle
-        FillRectangle(x_pos, y, x_end, y_end, fg);
+        FillRectangleBlocking(x_pos, y, x_end, y_end, fg);
 
         HAL_Delay(delay);
 
         // Clear the rectangle we drew
-        FillRectangle(x_pos, y, x_end, y_end, bg);
+        FillRectangleBlocking(x_pos, y, x_end, y_end, bg);
 
         std::string letter;
         letter.push_back(str[i]);
         // Draw the string finally
-        DrawText(x_pos, y, letter, font, fg, bg);
+        DrawTextBlocking(x_pos, y, letter, font, fg, bg);
 
         x_pos += font.width;
         x_end += font.width;
     }
 }
 
-void Screen::DrawText(const uint16_t x, const uint16_t y, const std::string& str,
+void Screen::DrawTextBlocking(const uint16_t x, const uint16_t y, const std::string& str,
     const Font& font, const uint16_t fg, const uint16_t bg,
     const bool wordwrap, uint32_t max_chunk_size)
 {
@@ -725,7 +727,7 @@ void Screen::DrawText(const uint16_t x, const uint16_t y, const std::string& str
     return;
 }
 
-void Screen::DrawTextbox(uint16_t x_pos,
+void Screen::DrawTextboxBlocking(uint16_t x_pos,
     uint16_t y_pos,
     const uint16_t x_window_start,
     const uint16_t y_window_start,
@@ -782,7 +784,7 @@ void Screen::DrawTextbox(uint16_t x_pos,
         for (j = 0; j < sz; j++)
         {
             ch = word[j];
-            DrawCharacter(x_pos, y_pos, x_window_start, y_window_start,
+            DrawCharacterBlocking(x_pos, y_pos, x_window_start, y_window_start,
                 x_window_end, y_window_end, ch, font, fg, bg);
             x_pos += font.width;
         }
@@ -791,16 +793,16 @@ void Screen::DrawTextbox(uint16_t x_pos,
     Deselect();
 }
 
-void Screen::DrawTriangle(const uint16_t x1, const uint16_t y1,
+void Screen::DrawTriangleBlocking(const uint16_t x1, const uint16_t y1,
     const uint16_t x2, const uint16_t y2,
     const uint16_t x3, const uint16_t y3,
     const uint16_t colour)
 {
     uint16_t points[3][2] = { { x1, y1 }, {x2, y2}, {x3, y3} };
-    DrawPolygon(3, points, colour);
+    DrawPolygonBlocking(3, points, colour);
 }
 
-void Screen::FillArrow(const uint16_t tip_x, const uint16_t tip_y,
+void Screen::FillArrowBlocking(const uint16_t tip_x, const uint16_t tip_y,
     const uint16_t length, const uint16_t width,
     const Screen::ArrowDirection direction, const uint16_t colour)
 {
@@ -821,7 +823,7 @@ void Screen::FillArrow(const uint16_t tip_x, const uint16_t tip_y,
             {(int16_t)(tip_x + tip_len), (int16_t)(tip_y + quar_width)},
             {(int16_t)(tip_x + tip_len), (int16_t)(tip_y + half_width)}
         };
-        FillPolygon(7, points, colour);
+        FillPolygonBlocking(7, points, colour);
 
     }
     else if (direction == ArrowDirection::Up)
@@ -837,7 +839,7 @@ void Screen::FillArrow(const uint16_t tip_x, const uint16_t tip_y,
             {(int16_t)(tip_x - quar_width), (int16_t)(tip_y + tip_len)},
             {(int16_t)(tip_x - half_width), (int16_t)(tip_y + tip_len)}
         };
-        FillPolygon(7, points, colour);
+        FillPolygonBlocking(7, points, colour);
     }
     else if (direction == ArrowDirection::Right)
     {
@@ -852,7 +854,7 @@ void Screen::FillArrow(const uint16_t tip_x, const uint16_t tip_y,
             {(int16_t)(tip_x - tip_len), (int16_t)(tip_y + quar_width)},
             {(int16_t)(tip_x - tip_len), (int16_t)(tip_y + half_width)}
         };
-        FillPolygon(7, points, colour);
+        FillPolygonBlocking(7, points, colour);
     }
     else if (direction == ArrowDirection::Down)
     {
@@ -867,11 +869,11 @@ void Screen::FillArrow(const uint16_t tip_x, const uint16_t tip_y,
             {(int16_t)(tip_x + quar_width), (int16_t)(tip_y - tip_len)},
             {(int16_t)(tip_x + half_width), (int16_t)(tip_y - tip_len)}
         };
-        FillPolygon(7, points, colour);
+        FillPolygonBlocking(7, points, colour);
     }
 }
 
-void Screen::FillCircle(const uint16_t x, const uint16_t y, const uint16_t r,
+void Screen::FillCircleBlocking(const uint16_t x, const uint16_t y, const uint16_t r,
     const uint16_t fg, const uint16_t bg)
 {
     // TODO error checking
@@ -922,14 +924,14 @@ void Screen::FillCircle(const uint16_t x, const uint16_t y, const uint16_t r,
             const uint16_t v_dis = ((top + row) - y) * ((top + row) - y);
             if (h_dis + v_dis <= r_2)
             {
-                DrawPixel(left + col, top + row, fg);
+                DrawPixelBlocking(left + col, top + row, fg);
                 // Point falls in the circle
                 // bytes[idx++] = static_cast<uint8_t>(fg >> 8);
                 // bytes[idx++] = static_cast<uint8_t>(fg);
             }
             else
             {
-                DrawPixel(left + col, top + row, bg);
+                DrawPixelBlocking(left + col, top + row, bg);
                 // bytes[idx++] = static_cast<uint8_t>(bg >> 8);
                 // bytes[idx++] = static_cast<uint8_t>(bg);
             }
@@ -946,7 +948,7 @@ void Screen::FillCircle(const uint16_t x, const uint16_t y, const uint16_t r,
     // Deselect();
 }
 
-void Screen::FillRectangle(const uint16_t x_start,
+void Screen::FillRectangleBlocking(const uint16_t x_start,
     const uint16_t y_start,
     uint16_t x_end,
     uint16_t y_end,
@@ -998,7 +1000,7 @@ void Screen::FillRectangle(const uint16_t x_start,
     Deselect();
 }
 
-void Screen::FillTriangle(const uint16_t x1, const uint16_t y1,
+void Screen::FillTriangleBlocking(const uint16_t x1, const uint16_t y1,
     const uint16_t x2, const uint16_t y2,
     const uint16_t x3, const uint16_t y3,
     const uint16_t colour)
@@ -1007,7 +1009,7 @@ void Screen::FillTriangle(const uint16_t x1, const uint16_t y1,
                              { int16_t(x2), int16_t(y2) },
                              { int16_t(x3), int16_t(y3) }
     };
-    FillPolygon(3, points, colour);
+    FillPolygonBlocking(3, points, colour);
 }
 
 void Screen::FillScreen(const uint16_t colour, bool async)
@@ -1018,7 +1020,7 @@ void Screen::FillScreen(const uint16_t colour, bool async)
     }
     else
     {
-        FillRectangle(0, 0, view_width, view_height, colour);
+        FillRectangleBlocking(0, 0, view_width, view_height, colour);
     }
 }
 
@@ -1056,7 +1058,7 @@ uint16_t Screen::GetStringLeftDistanceFromRightEdge(const uint16_t str_len,
 
 // Note - The select() and deselect() should be called before
 //        and after invoking this function, respectively.
-void Screen::DrawCharacter(uint16_t x_start,
+void Screen::DrawCharacterBlocking(uint16_t x_start,
     uint16_t y_start,
     const uint16_t x_window_begin,
     const uint16_t y_window_begin,
@@ -1441,12 +1443,19 @@ void Screen::DrawStringAsync(const uint16_t x, const uint16_t y,
 {
     if (word_wrap)
     {
-        DrawStringBoxAsync(x, y, view_width, view_height, str, len, font, fg, bg, false);
+        DrawStringBoxAsync(x, view_width, y, view_height, str, len, font, fg, bg, false);
     }
     else
     {
-        DrawStringBoxAsync(x, y, view_width, y + font.height, str, len, font, fg, bg, false);
+        DrawStringBoxAsync(x, view_width, y, y + font.height, str, len, font, fg, bg, false);
     }
+}
+
+void Screen::DrawStringAsync(const uint16_t x, const uint16_t y,
+    const std::string str, const Font& font, const uint16_t fg,
+    const uint16_t bg, const bool word_wrap)
+{
+    DrawStringAsync(x, y, str.c_str(), str.length(), font, fg, bg, word_wrap);
 }
 
 void Screen::DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
@@ -1455,12 +1464,7 @@ void Screen::DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
     const Font& font, const uint16_t fg, const uint16_t bg,
     const bool draw_box)
 {
-    if (x1 + font.width >= x2)
-    {
-        return;
-    }
-
-    if (y1 + font.height >= y2)
+    if (x1 + font.width > x2 || y1 + font.height > y2)
     {
         return;
     }
@@ -1530,6 +1534,17 @@ void Screen::DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
 
         i += (j - i);
     }
+}
+
+
+
+void Screen::DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
+    const uint16_t y1, const uint16_t y2,
+    const std::string str, const Font& font,
+    const uint16_t fg, const uint16_t bg,
+    const bool draw_box)
+{
+    DrawStringBoxAsync(x1, x2, y1, y2, str.c_str(), str.length(), font, fg, bg, draw_box);
 }
 
 void Screen::DrawTriangleAsync(const uint16_t x1, const uint16_t y1,
@@ -1615,11 +1630,7 @@ void Screen::FillCircleAsync(const uint16_t x, const uint16_t y, const uint16_t 
     const uint16_t cols = right - left + 1;
     const uint16_t rows = (bottom - top + 1) / 2;
 
-    if (cols == 0)
-    {
-        return;
-    }
-    if (rows == 0)
+    if (cols == 0 || rows == 0)
     {
         return;
     }
@@ -1692,7 +1703,7 @@ void Screen::FillPolygonAsync(const size_t count, const uint16_t points [][2],
      * Draw the line of pixels
     */
 
-    uint16_t intersections[count]{ 0 };
+    uint16_t* intersections = new uint16_t[count];
     uint8_t num_intersect = 0;
     uint16_t curr_point = 0;
     uint16_t next_point = 0;
@@ -1757,6 +1768,7 @@ void Screen::FillPolygonAsync(const size_t count, const uint16_t points [][2],
                 pix_y, pix_y, 1, colour);
         }
     }
+    delete [] intersections;
 }
 
 void Screen::FillTriangleAsync(const uint16_t x1, const uint16_t y1,
@@ -2394,7 +2406,7 @@ void Screen::Clip(const uint16_t x_start,
 
 inline void Screen::WaitUntilSPIFree()
 {
-    while (spi_busy)
+    while (spi_busy && spi_async)
     {
         __NOP();
     }

@@ -141,77 +141,76 @@ int app_main()
     WaitForNetReady();
     Logger::Log(Logger::Level::Info, "Hactar is ready");
 
-    screen.EnableBackLight();
+    // screen.EnableBackLight();
 
-    screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_WHITE);
-    screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_BLACK);
-    screen.FillRectangleAsync(10, 20, 10, 20, C_BLUE);
-    screen.FillRectangleAsync(0, 10, 0, 10, C_RED);
-    screen.DrawLineAsync(50, 60, 80, 45, 5, C_BLUE);
-    screen.DrawLineAsync(100, 90, 50, 30, 3, C_GREEN);
-    screen.DrawLineAsync(50, 63, 100, 115, 3, C_RED);
-    screen.DrawLineAsync(100, 88, 120, 140, 3, C_CYAN);
+    // screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_WHITE);
+    // screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_BLACK);
+    // screen.FillRectangleAsync(10, 20, 10, 20, C_BLUE);
+    // screen.FillRectangleAsync(0, 10, 0, 10, C_RED);
+    // screen.DrawLineAsync(50, 60, 80, 45, 5, C_BLUE);
+    // screen.DrawLineAsync(100, 90, 50, 30, 3, C_GREEN);
+    // screen.DrawLineAsync(50, 63, 100, 115, 3, C_RED);
+    // screen.DrawLineAsync(100, 88, 120, 140, 3, C_CYAN);
 
-    screen.DrawPixelAsync(200, 200, C_MAGENTA);
+    // screen.DrawPixelAsync(200, 200, C_MAGENTA);
 
-    const uint16_t points[][2] = {{100, 100}, {120, 120}, {80, 120}};
-    screen.DrawPolygonAsync(3, points, 1, C_YELLOW);
+    // const uint16_t points[][2] = {{100, 100}, {120, 120}, {80, 120}};
+    // screen.DrawPolygonAsync(3, points, 1, C_YELLOW);
 
-    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    screen.DrawArrowAsync(40, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    screen.DrawArrowAsync(60, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_YELLOW);
+    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    // screen.DrawArrowAsync(40, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
+    // screen.DrawArrowAsync(60, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_YELLOW);
 
-    screen.DrawCharacterAsync(70, 200, 'H', font5x8, C_BLUE, C_BLACK);
-    screen.DrawCharacterAsync(80, 200, 'H', font6x8, C_BLUE, C_BLACK);
-    screen.DrawCharacterAsync(90, 200, 'H', font7x12, C_BLUE, C_BLACK);
-    screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
-    screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
-    screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
-    screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
-    screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
+    // screen.DrawCharacterAsync(70, 200, 'H', font5x8, C_BLUE, C_BLACK);
+    // screen.DrawCharacterAsync(80, 200, 'H', font6x8, C_BLUE, C_BLACK);
+    // screen.DrawCharacterAsync(90, 200, 'H', font7x12, C_BLUE, C_BLACK);
+    // screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
+    // screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
+    // screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
+    // screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
+    // screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
 
-    screen.DrawRectangleAsync(110, 120, 200, 210, 2, C_BLUE);
-    screen.DrawRectangleAsync(125, 135, 200, 210, 2, C_RED);
+    // screen.DrawRectangleAsync(110, 120, 200, 210, 2, C_BLUE);
+    // screen.DrawRectangleAsync(125, 135, 200, 210, 2, C_RED);
 
-    screen.DrawStringBoxAsync(1, 95, 140, 200, "Hello world, look at my string!", 31, font5x8, C_YELLOW, C_BLACK, true);
-    screen.DrawStringBoxAsync(1, 36, 200, 220, "Hello Hello Hello", 17, font5x8, C_GREEN, C_BLACK, true);
+    // screen.DrawStringBoxAsync(1, 95, 140, 200, "Hello world, look at my string!", 31, font5x8, C_YELLOW, C_BLACK, true);
+    // screen.DrawStringBoxAsync(1, 36, 200, 220, "Hello Hello Hello", 17, font5x8, C_GREEN, C_BLACK, true);
 
-    screen.DrawTriangleAsync(100, 0, 110, 10, 95, 10, 1, C_YELLOW);
+    // screen.DrawTriangleAsync(100, 0, 110, 10, 95, 10, 1, C_YELLOW);
 
-    screen.FillTriangleAsync(120, 0, 130, 10, 115, 10, C_YELLOW);
+    // screen.FillTriangleAsync(120, 0, 130, 10, 115, 10, C_YELLOW);
 
-    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    screen.FillTriangleAsync(20, 0, 25, 10, 15, 5, C_BLUE);
-    screen.FillTriangleAsync(35, 0, 40, 10, 30, 5, C_BLUE);
-    screen.FillTriangleAsync(100, 50, 110, 60, 90, 50, C_BLUE);
+    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
+    // screen.FillTriangleAsync(20, 0, 25, 10, 15, 5, C_BLUE);
+    // screen.FillTriangleAsync(35, 0, 40, 10, 30, 5, C_BLUE);
+    // screen.FillTriangleAsync(100, 50, 110, 60, 90, 50, C_BLUE);
 
-    screen.FillArrowAsync(140, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    screen.FillArrowAsync(160, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    // screen.FillArrowAsync(140, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    // screen.FillArrowAsync(160, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    // screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    // screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    // screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    // screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
+    // screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
 
-    screen.DrawCircleAsync(50, 250, 30, C_CYAN);
-    screen.FillCircleAsync(150, 250, 30, C_YELLOW);
+    // screen.DrawCircleAsync(50, 250, 30, C_CYAN);
+    // screen.FillCircleAsync(150, 250, 30, C_YELLOW);
 
     while (1)
     {
-        // screen.Update(HAL_GetTick());
-        // ui_manager->Update();
+        ui_manager->Update();
 
         if (HAL_GetTick() > blink)
         {

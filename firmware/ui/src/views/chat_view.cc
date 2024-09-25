@@ -460,15 +460,17 @@ void ChatView::DrawMessages()
             if (msg_idx == static_cast<int32_t>(messages.size()) - 1)
             {
                 // Clear from the expected y position
-                screen.FillRectangle(clear_rec_x_start,
+                screen.FillRectangleAsync(clear_rec_x_start,
+                    next_used_x_space,
                     clipped_clear_box_y,
-                    next_used_x_space, y_pos + curr_used_y_space, bg);
+                    y_pos + curr_used_y_space, bg);
             }
             else
             {
-                screen.FillRectangle(clear_rec_x_start,
+                screen.FillRectangleAsync(clear_rec_x_start,
+                    next_used_x_space,
                     clipped_clear_box_y + (curr_used_y_space - prev_used_y_space),
-                    next_used_x_space, y_pos + curr_used_y_space, bg);
+                    y_pos + curr_used_y_space, bg);
             }
         }
 
@@ -476,9 +478,9 @@ void ChatView::DrawMessages()
         curr_used_x_space = next_used_x_space;
 
         // Draw the body
-        screen.DrawTextbox(x_pos, y_pos, x_window_start, y_window_start,
+        screen.DrawStringBoxAsync(x_pos, y_pos,
             x_window_end, y_window_end, msg, usr_font,
-            settings.body_colour, bg);
+            settings.body_colour, bg, true);
 
         // Decrement the idx
         msg_idx--;
@@ -488,19 +490,20 @@ void ChatView::DrawMessages()
 void ChatView::DrawTitle()
 {
     // Clear the title space
-    screen.FillRectangle(Margin_0, Margin_0, screen.ViewWidth(), menu_font.height + Padding_3, bg);
+    screen.FillRectangleAsync(Margin_0, Margin_0, screen.ViewWidth(), menu_font.height + Padding_3, bg);
 
     // Draw horizontal seperator
-    screen.FillRectangle(Margin_0, menu_font.height + Padding_2, screen.ViewWidth(), menu_font.height + Padding_3, fg);
+    screen.FillRectangleAsync(Margin_0, menu_font.height + Padding_2, screen.ViewWidth(), menu_font.height + Padding_3, fg);
 
     // Draw team chat name
-    screen.DrawText(Margin_0, Padding_2, "@CTO Team - Chat", menu_font, fg, bg);
+    screen.DrawStringAsync(Margin_0, Padding_2, "@CTO Team - Chat", menu_font, fg, bg, false);
 }
 
 void ChatView::DrawUsrInputSeperator()
 {
     // Draw typing seperator
-    screen.FillRectangle(Margin_0, screen.ViewHeight() - usr_font.height - Padding_3, screen.ViewWidth(), screen.ViewHeight() - usr_font.height - Padding_2, fg);
+    screen.FillRectangleAsync(Margin_0,
+        screen.ViewHeight() - usr_font.height - Padding_3, screen.ViewWidth(), screen.ViewHeight() - usr_font.height - Padding_2, fg);
 }
 
 void ChatView::SendAudio(uint32_t current_tick)

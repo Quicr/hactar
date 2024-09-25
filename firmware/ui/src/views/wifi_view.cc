@@ -6,12 +6,12 @@
 #include "main.h"
 
 WifiView::WifiView(UserInterfaceManager& manager,
-        Screen& screen,
-        Q10Keyboard& keyboard,
-        SettingManager& setting_manager,
-        SerialPacketManager& serial,
-        Network& network,
-        AudioChip& audio)
+    Screen& screen,
+    Q10Keyboard& keyboard,
+    SettingManager& setting_manager,
+    SerialPacketManager& serial,
+    Network& network,
+    AudioChip& audio)
     : ViewInterface(manager, screen, keyboard, setting_manager, serial, network, audio),
     last_num_ssids(0),
     next_get_ssid_timeout(0),
@@ -134,14 +134,15 @@ void WifiView::Draw()
         if (first_load)
         {
             // screen.FillRectangle(0, 13, screen.ViewWidth(), 14, fg);
-            screen.DrawText(0, 1, "Wifi settings", menu_font, fg, bg);
+            screen.DrawStringAsync(0, 1, "Wifi settings", menu_font, fg, bg, false);
             first_load = false;
         }
 
-        screen.FillRectangle(1,
-            screen.ViewHeight() - (usr_font.height * 3), screen.ViewWidth(), screen.ViewHeight() - (usr_font.height * 2), bg);
-        screen.DrawText(1, screen.ViewHeight() - (usr_font.height * 3),
-            request_msg, usr_font, fg, bg);
+        screen.FillRectangleAsync(1, screen.ViewWidth(),
+            screen.ViewHeight() - (usr_font.height * 3),
+            screen.ViewHeight() - (usr_font.height * 2), bg);
+        screen.DrawStringAsync(1, screen.ViewHeight() - (usr_font.height * 3),
+            request_msg, usr_font, fg, bg, false);
         redraw_menu = false;
     }
 
@@ -149,8 +150,8 @@ void WifiView::Draw()
     {
         const uint16_t y_start = 50;
         // Clear the area for wifi
-        screen.FillRectangle(0, y_start, screen.ViewWidth(),
-            screen.ViewHeight() - 100,
+        screen.FillRectangleAsync(0, screen.ViewWidth(),
+            y_start, screen.ViewHeight() - 100,
             C_BLACK);
 
         uint16_t idx = 0;
@@ -160,11 +161,11 @@ void WifiView::Draw()
             // convert the ssid int val to a string
             const std::string ssid_id_str = std::to_string(ssid.first);
 
-            screen.DrawText(1, y_start + (idx * usr_font.height),
-                ssid_id_str, usr_font, C_WHITE, C_BLACK);
+            screen.DrawStringAsync(1, y_start + (idx * usr_font.height),
+                ssid_id_str, usr_font, C_WHITE, C_BLACK, false);
 
-            screen.DrawText(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
-                ssid.second, usr_font, C_WHITE, C_BLACK);
+            screen.DrawStringAsync(1 + usr_font.width * 3, y_start + (idx * usr_font.height),
+                ssid.second, usr_font, C_WHITE, C_BLACK, false);
             ++idx;
         }
 
@@ -225,7 +226,7 @@ void WifiView::HandleWifiInput()
         // int32_t ssid_id = usr_input.ToNumber();
 
         // To avoid exceptions for now
-        char *str_part;
+        char* str_part;
         int32_t ssid_id = strtol(usr_input.c_str(), &str_part, 10);
 
         // May never get called now..
@@ -249,7 +250,8 @@ void WifiView::HandleWifiInput()
             ssid.data(), ssid.length());
 
         // Clear user input
-        screen.FillRectangle(x_start, y_start, screen.ViewWidth(), screen.ViewHeight(), C_BLACK);
+        screen.FillRectangleAsync(x_start, screen.ViewWidth(), y_start,
+            screen.ViewHeight(), C_BLACK);
 
         request_msg = "Please enter the wifi password";
         state = WifiState::Password;
@@ -265,7 +267,7 @@ void WifiView::HandleWifiInput()
             password.data(), password.length());
 
         // Clear user input
-        screen.FillRectangle(x_start, y_start, screen.ViewWidth(), screen.ViewHeight(), C_BLACK);
+        screen.FillRectangleAsync(x_start,screen.ViewWidth(), y_start, screen.ViewHeight(), C_BLACK);
 
         request_msg = "Connecting";
         redraw_menu = true;
