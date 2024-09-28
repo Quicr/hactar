@@ -58,9 +58,10 @@
 // Default orientation
 #define WIDTH                240U
 #define HEIGHT               320U
-#define PORTRAIT_DATA        (MAD_CTL_MY | MAD_CTL_BGR)
-#define LEFT_LANDSCAPE_DATA  (MAD_CTL_MV | MAD_CTL_BGR)
-#define RIGHT_LANDSCAPE_DATA (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
+#define PORTRAIT_DATA           (MAD_CTL_MY | MAD_CTL_BGR)
+#define FLIPPED_PORTRAIT_DATA   (MAD_CTL_MX | MAD_CTL_BGR)
+#define LEFT_LANDSCAPE_DATA     (MAD_CTL_MV | MAD_CTL_BGR)
+#define RIGHT_LANDSCAPE_DATA    (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
 
 class Screen
 {
@@ -90,6 +91,7 @@ private:
 public:
     enum Orientation {
         portrait,
+        flipped_portrait,
         left_landscape,
         right_landscape
     };
@@ -284,14 +286,14 @@ public:
 
 
     // Helper Functions
-    void ReleaseSPI();
+    void SpiComplete();
     uint16_t ViewWidth() const;
     uint16_t ViewHeight() const;
     uint16_t GetStringWidth(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringCenter(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringCenterMargin(const uint16_t str_len, const Font& font) const;
     uint16_t GetStringLeftDistanceFromRightEdge(const uint16_t str_len, const Font& font) const;
-    uint16_t Convert32ColorTo16(const uint32_t colour);
+    uint16_t RGB888ToRGB565(const uint32_t colour);
 
 
 private:
@@ -308,16 +310,12 @@ private:
     void WriteDataSyncDMA(uint8_t* data, const uint32_t data_size);
 
     // Private async command functions
-
-    // TODO RENAME SetWritablePixelsAsync
-    ScreenMemory* SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
+    ScreenMemory* SetWriteWindowAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
     static void SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory);
     static void SetColumnsDataAsync(Screen& screen, ScreenMemory& memory);
     static void SetRowsCommandAsync(Screen& screen, ScreenMemory& memory);
     static void SetRowsDataAsync(Screen& screen, ScreenMemory& memory);
     static void WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory);
-    bool WriteCommandAsync(uint8_t cmd);
-    bool WriteDataAsync(uint8_t* data, uint32_t data_size);
     bool WriteAsync(SwapBuffer::swap_buffer_t* buff);
 
     ScreenMemory* RetrieveFreeMemory();
@@ -339,7 +337,7 @@ private:
 
 
     // Variables
-    SPI_HandleTypeDef *spi_handle = nullptr;
+    SPI_HandleTypeDef *spi_handle;
     port_pin cs;
     port_pin dc;
     port_pin rst;
@@ -347,16 +345,14 @@ private:
     Orientation orientation;
     uint16_t view_height;
     uint16_t view_width;
-    volatile bool spi_busy;
-    volatile bool spi_async;
 
     SwapBuffer video_buff;
-    SwapBuffer::swap_buffer_t* video_front_buff;
+    SwapBuffer::swap_buffer_t* video_write_buff;
 
     ScreenMemory memories[Num_Memories];
     ScreenMemory* live_memory;
-    // TODO put into constructor
-    volatile uint32_t memories_write_idx = 0;
-    volatile uint32_t memories_read_idx = 0;
-    volatile uint32_t free_memories = Num_Memories;
+
+    volatile uint32_t memories_write_idx;
+    volatile uint32_t memories_read_idx;
+    volatile uint32_t free_memories;
 };

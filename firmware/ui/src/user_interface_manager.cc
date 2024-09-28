@@ -55,7 +55,6 @@ void UserInterfaceManager::Update()
 {
     current_tick = HAL_GetTick();
 
-    // TODO send update every 1/60 of a second?
     view->Run(current_tick);
 
     // TODO move into view

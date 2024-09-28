@@ -25,8 +25,8 @@ void NetNormalMode()
     // Power cycle
     PowerCycle(NET_NRST_GPIO_Port, NET_NRST_Pin, 10);
 
-    ChangeToInput(NET_BOOT_GPIO_Port, NET_BOOT_Pin);
-    ChangeToInput(NET_NRST_GPIO_Port, NET_NRST_Pin);
+    // ChangeToInput(NET_BOOT_GPIO_Port, NET_BOOT_Pin);
+    // ChangeToInput(NET_NRST_GPIO_Port, NET_NRST_Pin);
 }
 
 void NetHoldInReset()

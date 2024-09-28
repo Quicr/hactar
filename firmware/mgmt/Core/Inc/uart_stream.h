@@ -37,6 +37,7 @@ static const char debug_cmd [] = "debug";
 static const char ui_debug_cmd [] = "ui_debug";
 static const char net_debug_cmd [] = "net_debug";
 static const char reset_cmd [] = "reset";
+static const char reset_net [] = "reset_net";
 
 static const uint8_t ACK [] = { 0x79 };
 static const uint8_t READY [] = { 0x80 };

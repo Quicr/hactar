@@ -51,13 +51,34 @@ port_pin rst = { DISP_RST_GPIO_Port, DISP_RST_Pin };
 port_pin bl = { DISP_BL_GPIO_Port, DISP_BL_Pin };
 
 Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::portrait);
-Q10Keyboard* keyboard = nullptr;
-SerialStm* mgmt_serial_interface = nullptr;
+
+// Set the port pins and groups for the keyboard columns
+port_pin col_pins[Q10_COLS] =
+{
+    { KB_COL1_GPIO_Port, KB_COL1_Pin },
+    { KB_COL2_GPIO_Port, KB_COL2_Pin },
+    { KB_COL3_GPIO_Port, KB_COL3_Pin },
+    { KB_COL4_GPIO_Port, KB_COL4_Pin },
+    { KB_COL5_GPIO_Port, KB_COL5_Pin },
+};
+
+// Set the port pins and groups for the keyboard rows
+port_pin row_pins[Q10_ROWS] =
+{
+    { KB_ROW1_GPIO_Port, KB_ROW1_Pin },
+    { KB_ROW2_GPIO_Port, KB_ROW2_Pin },
+    { KB_ROW3_GPIO_Port, KB_ROW3_Pin },
+    { KB_ROW4_GPIO_Port, KB_ROW4_Pin },
+    { KB_ROW5_GPIO_Port, KB_ROW5_Pin },
+    { KB_ROW6_GPIO_Port, KB_ROW6_Pin },
+    { KB_ROW7_GPIO_Port, KB_ROW7_Pin },
+};
+
+// Create the keyboard object
+static Q10Keyboard keyboard(col_pins, row_pins, 200, 100, &htim2);
+
 SerialStm* net_serial_interface = nullptr;
-UserInterfaceManager* ui_manager = nullptr;
-EEPROM* eeprom = nullptr;
 AudioChip* audio = nullptr;
-bool rx_busy = false;
 
 uint8_t random_byte()
 {
@@ -82,50 +103,27 @@ size_t getFreeHeapSize(void)
     return &_estack - current_heap_end;
 }
 
-// TODO Get the osc working correctly from an external signal
+// TODO we have an issue regarding the free-ness of memories
+// we get stuck waiting forever for a memory to run
+// for some reason.
+// Don't know why
 int app_main()
 {
     audio = new AudioChip(hi2s3, hi2c1);
 
     // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
-    eeprom = new EEPROM(hi2c1, 32, 255);
+    EEPROM eeprom(hi2c1, 32, 255);
 
     screen.Begin();
     HAL_TIM_Base_Start_IT(&htim3);
 
-    // // Set the port pins and groups for the keyboard columns
-    port_pin col_pins[Q10_COLS] =
-    {
-        { KB_COL1_GPIO_Port, KB_COL1_Pin },
-        { KB_COL2_GPIO_Port, KB_COL2_Pin },
-        { KB_COL3_GPIO_Port, KB_COL3_Pin },
-        { KB_COL4_GPIO_Port, KB_COL4_Pin },
-        { KB_COL5_GPIO_Port, KB_COL5_Pin },
-    };
-
-    // Set the port pins and groups for the keyboard rows
-    port_pin row_pins[Q10_ROWS] =
-    {
-        { KB_ROW1_GPIO_Port, KB_ROW1_Pin },
-        { KB_ROW2_GPIO_Port, KB_ROW2_Pin },
-        { KB_ROW3_GPIO_Port, KB_ROW3_Pin },
-        { KB_ROW4_GPIO_Port, KB_ROW4_Pin },
-        { KB_ROW5_GPIO_Port, KB_ROW5_Pin },
-        { KB_ROW6_GPIO_Port, KB_ROW6_Pin },
-        { KB_ROW7_GPIO_Port, KB_ROW7_Pin },
-    };
-
-    // Create the keyboard object
-    keyboard = new Q10Keyboard(col_pins, row_pins, 200, 100, &htim2);
-
     // Initialize the keyboard
-    keyboard->Begin();
+    keyboard.Begin();
 
-    mgmt_serial_interface = new SerialStm(&huart1);
     net_serial_interface = new SerialStm(&huart2, 2048);
 
-    ui_manager = new UserInterfaceManager(screen, *keyboard,
-        *net_serial_interface, *eeprom, *audio);
+    UserInterfaceManager ui_manager(screen, keyboard,
+        *net_serial_interface, eeprom, *audio);
 
     HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
@@ -141,82 +139,18 @@ int app_main()
     WaitForNetReady();
     Logger::Log(Logger::Level::Info, "Hactar is ready");
 
-    // screen.EnableBackLight();
-
-    // screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_WHITE);
-    // screen.FillRectangleAsync(0, screen.ViewWidth(), 0, screen.ViewHeight(), C_BLACK);
-    // screen.FillRectangleAsync(10, 20, 10, 20, C_BLUE);
-    // screen.FillRectangleAsync(0, 10, 0, 10, C_RED);
-    // screen.DrawLineAsync(50, 60, 80, 45, 5, C_BLUE);
-    // screen.DrawLineAsync(100, 90, 50, 30, 3, C_GREEN);
-    // screen.DrawLineAsync(50, 63, 100, 115, 3, C_RED);
-    // screen.DrawLineAsync(100, 88, 120, 140, 3, C_CYAN);
-
-    // screen.DrawPixelAsync(200, 200, C_MAGENTA);
-
-    // const uint16_t points[][2] = {{100, 100}, {120, 120}, {80, 120}};
-    // screen.DrawPolygonAsync(3, points, 1, C_YELLOW);
-
-    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    // screen.DrawArrowAsync(20, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    // screen.DrawArrowAsync(40, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_BLUE);
-    // screen.DrawArrowAsync(60, 200, 20, 10, 1, Screen::ArrowDirection::Up, C_YELLOW);
-
-    // screen.DrawCharacterAsync(70, 200, 'H', font5x8, C_BLUE, C_BLACK);
-    // screen.DrawCharacterAsync(80, 200, 'H', font6x8, C_BLUE, C_BLACK);
-    // screen.DrawCharacterAsync(90, 200, 'H', font7x12, C_BLUE, C_BLACK);
-    // screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
-    // screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
-    // screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
-    // screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
-    // screen.DrawCharacterAsync(100, 200, 'H', font11x16, C_BLUE, C_BLACK);
-
-    // screen.DrawRectangleAsync(110, 120, 200, 210, 2, C_BLUE);
-    // screen.DrawRectangleAsync(125, 135, 200, 210, 2, C_RED);
-
-    // screen.DrawStringBoxAsync(1, 95, 140, 200, "Hello world, look at my string!", 31, font5x8, C_YELLOW, C_BLACK, true);
-    // screen.DrawStringBoxAsync(1, 36, 200, 220, "Hello Hello Hello", 17, font5x8, C_GREEN, C_BLACK, true);
-
-    // screen.DrawTriangleAsync(100, 0, 110, 10, 95, 10, 1, C_YELLOW);
-
-    // screen.FillTriangleAsync(120, 0, 130, 10, 115, 10, C_YELLOW);
-
-    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    // screen.FillTriangleAsync(1, 1, 10, 10, 1, 10, C_BLUE);
-    // screen.FillTriangleAsync(20, 0, 25, 10, 15, 5, C_BLUE);
-    // screen.FillTriangleAsync(35, 0, 40, 10, 30, 5, C_BLUE);
-    // screen.FillTriangleAsync(100, 50, 110, 60, 90, 50, C_BLUE);
-
-    // screen.FillArrowAsync(140, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    // screen.FillArrowAsync(160, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    // screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    // screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    // screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    // screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-    // screen.FillArrowAsync(180, 10, 20, 10, Screen::ArrowDirection::Up, C_YELLOW);
-
-    // screen.DrawCircleAsync(50, 250, 30, C_CYAN);
-    // screen.FillCircleAsync(150, 250, 30, C_YELLOW);
-
+    // TestScreenInit(C_BLACK);
     while (1)
     {
-        ui_manager->Update();
+        ui_manager.Update();
 
-        if (HAL_GetTick() > blink)
-        {
-            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            blink = HAL_GetTick() + 1000;
-        }
+        // TestScreen();
+
+        // if (HAL_GetTick() > blink)
+        // {
+        //     HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+        //     blink = HAL_GetTick() + 1000;
+        // }
     }
 
     return 0;
@@ -236,10 +170,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
     {
         net_serial_interface->RxEvent(size);
     }
-    else if (huart->Instance == USART1)
-    {
-        mgmt_serial_interface->RxEvent(size);
-    }
 }
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
@@ -247,11 +177,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     if (huart->Instance == USART2)
     {
         net_serial_interface->TxEvent();
-    }
-    else if (huart->Instance == USART1)
-    {
-        // HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
-        mgmt_serial_interface->TxEvent();
     }
 }
 
@@ -268,16 +193,6 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
         err = huart->Instance->SR;
 
         net_serial_interface->StartRx();
-    }
-    else if (huart->Instance == USART1)
-    {
-        mgmt_serial_interface->Reset();
-        HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-
-        // Read the err codes to clear them
-        err = huart->Instance->SR;
-
-        mgmt_serial_interface->StartRx();
     }
 }
 
@@ -299,7 +214,7 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
     UNUSED(hspi);
-    screen.ReleaseSPI();
+    screen.SpiComplete();
 }
 
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
@@ -313,12 +228,78 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        keyboard->Read();
+        keyboard.Read();
     }
     else if (htim->Instance == TIM3)
     {
         screen.Update(HAL_GetTick());
     }
+}
+
+void TestScreenInit(uint16_t colour)
+{
+    screen.EnableBackLight();
+    screen.FillScreen(colour);
+}
+
+void TestScreen()
+{
+    static uint16_t colour = C_GREEN;
+    static uint16_t c = 0;
+
+    if (c == 0)
+    {
+        colour = C_GREEN;
+        ++c;
+    }
+    else if (c == 1)
+    {
+        colour = C_BLUE;
+        ++c;
+    }
+    else
+    {
+        colour = C_RED;
+        c = 0;
+    }
+
+    screen.DrawRectangleAsync(0, 10, 0, 10, 1, colour);
+    screen.FillRectangleAsync(10, 20, 0, 10, colour);
+    screen.DrawLineAsync(30, 40, 0, 10, 5, colour);
+
+    screen.DrawPixelAsync(40, 1, colour);
+    screen.DrawPixelAsync(42, 1, colour);
+    screen.DrawPixelAsync(40, 3, colour);
+    screen.DrawPixelAsync(42, 3, colour);
+
+    screen.DrawArrowAsync(50, 0, 20, 10, 1, Screen::ArrowDirection::Up, colour);
+    screen.DrawArrowAsync(60, 21, 20, 10, 1, Screen::ArrowDirection::Down, colour);
+    screen.DrawArrowAsync(75, 10, 20, 10, 1, Screen::ArrowDirection::Left, colour);
+    screen.DrawArrowAsync(95, 30, 20, 10, 1, Screen::ArrowDirection::Right, colour);
+
+    screen.FillArrowAsync(105, 0, 20, 10, Screen::ArrowDirection::Up, colour);
+    screen.FillArrowAsync(115, 21, 20, 10, Screen::ArrowDirection::Down, colour);
+    screen.FillArrowAsync(130, 10, 20, 10, Screen::ArrowDirection::Left, colour);
+    screen.FillArrowAsync(150, 30, 20, 10, Screen::ArrowDirection::Right, colour);
+
+    screen.DrawCharacterAsync(0, 30, 'H', font5x8, colour, C_BLACK);
+    screen.DrawCharacterAsync(6, 30, 'H', font6x8, colour, C_BLACK);
+    screen.DrawCharacterAsync(13, 30, 'H', font7x12, colour, C_BLACK);
+    screen.DrawCharacterAsync(21, 30, 'H', font11x16, colour, C_BLACK);
+
+    screen.DrawStringBoxAsync(1, 100, 40, 60, "Hello world, look at my string!", 31, font5x8, colour, C_BLACK, true);
+    screen.DrawStringBoxAsync(101, 141, 40, 90, "Hello Hello Hello", 17, font5x8, colour, C_BLACK, true);
+
+    screen.DrawTriangleAsync(0, 65, 10, 65, 5, 70, 1, colour);
+    screen.FillTriangleAsync(15, 65, 25, 65, 20, 70, colour);
+
+    const uint16_t points [][2] = { {0, 80}, {40, 85}, {25, 95}, {5, 90} };
+    screen.DrawPolygonAsync(sizeof(points) / sizeof(points[0]), points, 1, colour);
+    const uint16_t points_2 [][2] = { {45, 80}, {85, 85}, {70, 95}, {50, 90} };
+    screen.FillPolygonAsync(sizeof(points_2) / sizeof(points_2[0]), points_2, colour);
+
+    screen.DrawCircleAsync(15, 115, 15, colour);
+    screen.FillCircleAsync(60, 115, 15, colour);
 }
 
 #ifdef USE_FULL_ASSERT
