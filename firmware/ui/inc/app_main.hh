@@ -36,6 +36,8 @@ extern "C" {
 
 int app_main();
 void WaitForNetReady();
+void TestScreenInit(uint16_t colour);
+void TestScreen();
 
 #ifdef __cplusplus
 }

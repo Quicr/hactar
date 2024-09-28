@@ -187,26 +187,19 @@ void Network::IngestNetworkPackets()
         return;
     }
 
-    // screen.DrawText(0, 160, "We have packets!", font6x8, C_WHITE, C_BLACK);
-//     screen.DrawText(17*6, 160, std::to_string(network_packets->Unread()), font6x8, C_WHITE, C_BLACK);
     // Ingest packets
     while (network_packets->Unread() > 0)
     {
-        // screen.DrawText(0, 168, "Get packet!", font6x8, C_WHITE, C_BLACK);
         auto packet = std::move(network_packets->Read());
 
         auto Network_type = static_cast<SerialPacket::WifiTypes>(
             packet->GetData<uint8_t>(7, 1));
 
-        // screen.DrawText(0, 168, "Network type: ", font6x8, C_WHITE, C_BLACK);
-        // screen.DrawText(0 + 14 * 6, 168, std::to_string((int)Network_type), font6x8, C_WHITE, C_BLACK);
         switch (Network_type)
         {
             case SerialPacket::WifiTypes::Status:
             {
                 uint8_t status = packet->GetData<uint8_t>(8, 1);
-                // screen.DrawText(0, 176, "status:", font6x8, C_WHITE, C_BLACK);
-                // screen.DrawText(0 + 7 * 6, 176, std::to_string(status), font6x8, C_WHITE, C_BLACK);
 
                 is_connected = status;
                 if (is_connected)
@@ -241,7 +234,7 @@ void Network::IngestNetworkPackets()
             case SerialPacket::WifiTypes::SSIDs:
             {
                 // Got the new ssids in range, so clear the old ones.
-                // screen.DrawText(0, 184, "got ssid", font6x8, C_WHITE, C_BLACK);
+                ssids.clear();
 
                 // Get the ssid id
                 uint8_t ssid_id = packet->GetData<uint8_t>(8, 1);
@@ -262,8 +255,6 @@ void Network::IngestNetworkPackets()
             case SerialPacket::WifiTypes::Connect:
             {
                 // Since we got a connect packet it means we've connected
-                // screen.DrawText(0, 192, "connected to wifi", font6x8, C_WHITE, C_BLACK);
-
                 is_connected = true;
                 num_connection_attempts = 0;
                 connection_attempt = false;

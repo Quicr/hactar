@@ -28,10 +28,13 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     orientation(_orientation),
     view_height(0),
     view_width(0),
-    spi_busy(0),
-    spi_async(0),
     video_buff(1024),
-    live_memory(memories)
+    video_write_buff(nullptr),
+    memories({ 0 }),
+    live_memory(memories),
+    memories_write_idx(0),
+    memories_read_idx(0),
+    free_memories(Num_Memories)
 {
 }
 
@@ -198,11 +201,6 @@ void Screen::Update(uint32_t current_tick)
 
 void Screen::Draw()
 {
-    if (spi_busy && spi_async)
-    {
-        return;
-    }
-
     HandleVideoBuffer();
     HandleReadyMemory();
 }
@@ -239,6 +237,13 @@ void Screen::SetOrientation(Orientation _orientation)
 
             WriteCommand(MAD_CT);
             WriteData(PORTRAIT_DATA);
+            break;
+        case Orientation::flipped_portrait:
+            view_width = WIDTH;
+            view_height = HEIGHT;
+
+            WriteCommand(MAD_CT);
+            WriteData(FLIPPED_PORTRAIT_DATA);
             break;
         case Orientation::left_landscape:
             view_width = HEIGHT;
@@ -1024,15 +1029,9 @@ void Screen::FillScreen(const uint16_t colour, bool async)
     }
 }
 
-void Screen::ReleaseSPI()
+void Screen::SpiComplete()
 {
-    spi_busy = false;
-
-    if (spi_async)
-    {
-        video_front_buff->is_ready = false;
-        spi_async = false;
-    }
+    video_write_buff->is_ready = false;
 }
 
 uint16_t Screen::GetStringWidth(const uint16_t str_len, const Font& font) const
@@ -1054,6 +1053,18 @@ uint16_t Screen::GetStringLeftDistanceFromRightEdge(const uint16_t str_len,
     const Font& font) const
 {
     return ViewWidth() - GetStringWidth(str_len, font);
+}
+
+uint16_t Screen::RGB888ToRGB565(const uint32_t colour)
+{
+    // Get the 5 most significant bits of r
+    uint16_t r = static_cast<uint16_t>((colour & 0xF80000U) >> 8);
+    // Get the 6 most significant bits of g
+    uint16_t g = static_cast<uint16_t>((colour & 0xFC00U) >> 5);
+    // Get the 5 most significant bits of b
+    uint16_t b = static_cast<uint16_t>((colour >> 3) & 0x1F);
+
+    return r | g | b;
 }
 
 // Note - The select() and deselect() should be called before
@@ -1221,7 +1232,7 @@ void Screen::DrawCharacterAsync(uint16_t x, uint16_t y, const char ch,
     const uint16_t offset = (ch - 32) * font.height * (font.width / 8 + 1);
     const uintptr_t ch_addr = (uintptr_t)(font.data + offset);
 
-    ScreenMemory* memory = SetWritablePixelsAsync(x, x2, y, y2);
+    ScreenMemory* memory = SetWriteWindowAsync(x, x2, y, y2);
 
     memory->post_callback = DrawCharacterProcedure;
     memory->parameters[8] = font.width;
@@ -1356,7 +1367,7 @@ void Screen::DrawLineAsync(uint16_t x1, uint16_t x2,
             }
         }
 
-        ScreenMemory* memory = SetWritablePixelsAsync(x1, x1 + 1, y1, y1 + 1);
+        ScreenMemory* memory = SetWriteWindowAsync(x1, x1 + 1, y1, y1 + 1);
 
         memory->post_callback = DrawLineAsyncProcedure;
         memory->parameters[8] = diff_x >> 8;
@@ -1390,7 +1401,7 @@ void Screen::DrawPixelAsync(const uint16_t x, const uint16_t y,
         return;
     }
 
-    ScreenMemory* memory = SetWritablePixelsAsync(x, x + 1, y, y + 1);
+    ScreenMemory* memory = SetWriteWindowAsync(x, x + 1, y, y + 1);
 
     memory->post_callback = DrawPixelAsyncProcedure;
     memory->parameters[8] = colour >> 8;
@@ -1816,7 +1827,7 @@ void Screen::FillRectangleAsync(uint16_t x1,
         y2 = tmp;
     }
 
-    ScreenMemory* memory = SetWritablePixelsAsync(x1, x2, y1, y2);
+    ScreenMemory* memory = SetWriteWindowAsync(x1, x2, y1, y2);
 
     uint32_t num_byte_pixels = ((x2 - x1) * (y2 - y1) * 2);
 
@@ -1934,7 +1945,6 @@ void Screen::WriteData(uint8_t data)
 
 void Screen::WriteDataSyncDMA(uint8_t* data, const uint32_t data_size)
 {
-    spi_busy = 1;
     HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
 
     // Wait for the SPI IT call complete to invoked
@@ -1946,7 +1956,7 @@ void Screen::WriteDataSyncDMA(uint8_t* data, const uint32_t data_size)
 /*****************************************************************************/
 
 
-Screen::ScreenMemory* Screen::SetWritablePixelsAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
+Screen::ScreenMemory* Screen::SetWriteWindowAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
 {
     // Get a memory
     ScreenMemory* memory = RetrieveFreeMemory();
@@ -2040,40 +2050,20 @@ void Screen::WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory)
     }
 }
 
-bool Screen::WriteCommandAsync(uint8_t cmd)
-{
-    static uint8_t command;
-    command = cmd;
-    spi_busy = true;
-    spi_async = true;
-    Select();
-    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_RESET);
-    HAL_SPI_Transmit_DMA(spi_handle, &command, 1);
-
-    return true;
-}
-
-bool Screen::WriteDataAsync(uint8_t* data, uint32_t data_size)
-{
-    spi_busy = true;
-    spi_async = true;
-    Select();
-    HAL_GPIO_WritePin(dc.port, dc.pin, GPIO_PIN_SET);
-    HAL_SPI_Transmit_DMA(spi_handle, data, data_size);
-
-    return true;
-}
-
 bool Screen::WriteAsync(SwapBuffer::swap_buffer_t* buff)
 {
-    spi_busy = true;
-    spi_async = true;
-
     Select();
     HAL_GPIO_WritePin(dc.port, dc.pin, buff->dc_level);
-    HAL_SPI_Transmit_DMA(spi_handle, buff->data, buff->len);
+    auto res = HAL_SPI_Transmit_DMA(spi_handle, buff->data, buff->len);
 
-    return true;
+    if (res == HAL_OK)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 Screen::ScreenMemory* Screen::RetrieveFreeMemory()
@@ -2155,16 +2145,22 @@ void Screen::HandleReadyMemory()
 void Screen::HandleVideoBuffer()
 {
     // Check if the back buffer is ready
-    if (spi_busy || !video_buff.BackIsReady())
+    if (spi_handle->State != HAL_SPI_STATE_READY || !video_buff.BackIsReady())
     {
         return;
     }
 
     // Back is ready, so swap it to the front
-    video_front_buff = video_buff.Swap();
+    video_write_buff = video_buff.Swap();
 
     // Send it off
-    WriteAsync(video_front_buff);
+    bool sent = WriteAsync(video_write_buff);
+
+    if (!sent)
+    {
+        // Buffer was sent, swap the buffers
+        video_buff.Swap();
+    }
 }
 
 /*****************************************************************************/
@@ -2406,7 +2402,7 @@ void Screen::Clip(const uint16_t x_start,
 
 inline void Screen::WaitUntilSPIFree()
 {
-    while (spi_busy && spi_async)
+    while (spi_handle->State != HAL_SPI_STATE_READY)
     {
         __NOP();
     }
@@ -2416,9 +2412,10 @@ void Screen::WaitForFreeMemory(const uint16_t minimum)
 {
     const uint16_t min_mem = minimum > 0 ? minimum : 1;
 
-    // Connect the final line
     while (free_memories < min_mem)
     {
         __NOP();
+        // HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+        // HAL_Delay(10);
     }
 }

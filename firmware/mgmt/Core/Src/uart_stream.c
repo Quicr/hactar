@@ -1,5 +1,7 @@
 #include "uart_stream.h"
 
+#include "chip_control.h"
+
 void HandleRx(uart_stream_t* rx_stream, uint16_t num_received)
 {
     // Calculate the number of bytes have occurred since the last event
@@ -208,6 +210,10 @@ void HandleCommands(uart_stream_t* rx_uart_stream,
         else if (strcmp((const char*)rx_uart_stream->tx_buffer, reset_cmd) == 0)
         {
             *state = Reset;
+        }
+        else if (strcmp((const char*)rx_uart_stream->tx_buffer, reset_net) == 0)
+        {
+            NetNormalMode();
         }
         else if (strcmp((const char*)rx_uart_stream->tx_buffer, HELLO) == 0)
         {

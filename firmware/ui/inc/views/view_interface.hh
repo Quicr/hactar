@@ -135,7 +135,6 @@ protected:
         DrawInput();
 
         // Draw Tx and Rx
-
         if (tx_colour != TxStatusColour() &&
             HAL_GetTick() > tx_redraw_timeout)
         {

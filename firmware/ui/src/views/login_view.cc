@@ -21,13 +21,19 @@ LoginView::~LoginView()
 void LoginView::AnimatedDraw()
 {
     if (!redraw_menu)
+    {
         return;
+    }
 
     if (manager.RedrawForced())
+    {
         return;
+    }
 
     if (!first_load)
+    {
         return;
+    }
 
     uint16_t speed = 10;
     const uint16_t y = 16;
