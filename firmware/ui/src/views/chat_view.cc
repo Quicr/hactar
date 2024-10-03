@@ -227,7 +227,7 @@ void ChatView::SendPacket(const bytes& msg)
     // XXX(RLB): This should use a null-safe message type.
     qchat::Ascii ascii{
         manager.ActiveRoom()->room_uri,
-        std::string { msg.begin(), msg.end()}
+        std::string { msg.begin(), msg.end() }
     };
 
     // TODO move into encode...
@@ -382,13 +382,13 @@ void ChatView::DrawMessages()
         return;
     }
 
-    uint16_t y_window_start = (menu_font.height + Padding_3);
-    uint16_t y_window_end = screen.ViewHeight() - (usr_font.height + usr_font.height / 2);
-    uint16_t y_window_size = y_window_end - y_window_start;
+    const uint16_t y_window_start = (menu_font.height + Padding_3);
+    const uint16_t y_window_end = screen.ViewHeight() - (usr_font.height + usr_font.height / 2);
+    const uint16_t y_window_size = y_window_end - y_window_start;
 
-    uint16_t x_window_start = Padding_2;
-    uint16_t x_window_end = screen.ViewWidth() - Padding_2;
-    uint16_t x_window_size = x_window_end - x_window_start;
+    const uint16_t x_window_start = Padding_2;
+    const uint16_t x_window_end = screen.ViewWidth() - Padding_2;
+    const uint16_t x_window_size = x_window_end - x_window_start;
 
     uint16_t total_used_y_space = 0;
     uint16_t curr_used_y_space = 0;
@@ -398,10 +398,11 @@ void ChatView::DrawMessages()
     uint16_t curr_used_x_space = x_pos;
     uint16_t next_used_x_space = 0;
 
-    // Get the msg size of the first message in the list
-    curr_used_x_space = x_window_start + messages[msg_idx].length() * usr_font.width;
+    // Get the msg size of the most recent message in the list
+    curr_used_x_space = x_window_start + messages[msg_idx].length()
+        * usr_font.width;
 
-    // clip to screen width
+    // Clip to screen width
     if (curr_used_x_space > screen.ViewWidth())
         curr_used_x_space = screen.ViewWidth();
 
@@ -478,9 +479,9 @@ void ChatView::DrawMessages()
         curr_used_x_space = next_used_x_space;
 
         // Draw the body
-        screen.DrawStringBoxAsync(x_pos, y_pos,
-            x_window_end, y_window_end, msg, usr_font,
-            settings.body_colour, bg, true);
+        screen.DrawStringBoxAsync(x_pos, x_window_end,
+            y_pos, y_window_end, msg, usr_font,
+            settings.body_colour, bg, false);
 
         // Decrement the idx
         msg_idx--;
@@ -503,7 +504,9 @@ void ChatView::DrawUsrInputSeperator()
 {
     // Draw typing seperator
     screen.FillRectangleAsync(Margin_0,
-        screen.ViewHeight() - usr_font.height - Padding_3, screen.ViewWidth(), screen.ViewHeight() - usr_font.height - Padding_2, fg);
+        screen.ViewWidth(),
+        screen.ViewHeight() - usr_font.height - Padding_3,
+        screen.ViewHeight() - usr_font.height - Padding_2, fg);
 }
 
 void ChatView::SendAudio(uint32_t current_tick)

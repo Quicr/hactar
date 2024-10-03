@@ -232,7 +232,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     }
     else if (htim->Instance == TIM3)
     {
-        screen.Update(HAL_GetTick());
+        screen.Draw();
     }
 }
 

@@ -20,7 +20,7 @@ void Network::Update(uint32_t tick)
     if (tick > next_connection_check)
     {
         SendStatusPacket();
-        next_connection_check = tick + 10000;
+        next_connection_check = tick + 30000;
     }
 
     if (tick > next_handle_packets)

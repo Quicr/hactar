@@ -418,7 +418,7 @@ void NetManager::HandleSerialCommands()
 
     while (room_packets->Unread() > 0)
     {
-        Logger::Log(Logger::Level::Info, "Wifi packets available: ", room_packets->Unread());
+        Logger::Log(Logger::Level::Info, "room packets available: ", room_packets->Unread());
         auto packet = std::move(room_packets->Read());
 
         GetRoomsCommand();

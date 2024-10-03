@@ -259,6 +259,8 @@ private:
                     auto command_type = static_cast<SerialPacket::Commands>(
                         rx_packet->GetData<unsigned short>(5, 2));
 
+                    Logger::Log(Logger::Level::Info, "Received command packet type =", (int)command_type);
+
                     command_packets[command_type].Write(std::move(rx_packet));
                     status = SerialStatus::OK;
                     break;

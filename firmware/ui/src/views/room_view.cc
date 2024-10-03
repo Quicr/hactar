@@ -15,6 +15,7 @@ RoomView::RoomView(UserInterfaceManager& manager,
     selected_room_id(-1),
     connecting_to_room(false),
     next_get_rooms_time(0),
+    state_update_timeout(0),
     rooms(),
     last_num_rooms(0)
 {
@@ -77,7 +78,11 @@ void RoomView::HandleInput()
         ChangeView(usr_input);
 
 
-
+        if (usr_input[1] == 'r')
+        {
+            // refresh
+            RequestRooms();
+        }
         return;
     }
 
@@ -90,8 +95,7 @@ void RoomView::Update(uint32_t current_tick)
     if (current_tick >= next_get_rooms_time)
     {
         RequestRooms();
-        rooms.clear();
-        next_get_rooms_time = current_tick + 60000;
+        next_get_rooms_time = current_tick + 30000;
     }
 
     if (current_tick > state_update_timeout)
@@ -119,7 +123,7 @@ void RoomView::Update(uint32_t current_tick)
 
 void RoomView::RequestRooms()
 {
-    next_get_rooms_time = HAL_GetTick() + 5000;
+    rooms.clear();
 
     // Send request to the esp32 to get the rooms
     std::unique_ptr<SerialPacket> room_req_packet = std::make_unique<SerialPacket>(HAL_GetTick());
