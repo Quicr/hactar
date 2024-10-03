@@ -35,6 +35,8 @@ void LoginView::AnimatedDraw()
         return;
     }
 
+    Clear();
+
     uint16_t speed = 10;
     const uint16_t y = 16;
     std::string msg = "Welcome to Cisco";

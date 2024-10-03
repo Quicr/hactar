@@ -3,6 +3,7 @@
 #include "login_view.hh"
 #include "team_view.hh"
 #include "chat_view.hh"
+#include "plain_chat_view.hh"
 
 #include "setting_manager.hh"
 #include "qchat.hh"
@@ -54,6 +55,8 @@ UserInterfaceManager::~UserInterfaceManager()
 void UserInterfaceManager::Update()
 {
     current_tick = HAL_GetTick();
+
+    screen.Update(current_tick);
 
     view->Run(current_tick);
 
@@ -321,7 +324,8 @@ void UserInterfaceManager::HandleMessagePacket(
         }
         case (qchat::MessageTypes::WatchOk):
         {
-            ChangeView<ChatView>();
+            // TODO change back to chat_view
+            ChangeView<PlainChatView>();
             break;
         }
         default:

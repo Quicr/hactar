@@ -70,8 +70,8 @@ private:
     static constexpr uint32_t Max_Chunk_Size = 16384U;
     static constexpr uint32_t Chunk_Buffer_Size = 2048UL;
 
-    static constexpr uint32_t Num_Memories = 20;
-    static constexpr uint32_t Memory_Size = 64;
+    static constexpr uint32_t Num_Memories = 40;
+    static constexpr uint32_t Memory_Size = 32;
 
     enum class MemoryStatus
     {

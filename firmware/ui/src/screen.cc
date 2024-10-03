@@ -196,13 +196,12 @@ void Screen::Begin()
 
 void Screen::Update(uint32_t current_tick)
 {
-    Draw();
+    HandleReadyMemory();
 }
 
 void Screen::Draw()
 {
     HandleVideoBuffer();
-    HandleReadyMemory();
 }
 
 
@@ -1452,6 +1451,28 @@ void Screen::DrawStringAsync(const uint16_t x, const uint16_t y,
     const Font& font, const uint16_t fg,
     const uint16_t bg, const bool word_wrap)
 {
+
+    // const uint16_t start_x = x;
+    // const uint16_t end_x = view_width;
+    // const uint16_t start_y = y;
+    // const uint16_t end_y =  view_height;
+
+    // uint16_t x_curr = start_x;
+    // uint16_t y_curr = start_y;
+
+    // uint16_t spc_idx = 0;
+    // uint16_t word_len = 0;
+    // for (int j = 0; j < len; ++j)
+    // {
+    //     DrawCharacterAsync(x_curr, y_curr, str[j], font, fg, bg);
+
+    //     x_curr += font.width;
+    //     if (x_curr >= end_x)
+    //     {
+    //         break;
+    //     }
+    // }
+
     if (word_wrap)
     {
         DrawStringBoxAsync(x, view_width, y, view_height, str, len, font, fg, bg, false);
@@ -1500,8 +1521,13 @@ void Screen::DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
     uint16_t j = 0;
     while (i < len)
     {
+        // Wonder if this could cause issues...?
         if (x_curr == start_x && ' ' == str[i])
         {
+            // Draw the space and MOVE ON
+            DrawCharacterAsync(x_curr, y_curr, str[j], font, fg, bg);
+
+            x_curr += font.width;
             ++i;
             continue;
         }
@@ -1526,9 +1552,6 @@ void Screen::DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
 
         for (j = i; j <= spc_idx && j < len; ++j)
         {
-            DrawCharacterAsync(x_curr, y_curr, str[j], font, fg, bg);
-
-            x_curr += font.width;
             if (x_curr >= end_x)
             {
                 x_curr = start_x;
@@ -1541,6 +1564,9 @@ void Screen::DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
                     break;
                 }
             }
+            DrawCharacterAsync(x_curr, y_curr, str[j], font, fg, bg);
+
+            x_curr += font.width;
         }
 
         i += (j - i);
@@ -2414,8 +2440,13 @@ void Screen::WaitForFreeMemory(const uint16_t minimum)
 
     while (free_memories < min_mem)
     {
-        __NOP();
-        // HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-        // HAL_Delay(10);
+        // Since we can't get out of here, lets update the buffer
+        // and wait for the timer to handle the issue.
+
+        // TODO If we need to change the buffer so that we set a flag
+        // before writing that says "is transferring"
+        // and then when the spi dma is done if they are both "done"
+        // then we can reset the flag and continue drawing on
+        Update(0);
     }
 }

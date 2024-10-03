@@ -55,6 +55,7 @@ public:
 
         ResetCursorPosition();
         Clear();
+        first_load = true;
     }
 
     virtual ~ViewInterface()
@@ -121,6 +122,13 @@ protected:
 
         Logger::Log(Logger::Level::Info, "Enter was pressed");
 
+        // Read random commands lol
+        if (RandomCommands())
+        {
+            ClearInput();
+            return;
+        }
+
         // Actual view code goes here
         HandleInput();
 
@@ -156,6 +164,7 @@ protected:
         if (HAL_GetTick() > general_refresh_timeout)
         {
             DrawWifiSymbol();
+            general_refresh_timeout = HAL_GetTick() + 500;
         }
 
         if (mic_last_state != keyboard.MicPressed())
@@ -174,6 +183,7 @@ protected:
             screen.FillRectangleAsync(screen.ViewWidth() - 51,
                 screen.ViewWidth() - 44, 4, 8, colour);
         }
+
     }
 
     virtual void DrawInput()
@@ -247,7 +257,7 @@ protected:
     {
         last_drawn_idx = usr_input.length();
         screen.DrawStringAsync(cursor_pos.x, cursor_pos.y, str,
-            usr_font, fg, bg, true);
+            usr_font, fg, bg, false);
         // Set the cursor the the length of the input
         cursor_pos.x = usr_font.width * usr_input.length();
         redraw_cursor = true;
@@ -402,5 +412,46 @@ private:
         screen.FillRectangleAsync(screen.ViewWidth() - 30, screen.ViewWidth() - 20, y_start_offset + 0, y_start_offset + 1, colour);
         screen.FillRectangleAsync(screen.ViewWidth() - 28, screen.ViewWidth() - 22, y_start_offset + 2, y_start_offset + 3, colour);
         screen.FillRectangleAsync(screen.ViewWidth() - 26, screen.ViewWidth() - 24, y_start_offset + 4, y_start_offset + 5, colour);
+    }
+
+    bool RandomCommands()
+    {
+        if (usr_input[0] == '/')
+        {
+            if (usr_input == "/po")
+            {
+                screen.SetOrientation(Screen::Orientation::portrait);
+                redraw_menu = true;
+                first_load = true;
+                screen.FillScreen(bg);
+                return true;
+            }
+            else if (usr_input == "/fp")
+            {
+                screen.SetOrientation(Screen::Orientation::flipped_portrait);
+                redraw_menu = true;
+                first_load = true;
+                screen.FillScreen(bg);
+                return true;
+            }
+            else if (usr_input == "/ll")
+            {
+                screen.SetOrientation(Screen::Orientation::left_landscape);
+                redraw_menu = true;
+                first_load = true;
+                screen.FillScreen(bg);
+                return true;
+
+            }
+            else if (usr_input == "/rl")
+            {
+                screen.SetOrientation(Screen::Orientation::right_landscape);
+                redraw_menu = true;
+                first_load = true;
+                screen.FillScreen(bg);
+                return true;
+
+            }
+        }
     }
 };
