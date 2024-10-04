@@ -60,7 +60,7 @@ extern "C" void app_main(void)
         if (state == Wifi::State::Connected && !qsession_connected)
         {
             Logger::Log(Logger::Level::Info, "Net app_main Connecting to QSession");
-            qsession->connect();
+            // qsession->connect();
             qsession_connected = true;
         }
 
@@ -119,18 +119,18 @@ void SetupComponents()
     ui_layer = new SerialPacketManager(ui_uart1);
     wifi = new Wifi(*ui_layer);
 
-    inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
-    char default_relay [] = "192.168.50.20";
-    auto relay_name = default_relay;
-    uint16_t port = 1234;
-    quicr::RelayInfo relay{
-        .hostname = relay_name,
-        .port = port,
-        .proto = quicr::RelayInfo::Protocol::UDP
-    };
-    qsession = std::make_shared<QSession>(relay, inbound_queue);
+    // inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
+    // char default_relay [] = "192.168.50.20";
+    // auto relay_name = default_relay;
+    // uint16_t port = 1234;
+    // quicr::RelayInfo relay{
+    //     .hostname = relay_name,
+    //     .port = port,
+    //     .proto = quicr::RelayInfo::Protocol::UDP
+    // };
+    // qsession = std::make_shared<QSession>(relay, inbound_queue);
 
-    manager = new NetManager(*ui_layer, *wifi, qsession, inbound_queue);
+    manager = new NetManager(*ui_layer, *wifi);
 
     // Wait for wifi to finish initializing
     while (!wifi->IsInitialized())
