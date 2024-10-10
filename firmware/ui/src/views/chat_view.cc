@@ -511,43 +511,43 @@ void ChatView::DrawUsrInputSeperator()
 
 void ChatView::SendAudio(uint32_t current_tick)
 {
-    if (!mls_state)
-    {
-        return;
-    }
-    if (audio.IsHalfComplete())
-    {
-        // Get audio at the start
-        const uint16_t* raw_buff = audio.GetRxBuffer(0);
+    // if (!mls_state)
+    // {
+    //     return;
+    // }
+    // if (audio.IsHalfComplete())
+    // {
+    //     // Get audio at the start
+    //     const uint16_t* raw_buff = audio.GetRxBuffer(0);
 
-        auto packet = std::move(qchat::Codec::encode(
-            serial.NextPacketId(),
-            manager.ActiveRoom()->room_uri,
-            raw_buff,
-            audio.AudioBufferSize_2(),
-            current_tick
-        ));
+    //     auto packet = std::move(qchat::Codec::encode(
+    //         serial.NextPacketId(),
+    //         manager.ActiveRoom()->room_uri,
+    //         raw_buff,
+    //         audio.AudioBufferSize_2(),
+    //         current_tick
+    //     ));
 
-        serial.EnqueuePacket(std::move(packet));
+    //     serial.EnqueuePacket(std::move(packet));
 
-        last_audio_buffer_used = 0;
-    }
-    if (audio.IsComplete())
-    {
-        // Get the raw audio half way through
-        const uint16_t* raw_buff = audio.GetRxBuffer(audio.AudioBufferSize_2());
+    //     last_audio_buffer_used = 0;
+    // }
+    // if (audio.IsComplete())
+    // {
+    //     // Get the raw audio half way through
+    //     const uint16_t* raw_buff = audio.GetRxBuffer(audio.AudioBufferSize_2());
 
-        // Send wave
-        auto packet = std::move(qchat::Codec::encode(
-            serial.NextPacketId(),
-            manager.ActiveRoom()->room_uri,
-            raw_buff,
-            audio.AudioBufferSize_2(),
-            current_tick
-        ));
+    //     // Send wave
+    //     auto packet = std::move(qchat::Codec::encode(
+    //         serial.NextPacketId(),
+    //         manager.ActiveRoom()->room_uri,
+    //         raw_buff,
+    //         audio.AudioBufferSize_2(),
+    //         current_tick
+    //     ));
 
-        serial.EnqueuePacket(std::move(packet));
+    //     serial.EnqueuePacket(std::move(packet));
 
-        last_audio_buffer_used = 1;
-    }
+    //     last_audio_buffer_used = 1;
+    // }
 }

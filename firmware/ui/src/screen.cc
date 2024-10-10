@@ -2006,7 +2006,7 @@ void Screen::SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = SetColumnsDataAsync;
 
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    SwapBuffer<uint8_t>::swap_buffer_t* buff = screen.video_buff.GetBack();
     buff->data[0] = CA_SET;
     buff->len = 1;
     buff->dc_level = GPIO_PIN_RESET;
@@ -2017,7 +2017,7 @@ void Screen::SetColumnsDataAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = SetRowsCommandAsync;
 
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    SwapBuffer<uint8_t>::swap_buffer_t* buff = screen.video_buff.GetBack();
 
     // Minus off 1 x2 because the screen expects a inclusive x1-x2
     buff->dc_level = GPIO_PIN_SET;
@@ -2033,7 +2033,7 @@ void Screen::SetRowsCommandAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = SetRowsDataAsync;
 
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    SwapBuffer<uint8_t>::swap_buffer_t* buff = screen.video_buff.GetBack();
 
     buff->dc_level = GPIO_PIN_RESET;
     buff->data[0] = RA_SET;
@@ -2045,7 +2045,7 @@ void Screen::SetRowsDataAsync(Screen& screen, ScreenMemory& memory)
 {
     memory.callback = WriteToRamCommandAsync;
 
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    SwapBuffer<uint8_t>::swap_buffer_t* buff = screen.video_buff.GetBack();
 
     // Minus off 1 y2 because the screen expects a inclusive y1-y2
     buff->dc_level = GPIO_PIN_SET;
@@ -2059,7 +2059,7 @@ void Screen::SetRowsDataAsync(Screen& screen, ScreenMemory& memory)
 
 void Screen::WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory)
 {
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    SwapBuffer<uint8_t>::swap_buffer_t* buff = screen.video_buff.GetBack();
 
     buff->dc_level = GPIO_PIN_RESET;
     buff->data[0] = WR_RAM;
@@ -2076,7 +2076,7 @@ void Screen::WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory)
     }
 }
 
-bool Screen::WriteAsync(SwapBuffer::swap_buffer_t* buff)
+bool Screen::WriteAsync(SwapBuffer<uint8_t>::swap_buffer_t* buff)
 {
     Select();
     HAL_GPIO_WritePin(dc.port, dc.pin, buff->dc_level);
@@ -2208,7 +2208,7 @@ void Screen::DrawCharacterProcedure(Screen& screen, ScreenMemory& memory)
     uint16_t w_off = 0;
     uint16_t buff_idx = 0;
 
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    SwapBuffer<uint8_t>::swap_buffer_t* buff = screen.video_buff.GetBack();
 
     // 2 bytes per pixel
     buff->len = font_height * font_width * 2;
@@ -2276,7 +2276,7 @@ void Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
     int16_t direction_y = (y1 < y2) ? 1 : -1;
 
     // Fill the array and then update stuff
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    SwapBuffer<uint8_t>::swap_buffer_t* buff = screen.video_buff.GetBack();
     buff->len = 2;
     buff->dc_level = GPIO_PIN_SET;
 
@@ -2362,7 +2362,7 @@ void Screen::DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory)
 
 void Screen::DrawPixelAsyncProcedure(Screen& screen, ScreenMemory& memory)
 {
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    SwapBuffer<uint8_t>::swap_buffer_t* buff = screen.video_buff.GetBack();
     buff->len = 2;
     buff->data[0] = memory.parameters[8];
     buff->data[1] = memory.parameters[9];
@@ -2383,7 +2383,7 @@ void Screen::FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory)
         memory.parameters[13];
 
     // Get a buff
-    SwapBuffer::swap_buffer_t* buff = screen.video_buff.GetBack();
+    SwapBuffer<uint8_t>::swap_buffer_t* buff = screen.video_buff.GetBack();
     buff->len = bytes_remaining > screen.video_buff.BufferSize()
         ? screen.video_buff.BufferSize() : bytes_remaining;
 

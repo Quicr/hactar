@@ -12,15 +12,12 @@ ESP_TOOL_ARGS 		= --trace --no-stub --port=${PORT} --baud=${BAUD} write_flash --
 	${PARITIONS_ADDR} ${BUILD_PATH}/partition_table/partition-table.bin \
 	${PROG_ADDR} ${BUILD_PATH}/${TARGET}.bin
 
-all: compile upload
-
-idf-clean:
-	idf.py fullclean
+all: compile
 
 compile:
 	idf.py build
 
-upload:
+upload: compile
 	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" \
 								 -bin=${BUILD_PATH} --port=/dev/ttyUSB0
 
@@ -43,3 +40,6 @@ py_monitor:
 
 clean:
 	rm -rf ${BUILD_PATH}
+
+fullclean:
+	idf.py fullclean

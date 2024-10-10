@@ -107,6 +107,10 @@ static void SetupPins()
         .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
     };
 
+    // uart_intr_config_t uart1_intr = {
+    //     .intr_enable_mask
+    // }
+
     // Setup serial interface for ui
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart1_config, 4096);
 

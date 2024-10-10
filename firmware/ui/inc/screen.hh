@@ -316,7 +316,7 @@ private:
     static void SetRowsCommandAsync(Screen& screen, ScreenMemory& memory);
     static void SetRowsDataAsync(Screen& screen, ScreenMemory& memory);
     static void WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory);
-    bool WriteAsync(SwapBuffer::swap_buffer_t* buff);
+    bool WriteAsync(SwapBuffer<uint8_t>::swap_buffer_t* buff);
 
     ScreenMemory* RetrieveFreeMemory();
     void HandleReadyMemory();
@@ -346,8 +346,8 @@ private:
     uint16_t view_height;
     uint16_t view_width;
 
-    SwapBuffer video_buff;
-    SwapBuffer::swap_buffer_t* video_write_buff;
+    SwapBuffer<uint8_t> video_buff;
+    SwapBuffer<uint8_t>::swap_buffer_t* video_write_buff;
 
     ScreenMemory memories[Num_Memories];
     ScreenMemory* live_memory;

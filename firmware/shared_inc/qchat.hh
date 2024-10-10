@@ -233,7 +233,7 @@ struct Codec
         // +4 for room_uri length
         // + room_uri len
         // +2 for audio_length
-        // Audio length is compressed to 1 byte
+        // Audio length is compressed to 1 byte using a-law
         const uint16_t len = 1 + Field_Len_Bytes + room_uri.length() + 2 + audio_length;
 
         std::unique_ptr<SerialPacket> packet = std::make_unique<SerialPacket>(current_tick, len+5);
@@ -259,12 +259,12 @@ struct Codec
 
         // Append the audio
         // Shift the buffer to where the audio will be inserted
+        Logger::Log(Logger::Level::Info, "Append actual audio");
         uint8_t* buff = packet->Data() + offset;
         AudioCodec::ALawCompand(audio_data, buff, audio_length);
 
         Logger::Log(Logger::Level::Info, "cap ", packet->Capacity(), " size ", packet->NumBytes());
 
-        Logger::Log(Logger::Level::Info, "Append actual audio");
 
         return packet;
     }

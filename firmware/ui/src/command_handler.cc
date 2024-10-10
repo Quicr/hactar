@@ -7,6 +7,7 @@
 #include "settings_view.hh"
 #include "team_view.hh"
 #include "wifi_view.hh"
+#include "plain_chat_view.hh"
 
 CommandHandler::CommandHandler(UserInterfaceManager* manager) :
     manager(manager)
@@ -20,6 +21,8 @@ bool CommandHandler::ChangeViewCommand(const std::string& command)
         return manager->ChangeView<LoginView>();
     else if (command == "/chat")
         return manager->ChangeView<ChatView>();
+    else if (command == "/plain")
+        return manager->ChangeView<PlainChatView>();
     else if (command == "/rooms")
         return manager->ChangeView<RoomView>();
     else if (command == "/t")

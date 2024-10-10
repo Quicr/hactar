@@ -18,7 +18,7 @@ void AudioCodec::ALawExpand(const uint8_t* input, uint16_t* output, const size_t
     }
 }
 
-uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
+inline uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
 {
     // Heavily influenced from
     // https://en.wikipedia.org/wiki/G.711
@@ -78,7 +78,7 @@ uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
     return (sign + exponent + mantissa) ^ 0x55;
 }
 
-uint16_t AudioCodec::ALawExpand(uint8_t sample)
+inline uint16_t AudioCodec::ALawExpand(uint8_t sample)
 {
     // Heavily influenced from
     // https://en.wikipedia.org/wiki/G.711

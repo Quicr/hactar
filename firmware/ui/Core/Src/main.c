@@ -631,10 +631,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PTT_BTN_Pin PTT_AI_BTN_Pin KB_ROW3_Pin UI_STAT_Pin */
-  GPIO_InitStruct.Pin = PTT_BTN_Pin|PTT_AI_BTN_Pin|KB_ROW3_Pin|UI_STAT_Pin;
+  /*Configure GPIO pins : PTT_BTN_Pin PTT_AI_BTN_Pin */
+  GPIO_InitStruct.Pin = PTT_BTN_Pin|PTT_AI_BTN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : UI_LED_B_Pin UI_DEBUG_3_Pin UI_LED_R_Pin UI_DEBUG_1_Pin
@@ -662,6 +662,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : KB_ROW3_Pin UI_STAT_Pin */
+  GPIO_InitStruct.Pin = KB_ROW3_Pin|UI_STAT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : KB_ROW4_Pin */
   GPIO_InitStruct.Pin = KB_ROW4_Pin;
