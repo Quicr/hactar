@@ -191,6 +191,8 @@ void RoomView::SelectRoom()
     }
 
     ConnectToRoom(std::move(rooms[room_id]));
+
+    // ChangeView("/plain");
 }
 
 void RoomView::ConnectToRoom(std::unique_ptr<qchat::Room> room)

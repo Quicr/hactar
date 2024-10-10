@@ -23,7 +23,7 @@ SerialEsp::SerialEsp(uart_port_t uart,
     printf("uart set pin res=%d\n", res);
     res = uart_param_config(uart, &uart_config);
     printf("install res=%d\n", res);
-    xTaskCreate(RxEvent, "uart_event_task", 8192, (void*)this, 12, NULL);
+    xTaskCreate(RxEvent, "uart_event_task", 8192, (void*)this, 0, NULL);
 }
 
 SerialEsp::~SerialEsp()
@@ -58,7 +58,7 @@ void SerialEsp::Transmit(unsigned char* buff, const unsigned short buff_size)
     uart_write_bytes(uart, start, 1);
 
     // Wait until the previous message is sent
-    while (uart_wait_tx_done(uart, 5))
+    while (uart_wait_tx_done(uart, 1))
     {
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
@@ -77,7 +77,7 @@ void SerialEsp::RxEvent(void* parameter)
 
     while (true)
     {
-        if (!xQueueReceive(serial->uart_queue, (void*)&event, portMAX_DELAY))
+        if (!xQueueReceive(serial->uart_queue, (void*)&event, 10 / portTICK_PERIOD_MS))
         {
             continue;
         }
@@ -105,7 +105,7 @@ void SerialEsp::RxEvent(void* parameter)
                     len_to_read = space_remain < event.size ? space_remain : event.size;
 
                     ring_buff = serial->rx_ring.Buffer() + write_idx;
-                    num_bytes = uart_read_bytes(serial->uart, ring_buff, len_to_read, portMAX_DELAY);
+                    num_bytes = uart_read_bytes(serial->uart, ring_buff, len_to_read, 10 / portTICK_PERIOD_MS);
 
                     if (num_bytes < 0)
                     {

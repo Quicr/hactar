@@ -19,6 +19,7 @@
 static NetManager* manager = nullptr;
 static SerialEsp* ui_uart1 = nullptr;
 static SerialPacketManager* ui_layer = nullptr;
+static SerialPacketManager* audio_layer = nullptr;
 static Wifi* wifi = nullptr;
 static std::shared_ptr<QSession> qsession = nullptr;
 static std::shared_ptr<AsyncQueue<QuicrObject>> inbound_queue;

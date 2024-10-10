@@ -195,8 +195,9 @@ void UserInterfaceManager::HandleIncomingPackets()
     Logger::Log(Logger::Level::Info,"Handle incoming packets ", net_layer.GetRxPackets().size());
 
     auto& packets = net_layer.GetRxPackets();
-    for (auto& rx_packet : packets)
+    for (size_t i = 0; i < packets.size(); ++i)
     {
+        std::unique_ptr<SerialPacket>& rx_packet = packets[i];
         SerialPacket::Types p_type = static_cast<SerialPacket::Types>(
             rx_packet->GetData<uint8_t>(0, 1));
         switch (p_type)
@@ -204,7 +205,7 @@ void UserInterfaceManager::HandleIncomingPackets()
             // P_type will only be message or debug by this point
             case (SerialPacket::Types::QMessage):
             {
-                HandleMessagePacket(std::move(rx_packet));
+                bool res = HandleMessagePacket(rx_packet);
 
                 if (ascii_messages.size() > 0)
                 {
@@ -212,16 +213,23 @@ void UserInterfaceManager::HandleIncomingPackets()
                     PushMessage(std::move(ascii.message));
                     ascii_messages.pop_front();
                 }
+
+                if (res)
+                {
+                    packets.pop_front();
+                    i--;
+                }
                 break;
             }
             default:
             {
                 // We'll do nothing if it doesn't fit these types
+                packets.pop_front();
+                i--;
                 break;
             }
         }
     }
-    packets.clear();
 }
 
 void UserInterfaceManager::SendTestPacket()
@@ -240,8 +248,8 @@ void UserInterfaceManager::SendTestPacket()
     net_layer.EnqueuePacket(std::move(test_packet));
 }
 
-void UserInterfaceManager::HandleMessagePacket(
-    std::unique_ptr<SerialPacket> packet)
+bool UserInterfaceManager::HandleMessagePacket(
+    std::unique_ptr<SerialPacket>& packet)
 {
     // Get the message type
     qchat::MessageTypes message_type =
@@ -300,13 +308,18 @@ void UserInterfaceManager::HandleMessagePacket(
                 }
                 case (qchat::MessageTypes::Audio):
                 {
+                    if (!audio.TxBufferReady())
+                    {
+                        return false;
+                    }
+
                     Logger::Log(Logger::Level::Info, "offset ", offset);
 
                     Logger::Log(Logger::Level::Info, "Audio message len = ", (int)data_len);
 
                     uint8_t* audio_data = (packet->Data() + offset);
 
-                    uint16_t* tx_buffer = audio.GetOutputBuffer();
+                    uint16_t* tx_buffer = audio.TxBuffer();
 
                     AudioCodec::ALawExpand(audio_data, tx_buffer, data_len);
 
@@ -331,4 +344,6 @@ void UserInterfaceManager::HandleMessagePacket(
         default:
             break;
     }
+
+    return true;
 }

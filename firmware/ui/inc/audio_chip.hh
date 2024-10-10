@@ -26,24 +26,10 @@ public:
     void Init();
     void Reset();
 
-    bool SetRegister(uint8_t address, uint16_t data);
-    bool OrRegister(uint8_t address, uint16_t data);
-    bool XorRegister(uint8_t address, uint16_t data);
-    bool SetBit(uint8_t address, uint8_t bit, uint8_t set);
-    bool SetBits(const uint8_t address, const uint16_t bits, const uint16_t set);
-
     bool ReadRegister(uint8_t address, uint16_t& value);
 
     void StartI2S();
     void StopI2S();
-
-    const uint16_t* GetRxBuffer(const size_t offset=0) const;
-
-    uint16_t* GetOutputBuffer(const size_t offset);
-    // Returns a pointer to the buffer either at the start or half way
-    uint16_t* GetOutputBuffer();
-
-    void GetAudio(uint16_t* buffer, uint16_t size);
 
     void TurnOnLeftInput3();
     void TurnOffLeftInput3();
@@ -56,23 +42,18 @@ public:
     void MuteMic();
     void UnmuteMic();
 
-    bool DataAvailable();
+    bool TxBufferReady();
+    bool RxBufferReady();
 
     void HalfCompleteCallback();
     void CompleteCallback();
-
-    bool IsHalfComplete();
-    bool IsComplete();
 
     uint16_t AudioBufferSize() const;
     uint16_t AudioBufferSize_2() const;
     void ClearTxBuffer();
 
-    void WriteHalf(uint16_t* buff, const size_t start_idx, const size_t size);
-    void WriteFirstHalf(uint16_t* buff, const size_t start_idx, const size_t size);
-    void WriteSecondHalf(uint16_t* buff, const size_t start_idx, const size_t size);
-    void ReadFirstHalf(uint16_t* buff, const size_t start_idx, const size_t size);
-    void ReadSecondHalf(uint16_t* buff, const size_t start_idx, const size_t size);
+    void Transmit(uint16_t* tx, const size_t size);
+    void Recieve(uint16_t* rx, const size_t size);
 
     void SampleSineWave(const uint16_t num_samples,
         const uint16_t start_idx, const double amplitude, const double freq,
@@ -85,7 +66,7 @@ public:
         const uint16_t num_freqs, const bool stereo);
     void SendSawToothWave();
 
-    const uint16_t* TxBuffer();
+    uint16_t* TxBuffer();
     const uint16_t* RxBuffer();
 
     double phase;
@@ -98,7 +79,26 @@ public:
     static constexpr uint16_t Audio_Buffer_Sz_2 = Audio_Buffer_Sz / 2;
 
 private:
+    enum AudioFlag
+    {
+        Running = 0,
+        Tx_Ready,
+        Rx_Ready,
+        Stereo,
+        Mic_Mute
+    };
+
     HAL_StatusTypeDef WriteRegister(uint8_t address);
+    bool SetRegister(uint8_t address, uint16_t data);
+    bool OrRegister(uint8_t address, uint16_t data);
+    bool XorRegister(uint8_t address, uint16_t data);
+    bool SetBit(uint8_t address, uint8_t bit, uint8_t set);
+    bool SetBits(const uint8_t address, const uint16_t bits, const uint16_t set);
+
+    void RaiseFlag(AudioFlag flag);
+    void LowerFlag(AudioFlag flag);
+    bool ReadFlag(AudioFlag flag);
+    bool ReadAndLowerFlag(AudioFlag flag);
 
     static constexpr uint16_t Write_Condition = 0x34;
 
@@ -111,21 +111,12 @@ private:
 
     I2S_HandleTypeDef* i2s;
     I2C_HandleTypeDef* i2c;
+
     uint16_t tx_buffer[Audio_Buffer_Sz];
-    size_t tx_buff_idx;
+    uint16_t* tx_ptr;
     uint16_t rx_buffer[Audio_Buffer_Sz];
+    uint16_t* rx_ptr;
     uint8_t byte_buff[Audio_Buffer_Sz_2];
-
-    bool first_half;
-
-    bool data_available;
-    bool stereo;
-
-    static constexpr uint16_t Running_Flag = 0x00;
-    static constexpr uint16_t Half_Complete_Flag = 0x01;
-    static constexpr uint16_t Complete_Flag = 0x02;
-    static constexpr uint16_t Stereo_Flag = 0x03;
-    static constexpr uint16_t Mic_Mute_Flag = 0x04;
 
     uint16_t flags = 0x00;
 

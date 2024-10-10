@@ -2,6 +2,8 @@
 
 #include "logger.hh"
 
+#include "main.h"
+
 // NOTE MCLK = 12Mhz
 #include <math.h>
 // For some reason M_PI is not defined when including math.h even though it
@@ -13,7 +15,12 @@
 extern UART_HandleTypeDef huart1;
 
 AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
-    i2s(&hi2s), i2c(&hi2c), tx_buffer{ 0 }, rx_buffer{ 0 }, first_half(true)
+    i2s(&hi2s),
+    i2c(&hi2c),
+    tx_buffer{ 0 },
+    tx_ptr{tx_buffer},
+    rx_buffer{ 0 },
+    rx_ptr{rx_buffer}
 {
     Init();
 }
@@ -103,7 +110,7 @@ void AudioChip::Init()
     // SetRegister(0x14, 0b0'1111'1001);
 
     // Slow close enable
-    // SetRegister(0x17, 0b1'1100'0001);
+    // SetRegister(0x17, 0b1'1101'0000);
 
     // // Headphone switch enabled
     // SetRegister(0x18, 0b0'0100'0000);
@@ -112,6 +119,10 @@ void AudioChip::Init()
     // SetRegister(0x1C, 0b0'0000'0100);
 
     // SetRegister(0x1D, 0b0'0100'0000);
+
+    // FIXME makes it sound like crap
+    // Enable mono mixer
+    // SetBit(0x1A, 1, 1);
 
     UnmuteMic();
 
@@ -337,9 +348,14 @@ void AudioChip::UnmuteMic()
     SetBit(0x19, 1, 1);
 }
 
-bool AudioChip::DataAvailable()
+bool AudioChip::TxBufferReady()
 {
-    return data_available;
+    return ReadFlag(AudioFlag::Tx_Ready);
+}
+
+bool AudioChip::RxBufferReady()
+{
+    return ReadFlag(AudioFlag::Rx_Ready);
 }
 
 void AudioChip::StartI2S()
@@ -348,56 +364,26 @@ void AudioChip::StartI2S()
 
     if (output == HAL_OK)
     {
-        flags |= (1 << Running_Flag);
+        RaiseFlag(AudioChip::Running);
     }
 }
 
 void AudioChip::StopI2S()
 {
     HAL_I2S_DMAStop(i2s);
-    // TODO
-    flags &= ~(1 << Running_Flag);
+
+    LowerFlag(AudioChip::Running);
 }
 
-const uint16_t* AudioChip::GetRxBuffer(const size_t offset) const
+uint16_t* AudioChip::TxBuffer()
 {
-    return rx_buffer + offset;
-}
-
-uint16_t* AudioChip::GetOutputBuffer(const size_t offset)
-{
-    return tx_buffer + offset;
-}
-
-uint16_t* AudioChip::GetOutputBuffer()
-{
-    if (flags & (1 << Half_Complete_Flag))
-    {
-        return tx_buffer;
-    }
-    else
-    {
-        return tx_buffer + Audio_Buffer_Sz_2;
-    }
-}
-
-void AudioChip::GetAudio(uint16_t* buffer, uint16_t size)
-{
-    for (uint16_t i = 0; i < size && i < Audio_Buffer_Sz; ++i)
-    {
-        buffer[i] = rx_buffer[i];
-    }
-
-    data_available = false;
-}
-
-const uint16_t* AudioChip::TxBuffer()
-{
+    LowerFlag(AudioFlag::Tx_Ready);
     return tx_buffer;
 }
 
 const uint16_t* AudioChip::RxBuffer()
 {
+    LowerFlag(AudioFlag::Rx_Ready);
     return rx_buffer;
 }
 
@@ -410,22 +396,32 @@ void AudioChip::HalfCompleteCallback()
 
     // UNCOMMENT THIS TO TEST THE AUDIO MIC
     // Copy the mic data to the speakers
-    // for (uint16_t i = 0; i < Audio_Buffer_Sz_2; i+=2)
-    // {
-    //     tx_buffer[i] = rx_buffer[i] + 5000;
-    //     tx_buffer[i+1] = rx_buffer[i] + 5000;
-    // }
     // END UNCOMMENT
-
-    // COMMENT THE BELOW OUT FOR TESTING
-    // Clear the first half of the buffer
-    for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
+    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET)
     {
-        tx_buffer[i] = 0;
+        for (uint16_t i = 0; i < Audio_Buffer_Sz_2; i+=2)
+        {
+            tx_buffer[i] = rx_buffer[i] + 5000;
+            tx_buffer[i+1] = rx_buffer[i+1] + 5000;
+        }
+    }
+    else
+    {
+        // COMMENT THE BELOW OUT FOR TESTING
+        // Clear the first half of the buffer
+
+        for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
+        {
+            tx_buffer[i] = 0;
+        }
     }
 
-    // Set half complete flag
-    flags |= (1 << Half_Complete_Flag);
+
+    tx_ptr = tx_buffer;
+    rx_ptr = rx_buffer;
+
+    RaiseFlag(AudioFlag::Rx_Ready);
+    RaiseFlag(AudioFlag::Tx_Ready);
 }
 
 void AudioChip::CompleteCallback()
@@ -437,37 +433,30 @@ void AudioChip::CompleteCallback()
 
     // UNCOMMENT THIS TO TEST THE AUDIO MIC
     // Copy the mic data to the speakers
-    // for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; i+=2)
-    // {
-    //     tx_buffer[i] = rx_buffer[i] + 5000;
-    //     tx_buffer[i+1] = rx_buffer[i] + 5000;
-    // }
-    // END UNCOMMENT
-
-
-    // COMMENT THE BELOW OUT FOR TESTING
-    // Clear the second half of the buffer
-    for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; ++i)
+    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET)
     {
-        tx_buffer[i] = 0;
+        for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; i+=2)
+        {
+            tx_buffer[i] = rx_buffer[i] + 5000;
+            tx_buffer[i+1] = rx_buffer[i+1] + 5000;
+        }
+        // END UNCOMMENT
+    }
+    else
+    {
+        // COMMENT THE BELOW OUT FOR TESTING
+        // Clear the second half of the buffer
+        for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; ++i)
+        {
+            tx_buffer[i] = 0;
+        }
     }
 
-    // Set complete flag
-    flags |= (1 << Complete_Flag);
-}
+    tx_ptr = tx_buffer + Audio_Buffer_Sz_2;
+    rx_ptr = rx_buffer + Audio_Buffer_Sz_2;
 
-bool AudioChip::IsHalfComplete()
-{
-    bool res = flags & (1 << Half_Complete_Flag);
-    flags &= ~(1 << Half_Complete_Flag);
-    return res;
-}
-
-bool AudioChip::IsComplete()
-{
-    bool res = flags & (1 << Complete_Flag);
-    flags &= ~(1 << Complete_Flag);
-    return res;
+    RaiseFlag(AudioFlag::Rx_Ready);
+    RaiseFlag(AudioFlag::Tx_Ready);
 }
 
 uint16_t AudioChip::AudioBufferSize() const
@@ -488,76 +477,28 @@ void AudioChip::ClearTxBuffer()
     }
 }
 
-void AudioChip::WriteHalf(uint16_t* buff, const size_t start_idx,
-    const size_t size)
+void AudioChip::Transmit(uint16_t* buff, const size_t size)
 {
-    size_t j = start_idx;
-    size_t i;
-
-    if (flags & (1 << Half_Complete_Flag))
+    uint16_t* tmp_ptr = tx_ptr;
+    for (size_t i = 0; i < Audio_Buffer_Sz && i < size; ++i)
     {
-        // If the half complete flag is set then i = 0;
-        i = 0;
-
-        while (i < Audio_Buffer_Sz_2 && j < size)
-        {
-            tx_buffer[i++] = buff[j++];
-        }
+        tmp_ptr[i] = buff[i];
     }
-    else
-    {
-        // Otherwise i = buffer_size /2
-        i = Audio_Buffer_Sz_2;
 
-        while (i < Audio_Buffer_Sz && j < size)
-        {
-            tx_buffer[i++] = buff[j++];
-        }
-    }
+    LowerFlag(AudioFlag::Tx_Ready);
 }
 
-void AudioChip::WriteFirstHalf(uint16_t* buff, const size_t start_idx,
-    const size_t size)
+void AudioChip::Recieve(uint16_t* buff, const size_t size)
 {
-    size_t i = 0;
-    size_t j = start_idx;
-    while (i < Audio_Buffer_Sz_2 && j < size)
+    // Make a tmp pointer so that if there is an interrupt during transfer
+    // then our pointer won't change
+    uint16_t* tmp_ptr = rx_ptr;
+    for (size_t i = 0 ; i < Audio_Buffer_Sz && i < size; ++i)
     {
-        tx_buffer[i++] = buff[j++];
+        buff[i] = tmp_ptr[i];
     }
-}
 
-void AudioChip::WriteSecondHalf(uint16_t* buff, const size_t start_idx,
-    const size_t size)
-{
-    size_t i = Audio_Buffer_Sz_2;
-    size_t j = start_idx;
-    while (i < Audio_Buffer_Sz && j < size)
-    {
-        tx_buffer[i++] = buff[j++];
-    }
-}
-
-void AudioChip::ReadFirstHalf(uint16_t* buff, const size_t start_idx,
-    const size_t size)
-{
-    size_t i = 0;
-    size_t j = start_idx;
-    while (i < Audio_Buffer_Sz_2 && j < size)
-    {
-        buff[j++] = rx_buffer[i++];
-    }
-}
-
-void AudioChip::ReadSecondHalf(uint16_t* buff, const size_t start_idx,
-    const size_t size)
-{
-    size_t i = Audio_Buffer_Sz_2;
-    size_t j = start_idx;
-    while (i < Audio_Buffer_Sz && j < size)
-    {
-        buff[j++] = rx_buffer[i++];
-    }
+    LowerFlag(AudioFlag::Rx_Ready);
 }
 
 void AudioChip::SampleSineWave(const uint16_t num_samples,
@@ -708,4 +649,26 @@ void AudioChip::SendSawToothWave()
     HAL_I2S_Transmit(i2s, buff, num_samples, HAL_MAX_DELAY);
 
     HAL_Delay(10);
+}
+
+inline void AudioChip::RaiseFlag(AudioFlag flag)
+{
+    flags |= 1 << flag;
+}
+
+inline void AudioChip::LowerFlag(AudioFlag flag)
+{
+    flags &= ~(1 << flag);
+}
+
+inline bool AudioChip::ReadFlag(AudioFlag flag)
+{
+    return (flags >> flag) & 0x01;
+}
+
+inline bool AudioChip::ReadAndLowerFlag(AudioFlag flag)
+{
+    const bool res = (flags >> flag) & 0x01;
+    LowerFlag(flag);
+    return res;
 }

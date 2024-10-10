@@ -43,7 +43,7 @@ void PlainChatView::Draw()
         {
             DrawUsrInputSeperator();
             // DrawTitle();
-            DrawTitleBar(manager.ActiveRoom()->friendly_name,
+            DrawTitleBar("Test room",
                 menu_font, C_WHITE, C_BLACK, screen);
             first_load = false;
         }
@@ -288,41 +288,19 @@ void PlainChatView::DrawUsrInputSeperator()
 
 void PlainChatView::SendAudio(uint32_t current_tick)
 {
-    if (audio.IsHalfComplete())
+    if (audio.RxBufferReady())
     {
         // Get audio at the start
-        const uint16_t* raw_buff = audio.GetRxBuffer(0);
+        const uint16_t* raw_rx_buff = audio.RxBuffer();
 
         auto packet = std::move(qchat::Codec::encode(
             serial.NextPacketId(),
             manager.ActiveRoom()->room_uri,
-            raw_buff,
+            raw_rx_buff,
             audio.AudioBufferSize_2(),
             current_tick
         ));
 
         serial.EnqueuePacket(std::move(packet));
-
-        last_audio_buffer_used = 0;
-        send_once = true;
-    }
-    else if (audio.IsComplete())
-    {
-        // Get the raw audio half way through
-        const uint16_t* raw_buff = audio.GetRxBuffer(audio.AudioBufferSize_2());
-
-        // Send wave
-        auto packet = std::move(qchat::Codec::encode(
-            serial.NextPacketId(),
-            manager.ActiveRoom()->room_uri,
-            raw_buff,
-            audio.AudioBufferSize_2(),
-            current_tick
-        ));
-
-        serial.EnqueuePacket(std::move(packet));
-
-        last_audio_buffer_used = 1;
-        send_once = true;
     }
 }

@@ -23,12 +23,15 @@ NetManager::NetManager(SerialPacketManager& ui_layer,
     Wifi& wifi,
     std::shared_ptr<QSession> qsession,
     std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects)
-    : ui_layer(ui_layer),
+    :
+    ui_layer(ui_layer),
     wifi(wifi),
     quicr_session(qsession),
-    inbound_objects(inbound_objects)
+    inbound_objects(inbound_objects),
+    audio_buffer(32),
+    audio_buffered(false)
 {
-    xTaskCreate(HandleSerial, "handle_serial_task", 8192 * 2, (void*)this, 13, NULL);
+    xTaskCreate(HandleSerial, "handle_serial_task", 8192 * 4, (void*)this, 1, NULL);
     xTaskCreate(HandleNetwork, "handle_network", 4096, (void*)this, 13, NULL);
 }
 
@@ -45,9 +48,44 @@ void NetManager::HandleSerial(void* param)
     while (true)
     {
         // Delay at the start
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
 
         self->ui_layer.Update(xTaskGetTickCount() / portTICK_PERIOD_MS);
+
+        while (self->audio_buffer.Unread() > 15 || self->audio_buffered)
+        {
+            if (self->audio_buffer.Unread() == 0 && self->audio_buffered)
+            {
+                self->audio_buffered = false;
+                break;
+            }
+
+            auto& rx_packets = self->ui_layer.GetRxPackets();
+            uint32_t timeout = (xTaskGetTickCount() / portTICK_PERIOD_MS) + 10000;
+            while (rx_packets.size() > 0 &&
+                xTaskGetTickCount() / portTICK_PERIOD_MS < timeout)
+            {
+                std::unique_ptr<SerialPacket> rx_packet = std::move(rx_packets[0]);
+                SerialPacket::Types packet_type = static_cast<SerialPacket::Types>(
+                    rx_packet->GetData<uint8_t>(0, 1));
+
+                if (packet_type == SerialPacket::Types::QMessage)
+                {
+                    Logger::Log(Logger::Level::Info, "NetManager: Handle for Packet:Type:Message");
+
+                    // Skip the packetId and go to the next part of the packet data
+                    uint8_t sub_message_type = rx_packet->GetData<uint8_t>(5, 1);
+                    self->HandleQChatMessages(sub_message_type, rx_packet, 6);
+                }
+
+                rx_packets.pop_front();
+            }
+
+            self->audio_buffered = true;
+            self->ui_layer.EnqueuePacket(self->audio_buffer.Read());
+            self->ui_layer.Update(xTaskGetTickCount() / portTICK_PERIOD_MS);
+        }
+
 
 
         self->HandleSerialCommands();
@@ -166,7 +204,7 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
 
             // Get the room uri
             std::string room_uri;
-            for (int i =0; i < room_len; ++i)
+            for (int i = 0; i < room_len; ++i)
             {
                 room_uri.push_back(rx_packet->GetData<char>(off, 1));
                 off += 1;
@@ -176,6 +214,7 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
             uint16_t audio_len = rx_packet->GetData<uint16_t>(off, 2);
             off += 2;
 
+            // this is a hack for now until quicr is fixed.
             std::vector<uint8_t> msg;
             msg.reserve(audio_len + 1); // +1 for type
             msg.push_back((uint8_t)qchat::MessageTypes::Audio);
@@ -183,13 +222,48 @@ void NetManager::HandleQChatMessages(uint8_t message_type,
             for (uint16_t i = 0; i < audio_len; ++i)
             {
                 msg.push_back(rx_packet->GetData<uint8_t>(off, 1));
-                off+=1;
+                off += 1;
             }
 
-            auto nspace = quicr_session->to_namespace(room_uri);
+            // Loopback
+            // Convert the msg to a packet
+            const uint16_t Bytes_In_128_Bits = 128 / 8;
 
-            Logger::Log(Logger::Level::Info, "Send audio to quicr session to publish");
-            quicr_session->publish(nspace, msg);
+            uint16_t packet_len = msg.size();
+            uint16_t total_len = packet_len + 9 + Bytes_In_128_Bits;
+
+            std::unique_ptr<SerialPacket> loopback_packet = std::make_unique<SerialPacket>(packet_len + 5);
+
+            loopback_packet->SetData(SerialPacket::Types::QMessage, 0, 1);
+            loopback_packet->SetData(ui_layer.NextPacketId(), 1, 2);
+            loopback_packet->SetData(total_len, 2);
+            loopback_packet->SetData(qchat::MessageTypes::Ascii, 1);
+
+            loopback_packet->SetData(Bytes_In_128_Bits, 4);
+
+            for (size_t i = 0; i < Bytes_In_128_Bits; ++i)
+            {
+                loopback_packet->SetData('a', 1);
+            }
+
+            loopback_packet->SetData(packet_len, 4);
+
+            for (size_t i = 0 ; i < packet_len; ++i)
+            {
+                loopback_packet->SetData(msg[i], 1);
+            }
+
+            Logger::Log(Logger::Level::Info, "Sending audio data back");
+
+            audio_buffer.Write(std::move(loopback_packet));
+            // ui_layer.EnqueuePacket(std::move(loopback_packet));
+
+
+
+            // auto nspace = quicr_session->to_namespace(room_uri);
+
+            // Logger::Log(Logger::Level::Info, "Send audio to quicr session to publish");
+            // quicr_session->publish(nspace, msg);
             break;
         }
         default:
@@ -364,7 +438,7 @@ void NetManager::HandleSerialCommands()
     while (wifi_packets->Unread() > 0)
     {
         Logger::Log(Logger::Level::Info, "Wifi packets available: ", wifi_packets->Unread());
-        auto packet = std::move(wifi_packets->Read());
+        std::unique_ptr<SerialPacket> packet = wifi_packets->Read();
         // Get the type
         SerialPacket::WifiTypes wifi_cmd_type = static_cast<SerialPacket::WifiTypes>(
             packet->GetData<uint16_t>(7, 1));
@@ -419,7 +493,7 @@ void NetManager::HandleSerialCommands()
     while (room_packets->Unread() > 0)
     {
         Logger::Log(Logger::Level::Info, "room packets available: ", room_packets->Unread());
-        auto packet = std::move(room_packets->Read());
+        std::unique_ptr<SerialPacket> packet = room_packets->Read();
 
         GetRoomsCommand();
     }
