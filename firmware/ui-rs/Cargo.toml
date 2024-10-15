@@ -1,0 +1,21 @@
+[package]
+edition = "2021"
+name = "hactar-ui"
+version = "0.1.0"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+embassy-stm32 = { version = "0.1.0", features = ["defmt", "stm32f405rg", "unstable-pac", "memory-x", "time-driver-any", "exti", "chrono"] }
+embassy-executor = { version = "0.6.0", features = ["task-arena-size-32768", "arch-cortex-m", "executor-thread", "executor-interrupt", "defmt", "integrated-timers"] }
+embassy-time = { version = "0.3.2", features = ["defmt", "defmt-timestamp-uptime", "tick-hz-32_768"] }
+
+defmt = "0.3"
+defmt-rtt = "0.4"
+
+cortex-m = { version = "0.7.6", features = ["inline-asm", "critical-section-single-core"] }
+cortex-m-rt = "0.7.0"
+
+panic-probe = { version = "0.3", features = ["print-defmt"] }
+
+[profile.release]
+debug = 2
