@@ -12,6 +12,8 @@ set (SOURCES
     net_manager.cc
 )
 
+set(CMAKE_CXX_FLAGS "-Wno-error=format -Wno-error=pessimizing-move")
+
 idf_component_register(SRCS ${SOURCES}
                     INCLUDE_DIRS . ../../../shared_inc/ ../../core/inc
                     PRIV_REQUIRES ${priv_requires}
