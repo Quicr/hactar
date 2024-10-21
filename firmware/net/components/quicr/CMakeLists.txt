@@ -14,6 +14,4 @@ idf_component_register(
 
 
 add_subdirectory(lib)
-
-# target_compile_options(quicr PRIVATE -Wno-error=format)
 target_link_libraries(${COMPONENT_LIB} INTERFACE quicr)

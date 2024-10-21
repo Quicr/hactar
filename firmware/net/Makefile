@@ -15,10 +15,10 @@ ESP_TOOL_ARGS 		= --trace --no-stub --port=${PORT} --baud=${BAUD} write_flash --
 all: compile upload
 
 idf-clean:
-	idf.py fullclean
+	idf.py -B $(BUILD_PATH)  fullclean
 
 compile:
-	idf.py build
+	idf.py -B $(BUILD_PATH) build
 
 upload:
 	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" \
