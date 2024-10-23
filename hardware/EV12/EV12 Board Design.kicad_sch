@@ -11883,6 +11883,12 @@
 		(uuid "2a7f534e-3332-443f-a528-5a5143d97333")
 	)
 	(junction
+		(at 33.02 311.15)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "2b67c683-5f6d-4a61-b516-6e1702e7ce01")
+	)
+	(junction
 		(at 265.43 351.79)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -11971,6 +11977,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "4e587e3b-9ea8-448b-ae4a-9262b8f412b7")
+	)
+	(junction
+		(at 35.56 327.66)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4f7d4ac2-769c-4599-bc21-e1ea53ef09f0")
 	)
 	(junction
 		(at 405.13 161.29)
@@ -12255,6 +12267,12 @@
 		(uuid "98394f89-7ed3-4636-b079-f4bbd943b2fc")
 	)
 	(junction
+		(at 33.02 302.26)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "9c27b15c-1c29-427f-870d-239502fae388")
+	)
+	(junction
 		(at 196.85 351.79)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -12499,12 +12517,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f99bf917-d2f0-4f5d-9604-79af0d0b91ad")
-	)
-	(junction
-		(at 35.56 302.26)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "ffc1e1ef-edf0-4820-aaa8-b456b41ee50e")
 	)
 	(no_connect
 		(at 196.85 127)
@@ -12795,6 +12807,16 @@
 			(type default)
 		)
 		(uuid "021f4532-6280-4977-8537-8f58dd06f6e6")
+	)
+	(wire
+		(pts
+			(xy 33.02 302.26) (xy 86.36 302.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0246957f-242b-40c6-8dcc-9208306d5714")
 	)
 	(polyline
 		(pts
@@ -13588,6 +13610,16 @@
 	)
 	(wire
 		(pts
+			(xy 35.56 327.66) (xy 48.26 327.66)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1ec9e5de-9f6f-4d36-8015-3d96341cd16d")
+	)
+	(wire
+		(pts
 			(xy 80.01 311.15) (xy 80.01 316.23)
 		)
 		(stroke
@@ -13778,7 +13810,7 @@
 	)
 	(wire
 		(pts
-			(xy 35.56 311.15) (xy 38.1 311.15)
+			(xy 33.02 311.15) (xy 38.1 311.15)
 		)
 		(stroke
 			(width 0)
@@ -15578,16 +15610,6 @@
 	)
 	(wire
 		(pts
-			(xy 35.56 327.66) (xy 48.26 327.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6974f024-1b15-4556-93eb-8b364b003d7e")
-	)
-	(wire
-		(pts
 			(xy 403.86 290.83) (xy 403.86 293.37)
 		)
 		(stroke
@@ -15895,6 +15917,16 @@
 			(type default)
 		)
 		(uuid "760d0698-b91f-4d98-998b-ff7dbaa519e5")
+	)
+	(wire
+		(pts
+			(xy 33.02 327.66) (xy 35.56 327.66)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "764ecdac-b182-43c5-b881-a7e872b681db")
 	)
 	(wire
 		(pts
@@ -16845,6 +16877,16 @@
 			(type default)
 		)
 		(uuid "9a0a2aeb-ffbd-407f-aaaf-52d502454da1")
+	)
+	(wire
+		(pts
+			(xy 33.02 318.77) (xy 33.02 327.66)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9a3fd454-a75f-4f8a-a6da-f7e6bcc19fad")
 	)
 	(polyline
 		(pts
@@ -18278,7 +18320,7 @@
 	)
 	(wire
 		(pts
-			(xy 35.56 302.26) (xy 35.56 311.15)
+			(xy 33.02 302.26) (xy 33.02 311.15)
 		)
 		(stroke
 			(width 0)
@@ -18295,16 +18337,6 @@
 			(type default)
 		)
 		(uuid "d3729f6f-c71a-4e50-9590-7b3cb5138833")
-	)
-	(wire
-		(pts
-			(xy 35.56 302.26) (xy 86.36 302.26)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d4115ab0-69ea-4d33-b33b-2023248dc491")
 	)
 	(wire
 		(pts
@@ -19018,7 +19050,7 @@
 	)
 	(wire
 		(pts
-			(xy 35.56 299.72) (xy 35.56 302.26)
+			(xy 33.02 299.72) (xy 33.02 302.26)
 		)
 		(stroke
 			(width 0)
@@ -28585,7 +28617,7 @@
 		(dnp no)
 		(uuid "516f255b-ef4f-4a36-abea-05082fd6bbe3")
 		(property "Reference" "R26"
-			(at 38.608 322.58 0)
+			(at 38.608 323.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28593,7 +28625,7 @@
 			)
 		)
 		(property "Value" "680"
-			(at 33.274 322.58 90)
+			(at 38.608 320.802 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -31022,6 +31054,84 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR0119")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 33.02 314.96 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "7a97a0d1-acc4-48ad-9bdf-1dd89dee346d")
+		(property "Reference" "C21"
+			(at 30.226 312.928 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10u"
+			(at 28.956 317.754 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+			(at 33.9852 318.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 33.02 314.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 33.02 314.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C307415"
+			(at 33.02 314.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "445eb3cc-65c4-4006-9cf9-b8e23c6f778b")
+		)
+		(pin "2"
+			(uuid "94eafc4d-68fd-4277-b904-194789277f01")
+		)
+		(instances
+			(project "EV12 Board Design"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "C21")
 					(unit 1)
 				)
 			)
@@ -39028,7 +39138,7 @@
 	)
 	(symbol
 		(lib_id "power:VBUS")
-		(at 35.56 299.72 0)
+		(at 33.02 299.72 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -39036,7 +39146,7 @@
 		(dnp no)
 		(uuid "f9f7a61d-6e42-43ee-a48d-e6a9b0b7d0a8")
 		(property "Reference" "#PWR03"
-			(at 35.56 303.53 0)
+			(at 33.02 303.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -39045,7 +39155,7 @@
 			)
 		)
 		(property "Value" "VBUS"
-			(at 35.306 296.672 0)
+			(at 32.766 296.672 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -39053,7 +39163,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 35.56 299.72 0)
+			(at 33.02 299.72 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -39062,7 +39172,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 35.56 299.72 0)
+			(at 33.02 299.72 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -39071,7 +39181,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"VBUS\""
-			(at 35.56 299.72 0)
+			(at 33.02 299.72 0)
 			(effects
 				(font
 					(size 1.27 1.27)
