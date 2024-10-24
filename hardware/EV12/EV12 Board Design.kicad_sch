@@ -10211,196 +10211,6 @@
 				)
 			)
 		)
-		(symbol "Transistor_BJT:SS8050"
-			(pin_names
-				(offset 0) hide)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "Q"
-				(at 5.08 1.905 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Value" "SS8050"
-				(at 5.08 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Footprint" "Package_TO_SOT_SMD:SOT-23"
-				(at 5.08 -7.366 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-						(italic yes)
-					)
-					(justify left)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "http://www.secosgmbh.com/datasheet/products/SSMPTransistor/SOT-23/SS8050.pdf"
-				(at 5.08 -4.826 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-					(hide yes)
-				)
-			)
-			(property "Description" "General Purpose NPN Transistor, 1.5A Ic, 25V Vce, SOT-23"
-				(at 34.036 -2.286 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "SS8050 NPN Transistor"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "SOT?23*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "SS8050_0_1"
-				(polyline
-					(pts
-						(xy 0.635 0.635) (xy 2.54 2.54)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0.635 -0.635) (xy 2.54 -2.54) (xy 2.54 -2.54)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0.635 1.905) (xy 0.635 -1.905) (xy 0.635 -1.905)
-					)
-					(stroke
-						(width 0.508)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -1.778) (xy 1.778 -1.27) (xy 2.286 -2.286) (xy 1.27 -1.778) (xy 1.27 -1.778)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(circle
-					(center 1.27 0)
-					(radius 2.8194)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "SS8050_1_1"
-				(pin input line
-					(at -5.08 0 0)
-					(length 5.715)
-					(name "B"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 2.54 -5.08 90)
-					(length 2.54)
-					(name "E"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 2.54 5.08 270)
-					(length 2.54)
-					(name "C"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-		)
 		(symbol "WM8960CGEFL/RV_1_1"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -11739,12 +11549,6 @@
 		(uuid "055091fc-8af4-4d54-b983-b5b6e17a5cce")
 	)
 	(junction
-		(at 270.51 129.54)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "05c3bdb7-7ec7-4dd8-8681-1593b374eb12")
-	)
-	(junction
 		(at 196.85 330.2)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -11779,12 +11583,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "0c58081a-f66c-4c18-9699-51592c6cc542")
-	)
-	(junction
-		(at 269.24 115.57)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "101504d6-336a-445d-87d5-ab0b3eb5e650")
 	)
 	(junction
 		(at 71.12 370.84)
@@ -12758,16 +12556,6 @@
 		(at 256.54 231.14)
 		(uuid "fc191482-c178-46c4-a572-d92a2b2733d3")
 	)
-	(polyline
-		(pts
-			(xy 304.8 107.95) (xy 304.8 137.16)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "003b8920-a21f-457c-8df3-f0b7ec13d74a")
-	)
 	(wire
 		(pts
 			(xy 339.09 294.64) (xy 349.25 294.64)
@@ -12817,16 +12605,6 @@
 			(type default)
 		)
 		(uuid "0246957f-242b-40c6-8dcc-9208306d5714")
-	)
-	(wire
-		(pts
-			(xy 401.32 261.62) (xy 410.21 261.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "02691e1f-a325-4417-8305-d54c322976d6")
 	)
 	(polyline
 		(pts
@@ -12927,6 +12705,16 @@
 			(type default)
 		)
 		(uuid "07313505-aa83-4b3f-b29e-aaede99891ba")
+	)
+	(wire
+		(pts
+			(xy 57.15 132.08) (xy 73.66 132.08)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "07a597d0-b585-44b1-9d44-b493b4964ec0")
 	)
 	(wire
 		(pts
@@ -13300,16 +13088,6 @@
 	)
 	(wire
 		(pts
-			(xy 270.51 121.92) (xy 270.51 129.54)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "136a8037-3e45-4737-9a4a-d5acd096c9ab")
-	)
-	(wire
-		(pts
 			(xy 149.86 330.2) (xy 149.86 351.79)
 		)
 		(stroke
@@ -13470,16 +13248,6 @@
 	)
 	(wire
 		(pts
-			(xy 280.67 129.54) (xy 281.94 129.54)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "197c9cd8-fd60-4a8e-8ede-69ccd134b0c6")
-	)
-	(wire
-		(pts
 			(xy 41.91 105.41) (xy 36.83 105.41)
 		)
 		(stroke
@@ -13567,16 +13335,6 @@
 			(type default)
 		)
 		(uuid "1d58c840-f8e5-4779-91bb-6dcea1c20f88")
-	)
-	(wire
-		(pts
-			(xy 417.83 261.62) (xy 419.1 261.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1d69b92f-6cac-4a42-acd7-e5850f57847d")
 	)
 	(wire
 		(pts
@@ -13680,16 +13438,6 @@
 	)
 	(wire
 		(pts
-			(xy 269.24 123.19) (xy 289.56 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1f9e66b2-21b8-48a3-9366-a3bb37fb08a1")
-	)
-	(wire
-		(pts
 			(xy 364.49 224.79) (xy 375.92 224.79)
 		)
 		(stroke
@@ -13777,16 +13525,6 @@
 			(type default)
 		)
 		(uuid "2355b228-5191-463e-ae4b-e92c54c394b3")
-	)
-	(wire
-		(pts
-			(xy 452.12 294.64) (xy 467.36 294.64)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2363fe32-ff5f-425e-9e58-b1d4cfac48ab")
 	)
 	(wire
 		(pts
@@ -14020,16 +13758,6 @@
 	)
 	(wire
 		(pts
-			(xy 289.56 110.49) (xy 294.64 110.49)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2ab355ec-e4dd-4515-b31d-9215a9f732d9")
-	)
-	(wire
-		(pts
 			(xy 259.08 195.58) (xy 256.54 195.58)
 		)
 		(stroke
@@ -14087,6 +13815,16 @@
 			(type default)
 		)
 		(uuid "2cebe574-5ccb-4506-a5fa-c3f38c8ff9ac")
+	)
+	(wire
+		(pts
+			(xy 452.12 287.02) (xy 467.36 287.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2d405c1b-b62d-47ab-bf07-58a91e3075a9")
 	)
 	(wire
 		(pts
@@ -14317,16 +14055,6 @@
 			(type default)
 		)
 		(uuid "346431a4-aae9-48d4-a9f9-09282fcc026d")
-	)
-	(wire
-		(pts
-			(xy 248.92 115.57) (xy 260.35 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3473ba96-f50c-4c79-aaef-66be1465b972")
 	)
 	(wire
 		(pts
@@ -15010,16 +14738,6 @@
 	)
 	(wire
 		(pts
-			(xy 280.67 115.57) (xy 281.94 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4e497676-e6e7-43c8-844a-4d9b1e8e4223")
-	)
-	(wire
-		(pts
 			(xy 313.69 81.28) (xy 322.58 81.28)
 		)
 		(stroke
@@ -15077,16 +14795,6 @@
 			(type default)
 		)
 		(uuid "5092a29f-db08-4875-b940-8d3878c6b3ee")
-	)
-	(wire
-		(pts
-			(xy 72.39 129.54) (xy 73.66 129.54)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "50a3429f-601a-45eb-b328-040d9ae4d7ce")
 	)
 	(polyline
 		(pts
@@ -15380,13 +15088,13 @@
 	)
 	(wire
 		(pts
-			(xy 55.88 132.08) (xy 73.66 132.08)
+			(xy 410.21 261.62) (xy 419.1 261.62)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "5e1fcc7e-1b6b-45b5-bf7d-9aed4c853aff")
+		(uuid "5dee8c56-2142-478b-9cc0-b8b98cd1b790")
 	)
 	(wire
 		(pts
@@ -15427,16 +15135,6 @@
 			(type default)
 		)
 		(uuid "5fd70e79-0f09-4c4b-a7e9-8fa7157fde0f")
-	)
-	(wire
-		(pts
-			(xy 267.97 129.54) (xy 270.51 129.54)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "609c4d0e-6aed-4218-b2aa-839598253c3e")
 	)
 	(polyline
 		(pts
@@ -15690,6 +15388,16 @@
 	)
 	(wire
 		(pts
+			(xy 410.21 264.16) (xy 419.1 264.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6a13a61a-5efd-4fb4-b623-0f4ba26cee6a")
+	)
+	(wire
+		(pts
 			(xy 242.57 121.92) (xy 227.33 121.92)
 		)
 		(stroke
@@ -15810,16 +15518,6 @@
 	)
 	(wire
 		(pts
-			(xy 269.24 115.57) (xy 267.97 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6f4411aa-b6a1-4b80-81c8-4948497a6d68")
-	)
-	(wire
-		(pts
 			(xy 383.54 163.83) (xy 397.51 163.83)
 		)
 		(stroke
@@ -15908,16 +15606,6 @@
 		)
 		(uuid "735b6a39-3f6f-483b-bf2d-5199c9b5c446")
 	)
-	(polyline
-		(pts
-			(xy 304.8 137.16) (xy 246.38 137.16)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7364eb41-895c-4f48-b083-e03e12bf9039")
-	)
 	(wire
 		(pts
 			(xy 257.81 335.28) (xy 257.81 351.79)
@@ -15987,16 +15675,6 @@
 			(type default)
 		)
 		(uuid "764ecdac-b182-43c5-b881-a7e872b681db")
-	)
-	(wire
-		(pts
-			(xy 69.85 134.62) (xy 73.66 134.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "766ec904-8e98-4e4d-b5a0-2b966f548a14")
 	)
 	(wire
 		(pts
@@ -16130,16 +15808,6 @@
 	)
 	(wire
 		(pts
-			(xy 289.56 134.62) (xy 294.64 134.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7b6c8e5b-09a8-406e-a23a-b269e631dfd7")
-	)
-	(wire
-		(pts
 			(xy 49.53 142.24) (xy 73.66 142.24)
 		)
 		(stroke
@@ -16260,16 +15928,6 @@
 	)
 	(wire
 		(pts
-			(xy 289.56 121.92) (xy 289.56 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7f110e88-0602-407a-b44b-a2c4dea68d72")
-	)
-	(wire
-		(pts
 			(xy 325.12 119.38) (xy 347.98 119.38)
 		)
 		(stroke
@@ -16277,16 +15935,6 @@
 			(type default)
 		)
 		(uuid "7f2aee9b-75ac-44e9-9ea9-9551a6ba81d5")
-	)
-	(wire
-		(pts
-			(xy 248.92 129.54) (xy 260.35 129.54)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "800113da-f957-4b1a-bf6c-e5a37040a3dc")
 	)
 	(wire
 		(pts
@@ -16700,16 +16348,6 @@
 	)
 	(wire
 		(pts
-			(xy 416.56 264.16) (xy 419.1 264.16)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8fd7405b-44da-4ecc-aa2f-85b905ba5bd1")
-	)
-	(wire
-		(pts
 			(xy 64.77 370.84) (xy 55.88 370.84)
 		)
 		(stroke
@@ -16950,16 +16588,6 @@
 	)
 	(wire
 		(pts
-			(xy 115.57 132.08) (xy 121.92 132.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "99b8193e-d0eb-42c8-9da3-5ce4f627a0e3")
-	)
-	(wire
-		(pts
 			(xy 363.22 276.86) (xy 373.38 276.86)
 		)
 		(stroke
@@ -16987,6 +16615,16 @@
 			(type default)
 		)
 		(uuid "9ae14b9a-a69c-44b9-8985-924bcce80f3e")
+	)
+	(wire
+		(pts
+			(xy 57.15 134.62) (xy 73.66 134.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9af21ba6-701e-4108-8dad-255485b10782")
 	)
 	(wire
 		(pts
@@ -17248,16 +16886,6 @@
 		)
 		(uuid "a60d385f-ca30-41d3-8c12-85e2fdc9f15e")
 	)
-	(polyline
-		(pts
-			(xy 246.38 137.16) (xy 246.38 107.95)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a6299e29-086c-47bb-926f-23cc702d9b3f")
-	)
 	(wire
 		(pts
 			(xy 314.96 236.22) (xy 326.39 236.22)
@@ -17267,16 +16895,6 @@
 			(type default)
 		)
 		(uuid "a63ce03c-198d-4fa1-ba60-0d3605ee9edf")
-	)
-	(wire
-		(pts
-			(xy 53.34 134.62) (xy 62.23 134.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a646f91c-1bd6-4069-b039-0959dc685e1d")
 	)
 	(wire
 		(pts
@@ -17327,16 +16945,6 @@
 			(type default)
 		)
 		(uuid "a8cab9ce-4ae8-4129-95b0-35c84d519f11")
-	)
-	(wire
-		(pts
-			(xy 270.51 121.92) (xy 289.56 121.92)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a8ed9255-7558-490e-a925-d9f2148cfa68")
 	)
 	(wire
 		(pts
@@ -17427,6 +17035,16 @@
 			(type default)
 		)
 		(uuid "abc06890-5aef-45fe-a719-f1f5d68e6ae1")
+	)
+	(wire
+		(pts
+			(xy 452.12 294.64) (xy 467.36 294.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "abe1e262-0070-4875-ac51-b4bdc0b38ebd")
 	)
 	(wire
 		(pts
@@ -17660,17 +17278,7 @@
 	)
 	(wire
 		(pts
-			(xy 452.12 287.02) (xy 467.36 287.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b4af992b-235a-4f7c-a900-d7747117eb16")
-	)
-	(wire
-		(pts
-			(xy 106.68 132.08) (xy 107.95 132.08)
+			(xy 106.68 132.08) (xy 121.92 132.08)
 		)
 		(stroke
 			(width 0)
@@ -17757,16 +17365,6 @@
 			(type default)
 		)
 		(uuid "b66cab47-099f-455a-9cf1-2003bad41d4a")
-	)
-	(wire
-		(pts
-			(xy 269.24 115.57) (xy 273.05 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b6c4152a-9637-4f23-9f31-c2a1427c5cc0")
 	)
 	(wire
 		(pts
@@ -18030,16 +17628,6 @@
 	)
 	(wire
 		(pts
-			(xy 289.56 123.19) (xy 289.56 124.46)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c6dd4b30-01da-495d-bea3-20e4ee055b9c")
-	)
-	(wire
-		(pts
 			(xy 60.96 327.66) (xy 60.96 326.39)
 		)
 		(stroke
@@ -18120,16 +17708,6 @@
 	)
 	(wire
 		(pts
-			(xy 269.24 123.19) (xy 269.24 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c9dda4b5-c9bb-45f7-956b-91236c74fb28")
-	)
-	(wire
-		(pts
 			(xy 447.04 138.43) (xy 447.04 139.7)
 		)
 		(stroke
@@ -18197,16 +17775,6 @@
 			(type default)
 		)
 		(uuid "cbf52be8-205d-4757-8ee0-ffeda6b3a7b6")
-	)
-	(wire
-		(pts
-			(xy 401.32 264.16) (xy 408.94 264.16)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cc1c4461-de61-492d-bfa6-871003715b62")
 	)
 	(wire
 		(pts
@@ -19058,16 +18626,6 @@
 		)
 		(uuid "eb158bde-3360-4a6d-8f73-2c05cf2babe2")
 	)
-	(polyline
-		(pts
-			(xy 246.38 107.95) (xy 304.8 107.95)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ebd72a39-5228-427f-94f3-f2475aad29c3")
-	)
 	(wire
 		(pts
 			(xy 173.99 83.82) (xy 167.64 83.82)
@@ -19238,16 +18796,6 @@
 		)
 		(uuid "f1622f29-1c16-4dd9-bb2f-7a1e563d6778")
 	)
-	(wire
-		(pts
-			(xy 270.51 129.54) (xy 273.05 129.54)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f1a5d67e-6092-43d1-805b-26c265b5daef")
-	)
 	(polyline
 		(pts
 			(xy 336.55 213.36) (xy 336.55 250.19)
@@ -19287,16 +18835,6 @@
 			(type default)
 		)
 		(uuid "f33a7138-1870-41f8-8127-44d928f52ba3")
-	)
-	(wire
-		(pts
-			(xy 38.1 132.08) (xy 48.26 132.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f3baab9a-3302-40d3-9efc-d50c45edbca5")
 	)
 	(wire
 		(pts
@@ -19360,7 +18898,7 @@
 	)
 	(wire
 		(pts
-			(xy 57.15 129.54) (xy 64.77 129.54)
+			(xy 57.15 129.54) (xy 73.66 129.54)
 		)
 		(stroke
 			(width 0)
@@ -20221,19 +19759,6 @@
 		)
 		(uuid "b60ab05a-ca2c-4e72-b853-a0b459bc9db4")
 	)
-	(text "NET AUTO RESET"
-		(exclude_from_sim no)
-		(at 244.094 107.696 0)
-		(effects
-			(font
-				(size 5 5)
-				(thickness 1)
-				(bold yes)
-			)
-			(justify left bottom)
-		)
-		(uuid "c467dae9-5b12-4e91-9701-d867657f4972")
-	)
 	(text "NOTES"
 		(exclude_from_sim no)
 		(at 422.91 386.08 0)
@@ -20470,17 +19995,6 @@
 		)
 		(uuid "0d2a9c65-6d10-483f-970a-f52f4b4aed89")
 	)
-	(label "NET_BOOT"
-		(at 121.92 132.08 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "0f62f002-f19d-4628-bdbe-cf762f2da247")
-	)
 	(label "I2S_DACDAT"
 		(at 214.63 224.79 0)
 		(fields_autoplaced yes)
@@ -20535,6 +20049,17 @@
 			(justify left bottom)
 		)
 		(uuid "152e0e76-1af7-4739-ab2d-38d4e68f72b2")
+	)
+	(label "NET_BOOT"
+		(at 452.12 287.02 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "15f98d6a-347e-4c59-9f16-15043ad6e6fb")
 	)
 	(label "UI_DEBUG_1"
 		(at 429.26 266.7 0)
@@ -20656,17 +20181,6 @@
 			(justify right bottom)
 		)
 		(uuid "2093befb-3b9d-49ce-8e0f-f8d911c3176d")
-	)
-	(label "UI_BOOT0"
-		(at 53.34 134.62 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "22697ff6-4938-4b47-934b-af144581e156")
 	)
 	(label "KB_LED"
 		(at 325.12 162.56 0)
@@ -20799,17 +20313,6 @@
 			(justify left bottom)
 		)
 		(uuid "2d8657ad-9554-4a62-ad45-d07e0b70564e")
-	)
-	(label "NET_DTR"
-		(at 248.92 129.54 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "2ef5cb7b-96f3-4053-b778-a0ee3790a384")
 	)
 	(label "UI_TX1_MGMT"
 		(at 121.92 101.6 180)
@@ -21009,17 +20512,6 @@
 		)
 		(uuid "3f26b1b0-e671-4d54-9905-6eaa7fcefdcf")
 	)
-	(label "NET_NRST"
-		(at 294.64 134.62 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "3ff47081-815d-4eef-9331-8e2e2bbe8519")
-	)
 	(label "LEDB_R"
 		(at 58.42 121.92 0)
 		(fields_autoplaced yes)
@@ -21064,17 +20556,6 @@
 		)
 		(uuid "44392051-b307-481a-a07b-a41807c62940")
 	)
-	(label "NET_RTS"
-		(at 452.12 294.64 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "44860a5a-aecc-4fe9-9dff-c5f5ed3a1ea5")
-	)
 	(label "KB_ROW2"
 		(at 325.12 172.72 0)
 		(fields_autoplaced yes)
@@ -21118,17 +20599,6 @@
 			(justify right bottom)
 		)
 		(uuid "51827a6d-597a-497a-97a1-a91ba7ec978f")
-	)
-	(label "UI_NRST"
-		(at 38.1 132.08 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "5183100a-2f9f-41e0-bd64-634e7af361e6")
 	)
 	(label "NET_DEBUG_2"
 		(at 494.03 269.24 180)
@@ -21295,17 +20765,6 @@
 		)
 		(uuid "6614d0cd-2807-44b4-8186-b79dc1f9b638")
 	)
-	(label "NET_BOOT"
-		(at 294.64 110.49 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "680e8b80-5a98-44ee-b39e-5d2334453133")
-	)
 	(label "USB_CC2_DETECT"
 		(at 411.48 121.92 180)
 		(fields_autoplaced yes)
@@ -21427,6 +20886,17 @@
 		)
 		(uuid "7a3053d4-7f25-449e-8098-4f19c7f93af2")
 	)
+	(label "NET_NRST"
+		(at 57.15 132.08 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "7a5101a6-d73d-4215-9db6-8593545fbc75")
+	)
 	(label "LEDB_B"
 		(at 58.42 160.02 0)
 		(fields_autoplaced yes)
@@ -21437,6 +20907,17 @@
 			(justify left bottom)
 		)
 		(uuid "7adf72e3-64f2-4785-9bbd-6a8a070385d3")
+	)
+	(label "UI_BOOT0"
+		(at 121.92 132.08 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "7afe31d7-1552-4cb0-96be-aa492f5dcf15")
 	)
 	(label "UI_SDA"
 		(at 214.63 212.09 0)
@@ -21459,28 +20940,6 @@
 			(justify left bottom)
 		)
 		(uuid "7cf5edcd-1b83-4b79-912f-7c147e79cd01")
-	)
-	(label "NET_RTS"
-		(at 248.92 115.57 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "7ec5ae6c-7db4-4ed4-8d2c-a6ff59cb07f4")
-	)
-	(label "NET_DTR"
-		(at 452.12 287.02 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "7f0f7368-268c-4e33-8c8b-8841b953d82f")
 	)
 	(label "RCC_OSC_IN"
 		(at 72.39 104.14 180)
@@ -21900,17 +21359,6 @@
 		)
 		(uuid "aaef7bb5-437b-4d11-95b2-46aa5e8f3949")
 	)
-	(label "NET_NRST"
-		(at 57.15 129.54 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "abc51add-6c7b-45ba-bddd-890002b35bca")
-	)
 	(label "KB_ROW7"
 		(at 373.38 267.97 180)
 		(fields_autoplaced yes)
@@ -22010,6 +21458,17 @@
 		)
 		(uuid "b969f908-0281-4f27-b471-990f1fc8a156")
 	)
+	(label "NET_NRST"
+		(at 452.12 294.64 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "b9e2dff8-48d0-4c45-bed9-239bd761b894")
+	)
 	(label "SPI1_CLK"
 		(at 325.12 106.68 0)
 		(fields_autoplaced yes)
@@ -22097,6 +21556,17 @@
 			(justify left bottom)
 		)
 		(uuid "c6e2296f-63e1-4a48-9e39-5ca5d8860e8b")
+	)
+	(label "NET_BOOT"
+		(at 57.15 134.62 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "c712aec5-b268-4279-95ea-553933ced047")
 	)
 	(label "UI_LED_B"
 		(at 325.12 96.52 0)
@@ -22253,7 +21723,7 @@
 		(uuid "dad355e7-a795-41f8-a94b-9200123b5f23")
 	)
 	(label "UI_NRST"
-		(at 401.32 261.62 0)
+		(at 410.21 261.62 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -22361,6 +21831,17 @@
 			(justify left bottom)
 		)
 		(uuid "e3305113-216f-42e2-b835-d31fdc34a9cc")
+	)
+	(label "UI_NRST"
+		(at 57.15 129.54 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "e380d551-d5be-415c-9db2-fae4a90a52e1")
 	)
 	(label "DISP_DC"
 		(at 325.12 160.02 0)
@@ -22506,7 +21987,7 @@
 		(uuid "fe4fa884-2c0f-4109-b754-d7f5a213ed34")
 	)
 	(label "UI_BOOT0"
-		(at 401.32 264.16 0)
+		(at 410.21 264.16 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -24686,82 +24167,6 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR041")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:D_Schottky")
-		(at 111.76 132.08 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "28267977-9dc5-4558-82a0-b49f26c8d981")
-		(property "Reference" "D12"
-			(at 112.268 136.652 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1N5819WS"
-			(at 112.014 134.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 111.76 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 111.76 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Schottky diode"
-			(at 111.76 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C191023"
-			(at 111.76 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "dd20f097-a3a4-45a8-8a14-441735d8f9e4")
-		)
-		(pin "2"
-			(uuid "00a50ccc-7c1a-4815-ac0f-8ddbc00f4fc7")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "D12")
 					(unit 1)
 				)
 			)
@@ -29785,82 +29190,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_US")
-		(at 276.86 129.54 90)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "5ff297ab-aa02-40eb-9e4c-d0c01b602a37")
-		(property "Reference" "R44"
-			(at 277.114 131.318 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 276.86 127.508 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 276.86 131.318 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 276.86 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, US symbol"
-			(at 276.86 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C25744"
-			(at 276.86 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "ed001772-4ecf-4a01-8547-111dfcb3d8b0")
-		)
-		(pin "2"
-			(uuid "95ad14f2-2232-4c3d-8b13-8293e8fd200e")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "R44")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:C")
 		(at 322.58 77.47 0)
 		(unit 1)
@@ -31683,166 +31012,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:D_Schottky")
-		(at 66.04 134.62 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "80b9c878-ba68-4b78-af9e-de18c23f1cc6")
-		(property "Reference" "D9"
-			(at 66.294 139.192 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1N5819WS"
-			(at 65.532 136.906 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 66.04 134.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 66.04 134.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Schottky diode"
-			(at 66.04 134.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C191023"
-			(at 66.04 134.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "b69bc6d7-a291-4bb7-a019-fcd89d9e552a")
-		)
-		(pin "2"
-			(uuid "d8b4cd7f-e3f3-4fbb-b9c5-3359e6411c4e")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "D9")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Transistor_BJT:SS8050")
-		(at 287.02 115.57 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "818690e0-843f-4b19-9399-f60caf5c9098")
-		(property "Reference" "Q1"
-			(at 283.972 112.014 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "SS8050"
-			(at 280.416 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Package_TO_SOT_SMD:SOT-23"
-			(at 292.1 122.936 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-					(italic yes)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "http://www.secosgmbh.com/datasheet/products/SSMPTransistor/SOT-23/SS8050.pdf"
-			(at 292.1 120.396 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Description" "General Purpose NPN Transistor, 1.5A Ic, 25V Vce, SOT-23"
-			(at 321.056 117.856 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C2146"
-			(at 287.02 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "8a4c09bf-c38d-4c3e-a4c6-6a655a97a4e2")
-		)
-		(pin "3"
-			(uuid "89b25a6a-5a0a-437d-b047-8803666bdc58")
-		)
-		(pin "2"
-			(uuid "27e7a350-9ec6-40c3-bfb6-bb7b12fbef87")
-		)
-		(instances
-			(project ""
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "Q1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:C")
 		(at 199.39 181.61 0)
 		(mirror y)
@@ -32640,91 +31809,6 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R17")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Transistor_BJT:SS8050")
-		(at 287.02 129.54 0)
-		(mirror x)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "87d2b30e-cf90-4e70-bfeb-6ad058421600")
-		(property "Reference" "Q2"
-			(at 283.464 126.492 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "SS8050"
-			(at 280.162 133.096 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Package_TO_SOT_SMD:SOT-23"
-			(at 292.1 122.174 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-					(italic yes)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "http://www.secosgmbh.com/datasheet/products/SSMPTransistor/SOT-23/SS8050.pdf"
-			(at 292.1 124.714 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Description" "General Purpose NPN Transistor, 1.5A Ic, 25V Vce, SOT-23"
-			(at 321.056 127.254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C2146"
-			(at 287.02 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "e0a79f28-91c1-4514-98f2-0067e1a92e6c")
-		)
-		(pin "3"
-			(uuid "a622fed9-e327-47ce-9798-9b666b5d8cd3")
-		)
-		(pin "2"
-			(uuid "50156b0e-c6ad-4db1-a014-f97f74156e27")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "Q2")
 					(unit 1)
 				)
 			)
@@ -33605,82 +32689,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:D_Schottky")
-		(at 264.16 129.54 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "95d69968-0ffa-47ab-9b17-32168ca67380")
-		(property "Reference" "D11"
-			(at 263.906 124.968 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1N5819WS"
-			(at 264.668 127.254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 264.16 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 264.16 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Schottky diode"
-			(at 264.16 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C191023"
-			(at 264.16 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "50495bde-2786-4bda-b024-1737509b9b1e")
-		)
-		(pin "2"
-			(uuid "0ca07401-0661-4b38-ae68-1e934b7b4aec")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "D11")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:GND")
 		(at 280.67 278.13 0)
 		(unit 1)
@@ -34043,82 +33051,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:D_Schottky")
-		(at 68.58 129.54 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "9a429f5e-a40e-436c-b7ad-e364c04db061")
-		(property "Reference" "D13"
-			(at 64.77 130.81 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1N5819WS"
-			(at 67.564 126.492 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 68.58 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 68.58 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Schottky diode"
-			(at 68.58 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C191023"
-			(at 68.58 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "91a05e25-5749-4e0c-aafd-cd2b9763d418")
-		)
-		(pin "2"
-			(uuid "981a113b-5570-4d4c-9362-cf0af2c129f8")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "D13")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R_US")
 		(at 182.88 100.33 0)
 		(unit 1)
@@ -34444,83 +33376,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:D_Schottky")
-		(at 412.75 264.16 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "a3158ccb-1e95-4711-a83c-c01f0f1485a9")
-		(property "Reference" "D14"
-			(at 416.306 265.43 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1N5819WS"
-			(at 413.258 265.684 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 412.75 264.16 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 412.75 264.16 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Schottky diode"
-			(at 412.75 264.16 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C191023"
-			(at 412.75 264.16 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "791a389b-885b-4631-a0f9-0f8cac58e2f9")
-		)
-		(pin "2"
-			(uuid "c84e67f1-461b-4e8b-b86c-a0607bd8b783")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "D14")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:C")
 		(at 349.25 77.47 0)
 		(unit 1)
@@ -34664,82 +33519,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:D_Schottky")
-		(at 52.07 132.08 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "ad9bb306-5bc3-4a54-b7f9-14648b03b257")
-		(property "Reference" "D8"
-			(at 51.562 127.508 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1N5819WS"
-			(at 51.816 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 52.07 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 52.07 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Schottky diode"
-			(at 52.07 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C191023"
-			(at 52.07 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "494a51e6-056b-459a-a9c4-e0703ab03cfe")
-		)
-		(pin "2"
-			(uuid "4bd6c791-1593-47c0-ac9f-8290058bb520")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "D8")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:VBUS")
 		(at 33.02 198.12 0)
 		(unit 1)
@@ -34799,82 +33578,6 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR045")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R_US")
-		(at 276.86 115.57 90)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "b0f8975e-f0ff-472e-ae99-5125200a969e")
-		(property "Reference" "R43"
-			(at 276.352 117.856 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10k"
-			(at 276.86 113.538 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 276.86 117.348 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 276.86 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, US symbol"
-			(at 276.86 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C25744"
-			(at 276.86 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "ce836cfc-ae2b-433a-9fb6-2e8511ecce9e")
-		)
-		(pin "2"
-			(uuid "5305ec38-0352-488c-918f-73d59ffaecea")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "R43")
 					(unit 1)
 				)
 			)
@@ -36482,82 +35185,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:D_Schottky")
-		(at 264.16 115.57 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "be3d0def-aa25-47a2-980f-e298523a5dea")
-		(property "Reference" "D10"
-			(at 263.906 110.998 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1N5819WS"
-			(at 264.668 113.284 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 264.16 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 264.16 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Schottky diode"
-			(at 264.16 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C191023"
-			(at 264.16 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "88f600fe-8ca8-4e9c-8377-9292bc50f1b9")
-		)
-		(pin "2"
-			(uuid "40d40613-a894-4b98-a05b-4f51ddbaa06f")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "D10")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:+3.3V")
 		(at 403.86 283.21 0)
 		(unit 1)
@@ -37410,83 +36037,6 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "C28")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:D_Schottky")
-		(at 414.02 261.62 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "d7629dbf-3b3c-4cc2-9e49-4805857f3151")
-		(property "Reference" "D15"
-			(at 417.576 260.604 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1N5819WS"
-			(at 414.528 263.144 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 414.02 261.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 414.02 261.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Schottky diode"
-			(at 414.02 261.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C191023"
-			(at 414.02 261.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "5cd10559-a853-4c2a-ac80-e049a1f3e2bd")
-		)
-		(pin "2"
-			(uuid "2b0cd59d-bfc6-4e65-a64a-82a828b98b78")
-		)
-		(instances
-			(project "EV12 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "D15")
 					(unit 1)
 				)
 			)
