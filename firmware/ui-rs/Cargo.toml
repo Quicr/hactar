@@ -1,0 +1,12 @@
+[workspace]
+
+resolver = "2"
+
+members = [
+  "hactar-platform", 
+  "hactar-platform-macos", 
+  "hactar-platform-stm32", 
+  "hactar-ui", 
+  "hactar-ui-macos", 
+  "hactar-ui-stm32"
+]

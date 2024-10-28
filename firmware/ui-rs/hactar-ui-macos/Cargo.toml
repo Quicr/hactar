@@ -1,0 +1,9 @@
+[package]
+name = "hactar-ui-macos"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hactar-platform-macos = { version = "0.1.0", path = "../hactar-platform-macos" }
+hactar-ui = { version = "0.1.0", path = "../hactar-ui" }
+tokio = { version = "1.41.0", features = ["full"] }
