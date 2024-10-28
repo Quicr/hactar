@@ -2,7 +2,7 @@
 #![no_main]
 #![deny(missing_docs, warnings)]
 
-//! TODO(RLB) documentation
+//! This crate simply instantiates the Hactar application on the macOS platform.
 
 use core::panic::PanicInfo;
 use embassy_executor::Spawner;
