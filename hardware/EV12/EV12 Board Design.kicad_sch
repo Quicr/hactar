@@ -20215,6 +20215,17 @@
 		)
 		(uuid "23ecb78f-ad91-473d-ad93-4448bea14188")
 	)
+	(label "NET_MTDO"
+		(at 429.26 288.29 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "24134c77-5048-4c84-af66-9926c67a0fd0")
+	)
 	(label "UI_BOOT1"
 		(at 325.12 142.24 0)
 		(fields_autoplaced yes)
@@ -20291,17 +20302,6 @@
 			(justify left bottom)
 		)
 		(uuid "2d4c683e-56c6-4317-96f6-84972f12e391")
-	)
-	(label "NET_MTDI"
-		(at 429.26 283.21 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "2d6f5c9d-aad5-479f-8557-01b8edb81e8f")
 	)
 	(label "NET_NRST"
 		(at 181.61 96.52 0)
@@ -20390,17 +20390,6 @@
 			(justify right bottom)
 		)
 		(uuid "373d4e14-8ece-4d4c-b8b5-9e70d18aba2f")
-	)
-	(label "NET_MTDO"
-		(at 429.26 285.75 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "377a00f1-4afb-440e-aec0-2fb239b87699")
 	)
 	(label "DISP_RST"
 		(at 314.96 223.52 0)
@@ -20567,17 +20556,6 @@
 		)
 		(uuid "472d0c32-d5bb-4509-bc90-c4de6c9af569")
 	)
-	(label "NET_MTCK"
-		(at 429.26 288.29 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "4ab5f28d-f967-4db2-ac58-cbbb7f71b453")
-	)
 	(label "NET_RX1_MGMT"
 		(at 452.12 292.1 0)
 		(fields_autoplaced yes)
@@ -20643,6 +20621,17 @@
 			(justify left bottom)
 		)
 		(uuid "5969cb85-aee8-452c-81dd-36a37534a8d6")
+	)
+	(label "NET_MTDI"
+		(at 429.26 290.83 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "598972c5-8131-4679-8531-8a2681c6e569")
 	)
 	(label "UI_SCL"
 		(at 214.63 214.63 0)
@@ -20842,17 +20831,6 @@
 		)
 		(uuid "720f63aa-c09d-438e-9db9-c2fd6b98d669")
 	)
-	(label "NET_MTMS"
-		(at 429.26 290.83 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "7235e853-9b84-49d9-8913-ed0b4a7db180")
-	)
 	(label "UI_SDA"
 		(at 287.02 283.21 0)
 		(fields_autoplaced yes)
@@ -21028,6 +21006,17 @@
 			(justify right bottom)
 		)
 		(uuid "8d509274-333c-4d2f-b591-96d27515f29b")
+	)
+	(label "NET_MTCK"
+		(at 429.26 285.75 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8d9455c1-4b8b-492f-91e4-5417631c6066")
 	)
 	(label "I2S_DACDAT"
 		(at 485.14 247.65 180)
@@ -21644,6 +21633,17 @@
 			(justify right bottom)
 		)
 		(uuid "cef22f41-5de2-43f4-9706-654d3fd91f12")
+	)
+	(label "NET_MTMS"
+		(at 429.26 283.21 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "cfc55e30-1af7-4f06-acd8-64eda790a455")
 	)
 	(label "KB_ROW7"
 		(at 325.12 165.1 0)
