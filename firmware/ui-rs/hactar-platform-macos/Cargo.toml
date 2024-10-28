@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 hactar-platform = { version = "0.1.0", path = "../hactar-platform" }
+tokio = { version = "1.41.0", features = ["full"] }

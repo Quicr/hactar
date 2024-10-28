@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+embassy-stm32 = { version = "0.1.0", features = ["stm32f405rg", "memory-x"] }
+embassy-time = { version = "0.3.2", features = ["tick-hz-32_768"] }
 hactar-platform = { version = "0.1.0", path = "../hactar-platform" }

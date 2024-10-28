@@ -1,6 +1,6 @@
 #![deny(missing_docs, warnings)]
 
-//! TODO(RLB) documentation
+//! This crate simply instantiates the Hactar application on the macOS platform.
 
 use hactar_platform_macos::MacOsPlatform;
 use hactar_ui::App;
