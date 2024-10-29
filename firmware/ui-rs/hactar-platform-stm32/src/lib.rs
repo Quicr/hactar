@@ -6,7 +6,7 @@
 
 use embassy_stm32::{
     gpio::{Level, Output, Speed},
-    peripherals, Peripherals,
+    peripherals,
 };
 use embassy_time::Timer;
 
@@ -14,14 +14,13 @@ use hactar_platform::{Led, Platform};
 
 /// An instantiation of the platform abstraction on STM32
 pub struct Stm32Platform {
-    peripherals: Peripherals,
+    pc5: Option<peripherals::PC5>,
 }
 
 impl Default for Stm32Platform {
     fn default() -> Self {
-        Self {
-            peripherals: embassy_stm32::init(Default::default()),
-        }
+        let p = embassy_stm32::init(Default::default());
+        Self { pc5: Some(p.PC5) }
     }
 }
 
@@ -32,12 +31,9 @@ impl Platform for Stm32Platform {
 
     type StatusLed<'d> = StatusLed<'d>;
 
-    fn status_led<'d>(&'d mut self) -> Self::StatusLed<'d> {
-        StatusLed(Output::new(
-            &mut self.peripherals.PC5,
-            Level::High,
-            Speed::Low,
-        ))
+    fn status_led<'d>(&mut self) -> Option<Self::StatusLed<'d>> {
+        let pc5 = self.pc5.take()?;
+        Some(StatusLed(Output::new(pc5, Level::High, Speed::Low)))
     }
 
     async fn after_millis(millis: u64) {
