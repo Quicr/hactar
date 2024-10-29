@@ -9,27 +9,18 @@ use tokio::time::{sleep, Duration};
 use hactar_platform::{Led, Platform};
 
 /// An instantiation of the platform abstraction on macOS
-pub struct MacOsPlatform {
-    status_led: StatusLed,
-}
-
-impl Default for MacOsPlatform {
-    fn default() -> Self {
-        Self {
-            status_led: StatusLed,
-        }
-    }
-}
+#[derive(Default)]
+pub struct MacOsPlatform;
 
 impl Platform for MacOsPlatform {
     fn name() -> &'static str {
         "macos"
     }
 
-    type StatusLed<'d> = &'d StatusLed;
+    type StatusLed<'d> = StatusLed;
 
-    fn status_led<'d>(&'d mut self) -> Self::StatusLed<'d> {
-        &self.status_led
+    fn status_led<'d>(&mut self) -> Option<Self::StatusLed<'d>> {
+        Some(StatusLed)
     }
 
     async fn after_millis(millis: u64) {
@@ -40,7 +31,7 @@ impl Platform for MacOsPlatform {
 /// An ersatz status LED that just prints when it is turned on and off
 pub struct StatusLed;
 
-impl<'d> Led for &'d StatusLed {
+impl Led for StatusLed {
     fn set_high(&mut self) {
         println!("set_high()");
     }
