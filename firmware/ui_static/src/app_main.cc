@@ -91,9 +91,10 @@ int app_main()
     screen.Init();
     screen.EnableBacklight();
     screen.FillRectangle(0, 10, 0, 10, Screen::Colour::CYAN);
+    // screen.FillRectangle(0, 10, 0, 10, Screen::Colour::CYAN);
 
-    screen.FillRectangle(0, WIDTH, 0, HEIGHT, Screen::Colour::YELLOW);
-    screen.FillRectangle(0, 10, 0, 10, Screen::Colour::CYAN);
+    // screen.FillRectangle(0, WIDTH, 0, HEIGHT, Screen::Colour::YELLOW);
+    // screen.FillRectangle(0, 10, 0, 10, Screen::Colour::CYAN);
 
     HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
@@ -102,6 +103,10 @@ int app_main()
 
     audio_chip.StartI2S();
     uint32_t timeout;
+    uint32_t current_tick;
+    uint32_t redraw = uwTick;
+    Screen::Colour next = Screen::Colour::GREEN;
+    Screen::Colour curr = Screen::Colour::BLUE;
     while (1)
     {
         HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
@@ -119,7 +124,8 @@ int app_main()
         }
         // If we broke out then that means we got an audio callback
         // TODO test clock stability
-        timeout = uwTick+10'000;
+        current_tick = uwTick;
+        timeout = current_tick+10'000;
 
         // Send off a tx packet
 
@@ -128,7 +134,18 @@ int app_main()
         RaiseFlag(Rx_Audio_Companded);
 
         // Use remaining time to draw?
-        // screen.FillRectangle(0, WIDTH, 0, HEIGHT, Screen::Colour::YELLOW);
+        if (uwTick > redraw)
+        {
+            screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
+            screen.DrawRectangle(10, 30, 10, 30, 3, next);
+
+            // swap
+            Screen::Colour tmp = curr;
+            curr = next;
+            next = tmp;
+
+            redraw = uwTick + 5000;
+        }
 
         screen.Draw(timeout);
         RaiseFlag(Draw_Complete);
@@ -180,7 +197,6 @@ void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef* hi2s)
 {
     UNUSED(hi2s);
     CheckFlags();
-    // HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_RESET);
     // WakeUp();
     audio_chip.HalfCompleteCallback();
     RaiseFlag(Audio_Interrupt);
