@@ -462,7 +462,7 @@
       "no_connect_dangling": "warning",
       "pin_not_connected": "error",
       "pin_not_driven": "error",
-      "pin_to_pin": "warning",
+      "pin_to_pin": "error",
       "power_pin_not_driven": "error",
       "similar_labels": "warning",
       "simulation_model_issue": "ignore",
@@ -509,15 +509,15 @@
   },
   "pcbnew": {
     "last_paths": {
-      "gencad": "EV6 Board Design.cad",
+      "gencad": "EV12 Board Design.cad",
       "idf": "",
       "netlist": "./",
-      "plot": "~/cisco/ev11.pdf",
+      "plot": "~/cisco/ev12.pdf",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "EV11 Board Design.step",
-      "svg": "~/cisco/ev11.svg",
-      "vrml": "EV11 Board Design.wrl"
+      "step": "EV12 Board Design.step",
+      "svg": "~/cisco/ev12.svg",
+      "vrml": "EV12 Board Design.wrl"
     },
     "page_layout_descr_file": ""
   },
