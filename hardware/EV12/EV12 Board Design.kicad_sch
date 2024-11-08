@@ -7,7 +7,7 @@
 	(title_block
 		(title "EV12 FINN BERG & BRETT REGNIER")
 		(date "2024/07/19")
-		(company "CISCO SYSTEMS")
+		(company "CISCO SYSTEMS INC")
 	)
 	(lib_symbols
 		(symbol "Battery_Management:BQ21040DBV"

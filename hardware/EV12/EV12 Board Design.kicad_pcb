@@ -9,9 +9,9 @@
 	(paper "A4")
 	(title_block
 		(title "Hactar PCB - Finn Berg, Brett Regnier")
-		(date "2024-07-24")
-		(rev "EV11")
-		(company "CISCO SYSTEMS")
+		(date "2024-11-01")
+		(rev "EV12")
+		(company "CISCO SYSTEMS INC")
 	)
 	(layers
 		(0 "F.Cu" signal)
