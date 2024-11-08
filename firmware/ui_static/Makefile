@@ -22,7 +22,7 @@ FIRMWARE = ${TARGET}.elf
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Os
+OPT = -Og
 # OPT = -O3
 
 #######################################

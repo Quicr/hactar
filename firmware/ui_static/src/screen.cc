@@ -29,8 +29,10 @@ Screen::Screen(
     memory_read_idx(0),
     memory_write_idx(0),
     row(0),
+    updating(false),
+    restart_update(false),
     matrix({ Colour::BLACK }),
-    row_data({ 0 })
+    scan_window({ 0 })
 {
 
 }
@@ -146,76 +148,94 @@ void Screen::Init()
 // that have already been drawn?
 void Screen::Draw(uint32_t timeout)
 {
-    if (memories_in_use > 0)
+    if (restart_update)
     {
-        // TODO adjust based on how long the following function takes to
-        // breakout
-        const uint32_t adjusted_timeout = timeout - 100;
+        restart_update = false;
+        updating = true;
+        row = 0;
+    }
 
-        // While we have time compute
-        while (uwTick < adjusted_timeout && memories_in_use > 0)
+    if (!updating)
+    {
+        return;
+    }
+
+    if (memory_read_idx >= Num_Memories)
+    {
+        memory_read_idx = 0;
+    }
+
+    constexpr uint16_t num_rows = 32;
+    const uint16_t end_row = row + num_rows;
+    Select();
+    // TODO different orientations
+    SetWriteablePixels(0, view_width, row, end_row);
+    uint16_t read_idx = memory_read_idx;
+    uint16_t num_mems = memories_in_use;
+    // Go through all of the memories
+    for (uint16_t j = 0; j < num_mems; ++j)
+    {
+        if (read_idx >= Num_Memories)
         {
-            if (memory_read_idx >= Num_Memories)
+            read_idx = 0;
+        }
+
+        // Get a memory
+        DrawMemory& memory = memories[read_idx++];
+
+        switch (memory.status)
+        {
+            case MemoryStatus::Unused:
             {
-                memory_read_idx = 0;
+                // TODO fix
+                Error_Handler();
+                continue;
             }
-
-            DrawMemory& memory = memories[memory_read_idx];
-
-            switch (memory.status)
+            case MemoryStatus::In_Progress:
             {
-                case MemoryStatus::Unused:
-                {
-                    // If we somehow get here break
-                    Error_Handler();
-                    break;
-                }
-                case MemoryStatus::In_Progress:
-                {
-                    // Use this memory
-                    break;
-                }
-                case MemoryStatus::Complete:
-                {
-                    --memories_in_use;
-                    ++memory_read_idx;
-                    memory.status = MemoryStatus::Unused;
-                    // TODO should I zero out the values?
-                }
-                default:
-                {
-                    // Should never be able to get here.
-                    break;
-                }
+                // Use this memory
+                break;
             }
+            case MemoryStatus::Complete:
+            {
+                --memories_in_use;
+                ++memory_read_idx;
+                memory.status = MemoryStatus::Unused;
+                // Skip this memory
+                continue;
+            }
+            default:
+            {
+                // Should never be able to get here.
+                Error_Handler();
+                break;
+            }
+        }
 
-            memory.callback(*this, memory);
+        memory.callback(*this, memory, row, end_row);
+    }
+
+    // Fill the row
+    for (uint16_t i = row; i < end_row; ++i)
+    {
+        const uint16_t y_idx = (i - row) * view_width * 2;
+        for (uint16_t j = 0; j < view_width; ++j)
+        {
+            const uint16_t idx = y_idx + j * 2;
+            scan_window[idx] = colour_map[(size_t)matrix[i][j]] >> 8;
+            scan_window[idx + 1] = colour_map[(size_t)matrix[i][j]] & 0xFF;
         }
     }
-    else
+
+    // Send all of the data off.
+    WriteData(scan_window, num_rows * view_width * 2);
+    row += num_rows;
+    if (row >= view_height)
     {
-        Select();
-        // TODO different orientations
-        SetWriteablePixels(0, view_width, row, row+20);
-        for (uint16_t i = row; i < row + 20; ++i)
-        {
-            // Fill the row
-            for (uint16_t j = 0; j < view_width; ++j)
-            {
-                row_data[j * 2] = colour_map[(size_t)matrix[i][j]] >> 8;
-                row_data[j * 2 + 1] = colour_map[(size_t)matrix[i][j]] & 0xFF;
-            }
-            WriteData(row_data, view_width * 2);
-        }
-
-        row += 20;
-        if (row == view_height)
-        {
-            row = 0;
-        }
-
-        Deselect();
+        row = 0;
     }
+
+    Deselect();
 }
 
 void Screen::Sleep()
@@ -263,7 +283,7 @@ void Screen::SetWriteablePixels(const uint16_t x1, const uint16_t x2,
         static_cast<const uint8_t>(x2 >> 8), static_cast<const uint8_t>(x2),
     };
 
-    uint8_t row_data [] = {
+    uint8_t scan_window [] = {
         static_cast<const uint8_t>(y1 >> 8), static_cast<const uint8_t>(y1),
         static_cast<const uint8_t>(y2 >> 8), static_cast<const uint8_t>(y2),
     };
@@ -272,7 +292,7 @@ void Screen::SetWriteablePixels(const uint16_t x1, const uint16_t x2,
     WriteData(col_data, sizeof(col_data));
 
     WriteCommand(RA_SET);
-    WriteData(row_data, sizeof(row_data));
+    WriteData(scan_window, sizeof(scan_window));
 
     WriteCommand(WR_RAM);
 }
@@ -320,57 +340,41 @@ void Screen::SetOrientation(const Screen::Orientation orientation)
 }
 
 
-void Screen::FillRectangle(const uint16_t x1, const uint16_t x2,
-    const uint16_t y1, const uint16_t y2, const Colour colour)
+void Screen::FillRectangle(uint16_t x1, uint16_t x2,
+    uint16_t y1, uint16_t y2, const Colour colour)
 {
-    uint16_t _x1 = x1;
-    uint16_t _x2 = x2;
-    uint16_t _y1 = y1;
-    uint16_t _y2 = y2;
-
-    if (_x1 >= view_width || _y1 >= view_height)
-    {
-        return;
-    }
-
-    if (_x2 >= view_width)
-    {
-        _x2 = view_width;
-    }
-
-    if (_x1 > _x2)
-    {
-        const uint16_t tmp = _x1;
-        _x1 = _x2;
-        _x2 = tmp;
-    }
-
-    if (_y1 > _y2)
-    {
-        const uint16_t tmp = _y1;
-        _y1 = _y2;
-        _y2 = tmp;
-    }
-
-    // Fill the matrix
-    // for (uint16_t i = _y1; i < _y2; ++i)
-    // {
-    //     for (uint16_t j = _x1; j < _x2; ++j)
-    //     {
-    //         matrix[i][j] = colour;
-    //     }
-    // }
+    BoundCheck(x1, x2, y1, y2);
 
     // DrawMemory
     DrawMemory& memory = RetrieveMemory();
 
     memory.callback = Screen::FillRectangleProcedure;
     memory.status = MemoryStatus::In_Progress;
-    memory.x1 = _x1;
-    memory.x2 = _x2;
-    memory.y1 = _y1;
-    memory.y2 = _y2;
+    memory.x1 = x1;
+    memory.x2 = x2;
+    memory.y1 = y1;
+    memory.y2 = y2;
     memory.colour = colour;
+}
+
+void Screen::DrawRectangle(uint16_t x1, uint16_t x2,
+    uint16_t y1, uint16_t y2, const uint16_t thickness,
+    const Colour colour)
+{
+    BoundCheck(x1, x2, y1, y2);
+
+    DrawMemory& memory = RetrieveMemory();
+
+    memory.callback = Screen::DrawRectangleProcedure;
+    memory.status = MemoryStatus::In_Progress;
+    memory.x1 = x1;
+    memory.x2 = x2;
+    memory.y1 = y1;
+    memory.y2 = y2;
+    memory.colour = colour;
+
+    memory.parameters[0] = thickness >> 8;
+    memory.parameters[1] = thickness & 0xFF;
 }
 
 // Private functions
@@ -383,6 +387,7 @@ void Screen::WriteCommand(uint8_t command)
 
 void Screen::WriteData(uint8_t* data, const uint32_t data_size)
 {
+    // TODO async
     HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
     HAL_SPI_Transmit(spi, data, data_size, HAL_MAX_DELAY);
 }
@@ -407,39 +412,129 @@ Screen::DrawMemory& Screen::RetrieveMemory()
 
     Screen::DrawMemory& memory = memories[memory_write_idx++];
 
+    restart_update = true;
     ++memories_in_use;
     return memory;
 }
 
-void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory)
+void Screen::FillRectangleProcedure(Screen& screen, DrawMemory& memory,
+    const uint16_t y1, const uint16_t y2)
 {
+    // See if rectangle is in the current scan line
+    if (y1 < memory.y1 && y2 > memory.y2)
+    {
+        return;
+    }
 
+    // Get the y bounds
+    const uint16_t y_min = y1 > memory.y1 ? y1 : memory.y1;
+    const uint16_t y_max = y2 < memory.y2 ? y2 : memory.y2;
+
+    // Get the colour
+    for (uint16_t i = y_min; i < y_max; ++i)
+    {
+        for (uint16_t j = memory.x1; j < memory.x2; ++j)
+        {
+            screen.matrix[i][j] = memory.colour;
+        }
+    }
+
+    if (y2 >= memory.y2)
+    {
+        memory.status = MemoryStatus::Complete;
+    }
 }
 
 
-void Screen::FillRectangleProcedure(Screen& screen, DrawMemory& memory)
+void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
+    const uint16_t y1, const uint16_t y2)
 {
-    // TODO fix
-    if (memory.status == MemoryStatus::Complete)
-    {
-        return;
-    }
-
     // See if rectangle is in the current scan line
-    if (screen.row < memory.y1 || screen.row > memory.y2)
+    if (y1 < memory.y1 && y2 > memory.y2)
     {
         return;
     }
 
-    // Within the bounds
-    Screen::Colour* mat_row = screen.matrix[screen.row];
-    for (uint16_t i = memory.x1; i < memory.x2; ++i)
+    const uint16_t thickness = memory.parameters[0] << 8 | memory.parameters[1];
+
+    // Get the y bounds
+    const uint16_t y_min = y1 > memory.y1 ? y1 : memory.y1;
+    const uint16_t y_max = y2 < memory.y2 ? y2 : memory.y2;
+    const uint16_t y1_thick = memory.y1 + thickness > y_max ? memory.y1 + thickness : y_max;
+    const uint16_t y2_thick = memory.y2 - thickness < y_min ? memory.y2 - thickness : y_min;
+
+    const uint16_t x1_thick = memory.x1 + thickness;
+    const uint16_t x2_thick = memory.x2 - thickness;
+
+
+    // Check for the "top rectangle"
+    if (y1 < memory.y1)
     {
-        mat_row[i++] = memory.colour;
+        // In the bounds of the top rectangle
+        for (uint16_t i = y_min; i < y1_thick; ++i)
+        {
+            for (uint16_t j = memory.x1; j < memory.x2; ++j)
+            {
+                screen.matrix[i][j] = memory.colour;
+            }
+        }
     }
 
-    if (screen.row == memory.y2)
+    // Check for the "bottom rectangle"
+    if (y_max > y2_thick)
+    {
+        // In the bounds of the top rectangle
+        for (uint16_t i = y2_thick; i < y_max; ++i)
+        {
+            for (uint16_t j = memory.x1; j < memory.x2; ++j)
+            {
+                screen.matrix[i][j] = memory.colour;
+            }
+        }
+    }
+
+    // Do the side rectangles
+    for (uint16_t i = y_min; i < y_max; ++i)
+    {
+        for (uint16_t j = memory.x1; j < x1_thick; ++j)
+        {
+            screen.matrix[i][j] = memory.colour;
+        }
+        for (uint16_t j = x2_thick; j < memory.x2; ++j)
+        {
+            screen.matrix[i][j] = memory.colour;
+        }
+    }
+
+    if (y2 >= memory.y2)
     {
         memory.status = MemoryStatus::Complete;
+    }
+}
+
+void Screen::BoundCheck(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
+{
+    if (x1 >= view_width || y1 >= view_height)
+    {
+        return;
+    }
+
+    if (x2 >= view_width)
+    {
+        x2 = view_width;
+    }
+
+    if (x1 > x2)
+    {
+        const uint16_t tmp = x1;
+        x1 = x2;
+        x2 = tmp;
+    }
+
+    if (y1 > y2)
+    {
+        const uint16_t tmp = y1;
+        y1 = y2;
+        y2 = tmp;
     }
 }

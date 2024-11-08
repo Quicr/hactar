@@ -87,7 +87,7 @@ private:
         C_MAGENTA,
         C_YELLOW
     };
-    static constexpr uint32_t Num_Memories = 40;
+    static constexpr uint32_t Num_Memories = 4;
     static constexpr uint32_t Memory_Size = 32;
 
 
@@ -100,7 +100,8 @@ private:
 
     struct DrawMemory
     {
-        void (*callback)(Screen& screen, DrawMemory& memory) = nullptr;
+        void (*callback)(Screen& screen, DrawMemory& memory,
+            const uint16_t y1, const uint16_t y2) = nullptr;
         MemoryStatus status = MemoryStatus::Unused;
         uint16_t x1;
         uint16_t x2;
@@ -143,8 +144,10 @@ public:
     inline void Deselect();
 
     void SetOrientation(const Orientation orientation);
-    void FillRectangle(const uint16_t x1, const uint16_t x2, const uint16_t y1,
-        const uint16_t y2, const Colour colour);
+    void FillRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
+        uint16_t y2, const Colour colour);
+    void DrawRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
+        uint16_t y2, const uint16_t thickness, const Colour colour);
 
 private:
     void WriteCommand(const uint8_t command);
@@ -155,9 +158,12 @@ private:
     DrawMemory& RetrieveMemory();
 
     // Private functions
-    static void DrawRectangleProcedure(Screen& screen, DrawMemory& memory);
-    static void FillRectangleProcedure(Screen& screen, DrawMemory& memory);
+    static void DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
+        const uint16_t y1, const uint16_t y2);
+    static void FillRectangleProcedure(Screen& screen, DrawMemory& memory,
+        const uint16_t y1, const uint16_t y2);
 
+    inline void BoundCheck(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2);
 
     // Variables
     SPI_HandleTypeDef* spi;
@@ -182,8 +188,11 @@ private:
     uint32_t memory_write_idx;
     uint16_t row;
 
+    bool updating;
+    bool restart_update;
+
     Colour matrix[HEIGHT][WIDTH];
     // Two bytes per pixel
-    uint8_t row_data[32*WIDTH*2];
+    uint8_t scan_window[32*WIDTH*2];
 
 };
