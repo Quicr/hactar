@@ -170,39 +170,29 @@ void Screen::Draw(uint32_t timeout)
     Select();
     // TODO different orientations
     SetWriteablePixels(0, view_width, row, end_row);
-    uint16_t read_idx = memory_read_idx;
-    uint16_t num_mems = memories_in_use;
     // Go through all of the memories
-    for (uint16_t j = 0; j < num_mems; ++j)
+    for (uint16_t j = 0; j < Num_Memories; ++j)
     {
-        if (read_idx >= Num_Memories)
-        {
-            read_idx = 0;
-        }
-
         // Get a memory
-        DrawMemory& memory = memories[read_idx++];
+        DrawMemory& memory = memories[j];
 
         switch (memory.status)
         {
-            case MemoryStatus::Unused:
+            case MemoryStatus::Free:
             {
-                // TODO fix
-                Error_Handler();
                 continue;
             }
             case MemoryStatus::In_Progress:
             {
-                // Use this memory
+
+                memory.callback(*this, memory, row, end_row);
+
+                if (end_row >= memory.y2)
+                {
+                    memory.status = MemoryStatus::Free;
+                    --memories_in_use;
+                }
                 break;
-            }
-            case MemoryStatus::Complete:
-            {
-                --memories_in_use;
-                ++memory_read_idx;
-                memory.status = MemoryStatus::Unused;
-                // Skip this memory
-                continue;
             }
             default:
             {
@@ -211,8 +201,6 @@ void Screen::Draw(uint32_t timeout)
                 break;
             }
         }
-
-        memory.callback(*this, memory, row, end_row);
     }
 
     // Fill the row
@@ -233,6 +221,7 @@ void Screen::Draw(uint32_t timeout)
     if (row >= view_height)
     {
         row = 0;
+        updating = false;
     }
 
     Deselect();
@@ -349,7 +338,6 @@ void Screen::FillRectangle(uint16_t x1, uint16_t x2,
     DrawMemory& memory = RetrieveMemory();
 
     memory.callback = Screen::FillRectangleProcedure;
-    memory.status = MemoryStatus::In_Progress;
     memory.x1 = x1;
     memory.x2 = x2;
     memory.y1 = y1;
@@ -366,15 +354,63 @@ void Screen::DrawRectangle(uint16_t x1, uint16_t x2,
     DrawMemory& memory = RetrieveMemory();
 
     memory.callback = Screen::DrawRectangleProcedure;
-    memory.status = MemoryStatus::In_Progress;
     memory.x1 = x1;
     memory.x2 = x2;
     memory.y1 = y1;
     memory.y2 = y2;
     memory.colour = colour;
 
-    memory.parameters[0] = thickness >> 8;
-    memory.parameters[1] = thickness & 0xFF;
+    PushMemoryParameter(memory, thickness, 2);
+}
+
+void Screen::DrawCharacter(uint16_t x, uint16_t y, const char ch,
+    const Font& font, const Colour fg, const Colour bg)
+{
+    const uint16_t x2 = x + font.width;
+    const uint16_t y2 = y + font.height;
+    const uint16_t offset = (ch - 32) * font.height * (font.width / 8 + 1);
+    const uintptr_t ch_addr = (uintptr_t)(font.data + offset);
+
+    DrawMemory& memory = RetrieveMemory();
+
+    memory.callback = DrawCharacterProcedure;
+    memory.x1 = x;
+    memory.y1 = y;
+    memory.x2 = x2;
+    memory.y2 = y2;
+    memory.colour = fg;
+
+    PushMemoryParameter(memory, static_cast<uint32_t>(bg), 1);
+    PushMemoryParameter(memory, font.width, 1);
+    PushMemoryParameter(memory, font.height, 1);
+    PushMemoryParameter(memory, ch_addr, 4);
+}
+
+void Screen::DrawString(uint16_t x, uint16_t y, const char* str,
+    const uint16_t length, const Font& font,
+    const Colour fg, const Colour bg)
+{
+    // Get the maximum num of characters for a single line
+    const uint16_t len = length * font.width > WIDTH ? WIDTH / font.width : length;
+
+    const uint16_t x2 = x + len;
+    const uint16_t y2 = y + font.height;
+
+    DrawMemory& memory = RetrieveMemory();
+
+    memory.callback = DrawStringProcedure;
+    memory.x1 = x;
+    memory.y1 = y;
+    memory.x2 = x2;
+    memory.y2 = y2;
+    memory.colour = fg;
+
+    PushMemoryParameter(memory, static_cast<uint8_t>(bg), 1);
+    PushMemoryParameter(memory, (uint32_t)str, 4);
+    PushMemoryParameter(memory, len, 2);
+    PushMemoryParameter(memory, font.width, 1);
+    PushMemoryParameter(memory, font.height, 1);
+    PushMemoryParameter(memory, (uint32_t)font.data, 4);
 }
 
 // Private functions
@@ -400,7 +436,7 @@ void Screen::WriteData(uint8_t data)
 
 Screen::DrawMemory& Screen::RetrieveMemory()
 {
-    if (memories_in_use == Num_Memories)
+    if (memories_in_use >= Num_Memories)
     {
         Error_Handler();
     }
@@ -414,6 +450,7 @@ Screen::DrawMemory& Screen::RetrieveMemory()
 
     restart_update = true;
     ++memories_in_use;
+    memory.status = MemoryStatus::In_Progress;
     return memory;
 }
 
@@ -438,11 +475,6 @@ void Screen::FillRectangleProcedure(Screen& screen, DrawMemory& memory,
             screen.matrix[i][j] = memory.colour;
         }
     }
-
-    if (y2 >= memory.y2)
-    {
-        memory.status = MemoryStatus::Complete;
-    }
 }
 
 
@@ -450,25 +482,24 @@ void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
     const uint16_t y1, const uint16_t y2)
 {
     // See if rectangle is in the current scan line
-    if (y1 < memory.y1 && y2 > memory.y2)
+    if (y1 > memory.y2 || y2 < memory.y1)
     {
         return;
     }
 
-    const uint16_t thickness = memory.parameters[0] << 8 | memory.parameters[1];
+    const uint16_t thickness = PopMemoryParameter(memory, 2);
 
     // Get the y bounds
     const uint16_t y_min = y1 > memory.y1 ? y1 : memory.y1;
     const uint16_t y_max = y2 < memory.y2 ? y2 : memory.y2;
-    const uint16_t y1_thick = memory.y1 + thickness > y_max ? memory.y1 + thickness : y_max;
-    const uint16_t y2_thick = memory.y2 - thickness < y_min ? memory.y2 - thickness : y_min;
+    const uint16_t y1_thick = memory.y1 + thickness < y_max ? memory.y1 + thickness : y_max;
+    const uint16_t y2_thick = memory.y2 - thickness > y_min ? memory.y2 - thickness : y_min;
 
     const uint16_t x1_thick = memory.x1 + thickness;
     const uint16_t x2_thick = memory.x2 - thickness;
 
-
     // Check for the "top rectangle"
-    if (y1 < memory.y1)
+    if (y1 <= memory.y1)
     {
         // In the bounds of the top rectangle
         for (uint16_t i = y_min; i < y1_thick; ++i)
@@ -481,7 +512,7 @@ void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
     }
 
     // Check for the "bottom rectangle"
-    if (y_max > y2_thick)
+    if (y2 >= memory.y2)
     {
         // In the bounds of the top rectangle
         for (uint16_t i = y2_thick; i < y_max; ++i)
@@ -505,10 +536,106 @@ void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
             screen.matrix[i][j] = memory.colour;
         }
     }
+}
 
-    if (y2 >= memory.y2)
+void Screen::DrawCharacterProcedure(Screen& screen, DrawMemory& memory,
+    const uint16_t y1, const uint16_t y2)
+{
+    const uint8_t* ch_ptr = (uint8_t*)PopMemoryParameter(memory, 4);
+    const uint16_t font_height = PopMemoryParameter(memory, 1);
+    const uint16_t font_width = PopMemoryParameter(memory, 1);
+    const Colour bg = static_cast<Colour>(PopMemoryParameter(memory, 1));
+
+    uint16_t w_off = 0;
+
+    const uint16_t y_min = y1 > memory.y1 ? y1 : memory.y1;
+    const uint16_t y_max = y2 < memory.y2 ? y2 : memory.y2;
+
+    for (uint16_t i = y_min; i < y_max; ++i)
     {
-        memory.status = MemoryStatus::Complete;
+        w_off = 0;
+        for (uint16_t j = memory.x1; j < memory.x2; ++j)
+        {
+            if ((*ch_ptr << w_off) & 0x80)
+            {
+                screen.matrix[i][j] = memory.colour;
+            }
+            else
+            {
+                screen.matrix[i][j] = bg;
+            }
+
+            ++w_off;
+            if (w_off >= 8)
+            {
+                w_off = 0;
+
+                // At the end of the byte's bits, if a font > 8 bits
+                // then we need to slide to the next byte. which is in the same
+                // column
+                ++ch_ptr;
+            }
+        }
+
+        // Slide the pointer to the next row byte
+        ++ch_ptr;
+    }
+}
+
+void Screen::DrawStringProcedure(Screen& screen, DrawMemory& memory,
+    const uint16_t y1, const uint16_t y2)
+{
+    uint8_t* font_data = (uint8_t*)PopMemoryParameter(memory, 4);
+    const uint8_t font_height = PopMemoryParameter(memory, 1);
+    const uint8_t font_width = PopMemoryParameter(memory, 1);
+    const uint16_t len = PopMemoryParameter(memory, 2);
+    const uint8_t* str = (uint8_t*)PopMemoryParameter(memory, 4);
+    const Colour bg = static_cast<Colour>(PopMemoryParameter(memory, 1));
+
+    uint16_t ch_idx = 0;
+    char ch = str[ch_idx];
+    uint32_t offset = GetCharacterOffset(ch, font_width, font_height);
+    uint8_t* ch_addr = font_data + offset;
+
+    // TODO FINISH
+
+    // How many iterations we've been at the same character
+    // If it exceeds the font width that means we are on the next
+    // character in the string
+    uint16_t x_char_iter = 0;
+    uint16_t w_off = 0;
+
+    const uint16_t y_min = y1 > memory.y1 ? y1 : memory.y1;
+    const uint16_t y_max = y2 < memory.y2 ? y2 : memory.y2;
+
+    for (uint16_t i = y_min; i < y_max; ++i)
+    {
+        x_char_iter = 0;
+        w_off = 0;
+        for (uint16_t j = memory.x1; j < memory.x2; ++j)
+        {
+
+            ++w_off;
+            ++x_char_iter;
+
+            // Check if we are on the next character
+            if (x_char_iter > font_width)
+            {
+                x_char_iter = 0;
+                // Next character and reset w_off
+                w_off = 0;
+            }
+
+            if (w_off >= 8)
+            {
+                w_off = 0;
+
+                // At the end of the byte's bits, if a font > 8 bits
+                // then we need to slide to the next byte. which is in the same
+                // column
+                ++ch_ptr;
+            }
+        }
     }
 }
 
@@ -537,4 +664,39 @@ void Screen::BoundCheck(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
         y1 = y2;
         y2 = tmp;
     }
+}
+
+inline uint16_t Screen::GetCharacterOffset(const uint8_t ch,
+    const uint16_t font_width,
+    const uint16_t font_height)
+{
+    return (ch - 32) * font_height * (font_width / 8 + 1);
+}
+
+void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
+    const int16_t num_bytes)
+{
+    uint8_t& idx = memory.param_idx;
+    for (int16_t i = 0; i < num_bytes && i < 4; ++i)
+    {
+        // We are relying on truncation to save a cycle
+        const uint8_t v = (val >> (8 * i));
+        memory.parameters[idx] = v;
+        ++idx;
+    }
+}
+
+uint32_t Screen::PopMemoryParameter(DrawMemory& memory,
+    const int16_t num_bytes)
+{
+    uint32_t output = 0;
+    uint8_t& idx = memory.param_idx;
+
+    for (int16_t i = num_bytes - 1; i >= 0; --i)
+    {
+        output |= memory.parameters[idx - 1] << (8 * i);
+        --idx;
+    }
+
+    return output;
 }
