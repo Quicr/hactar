@@ -3,6 +3,8 @@
 #include "main.h"
 #include "stm32.h"
 
+#include "font.hh"
+
 #define SF_RST 0x01U // Software reset
 #define PWRC_A 0xCBU // Power control A
 #define PWRC_B 0xCFU // Power control B
@@ -58,12 +60,10 @@
 #define LEFT_LANDSCAPE_DATA     (MAD_CTL_MV | MAD_CTL_BGR)
 #define RIGHT_LANDSCAPE_DATA    (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
 
-
-
 class Screen
 {
 public:
-    enum class Colour : uint8_t
+    enum class Colour: uint8_t
     {
         BLACK = 0,
         WHITE,
@@ -76,7 +76,7 @@ public:
         YELLOW,
     };
 private:
-    static constexpr uint16_t colour_map[] {
+    static constexpr uint16_t colour_map []{
         C_BLACK,
         C_WHITE,
         C_RED,
@@ -87,27 +87,27 @@ private:
         C_MAGENTA,
         C_YELLOW
     };
-    static constexpr uint32_t Num_Memories = 4;
+    static constexpr uint32_t Num_Memories = 20;
     static constexpr uint32_t Memory_Size = 32;
 
 
     enum class MemoryStatus
     {
-        Unused = 0,
+        Free = 0,
         In_Progress,
-        Complete
     };
 
     struct DrawMemory
     {
         void (*callback)(Screen& screen, DrawMemory& memory,
             const uint16_t y1, const uint16_t y2) = nullptr;
-        MemoryStatus status = MemoryStatus::Unused;
-        uint16_t x1;
-        uint16_t x2;
-        uint16_t y1;
-        uint16_t y2;
-        Colour colour;
+        MemoryStatus status = MemoryStatus::Free;
+        uint16_t x1 = 0;
+        uint16_t x2 = 0;
+        uint16_t y1 = 0;
+        uint16_t y2 = 0;
+        Colour colour = Colour::BLACK;
+        uint8_t param_idx = 0;
         uint8_t parameters[Memory_Size]{ 0 }; // A bunch of data params to run the next command
     };
 
@@ -148,6 +148,11 @@ public:
         uint16_t y2, const Colour colour);
     void DrawRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
         uint16_t y2, const uint16_t thickness, const Colour colour);
+    void DrawCharacter(uint16_t x, uint16_t y, const char ch, const Font& font,
+        const Colour fg, const Colour bg);
+    void DrawString(uint16_t x, uint16_t y, const char* str,
+        const uint16_t length, const Font& font,
+        const Colour fg, const Colour bg);
 
 private:
     void WriteCommand(const uint8_t command);
@@ -158,12 +163,25 @@ private:
     DrawMemory& RetrieveMemory();
 
     // Private functions
+    // TODO do I need screen???
     static void DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
         const uint16_t y1, const uint16_t y2);
     static void FillRectangleProcedure(Screen& screen, DrawMemory& memory,
         const uint16_t y1, const uint16_t y2);
+    static void DrawCharacterProcedure(Screen& screen, DrawMemory& memory,
+        const uint16_t y1, const uint16_t y2);
+    static void DrawStringProcedure(Screen& screen, DrawMemory& memory,
+        const uint16_t y1, const uint16_t y2);
 
     inline void BoundCheck(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2);
+
+    static inline uint16_t GetCharacterOffset(const uint8_t ch,
+        const uint16_t font_width,
+        const uint16_t font_height);
+    static inline void PushMemoryParameter(DrawMemory& memory,
+        const uint32_t val, const int16_t num_bytes);
+    static inline uint32_t PopMemoryParameter(DrawMemory& memory,
+        const int16_t num_bytes);
 
     // Variables
     SPI_HandleTypeDef* spi;
@@ -191,8 +209,9 @@ private:
     bool updating;
     bool restart_update;
 
+    // TODO matrix structure?
     Colour matrix[HEIGHT][WIDTH];
     // Two bytes per pixel
-    uint8_t scan_window[32*WIDTH*2];
+    uint8_t scan_window[32 * WIDTH * 2];
 
 };

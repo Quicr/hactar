@@ -90,7 +90,7 @@ int app_main()
     audio_chip.Init();
     screen.Init();
     screen.EnableBacklight();
-    screen.FillRectangle(0, 10, 0, 10, Screen::Colour::CYAN);
+    // screen.FillRectangle(0, 10, 0, 10, Screen::Colour::CYAN);
     // screen.FillRectangle(0, 10, 0, 10, Screen::Colour::CYAN);
 
     // screen.FillRectangle(0, WIDTH, 0, HEIGHT, Screen::Colour::YELLOW);
@@ -114,7 +114,7 @@ int app_main()
         HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
         if (error)
         {
-            Error_Handler();
+            // Error_Handler();
         }
 
         while (flags == 0)
@@ -125,7 +125,7 @@ int app_main()
         // If we broke out then that means we got an audio callback
         // TODO test clock stability
         current_tick = uwTick;
-        timeout = current_tick+10'000;
+        timeout = current_tick + 10'000;
 
         // Send off a tx packet
 
@@ -137,7 +137,26 @@ int app_main()
         if (uwTick > redraw)
         {
             screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
-            screen.DrawRectangle(10, 30, 10, 30, 3, next);
+            screen.DrawRectangle(0, 10, 0, 10, 2, Screen::Colour::MAGENTA);
+            screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
+            const uint16_t width = 50;
+            const uint16_t height = 50;
+            const uint16_t x_inc = width + 2;
+            const uint16_t y_inc = height+1;
+            // uint16_t x = 0;
+            // uint16_t y = y_inc;
+            // for (int i = 0 ; i < 19; ++i)
+            // {
+            //     if (20 + x >= WIDTH)
+            //     {
+            //         x = 0;
+            //         y += y_inc;
+            //     }
+            //     // screen.DrawRectangle(x, x + width, y, y + height, 4, next);
+            //     // screen.FillRectangle(x, x + width, y, y + height, next);
+            //     screen.FillRectangle(0, WIDTH, 0, HEIGHT, next);
+            //     x += x_inc;
+            // }
 
             // swap
             Screen::Colour tmp = curr;
@@ -252,5 +271,5 @@ void assert_failed(uint8_t* file, uint32_t line)
     /* User can add his own implementation to report the file name and line number,
         e.g.: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
         /* USER CODE END 6 */
-}
+    }
 #endif /* USE_FULL_ASSERT */
