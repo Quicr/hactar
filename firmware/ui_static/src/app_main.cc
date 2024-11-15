@@ -107,6 +107,10 @@ int app_main()
     uint32_t redraw = uwTick;
     Screen::Colour next = Screen::Colour::GREEN;
     Screen::Colour curr = Screen::Colour::BLUE;
+
+    const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
+    screen.DrawString(2, 28, &hello, 48, font11x16, Screen::Colour::WHITE, Screen::Colour::BLACK);
+
     while (1)
     {
         HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
@@ -136,9 +140,10 @@ int app_main()
         // Use remaining time to draw?
         if (uwTick > redraw)
         {
-            screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
+            // screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
             screen.DrawRectangle(0, 10, 0, 10, 2, Screen::Colour::MAGENTA);
             screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
+            // screen.DrawString(2, 28, &hello, 48, font11x16, next, curr);
             const uint16_t width = 50;
             const uint16_t height = 50;
             const uint16_t x_inc = width + 2;
