@@ -386,27 +386,30 @@ void Screen::DrawCharacter(uint16_t x, uint16_t y, const char ch,
     PushMemoryParameter(memory, ch_addr, 4);
 }
 
-void Screen::DrawString(uint16_t x, uint16_t y, const char* str,
+void Screen::DrawString(uint16_t x, uint16_t y, const char** str,
     const uint16_t length, const Font& font,
     const Colour fg, const Colour bg)
 {
     // Get the maximum num of characters for a single line
-    const uint16_t len = length * font.width > WIDTH ? WIDTH / font.width : length;
+    const uint16_t len = x + length * font.width > WIDTH ? (WIDTH - x) / font.width : length;
+    const uint16_t width = len * font.width;
 
-    const uint16_t x2 = x + len;
+    const uint16_t x2 = x + width;
     const uint16_t y2 = y + font.height;
 
     DrawMemory& memory = RetrieveMemory();
 
     memory.callback = DrawStringProcedure;
     memory.x1 = x;
-    memory.y1 = y;
     memory.x2 = x2;
+    memory.y1 = y;
     memory.y2 = y2;
     memory.colour = fg;
 
+    const uint32_t _str = (uint32_t)*str;
+
     PushMemoryParameter(memory, static_cast<uint8_t>(bg), 1);
-    PushMemoryParameter(memory, (uint32_t)str, 4);
+    PushMemoryParameter(memory, (uint32_t)*str, 4);
     PushMemoryParameter(memory, len, 2);
     PushMemoryParameter(memory, font.width, 1);
     PushMemoryParameter(memory, font.height, 1);
@@ -464,11 +467,11 @@ void Screen::FillRectangleProcedure(Screen& screen, DrawMemory& memory,
     }
 
     // Get the y bounds
-    const uint16_t y_min = y1 > memory.y1 ? y1 : memory.y1;
-    const uint16_t y_max = y2 < memory.y2 ? y2 : memory.y2;
+    const uint16_t y_start = y1 > memory.y1 ? y1 : memory.y1;
+    const uint16_t y_end = y2 < memory.y2 ? y2 : memory.y2;
 
     // Get the colour
-    for (uint16_t i = y_min; i < y_max; ++i)
+    for (uint16_t i = y_start; i < y_end; ++i)
     {
         for (uint16_t j = memory.x1; j < memory.x2; ++j)
         {
@@ -487,13 +490,13 @@ void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
         return;
     }
 
-    const uint16_t thickness = PopMemoryParameter(memory, 2);
+    const uint16_t thickness = PullMemoryParameter(memory, 2);
 
     // Get the y bounds
-    const uint16_t y_min = y1 > memory.y1 ? y1 : memory.y1;
-    const uint16_t y_max = y2 < memory.y2 ? y2 : memory.y2;
-    const uint16_t y1_thick = memory.y1 + thickness < y_max ? memory.y1 + thickness : y_max;
-    const uint16_t y2_thick = memory.y2 - thickness > y_min ? memory.y2 - thickness : y_min;
+    const uint16_t y_start = y1 > memory.y1 ? y1 : memory.y1;
+    const uint16_t y_end = y2 < memory.y2 ? y2 : memory.y2;
+    const uint16_t y1_thick = memory.y1 + thickness < y_end ? memory.y1 + thickness : y_end;
+    const uint16_t y2_thick = memory.y2 - thickness > y_start ? memory.y2 - thickness : y_start;
 
     const uint16_t x1_thick = memory.x1 + thickness;
     const uint16_t x2_thick = memory.x2 - thickness;
@@ -502,7 +505,7 @@ void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
     if (y1 <= memory.y1)
     {
         // In the bounds of the top rectangle
-        for (uint16_t i = y_min; i < y1_thick; ++i)
+        for (uint16_t i = y_start; i < y1_thick; ++i)
         {
             for (uint16_t j = memory.x1; j < memory.x2; ++j)
             {
@@ -515,7 +518,7 @@ void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
     if (y2 >= memory.y2)
     {
         // In the bounds of the top rectangle
-        for (uint16_t i = y2_thick; i < y_max; ++i)
+        for (uint16_t i = y2_thick; i < y_end; ++i)
         {
             for (uint16_t j = memory.x1; j < memory.x2; ++j)
             {
@@ -525,7 +528,7 @@ void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
     }
 
     // Do the side rectangles
-    for (uint16_t i = y_min; i < y_max; ++i)
+    for (uint16_t i = y_start; i < y_end; ++i)
     {
         for (uint16_t j = memory.x1; j < x1_thick; ++j)
         {
@@ -541,17 +544,17 @@ void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
 void Screen::DrawCharacterProcedure(Screen& screen, DrawMemory& memory,
     const uint16_t y1, const uint16_t y2)
 {
-    const uint8_t* ch_ptr = (uint8_t*)PopMemoryParameter(memory, 4);
-    const uint16_t font_height = PopMemoryParameter(memory, 1);
-    const uint16_t font_width = PopMemoryParameter(memory, 1);
-    const Colour bg = static_cast<Colour>(PopMemoryParameter(memory, 1));
+    const Colour bg = static_cast<Colour>(PullMemoryParameter(memory, 1));
+    const uint16_t font_width = PullMemoryParameter(memory, 1);
+    const uint16_t font_height = PullMemoryParameter(memory, 1);
+    const uint8_t* ch_ptr = (uint8_t*)PullMemoryParameter(memory, 4);
 
     uint16_t w_off = 0;
 
-    const uint16_t y_min = y1 > memory.y1 ? y1 : memory.y1;
-    const uint16_t y_max = y2 < memory.y2 ? y2 : memory.y2;
+    const uint16_t y_start = y1 > memory.y1 ? y1 : memory.y1;
+    const uint16_t y_end = y2 < memory.y2 ? y2 : memory.y2;
 
-    for (uint16_t i = y_min; i < y_max; ++i)
+    for (uint16_t i = y_start; i < y_end; ++i)
     {
         w_off = 0;
         for (uint16_t j = memory.x1; j < memory.x2; ++j)
@@ -585,19 +588,25 @@ void Screen::DrawCharacterProcedure(Screen& screen, DrawMemory& memory,
 void Screen::DrawStringProcedure(Screen& screen, DrawMemory& memory,
     const uint16_t y1, const uint16_t y2)
 {
-    uint8_t* font_data = (uint8_t*)PopMemoryParameter(memory, 4);
-    const uint8_t font_height = PopMemoryParameter(memory, 1);
-    const uint8_t font_width = PopMemoryParameter(memory, 1);
-    const uint16_t len = PopMemoryParameter(memory, 2);
-    const uint8_t* str = (uint8_t*)PopMemoryParameter(memory, 4);
-    const Colour bg = static_cast<Colour>(PopMemoryParameter(memory, 1));
+    // TODO put into function
+    if (y1 > memory.y2 || y2 < memory.y1)
+    {
+        return;
+    }
+
+    const Colour bg = static_cast<Colour>(PullMemoryParameter(memory, 1));
+    const uint8_t* str = (uint8_t*)PullMemoryParameter(memory, 4);
+    const uint16_t len = PullMemoryParameter(memory, 2);
+    const uint8_t font_width = PullMemoryParameter(memory, 1);
+    const uint8_t font_height = PullMemoryParameter(memory, 1);
+    uint8_t* font_data = (uint8_t*)PullMemoryParameter(memory, 4);
+
+    const uint16_t bytes_per_char = (font_width / 8) + 1;
+    const uint16_t y_start = y1 > memory.y1 ? y1 : memory.y1;
+    const uint16_t y_end = y2 < memory.y2 ? y2 : memory.y2;
 
     uint16_t ch_idx = 0;
-    char ch = str[ch_idx];
-    uint32_t offset = GetCharacterOffset(ch, font_width, font_height);
-    uint8_t* ch_addr = font_data + offset;
-
-    // TODO FINISH
+    uint8_t* ch_ptr = nullptr;
 
     // How many iterations we've been at the same character
     // If it exceeds the font width that means we are on the next
@@ -605,23 +614,46 @@ void Screen::DrawStringProcedure(Screen& screen, DrawMemory& memory,
     uint16_t x_char_iter = 0;
     uint16_t w_off = 0;
 
-    const uint16_t y_min = y1 > memory.y1 ? y1 : memory.y1;
-    const uint16_t y_max = y2 < memory.y2 ? y2 : memory.y2;
+    // Get the current number of scan lines already passed
+    uint16_t y_char_iter = 0;
+    if (y1 > memory.y1)
+    {
+        // We have done some lines
+        y_char_iter = (y1 - memory.y1);
+    }
 
-    for (uint16_t i = y_min; i < y_max; ++i)
+    for (uint16_t i = y_start; i < y_end; ++i)
     {
         x_char_iter = 0;
         w_off = 0;
+        ch_idx = 0;
+        ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width,
+            font_height) + y_char_iter * bytes_per_char;
+
         for (uint16_t j = memory.x1; j < memory.x2; ++j)
         {
+            if ((*ch_ptr << w_off) & 0x80)
+            {
+                screen.matrix[i][j] = memory.colour;
+            }
+            else
+            {
+                screen.matrix[i][j] = bg;
+            }
 
             ++w_off;
             ++x_char_iter;
 
             // Check if we are on the next character
-            if (x_char_iter > font_width)
+            if (x_char_iter >= font_width)
             {
                 x_char_iter = 0;
+
+                // Get the character
+                ++ch_idx;
+                ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width,
+                    font_height) + y_char_iter * bytes_per_char;
+
                 // Next character and reset w_off
                 w_off = 0;
             }
@@ -636,6 +668,9 @@ void Screen::DrawStringProcedure(Screen& screen, DrawMemory& memory,
                 ++ch_ptr;
             }
         }
+
+        // Slide the pointer is the next row
+        ++y_char_iter;
     }
 }
 
@@ -666,18 +701,22 @@ void Screen::BoundCheck(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
     }
 }
 
-inline uint16_t Screen::GetCharacterOffset(const uint8_t ch,
+inline uint8_t* Screen::GetCharAddr(
+    uint8_t* font_data,
+    const uint8_t ch,
     const uint16_t font_width,
     const uint16_t font_height)
 {
-    return (ch - 32) * font_height * (font_width / 8 + 1);
+    return font_data + ((ch - 32) * font_height * (font_width / 8 + 1));
 }
 
 void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
     const int16_t num_bytes)
 {
-    uint8_t& idx = memory.param_idx;
-    for (int16_t i = 0; i < num_bytes && i < 4; ++i)
+    const int16_t bytes = num_bytes < 4 ? num_bytes : 4;
+
+    uint8_t& idx = memory.write_idx;
+    for (int16_t i = 0; i < bytes; ++i)
     {
         // We are relying on truncation to save a cycle
         const uint8_t v = (val >> (8 * i));
@@ -686,16 +725,24 @@ void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
     }
 }
 
-uint32_t Screen::PopMemoryParameter(DrawMemory& memory,
+// Non-destructive retrieval
+uint32_t Screen::PullMemoryParameter(DrawMemory& memory,
     const int16_t num_bytes)
 {
+    const int16_t bytes = num_bytes < 4 ? num_bytes : 4;
     uint32_t output = 0;
-    uint8_t& idx = memory.param_idx;
+    uint8_t& idx = memory.read_idx;
 
-    for (int16_t i = num_bytes - 1; i >= 0; --i)
+    for (int16_t i = 0; i < bytes && i < memory.write_idx; ++i)
     {
-        output |= memory.parameters[idx - 1] << (8 * i);
-        --idx;
+        output |= memory.parameters[idx] << (8 * i);
+        ++idx;
+    }
+
+    // Restart where we read from if the index is zero
+    if (idx >= memory.write_idx)
+    {
+        idx = 0;
     }
 
     return output;

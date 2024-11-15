@@ -107,7 +107,8 @@ private:
         uint16_t y1 = 0;
         uint16_t y2 = 0;
         Colour colour = Colour::BLACK;
-        uint8_t param_idx = 0;
+        uint8_t write_idx = 0;
+        uint8_t read_idx = 0;
         uint8_t parameters[Memory_Size]{ 0 }; // A bunch of data params to run the next command
     };
 
@@ -150,7 +151,7 @@ public:
         uint16_t y2, const uint16_t thickness, const Colour colour);
     void DrawCharacter(uint16_t x, uint16_t y, const char ch, const Font& font,
         const Colour fg, const Colour bg);
-    void DrawString(uint16_t x, uint16_t y, const char* str,
+    void DrawString(uint16_t x, uint16_t y, const char** str,
         const uint16_t length, const Font& font,
         const Colour fg, const Colour bg);
 
@@ -175,12 +176,13 @@ private:
 
     inline void BoundCheck(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2);
 
-    static inline uint16_t GetCharacterOffset(const uint8_t ch,
+    static inline uint8_t* GetCharAddr(uint8_t* font_data,
+        const uint8_t ch,
         const uint16_t font_width,
         const uint16_t font_height);
     static inline void PushMemoryParameter(DrawMemory& memory,
         const uint32_t val, const int16_t num_bytes);
-    static inline uint32_t PopMemoryParameter(DrawMemory& memory,
+    static inline uint32_t PullMemoryParameter(DrawMemory& memory,
         const int16_t num_bytes);
 
     // Variables
