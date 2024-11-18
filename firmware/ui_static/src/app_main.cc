@@ -101,7 +101,6 @@ int app_main()
     HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
 
 
-    audio_chip.StartI2S();
     uint32_t timeout;
     uint32_t current_tick;
     uint32_t redraw = uwTick;
@@ -109,8 +108,8 @@ int app_main()
     Screen::Colour curr = Screen::Colour::BLUE;
 
     const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
-    screen.DrawString(2, 28, &hello, 48, font11x16, Screen::Colour::WHITE, Screen::Colour::BLACK);
 
+    audio_chip.StartI2S();
     while (1)
     {
         HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
@@ -118,7 +117,7 @@ int app_main()
         HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
         if (error)
         {
-            // Error_Handler();
+            Error_Handler();
         }
 
         while (flags == 0)
@@ -133,17 +132,17 @@ int app_main()
 
         // Send off a tx packet
 
-        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
         AudioCodec::ALawCompand(audio_chip.RxBuffer(), rx_companded, AudioChip::Audio_Buffer_Sz_2);
         RaiseFlag(Rx_Audio_Companded);
+        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
 
         // Use remaining time to draw?
         if (uwTick > redraw)
         {
-            // screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
-            screen.DrawRectangle(0, 10, 0, 10, 2, Screen::Colour::MAGENTA);
+            screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
+            screen.DrawRectangle(0, 10, 0, 10, 2, next);
             screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
-            // screen.DrawString(2, 28, &hello, 48, font11x16, next, curr);
+            screen.DrawString(2, 28, &hello, 48, font11x16, next, curr);
             const uint16_t width = 50;
             const uint16_t height = 50;
             const uint16_t x_inc = width + 2;
@@ -173,6 +172,7 @@ int app_main()
 
         screen.Draw(timeout);
         RaiseFlag(Draw_Complete);
+        HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_RESET);
     }
 
     return 0;
@@ -230,7 +230,6 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 {
     UNUSED(hi2s);
     CheckFlags();
-    // HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_RESET);
     // WakeUp();
     audio_chip.CompleteCallback();
     RaiseFlag(Audio_Interrupt);

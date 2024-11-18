@@ -53,12 +53,14 @@
 #define C_GREY          0xCE59U
 
 // Default orientation
-#define WIDTH                240U
-#define HEIGHT               320U
+#define WIDTH                   uint16_t(240)
+#define HEIGHT                  uint16_t(320)
 #define PORTRAIT_DATA           (MAD_CTL_MY | MAD_CTL_BGR)
 #define FLIPPED_PORTRAIT_DATA   (MAD_CTL_MX | MAD_CTL_BGR)
 #define LEFT_LANDSCAPE_DATA     (MAD_CTL_MV | MAD_CTL_BGR)
 #define RIGHT_LANDSCAPE_DATA    (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
+
+#define NUM_ROWS 10
 
 class Screen
 {
@@ -156,9 +158,13 @@ public:
         const Colour fg, const Colour bg);
 
 private:
+    inline void SetPinToCommand();
+    inline void SetPinToData();
     void WriteCommand(const uint8_t command);
+    void WriteDataWithSet(const uint8_t data);
+    void WriteDataWithSet(uint8_t* data, const uint32_t data_size);
     void WriteData(uint8_t* data, const uint32_t data_size);
-    void WriteData(const uint8_t data);
+    void WriteDataAsync(uint8_t* data, const uint32_t data_size);
     void SetWriteablePixels(const uint16_t x1, const uint16_t x2,
         const uint16_t y1, const uint16_t y2);
     DrawMemory& RetrieveMemory();
@@ -204,16 +210,15 @@ private:
 
     DrawMemory memories[Num_Memories];
     uint32_t memories_in_use;
-    uint32_t memory_read_idx;
     uint32_t memory_write_idx;
     uint16_t row;
 
     bool updating;
     bool restart_update;
 
-    // TODO matrix structure?
     Colour matrix[HEIGHT][WIDTH];
     // Two bytes per pixel
-    uint8_t scan_window[32 * WIDTH * 2];
+    // TODO define variables
+    uint8_t scan_window[WIDTH * 2 * 2];
 
 };

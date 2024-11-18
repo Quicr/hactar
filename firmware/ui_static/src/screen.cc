@@ -21,22 +21,24 @@ Screen::Screen(
     rst_pin(rst_pin),
     bl_port(bl_port),
     bl_pin(bl_pin),
-    orientation(portrait),
+    orientation(orientation),
     view_height(HEIGHT),
     view_width(WIDTH),
-    memories({ 0 }),
+    memories{ 0 },
     memories_in_use(0),
-    memory_read_idx(0),
     memory_write_idx(0),
     row(0),
     updating(false),
     restart_update(false),
-    matrix({ Colour::BLACK }),
-    scan_window({ 0 })
+    matrix{ Colour::BLACK },
+    scan_window{ 0 }
 {
 
 }
 
+
+// NOTE, we never deselect the screen because its the only
+// thing on our spi bus.
 void Screen::Init()
 {
     Select();
@@ -48,86 +50,86 @@ void Screen::Init()
     // Set power control A
     WriteCommand(PWRC_A);
     uint8_t power_a_data[5] = { 0x39, 0x2C, 0x00, 0x34, 0x02 };
-    WriteData(power_a_data, 5);
+    WriteDataWithSet(power_a_data, 5);
 
     // Set power control B
     WriteCommand(PWRC_B);
     uint8_t power_b_data[3] = { 0x00, 0xC1, 0x30 };
-    WriteData(power_b_data, 3);
+    WriteDataWithSet(power_b_data, 3);
 
     // Driver timing control A
     WriteCommand(TIMC_A);
     uint8_t timer_a_data[3] = { 0x85, 0x00, 0x78 };
-    WriteData(timer_a_data, 3);
+    WriteDataWithSet(timer_a_data, 3);
 
     // Driver timing control B
     WriteCommand(TIMC_B);
     uint8_t timer_b_data[2] = { 0x00, 0x00 };
-    WriteData(timer_b_data, 2);
+    WriteDataWithSet(timer_b_data, 2);
 
     // Power on sequence control
     WriteCommand(PWR_ON);
     uint8_t power_data[4] = { 0x64, 0x03, 0x12, 0x81 };
-    WriteData(power_data, 4);
+    WriteDataWithSet(power_data, 4);
 
     // Pump ratio control
     WriteCommand(PMP_RA);
-    WriteData(0x20);
+    WriteDataWithSet(0x20);
 
     // Power control VRH[5:0]
     WriteCommand(PC_VRH); // 0xC0
-    WriteData(0x23);
+    WriteDataWithSet(0x23);
 
     // Power control SAP[2:0];BT[3:0]
     WriteCommand(PC_SAP); // 0xC1
-    WriteData(0x10);
+    WriteDataWithSet(0x10);
 
     // VCM Control 1
     WriteCommand(VCM_C1);
     uint8_t vcm_control[2] = { 0x3E, 0x28 };
-    WriteData(vcm_control, 2);
+    WriteDataWithSet(vcm_control, 2);
 
     // VCM Control 2
     WriteCommand(VCM_C2);
-    WriteData(0x86);
+    WriteDataWithSet(0x86);
 
     // Memory access control
     WriteCommand(MEM_CR);
-    WriteData(0x48);
+    WriteDataWithSet(0x48);
 
     // Pixel format
     WriteCommand(PIX_FM);
-    WriteData(0x55);
+    WriteDataWithSet(0x55);
 
     // Frame ratio control. RGB Color
     WriteCommand(FR_CTL); // 0xB1
     uint8_t fr_control_data[2] = { 0x00, 0x18 };
-    WriteData(fr_control_data, 2);
+    WriteDataWithSet(fr_control_data, 2);
 
     // Display function control
     WriteCommand(DIS_CT); // 0xB6
     uint8_t df_control_data[3] = { 0x08, 0x82, 0x27 };
-    WriteData(df_control_data, 3);
+    WriteDataWithSet(df_control_data, 3);
 
     // 3Gamma function
     WriteCommand(GAMM_3); // 0xF2
-    WriteData(0x00);
+    WriteDataWithSet(0x00);
 
     // Gamma curve selected
     WriteCommand(GAMM_C); // 0x26
-    WriteData(0x01);
+    WriteDataWithSet(0x01);
 
     // Positive Gamma correction
     WriteCommand(GAM_PC); // 0xE0
     uint8_t positive_gamma_correction_data[15] = { 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1,
                               0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00 };
-    WriteData(positive_gamma_correction_data, 15);
+    WriteDataWithSet(positive_gamma_correction_data, 15);
 
     // Negative gamma correction
     WriteCommand(GAM_NC);
     uint8_t negative_gamma_correction_data[15] = { 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1,
                               0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F };
-    WriteData(negative_gamma_correction_data, 15);
+    WriteDataWithSet(negative_gamma_correction_data, 15);
 
     // Exit sleep
     WriteCommand(END_SL); // 0x11
@@ -139,8 +141,6 @@ void Screen::Init()
 
     // Set the orientation of the screen
     SetOrientation(orientation);
-
-    Deselect();
 }
 
 // TODO use different draw code based on the orientation?
@@ -160,16 +160,10 @@ void Screen::Draw(uint32_t timeout)
         return;
     }
 
-    if (memory_read_idx >= Num_Memories)
-    {
-        memory_read_idx = 0;
-    }
-
-    constexpr uint16_t num_rows = 32;
-    const uint16_t end_row = row + num_rows;
-    Select();
+    // constexpr uint16_t num_rows = 32;
+    const uint16_t end_row = row + NUM_ROWS;
     // TODO different orientations
-    SetWriteablePixels(0, view_width, row, end_row);
+    SetWriteablePixels(0, view_width-1, row, end_row-1);
     // Go through all of the memories
     for (uint16_t j = 0; j < Num_Memories; ++j)
     {
@@ -181,15 +175,17 @@ void Screen::Draw(uint32_t timeout)
             case MemoryStatus::Free:
             {
                 continue;
+                break;
             }
             case MemoryStatus::In_Progress:
             {
-
                 memory.callback(*this, memory, row, end_row);
 
                 if (end_row >= memory.y2)
                 {
                     memory.status = MemoryStatus::Free;
+                    memory.read_idx = 0;
+                    memory.write_idx = 0;
                     --memories_in_use;
                 }
                 break;
@@ -204,27 +200,33 @@ void Screen::Draw(uint32_t timeout)
     }
 
     // Fill the row
+    uint16_t mod = 0;
     for (uint16_t i = row; i < end_row; ++i)
     {
         const uint16_t y_idx = (i - row) * view_width * 2;
         for (uint16_t j = 0; j < view_width; ++j)
         {
-            const uint16_t idx = y_idx + j * 2;
+            const uint16_t idx = mod * 480 + (j * 2);
             scan_window[idx] = colour_map[(size_t)matrix[i][j]] >> 8;
             scan_window[idx + 1] = colour_map[(size_t)matrix[i][j]] & 0xFF;
         }
+
+        while (spi->State != HAL_SPI_STATE_READY)
+        {
+            __NOP();
+        }
+        WriteDataAsync(&scan_window[mod*480], view_width * 2);
+        mod = !mod;
     }
 
     // Send all of the data off.
-    WriteData(scan_window, num_rows * view_width * 2);
-    row += num_rows;
+    // WriteData(scan_window, num_rows * view_width * 2);
+    row += NUM_ROWS;
     if (row >= view_height)
     {
         row = 0;
         updating = false;
     }
-
-    Deselect();
 }
 
 void Screen::Sleep()
@@ -268,22 +270,23 @@ void Screen::SetWriteablePixels(const uint16_t x1, const uint16_t x2,
     const uint16_t y1, const uint16_t y2)
 {
     uint8_t col_data [] = {
-        static_cast<const uint8_t>(x1 >> 8), static_cast<const uint8_t>(x1),
-        static_cast<const uint8_t>(x2 >> 8), static_cast<const uint8_t>(x2),
+        static_cast<uint8_t>(x1 >> 8), static_cast<uint8_t>(x1),
+        static_cast<uint8_t>(x2 >> 8), static_cast<uint8_t>(x2),
     };
 
     uint8_t scan_window [] = {
-        static_cast<const uint8_t>(y1 >> 8), static_cast<const uint8_t>(y1),
-        static_cast<const uint8_t>(y2 >> 8), static_cast<const uint8_t>(y2),
+        static_cast<uint8_t>(y1 >> 8), static_cast<uint8_t>(y1),
+        static_cast<uint8_t>(y2 >> 8), static_cast<uint8_t>(y2),
     };
 
     WriteCommand(CA_SET);
-    WriteData(col_data, sizeof(col_data));
+    WriteDataWithSet(col_data, sizeof(col_data));
 
     WriteCommand(RA_SET);
-    WriteData(scan_window, sizeof(scan_window));
+    WriteDataWithSet(scan_window, sizeof(scan_window));
 
     WriteCommand(WR_RAM);
+    SetPinToData();
 }
 
 void Screen::SetOrientation(const Screen::Orientation orientation)
@@ -296,28 +299,28 @@ void Screen::SetOrientation(const Screen::Orientation orientation)
             view_height = HEIGHT;
 
             WriteCommand(MAD_CT);
-            WriteData(PORTRAIT_DATA);
+            WriteDataWithSet(PORTRAIT_DATA);
             break;
         case Orientation::flipped_portrait:
             view_width = WIDTH;
             view_height = HEIGHT;
 
             WriteCommand(MAD_CT);
-            WriteData(FLIPPED_PORTRAIT_DATA);
+            WriteDataWithSet(FLIPPED_PORTRAIT_DATA);
             break;
         case Orientation::left_landscape:
             view_width = HEIGHT;
             view_height = WIDTH;
 
             WriteCommand(MAD_CT);
-            WriteData(LEFT_LANDSCAPE_DATA);
+            WriteDataWithSet(LEFT_LANDSCAPE_DATA);
             break;
         case Orientation::right_landscape:
             view_width = HEIGHT;
             view_height = WIDTH;
 
             WriteCommand(MAD_CT);
-            WriteData(RIGHT_LANDSCAPE_DATA);
+            WriteDataWithSet(RIGHT_LANDSCAPE_DATA);
             break;
         default:
             // Do nothing
@@ -381,8 +384,6 @@ void Screen::DrawCharacter(uint16_t x, uint16_t y, const char ch,
     memory.colour = fg;
 
     PushMemoryParameter(memory, static_cast<uint32_t>(bg), 1);
-    PushMemoryParameter(memory, font.width, 1);
-    PushMemoryParameter(memory, font.height, 1);
     PushMemoryParameter(memory, ch_addr, 4);
 }
 
@@ -391,7 +392,7 @@ void Screen::DrawString(uint16_t x, uint16_t y, const char** str,
     const Colour fg, const Colour bg)
 {
     // Get the maximum num of characters for a single line
-    const uint16_t len = x + length * font.width > WIDTH ? (WIDTH - x) / font.width : length;
+    const uint16_t len = x + length * static_cast<uint16_t>(font.width) > WIDTH ? (WIDTH - x) / font.width : length;
     const uint16_t width = len * font.width;
 
     const uint16_t x2 = x + width;
@@ -406,11 +407,8 @@ void Screen::DrawString(uint16_t x, uint16_t y, const char** str,
     memory.y2 = y2;
     memory.colour = fg;
 
-    const uint32_t _str = (uint32_t)*str;
-
     PushMemoryParameter(memory, static_cast<uint8_t>(bg), 1);
     PushMemoryParameter(memory, (uint32_t)*str, 4);
-    PushMemoryParameter(memory, len, 2);
     PushMemoryParameter(memory, font.width, 1);
     PushMemoryParameter(memory, font.height, 1);
     PushMemoryParameter(memory, (uint32_t)font.data, 4);
@@ -418,23 +416,44 @@ void Screen::DrawString(uint16_t x, uint16_t y, const char** str,
 
 // Private functions
 
-void Screen::WriteCommand(uint8_t command)
+inline void Screen::SetPinToCommand()
 {
     HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_RESET);
+}
+
+inline void Screen::SetPinToData()
+{
+    HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
+}
+
+void Screen::WriteCommand(uint8_t command)
+{
+    SetPinToCommand();
     HAL_SPI_Transmit(spi, &command, sizeof(command), HAL_MAX_DELAY);
 }
 
+// SetPinToData needs to be called before this function
 void Screen::WriteData(uint8_t* data, const uint32_t data_size)
 {
-    // TODO async
-    HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
     HAL_SPI_Transmit(spi, data, data_size, HAL_MAX_DELAY);
 }
 
-void Screen::WriteData(uint8_t data)
+// SetPinToData needs to be called before this function
+void Screen::WriteDataAsync(uint8_t* data, const uint32_t data_size)
 {
-    HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
+    HAL_SPI_Transmit_DMA(spi, data, data_size);
+}
+
+void Screen::WriteDataWithSet(uint8_t data)
+{
+    SetPinToData();
     HAL_SPI_Transmit(spi, &data, sizeof(data), HAL_MAX_DELAY);
+}
+
+void Screen::WriteDataWithSet(uint8_t* data, const uint32_t data_size)
+{
+    SetPinToData();
+    HAL_SPI_Transmit(spi, data, data_size, HAL_MAX_DELAY);
 }
 
 Screen::DrawMemory& Screen::RetrieveMemory()
@@ -545,9 +564,7 @@ void Screen::DrawCharacterProcedure(Screen& screen, DrawMemory& memory,
     const uint16_t y1, const uint16_t y2)
 {
     const Colour bg = static_cast<Colour>(PullMemoryParameter(memory, 1));
-    const uint16_t font_width = PullMemoryParameter(memory, 1);
-    const uint16_t font_height = PullMemoryParameter(memory, 1);
-    const uint8_t* ch_ptr = (uint8_t*)PullMemoryParameter(memory, 4);
+    uint8_t* ch_ptr = (uint8_t*)PullMemoryParameter(memory, 4);
 
     uint16_t w_off = 0;
 
@@ -583,6 +600,8 @@ void Screen::DrawCharacterProcedure(Screen& screen, DrawMemory& memory,
         // Slide the pointer to the next row byte
         ++ch_ptr;
     }
+
+    ch_ptr = nullptr;
 }
 
 void Screen::DrawStringProcedure(Screen& screen, DrawMemory& memory,
@@ -596,7 +615,6 @@ void Screen::DrawStringProcedure(Screen& screen, DrawMemory& memory,
 
     const Colour bg = static_cast<Colour>(PullMemoryParameter(memory, 1));
     const uint8_t* str = (uint8_t*)PullMemoryParameter(memory, 4);
-    const uint16_t len = PullMemoryParameter(memory, 2);
     const uint8_t font_width = PullMemoryParameter(memory, 1);
     const uint8_t font_height = PullMemoryParameter(memory, 1);
     uint8_t* font_data = (uint8_t*)PullMemoryParameter(memory, 4);
@@ -628,7 +646,7 @@ void Screen::DrawStringProcedure(Screen& screen, DrawMemory& memory,
         w_off = 0;
         ch_idx = 0;
         ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width,
-            font_height) + y_char_iter * bytes_per_char;
+            font_height) + (y_char_iter * bytes_per_char);
 
         for (uint16_t j = memory.x1; j < memory.x2; ++j)
         {
@@ -652,7 +670,7 @@ void Screen::DrawStringProcedure(Screen& screen, DrawMemory& memory,
                 // Get the character
                 ++ch_idx;
                 ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width,
-                    font_height) + y_char_iter * bytes_per_char;
+                    font_height) + (y_char_iter * bytes_per_char);
 
                 // Next character and reset w_off
                 w_off = 0;
@@ -672,6 +690,9 @@ void Screen::DrawStringProcedure(Screen& screen, DrawMemory& memory,
         // Slide the pointer is the next row
         ++y_char_iter;
     }
+
+    ch_ptr = nullptr;
+    font_data = nullptr;
 }
 
 void Screen::BoundCheck(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
@@ -719,8 +740,7 @@ void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
     for (int16_t i = 0; i < bytes; ++i)
     {
         // We are relying on truncation to save a cycle
-        const uint8_t v = (val >> (8 * i));
-        memory.parameters[idx] = v;
+        memory.parameters[idx] = (val >> (8 * i));
         ++idx;
     }
 }
