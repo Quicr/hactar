@@ -150,9 +150,10 @@ void Screen::Draw(uint32_t timeout)
 {
     if (restart_update)
     {
+        row = 0;
         restart_update = false;
         updating = true;
-        row = 0;
+        SetWriteablePixels(0, view_width - 1, 0, view_height - 1);
     }
 
     if (!updating)
@@ -160,10 +161,9 @@ void Screen::Draw(uint32_t timeout)
         return;
     }
 
-    // constexpr uint16_t num_rows = 32;
-    const uint16_t end_row = row + NUM_ROWS;
     // TODO different orientations
-    SetWriteablePixels(0, view_width-1, row, end_row-1);
+    const uint16_t end_row = row + NUM_ROWS;
+
     // Go through all of the memories
     for (uint16_t j = 0; j < Num_Memories; ++j)
     {
@@ -215,12 +215,11 @@ void Screen::Draw(uint32_t timeout)
         {
             __NOP();
         }
-        WriteDataAsync(&scan_window[mod*480], view_width * 2);
+        WriteDataAsync(&scan_window[mod * 480], view_width * 2);
         mod = !mod;
     }
 
     // Send all of the data off.
-    // WriteData(scan_window, num_rows * view_width * 2);
     row += NUM_ROWS;
     if (row >= view_height)
     {
@@ -509,7 +508,7 @@ void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
         return;
     }
 
-    const uint16_t thickness = PullMemoryParameter(memory, 2);
+    const uint16_t thickness = PullMemoryParameter<uint16_t>(memory);
 
     // Get the y bounds
     const uint16_t y_start = y1 > memory.y1 ? y1 : memory.y1;
@@ -563,8 +562,8 @@ void Screen::DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
 void Screen::DrawCharacterProcedure(Screen& screen, DrawMemory& memory,
     const uint16_t y1, const uint16_t y2)
 {
-    const Colour bg = static_cast<Colour>(PullMemoryParameter(memory, 1));
-    uint8_t* ch_ptr = (uint8_t*)PullMemoryParameter(memory, 4);
+    const Colour bg = static_cast<Colour>(PullMemoryParameter<uint8_t>(memory));
+    uint8_t* ch_ptr = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
 
     uint16_t w_off = 0;
 
@@ -613,11 +612,11 @@ void Screen::DrawStringProcedure(Screen& screen, DrawMemory& memory,
         return;
     }
 
-    const Colour bg = static_cast<Colour>(PullMemoryParameter(memory, 1));
-    const uint8_t* str = (uint8_t*)PullMemoryParameter(memory, 4);
-    const uint8_t font_width = PullMemoryParameter(memory, 1);
-    const uint8_t font_height = PullMemoryParameter(memory, 1);
-    uint8_t* font_data = (uint8_t*)PullMemoryParameter(memory, 4);
+    const Colour bg = static_cast<Colour>(PullMemoryParameter<uint8_t>(memory));
+    const uint8_t* str = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
+    const uint8_t font_width = PullMemoryParameter<uint8_t>(memory);
+    const uint8_t font_height = PullMemoryParameter<uint8_t>(memory);
+    uint8_t* font_data = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
 
     const uint16_t bytes_per_char = (font_width / 8) + 1;
     const uint16_t y_start = y1 > memory.y1 ? y1 : memory.y1;
@@ -731,7 +730,7 @@ inline uint8_t* Screen::GetCharAddr(
     return font_data + ((ch - 32) * font_height * (font_width / 8 + 1));
 }
 
-void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
+inline void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
     const int16_t num_bytes)
 {
     const int16_t bytes = num_bytes < 4 ? num_bytes : 4;
@@ -746,11 +745,11 @@ void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
 }
 
 // Non-destructive retrieval
-uint32_t Screen::PullMemoryParameter(DrawMemory& memory,
-    const int16_t num_bytes)
+template<typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = 0>
+inline T Screen::PullMemoryParameter(DrawMemory& memory)
 {
-    const int16_t bytes = num_bytes < 4 ? num_bytes : 4;
-    uint32_t output = 0;
+    const int16_t bytes = sizeof(T);
+    T output = 0;
     uint8_t& idx = memory.read_idx;
 
     for (int16_t i = 0; i < bytes && i < memory.write_idx; ++i)
