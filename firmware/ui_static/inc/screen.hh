@@ -5,6 +5,8 @@
 
 #include "font.hh"
 
+#include <type_traits>
+
 #define SF_RST 0x01U // Software reset
 #define PWRC_A 0xCBU // Power control A
 #define PWRC_B 0xCFU // Power control B
@@ -188,8 +190,8 @@ private:
         const uint16_t font_height);
     static inline void PushMemoryParameter(DrawMemory& memory,
         const uint32_t val, const int16_t num_bytes);
-    static inline uint32_t PullMemoryParameter(DrawMemory& memory,
-        const int16_t num_bytes);
+    template<typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = 0>
+    static inline T PullMemoryParameter(DrawMemory& memory);
 
     // Variables
     SPI_HandleTypeDef* spi;

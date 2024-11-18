@@ -6,6 +6,8 @@
 
 #include "screen.hh"
 
+#include "serial.hh"
+
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -19,6 +21,8 @@ extern TIM_HandleTypeDef htim3;
 extern RNG_HandleTypeDef hrng;
 
 AudioChip audio_chip(hi2s3, hi2c1);
+
+Serial serial(&huart2);
 
 Screen screen(
     hspi1,
@@ -41,10 +45,12 @@ enum TIMER_FLAGS
 {
     Audio_Interrupt = 0,
     Rx_Audio_Companded,
+    Rx_Audio_Transmitted,
     Draw_Complete
 
 };
-uint32_t flags = 0b0000'0111;
+constexpr uint32_t Expected_Flags = 0b0000'1111;
+uint32_t flags = Expected_Flags;
 bool error = false;
 
 inline void RaiseFlag(TIMER_FLAGS flag)
@@ -75,7 +81,7 @@ inline void WakeUp()
 
 inline void CheckFlags()
 {
-    if (flags != 0b0000'0111)
+    if (flags != Expected_Flags)
     {
         error = true;
     }
@@ -120,7 +126,7 @@ int app_main()
             Error_Handler();
         }
 
-        while (flags == 0)
+        while (flags == Expected_Flags)
         {
             // TODO renable
             // LowPowerMode();
@@ -142,7 +148,7 @@ int app_main()
             screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
             screen.DrawRectangle(0, 10, 0, 10, 2, next);
             screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
-            screen.DrawString(2, 28, &hello, 48, font11x16, next, curr);
+            screen.DrawString(0, 28, &hello, 48, font5x8, next, curr);
             const uint16_t width = 50;
             const uint16_t height = 50;
             const uint16_t x_inc = width + 2;
@@ -170,9 +176,17 @@ int app_main()
             redraw = uwTick + 5000;
         }
 
+        // Try to send packets
+        serial.WriteSerial(rx_companded, AudioChip::Audio_Buffer_Sz_2);
+
+        // Draw what we can
         screen.Draw(timeout);
         RaiseFlag(Draw_Complete);
         HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_RESET);
+
+
+        // Wait for transmission to finish
+
     }
 
     return 0;
@@ -197,7 +211,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
     if (huart->Instance == USART2)
     {
-        // net_serial_interface->TxEvent();
+        serial.Free();
+        RaiseFlag(Rx_Audio_Transmitted);
     }
 }
 
@@ -239,7 +254,6 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
     UNUSED(hspi);
-    // screen.SpiComplete();
 }
 
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
