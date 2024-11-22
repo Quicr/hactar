@@ -1,5 +1,7 @@
 #include "screen.hh"
 
+// TODO vertical scrolling
+
 Screen::Screen(
     SPI_HandleTypeDef& hspi,
     GPIO_TypeDef* cs_port,
@@ -31,7 +33,10 @@ Screen::Screen(
     updating(false),
     restart_update(false),
     matrix{ Colour::BLACK },
-    scan_window{ 0 }
+    scan_window{ 0 },
+    title_buffer{ 0 },
+    text_buffer{ 0 },
+    usr_buffer{ 0 }
 {
 
 }
@@ -131,6 +136,7 @@ void Screen::Init()
                               0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F };
     WriteDataWithSet(negative_gamma_correction_data, 15);
 
+    WriteCommand(NORON); // 0x11
     // Exit sleep
     WriteCommand(END_SL); // 0x11
 
@@ -413,6 +419,96 @@ void Screen::DrawString(uint16_t x, uint16_t y, const char** str,
     PushMemoryParameter(memory, (uint32_t)font.data, 4);
 }
 
+void Screen::TestScroll(uint16_t offset)
+{
+    // ScrollScreen(0, 320, 0, font5x8.height);
+    ScrollScreen(Top_Fixed_Area, Scroll_Area, Bottom_Fixed_Area, offset);
+}
+
+void Screen::ScrollScreen(const uint16_t tfa_idx,
+    const uint16_t vsa_idx, const uint16_t bfa_idx,
+    const uint16_t scroll_idx
+)
+{
+    switch (orientation)
+    {
+        // TODO note- I have no idea if flipped portrait is the same as portrait
+        case Orientation::portrait:
+        case Orientation::left_landscape:
+        {
+            uint8_t vert_scroll_def_data [] = {
+                static_cast<uint8_t>(tfa_idx >> 8), static_cast<uint8_t>(tfa_idx),
+                static_cast<uint8_t>(vsa_idx >> 8), static_cast<uint8_t>(vsa_idx),
+                static_cast<uint8_t>(bfa_idx >> 8), static_cast<uint8_t>(bfa_idx),
+            };
+            WriteCommand(VSCRDEF);
+            WriteDataWithSet(vert_scroll_def_data, 6);
+
+            break;
+        }
+        case Orientation::flipped_portrait:
+        case Orientation::right_landscape:
+        {
+            uint8_t vert_scroll_def_data [] = {
+                static_cast<uint8_t>(bfa_idx >> 8), static_cast<uint8_t>(bfa_idx),
+                static_cast<uint8_t>(vsa_idx >> 8), static_cast<uint8_t>(vsa_idx),
+                static_cast<uint8_t>(tfa_idx >> 8), static_cast<uint8_t>(tfa_idx),
+            };
+            WriteCommand(VSCRDEF);
+            WriteDataWithSet(vert_scroll_def_data, 6);
+
+            break;
+        }
+        default:
+        {
+            return;
+        }
+    }
+
+    uint8_t vert_scroll_idx_data [] = {
+        static_cast<uint8_t>(scroll_idx >> 8), static_cast<uint8_t>(scroll_idx)
+    };
+
+    WriteCommand(VSCRSADD);
+    WriteDataWithSet(vert_scroll_idx_data, 2);
+
+}
+
+void Screen::AppendText(const char* text, const uint32_t len)
+{
+    // Work our way down
+    const uint32_t num_bytes = Max_Characters < len ? Max_Characters : len;
+    char* text_buf = text_buffer[text_idx];
+    char& text_len = text_lens[text_idx];
+
+    char idx = 0;
+    while (text_len < Max_Characters && idx < num_bytes)
+    {
+        text_buf[text_len++] = text[idx++];
+    }
+}
+
+void Screen::CommitText()
+{
+    // Enqueue a string draw
+    DrawString(0, Text_Start_Y + font5x8.height * text_idx,
+        (const char**)(&text_buffer[text_idx]), text_lens[text_idx],
+        font5x8, Colour::WHITE, Colour::BLACK);
+
+    // Send a scroll text command if we have a full text buff
+    if (text_idx >= Max_Texts)
+    {
+        // Scroll, this will happen before the draw string
+        ScrollScreen(Top_Fixed_Area, Scroll_Area, Bottom_Fixed_Area, font5x8.height);
+    }
+    else
+    {
+        // Just increase text our idx
+        text_idx++;
+    }
+
+}
+
 // Private functions
 
 inline void Screen::SetPinToCommand()
@@ -479,7 +575,7 @@ void Screen::FillRectangleProcedure(Screen& screen, DrawMemory& memory,
     const uint16_t y1, const uint16_t y2)
 {
     // See if rectangle is in the current scan line
-    if (y1 < memory.y1 && y2 > memory.y2)
+    if (y1 > memory.y2 || y2 < memory.y1)
     {
         return;
     }

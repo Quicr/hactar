@@ -8,6 +8,8 @@
 
 #include "serial.hh"
 
+#include "fib.hh"
+
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -34,31 +36,40 @@ Screen screen(
     DISP_RST_Pin,
     DISP_BL_GPIO_Port,
     DISP_BL_Pin,
-    Screen::portrait
+    Screen::flipped_portrait
 );
 
+constexpr uint32_t QMessage_Room_Length = 32;
+constexpr uint32_t Serial_Header_Sz = 3 + QMessage_Room_Length;
+constexpr uint32_t Serial_Audio_Buff_Sz = AudioChip::Audio_Buffer_Sz_2 + Serial_Header_Sz;
+
 // Make tx and rx buffers for audio
-uint8_t tx_companded[AudioChip::Audio_Buffer_Sz_2] = { 0 };
-uint8_t rx_companded[AudioChip::Audio_Buffer_Sz_2] = { 0 };
+uint8_t serial_tx_audio_buff[Serial_Audio_Buff_Sz] = {
+    Serial_Audio_Buff_Sz, 0, Serial::Packet_Type::Audio };
+// The bytes that take up the room should be set at some point
+uint8_t serial_rx_audio_buff[Serial_Audio_Buff_Sz] = {
+    Serial_Audio_Buff_Sz, 0, Serial::Packet_Type::Audio };
 
-enum TIMER_FLAGS
-{
-    Audio_Interrupt = 0,
-    Rx_Audio_Companded,
-    Rx_Audio_Transmitted,
-    Draw_Complete
+// Make a pointer that is to JUST the audio data section of the buffer
+uint8_t* serial_tx_audio_offset_ptr = serial_tx_audio_buff + Serial_Header_Sz;
+uint8_t* serial_rx_audio_offset_ptr = serial_rx_audio_buff + Serial_Header_Sz;
 
-};
+volatile bool sleeping = true;
+volatile bool error = false;
 constexpr uint32_t Expected_Flags = 0b0000'1111;
 uint32_t flags = Expected_Flags;
-bool error = false;
+uint32_t est_time_ms = 0;
 
-inline void RaiseFlag(TIMER_FLAGS flag)
+inline void RaiseFlag(Timer_Flags flag)
 {
+    if (error)
+    {
+        return;
+    }
     flags |= 1 << flag;
 }
 
-inline void LowerFlag(TIMER_FLAGS flag)
+inline void LowerFlag(Timer_Flags flag)
 {
     flags &= ~(1 << flag);
 }
@@ -68,7 +79,7 @@ inline void LowPowerMode()
     HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
     HAL_SuspendTick();
-    HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+    HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
 }
 
 inline void WakeUp()
@@ -77,6 +88,7 @@ inline void WakeUp()
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_RESET);
 
     HAL_ResumeTick();
+    sleeping = false;
 }
 
 inline void CheckFlags()
@@ -91,16 +103,36 @@ inline void CheckFlags()
     }
 }
 
+inline void ProcessText(uint16_t len)
+{
+    // Get the room
+    uint8_t room[QMessage_Room_Length];
+    serial.ReadSerial(room, QMessage_Room_Length, QMessage_Room_Length);
+    len -= Serial_Header_Sz;
+
+    uint8_t* serial_data = nullptr;
+    size_t num_bytes = len;
+
+    while (len > 0)
+    {
+        // Get the text
+        serial.ReadSerial(&serial_data, num_bytes);
+
+        // Now we have the text data
+        screen.AppendText((const char*)serial_data, num_bytes);
+
+        len -= num_bytes;
+    }
+
+    // Commit the text
+    screen.CommitText();
+}
+
 int app_main()
 {
     audio_chip.Init();
     screen.Init();
     screen.EnableBacklight();
-    // screen.FillRectangle(0, 10, 0, 10, Screen::Colour::CYAN);
-    // screen.FillRectangle(0, 10, 0, 10, Screen::Colour::CYAN);
-
-    // screen.FillRectangle(0, WIDTH, 0, HEIGHT, Screen::Colour::YELLOW);
-    // screen.FillRectangle(0, 10, 0, 10, Screen::Colour::CYAN);
 
     HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
@@ -115,78 +147,144 @@ int app_main()
 
     const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
 
+    uint16_t rec_size = 20;
+    Screen::Colour clr = Screen::Colour::RED;
+    // for (int i = 0; i < 320; i += rec_size)
+    // {
+    //     screen.FillRectangle(0, WIDTH, i, (rec_size) + i, clr);
+
+    //     clr = (Screen::Colour)((int)clr + 1);
+
+    //     if (clr > Screen::Colour::YELLOW)
+    //     {
+    //         clr = Screen::Colour::RED;
+    //     }
+    // }
+
+    screen.FillRectangle(0, WIDTH, 0, 20, Screen::Colour::GREEN);
+    screen.FillRectangle(0, WIDTH, 21, 22, Screen::Colour::WHITE);
+    screen.FillRectangle(0, WIDTH, 22, 62, clr);
+    screen.FillRectangle(0, WIDTH, 62, 63, Screen::Colour::WHITE);
+    screen.FillRectangle(0, WIDTH, 302, 320, Screen::Colour::BLUE);
+
+    for (int i = 0; i < 320; i += NUM_ROWS)
+    {
+        screen.Draw(0);
+    }
+
+    HAL_Delay(1000);
+
+    while (true)
+    {
+        for (int i = 0 ; i < 320; i++)
+        {
+            HAL_Delay(100);
+            screen.TestScroll(i);
+        }
+
+    }
+    bool scroll_timeout = est_time_ms + 5000;
+    bool scroll = true;
+
+    serial.StartReceive();
     audio_chip.StartI2S();
     while (1)
     {
+        while (sleeping)
+        {
+            // LowPowerMode();
+        }
+
         HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
         HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
         HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
+
         if (error)
         {
-            Error_Handler();
+            // Error_Handler();
         }
 
-        while (flags == Expected_Flags)
-        {
-            // TODO renable
-            // LowPowerMode();
-        }
+
+
         // If we broke out then that means we got an audio callback
         // TODO test clock stability
-        current_tick = uwTick;
-        timeout = current_tick + 10'000;
 
-        // Send off a tx packet
-
-        AudioCodec::ALawCompand(audio_chip.RxBuffer(), rx_companded, AudioChip::Audio_Buffer_Sz_2);
+        AudioCodec::ALawCompand(audio_chip.RxBuffer(), serial_tx_audio_offset_ptr, AudioChip::Audio_Buffer_Sz_2);
         RaiseFlag(Rx_Audio_Companded);
         HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
 
-        // Use remaining time to draw?
-        if (uwTick > redraw)
+        // Try to send packets
+        // serial.WriteSerial(serial_tx_audio_buff, Serial_Audio_Buff_Sz);
+
+        // If there are bytes available read them
+        while (serial.Unread())
         {
-            screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
-            screen.DrawRectangle(0, 10, 0, 10, 2, next);
-            screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
-            screen.DrawString(0, 28, &hello, 48, font5x8, next, curr);
-            const uint16_t width = 50;
-            const uint16_t height = 50;
-            const uint16_t x_inc = width + 2;
-            const uint16_t y_inc = height+1;
-            // uint16_t x = 0;
-            // uint16_t y = y_inc;
-            // for (int i = 0 ; i < 19; ++i)
-            // {
-            //     if (20 + x >= WIDTH)
-            //     {
-            //         x = 0;
-            //         y += y_inc;
-            //     }
-            //     // screen.DrawRectangle(x, x + width, y, y + height, 4, next);
-            //     // screen.FillRectangle(x, x + width, y, y + height, next);
-            //     screen.FillRectangle(0, WIDTH, 0, HEIGHT, next);
-            //     x += x_inc;
-            // }
+            // TODO decide how to do this.
+            // Need to determine what kind of packet
+            // audio, text, mls packets etc.
+
+            // Get the length and the type
+            uint16_t len = 0;
+            uint8_t type = 3;
+
+            // Deep magickas of the ancients
+            serial.ReadSerial((uint8_t*)len, 2, 2);
+            serial.ReadSerial(&type, 1, 1);
+
+            switch (type)
+            {
+                case Serial::Audio:
+                {
+                    break;
+                }
+                case Serial::Text:
+                {
+                    ProcessText(len);
+                    break;
+                }
+                case Serial::MLS:
+                {
+                    break;
+                }
+            }
+
+
+
+            // If it is an audio packet we should uncompand it
+            // First 2 bytes will be the length
+
+            // If it is a text packet we need to display it
+
+
+            // If it is mls we need to process it etc.
+        }
+
+
+        // Use remaining time to draw
+        if (est_time_ms > redraw)
+        {
+            // screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
+            // screen.DrawRectangle(0, 10, 0, 10, 2, next);
+            // screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
+            // screen.DrawString(0, 28, &hello, 48, font5x8, next, curr);
+            // const uint16_t width = 50;
+            // const uint16_t height = 50;
+            // const uint16_t x_inc = width + 2;
+            // const uint16_t y_inc = height + 1;
 
             // swap
             Screen::Colour tmp = curr;
             curr = next;
             next = tmp;
-
-            redraw = uwTick + 5000;
+            redraw = est_time_ms + 1600;
         }
 
-        // Try to send packets
-        serial.WriteSerial(rx_companded, AudioChip::Audio_Buffer_Sz_2);
-
         // Draw what we can
-        screen.Draw(timeout);
+        screen.Draw(0);
         RaiseFlag(Draw_Complete);
         HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_RESET);
 
-
-        // Wait for transmission to finish
-
+        sleeping = true;
     }
 
     return 0;
@@ -204,7 +302,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     if (huart->Instance == USART2)
     {
-        // net_serial_interface->RxEvent(size);
+        serial.RxEvent(size);
     }
 }
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
@@ -218,25 +316,18 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
-    uint16_t err;
-    UNUSED(err);
     if (huart->Instance == USART2)
     {
-        // net_serial_interface->Reset();
-        // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
-
-        // // Read the err codes to clear them
-        // err = huart->Instance->SR;
-
-        // net_serial_interface->StartRx();
+        serial.Reset();
     }
 }
 
 void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef* hi2s)
 {
     UNUSED(hi2s);
+    est_time_ms += 10;
     CheckFlags();
-    // WakeUp();
+    WakeUp();
     audio_chip.HalfCompleteCallback();
     RaiseFlag(Audio_Interrupt);
 }
@@ -244,8 +335,9 @@ void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef* hi2s)
 void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 {
     UNUSED(hi2s);
+    est_time_ms += 10;
     CheckFlags();
-    // WakeUp();
+    WakeUp();
     audio_chip.CompleteCallback();
     RaiseFlag(Audio_Interrupt);
 }
@@ -254,12 +346,6 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
     UNUSED(hspi);
-}
-
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
-{
-    volatile int x = 10;
-    x += 10;
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
@@ -289,5 +375,5 @@ void assert_failed(uint8_t* file, uint32_t line)
     /* User can add his own implementation to report the file name and line number,
         e.g.: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
         /* USER CODE END 6 */
-    }
+}
 #endif /* USE_FULL_ASSERT */

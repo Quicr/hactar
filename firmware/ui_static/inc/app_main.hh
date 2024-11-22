@@ -34,7 +34,23 @@ extern "C" {
 #include "main.h"
 #include "stm32.h"
 
+enum Timer_Flags
+{
+    Audio_Interrupt = 0,
+    Rx_Audio_Companded,
+    Rx_Audio_Transmitted,
+    Draw_Complete
+
+};
+
 int app_main();
+
+inline void RaiseFlag(Timer_Flags flag);
+inline void LowerFlag(Timer_Flags flag);
+inline void LowPowerMode();
+inline void WakeUp();
+inline void CheckFlags();
+inline void ProcessText(uint16_t len);
 
 #ifdef __cplusplus
 }

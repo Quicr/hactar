@@ -7,6 +7,7 @@
 
 #include <type_traits>
 
+// TODO move into screen as constexpr
 #define SF_RST 0x01U // Software reset
 #define PWRC_A 0xCBU // Power control A
 #define PWRC_B 0xCFU // Power control B
@@ -34,6 +35,8 @@
 #define RA_SET 0x2BU // Row address set
 #define WR_RAM 0x2CU // Write to RAM
 
+#define NORON 0x13U
+
 #define MAD_CTL_MY  0x80U
 #define MAD_CTL_MX  0x40U
 #define MAD_CTL_MV  0x20U
@@ -41,6 +44,12 @@
 #define MAD_CTL_RGB 0x00U
 #define MAD_CTL_BGR 0x08U
 #define MAD_CTL_MH  0x04U
+
+// Vertical scroll definition
+#define VSCRDEF 0x33U
+
+// Vertical scroll address
+#define VSCRSADD 0x37U
 
 // Some basic colours
 #define	C_BLACK         0x0000U
@@ -57,8 +66,8 @@
 // Default orientation
 #define WIDTH                   uint16_t(240)
 #define HEIGHT                  uint16_t(320)
-#define PORTRAIT_DATA           (MAD_CTL_MY | MAD_CTL_BGR)
-#define FLIPPED_PORTRAIT_DATA   (MAD_CTL_MX | MAD_CTL_BGR)
+#define PORTRAIT_DATA           (MAD_CTL_MX | MAD_CTL_BGR)
+#define FLIPPED_PORTRAIT_DATA   (MAD_CTL_MY | MAD_CTL_BGR)
 #define LEFT_LANDSCAPE_DATA     (MAD_CTL_MV | MAD_CTL_BGR)
 #define RIGHT_LANDSCAPE_DATA    (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
 
@@ -93,7 +102,13 @@ private:
     };
     static constexpr uint32_t Num_Memories = 20;
     static constexpr uint32_t Memory_Size = 32;
-
+    static constexpr uint32_t Title_Length = 18;
+    static constexpr uint32_t Max_Texts = 36;
+    static constexpr uint32_t Max_Characters = 48;
+    static constexpr uint8_t Text_Start_Y = 20;
+    static constexpr uint16_t Top_Fixed_Area = 20;
+    static constexpr uint16_t Bottom_Fixed_Area = 18;
+    static constexpr uint16_t Scroll_Area = HEIGHT - (Top_Fixed_Area + Bottom_Fixed_Area);
 
     enum class MemoryStatus
     {
@@ -138,6 +153,9 @@ public:
         Orientation orientation
     );
 
+    // TODO MOVE
+    void TestScroll(uint16_t offset);
+
     void Init();
     void Draw(uint32_t timeout);
     void Reset();
@@ -158,6 +176,12 @@ public:
     void DrawString(uint16_t x, uint16_t y, const char** str,
         const uint16_t length, const Font& font,
         const Colour fg, const Colour bg);
+    void ScrollScreen(const uint16_t tfa_idx,
+        const uint16_t vsa_idx, const uint16_t bfa_idx,
+        const uint16_t scroll_idx);
+
+    void AppendText(const char* text, const uint32_t len);
+    void CommitText();
 
 private:
     inline void SetPinToCommand();
@@ -170,6 +194,8 @@ private:
     void SetWriteablePixels(const uint16_t x1, const uint16_t x2,
         const uint16_t y1, const uint16_t y2);
     DrawMemory& RetrieveMemory();
+    void ScrollDefintion();
+    void ScrollAddr();
 
     // Private functions
     // TODO do I need screen???
@@ -222,5 +248,17 @@ private:
     // Two bytes per pixel
     // TODO define variables
     uint8_t scan_window[WIDTH * 2 * 2];
+
+    // Window: 0-20px
+    // Max 18 characters
+    char title_buffer[Title_Length];
+
+    // Window: 20 - 308px
+    uint8_t text_idx;
+    char text_buffer[Max_Texts][Max_Characters];
+    char text_lens[Max_Texts];
+
+    // Window: 308-320px
+    char usr_buffer[Max_Characters];
 
 };
