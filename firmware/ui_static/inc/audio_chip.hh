@@ -75,7 +75,7 @@ public:
 
     static constexpr uint16_t Sample_Rate = 16'000; // 16khz
 
-    static constexpr uint16_t Audio_Buffer_Sz = 360;
+    static constexpr uint16_t Audio_Buffer_Sz = 320;
     static constexpr uint16_t Audio_Buffer_Sz_2 = Audio_Buffer_Sz / 2;
 
 private:
