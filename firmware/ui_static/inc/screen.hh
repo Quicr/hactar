@@ -100,17 +100,20 @@ private:
         C_MAGENTA,
         C_YELLOW
     };
-    static constexpr uint32_t Num_Memories = 20;
+    // TODO find a sweet spot for num memories
+    static constexpr uint32_t Num_Memories = 50;
     static constexpr uint32_t Memory_Size = 32;
     static constexpr uint32_t Title_Length = 18;
-    static constexpr uint32_t Max_Texts = 36;
+    static constexpr uint32_t Max_Texts = 35;
     static constexpr uint32_t Max_Characters = 48;
     static constexpr uint8_t Text_Start_Y = 20;
     static constexpr uint16_t Top_Fixed_Area = 20;
-    static constexpr uint16_t Bottom_Fixed_Area = 18;
-    static constexpr uint16_t Scroll_Area = HEIGHT - (Top_Fixed_Area + Bottom_Fixed_Area);
+    static constexpr uint16_t Bottom_Fixed_Area = 20;
+    static constexpr uint16_t Scroll_Area_Height = HEIGHT - (Top_Fixed_Area + Bottom_Fixed_Area);
+    static constexpr uint16_t Scroll_Area_Top = Top_Fixed_Area;
+    static constexpr uint16_t Scroll_Area_Bottom = HEIGHT - Bottom_Fixed_Area;
 
-    enum class MemoryStatus
+    enum class MemoryStatus: uint8_t
     {
         Free = 0,
         In_Progress,
@@ -153,9 +156,6 @@ public:
         Orientation orientation
     );
 
-    // TODO MOVE
-    void TestScroll(uint16_t offset);
-
     void Init();
     void Draw(uint32_t timeout);
     void Reset();
@@ -173,17 +173,18 @@ public:
         uint16_t y2, const uint16_t thickness, const Colour colour);
     void DrawCharacter(uint16_t x, uint16_t y, const char ch, const Font& font,
         const Colour fg, const Colour bg);
-    void DrawString(uint16_t x, uint16_t y, const char** str,
+    void DrawString(uint16_t x, uint16_t y, const char* str,
         const uint16_t length, const Font& font,
         const Colour fg, const Colour bg);
-    void ScrollScreen(const uint16_t tfa_idx,
-        const uint16_t vsa_idx, const uint16_t bfa_idx,
-        const uint16_t scroll_idx);
+    void DefineScrollArea(const uint16_t tfa_idx,
+        const uint16_t vsa_idx, const uint16_t bfa_idx);
+    void ScrollScreen(const uint16_t scroll_idx, bool up);
 
     void AppendText(const char* text, const uint32_t len);
     void CommitText();
 
 private:
+    inline void WaitForSPIComplete();
     inline void SetPinToCommand();
     inline void SetPinToData();
     void WriteCommand(const uint8_t command);
@@ -254,7 +255,9 @@ private:
     char title_buffer[Title_Length];
 
     // Window: 20 - 308px
-    uint8_t text_idx;
+    uint32_t text_idx;
+    uint32_t texts_in_use;
+    uint32_t scroll_offset;
     char text_buffer[Max_Texts][Max_Characters];
     char text_lens[Max_Texts];
 
