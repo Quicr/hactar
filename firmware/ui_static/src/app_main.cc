@@ -10,6 +10,56 @@
 
 #include "fib.hh"
 
+#include <string.h>
+
+void reverse(char* str, int length)
+{
+    int start = 0;
+    int end = length - 1;
+    while (start < end)
+    {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+char* itoa(int value, char* str, int base)
+{
+    if (base < 2 || base > 36)
+    { // Base check: only supports bases 2-36
+        *str = '\0';
+        return str;
+    }
+
+    bool isNegative = false;
+    if (value < 0 && base == 10)
+    { // Handle negative numbers in base 10
+        isNegative = true;
+        value = -value;
+    }
+
+    int i = 0;
+    do
+    {
+        int digit = value % base;
+        str[i++] = (digit > 9) ? (digit - 10 + 'a') : (digit + '0');
+        value /= base;
+    } while (value != 0);
+
+    if (isNegative)
+    {
+        str[i++] = '-';
+    }
+
+    str[i] = '\0'; // Null-terminate the string
+
+    reverse(str, i); // Reverse the string to correct order
+
+    return str;
+}
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -162,27 +212,61 @@ int app_main()
     // }
 
     screen.FillRectangle(0, WIDTH, 0, 20, Screen::Colour::GREEN);
-    screen.FillRectangle(0, WIDTH, 21, 22, Screen::Colour::WHITE);
-    screen.FillRectangle(0, WIDTH, 22, 62, clr);
-    screen.FillRectangle(0, WIDTH, 62, 63, Screen::Colour::WHITE);
-    screen.FillRectangle(0, WIDTH, 302, 320, Screen::Colour::BLUE);
+    // screen.FillRectangle(0, WIDTH, 20, 21, Screen::Colour::WHITE);
+    // screen.FillRectangle(0, WIDTH, 21, 61, clr);
+    // screen.FillRectangle(0, WIDTH, 61, 62, Screen::Colour::WHITE);
+    screen.FillRectangle(0, WIDTH, 300, 320, Screen::Colour::BLUE);
+    // screen.DrawString(0, 20, &hello, 48, font5x8, Screen::Colour::WHITE, Screen::Colour::BLACK);
+
+    // screen.AppendText("Hello how are you ", 18);
+    // screen.CommitText();
+    char num[3] = { 0 };
+    // for (int i = 0; i < 35; ++i)
+    // {
+    //     screen.AppendText("Hello how are you ", 18);
+    //     itoa(i, num, 10);
+    //     const int len = strlen(num);
+
+    //     screen.AppendText(num, len);
+    //     screen.CommitText();
+    // }
 
     for (int i = 0; i < 320; i += NUM_ROWS)
     {
         screen.Draw(0);
     }
 
-    HAL_Delay(1000);
+    // HAL_Delay(1000);
 
+    uint16_t text_num = 0;
     while (true)
     {
-        for (int i = 0 ; i < 320; i++)
+
+        screen.AppendText("Hello how are you ", 18);
+        itoa(text_num++, num, 10);
+        const int len = strlen(num);
+        screen.AppendText(num, len);
+        screen.CommitText();
+        if (text_num > 99)
         {
-            HAL_Delay(100);
-            screen.TestScroll(i);
+            text_num = 0;
         }
 
+
+        for (int i = 0; i < 320; i += NUM_ROWS)
+        {
+            screen.Draw(0);
+        }
+
+        // for (int i = 20 ; i < 300; i++)
+        // {
+        //     HAL_Delay(20);
+        //     screen.ScrollScreen(i);
+        // }
+
+        HAL_Delay(100);
     }
+
     bool scroll_timeout = est_time_ms + 5000;
     bool scroll = true;
 
@@ -228,7 +312,7 @@ int app_main()
             uint8_t type = 3;
 
             // Deep magickas of the ancients
-            serial.ReadSerial((uint8_t*)len, 2, 2);
+            serial.ReadSerial((uint8_t*)&len, 2, 2);
             serial.ReadSerial(&type, 1, 1);
 
             switch (type)

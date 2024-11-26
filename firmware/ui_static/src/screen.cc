@@ -35,6 +35,9 @@ Screen::Screen(
     matrix{ Colour::BLACK },
     scan_window{ 0 },
     title_buffer{ 0 },
+    text_idx(0),
+    texts_in_use(0),
+    scroll_offset(0),
     text_buffer{ 0 },
     usr_buffer{ 0 }
 {
@@ -136,7 +139,7 @@ void Screen::Init()
                               0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F };
     WriteDataWithSet(negative_gamma_correction_data, 15);
 
-    WriteCommand(NORON); // 0x11
+    WriteCommand(NORON); // 0x13
     // Exit sleep
     WriteCommand(END_SL); // 0x11
 
@@ -154,6 +157,7 @@ void Screen::Init()
 // that have already been drawn?
 void Screen::Draw(uint32_t timeout)
 {
+    UNUSED(timeout);
     if (restart_update)
     {
         row = 0;
@@ -207,20 +211,34 @@ void Screen::Draw(uint32_t timeout)
 
     // Fill the row
     uint16_t mod = 0;
+    int16_t y_idx = 0;
     for (uint16_t i = row; i < end_row; ++i)
     {
-        const uint16_t y_idx = (i - row) * view_width * 2;
+        // const uint16_t y_idx = (i - row) * view_width * 2;
+        y_idx = i;
+        if (y_idx > Top_Fixed_Area && y_idx < Bottom_Fixed_Area)
+        {
+            // So many tabs ew.
+            y_idx = (int16_t)Top_Fixed_Area - scroll_offset;
+            if (y_idx < Top_Fixed_Area)
+            {
+                if (y_idx < 0)
+                {
+                    y_idx *= -1;
+                }
+
+                // Get the y_idx according to the offset amt
+                y_idx = Scroll_Area_Bottom - y_idx;
+            }
+
+        }
         for (uint16_t j = 0; j < view_width; ++j)
         {
             const uint16_t idx = mod * 480 + (j * 2);
-            scan_window[idx] = colour_map[(size_t)matrix[i][j]] >> 8;
-            scan_window[idx + 1] = colour_map[(size_t)matrix[i][j]] & 0xFF;
+            scan_window[idx] = colour_map[(size_t)matrix[y_idx][j]] >> 8;
+            scan_window[idx + 1] = colour_map[(size_t)matrix[y_idx][j]] & 0xFF;
         }
 
-        while (spi->State != HAL_SPI_STATE_READY)
-        {
-            __NOP();
-        }
         WriteDataAsync(&scan_window[mod * 480], view_width * 2);
         mod = !mod;
     }
@@ -297,6 +315,7 @@ void Screen::SetWriteablePixels(const uint16_t x1, const uint16_t x2,
 void Screen::SetOrientation(const Screen::Orientation orientation)
 {
     // TODO fix
+    // TODO add scroll area math
     switch (orientation)
     {
         case Orientation::portrait:
@@ -334,6 +353,9 @@ void Screen::SetOrientation(const Screen::Orientation orientation)
 
     row_bytes = view_width * 2;
     this->orientation = orientation;
+
+    DefineScrollArea(Top_Fixed_Area, Scroll_Area_Height, Bottom_Fixed_Area);
+
 }
 
 
@@ -392,7 +414,7 @@ void Screen::DrawCharacter(uint16_t x, uint16_t y, const char ch,
     PushMemoryParameter(memory, ch_addr, 4);
 }
 
-void Screen::DrawString(uint16_t x, uint16_t y, const char** str,
+void Screen::DrawString(uint16_t x, uint16_t y, const char* str,
     const uint16_t length, const Font& font,
     const Colour fg, const Colour bg)
 {
@@ -413,22 +435,14 @@ void Screen::DrawString(uint16_t x, uint16_t y, const char** str,
     memory.colour = fg;
 
     PushMemoryParameter(memory, static_cast<uint8_t>(bg), 1);
-    PushMemoryParameter(memory, (uint32_t)*str, 4);
+    PushMemoryParameter(memory, (uint32_t)str, 4);
     PushMemoryParameter(memory, font.width, 1);
     PushMemoryParameter(memory, font.height, 1);
     PushMemoryParameter(memory, (uint32_t)font.data, 4);
 }
 
-void Screen::TestScroll(uint16_t offset)
-{
-    // ScrollScreen(0, 320, 0, font5x8.height);
-    ScrollScreen(Top_Fixed_Area, Scroll_Area, Bottom_Fixed_Area, offset);
-}
-
-void Screen::ScrollScreen(const uint16_t tfa_idx,
-    const uint16_t vsa_idx, const uint16_t bfa_idx,
-    const uint16_t scroll_idx
-)
+void Screen::DefineScrollArea(const uint16_t tfa_idx,
+    const uint16_t vsa_idx, const uint16_t bfa_idx)
 {
     switch (orientation)
     {
@@ -464,14 +478,53 @@ void Screen::ScrollScreen(const uint16_t tfa_idx,
             return;
         }
     }
+}
+
+void Screen::ScrollScreen(const uint16_t scroll_idx, bool up)
+{
+    static uint16_t scroll_d = 0;
+
+    switch (orientation)
+    {
+        case Orientation::portrait:
+        case Orientation::left_landscape:
+        {
+            if (up)
+            {
+                scroll_d = scroll_idx;
+            }
+            else
+            {
+                scroll_d = view_height - scroll_idx;
+            }
+            break;
+        }
+        case Orientation::flipped_portrait:
+        case Orientation::right_landscape:
+        {
+            if (up)
+            {
+                scroll_d = view_height - scroll_idx;
+            }
+            else
+            {
+                scroll_d = scroll_idx;
+            }
+            break;
+        }
+        default:
+        {
+            scroll_d = 0;
+            return;
+        }
+    }
 
     uint8_t vert_scroll_idx_data [] = {
-        static_cast<uint8_t>(scroll_idx >> 8), static_cast<uint8_t>(scroll_idx)
+        static_cast<uint8_t>(scroll_d >> 8), static_cast<uint8_t>(scroll_d)
     };
 
     WriteCommand(VSCRSADD);
     WriteDataWithSet(vert_scroll_idx_data, 2);
-
 }
 
 void Screen::AppendText(const char* text, const uint32_t len)
@@ -481,7 +534,7 @@ void Screen::AppendText(const char* text, const uint32_t len)
     char* text_buf = text_buffer[text_idx];
     char& text_len = text_lens[text_idx];
 
-    char idx = 0;
+    size_t idx = 0;
     while (text_len < Max_Characters && idx < num_bytes)
     {
         text_buf[text_len++] = text[idx++];
@@ -490,26 +543,57 @@ void Screen::AppendText(const char* text, const uint32_t len)
 
 void Screen::CommitText()
 {
-    // Enqueue a string draw
-    DrawString(0, Text_Start_Y + font5x8.height * text_idx,
-        (const char**)(&text_buffer[text_idx]), text_lens[text_idx],
-        font5x8, Colour::WHITE, Colour::BLACK);
+    // TODO rethink on how to do this.. might need two different
+    // functions
+    static uint16_t y = 0;
+    const uint16_t idx = text_idx;
 
-    // Send a scroll text command if we have a full text buff
-    if (text_idx >= Max_Texts)
+    if (++text_idx >= Max_Texts)
     {
+        text_idx = 0;
+    }
+
+    y = Text_Start_Y + font5x8.height * (texts_in_use);
+    // Send a scroll text command if we have a full text buff
+    if (texts_in_use >= Max_Texts)
+    {
+        text_lens[text_idx] = 0;
+        y = Text_Start_Y + font5x8.height * (texts_in_use - 1);
         // Scroll, this will happen before the draw string
-        ScrollScreen(Top_Fixed_Area, Scroll_Area, Bottom_Fixed_Area, font5x8.height);
+        // TODO fix the scroll idx
+        ++scroll_idx;
+        ScrollScreen(Top_Fixed_Area + (font5x8.height * scroll_idx), true);
+        if (scroll_idx > Max_Texts)
+        {
+            scroll_idx = 0;
+        }
+
+        // Draw a rectangle to remove the text from the screen.
+        // TODO replace colour with a class variable
+        FillRectangle(0, view_width, y, y + font5x8.height, Screen::Colour::BLACK);
+        // return;
     }
     else
     {
-        // Just increase text our idx
-        text_idx++;
+        ++texts_in_use;
     }
 
+
+    // Enqueue the string draw
+    DrawString(0, y,
+        text_buffer[idx], text_lens[idx],
+        font5x8, Colour::WHITE, Colour::BLACK);
 }
 
 // Private functions
+
+inline void Screen::WaitForSPIComplete()
+{
+    while (spi->State != HAL_SPI_STATE_READY)
+    {
+        __NOP();
+    }
+}
 
 inline void Screen::SetPinToCommand()
 {
@@ -523,6 +607,7 @@ inline void Screen::SetPinToData()
 
 void Screen::WriteCommand(uint8_t command)
 {
+    WaitForSPIComplete();
     SetPinToCommand();
     HAL_SPI_Transmit(spi, &command, sizeof(command), HAL_MAX_DELAY);
 }
@@ -530,23 +615,27 @@ void Screen::WriteCommand(uint8_t command)
 // SetPinToData needs to be called before this function
 void Screen::WriteData(uint8_t* data, const uint32_t data_size)
 {
+    WaitForSPIComplete();
     HAL_SPI_Transmit(spi, data, data_size, HAL_MAX_DELAY);
 }
 
 // SetPinToData needs to be called before this function
 void Screen::WriteDataAsync(uint8_t* data, const uint32_t data_size)
 {
+    WaitForSPIComplete();
     HAL_SPI_Transmit_DMA(spi, data, data_size);
 }
 
 void Screen::WriteDataWithSet(uint8_t data)
 {
+    WaitForSPIComplete();
     SetPinToData();
     HAL_SPI_Transmit(spi, &data, sizeof(data), HAL_MAX_DELAY);
 }
 
 void Screen::WriteDataWithSet(uint8_t* data, const uint32_t data_size)
 {
+    WaitForSPIComplete();
     SetPinToData();
     HAL_SPI_Transmit(spi, data, data_size, HAL_MAX_DELAY);
 }
