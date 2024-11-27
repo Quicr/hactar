@@ -71,35 +71,24 @@
 #define LEFT_LANDSCAPE_DATA     (MAD_CTL_MV | MAD_CTL_BGR)
 #define RIGHT_LANDSCAPE_DATA    (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
 
-#define NUM_ROWS 10
+enum Colour: uint16_t
+{
+    Black = 0x0000U,
+    White = 0xFFFFU,
+    Red = 0xF800U,
+    Blue = 0x001FU,
+    Light_Green = 0x3626U,
+    Green = 0x07E0U,
+    Cyan = 0x07FFU,
+    Magenta = 0xF81FU,
+    Yellow = 0xFFE0U,
+    Grey = 0xCE59U,
+};
 
 class Screen
 {
 public:
-    enum class Colour: uint8_t
-    {
-        BLACK = 0,
-        WHITE,
-        RED,
-        BLUE,
-        LIGHT_GREEN,
-        GREEN,
-        CYAN,
-        MAGENTA,
-        YELLOW,
-    };
-private:
-    static constexpr uint16_t colour_map []{
-        C_BLACK,
-        C_WHITE,
-        C_RED,
-        C_BLUE,
-        C_LIGHT_GREEN,
-        C_GREEN,
-        C_CYAN,
-        C_MAGENTA,
-        C_YELLOW
-    };
+    static constexpr uint32_t Num_Rows = 10;
     // TODO find a sweet spot for num memories
     static constexpr uint32_t Num_Memories = 50;
     static constexpr uint32_t Memory_Size = 32;
@@ -112,6 +101,16 @@ private:
     static constexpr uint16_t Scroll_Area_Height = HEIGHT - (Top_Fixed_Area + Bottom_Fixed_Area);
     static constexpr uint16_t Scroll_Area_Top = Top_Fixed_Area;
     static constexpr uint16_t Scroll_Area_Bottom = HEIGHT - Bottom_Fixed_Area;
+    static constexpr uint32_t Width_Pixel_Size = WIDTH * 2;
+    static constexpr uint32_t Scan_Window_Size = Num_Rows * Width_Pixel_Size;
+
+private:
+
+    struct YBound
+    {
+        uint16_t y1 = 0;
+        uint16_t y2 = 0;
+    };
 
     enum class MemoryStatus: uint8_t
     {
@@ -121,14 +120,14 @@ private:
 
     struct DrawMemory
     {
-        void (*callback)(Screen& screen, DrawMemory& memory,
-            const uint16_t y1, const uint16_t y2) = nullptr;
+        void (*callback)(DrawMemory& memory, uint8_t lines[Num_Rows][Width_Pixel_Size],
+            const int16_t y1, const int16_t y2) = nullptr;
         MemoryStatus status = MemoryStatus::Free;
         uint16_t x1 = 0;
         uint16_t x2 = 0;
         uint16_t y1 = 0;
         uint16_t y2 = 0;
-        Colour colour = Colour::BLACK;
+        uint16_t colour = C_BLACK;
         uint8_t write_idx = 0;
         uint8_t read_idx = 0;
         uint8_t parameters[Memory_Size]{ 0 }; // A bunch of data params to run the next command
@@ -168,14 +167,14 @@ public:
 
     void SetOrientation(const Orientation orientation);
     void FillRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
-        uint16_t y2, const Colour colour);
+        uint16_t y2, const uint16_t colour);
     void DrawRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
-        uint16_t y2, const uint16_t thickness, const Colour colour);
+        uint16_t y2, const uint16_t thickness, const uint16_t colour);
     void DrawCharacter(uint16_t x, uint16_t y, const char ch, const Font& font,
-        const Colour fg, const Colour bg);
+        const uint16_t fg, const uint16_t bg);
     void DrawString(uint16_t x, uint16_t y, const char* str,
         const uint16_t length, const Font& font,
-        const Colour fg, const Colour bg);
+        const uint16_t fg, const uint16_t bg);
     void DefineScrollArea(const uint16_t tfa_idx,
         const uint16_t vsa_idx, const uint16_t bfa_idx);
     void ScrollScreen(const uint16_t scroll_idx, bool up);
@@ -187,27 +186,27 @@ private:
     inline void WaitForSPIComplete();
     inline void SetPinToCommand();
     inline void SetPinToData();
-    void WriteCommand(const uint8_t command);
-    void WriteDataWithSet(const uint8_t data);
+    void WriteCommand(uint8_t cmd);
+    void WriteCommand(uint8_t cmd, uint8_t* data, const uint32_t sz);
+    void WriteDataWithSet(uint8_t data);
     void WriteDataWithSet(uint8_t* data, const uint32_t data_size);
+    void WriteData(uint8_t data);
     void WriteData(uint8_t* data, const uint32_t data_size);
-    void WriteDataAsync(uint8_t* data, const uint32_t data_size);
-    void SetWriteablePixels(const uint16_t x1, const uint16_t x2,
-        const uint16_t y1, const uint16_t y2);
+    void SetWriteablePixels(const int16_t x1, const int16_t x2,
+        const int16_t y1, const int16_t y2);
     DrawMemory& RetrieveMemory();
-    void ScrollDefintion();
-    void ScrollAddr();
+    void NormalMode();
 
     // Private functions
     // TODO do I need screen???
-    static void DrawRectangleProcedure(Screen& screen, DrawMemory& memory,
-        const uint16_t y1, const uint16_t y2);
-    static void FillRectangleProcedure(Screen& screen, DrawMemory& memory,
-        const uint16_t y1, const uint16_t y2);
-    static void DrawCharacterProcedure(Screen& screen, DrawMemory& memory,
-        const uint16_t y1, const uint16_t y2);
-    static void DrawStringProcedure(Screen& screen, DrawMemory& memory,
-        const uint16_t y1, const uint16_t y2);
+    static void DrawRectangleProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][Width_Pixel_Size],
+        const int16_t y1, const int16_t y2);
+    static void FillRectangleProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][Width_Pixel_Size],
+        const int16_t y1, const int16_t y2);
+    static void DrawCharacterProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][Width_Pixel_Size],
+        const int16_t y1, const int16_t y2);
+    static void DrawStringProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][Width_Pixel_Size],
+        const int16_t y1, const int16_t y2);
 
     inline void BoundCheck(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2);
 
@@ -219,6 +218,8 @@ private:
         const uint32_t val, const int16_t num_bytes);
     template<typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = 0>
     static inline T PullMemoryParameter(DrawMemory& memory);
+    static inline void FillLineAtIdx(uint8_t lines[Num_Rows][Width_Pixel_Size], const uint16_t i, const uint16_t j, const uint16_t colour) __attribute__((always_inline));
+    static inline YBound GetYBounds(const uint16_t y1, const uint16_t y2, const uint16_t mem_y1, const uint16_t mem_y2) __attribute__((always_inline));
 
     // Variables
     SPI_HandleTypeDef* spi;
@@ -245,10 +246,10 @@ private:
     bool updating;
     bool restart_update;
 
-    Colour matrix[HEIGHT][WIDTH];
     // Two bytes per pixel
     // TODO define variables
-    uint8_t scan_window[WIDTH * 2 * 2];
+    // TODO double buffer
+    uint8_t scan_window[Num_Rows][Width_Pixel_Size];
 
     // Window: 0-20px
     // Max 18 characters

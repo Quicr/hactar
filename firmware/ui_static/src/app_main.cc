@@ -86,7 +86,7 @@ Screen screen(
     DISP_RST_Pin,
     DISP_BL_GPIO_Port,
     DISP_BL_Pin,
-    Screen::flipped_portrait
+    Screen::Orientation::flipped_portrait
 );
 
 constexpr uint32_t QMessage_Room_Length = 32;
@@ -192,32 +192,34 @@ int app_main()
     uint32_t timeout;
     uint32_t current_tick;
     uint32_t redraw = uwTick;
-    Screen::Colour next = Screen::Colour::GREEN;
-    Screen::Colour curr = Screen::Colour::BLUE;
+    Colour next = Colour::Green;
+    Colour curr = Colour::Blue;
 
     const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
 
     uint16_t rec_size = 20;
-    Screen::Colour clr = Screen::Colour::RED;
+    Colour clr = Colour::Red;
     // for (int i = 0; i < 320; i += rec_size)
     // {
     //     screen.FillRectangle(0, WIDTH, i, (rec_size) + i, clr);
 
-    //     clr = (Screen::Colour)((int)clr + 1);
+    //     clr = (Colour)((int)clr + 1);
 
-    //     if (clr > Screen::Colour::YELLOW)
+    //     if (clr > Colour::Yellow)
     //     {
-    //         clr = Screen::Colour::RED;
+    //         clr = Colour::Red;
     //     }
     // }
 
-    screen.FillRectangle(0, WIDTH, 0, 20, Screen::Colour::GREEN);
-    // screen.FillRectangle(0, WIDTH, 20, 21, Screen::Colour::WHITE);
-    // screen.FillRectangle(0, WIDTH, 21, 61, clr);
-    // screen.FillRectangle(0, WIDTH, 61, 62, Screen::Colour::WHITE);
-    screen.FillRectangle(0, WIDTH, 300, 320, Screen::Colour::BLUE);
-    // screen.DrawString(0, 20, &hello, 48, font5x8, Screen::Colour::WHITE, Screen::Colour::BLACK);
-
+    screen.FillRectangle(0, WIDTH, 0, HEIGHT, C_BLACK);
+    screen.FillRectangle(0, WIDTH, 0, 20, C_GREEN);
+    screen.FillRectangle(0, WIDTH, 20, 21, C_WHITE);
+    screen.FillRectangle(0, WIDTH, 21, 61, C_YELLOW);
+    screen.FillRectangle(0, WIDTH, 61, 62, C_WHITE);
+    screen.FillRectangle(0, WIDTH, 300, 320, C_BLUE);
+    // screen.DrawCharacter(0, 70, 'H', font6x8, Colour::White, Colour::Black);
+    // screen.DrawString(0, 80, hello, 48, font5x8, C_WHITE, C_BLACK);
+    // screen.DrawRectangle(50, 60, 70, 85, 3, C_BLUE);
     // screen.AppendText("Hello how are you ", 18);
     // screen.CommitText();
     char num[3] = { 0 };
@@ -231,12 +233,10 @@ int app_main()
     //     screen.CommitText();
     // }
 
-    for (int i = 0; i < 320; i += NUM_ROWS)
+    for (int i = 0; i < 320; i += Screen::Num_Rows)
     {
         screen.Draw(0);
     }
-
-    // HAL_Delay(1000);
 
     uint16_t text_num = 0;
     while (true)
@@ -253,7 +253,7 @@ int app_main()
         }
 
 
-        for (int i = 0; i < 320; i += NUM_ROWS)
+        for (int i = 0; i < 320; i += Screen::Num_Rows)
         {
             screen.Draw(0);
         }
@@ -357,7 +357,7 @@ int app_main()
             // const uint16_t y_inc = height + 1;
 
             // swap
-            Screen::Colour tmp = curr;
+            Colour tmp = curr;
             curr = next;
             next = tmp;
             redraw = est_time_ms + 1600;
@@ -389,6 +389,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
         serial.RxEvent(size);
     }
 }
+
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
     if (huart->Instance == USART2)
