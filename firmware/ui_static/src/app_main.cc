@@ -211,61 +211,75 @@ int app_main()
     //     }
     // }
 
-    screen.FillRectangle(0, WIDTH, 0, HEIGHT, C_BLACK);
-    screen.FillRectangle(0, WIDTH, 0, 20, C_GREEN);
-    screen.FillRectangle(0, WIDTH, 20, 21, C_WHITE);
-    screen.FillRectangle(0, WIDTH, 21, 61, C_YELLOW);
-    screen.FillRectangle(0, WIDTH, 61, 62, C_WHITE);
-    screen.FillRectangle(0, WIDTH, 300, 320, C_BLUE);
-    // screen.DrawCharacter(0, 70, 'H', font6x8, Colour::White, Colour::Black);
-    // screen.DrawString(0, 80, hello, 48, font5x8, C_WHITE, C_BLACK);
-    // screen.DrawRectangle(50, 60, 70, 85, 3, C_BLUE);
-    // screen.AppendText("Hello how are you ", 18);
-    // screen.CommitText();
-    char num[3] = { 0 };
-    // for (int i = 0; i < 35; ++i)
-    // {
-    //     screen.AppendText("Hello how are you ", 18);
-    //     itoa(i, num, 10);
-    //     const int len = strlen(num);
+    screen.FillRectangle(0, WIDTH, 0, HEIGHT, Colour::Black);
+    for (int i = 0; i < 320; i += Screen::Num_Rows)
+    {
+        screen.Draw(0);
+    }
 
-    //     screen.AppendText(num, len);
-    //     screen.CommitText();
-    // }
+
+    screen.FillRectangle(0, WIDTH, 0, 20, Colour::Green);
+    screen.FillRectangle(0, WIDTH, 20, 21, Colour::White);
+    screen.FillRectangle(0, WIDTH, 21, 61, Colour::Yellow);
+    screen.FillRectangle(0, WIDTH, 61, 62, Colour::White);
+    screen.FillRectangle(0, WIDTH, 300, 320, Colour::Blue);
+    screen.DrawRectangle(50, 60, 70, 85, 3, Colour::Blue);
+    for (int i = 0; i < 320; i += Screen::Num_Rows)
+    {
+        screen.Draw(0);
+    }
+
+    // TODO fix
+    screen.DrawCharacter(0, 70, 'H', font6x8, Colour::White, Colour::Black);
+    screen.DrawString(0, 80, hello, 48, font5x8, Colour::White, Colour::Black);
+    // // screen.AppendText("Hello how are you ", 18);
+    // // screen.CommitText();
+    // char num[3] = { 0 };
+    // // for (int i = 0; i < 35; ++i)
+    // // {
+    // //     screen.AppendText("Hello how are you ", 18);
+    // //     itoa(i, num, 10);
+    // //     const int len = strlen(num);
+
+    // //     screen.AppendText(num, len);
+    // //     screen.CommitText();
+    // // }
 
     for (int i = 0; i < 320; i += Screen::Num_Rows)
     {
         screen.Draw(0);
     }
 
-    uint16_t text_num = 0;
-    while (true)
-    {
+    while (true){}
 
-        screen.AppendText("Hello how are you ", 18);
-        itoa(text_num++, num, 10);
-        const int len = strlen(num);
-        screen.AppendText(num, len);
-        screen.CommitText();
-        if (text_num > 99)
-        {
-            text_num = 0;
-        }
+    // uint16_t text_num = 0;
+    // while (true)
+    // {
+
+    //     screen.AppendText("Hello how are you ", 18);
+    //     itoa(text_num++, num, 10);
+    //     const int len = strlen(num);
+    //     screen.AppendText(num, len);
+    //     screen.CommitText();
+    //     if (text_num > 99)
+    //     {
+    //         text_num = 0;
+    //     }
 
 
-        for (int i = 0; i < 320; i += Screen::Num_Rows)
-        {
-            screen.Draw(0);
-        }
+    //     for (int i = 0; i < 320; i += Screen::Num_Rows)
+    //     {
+    //         screen.Draw(0);
+    //     }
 
-        // for (int i = 20 ; i < 300; i++)
-        // {
-        //     HAL_Delay(20);
-        //     screen.ScrollScreen(i);
-        // }
+    //     // for (int i = 20 ; i < 300; i++)
+    //     // {
+    //     //     HAL_Delay(20);
+    //     //     screen.ScrollScreen(i);
+    //     // }
 
-        HAL_Delay(100);
-    }
+    //     HAL_Delay(100);
+    // }
 
     bool scroll_timeout = est_time_ms + 5000;
     bool scroll = true;
@@ -285,7 +299,7 @@ int app_main()
 
         if (error)
         {
-            // Error_Handler();
+            Error_Handler();
         }
 
 
@@ -298,7 +312,7 @@ int app_main()
         HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
 
         // Try to send packets
-        // serial.WriteSerial(serial_tx_audio_buff, Serial_Audio_Buff_Sz);
+        serial.WriteSerial(serial_tx_audio_buff, Serial_Audio_Buff_Sz);
 
         // If there are bytes available read them
         while (serial.Unread())
@@ -312,25 +326,25 @@ int app_main()
             uint8_t type = 3;
 
             // Deep magickas of the ancients
-            serial.ReadSerial((uint8_t*)&len, 2, 2);
-            serial.ReadSerial(&type, 1, 1);
+            // serial.ReadSerial((uint8_t*)&len, 2, 2);
+            // serial.ReadSerial(&type, 1, 1);
 
-            switch (type)
-            {
-                case Serial::Audio:
-                {
-                    break;
-                }
-                case Serial::Text:
-                {
-                    ProcessText(len);
-                    break;
-                }
-                case Serial::MLS:
-                {
-                    break;
-                }
-            }
+            // switch (type)
+            // {
+            //     case Serial::Audio:
+            //     {
+            //         break;
+            //     }
+            //     case Serial::Text:
+            //     {
+            //         ProcessText(len);
+            //         break;
+            //     }
+            //     case Serial::MLS:
+            //     {
+            //         break;
+            //     }
+            // }
 
 
 
@@ -350,7 +364,7 @@ int app_main()
             // screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
             // screen.DrawRectangle(0, 10, 0, 10, 2, next);
             // screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
-            // screen.DrawString(0, 28, &hello, 48, font5x8, next, curr);
+            // screen.DrawString(0, 28, hello, 48, font5x8, next, curr);
             // const uint16_t width = 50;
             // const uint16_t height = 50;
             // const uint16_t x_inc = width + 2;
