@@ -71,18 +71,33 @@
 #define LEFT_LANDSCAPE_DATA     (MAD_CTL_MV | MAD_CTL_BGR)
 #define RIGHT_LANDSCAPE_DATA    (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
 
-enum Colour: uint16_t
+// enum Colour: uint16_t
+// {
+//     NOP = 0x0000U,
+//     Black = 0x0001U,
+//     White = 0xFFFFU,
+//     Red = 0xF800U,
+//     Blue = 0x001FU,
+//     Light_Green = 0x3626U,
+//     Green = 0x07E0U,
+//     Cyan = 0x07FFU,
+//     Magenta = 0xF81FU,
+//     Yellow = 0xFFE0U,
+//     Grey = 0xCE59U,
+// };
+
+enum class Colour: uint8_t
 {
-    Black = 0x0000U,
-    White = 0xFFFFU,
-    Red = 0xF800U,
-    Blue = 0x001FU,
-    Light_Green = 0x3626U,
-    Green = 0x07E0U,
-    Cyan = 0x07FFU,
-    Magenta = 0xF81FU,
-    Yellow = 0xFFE0U,
-    Grey = 0xCE59U,
+    Black = 0,
+    White,
+    Blue,
+    Red,
+    Light_Green,
+    Green,
+    Cyan,
+    Magenta,
+    Yellow,
+    Grey,
 };
 
 class Screen
@@ -101,11 +116,11 @@ public:
     static constexpr uint16_t Scroll_Area_Height = HEIGHT - (Top_Fixed_Area + Bottom_Fixed_Area);
     static constexpr uint16_t Scroll_Area_Top = Top_Fixed_Area;
     static constexpr uint16_t Scroll_Area_Bottom = HEIGHT - Bottom_Fixed_Area;
+    static constexpr uint32_t Half_Width_Pixel_Size = WIDTH / 2;
     static constexpr uint32_t Width_Pixel_Size = WIDTH * 2;
-    static constexpr uint32_t Scan_Window_Size = Num_Rows * Width_Pixel_Size;
+    static constexpr uint32_t Scan_Window_Dbl_Sz = Width_Pixel_Size * 2;
 
 private:
-
     struct YBound
     {
         uint16_t y1 = 0;
@@ -118,16 +133,35 @@ private:
         In_Progress,
     };
 
+    static constexpr uint16_t Colour_Map []
+    {
+        C_BLACK,
+        C_WHITE,
+        C_BLUE,
+        C_RED,
+        C_LIGHT_GREEN,
+        C_GREEN,
+        C_CYAN,
+        C_MAGENTA,
+        C_YELLOW,
+        C_GREY
+    };
+
+    struct DrawMemory;
+
+    typedef bool (*MemoryCallback)(DrawMemory& memory,
+        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+        const int16_t y1, const int16_t y2);
+
     struct DrawMemory
     {
-        void (*callback)(DrawMemory& memory, uint8_t lines[Num_Rows][Width_Pixel_Size],
-            const int16_t y1, const int16_t y2) = nullptr;
+        MemoryCallback callback = nullptr;
         MemoryStatus status = MemoryStatus::Free;
         uint16_t x1 = 0;
         uint16_t x2 = 0;
         uint16_t y1 = 0;
         uint16_t y2 = 0;
-        uint16_t colour = C_BLACK;
+        Colour colour = Colour::Black;
         uint8_t write_idx = 0;
         uint8_t read_idx = 0;
         uint8_t parameters[Memory_Size]{ 0 }; // A bunch of data params to run the next command
@@ -167,14 +201,14 @@ public:
 
     void SetOrientation(const Orientation orientation);
     void FillRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
-        uint16_t y2, const uint16_t colour);
+        uint16_t y2, const Colour colour);
     void DrawRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
-        uint16_t y2, const uint16_t thickness, const uint16_t colour);
+        uint16_t y2, const uint16_t thickness, const Colour colour);
     void DrawCharacter(uint16_t x, uint16_t y, const char ch, const Font& font,
-        const uint16_t fg, const uint16_t bg);
+        const Colour fg, const Colour bg);
     void DrawString(uint16_t x, uint16_t y, const char* str,
         const uint16_t length, const Font& font,
-        const uint16_t fg, const uint16_t bg);
+        const Colour fg, const Colour bg);
     void DefineScrollArea(const uint16_t tfa_idx,
         const uint16_t vsa_idx, const uint16_t bfa_idx);
     void ScrollScreen(const uint16_t scroll_idx, bool up);
@@ -194,21 +228,26 @@ private:
     void WriteData(uint8_t* data, const uint32_t data_size);
     void SetWriteablePixels(const int16_t x1, const int16_t x2,
         const int16_t y1, const int16_t y2);
-    DrawMemory& RetrieveMemory();
+    DrawMemory& AllocateMemory(const uint16_t x1, const uint16_t x2,
+        const uint16_t y1, const uint16_t y2, const Colour colour,
+        MemoryCallback callback);
     void NormalMode();
 
     // Private functions
-    // TODO do I need screen???
-    static void DrawRectangleProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][Width_Pixel_Size],
+    static bool DrawRectangleProcedure(DrawMemory& memory,
+        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
         const int16_t y1, const int16_t y2);
-    static void FillRectangleProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][Width_Pixel_Size],
+    static bool FillRectangleProcedure(DrawMemory& memory,
+        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
         const int16_t y1, const int16_t y2);
-    static void DrawCharacterProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][Width_Pixel_Size],
+    static bool DrawCharacterProcedure(DrawMemory& memory,
+        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
         const int16_t y1, const int16_t y2);
-    static void DrawStringProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][Width_Pixel_Size],
+    static bool DrawStringProcedure(DrawMemory& memory,
+        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
         const int16_t y1, const int16_t y2);
 
-    inline void BoundCheck(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2);
+    inline void HandleBounds(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2);
 
     static inline uint8_t* GetCharAddr(uint8_t* font_data,
         const uint8_t ch,
@@ -218,8 +257,13 @@ private:
         const uint32_t val, const int16_t num_bytes);
     template<typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = 0>
     static inline T PullMemoryParameter(DrawMemory& memory);
-    static inline void FillLineAtIdx(uint8_t lines[Num_Rows][Width_Pixel_Size], const uint16_t i, const uint16_t j, const uint16_t colour) __attribute__((always_inline));
-    static inline YBound GetYBounds(const uint16_t y1, const uint16_t y2, const uint16_t mem_y1, const uint16_t mem_y2) __attribute__((always_inline));
+    static inline void FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+        const uint16_t i, const uint16_t j, const uint8_t colour_high,
+        const uint8_t colour_low) __attribute__((always_inline));
+    static inline void FillLineAtIdx(uint8_t* line, const uint16_t i,
+        const uint16_t j, const uint16_t colour) __attribute__((always_inline));
+    static inline YBound GetYBounds(const uint16_t y1, const uint16_t y2,
+        const uint16_t mem_y1, const uint16_t mem_y2) __attribute__((always_inline));
 
     // Variables
     SPI_HandleTypeDef* spi;
@@ -242,14 +286,19 @@ private:
     uint32_t memories_in_use;
     uint32_t memory_write_idx;
     uint16_t row;
+    uint16_t end_row;
+
+    uint16_t row_start_update;
+    uint16_t row_end_update;
 
     bool updating;
     bool restart_update;
 
-    // Two bytes per pixel
-    // TODO define variables
-    // TODO double buffer
-    uint8_t scan_window[Num_Rows][Width_Pixel_Size];
+    // Each byte stores two pixels
+    uint8_t matrix[HEIGHT][WIDTH / 2];
+
+    // Double buff
+    uint8_t scan_window[Scan_Window_Dbl_Sz];
 
     // Window: 0-20px
     // Max 18 characters

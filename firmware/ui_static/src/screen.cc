@@ -29,6 +29,9 @@ Screen::Screen(
     memories_in_use(0),
     memory_write_idx(0),
     row(0),
+    end_row(0),
+    row_start_update(0xFFFF),
+    row_end_update(0),
     updating(false),
     restart_update(false),
     scan_window{ 0 },
@@ -156,10 +159,12 @@ void Screen::Draw(uint32_t timeout)
     UNUSED(timeout);
     if (restart_update)
     {
-        row = 0;
+        row = row_start_update;
+        end_row = row_end_update;
+        row_start_update = 0xFFFF;
+        row_end_update = 0;
         restart_update = false;
         updating = true;
-        SetWriteablePixels(0, view_width - 1, 0, view_height - 1);
     }
 
     if (!updating)
@@ -167,24 +172,19 @@ void Screen::Draw(uint32_t timeout)
         return;
     }
 
-    // TODO remove after double buffer is put in?
-    // Might not matter if we only update every 10ms?
-    WaitForSPIComplete();
-
-    uint8_t* win = *scan_window;
-    for (size_t i = 0; i < Scan_Window_Size; ++i)
-    {
-        win[i] = 0;
-    }
-    win = nullptr;
-
     // Return to normal mode
     NormalMode();
 
-    const uint16_t end_row = row + Num_Rows;
-
     // Go through all of the memories
-    for (uint16_t j = 0; j < Num_Memories; ++j)
+    const uint16_t y1 = row;
+    const uint16_t y2 = (end_row - row) < Num_Rows ? end_row : row + Num_Rows;
+
+    uint32_t memories_read = 0;
+    uint32_t num_memories_used = memories_in_use;
+    bool buff_updated = false;
+    uint16_t x1 = view_width;
+    uint16_t x2 = 0;
+    for (uint16_t j = 0; j < Num_Memories && memories_read < num_memories_used; ++j)
     {
         // Get a memory
         DrawMemory& memory = memories[j];
@@ -198,15 +198,30 @@ void Screen::Draw(uint32_t timeout)
             }
             case MemoryStatus::In_Progress:
             {
-                memory.callback(memory, scan_window, row, end_row);
+                ++memories_read;
+                if (memory.callback(memory, matrix, y1, y2))
+                {
+                    if (memory.x1 < x1)
+                    {
+                        x1 = memory.x1;
+                    }
 
-                if (end_row >= memory.y2)
+                    if (memory.x2 > x2)
+                    {
+                        x2 = memory.x2;
+                    }
+
+                    buff_updated = true;
+                }
+
+                if (y2 >= memory.y2)
                 {
                     memory.status = MemoryStatus::Free;
                     memory.read_idx = 0;
                     memory.write_idx = 0;
                     --memories_in_use;
                 }
+
 
                 break;
             }
@@ -219,19 +234,49 @@ void Screen::Draw(uint32_t timeout)
         }
     }
 
-    // Send the data
-    // Just pass the pointer to the first element of the array
-    // since it will decay into a simple uint8_t* pointer.
-    WriteDataWithSet(*scan_window, Scan_Window_Size);
-
-    // Scroll
-    // ScrollScreen()
-
     row += Num_Rows;
-    if (row >= view_height)
+    if (row >= end_row)
     {
         row = 0;
         updating = false;
+    }
+
+    if (!buff_updated)
+    {
+        return;
+    }
+
+    // Buffer mod variable
+    uint32_t mod = 0;
+    uint32_t x1_offset = x1 * 2;
+    SetWriteablePixels(x1, x2 - 1, y1, y2 - 1);
+    for (uint16_t i = y1; i < y2; ++i)
+    {
+        const uint16_t mod_offset = mod * Width_Pixel_Size;
+        for (uint16_t j = x1; j < x2; ++j)
+        {
+            // Convert matrix into scan window update
+            const uint16_t mat_idx = j / 2;
+            const uint16_t scan_idx = mod_offset + (j * 2);
+            if (j & 0x0001)
+            {
+                // Second half
+                uint8_t c = (matrix[i][mat_idx] & 0x0F);
+                uint16_t colour_v = Colour_Map[c];
+                scan_window[scan_idx] = colour_v >> 8;
+                scan_window[scan_idx + 1] = colour_v & 0x00FF;
+            }
+            else
+            {
+                // First half
+                uint8_t c = matrix[i][mat_idx] >> 4;
+                uint16_t colour_v = Colour_Map[c];
+                scan_window[scan_idx] = colour_v >> 8;
+                scan_window[scan_idx + 1] = colour_v & 0x00FF;
+            }
+        }
+        WriteDataWithSet((scan_window + mod_offset) + x1_offset, (x2 - x1) * 2);
+        mod = !mod;
     }
 }
 
@@ -343,63 +388,41 @@ void Screen::SetOrientation(const Screen::Orientation orientation)
 
 
 void Screen::FillRectangle(uint16_t x1, uint16_t x2,
-    uint16_t y1, uint16_t y2, const uint16_t colour)
+    uint16_t y1, uint16_t y2, const Colour colour)
 {
-    BoundCheck(x1, x2, y1, y2);
+    HandleBounds(x1, x2, y1, y2);
 
-    // DrawMemory
-    DrawMemory& memory = RetrieveMemory();
-
-    memory.callback = Screen::FillRectangleProcedure;
-    memory.x1 = x1;
-    memory.x2 = x2;
-    memory.y1 = y1;
-    memory.y2 = y2;
-    memory.colour = colour;
+    AllocateMemory(x1, x2, y1, y2, colour, FillRectangleProcedure);
 }
 
 void Screen::DrawRectangle(uint16_t x1, uint16_t x2,
     uint16_t y1, uint16_t y2, const uint16_t thickness,
-    const uint16_t colour)
+    const Colour colour)
 {
-    BoundCheck(x1, x2, y1, y2);
+    HandleBounds(x1, x2, y1, y2);
 
-    DrawMemory& memory = RetrieveMemory();
-
-    memory.callback = Screen::DrawRectangleProcedure;
-    memory.x1 = x1;
-    memory.x2 = x2;
-    memory.y1 = y1;
-    memory.y2 = y2;
-    memory.colour = colour;
+    DrawMemory& memory = AllocateMemory(x1, x2, y1, y2, colour, DrawRectangleProcedure);
 
     PushMemoryParameter(memory, thickness, 2);
 }
 
 void Screen::DrawCharacter(uint16_t x, uint16_t y, const char ch,
-    const Font& font, const uint16_t fg, const uint16_t bg)
+    const Font& font, const Colour fg, const Colour bg)
 {
     const uint16_t x2 = x + font.width;
     const uint16_t y2 = y + font.height;
     const uint16_t offset = (ch - 32) * font.height * (font.width / 8 + 1);
     const uintptr_t ch_addr = (uintptr_t)(font.data + offset);
 
-    DrawMemory& memory = RetrieveMemory();
+    DrawMemory& memory = AllocateMemory(x, x2, y, y2, fg, DrawCharacterProcedure);
 
-    memory.callback = DrawCharacterProcedure;
-    memory.x1 = x;
-    memory.y1 = y;
-    memory.x2 = x2;
-    memory.y2 = y2;
-    memory.colour = fg;
-
-    PushMemoryParameter(memory, bg, 2);
+    PushMemoryParameter(memory, (uint32_t)bg, 1);
     PushMemoryParameter(memory, ch_addr, 4);
 }
 
 void Screen::DrawString(uint16_t x, uint16_t y, const char* str,
     const uint16_t length, const Font& font,
-    const uint16_t fg, const uint16_t bg)
+    const Colour fg, const Colour bg)
 {
     // Get the maximum num of characters for a single line
     const uint16_t len = x + length * static_cast<uint16_t>(font.width) > WIDTH ? (WIDTH - x) / font.width : length;
@@ -408,16 +431,9 @@ void Screen::DrawString(uint16_t x, uint16_t y, const char* str,
     const uint16_t x2 = x + width;
     const uint16_t y2 = y + font.height;
 
-    DrawMemory& memory = RetrieveMemory();
+    DrawMemory& memory = AllocateMemory(x, x2, y, y2, fg, DrawStringProcedure);
 
-    memory.callback = DrawStringProcedure;
-    memory.x1 = x;
-    memory.x2 = x2;
-    memory.y1 = y;
-    memory.y2 = y2;
-    memory.colour = fg;
-
-    PushMemoryParameter(memory, bg, 2);
+    PushMemoryParameter(memory, (uint32_t)bg, 1);
     PushMemoryParameter(memory, (uint32_t)str, 4);
     PushMemoryParameter(memory, font.width, 1);
     PushMemoryParameter(memory, font.height, 1);
@@ -563,7 +579,7 @@ void Screen::CommitText()
     // Enqueue the string draw
     DrawString(0, y,
         text_buffer[idx], text_lens[idx],
-        font5x8, C_WHITE, C_BLACK);
+        font5x8, Colour::White, Colour::Black);
 }
 
 // Private functions
@@ -620,7 +636,9 @@ void Screen::WriteDataWithSet(uint8_t* data, const uint32_t data_size)
     HAL_SPI_Transmit_DMA(spi, data, data_size);
 }
 
-Screen::DrawMemory& Screen::RetrieveMemory()
+Screen::DrawMemory& Screen::AllocateMemory(const uint16_t x1, const uint16_t x2,
+    const uint16_t y1, const uint16_t y2, const Colour colour,
+    MemoryCallback callback)
 {
     if (memories_in_use >= Num_Memories)
     {
@@ -637,6 +655,23 @@ Screen::DrawMemory& Screen::RetrieveMemory()
     restart_update = true;
     ++memories_in_use;
     memory.status = MemoryStatus::In_Progress;
+
+    memory.x1 = x1;
+    memory.x2 = x2;
+    memory.y1 = y1;
+    memory.y2 = y2;
+    memory.colour = colour;
+    memory.callback = callback;
+
+    if (y1 < row_start_update)
+    {
+        row_start_update = y1;
+    }
+    if (y2 > row_end_update)
+    {
+        row_end_update = y2;
+    }
+
     return memory;
 }
 
@@ -645,55 +680,62 @@ void Screen::NormalMode()
     // Send a dma command
 }
 
-void Screen::FillRectangleProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][WIDTH * 2],
+bool Screen::FillRectangleProcedure(DrawMemory& memory,
+    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
     const int16_t y1, const int16_t y2)
 {
     // See if rectangle is in the current scan line
-    if (y1 > memory.y2 || y2 < memory.y1)
+    if (y1 >= memory.y2 || y2 <= memory.y1)
     {
-        return;
+        return false;
     }
 
     // Get the y bounds
     YBound bound = GetYBounds(y1, y2, memory.y1, memory.y2);
 
-    // Get the colour
+    uint8_t colour_high = (uint8_t)memory.colour << 4;
+    uint8_t colour_low = (uint8_t)memory.colour & 0x0F;
+
     for (uint16_t i = bound.y1; i < bound.y2; ++i)
     {
         for (uint16_t j = memory.x1; j < memory.x2; ++j)
         {
-            FillLineAtIdx(lines, i, j, memory.colour);
+            FillMatrixAtIdx(matrix, i, j, colour_high, colour_low);
         }
     }
+
+    return true;
 }
 
 
-void Screen::DrawRectangleProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][WIDTH * 2],
+bool Screen::DrawRectangleProcedure(DrawMemory& memory,
+    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
     const int16_t y1, const int16_t y2)
 {
     // See if rectangle is in the current scan line
-    if (y1 > memory.y2 || y2 < memory.y1)
+    if (y1 >= memory.y2 || y2 <= memory.y1)
     {
-        return;
+        return false;
     }
 
     const uint16_t thickness = PullMemoryParameter<uint16_t>(memory);
 
     // Get the y bounds
-    const uint16_t y_start = y1 > memory.y1 ? 0 : memory.y1 - y1;
-    const uint16_t y_end = y2 < memory.y2 ? y2 - y1 : memory.y2 - y1;
+    YBound bound = GetYBounds(y1, y2, memory.y1, memory.y2);
 
+    uint8_t colour_high = (uint8_t)memory.colour << 4;
+    uint8_t colour_low = (uint8_t)memory.colour & 0x0F;
 
     // Check for the "top rectangle"
     if (y1 <= memory.y1)
     {
-        const uint16_t y1_thick = y_start + thickness < y_end ? y_start + thickness : y_end;
+        const uint16_t y1_thick = bound.y1 + thickness < bound.y2 ? bound.y1 + thickness : bound.y2;
         // In the bounds of the top rectangle
-        for (uint16_t i = y_start; i < y1_thick; ++i)
+        for (uint16_t i = bound.y1; i < y1_thick; ++i)
         {
             for (uint16_t j = memory.x1; j < memory.x2; ++j)
             {
-                FillLineAtIdx(lines, i, j, memory.colour);
+                FillMatrixAtIdx(matrix, i, j, colour_high, colour_low);
             }
         }
     }
@@ -701,44 +743,56 @@ void Screen::DrawRectangleProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][
     // Check for the "bottom rectangle"
     if (y2 >= memory.y2)
     {
-        const uint16_t y2_thick = y_end - thickness > y_start ? y_end - thickness : y_start;
+        const uint16_t y2_thick = bound.y2 - thickness > bound.y1 ? bound.y2 - thickness : bound.y1;
         // In the bounds of the top rectangle
-        for (uint16_t i = y2_thick; i < y_end; ++i)
+        for (uint16_t i = y2_thick; i < bound.y2; ++i)
         {
             for (uint16_t j = memory.x1; j < memory.x2; ++j)
             {
-                FillLineAtIdx(lines, i, j, memory.colour);
+                FillMatrixAtIdx(matrix, i, j, colour_high, colour_low);
             }
         }
     }
 
-
     const uint16_t x1_thick = memory.x1 + thickness;
     const uint16_t x2_thick = memory.x2 - thickness;
     // Do the side rectangles
-    for (uint16_t i = y_start; i < y_end; ++i)
+    for (uint16_t i = bound.y1; i < bound.y2; ++i)
     {
         uint16_t left_v = memory.x1;
         uint16_t right_v = x2_thick;
         while (left_v < x1_thick)
         {
-            FillLineAtIdx(lines, i, left_v, memory.colour);
-            FillLineAtIdx(lines, i, right_v, memory.colour);
+            FillMatrixAtIdx(matrix, i, left_v, colour_high, colour_low);
+            FillMatrixAtIdx(matrix, i, right_v, colour_high, colour_low);
             ++right_v;
             ++left_v;
         }
     }
+
+    return true;
 }
 
-void Screen::DrawCharacterProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][WIDTH * 2],
+bool Screen::DrawCharacterProcedure(DrawMemory& memory,
+    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
     const int16_t y1, const int16_t y2)
 {
-    const uint16_t bg = PullMemoryParameter<uint16_t>(memory);
+    if (y1 >= memory.y2 || y2 <= memory.y1)
+    {
+        return false;
+    }
+
+    const uint8_t bg = PullMemoryParameter<uint8_t>(memory);
     uint8_t* ch_ptr = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
 
     uint16_t w_off = 0;
 
     YBound bounds = GetYBounds(y1, y2, memory.y1, memory.y2);
+
+    uint8_t fg_high = (uint8_t)memory.colour << 4;
+    uint8_t fg_low = (uint8_t)memory.colour & 0x0F;
+    uint8_t bg_high = bg << 4;
+    uint8_t bg_low = bg & 0x0F;
 
     for (uint16_t i = bounds.y1; i < bounds.y2; ++i)
     {
@@ -747,11 +801,11 @@ void Screen::DrawCharacterProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][
         {
             if ((*ch_ptr << w_off) & 0x80)
             {
-                FillLineAtIdx(lines, i, j, memory.colour);
+                FillMatrixAtIdx(matrix, i, j, fg_high, fg_low);
             }
             else
             {
-                FillLineAtIdx(lines, i, j, bg);
+                FillMatrixAtIdx(matrix, i, j, bg_high, bg_low);
             }
 
             ++w_off;
@@ -771,18 +825,21 @@ void Screen::DrawCharacterProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][
     }
 
     ch_ptr = nullptr;
+
+    return true;
 }
 
-void Screen::DrawStringProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][WIDTH * 2],
+bool Screen::DrawStringProcedure(DrawMemory& memory,
+    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
     const int16_t y1, const int16_t y2)
 {
     // TODO put into function
-    if (y1 > memory.y2 || y2 < memory.y1)
+    if (y1 >= memory.y2 || y2 <= memory.y1)
     {
-        return;
+        return false;
     }
 
-    const uint16_t bg = PullMemoryParameter<uint16_t>(memory);
+    const uint8_t bg = PullMemoryParameter<uint8_t>(memory);
     const uint8_t* str = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
     const uint8_t font_width = PullMemoryParameter<uint8_t>(memory);
     const uint8_t font_height = PullMemoryParameter<uint8_t>(memory);
@@ -799,15 +856,20 @@ void Screen::DrawStringProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][WID
     uint16_t x_char_iter = 0;
     uint16_t w_off = 0;
 
-    // Get the current number of scan lines already passed
+    // Get the current number of scan line already passed
     uint16_t y_char_iter = 0;
     if (y1 > memory.y1)
     {
-        // We have done some lines
+        // We have done some line
         y_char_iter = (y1 - memory.y1);
     }
 
     YBound bounds = GetYBounds(y1, y2, memory.y1, memory.y2);
+
+    uint8_t fg_high = (uint8_t)memory.colour << 4;
+    uint8_t fg_low = (uint8_t)memory.colour & 0x0F;
+    uint8_t bg_high = bg << 4;
+    uint8_t bg_low = bg & 0x0F;
 
     for (uint16_t i = bounds.y1; i < bounds.y2; ++i)
     {
@@ -821,11 +883,11 @@ void Screen::DrawStringProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][WID
         {
             if ((*ch_ptr << w_off) & 0x80)
             {
-                FillLineAtIdx(lines, i, j, memory.colour);
+                FillMatrixAtIdx(matrix, i, j, fg_high, fg_low);
             }
             else
             {
-                FillLineAtIdx(lines, i, j, bg);
+                FillMatrixAtIdx(matrix, i, j, bg_high, bg_low);
             }
 
             ++w_off;
@@ -862,9 +924,11 @@ void Screen::DrawStringProcedure(DrawMemory& memory, uint8_t lines[Num_Rows][WID
 
     ch_ptr = nullptr;
     font_data = nullptr;
+
+    return true;
 }
 
-void Screen::BoundCheck(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
+void Screen::HandleBounds(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
 {
     if (x1 >= view_width || y1 >= view_height)
     {
@@ -937,19 +1001,38 @@ inline T Screen::PullMemoryParameter(DrawMemory& memory)
     return output;
 }
 
-inline void Screen::FillLineAtIdx(uint8_t lines[Num_Rows][Width_Pixel_Size],
+// TODO colour HIGH and colour LOW to save calculating it everytime.
+inline void Screen::FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+    const uint16_t i, const uint16_t j,
+    const uint8_t colour_high, const uint8_t colour_low)
+{
+    const uint16_t idx = j / 2;
+    if (j & 0x0001)
+    {
+        matrix[i][idx] = (matrix[i][idx] & 0xF0) | colour_low;
+    }
+    else
+    {
+        matrix[i][idx] = (matrix[i][idx] & 0x0F) | colour_high;
+    }
+}
+
+inline void Screen::FillLineAtIdx(uint8_t* line,
     const uint16_t i, const uint16_t j, const uint16_t colour)
 {
     const uint16_t idx = j * 2;
-    lines[i][idx] = static_cast<uint8_t>(colour >> 8);
-    lines[i][idx + 1] = static_cast<uint8_t>(colour);
+    line[idx] = static_cast<uint8_t>(colour >> 8);
+    line[idx + 1] = static_cast<uint8_t>(colour);
 }
 
 inline Screen::YBound Screen::GetYBounds(const uint16_t y1, const uint16_t y2,
     const uint16_t mem_y1, const uint16_t mem_y2)
 {
-    const uint16_t y_start = y1 > mem_y1 ? 0 : mem_y1 - y1;
-    const uint16_t y_end = y2 < mem_y2 ? y2 - y1 : mem_y2 - y1;
+    const uint16_t y_start = y1 > mem_y1 ? y1 : mem_y1;
+    const uint16_t y_end = y2 < mem_y2 ? y2 : mem_y2;
+
+    // const uint16_t y_start = y1 > mem_y1 ? 0 : mem_y1 - y1;
+    // const uint16_t y_end = y2 < mem_y2 ? y2 - y1 : mem_y2 - y1;
 
     return { y_start, y_end };
 }
