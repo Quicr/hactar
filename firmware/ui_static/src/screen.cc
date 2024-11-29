@@ -542,44 +542,40 @@ void Screen::AppendText(const char* text, const uint32_t len)
 
 void Screen::CommitText()
 {
-    static uint16_t y = 0;
-    const uint16_t idx = text_idx;
+    const uint16_t y = Top_Fixed_Area + font5x8.height * text_idx;
+    // Send a scroll text command if we have a full text buff
+    if (texts_in_use >= Max_Texts)
+    {
+
+        FillRectangle(0, view_width, y, y+font5x8.height, Colour::Black);
+        DrawString(0, y,
+            text_buffer[text_idx], text_lens[text_idx],
+            font5x8, Colour::White, Colour::Black);
+
+        scroll_offset += font5x8.height;
+        if (scroll_offset >= Scroll_Area_Height)
+        {
+            scroll_offset = 0;
+        }
+        ScrollScreen(Top_Fixed_Area + scroll_offset, true);
+
+        // Draw a rectangle to remove the text from the screen.
+        // TODO replace colour with a class variable
+    }
+    else
+    {
+        ++texts_in_use;
+        // Enqueue the string draw
+        DrawString(0, y,
+            text_buffer[text_idx], text_lens[text_idx],
+            font5x8, Colour::White, Colour::Black);
+    }
 
     if (++text_idx >= Max_Texts)
     {
         text_idx = 0;
     }
-
-    y = Text_Start_Y + font5x8.height * (texts_in_use);
-    // Send a scroll text command if we have a full text buff
-    if (texts_in_use >= Max_Texts)
-    {
-        // text_lens[text_idx] = 0;
-        // y = Text_Start_Y + font5x8.height * (texts_in_use - 1);
-        // // Scroll, this will happen before the draw string
-        // // TODO fix the scroll idx
-        // ++scroll_idx;
-        // ScrollScreen(Top_Fixed_Area + (font5x8.height * scroll_idx), true);
-        // if (scroll_idx > Max_Texts)
-        // {
-        //     scroll_idx = 0;
-        // }
-
-        // // Draw a rectangle to remove the text from the screen.
-        // // TODO replace colour with a class variable
-        // FillRectangle(0, view_width, y, y + font5x8.height, Screen::Colour::BLACK);
-        return;
-    }
-    else
-    {
-        ++texts_in_use;
-    }
-
-
-    // Enqueue the string draw
-    DrawString(0, y,
-        text_buffer[idx], text_lens[idx],
-        font5x8, Colour::White, Colour::Black);
+    text_lens[text_idx] = 0;
 }
 
 // Private functions

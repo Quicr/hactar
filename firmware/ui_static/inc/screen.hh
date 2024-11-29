@@ -110,7 +110,6 @@ public:
     static constexpr uint32_t Title_Length = 18;
     static constexpr uint32_t Max_Texts = 35;
     static constexpr uint32_t Max_Characters = 48;
-    static constexpr uint8_t Text_Start_Y = 20;
     static constexpr uint16_t Top_Fixed_Area = 20;
     static constexpr uint16_t Bottom_Fixed_Area = 20;
     static constexpr uint16_t Scroll_Area_Height = HEIGHT - (Top_Fixed_Area + Bottom_Fixed_Area);
