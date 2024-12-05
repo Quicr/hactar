@@ -56,7 +56,7 @@ void FibMain()
     }
 }
 
-uint32_t FibInt32(const uint32_t n)
+int32_t FibInt32(const uint32_t n)
 {
     if (n > 2)
     {

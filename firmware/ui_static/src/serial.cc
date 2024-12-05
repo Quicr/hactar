@@ -33,7 +33,6 @@ void Serial::Reset()
     StartReceive();
 }
 
-
 void Serial::ReadSerial(uint8_t* data, const size_t size, const size_t num_bytes)
 {
     const size_t sz = size < num_bytes ? size : num_bytes;
@@ -84,7 +83,7 @@ void Serial::ReadSerial(uint8_t** data, size_t& num_bytes)
 
 void Serial::WriteSerial(const uint8_t* data, const size_t size)
 {
-    if (!tx_is_free)
+    if (uart->gState != HAL_UART_STATE_READY)
     {
         Error_Handler();
         return;
@@ -101,8 +100,15 @@ size_t Serial::Unread()
 
 void Serial::RxEvent(const uint16_t idx)
 {
-    write_idx += (idx - write_idx);
-    if (write_idx > Rx_Buff_Sz)
+    // NOTE- Do NOT put a breakpoint in here, the callbacks will
+    // get blocked will get memory access errors because the
+    // callback on your breakpoint will through off the values and then
+    // will cause the value to be at the wrong idx and everything will go
+    // ka-boom, crash, plop. Overflow errors and stuff.
+    const uint16_t num_recv = idx - write_idx;
+    unread += num_recv;
+    write_idx += num_recv;
+    if (write_idx >= Rx_Buff_Sz)
     {
         write_idx = write_idx - Rx_Buff_Sz;
     }

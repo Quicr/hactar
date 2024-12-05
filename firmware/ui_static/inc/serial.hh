@@ -7,9 +7,12 @@ class Serial
 public:
     enum Packet_Type: uint8_t
     {
+        Null,
+        Ready,
         Audio,
         Text,
-        MLS
+        MLS,
+
     };
 
     Serial(UART_HandleTypeDef* uart);
@@ -28,12 +31,12 @@ public:
     void Free();
 
 protected:
-    static constexpr size_t Rx_Buff_Sz = 400;
+    static constexpr size_t Rx_Buff_Sz = 1024;
 
     UART_HandleTypeDef* uart;
     volatile bool tx_is_free;
     uint8_t rx_buff[Rx_Buff_Sz];
-    size_t write_idx;
-    size_t read_idx;
-    size_t unread;
+    uint32_t write_idx;
+    uint32_t read_idx;
+    uint32_t unread;
 };

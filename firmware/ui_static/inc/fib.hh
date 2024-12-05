@@ -3,7 +3,7 @@
 #include <cstdint>
 
 void FibMain();
-uint32_t FibInt32(const uint32_t);
-int64_t FibInt64(const uint32_t);
-float FibFloat32(const uint32_t);
-double FibFloat64(const uint32_t);
+extern "C" int32_t FibInt32(uint32_t);
+extern "C" int64_t FibInt64(uint32_t);
+extern "C" float FibFloat32(uint32_t);
+extern "C" double FibFloat64(uint32_t);
