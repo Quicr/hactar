@@ -96,7 +96,11 @@ static void MX_TIM3_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
-int main(void)
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int stm32_main(void)
 {
   /* USER CODE BEGIN 1 */
 
@@ -146,6 +150,10 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 /**
   * @brief System Clock Configuration

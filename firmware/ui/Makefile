@@ -217,8 +217,8 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32F405RGTx_FLASH.ld
 
 # libraries
-LIBS = -lc -lm -lnosys -lrdimon -lSTM32Cryptographic_CM4
-LIBDIR = -Llib
+LIBS = -lc -lm -lnosys -lrdimon -lSTM32Cryptographic_CM4 -lhactar
+LIBDIR = -Llib -Lhactar/target/thumbv7em-none-eabihf/release
 LDFLAGS = $(MCU) --specs=rdimon.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/${TARGET}.map,--cref -Wl,--gc-sections
 
 #######################################

@@ -2,6 +2,7 @@
 
 
 #include <iostream>
+#include <stdint.h>
 #include "audio_codec.hh"
 
 #include <map>
