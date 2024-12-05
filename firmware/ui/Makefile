@@ -217,8 +217,9 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32F405RGTx_FLASH.ld
 
 # libraries
+RUST_LIBDIR=hactar/target/thumbv7em-none-eabihf/release
 LIBS = -lc -lm -lnosys -lrdimon -lSTM32Cryptographic_CM4 -lhactar
-LIBDIR = -Llib -Lhactar/target/thumbv7em-none-eabihf/release
+LIBDIR = -Llib -L$(RUST_LIBDIR)
 LDFLAGS = $(MCU) --specs=rdimon.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/${TARGET}.map,--cref -Wl,--gc-sections
 
 #######################################
@@ -267,7 +268,11 @@ $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
 	@echo "[S]			$(notdir $<)"
 	@$(AS) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/${TARGET}.elf: ${OBJECTS} | ${BUILD_DIR}
+$(RUST_LIBDIR)/libhactar.a: hactar/src/lib.rs hactar/Cargo.toml
+	@echo "[RS]			$(notdir $<)"
+	@cd hactar && cargo build --release
+
+$(BUILD_DIR)/${TARGET}.elf: ${OBJECTS} $(RUST_LIBDIR)/libhactar.a | ${BUILD_DIR} 
 	@echo "[LD]			${TARGET}.elf"
 	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 	@$(DP) -St $@ >$(BUILD_DIR)/${TARGET}.lst
