@@ -121,6 +121,7 @@ public:
         write_idx += num_received;
         unread_values += num_received;
 
+        // TODO isn't this incorrect???
         if (write_idx >= size)
         {
             write_idx = 0;

@@ -18,7 +18,8 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     tx_buffer{ 0 },
     tx_ptr{tx_buffer},
     rx_buffer{ 0 },
-    rx_ptr{rx_buffer}
+    rx_ptr{rx_buffer},
+    buff_mod(0)
 {
 }
 
@@ -369,26 +370,22 @@ void AudioChip::StopI2S()
 
 uint16_t* AudioChip::TxBuffer()
 {
-    LowerFlag(AudioFlag::Tx_Ready);
-    return tx_buffer;
+    // LowerFlag(AudioFlag::Tx_Ready);
+    return tx_ptr;
 }
 
 const uint16_t* AudioChip::RxBuffer()
 {
-    LowerFlag(AudioFlag::Rx_Ready);
-    return rx_buffer;
+    // LowerFlag(AudioFlag::Rx_Ready);
+    return rx_ptr;
 }
 
 void AudioChip::HalfCompleteCallback()
 {
-    // UNCOMMENT THIS TO TEST THE AUDIO OUTPUT
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz_2, 0,
-    //     1000, 440, phase, true);
-    // END UNCOMMENT
+    // SampleSineWave(rx_buffer, Audio_Buffer_Sz_2, 0,
+    //     1000, 440, phase, false);
 
-    // UNCOMMENT THIS TO TEST THE AUDIO MIC
     // Copy the mic data to the speakers
-    // END UNCOMMENT
     if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET)
     {
         for (uint16_t i = 0; i < Audio_Buffer_Sz_2; i+=2)
@@ -399,9 +396,7 @@ void AudioChip::HalfCompleteCallback()
     }
     else
     {
-        // COMMENT THE BELOW OUT FOR TESTING
         // Clear the first half of the buffer
-
         for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
         {
             tx_buffer[i] = 0;
@@ -418,12 +413,9 @@ void AudioChip::HalfCompleteCallback()
 
 void AudioChip::CompleteCallback()
 {
-    // UNCOMMENT THIS TO TEST THE AUDIO OUTPUT
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz_2, Audio_Buffer_Sz_2,
-    //     1000, 440, phase, true);
-    // END UNCOMMENT
+    // SampleSineWave(rx_buffer, Audio_Buffer_Sz_2, Audio_Buffer_Sz_2,
+    //     1000, 440, phase, false);
 
-    // UNCOMMENT THIS TO TEST THE AUDIO MIC
     // Copy the mic data to the speakers
     if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET)
     {
@@ -432,11 +424,9 @@ void AudioChip::CompleteCallback()
             tx_buffer[i] = rx_buffer[i] + 5000;
             tx_buffer[i+1] = rx_buffer[i+1] + 5000;
         }
-        // END UNCOMMENT
     }
     else
     {
-        // COMMENT THE BELOW OUT FOR TESTING
         // Clear the second half of the buffer
         for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; ++i)
         {
@@ -608,39 +598,6 @@ void AudioChip::SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
             buff[start_idx + i] += harmonic[i];
         }
     }
-}
-
-void AudioChip::SendSawToothWave()
-{
-    uint32_t sample_rate = 16'000;
-    float amplitude = 2;
-    float freq = 1000.0;
-    float period = sample_rate / freq;
-
-    uint16_t num_samples = 256;
-    static uint16_t buff[256];
-
-    for (int i = 0; i < num_samples; ++i)
-    {
-        float phase = fmod(i, period) / period;
-
-        float sawtooth_value = amplitude * (2 * phase - 1);
-
-        if (sawtooth_value > 1.0f)
-        {
-            sawtooth_value = 1.0f;
-        }
-        else if (sawtooth_value < -1.0f)
-        {
-            sawtooth_value = -1.0f;
-        }
-
-        buff[i] = (uint16_t)((sawtooth_value + 1.0f) * 32767);
-    }
-
-    HAL_I2S_Transmit(i2s, buff, num_samples, HAL_MAX_DELAY);
-
-    HAL_Delay(10);
 }
 
 inline void AudioChip::RaiseFlag(AudioFlag flag)

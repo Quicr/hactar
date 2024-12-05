@@ -51,6 +51,11 @@ inline void LowPowerMode();
 inline void WakeUp();
 inline void CheckFlags();
 inline void ProcessText(uint16_t len);
+inline void InitScreen();
+inline void WaitForNetReady();
+inline void AudioCallback();
+
+void InterHactarRoundTripTest();
 
 #ifdef __cplusplus
 }

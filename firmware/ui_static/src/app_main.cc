@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#include <random>
+
 void reverse(char* str, int length)
 {
     int start = 0;
@@ -90,15 +92,22 @@ Screen screen(
 );
 
 constexpr uint32_t QMessage_Room_Length = 32;
-constexpr uint32_t Serial_Header_Sz = 3 + QMessage_Room_Length;
+constexpr uint32_t Serial_Start_Bytes = 3;
+constexpr uint32_t Serial_Header_Sz = Serial_Start_Bytes + QMessage_Room_Length;
+constexpr uint32_t Serial_QMessage_Room_Offset = Serial_Start_Bytes;
 constexpr uint32_t Serial_Audio_Buff_Sz = AudioChip::Audio_Buffer_Sz_2 + Serial_Header_Sz;
 
 // Make tx and rx buffers for audio
 uint8_t serial_tx_audio_buff[Serial_Audio_Buff_Sz] = {
-    Serial_Audio_Buff_Sz, 0, Serial::Packet_Type::Audio };
+    Serial_Audio_Buff_Sz >> 8, Serial_Audio_Buff_Sz & 0xFF,
+    Serial::Packet_Type::Audio };
 // The bytes that take up the room should be set at some point
 uint8_t serial_rx_audio_buff[Serial_Audio_Buff_Sz] = {
-    Serial_Audio_Buff_Sz, 0, Serial::Packet_Type::Audio };
+    Serial_Audio_Buff_Sz >> 8, Serial_Audio_Buff_Sz & 0xFF,
+    Serial::Packet_Type::Audio };
+
+uint8_t serial_tx_buffer[400] = { 0 };
+uint8_t serial_rx_buffer[400] = { 0 };
 
 // Make a pointer that is to JUST the audio data section of the buffer
 uint8_t* serial_tx_audio_offset_ptr = serial_tx_audio_buff + Serial_Header_Sz;
@@ -106,9 +115,189 @@ uint8_t* serial_rx_audio_offset_ptr = serial_rx_audio_buff + Serial_Header_Sz;
 
 volatile bool sleeping = true;
 volatile bool error = false;
+bool net_replied = false;
 constexpr uint32_t Expected_Flags = 0b0000'1111;
 uint32_t flags = Expected_Flags;
 uint32_t est_time_ms = 0;
+uint32_t num_loops = 0;
+uint32_t ticks_ms = 0;
+
+int app_main()
+{
+    audio_chip.Init();
+    InitScreen();
+    serial.StartReceive();
+
+    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
+
+
+    uint32_t timeout;
+    uint32_t current_tick;
+    uint32_t redraw = uwTick;
+    Colour next = Colour::Green;
+    Colour curr = Colour::Blue;
+    const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
+
+    WaitForNetReady();
+
+    // TODO Probe for a reply from the net chip using serial
+    serial_tx_buffer[0] = 3;
+    serial_tx_buffer[1] = 0;
+    serial_tx_buffer[2] = Serial::Ready;
+    // serial.WriteSerial(serial_tx_buffer, 3);
+    // HAL_Delay(100);
+    // while (!net_replied)
+    // {
+    //     if (serial.Unread() >= 3)
+    //     {
+    //         // Read
+    //         serial.ReadSerial(serial_rx_buffer, 255, 3);
+
+    //         if (serial_rx_buffer[2] == Serial::Ready)
+    //         {
+    //             net_replied = true;
+    //         }
+    //     }
+
+    // }
+
+        // HAL_UART_Transmit(&huart2, serial_tx_audio_buff, Serial_Audio_Buff_Sz, HAL_MAX_DELAY);
+        // HAL_UART_Transmit(&huart2, serial_tx_audio_buff, Serial_Audio_Buff_Sz, HAL_MAX_DELAY);
+    HAL_Delay(5000);
+    // for (int i = 0 ; i < 100; ++i)
+    while(true)
+    {
+        HAL_UART_Transmit_DMA(&huart2, serial_tx_audio_buff, Serial_Audio_Buff_Sz);
+        // serial.WriteSerial(serial_tx_audio_buff, Serial_Audio_Buff_Sz);
+        HAL_Delay(10);
+    }
+    bool x = true;
+    while (x)
+    {
+
+    }
+
+    audio_chip.StartI2S();
+    while (1)
+    {
+        num_loops++;
+        while (sleeping)
+        {
+            // LowPowerMode();
+        }
+
+        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
+
+        if (error)
+        {
+            // Error_Handler();
+        }
+
+        // If we broke out then that means we got an audio callback
+        // TODO test clock stability
+
+        // Compand our audio
+        AudioCodec::ALawCompand(audio_chip.RxBuffer(), serial_tx_audio_offset_ptr, AudioChip::Audio_Buffer_Sz_2);
+        RaiseFlag(Rx_Audio_Companded);
+        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
+
+        // Try to send packets
+        serial.WriteSerial(serial_tx_audio_buff, Serial_Audio_Buff_Sz);
+
+        // If there are bytes available read them
+        // while (serial.Unread() && false)
+        // {
+        //     // TODO decide how to do this.
+        //     // Need to determine what kind of packet
+        //     // audio, text, mls packets etc.
+
+        //     // Get the length and the type
+        //     uint16_t len = 0;
+        //     uint8_t type = 3;
+
+        //     // Deep magickas of the ancients
+        //     // serial.ReadSerial((uint8_t*)&len, 2, 2);
+        //     // serial.ReadSerial(&type, 1, 1);
+
+        //     // Get the "room"
+        //     // THIS IS DUMMY DATA
+        //     // serial.ReadSerial(serial_tx_audio_buff+3, QMessage_Room_Length, QMessage_Room_Length);
+
+        //     switch (type)
+        //     {
+        //         case Serial::Audio:
+        //         {
+        //             // Copy the audio from the buffer to the audio buffer
+        //             // uint16_t* tx_ptr = audio_chip.TxBuffer();
+
+        //             // copy the data to the audio serial rx buff
+        //             // serial.ReadSerial(serial_rx_audio_buff+35, Serial_Audio_Buff_Sz, Serial_Audio_Buff_Sz);
+
+        //             // expand the data
+        //             // AudioCodec::ALawExpand(serial_rx_audio_buff+35, tx_ptr, AudioChip::Audio_Buffer_Sz_2);
+
+        //             break;
+        //         }
+        //         case Serial::Text:
+        //         {
+        //             // ProcessText(len);
+        //             break;
+        //         }
+        //         case Serial::MLS:
+        //         {
+        //             break;
+        //         }
+        //         default:
+        //         {
+        //             break;
+        //         }
+        //     }
+
+
+
+        //     // If it is an audio packet we should uncompand it
+        //     // First 2 bytes will be the length
+
+        //     // If it is a text packet we need to display it
+
+
+        //     // If it is mls we need to process it etc.
+        // }
+
+
+        // Use remaining time to draw
+        if (est_time_ms > redraw)
+        {
+            screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
+            screen.DrawRectangle(0, 10, 0, 10, 2, next);
+            screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
+            screen.DrawString(0, 28, hello, 48, font5x8, next, curr);
+            const uint16_t width = 50;
+            const uint16_t height = 50;
+            const uint16_t x_inc = width + 2;
+            const uint16_t y_inc = height + 1;
+
+            // swap
+            Colour tmp = curr;
+            curr = next;
+            next = tmp;
+            redraw = est_time_ms + 1600;
+        }
+
+        // Draw what we can
+        screen.Draw(0);
+        RaiseFlag(Draw_Complete);
+        HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_RESET);
+
+        sleeping = true;
+    }
+
+    return 0;
+}
 
 inline void RaiseFlag(Timer_Flags flag)
 {
@@ -178,214 +367,16 @@ inline void ProcessText(uint16_t len)
     screen.CommitText();
 }
 
-int app_main()
+void InitScreen()
 {
-    audio_chip.Init();
     screen.Init();
-    screen.EnableBacklight();
-
-    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
-
-
-    uint32_t timeout;
-    uint32_t current_tick;
-    uint32_t redraw = uwTick;
-    Colour next = Colour::Green;
-    Colour curr = Colour::Blue;
-
-    const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
-
-    uint16_t rec_size = 20;
-    Colour clr = Colour::Red;
-    // for (int i = 0; i < 320; i += rec_size)
-    // {
-    //     screen.FillRectangle(0, WIDTH, i, (rec_size) + i, clr);
-
-    //     clr = (Colour)((int)clr + 1);
-
-    //     if (clr > Colour::Yellow)
-    //     {
-    //         clr = Colour::Red;
-    //     }
-    // }
-
+    // Do the first draw
     screen.FillRectangle(0, WIDTH, 0, HEIGHT, Colour::Black);
     for (int i = 0; i < 320; i += Screen::Num_Rows)
     {
-        screen.Draw(0);
+        screen.Draw(0xFFFF);
     }
-
-
-    screen.FillRectangle(0, WIDTH, 0, 20, Colour::Green);
-    screen.FillRectangle(0, WIDTH, 20, 21, Colour::White);
-    screen.FillRectangle(0, WIDTH, 21, 61, Colour::Yellow);
-    screen.FillRectangle(0, WIDTH, 61, 62, Colour::White);
-    screen.FillRectangle(0, WIDTH, 300, 320, Colour::Blue);
-    screen.DrawRectangle(50, 60, 70, 85, 3, Colour::Blue);
-    for (int i = 0; i < 320; i += Screen::Num_Rows)
-    {
-        screen.Draw(0);
-    }
-
-    // TODO fix
-    screen.DrawCharacter(0, 70, 'H', font6x8, Colour::White, Colour::Black);
-    screen.DrawString(0, 80, hello, 48, font5x8, Colour::White, Colour::Black);
-    // // screen.AppendText("Hello how are you ", 18);
-    // // screen.CommitText();
-    // char num[3] = { 0 };
-    // // for (int i = 0; i < 35; ++i)
-    // // {
-    // //     screen.AppendText("Hello how are you ", 18);
-    // //     itoa(i, num, 10);
-    // //     const int len = strlen(num);
-
-    // //     screen.AppendText(num, len);
-    // //     screen.CommitText();
-    // // }
-
-    for (int i = 0; i < 320; i += Screen::Num_Rows)
-    {
-        screen.Draw(0);
-    }
-
-    while (true){}
-
-    // uint16_t text_num = 0;
-    // while (true)
-    // {
-
-    //     screen.AppendText("Hello how are you ", 18);
-    //     itoa(text_num++, num, 10);
-    //     const int len = strlen(num);
-    //     screen.AppendText(num, len);
-    //     screen.CommitText();
-    //     if (text_num > 99)
-    //     {
-    //         text_num = 0;
-    //     }
-
-
-    //     for (int i = 0; i < 320; i += Screen::Num_Rows)
-    //     {
-    //         screen.Draw(0);
-    //     }
-
-    //     // for (int i = 20 ; i < 300; i++)
-    //     // {
-    //     //     HAL_Delay(20);
-    //     //     screen.ScrollScreen(i);
-    //     // }
-
-    //     HAL_Delay(100);
-    // }
-
-    bool scroll_timeout = est_time_ms + 5000;
-    bool scroll = true;
-
-    serial.StartReceive();
-    audio_chip.StartI2S();
-    while (1)
-    {
-        while (sleeping)
-        {
-            // LowPowerMode();
-        }
-
-        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
-
-        if (error)
-        {
-            Error_Handler();
-        }
-
-
-
-        // If we broke out then that means we got an audio callback
-        // TODO test clock stability
-
-        AudioCodec::ALawCompand(audio_chip.RxBuffer(), serial_tx_audio_offset_ptr, AudioChip::Audio_Buffer_Sz_2);
-        RaiseFlag(Rx_Audio_Companded);
-        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
-
-        // Try to send packets
-        serial.WriteSerial(serial_tx_audio_buff, Serial_Audio_Buff_Sz);
-
-        // If there are bytes available read them
-        while (serial.Unread())
-        {
-            // TODO decide how to do this.
-            // Need to determine what kind of packet
-            // audio, text, mls packets etc.
-
-            // Get the length and the type
-            uint16_t len = 0;
-            uint8_t type = 3;
-
-            // Deep magickas of the ancients
-            // serial.ReadSerial((uint8_t*)&len, 2, 2);
-            // serial.ReadSerial(&type, 1, 1);
-
-            // switch (type)
-            // {
-            //     case Serial::Audio:
-            //     {
-            //         break;
-            //     }
-            //     case Serial::Text:
-            //     {
-            //         ProcessText(len);
-            //         break;
-            //     }
-            //     case Serial::MLS:
-            //     {
-            //         break;
-            //     }
-            // }
-
-
-
-            // If it is an audio packet we should uncompand it
-            // First 2 bytes will be the length
-
-            // If it is a text packet we need to display it
-
-
-            // If it is mls we need to process it etc.
-        }
-
-
-        // Use remaining time to draw
-        if (est_time_ms > redraw)
-        {
-            // screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
-            // screen.DrawRectangle(0, 10, 0, 10, 2, next);
-            // screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
-            // screen.DrawString(0, 28, hello, 48, font5x8, next, curr);
-            // const uint16_t width = 50;
-            // const uint16_t height = 50;
-            // const uint16_t x_inc = width + 2;
-            // const uint16_t y_inc = height + 1;
-
-            // swap
-            Colour tmp = curr;
-            curr = next;
-            next = tmp;
-            redraw = est_time_ms + 1600;
-        }
-
-        // Draw what we can
-        screen.Draw(0);
-        RaiseFlag(Draw_Complete);
-        HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_RESET);
-
-        sleeping = true;
-    }
-
-    return 0;
+    screen.EnableBacklight();
 }
 
 void WaitForNetReady()
@@ -394,6 +385,14 @@ void WaitForNetReady()
     {
         HAL_Delay(10);
     }
+}
+
+inline void AudioCallback()
+{
+    ticks_ms = HAL_GetTick();
+    CheckFlags();
+    WakeUp();
+    RaiseFlag(Audio_Interrupt);
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
@@ -424,21 +423,15 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef* hi2s)
 {
     UNUSED(hi2s);
-    est_time_ms += 10;
-    CheckFlags();
-    WakeUp();
     audio_chip.HalfCompleteCallback();
-    RaiseFlag(Audio_Interrupt);
+    AudioCallback();
 }
 
 void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 {
     UNUSED(hi2s);
-    est_time_ms += 10;
-    CheckFlags();
-    WakeUp();
     audio_chip.CompleteCallback();
-    RaiseFlag(Audio_Interrupt);
+    AudioCallback();
 }
 
 
@@ -476,3 +469,40 @@ void assert_failed(uint8_t* file, uint32_t line)
         /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+
+
+void InterHactarRoundTripTest()
+{
+    uint8_t tmp[Serial_Audio_Buff_Sz] = {
+        Serial_Audio_Buff_Sz >> 8, Serial_Audio_Buff_Sz & 0xFF,
+        Serial::Packet_Type::Audio
+    };
+
+    // Fill the tmp audio buffer with random
+    for (int i = 35; i < Serial_Audio_Buff_Sz; ++i)
+    {
+        tmp[i] = rand() % 0xFF;
+    }
+
+    while (true)
+    {
+        HAL_Delay(100);
+        serial.WriteSerial(tmp, Serial_Audio_Buff_Sz);
+        HAL_Delay(20);
+        serial.ReadSerial(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);
+
+        // Compare the two
+        bool is_eq = true;
+        for (int i = 0 ; i < Serial_Audio_Buff_Sz;++i)
+        {
+            if (tmp[i] != serial_rx_buffer[i])
+            {
+                while (true)
+                {
+                    Error_Handler();
+                }
+            }
+        }
+    }
+}

@@ -64,7 +64,6 @@ public:
     void SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
         const uint16_t start_idx, const double amplitutde, double freqs [], double phases [],
         const uint16_t num_freqs, const bool stereo);
-    void SendSawToothWave();
 
     uint16_t* TxBuffer();
     const uint16_t* RxBuffer();
@@ -75,7 +74,7 @@ public:
 
     static constexpr uint16_t Sample_Rate = 16'000; // 16khz
 
-    static constexpr uint16_t Audio_Buffer_Sz = 320;
+    static constexpr uint16_t Audio_Buffer_Sz = 640;
     static constexpr uint16_t Audio_Buffer_Sz_2 = Audio_Buffer_Sz / 2;
 
 private:
@@ -116,7 +115,7 @@ private:
     uint16_t* tx_ptr;
     uint16_t rx_buffer[Audio_Buffer_Sz];
     uint16_t* rx_ptr;
-    uint8_t byte_buff[Audio_Buffer_Sz_2];
+    uint32_t buff_mod;
 
     uint16_t flags = 0x00;
 
