@@ -20,10 +20,11 @@ public:
 
     void StartReceive();
     void Reset();
-    void ReadSerial(uint8_t* data, const size_t size, const size_t num_bytes);
-    void ReadSerial(uint8_t** data, size_t& num_bytes);
+    uint8_t Read();
+    void Read(uint8_t* data, const size_t size, const size_t num_bytes);
+    void Read(uint8_t** data, size_t& num_bytes);
     void UpdateReadHead(size_t amt);
-    void WriteSerial(const uint8_t* data, const size_t size);
+    void Write(const uint8_t* data, const size_t size);
     size_t Unread();
 
     void RxEvent(const uint16_t idx);
@@ -31,7 +32,7 @@ public:
     void Free();
 
 protected:
-    static constexpr size_t Rx_Buff_Sz = 1024;
+    static constexpr size_t Rx_Buff_Sz = 2048;
 
     UART_HandleTypeDef* uart;
     volatile bool tx_is_free;

@@ -45,8 +45,7 @@ public:
     bool TxBufferReady();
     bool RxBufferReady();
 
-    void HalfCompleteCallback();
-    void CompleteCallback();
+    void ISRCallback();
 
     uint16_t AudioBufferSize() const;
     uint16_t AudioBufferSize_2() const;
