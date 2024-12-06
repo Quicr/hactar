@@ -20,7 +20,7 @@ FIRMWARE = ${TARGET}.bin
 # building variables
 ######################################
 # debug build?
-DEBUG = 0
+DEBUG = 1
 # optimization
 OPT = -Os
 # OPT = -O0
