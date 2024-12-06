@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "audio_codec.hh"
+#include <stdint.h>
 
 #include <map>
 
