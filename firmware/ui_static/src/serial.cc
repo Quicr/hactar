@@ -33,7 +33,17 @@ void Serial::Reset()
     StartReceive();
 }
 
-void Serial::ReadSerial(uint8_t* data, const size_t size, const size_t num_bytes)
+uint8_t Serial::Read()
+{
+    if (read_idx >= Rx_Buff_Sz)
+    {
+        read_idx = 0;
+    }
+
+    return rx_buff[read_idx++];
+}
+
+void Serial::Read(uint8_t* data, const size_t size, const size_t num_bytes)
 {
     const size_t sz = size < num_bytes ? size : num_bytes;
     const size_t bytes = Rx_Buff_Sz < sz ? Rx_Buff_Sz : sz;
@@ -42,8 +52,7 @@ void Serial::ReadSerial(uint8_t* data, const size_t size, const size_t num_bytes
     size_t remaining_bytes = total_bytes;
     size_t idx = 0;
 
-    // Better to check once than in the loop
-    if (read_idx + remaining_bytes > Rx_Buff_Sz)
+    if (read_idx + remaining_bytes >= Rx_Buff_Sz)
     {
         const uint16_t read_space = Rx_Buff_Sz - read_idx;
         const uint16_t bytes = read_space < remaining_bytes ? read_space : remaining_bytes;
@@ -60,7 +69,7 @@ void Serial::ReadSerial(uint8_t* data, const size_t size, const size_t num_bytes
     unread -= total_bytes;
 }
 
-void Serial::ReadSerial(uint8_t** data, size_t& num_bytes)
+void Serial::Read(uint8_t** data, size_t& num_bytes)
 {
     const size_t remaining_space = Rx_Buff_Sz - read_idx;
     num_bytes = remaining_space < num_bytes ? remaining_space : num_bytes;
@@ -81,7 +90,7 @@ void Serial::ReadSerial(uint8_t** data, size_t& num_bytes)
     }
 }
 
-void Serial::WriteSerial(const uint8_t* data, const size_t size)
+void Serial::Write(const uint8_t* data, const size_t size)
 {
     if (uart->gState != HAL_UART_STATE_READY)
     {

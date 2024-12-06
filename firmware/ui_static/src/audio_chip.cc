@@ -1,4 +1,5 @@
 #include "audio_chip.hh"
+#include "audio_codec.hh"
 
 #include "main.h"
 
@@ -16,9 +17,9 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     i2s(&hi2s),
     i2c(&hi2c),
     tx_buffer{ 0 },
-    tx_ptr{tx_buffer},
+    tx_ptr{ tx_buffer },
     rx_buffer{ 0 },
-    rx_ptr{rx_buffer},
+    rx_ptr{ rx_buffer },
     buff_mod(0)
 {
 }
@@ -87,6 +88,9 @@ void AudioChip::Init()
     SetRegister(0x02, 0b1'0111'1111);
     SetRegister(0x03, 0b1'0111'1111);
 
+    // Enable mono mixer
+    SetBit(0x17, 4, 1);
+
     // Enable the outputs
     SetRegister(0x31, 0b0'0111'0111);
 
@@ -118,9 +122,6 @@ void AudioChip::Init()
 
     // SetRegister(0x1D, 0b0'0100'0000);
 
-    // FIXME makes it sound like crap
-    // Enable mono mixer
-    // SetBit(0x1A, 1, 1);
 
     UnmuteMic();
 }
@@ -380,62 +381,35 @@ const uint16_t* AudioChip::RxBuffer()
     return rx_ptr;
 }
 
-void AudioChip::HalfCompleteCallback()
+uint8_t buff[AudioChip::Audio_Buffer_Sz_2] = {0};
+void AudioChip::ISRCallback()
 {
     // SampleSineWave(rx_buffer, Audio_Buffer_Sz_2, 0,
     //     1000, 440, phase, false);
 
-    // Copy the mic data to the speakers
+
+    const uint16_t offset = buff_mod * Audio_Buffer_Sz_2;
+    tx_ptr = tx_buffer + offset;
+    rx_ptr = rx_buffer + offset;
+    buff_mod = !buff_mod;
+
     if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET)
     {
-        for (uint16_t i = 0; i < Audio_Buffer_Sz_2; i+=2)
-        {
-            tx_buffer[i] = rx_buffer[i] + 5000;
-            tx_buffer[i+1] = rx_buffer[i+1] + 5000;
-        }
+        AudioCodec::ALawCompand(rx_ptr, buff, Audio_Buffer_Sz_2);
+        AudioCodec::ALawExpand(buff, tx_ptr, Audio_Buffer_Sz_2);
+        // for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
+        // {
+        //     tx_ptr[i] = rx_ptr[i];
+        // }
     }
     else
     {
-        // Clear the first half of the buffer
+        // Clear the transmission buffer
         for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
         {
-            tx_buffer[i] = 0;
+            tx_ptr[i] = 0;
         }
     }
-
-
-    tx_ptr = tx_buffer;
-    rx_ptr = rx_buffer;
-
-    RaiseFlag(AudioFlag::Rx_Ready);
-    RaiseFlag(AudioFlag::Tx_Ready);
-}
-
-void AudioChip::CompleteCallback()
-{
-    // SampleSineWave(rx_buffer, Audio_Buffer_Sz_2, Audio_Buffer_Sz_2,
-    //     1000, 440, phase, false);
-
-    // Copy the mic data to the speakers
-    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET)
-    {
-        for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; i+=2)
-        {
-            tx_buffer[i] = rx_buffer[i] + 5000;
-            tx_buffer[i+1] = rx_buffer[i+1] + 5000;
-        }
-    }
-    else
-    {
-        // Clear the second half of the buffer
-        for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; ++i)
-        {
-            tx_buffer[i] = 0;
-        }
-    }
-
-    tx_ptr = tx_buffer + Audio_Buffer_Sz_2;
-    rx_ptr = rx_buffer + Audio_Buffer_Sz_2;
 
     RaiseFlag(AudioFlag::Rx_Ready);
     RaiseFlag(AudioFlag::Tx_Ready);

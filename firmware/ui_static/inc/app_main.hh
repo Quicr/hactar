@@ -45,6 +45,10 @@ enum Timer_Flags
 
 int app_main();
 
+inline void LEDR(GPIO_PinState r);
+inline void LEDG(GPIO_PinState g);
+inline void LEDB(GPIO_PinState b);
+inline void LEDS(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
 inline void RaiseFlag(Timer_Flags flag);
 inline void LowerFlag(Timer_Flags flag);
 inline void LowPowerMode();

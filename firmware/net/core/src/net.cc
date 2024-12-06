@@ -14,6 +14,7 @@
 #include "driver/uart.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
+#include "driver/ledc.h"
 
 #include "net_pins.hh"
 #include "serial_esp.hh"
@@ -25,10 +26,19 @@
 // #include "qsession.hh"
 // #include "logger.hh"
 
+
+constexpr ledc_timer_t ledc_timer = LEDC_TIMER_0;
+constexpr ledc_mode_t ledc_mode = LEDC_LOW_SPEED_MODE;
+constexpr int ledc_io = NET_LED_R;
+constexpr ledc_channel_t ledc_channel = LEDC_CHANNEL_0;
+constexpr ledc_timer_bit_t ledc_duty_res = LEDC_TIMER_8_BIT;
+constexpr int ledc_duty = 255;
+constexpr int ledc_freq = 8000;
+
 bool ui_chip_ready = false;
 
 constexpr uint32_t Tx_Buff_Size = 1024;
-constexpr uint32_t Tx_Buff_Size_2 = Tx_Buff_Size/2;
+constexpr uint32_t Tx_Buff_Size_2 = Tx_Buff_Size / 2;
 constexpr uint32_t Rx_Buff_Size = 1024;
 
 const size_t audio_sz = 355;
@@ -59,7 +69,7 @@ static void SerialWriteTask(void* param)
         if (tx_data_ready)
         {
             uint16_t offset = tx_read_mod * Tx_Buff_Size_2;
-            uart_write_bytes(UART1, tx_buff+offset, num_to_send);
+            uart_write_bytes(UART1, tx_buff + offset, num_to_send);
             tx_data_ready = false;
 
             ++num_write;
@@ -79,7 +89,7 @@ static void SerialWriteTask(void* param)
         }
         else
         {
-            vTaskDelay(2 / portTICK_PERIOD_MS);
+            vTaskDelay(10 / portTICK_PERIOD_MS);
         }
     }
 }
@@ -147,10 +157,10 @@ static void SerialReadTask(void* param)
                         partial_packet = true;
 
                         // Get the length
-                        packet_len = static_cast<uint16_t>(data[idx+0]) << 8 | data[idx+1];
+                        packet_len = static_cast<uint16_t>(data[idx + 0]) << 8 | data[idx + 1];
 
                         // Get the type
-                        packet_type = data[idx+2];
+                        packet_type = data[idx + 2];
                         // idx = 2;
 
                         // ESP_LOGI("uart rx", "packet len: %u type: %d", packet_len, (int)packet_type);
@@ -182,15 +192,15 @@ static void SerialReadTask(void* param)
                             case 2:
                             {
 
-                                int tx_read_offset = tx_read_mod * Tx_Buff_Size_2;
+                                int tx_write_offset = tx_write_mod * Tx_Buff_Size_2;
 
                                 // Audio copy to the tx buffer
                                 for (int i = 0; i < audio_sz; ++i)
                                 {
-                                    tx_buff[tx_read_offset+i] = rx_buff[i];
+                                    tx_buff[tx_write_offset + i] = rx_buff[i];
                                 }
 
-                                tx_read_mod = !tx_read_mod;
+                                tx_write_mod = !tx_write_mod;
                                 num_to_send = audio_sz;
                                 tx_data_ready = true;
                                 ++num_recv;
@@ -227,18 +237,24 @@ static void SerialReadTask(void* param)
             {
 
                 printf("UART Parity Error!\n");
+                uart_flush_input(UART1); // Flush the input to recover
+                xQueueReset(uart_queue);   // Reset the event queue
                 break;
             }
             case UART_FRAME_ERR: // Frame error
             {
 
                 printf("UART Frame Error!\n");
+                uart_flush_input(UART1); // Flush the input to recover
+                xQueueReset(uart_queue);   // Reset the event queue
                 break;
             }
             default:
             {
 
                 printf("Unhandled UART event type: %d\n", event.type);
+                uart_flush_input(UART1); // Flush the input to recover
+                xQueueReset(uart_queue);   // Reset the event queue
                 break;
             }
 
@@ -251,15 +267,12 @@ extern "C" void app_main(void)
     SetupPins();
     SetupComponents();
 
-    gpio_set_level(NET_LED_R, 1);
+    // gpio_set_level(NET_LED_R, 1);
     gpio_set_level(NET_LED_G, 1);
     gpio_set_level(NET_LED_B, 1);
     gpio_set_level(NET_DEBUG_1, 0);
     gpio_set_level(NET_DEBUG_2, 0);
     gpio_set_level(NET_DEBUG_3, 0);
-
-    int next = 0;
-    gpio_set_level(NET_LED_R, 0);
 
     // Ready for normal operations
     gpio_set_level(NET_STAT, 1);
@@ -268,8 +281,7 @@ extern "C" void app_main(void)
     uint32_t blink_cnt = 0;
     while (1)
     {
-        gpio_set_level(NET_LED_R, next);
-        next = next ? 0 : 1;
+
 
         // manager->Update();
 
@@ -327,6 +339,32 @@ static void SetupPins()
     // uart_intr_config_t uart1_intr = {
     //     .intr_enable_mask
     // }
+
+        // Prepare and then apply the LEDC PWM timer configuration
+    ledc_timer_config_t ledc_timer_c = {
+        .speed_mode = ledc_mode,
+        .duty_resolution = ledc_duty_res,
+        .timer_num = ledc_timer,
+        .freq_hz = ledc_freq,  // Set output frequency at 4 kHz
+        .clk_cfg = LEDC_AUTO_CLK
+    };
+    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer_c));
+
+    // Prepare and then apply the LEDC PWM channel configuration
+    ledc_channel_config_t ledc_channel_c = {
+        .gpio_num = ledc_io,
+        .speed_mode = ledc_mode,
+        .channel = ledc_channel,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = ledc_timer,
+        .duty = 0, // Set duty to 0%
+        .hpoint = 0
+    };
+    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_c));
+    // Set duty to 50%
+    ESP_ERROR_CHECK(ledc_set_duty(ledc_mode, ledc_channel, ledc_duty));
+    // Update duty to apply the new value
+    ESP_ERROR_CHECK(ledc_update_duty(ledc_mode, ledc_channel));
 
     // Setup serial interface for ui
     esp_err_t res;
