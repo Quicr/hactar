@@ -1,6 +1,5 @@
 #pragma once
 
-#include "stm32.h"
 #include "stdint.h"
 
 enum class Fonts {

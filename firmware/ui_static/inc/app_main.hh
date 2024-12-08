@@ -32,7 +32,6 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stm32.h"
 
 typedef enum Timer_Flags
 {

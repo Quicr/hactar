@@ -60,7 +60,7 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 set(OBJECT_GEN_FLAGS "-O0 -mcpu=cortex-m4 -mthumb -fno-builtin -Wall -ffunction-sections -fdata-sections -fomit-frame-pointer -mabi=aapcs")
 
 set(CMAKE_C_FLAGS   "${OBJECT_GEN_FLAGS} -std=gnu99 " CACHE INTERNAL "C Compiler options")
-set(CMAKE_CXX_FLAGS "${OBJECT_GEN_FLAGS} -std=c++11 " CACHE INTERNAL "C++ Compiler options")
+set(CMAKE_CXX_FLAGS "${OBJECT_GEN_FLAGS} -std=c++17 " CACHE INTERNAL "C++ Compiler options")
 set(CMAKE_ASM_FLAGS "${OBJECT_GEN_FLAGS} -x assembler-with-cpp " CACHE INTERNAL "ASM Compiler options")
 
 

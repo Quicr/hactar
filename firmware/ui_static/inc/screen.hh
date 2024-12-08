@@ -1,7 +1,6 @@
 #pragma once
 
 #include "main.h"
-#include "stm32.h"
 
 #include "font.hh"
 

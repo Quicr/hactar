@@ -47,13 +47,13 @@ target_include_directories(hal
 )
 
 # STM-template-based HAL adaptation layer
-set(HAL_SOURCES
+set(HAL_ADAPTER_SOURCES
   ./Core/Src/main.c
   ./Core/Src/stm32f4xx_hal_msp.c
   ./Core/Src/stm32f4xx_it.c
   ./Core/Src/system_stm32f4xx.c
 )
-add_library(hal_adapter ${HAL_SOURCES})
+add_library(hal_adapter ${HAL_ADAPTER_SOURCES})
 target_include_directories(hal_adapter
   PRIVATE
     Drivers/STM32F4xx_HAL_Driver/Inc
@@ -64,7 +64,19 @@ target_include_directories(hal_adapter
     inc
 )
 
-# Adaptation of the HAL to our board
+# Application code
+file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc")
+add_library(app ${APP_SOURCES})
+target_include_directories(app
+  PRIVATE
+    Drivers/STM32F4xx_HAL_Driver/Inc
+    Drivers/CMSIS/Device/ST/STM32F4xx/Include
+    Drivers/CMSIS/Include
+    Core/Inc
+    inc
+    inc/fonts
+    ../shared_inc
+)
 
 
 # if(MLS_NAMESPACE_SUFFIX)
