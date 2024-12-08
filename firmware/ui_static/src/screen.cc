@@ -975,7 +975,7 @@ inline void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
 }
 
 // Non-destructive retrieval
-template<typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = 0>
+template<typename T>
 inline T Screen::PullMemoryParameter(DrawMemory& memory)
 {
     const int16_t bytes = sizeof(T);

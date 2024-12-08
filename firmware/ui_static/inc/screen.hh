@@ -254,8 +254,10 @@ private:
         const uint16_t font_height);
     static inline void PushMemoryParameter(DrawMemory& memory,
         const uint32_t val, const int16_t num_bytes);
-    template<typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = 0>
+
+    template<typename T>
     static inline T PullMemoryParameter(DrawMemory& memory);
+
     static inline void FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
         const uint16_t i, const uint16_t j, const uint8_t colour_high,
         const uint8_t colour_low) __attribute__((always_inline));
