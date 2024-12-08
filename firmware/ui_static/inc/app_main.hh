@@ -34,14 +34,14 @@ extern "C" {
 #include "main.h"
 #include "stm32.h"
 
-enum Timer_Flags
+typedef enum Timer_Flags
 {
     Audio_Interrupt = 0,
     Rx_Audio_Companded,
     Rx_Audio_Transmitted,
     Draw_Complete
 
-};
+} Timer_Flags;
 
 int app_main();
 
