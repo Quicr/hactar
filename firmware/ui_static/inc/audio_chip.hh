@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stm32.h"
+#include "stm32f4xx_hal_def.h"
 #include "stm32f4xx_hal_i2c.h"
 #include "stm32f4xx_hal_i2s.h"
 
