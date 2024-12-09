@@ -10,7 +10,7 @@ fn main() {
     println!("cargo:rustc-link-lib=static=hal");
     println!("cargo:rustc-link-lib=static=app");
 
-    // Build the startup assemby file
+    // Build the startup assembly file
     cc::Build::new()
         .file("startup_stm32f405xx.s")
         .compile("startup");
