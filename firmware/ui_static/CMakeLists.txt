@@ -12,6 +12,10 @@ add_compile_definitions("-DUSE_HAL_DRIVER -DSTM32F405xx")
 
 # STM-provided HAL
 set(HAL_SOURCES
+  ./Core/Src/main.c
+  ./Core/Src/stm32f4xx_hal_msp.c
+  ./Core/Src/stm32f4xx_it.c
+  ./Core/Src/system_stm32f4xx.c
   ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c
   ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c
   ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c
@@ -38,42 +42,41 @@ set(HAL_SOURCES
 )
 add_library(hal ${HAL_SOURCES})
 target_include_directories(hal
-  PRIVATE
+  PUBLIC 
     Drivers/STM32F4xx_HAL_Driver/Inc
-    Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
-    Drivers/CMSIS/Device/ST/STM32F4xx/Include
-    Drivers/CMSIS/Include
-    Core/Inc
-)
-
-# STM-template-based HAL adaptation layer
-set(HAL_ADAPTER_SOURCES
-  ./Core/Src/main.c
-  ./Core/Src/stm32f4xx_hal_msp.c
-  ./Core/Src/stm32f4xx_it.c
-  ./Core/Src/system_stm32f4xx.c
-)
-add_library(hal_adapter ${HAL_ADAPTER_SOURCES})
-target_include_directories(hal_adapter
-  PRIVATE
-    Drivers/STM32F4xx_HAL_Driver/Inc
-    # Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
     Drivers/CMSIS/Device/ST/STM32F4xx/Include
     Drivers/CMSIS/Include
     Core/Inc
     inc
 )
+
+# STM-template-based HAL adaptation layer
+# set(HAL_ADAPTER_SOURCES
+#   ./Core/Src/main.c
+#   ./Core/Src/stm32f4xx_hal_msp.c
+#   ./Core/Src/stm32f4xx_it.c
+#   ./Core/Src/system_stm32f4xx.c
+# )
+# add_library(hal_adapter ${HAL_ADAPTER_SOURCES})
+# target_link_libraries(hal_adapter hal)
+# target_include_directories(hal_adapter
+#   PUBLIC
+#     inc
+# )
 
 # Application code
 file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc")
 add_library(app ${APP_SOURCES})
+target_link_libraries(app hal)
 target_include_directories(app
-  PRIVATE
-    Drivers/STM32F4xx_HAL_Driver/Inc
-    Drivers/CMSIS/Device/ST/STM32F4xx/Include
-    Drivers/CMSIS/Include
-    Core/Inc
-    inc
+  PUBLIC
     inc/fonts
     ../shared_inc
 )
+
+# The executable
+add_executable(ui_static startup_stm32f405xx.s)
+target_link_libraries(ui_static hal app)
+
+# Install the libraries for consumption by Rust
+install(TARGETS hal app)
