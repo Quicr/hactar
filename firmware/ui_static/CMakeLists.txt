@@ -2,13 +2,14 @@ cmake_minimum_required(VERSION 3.13)
 
 # CMAKE_TOOLCHAIN_FILE=toolchain.cmake cmake -B build
 
-project(hactar_ui
+project(ui_static
   VERSION 0.1
   LANGUAGES C CXX
 )
 
 # Global compiler config
 add_compile_definitions("-DUSE_HAL_DRIVER -DSTM32F405xx")
+set(OBJCOPY "${TOOLCHAIN_BIN_DIR}/arm-none-eabi-objcopy")
 
 # STM-provided HAL
 set(HAL_SOURCES
@@ -50,20 +51,6 @@ target_include_directories(hal
     inc
 )
 
-# STM-template-based HAL adaptation layer
-# set(HAL_ADAPTER_SOURCES
-#   ./Core/Src/main.c
-#   ./Core/Src/stm32f4xx_hal_msp.c
-#   ./Core/Src/stm32f4xx_it.c
-#   ./Core/Src/system_stm32f4xx.c
-# )
-# add_library(hal_adapter ${HAL_ADAPTER_SOURCES})
-# target_link_libraries(hal_adapter hal)
-# target_include_directories(hal_adapter
-#   PUBLIC
-#     inc
-# )
-
 # Application code
 file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc")
 add_library(app ${APP_SOURCES})
@@ -75,8 +62,18 @@ target_include_directories(app
 )
 
 # The executable
-add_executable(ui_static startup_stm32f405xx.s)
-target_link_libraries(ui_static hal app)
+set(FIRMWARE "${CMAKE_PROJECT_NAME}.elf")
+add_executable(${FIRMWARE} startup_stm32f405xx.s)
+target_link_libraries(${FIRMWARE} hal app)
 
 # Install the libraries for consumption by Rust
 install(TARGETS hal app)
+
+# Upload to the device
+set(WRITE_START "0x08000000")
+set(PORT "/dev/tty.usbserial-110")
+set(BAUD 115200)
+add_custom_target(upload
+  COMMAND 
+  STM32_Programmer_CLI -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${CMAKE_CURRENT_BINARY_DIR}/${FIRMWARE} ${WRITE_START} -v -g)
+add_dependencies(upload ${FIRMWARE})
