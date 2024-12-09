@@ -31,7 +31,7 @@ inline uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
     uint16_t sign = 0;
 
     // Get the sign
-    if (sample > 0)
+    if (sample >= 0)
     {
         // Sample is positive
         // put the sign in the 8th bit
@@ -44,14 +44,11 @@ inline uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
         sample = -sample;
     }
 
-    // Clip the sample to 12 bits
-    if (sample > 0x7FF8)
-    {
-        sample = 0x7FF8;
-    }
+    // Clip the sample to 13 bits
+    // sample >>= 3;
 
+    // Find the first bit set in our 13 bits
     int i = 0;
-    // Find the first bit set in our 12 bits
     for (; i < 7; ++i)
     {
         if ((sample << i) & 0x4000)
@@ -59,22 +56,23 @@ inline uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
             break;
         }
     }
+
     exponent = 7 - i;
+
 
     // Get our mantissa (abcd)
     if (exponent == 0)
     {
-        mantissa = (sample >> 1) & 0x78;
+        mantissa = (sample >> 4) & 0x0F;
     }
     else
     {
-        mantissa = (sample >> exponent) & 0x78;
+        mantissa = (sample >> exponent+3) & 0x0F;
         // Shift the exponent to the front of output since the last 4 bits are
         // for our bit values
         exponent <<= 4;
     }
 
-    mantissa >>= 3;
 
     // Put together and xor by 0x55;
     return (sign + exponent + mantissa) ^ 0x55;
@@ -101,14 +99,12 @@ inline uint16_t AudioCodec::ALawExpand(uint8_t sample)
     // Some spooky m̸̹̫̅͑́a̷̺̪͑̔g̷̛͈̩̪͋͗ī̴̹c̷̲͔̈̓ ȃ̵̘͙d̶̮͘d̵̮͐͠i̷͇̔t̵̡͌̀ͅì̸̥̊o̸͈̬̾̈́n̵̤̤̈́ here that is not explained anywhere
     if (exponent == 0)
     {
-        mantissa += 0x0001;
+        mantissa = (mantissa + 0x0001) << 2;
     }
     else
     {
-        mantissa = (mantissa + 0x0021) << (exponent - 1);
+        mantissa = (mantissa + 0x0021) << (exponent + 1);
     }
-
-    mantissa <<= 2;
 
     if (sign)
     {
