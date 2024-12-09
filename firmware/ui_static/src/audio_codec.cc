@@ -45,16 +45,16 @@ inline uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
     }
 
     // Clip the sample to 12 bits
-    if (sample > 0x0FFF)
+    if (sample > 0x7FF8)
     {
-        sample = 0x0FFF;
+        sample = 0x7FF8;
     }
 
     int i = 0;
     // Find the first bit set in our 12 bits
     for (; i < 7; ++i)
     {
-        if ((sample << i) & 0x0800)
+        if ((sample << i) & 0x4000)
         {
             break;
         }
@@ -64,15 +64,17 @@ inline uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
     // Get our mantissa (abcd)
     if (exponent == 0)
     {
-        mantissa = (sample >> 1) & 0x0F;
+        mantissa = (sample >> 1) & 0x78;
     }
     else
     {
-        mantissa = (sample >> exponent) & 0x0F;
+        mantissa = (sample >> exponent) & 0x78;
         // Shift the exponent to the front of output since the last 4 bits are
         // for our bit values
         exponent <<= 4;
     }
+
+    mantissa >>= 3;
 
     // Put together and xor by 0x55;
     return (sign + exponent + mantissa) ^ 0x55;
@@ -105,6 +107,8 @@ inline uint16_t AudioCodec::ALawExpand(uint8_t sample)
     {
         mantissa = (mantissa + 0x0021) << (exponent - 1);
     }
+
+    mantissa <<= 2;
 
     if (sign)
     {
