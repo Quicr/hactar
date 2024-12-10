@@ -96,7 +96,7 @@ static void MX_TIM3_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
-int main(void)
+int stm32_main(void)
 {
   /* USER CODE BEGIN 1 */
 
