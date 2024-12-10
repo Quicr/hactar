@@ -94,13 +94,9 @@ LoopFillZerobss:
 /* Call the clock system initialization function.*/
   bl  SystemInit
 /* Call static constructors */
-		/* XXX(RLB) According to an ST forum thread [1], this is an artifact of the GCC runtime.
-		 * Let's assume for now that it isn't required.
-		 *
-		 * [1] https://community.st.com/t5/stm32cubeide-mcus/the-mysterious-libc-init-array-in-cube-ide-is-it-only-for-c/td-p/652829
-    /* bl __libc_init_array */
+    bl __libc_init_array
 /* Call the application's entry point.*/
-  bl  rs_main
+  bl  main
   bx  lr
 .size  Reset_Handler, .-Reset_Handler
 
