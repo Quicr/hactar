@@ -1,4 +1,4 @@
-# Build the application's C++ code
+# Build the application C++ code
 add_compile_definitions(-DUSE_HAL_DRIVER -DSTM32F405xx)
 add_compile_options(
   -mcpu=cortex-m4
