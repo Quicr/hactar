@@ -1,7 +1,7 @@
 set(HAL_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/main.c
   ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/stm32f4xx_hal_msp.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/stm32f4xx_it.c
+  # ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/stm32f4xx_it.c
   ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/system_stm32f4xx.c
   ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c
   ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c
