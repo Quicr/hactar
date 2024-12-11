@@ -1,0 +1,105 @@
+use std::{env, path::PathBuf};
+
+fn main() {
+    // Compile the things that can be in a library into a library
+    let hal_files = [
+        // Base HAL
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rng.c",
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.c",
+        // HAL adaptation
+        "../../ui_static/Core/Src/main.c",
+        "../../ui_static/Core/Src/system_stm32f4xx.c",
+        // Application
+        /*
+        "../../ui_static/src/audio_codec.cc",
+        "../../ui_static/src/app_main.cc",
+        "../../ui_static/src/audio_chip.cc",
+        "../../ui_static/src/serial.cc",
+        "../../ui_static/src/fib.cc",
+        "../../ui_static/src/screen.cc",
+        "../../ui_static/src/fonts/font_6x8.cc",
+        "../../ui_static/src/fonts/font_7x12.cc",
+        "../../ui_static/src/fonts/font_5x8.cc",
+        "../../ui_static/src/fonts/font_11x16.cc",
+        */
+    ];
+
+    let include_dirs = [
+        "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Inc",
+        "../../ui_static/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
+        "../../ui_static/Drivers/CMSIS/Include",
+        "../../ui_static/Core/Inc",
+        "../../ui_static/inc",
+        "../../ui_static/inc/fonts",
+        "../../ui_static/../shared_inc",
+    ];
+
+    cc::Build::new()
+        .cpp(true)
+        .define("USE_HAL_DRIVER", None)
+        .define("STM32F405xx", None)
+        .includes(include_dirs)
+        .files(hal_files)
+        .compile("hal");
+
+    // Compile the things that have to be object files into object files
+    let direct_files = ["../../ui_static/Core/Src/stm32f4xx_hal_msp.c"];
+
+    let object_files = cc::Build::new()
+        .define("USE_HAL_DRIVER", None)
+        .define("STM32F405xx", None)
+        .includes(include_dirs)
+        .files(direct_files)
+        .compile_intermediates();
+
+    // Move the files to a predictable location
+    let output_dir = get_output_path();
+    for object in object_files {
+        // The file name is something like <hash>-<actual-filename>.o
+        let file_name = object.file_name().unwrap().to_str().unwrap().to_owned();
+        let (_, file_name) = file_name.split_once("-").unwrap();
+
+        std::fs::copy(object, output_dir.join(file_name)).unwrap();
+    }
+}
+
+// Ascend until we get to a `build` directory, and then one further, e.g.:
+//
+// In: target/thumbv7em-none-eabihf/debug/build/ui_rs-89af71c117ed0a82/out
+// Out: target/thumbv7em-none-eabihf/debug/
+fn get_output_path() -> PathBuf {
+    let mut out = PathBuf::from(env::var("OUT_DIR").unwrap());
+
+    loop {
+        match out.file_name() {
+            Some(name) if name == "build" => {
+                break;
+            }
+            _ => out = out.parent().unwrap().to_path_buf(),
+        }
+    }
+
+    out.parent().unwrap().to_path_buf()
+}
