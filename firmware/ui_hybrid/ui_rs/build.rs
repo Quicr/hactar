@@ -1,7 +1,9 @@
 use std::{env, path::PathBuf};
 
 fn main() {
-    // Compile the things that can be in a library into a library
+    // Compile the things that can be in a library into a library.  This will also cause them to
+    // get included in the output library of this application, so that they are available to
+    // downstream consumers.
     let hal_files = [
         // Base HAL
         "../../ui_static/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c",
@@ -31,19 +33,6 @@ fn main() {
         // HAL adaptation
         "../../ui_static/Core/Src/main.c",
         "../../ui_static/Core/Src/system_stm32f4xx.c",
-        // Application
-        /*
-        "../../ui_static/src/audio_codec.cc",
-        "../../ui_static/src/app_main.cc",
-        "../../ui_static/src/audio_chip.cc",
-        "../../ui_static/src/serial.cc",
-        "../../ui_static/src/fib.cc",
-        "../../ui_static/src/screen.cc",
-        "../../ui_static/src/fonts/font_6x8.cc",
-        "../../ui_static/src/fonts/font_7x12.cc",
-        "../../ui_static/src/fonts/font_5x8.cc",
-        "../../ui_static/src/fonts/font_11x16.cc",
-        */
     ];
 
     let include_dirs = [
@@ -74,7 +63,7 @@ fn main() {
         .files(direct_files)
         .compile_intermediates();
 
-    // Move the files to a predictable location
+    // Move the object files to a predictable location
     let output_dir = get_output_path();
     for object in object_files {
         // The file name is something like <hash>-<actual-filename>.o

@@ -14,15 +14,32 @@ convenience Makefile to streamline common operations:
 
 The firmware is pieced together from the following components:
 
-* `hal` (static library, C): The STM-provided HAL files
-* `hal_adapter` (object files, C): Source files created from STM-provided
-  templates that instantiate our device.
+* `hal` (static library, C): The STM-provided HAL files, and source files
+  created from STM-provided templates that instantiate our device.
 * `app` (static library, C++): Our application code
 * `ui_rs` (static library, Rust): Rust code
 * `startup` (object file, ASM): STM-provided initialization logic
 
-The C and ASM libraries are built via CMake; the Rust library is built by Cargo,
-and the final ELF file is built from CMake.
+The C and Rust libraries are built via Cargo.  The C++ library and the final ELF
+file are built via CMake
+
+```
+Drivers/**/*.c ---+
+                  |
+                  +---> build.rs --+
+                  |                |
+Core/Src/*.c -----+                |
+                                   |
+                                   +---> cargo --+
+                                   |             |
+src/*.rs --------------------------+             |
+                                                 |
+src/**/*.cc -----------> cmake ------------------+
+                                                 |
+                                                 +--> cmake --> ui_hybrid.elf
+                                                 |
+startup_stm32f405xx.s ---------------------------+
+```
 
 Currently, Rust provides an `rs_main` method and it takes over the interrupt
 handlers that were formerly in `stm32f4xx_it.c`.  The startup logic sets the
@@ -30,3 +47,35 @@ handlers that were formerly in `stm32f4xx_it.c`.  The startup logic sets the
 calls the existing `main` function in `main.c`.  The interrupt handlers have
 exactly the same code as the C ones, just translated 1:1 to Rust.
 
+## Why so complicated?
+
+The above scheme is more complicated than one might like.  Ideally, we could
+build any required C/C++ in a `build.rs` build script, and have cargo assemble
+an ELF file from that plus the relevant Rust code, something like:
+
+```
+Drivers/**/*.c ---+
+                  |
+Core/Src/*.c -----+---> build.rs --+
+                  |                |
+src/**/*.cc ------+                +---> cargo --> ui_hybrid.elf
+                                   |
+src/*.rs --------------------------+
+```
+
+There are two problems preventing this more elegant solution:
+
+1. The entry point and interrupt handlers are set in the `startup_stm32f405xx.s`
+   ASM file, and it won't link properly in this scheme.  Anything that builds
+   via `build.rs` is input to the final `cargo` build process as a library,
+   and since the startup ASM defines the entry point, if it's in a library,
+   no code gets emitted at all (!)
+
+2. Since that problem causes the final assembly to be done separately from the
+   Cargo build, and C++ is so fragile, there are linking issues if Cargo builds
+   the C++ and CMake links it.
+
+The way out of this seems to be to solve the startup problem.  To do this, we
+will probably need to employ one of the several Rust embedded frameworks out
+there.  But since that might involve some experimentation and re-architecting,
+we might need to stick with the more complicated solution for a little while.
