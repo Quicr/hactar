@@ -31,5 +31,5 @@ private:
     RingBuffer<unsigned char> rx_ring;
     bool tx_free;
 
-    QueueHandle_t uart_queue;
+    QueueHandle_t queue;
 };
