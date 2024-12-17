@@ -13,11 +13,11 @@ SerialEsp::SerialEsp(uart_port_t uart,
     uart(uart),
     rx_ring(ring_buff_size),
     tx_free(true),
-    uart_queue(nullptr)
+    queue(nullptr)
 {
     esp_err_t res;
     // NOTE rx buff is MINIMUM 128
-    // res = uart_driver_install(uart, BUFFER_SIZE * 4, BUFFER_SIZE * 4, 20, &uart_queue, 0);
+    // res = uart_driver_install(uart, BUFFER_SIZE * 4, BUFFER_SIZE * 4, 20, &queue, 0);
     // printf("install res=%d\n", res);
     // res = uart_set_pin(uart, tx_pin, rx_pin, rts_pin, cts_pin);
     // printf("uart set pin res=%d\n", res);
@@ -77,7 +77,7 @@ void SerialEsp::RxEvent(void* parameter)
 
     while (true)
     {
-        if (!xQueueReceive(serial->uart_queue, (void*)&event, 1 / portTICK_PERIOD_MS))
+        if (!xQueueReceive(serial->queue, (void*)&event, 1 / portTICK_PERIOD_MS))
         {
             continue;
         }

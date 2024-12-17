@@ -11,43 +11,22 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "driver/uart.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
-#include "driver/ledc.h"
 
-#include "net_pins.hh"
-#include "serial_esp.hh"
-#include "serial_packet_manager.hh"
-// #include "net_manager.hh"
-
-// #include "wifi.hh"
-
-// #include "qsession.hh"
-// #include "logger.hh"
-
-
-constexpr ledc_timer_t ledc_timer = LEDC_TIMER_0;
-constexpr ledc_mode_t ledc_mode = LEDC_LOW_SPEED_MODE;
-constexpr int ledc_io = NET_LED_R;
-constexpr ledc_channel_t ledc_channel = LEDC_CHANNEL_0;
-constexpr ledc_timer_bit_t ledc_duty_res = LEDC_TIMER_8_BIT;
-constexpr int ledc_duty = 255;
-constexpr int ledc_freq = 8000;
+#include "peripherals.hh"
+#include "serial.hh"
 
 bool ui_chip_ready = false;
 
-constexpr uint32_t Tx_Buff_Size = 1024;
-constexpr uint32_t Tx_Buff_Size_2 = Tx_Buff_Size / 2;
-constexpr uint32_t Rx_Buff_Size = 1024;
-
 const size_t audio_sz = 355;
-uint8_t tx_buff[Tx_Buff_Size] = { 0 };
+uint8_t tx_buff[TX_BUFF_SIZE] = { 0 };
 size_t tx_write_mod = 0;
 size_t tx_read_mod = 0;
-uint8_t rx_buff[Rx_Buff_Size] = { 0 };
+uint8_t rx_buff[RX_BUFF_SIZE] = { 0 };
 
-constexpr uint32_t Event_Queue_Size = 20;
 
 bool tx_data_ready = false;
 uint32_t num_to_send = 0;
@@ -58,9 +37,6 @@ bool synced = true;
 
 QueueHandle_t uart_queue;
 
-
-// TODO try to do a version without two tasks
-
 static void SerialWriteTask(void* param)
 {
     int next = 0;
@@ -68,7 +44,7 @@ static void SerialWriteTask(void* param)
     {
         if (tx_data_ready)
         {
-            uint16_t offset = tx_read_mod * Tx_Buff_Size_2;
+            uint16_t offset = tx_read_mod * TX_BUFF_SIZE_2;
             uart_write_bytes(UART1, tx_buff + offset, num_to_send);
             tx_data_ready = false;
 
@@ -93,7 +69,6 @@ static void SerialWriteTask(void* param)
         }
     }
 }
-
 static void SerialReadTask(void* param)
 {
     uart_event_t event;
@@ -192,7 +167,7 @@ static void SerialReadTask(void* param)
                             case 2:
                             {
 
-                                int tx_write_offset = tx_write_mod * Tx_Buff_Size_2;
+                                int tx_write_offset = tx_write_mod * TX_BUFF_SIZE_2;
 
                                 // Audio copy to the tx buffer
                                 for (int i = 0; i < audio_sz; ++i)
@@ -264,10 +239,29 @@ static void SerialReadTask(void* param)
 
 extern "C" void app_main(void)
 {
-    SetupPins();
-    SetupComponents();
+    InitializeGPIO();
+    IntitializeLEDs();
+    // Not using for now
+    // IntitializePWM();
 
-    // gpio_set_level(NET_LED_R, 1);
+
+    // Configure the uart
+    uart_config_t uart1_config = {
+        .baud_rate = 921600,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_EVEN,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_DISABLE,
+        .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
+    };
+
+    InitializeQueuedUART(uart1_config, UART1, uart_queue,
+        RX_BUFF_SIZE, TX_BUFF_SIZE,
+        EVENT_QUEUE_SIZE, TX_PIN, RX_PIN,
+        RTS_PIN, CTS_PIN, ESP_INTR_FLAG_LOWMED);
+
+    gpio_set_level(NET_LED_R, 1);
     gpio_set_level(NET_LED_G, 1);
     gpio_set_level(NET_LED_B, 1);
     gpio_set_level(NET_DEBUG_1, 0);
@@ -276,6 +270,8 @@ extern "C" void app_main(void)
 
     // Ready for normal operations
     gpio_set_level(NET_STAT, 1);
+
+    Serial ui_layer(UART1,  uart_queue, 4096, 4096, 1024, 1024);
 
     // This is the lazy way of doing it, otherwise we should use a esp_timer.
     uint32_t blink_cnt = 0;
@@ -297,101 +293,10 @@ extern "C" void app_main(void)
     }
 }
 
-static void SetupPins()
-{
-    gpio_config_t io_conf = {};
-    io_conf.intr_type = GPIO_INTR_DISABLE;
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = NET_STAT_MASK;
-    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
-    gpio_config(&io_conf);
-
-    gpio_set_level(NET_STAT, 0);
-
-    // LED init
-    io_conf.intr_type = GPIO_INTR_DISABLE;
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = LED_MASK;
-    io_conf.pull_down_en = (gpio_pulldown_t)0;
-    io_conf.pull_up_en = (gpio_pullup_t)0;
-    gpio_config(&io_conf);
-
-    // Debug init
-    io_conf.intr_type = GPIO_INTR_DISABLE;
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = NET_DEBUG_MASK;
-    io_conf.pull_down_en = (gpio_pulldown_t)0;
-    io_conf.pull_up_en = (gpio_pullup_t)0;
-    gpio_config(&io_conf);
-
-    // Configure the uart
-    uart_config_t uart1_config = {
-        .baud_rate = 921600,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_EVEN,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_DISABLE,
-        .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
-    };
-
-    // uart_intr_config_t uart1_intr = {
-    //     .intr_enable_mask
-    // }
-
-        // Prepare and then apply the LEDC PWM timer configuration
-    ledc_timer_config_t ledc_timer_c = {
-        .speed_mode = ledc_mode,
-        .duty_resolution = ledc_duty_res,
-        .timer_num = ledc_timer,
-        .freq_hz = ledc_freq,  // Set output frequency at 4 kHz
-        .clk_cfg = LEDC_AUTO_CLK
-    };
-    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer_c));
-
-    // Prepare and then apply the LEDC PWM channel configuration
-    ledc_channel_config_t ledc_channel_c = {
-        .gpio_num = ledc_io,
-        .speed_mode = ledc_mode,
-        .channel = ledc_channel,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = ledc_timer,
-        .duty = 0, // Set duty to 0%
-        .hpoint = 0
-    };
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_c));
-    // Set duty to 50%
-    ESP_ERROR_CHECK(ledc_set_duty(ledc_mode, ledc_channel, ledc_duty));
-    // Update duty to apply the new value
-    ESP_ERROR_CHECK(ledc_update_duty(ledc_mode, ledc_channel));
-
-    // Setup serial interface for ui
-    esp_err_t res;
-    res = uart_driver_install(UART1, Rx_Buff_Size, Tx_Buff_Size, Event_Queue_Size, &uart_queue, ESP_INTR_FLAG_LOWMED);
-    printf("install res=%d\n", res);
-
-    res = uart_set_pin(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-    printf("uart set pin res=%d\n", res);
-
-    res = uart_param_config(UART1, &uart1_config);
-    printf("install res=%d\n", res);
-
-    ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart1_config, 4096 * 2);
-
-    Logger::Log(Logger::Level::Info, "Pin setup complete");
-}
-
 void SetupComponents()
 {
-    // UART to the ui
-    ui_layer = new SerialPacketManager(ui_uart1);
-
-    xTaskCreate(SerialReadTask, "serial_read_task", 4096, NULL, 1, NULL);
 
 
-    // Once ui is ready then we can start the serial write task
-    xTaskCreate(SerialWriteTask, "serial_write_task", 4096, NULL, 1, NULL);
     // wifi = new Wifi(*ui_layer);
 
     // inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
