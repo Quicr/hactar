@@ -1,28 +1,88 @@
 #![allow(dead_code)]
 
-use derive_view::MyTrait;
+struct Error;
+type Result<T> = core::result::Result<T, Error>;
 
-trait MyTrait {
-    const RESULT: usize;
+struct Commit;
+struct CommitView<'a> {
+    _dummy: &'a [u8],
 }
 
-struct Bar;
-struct Baz;
+struct Credential;
 
-#[derive(MyTrait)]
-struct Foo {
-    bar: Bar,
-    baz: Baz,
+struct GroupState;
+struct GroupStateView<'a> {
+    _dummy: &'a [u8],
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
+struct KeyPackage;
+struct KeyPackageView<'a> {
+    _dummy: &'a [u8],
+}
 
-    #[test]
-    fn it_works() {
-        println!("view: {:?}", FooView(&[1, 2, 3]).len());
-    }
+struct KeyPackagePriv;
+struct KeyPackagePrivView<'a> {
+    _dummy: &'a [u8],
+}
+
+struct LeafIndex(u32);
+
+struct RatchetTree;
+struct RatchetTreeView<'a> {
+    _dummy: &'a [u8],
+}
+
+struct SignatureKey;
+
+struct Welcome;
+struct WelcomeView<'a> {
+    _dummy: &'a [u8],
+}
+
+fn make_key_package(
+    _signature_key: SignatureKey,
+    _credential: Credential,
+) -> Result<(KeyPackagePriv, KeyPackage)> {
+    todo!();
+}
+
+fn create_group(
+    _key_package_priv: KeyPackagePrivView,
+    _key_package: KeyPackageView,
+) -> Result<(GroupState, RatchetTree)> {
+    todo!();
+}
+
+fn join_group(
+    _key_package_priv: KeyPackagePrivView,
+    _key_package: KeyPackageView,
+    _welcome: WelcomeView,
+) -> Result<(GroupState, RatchetTree)> {
+    todo!();
+}
+
+fn add_member(
+    _group_state: GroupStateView,
+    _ratchet_tree: RatchetTreeView,
+    _key_package: KeyPackageView,
+) -> Result<(GroupState, RatchetTree, Commit, Welcome)> {
+    todo!();
+}
+
+fn remove_member(
+    _group_state: GroupStateView,
+    _ratchet_tree: RatchetTreeView,
+    _leaf_index: LeafIndex,
+) -> Result<(GroupState, RatchetTree, Commit)> {
+    todo!();
+}
+
+fn handle_commit(
+    _group_state: GroupStateView,
+    _ratchet_tree: RatchetTreeView,
+    _commit: CommitView,
+) -> Result<(GroupState, RatchetTree)> {
+    todo!();
 }
 
 /*
