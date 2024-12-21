@@ -82,7 +82,7 @@ void NetManager::HandleSerial(void* param)
             }
 
             self->audio_buffered = true;
-            self->ui_layer.EnqueuePacket(self->audio_buffer.Read());
+            self->ui_layer.EnqueuePacket(self->audio_buffer.Take());
             self->ui_layer.Update(xTaskGetTickCount() / portTICK_PERIOD_MS);
         }
 
@@ -438,7 +438,7 @@ void NetManager::HandleSerialCommands()
     while (wifi_packets->Unread() > 0)
     {
         Logger::Log(Logger::Level::Info, "Wifi packets available: ", wifi_packets->Unread());
-        std::unique_ptr<SerialPacket> packet = wifi_packets->Read();
+        std::unique_ptr<SerialPacket> packet = wifi_packets->Take();
         // Get the type
         SerialPacket::WifiTypes wifi_cmd_type = static_cast<SerialPacket::WifiTypes>(
             packet->GetData<uint16_t>(7, 1));
@@ -493,7 +493,7 @@ void NetManager::HandleSerialCommands()
     while (room_packets->Unread() > 0)
     {
         Logger::Log(Logger::Level::Info, "room packets available: ", room_packets->Unread());
-        std::unique_ptr<SerialPacket> packet = room_packets->Read();
+        std::unique_ptr<SerialPacket> packet = room_packets->Take();
 
         GetRoomsCommand();
     }

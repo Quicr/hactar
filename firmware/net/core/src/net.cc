@@ -18,11 +18,75 @@
 
 #include "peripherals.hh"
 #include "serial.hh"
+#include "wifi.hh"
 
-QueueHandle_t uart_queue;
+#include "lwip/sockets.h"
+#include "lwip/netdb.h"
+
+#define TEST_SERVER_IP "192.168.50.20"
+#define TEST_SERVER_PORT 12345
+
+// TODO tcp client should now also receive packets and push them to serial
+
+Serial* ui_layer;
+
+static void TCPClientTask(void* params)
+{
+    static const char* tcp_tag = "TCP Client Task";
+    uint32_t packets_sent = 0;
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0)
+    {
+        ESP_LOGE(tcp_tag, "Unable to create socket");
+        vTaskDelete(NULL);
+    }
+
+    struct sockaddr_in dest_addr;
+    dest_addr.sin_addr.s_addr = inet_addr(TEST_SERVER_IP);
+    dest_addr.sin_family = AF_INET;
+    dest_addr.sin_port = htons(TEST_SERVER_PORT);
+
+
+    // Connect to server
+    int err = connect(sock, (struct sockaddr*)&dest_addr, sizeof(dest_addr));
+    if (err < 0)
+    {
+        ESP_LOGE(tcp_tag, "Socket unable to connect errno %d", err);
+        vTaskDelete(NULL);
+    }
+    ESP_LOGI(tcp_tag, "Connected to server");
+
+    Serial::packet_t* packet = nullptr;
+    while (true)
+    {
+        vTaskDelay(10/portTICK_PERIOD_MS);
+        // Get the data from our serial
+        packet = ui_layer->GetReadyRxPacket();
+        if (packet == nullptr)
+        {
+            continue;
+        }
+        
+        err = send(sock, packet->data, packet->length, 0);
+        if (err < 0)
+        {
+            ESP_LOGE(tcp_tag, "Error sending data: errno %d", err);
+        }
+        else
+        {
+            ++packets_sent;
+            ESP_LOGI(tcp_tag, "Data sent %lu", packets_sent);
+        }
+    }
+    close(sock);
+    ESP_LOGI(tcp_tag, "socket closed");
+    vTaskDelete(NULL);
+}
+
 
 extern "C" void app_main(void)
 {
+    QueueHandle_t uart_queue;
     InitializeGPIO();
     IntitializeLEDs();
     // Not using for now
@@ -45,6 +109,20 @@ extern "C" void app_main(void)
         EVENT_QUEUE_SIZE, TX_PIN, RX_PIN,
         RTS_PIN, CTS_PIN, ESP_INTR_FLAG_LOWMED);
 
+
+    ui_layer = new Serial(UART1, uart_queue, 4096 * 2, 4096 * 2, 30, 30);
+    Wifi wifi;
+    wifi.Connect("", "");
+
+    while (!wifi.IsConnected())
+    {
+        ESP_LOGW("net.cc", "REMOVE ME - Waiting to connect to wifi");
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+    // TODO we need to wait until the tcp client is also connected before we say we can take 
+    // packets
+    xTaskCreate(TCPClientTask, "tcp_client_task", 4096, NULL, 5, NULL);
+
     gpio_set_level(NET_LED_R, 1);
     gpio_set_level(NET_LED_G, 1);
     gpio_set_level(NET_LED_B, 1);
@@ -55,7 +133,6 @@ extern "C" void app_main(void)
     // Ready for normal operations
     gpio_set_level(NET_STAT, 1);
 
-    Serial ui_layer(UART1,  uart_queue, 4096, 4096, 1024, 1024);
 
     // This is the lazy way of doing it, otherwise we should use a esp_timer.
     uint32_t blink_cnt = 0;
