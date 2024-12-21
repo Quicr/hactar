@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <utility>
 
+#include <iostream>
+
 #define DEFAULT_BUFFER_SIZE 32
 
 template <typename T>
@@ -22,6 +24,8 @@ public:
             this->size = 1;
         }
 
+        std::cout << size << std::endl;
+
         buffer = new T[this->size]{ 0 };
     }
 
@@ -30,7 +34,23 @@ public:
         delete [] buffer;
     }
 
-    void Write(T d_in)
+    T& operator [](const size_t i)
+    {
+        return buffer[i];
+    }
+
+    T& Write() noexcept
+    {
+        if (write_idx >= size)
+        {
+            write_idx = 0;
+        }
+
+        unread++;
+        return buffer[write_idx++];
+    }
+
+    void Write(T d_in) noexcept 
     {
         buffer[write_idx++] = std::move(d_in);
 
@@ -64,26 +84,59 @@ public:
         }
     }
 
-    T Read() noexcept
+    T Take() noexcept
     {
-        if (unread > 0) unread--;
+        if (unread > 0)
+        {
+            unread--;
+        }
+        
         T d_out = std::move(buffer[read_idx++]);
 
         if (read_idx >= size)
+        {
             read_idx = 0;
+        }
+
+        return d_out;
+    }
+
+    T& Read() noexcept
+    {
+        if (unread > 0)
+        {
+            unread--;
+        }
+        T& d_out = buffer[read_idx++];
+
+        if (read_idx >= size)
+        {
+            read_idx = 0;
+        }
 
         return d_out;
     }
 
     void Read(T& d_out, bool& is_end)
     {
-        if (unread > 0) unread--;
+        if (unread > 0) 
+        {
+            unread--;
+        }
+        
         d_out = buffer[read_idx++];
 
         if (read_idx >= size)
+        {
             read_idx = 0;
+        }
 
         is_end = read_idx == write_idx;
+    }
+
+    const T& Peek() const
+    {
+        return buffer[read_idx];
     }
 
     uint16_t Unread() const

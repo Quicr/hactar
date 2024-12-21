@@ -4,8 +4,6 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 
-#include "serial_packet_manager.hh"
-
 #include <cstring>
 #include <mutex>
 #include <string>
@@ -15,7 +13,7 @@
 // TODO scrolling
 #define MAX_AP 10
 
-#define MAX_ATTEMPTS 1
+#define MAX_ATTEMPTS 5
 
 class Wifi
 {
@@ -33,7 +31,7 @@ public:
         InvalidCredentials
     };
 
-    Wifi(SerialPacketManager& serial);
+    Wifi();
     Wifi(Wifi& other) = delete;
     ~Wifi();
     void operator=(const Wifi& other) = delete;
@@ -77,13 +75,12 @@ private:
     inline void WifiEvents(int32_t event_id, void* event_data);
     inline void IpEvents(int32_t event_id);
 
-    inline void SendWifiConnectedPacket();
-    inline void SendWifiDisconnectPacket();
-    inline void SendWifiFailedToConnectPacket();
+    // inline void SendWifiConnectedPacket();
+    // inline void SendWifiDisconnectPacket();
+    // inline void SendWifiFailedToConnectPacket();
 
 
     // Private variables
-    SerialPacketManager& serial;
     wifi_init_config_t wifi_init_cfg;
     wifi_config_t wifi_cfg;
     State state;

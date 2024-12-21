@@ -6,17 +6,52 @@
 
 #include "ring_buffer.hh"
 
+#ifndef PACKET_SIZE
+#define PACKET_SIZE 512
+#endif
+
 class Serial
 {
 public:
-    Serial(const uart_port_t uart, QueueHandle_t& queue,
-        const size_t tx_task_sz, const size_t rx_task_sz,
-        const size_t tx_buff_sz, const size_t rx_buff_sz);
+    enum class Packet_Type: uint8_t
+    {
+        Null,
+        Ready,
+        Audio,
+        Text,
+        MLS,
 
+    };
+    typedef struct
+    {
+        union
+        {
+            struct
+            {
+                uint16_t length;
+                Packet_Type type;
+            };
+            uint8_t data[PACKET_SIZE];
+        };
+        bool is_ready;
+    } packet_t;
+
+    Serial(const uart_port_t uart, QueueHandle_t& queue,
+        const size_t tx_task, const size_t rx_task,
+        const size_t tx_rings, const size_t rx_rings);
+
+    uint16_t NumReadyRxPackets();
+    packet_t* GetReadyRxPacket();
+
+    // REMOVEME
+    uint32_t audio_packets_recv;
 private:
     static void WriteTask(void* param);
     static void ReadTask(void* param);
-    
+
+    void HandleRxEvent(uart_event_t event);
+    void HandleRxData();
+
     // TODO remove
     static const size_t audio_sz = 355;
 
@@ -27,14 +62,6 @@ private:
     bool tx_data_ready;
     bool synced;
 
-    uint8_t* tx_buff;
-    size_t tx_buff_sz;
-    uint16_t tx_read_mod;
-    uint16_t tx_write_mod;
-    uint16_t num_to_send;
-    size_t num_write;
-    uint8_t* rx_buff;
-    size_t rx_buff_sz;
-    size_t rx_buff_write_idx;
-    size_t num_recv;
+    RingBuffer<packet_t> tx_packets;
+    RingBuffer<packet_t> rx_packets;
 };
