@@ -26,6 +26,7 @@ Screen::Screen(
     view_height(HEIGHT),
     view_width(WIDTH),
     memories{ 0 },
+    memory_read_idx(0),
     memories_in_use(0),
     memory_write_idx(0),
     row(0),
@@ -154,6 +155,7 @@ void Screen::Init()
 }
 
 // TODO use different draw code based on the orientation?
+// FIX - need to change where we start reading memories from the oldest
 void Screen::Draw(uint32_t timeout)
 {
     UNUSED(timeout);
@@ -171,9 +173,6 @@ void Screen::Draw(uint32_t timeout)
     {
         return;
     }
-
-    // Return to normal mode
-    NormalMode();
 
     // Go through all of the memories
     const uint16_t y1 = row;

@@ -2,12 +2,13 @@
 
 #include <mutex>
 #include <iostream>
+#include <algorithm>
+#include "logger.hh"
 
 #include "esp_log.h"
 
 
-Wifi::Wifi(SerialPacketManager& serial):
-    serial(serial),
+Wifi::Wifi():
     wifi_init_cfg(WIFI_INIT_CONFIG_DEFAULT()),
     wifi_cfg({}),
     state(State::NotInitialized),
@@ -39,10 +40,12 @@ Wifi::~Wifi()
 
 void Wifi::Connect(const char* ssid, const char* password)
 {
+    Logger::Log(Logger::Level::Error, "ssid len", std::min(strlen(ssid), (size_t)sizeof(wifi_cfg.sta.ssid)));
+    Logger::Log(Logger::Level::Error, "ssid pwd len", std::min(strlen(password), (size_t)sizeof(wifi_cfg.sta.password)));
     Connect(ssid,
-        std::min(strlen(ssid), sizeof(wifi_cfg.sta.ssid)),
+        std::min(strlen(ssid), (size_t)sizeof(wifi_cfg.sta.ssid)),
         password,
-        std::min(strlen(password), sizeof(wifi_cfg.sta.password))
+        std::min(strlen(password), (size_t)sizeof(wifi_cfg.sta.password))
     );
 }
 
@@ -63,9 +66,12 @@ void Wifi::Connect(const char* ssid,
         password,
         password_len);
 
-    Logger::Log(Logger::Level::Error, "ssid ", wifi_cfg.sta.ssid, ", password ", wifi_cfg.sta.password);
+    Logger::Log(Logger::Level::Error, "ssid:", wifi_cfg.sta.ssid, ", password:", wifi_cfg.sta.password);
 
-    while (!xSemaphoreTake(connect_semaphore, 1000)) { Logger::Log(Logger::Level::Warn,"Connect() Waiting for semaphore");}
+    while (!xSemaphoreTake(connect_semaphore, 1000))
+    {
+        Logger::Log(Logger::Level::Warn, "Connect() Waiting for semaphore");
+    }
 
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
 
@@ -77,7 +83,10 @@ void Wifi::Connect(const char* ssid,
 
 esp_err_t Wifi::Deinitialize()
 {
-    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY)) { Logger::Log(Logger::Level::Warn,"Deinitialize() Waiting for semaphore"); }
+    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY))
+    {
+        Logger::Log(Logger::Level::Warn, "Deinitialize() Waiting for semaphore");
+    }
 
     state = State::NotInitialized;
     esp_err_t status = esp_wifi_deinit();
@@ -88,7 +97,10 @@ esp_err_t Wifi::Deinitialize()
 
 esp_err_t Wifi::Disconnect()
 {
-    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY)) {Logger::Log(Logger::Level::Warn,"Disconnect() Waiting for semaphore"); }
+    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY))
+    {
+        Logger::Log(Logger::Level::Warn, "Disconnect() Waiting for semaphore");
+    }
 
     state = State::Disconnected;
     esp_err_t status = esp_wifi_disconnect();
@@ -189,8 +201,8 @@ esp_err_t Wifi::Initialize()
     wifi_cfg.sta.pmf_cfg.capable = true;
     wifi_cfg.sta.pmf_cfg.required = false;
 
-    status = esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg);
-    ESP_ERROR_CHECK(status);
+    // status = esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg);
+    // ESP_ERROR_CHECK(status);
 
     Logger::Log(Logger::Level::Info, "Start wifi");
     status = esp_wifi_start();
@@ -223,13 +235,19 @@ void Wifi::ConnectTask(void* params)
     while (true)
     {
         // Delay for a second
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(2500 / portTICK_PERIOD_MS);
 
         // If the state is ready to be connected to something then do it.
-        if (instance->state != State::ReadyToConnect) continue;
+        if (instance->state != State::ReadyToConnect)
+        {
+            continue;
+        }
 
         // Try to take the semaphore
-        while (!xSemaphoreTake(instance->connect_semaphore, portMAX_DELAY)) { Logger::Log(Logger::Level::Warn,"ConnectTask() Waiting for semaphore"); }
+        while (!xSemaphoreTake(instance->connect_semaphore, portMAX_DELAY))
+        {
+            Logger::Log(Logger::Level::Warn, "ConnectTask() Waiting for semaphore");
+        }
         // Give semaphore in IP/HTTP events
 
         Logger::Log(Logger::Level::Info, "connect() state ", (int)instance->state);
@@ -262,7 +280,7 @@ void Wifi::EventHandler(void* arg, esp_event_base_t event_base,
 inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
 {
     const wifi_event_t event_type{ static_cast<wifi_event_t>(event_id) };
-    Logger::Log(Logger::Level::Info, "Wifi Event -- event %d", (int)event_id);
+    Logger::Log(Logger::Level::Info, "Wifi Event -- event", (int)event_id);
 
     switch (event_type)
     {
@@ -277,7 +295,7 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
         case WIFI_EVENT_STA_CONNECTED:
         {
             state = State::WaitingForIP;
-            SendWifiConnectedPacket();
+            // SendWifiConnectedPacket();
             Logger::Log(Logger::Level::Info, "Wifi Event - Waiting for IP");
             xSemaphoreGive(connect_semaphore);
             break;
@@ -294,7 +312,7 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
                     // Reset to ready to connect
                     state = State::InvalidCredentials;
                     failed_attempts = 0;
-                    SendWifiFailedToConnectPacket();
+                    // SendWifiFailedToConnectPacket();
                     Logger::Log(Logger::Level::Error, "Max failed attempts, invalid credentials");
                 }
                 else
@@ -306,7 +324,7 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
             {
                 // If we just decide to disconnect the wifi
                 state = State::Disconnected;
-                SendWifiDisconnectPacket();
+                // SendWifiDisconnectPacket();
             }
 
             xSemaphoreGive(connect_semaphore);
@@ -351,66 +369,68 @@ inline void Wifi::IpEvents(int32_t event_id)
             break;
         }
         default:
+        {
             break;
+        }
     }
 }
 
-void Wifi::SendWifiConnectedPacket()
-{
-    auto packet = std::make_unique<SerialPacket>(8);
+// void Wifi::SendWifiConnectedPacket()
+// {
+//     auto packet = std::make_unique<SerialPacket>(8);
 
-    // Type
-    packet->SetData(SerialPacket::Types::Command, 0, 1);
+//     // Type
+//     packet->SetData(SerialPacket::Types::Command, 0, 1);
 
-    // Id
-    packet->SetData(serial.NextPacketId(), 1, 2);
+//     // Id
+//     packet->SetData(serial.NextPacketId(), 1, 2);
 
-    // Size
-    packet->SetData(3, 3, 2);
+//     // Size
+//     packet->SetData(3, 3, 2);
 
-    packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
+//     packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
 
-    packet->SetData(SerialPacket::WifiTypes::Connect, 7, 1);
+//     packet->SetData(SerialPacket::WifiTypes::Connect, 7, 1);
 
-    serial.EnqueuePacket(std::move(packet));
-}
+//     serial.EnqueuePacket(std::move(packet));
+// }
 
-void Wifi::SendWifiDisconnectPacket()
-{
-    auto packet = std::make_unique<SerialPacket>(8);
+// void Wifi::SendWifiDisconnectPacket()
+// {
+//     auto packet = std::make_unique<SerialPacket>(8);
 
-    // Type
-    packet->SetData(SerialPacket::Types::Command, 0, 1);
+//     // Type
+//     packet->SetData(SerialPacket::Types::Command, 0, 1);
 
-    // Id
-    packet->SetData(serial.NextPacketId(), 1, 2);
+//     // Id
+//     packet->SetData(serial.NextPacketId(), 1, 2);
 
-    // Size
-    packet->SetData(3, 3, 2);
+//     // Size
+//     packet->SetData(3, 3, 2);
 
-    packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
+//     packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
 
-    packet->SetData(SerialPacket::WifiTypes::Disconnect, 7, 1);
+//     packet->SetData(SerialPacket::WifiTypes::Disconnect, 7, 1);
 
-    serial.EnqueuePacket(std::move(packet));
-}
+//     serial.EnqueuePacket(std::move(packet));
+// }
 
-void Wifi::SendWifiFailedToConnectPacket()
-{
-    auto packet = std::make_unique<SerialPacket>(8);
+// void Wifi::SendWifiFailedToConnectPacket()
+// {
+//     auto packet = std::make_unique<SerialPacket>(8);
 
-    // Type
-    packet->SetData(SerialPacket::Types::Command, 0, 1);
+//     // Type
+//     packet->SetData(SerialPacket::Types::Command, 0, 1);
 
-    // Id
-    packet->SetData(serial.NextPacketId(), 1, 2);
+//     // Id
+//     packet->SetData(serial.NextPacketId(), 1, 2);
 
-    // Size
-    packet->SetData(3, 3, 2);
+//     // Size
+//     packet->SetData(3, 3, 2);
 
-    packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
+//     packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
 
-    packet->SetData(SerialPacket::WifiTypes::FailedToConnect, 7, 1);
+//     packet->SetData(SerialPacket::WifiTypes::FailedToConnect, 7, 1);
 
-    serial.EnqueuePacket(std::move(packet));
-}
+//     serial.EnqueuePacket(std::move(packet));
+// }
