@@ -45,29 +45,10 @@ extern DMA_HandleTypeDef hdma_usart3_tx;
 #define BTN_WAIT_TIMEOUT 1000
 
 enum State state;
-enum State next_state;
 
 uart_stream_t usb_stream;
 uart_stream_t net_stream;
 uart_stream_t ui_stream;
-
-uint32_t wait_timeout = 0;
-
-void HAL_GPIO_EXTI_Callback(uint16_t gpio_pin)
-{
-    if (gpio_pin == USB_RTS_Pin)
-    {
-        if ((state == Net_Upload || state == UI_Upload) && usb_stream.bytes_ready)
-        {
-            state = Reset;
-        }
-        return;
-    }
-
-    // Gets here then then it was a button that was pressed
-    state = Waiting;
-    wait_timeout = HAL_GetTick() + BTN_WAIT_TIMEOUT;
-}
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
@@ -131,14 +112,10 @@ void CancelAllUart()
 
 void NetUpload()
 {
+    TurnOffLEDs();
+
     NetHoldInReset();
     UIHoldInReset();
-
-    // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
-
-    // Set LEDS for net
-    LEDA(HIGH, HIGH, LOW);
 
     CancelAllUart();
 
@@ -188,12 +165,7 @@ void NetUpload()
 
 void UIUpload()
 {
-
-    // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
-
-    // Set LEDS for net
-    LEDA(LOW, HIGH, HIGH);
+    TurnOffLEDs();
 
     CancelAllUart();
 
@@ -216,12 +188,11 @@ void UIUpload()
     NetHoldInReset();
     UIBootloaderMode();
 
-
     // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
+    LEDB(HIGH, LOW, HIGH);
 
     // Set LEDS for net
-    LEDA(LOW, HIGH, HIGH);
+    LEDA(HIGH, HIGH, HIGH);
 
     state = UI_Upload;
 
@@ -242,11 +213,7 @@ void UIUpload()
 
 void RunningMode()
 {
-    // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
-
-    // Set LEDS for net
-    LEDA(HIGH, HIGH, HIGH);
+    TurnOffLEDs();
 
     CancelAllUart();
 
@@ -263,17 +230,15 @@ void RunningMode()
     InitUartStreamParameters(&usb_stream);
     StartUartReceive(&usb_stream);
 
-    NetNormalMode();
-    UINormalMode();
+    NormalStart();
 
-    WaitForNetReady(&state);
-
+    // Set LEDS for ui
     LEDB(HIGH, HIGH, HIGH);
-
     // Set LEDS for net
     LEDA(HIGH, HIGH, HIGH);
 
     state = Running;
+    WaitForNetReady(&state);
     while (state == Running)
     {
         HandleCommands(&usb_stream, &huart1, &state);
@@ -282,11 +247,7 @@ void RunningMode()
 
 void DebugMode()
 {
-    // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
-
-    // Set LEDS for net
-    LEDA(HIGH, HIGH, HIGH);
+    TurnOffLEDs();
 
     CancelAllUart();
 
@@ -313,12 +274,15 @@ void DebugMode()
 
     HAL_Delay(100);
 
-    NetNormalMode();
-    UINormalMode();
+    NormalStart();
 
-    WaitForNetReady(&state);
+    // Set LEDS for ui
+    LEDB(HIGH, HIGH, HIGH);
+    // Set LEDS for net
+    LEDA(HIGH, HIGH, HIGH);
 
     state = Debug_Running;
+    WaitForNetReady(&state);
     while (state == Debug_Running)
     {
         HandleCommands(&usb_stream, &huart1, &state);
@@ -328,11 +292,7 @@ void DebugMode()
 }
 void UIDebugMode()
 {
-    // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
-
-    // Set LEDS for net
-    LEDA(HIGH, HIGH, HIGH);
+    TurnOffLEDs();
 
     CancelAllUart();
 
@@ -355,27 +315,26 @@ void UIDebugMode()
 
     HAL_Delay(100);
 
-    NetNormalMode();
-    UINormalMode();
 
-    WaitForNetReady(&state);
+    NormalStart();
+
+    // Set LEDS for ui
+    LEDB(HIGH, HIGH, HIGH);
+    // Set LEDS for net
+    LEDA(HIGH, HIGH, HIGH);
 
     state = Debug_Running;
+    WaitForNetReady(&state);
     while (state == Debug_Running)
     {
         HandleCommands(&usb_stream, &huart1, &state);
         HandleTx(&ui_stream, &state);
-        // HandleTx(&net_stream, &state);
     }
 }
 
 void NetDebugMode()
 {
-    // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
-
-    // Set LEDS for net
-    LEDA(HIGH, HIGH, HIGH);
+    TurnOffLEDs();
 
     CancelAllUart();
 
@@ -398,10 +357,8 @@ void NetDebugMode()
 
     HAL_Delay(100);
 
-    NetNormalMode();
-    UINormalMode();
+    NormalStart();
 
-    WaitForNetReady(&state);
     // Set LEDS for ui
     LEDB(HIGH, HIGH, HIGH);
 
@@ -409,6 +366,7 @@ void NetDebugMode()
     LEDA(HIGH, HIGH, HIGH);
 
     state = Debug_Running;
+    WaitForNetReady(&state);
     while (state == Debug_Running)
     {
         HandleCommands(&usb_stream, &huart1, &state);
@@ -418,8 +376,7 @@ void NetDebugMode()
 
 int app_main(void)
 {
-    LEDA(HIGH, HIGH, HIGH);
-    LEDB(HIGH, HIGH, HIGH);
+    TurnOffLEDs();
 
     // TODO move these into functions for starting ui/net upload
     // Init uart structures
@@ -461,20 +418,10 @@ int app_main(void)
     net_stream.is_listening = 1;
     ui_stream.is_listening = 1;
 
-    state = Waiting;
-    next_state = Reset;
+    state = Reset;
     while (1)
     {
-        if (state == Waiting)
-        {
-            state = next_state;
-            next_state = Waiting;
-            while (HAL_GetTick() < wait_timeout)
-            {
-                __NOP();
-            }
-        }
-        else if (state == Reset)
+        if (state == Reset)
         {
             RunningMode();
         }
@@ -502,24 +449,10 @@ int app_main(void)
     return 0;
 }
 
-/**
- * @brief Waits for the network chip to send a ready signal
- *
- */
-void WaitForNetReady(const enum State* state)
+void TurnOffLEDs()
 {
-    // Read from the Net chip
-    uint32_t timeout = HAL_GetTick() + 3000;
-    while (state != Reset
-        && HAL_GetTick() < timeout
-        && HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
-    {
-        // Stay here until the Net is done booting
-        HAL_Delay(10);
-    }
-
-    // Tell the UI the net is ready
-    HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, HIGH);
+    LEDA(HIGH, HIGH, HIGH);
+    LEDB(HIGH, HIGH, HIGH);
 }
 
 /**

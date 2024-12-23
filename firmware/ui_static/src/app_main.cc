@@ -240,7 +240,7 @@ int app_main()
                     serial.Read(serial_rx_audio_buff + 35, Serial_Audio_Buff_Sz, AudioChip::Audio_Buffer_Sz_2);
 
                     // expand the data
-                   AudioCodec::ALawExpand(serial_rx_audio_buff+35, tx_ptr, AudioChip::Audio_Buffer_Sz_2);
+                    AudioCodec::ALawExpand(serial_rx_audio_buff + 35, tx_ptr, AudioChip::Audio_Buffer_Sz_2);
                     is_reading = false;
                     break;
                 }
