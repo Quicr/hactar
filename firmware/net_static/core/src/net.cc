@@ -23,6 +23,8 @@
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
 
+#include "wifi_creds.hh"
+
 #define TEST_SERVER_IP "192.168.50.20"
 #define TEST_SERVER_PORT 12345
 
@@ -112,7 +114,7 @@ extern "C" void app_main(void)
 
     ui_layer = new Serial(UART1, uart_queue, 4096 * 2, 4096 * 2, 30, 30);
     Wifi wifi;
-    wifi.Connect("", "");
+    wifi.Connect(SSID, SSID_PWD);
 
     while (!wifi.IsConnected())
     {
