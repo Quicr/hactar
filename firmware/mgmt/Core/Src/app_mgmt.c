@@ -283,10 +283,10 @@ void RunningMode()
 void DebugMode()
 {
     // Set LEDS for ui
-    LEDB(LOW, HIGH, HIGH);
+    LEDB(HIGH, HIGH, HIGH);
 
     // Set LEDS for net
-    LEDA(LOW, HIGH, HIGH);
+    LEDA(HIGH, HIGH, HIGH);
 
     CancelAllUart();
 
@@ -329,7 +329,7 @@ void DebugMode()
 void UIDebugMode()
 {
     // Set LEDS for ui
-    LEDB(LOW, HIGH, HIGH);
+    LEDB(HIGH, HIGH, HIGH);
 
     // Set LEDS for net
     LEDA(HIGH, HIGH, HIGH);
@@ -372,14 +372,10 @@ void UIDebugMode()
 void NetDebugMode()
 {
     // Set LEDS for ui
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_RESET);
+    LEDB(HIGH, HIGH, HIGH);
 
     // Set LEDS for net
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+    LEDA(HIGH, HIGH, HIGH);
 
     CancelAllUart();
 
@@ -406,6 +402,11 @@ void NetDebugMode()
     UINormalMode();
 
     WaitForNetReady(&state);
+    // Set LEDS for ui
+    LEDB(HIGH, HIGH, HIGH);
+
+    // Set LEDS for net
+    LEDA(HIGH, HIGH, HIGH);
 
     state = Debug_Running;
     while (state == Debug_Running)
