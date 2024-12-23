@@ -13,7 +13,7 @@
 #define NET_LED_G           GPIO_NUM_37
 #define NET_LED_R           GPIO_NUM_38
 
-#define LED_MASK            1ULL << NET_LED_B | 1ULL << NET_LED_G
+#define LED_MASK            1ULL << NET_LED_B | 1ULL << NET_LED_G | 1ULL << NET_LED_R
 #define NET_STAT_MASK       1ULL << NET_STAT
 #define NET_DEBUG_MASK      1ULL << NET_DEBUG_1 | 1ULL << NET_DEBUG_2 | 1ULL << NET_DEBUG_3
 

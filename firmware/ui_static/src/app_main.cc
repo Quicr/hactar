@@ -102,11 +102,11 @@ constexpr uint32_t Serial_Audio_Buff_Sz = AudioChip::Audio_Buffer_Sz_2 + Serial_
 
 // Make tx and rx buffers for audio
 uint8_t serial_tx_audio_buff[Serial_Audio_Buff_Sz] = {
-    Serial_Audio_Buff_Sz >> 8, Serial_Audio_Buff_Sz & 0xFF,
+    Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
     Serial::Packet_Type::Audio };
 // The bytes that take up the room should be set at some point
 uint8_t serial_rx_audio_buff[Serial_Audio_Buff_Sz] = {
-    Serial_Audio_Buff_Sz >> 8, Serial_Audio_Buff_Sz & 0xFF,
+    Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
     Serial::Packet_Type::Audio };
 
 uint8_t serial_tx_buffer[400] = { 0 };
@@ -140,6 +140,7 @@ int app_main()
     Colour curr = Colour::Blue;
     const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
 
+    // TODO Fix
     WaitForNetReady();
 
     // TODO Probe for a reply from the net chip using serial
@@ -191,16 +192,12 @@ int app_main()
             // LowPowerMode();
         }
 
-        // while (stop)
-        // {
-
-        // }
 
         // LEDS(HIGH, HIGH, HIGH);
 
         if (error)
         {
-            // Error_Handler();
+            Error_Handler();
         }
 
         // If we broke out then that means we got an audio callback
@@ -212,18 +209,11 @@ int app_main()
         // Try to send packets
         serial.Write(serial_tx_audio_buff, Serial_Audio_Buff_Sz);
 
-        // while (!serial.Unread())
-        // {
-
-        // }
 
         // If there are bytes available read them
         // TODO need to make sure that there is 3 or more bytes.
         // TODO remake this, its garbage.
 
-
-        // FIX after around 5 seconds the sound starting coming through normally
-        // and it sounds perfect!!
         bool is_reading = true;
         while (serial.Unread() && is_reading)
         {
@@ -492,10 +482,32 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 
 
+void SlowSendTest()
+{
+    uint8_t tmp[Serial_Audio_Buff_Sz] = {
+        Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
+        Serial::Packet_Type::Audio
+    };
+
+    // Fill the tmp audio buffer with random
+    for (int i = 35; i < Serial_Audio_Buff_Sz; ++i)
+    {
+        tmp[i] = rand() % 0xFF;
+    }
+
+    while (true)
+    {
+        HAL_Delay(5000);
+        serial.Write(tmp, Serial_Audio_Buff_Sz);
+        // HAL_Delay(20);
+        // serial.Read(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);
+    }
+}
+
 void InterHactarRoundTripTest()
 {
     uint8_t tmp[Serial_Audio_Buff_Sz] = {
-        Serial_Audio_Buff_Sz >> 8, Serial_Audio_Buff_Sz & 0xFF,
+        Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
         Serial::Packet_Type::Audio
     };
 
