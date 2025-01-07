@@ -11,6 +11,7 @@
 #include "stm32f0xx_hal_def.h"
 #include "uart_stream.h"
 #include "chip_control.h"
+#include "io_control.h"
 /* USER CODE END Includes */
 
 extern TIM_HandleTypeDef htim3;
