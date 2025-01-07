@@ -454,18 +454,6 @@ void TurnOffLEDs()
 {
     LEDA(HIGH, HIGH, HIGH);
     LEDB(HIGH, HIGH, HIGH);
-    // Read from the Net chip
-    uint32_t timeout = HAL_GetTick() + 3000;
-    while (*state != Reset
-        && HAL_GetTick() < timeout
-        && HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET)
-    {
-        // Stay here until the Net is done booting
-        HAL_Delay(10);
-    }
-
-    // Tell the UI the net is ready
-    HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, HIGH);
 }
 
 /**
