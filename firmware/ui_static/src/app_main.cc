@@ -147,6 +147,9 @@ int app_main()
     serial_tx_buffer[0] = 3;
     serial_tx_buffer[1] = 0;
     serial_tx_buffer[2] = Serial::Ready;
+
+    // SlowSendTest(10);
+
     // serial.Write(serial_tx_buffer, 3);
     // HAL_Delay(100);
     // while (!net_replied)
@@ -482,7 +485,7 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 
 
-void SlowSendTest()
+void SlowSendTest(int delay)
 {
     uint8_t tmp[Serial_Audio_Buff_Sz] = {
         Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
@@ -497,7 +500,7 @@ void SlowSendTest()
 
     while (true)
     {
-        HAL_Delay(5000);
+        HAL_Delay(delay);
         serial.Write(tmp, Serial_Audio_Buff_Sz);
         // HAL_Delay(20);
         // serial.Read(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);

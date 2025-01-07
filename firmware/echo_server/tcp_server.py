@@ -7,20 +7,21 @@ clients = []  # List to hold client sockets
 
 # Function to handle communication with each client
 def handle_client(client_socket):
+    recv = 0
     try:
         while True:
             # Receive data from the client
             data = client_socket.recv(1024)  # Buffer size 1024 bytes
             if not data:
                 break  # Connection closed by the client
-
-            print(f"Received message: {len(data)}")
+            recv += 1;
+            print(f"Received message: {len(data)}, recv: {recv}")
 
             # Send data to all other connected clients
             for client in clients:
-                if client != client_socket:  # Don't send back to the sender
-                    client.send(data)
-                    print(f"Forwarded message to {client.getpeername()}")
+                # if client != client_socket:  # Don't send back to the sender
+                client.send(data)
+                print(f"Forwarded message to {client.getpeername()}")
     except Exception as e:
         print(f"Error with client {client_socket.getpeername()}: {e}")
     finally:

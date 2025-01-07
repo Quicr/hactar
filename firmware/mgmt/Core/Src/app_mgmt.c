@@ -363,7 +363,7 @@ void NetDebugMode()
     LEDB(HIGH, HIGH, HIGH);
 
     // Set LEDS for net
-    LEDA(HIGH, HIGH, HIGH);
+    LEDA(HIGH, HIGH, LOW);
 
     state = Debug_Running;
     WaitForNetReady(&state);

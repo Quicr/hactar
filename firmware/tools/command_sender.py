@@ -3,7 +3,7 @@ import time
 import sys
 
 if (len(sys.argv) < 4):
-    print("Error. Need port followed by command")
+    print("python3 script port baud command")
     exit()
 
 port = sys.argv[1]
