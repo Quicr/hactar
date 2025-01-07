@@ -187,8 +187,17 @@ int app_main()
     HAL_Delay(5000);
     audio_chip.StartI2S();
     bool stop = false;
+
+    uint32_t blinky = 0;
+
     while (1)
     {
+        if (HAL_GetTick() > blinky)
+        {
+            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+            blinky = HAL_GetTick() + 2000;
+        }
+
         num_loops++;
         while (sleeping)
         {
