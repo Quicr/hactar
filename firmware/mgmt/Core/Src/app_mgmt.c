@@ -322,7 +322,7 @@ void UIDebugMode()
     // Set LEDS for ui
     LEDB(HIGH, HIGH, HIGH);
     // Set LEDS for net
-    LEDA(HIGH, HIGH, HIGH);
+    LEDA(HIGH, LOW, HIGH);
 
     state = Debug_Running;
     WaitForNetReady(&state);
@@ -419,7 +419,7 @@ int app_main(void)
     net_stream.is_listening = 1;
     ui_stream.is_listening = 1;
 
-    state = Reset;
+    state = UI_Debug_Reset;
     while (1)
     {
         if (state == Reset)
