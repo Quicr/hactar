@@ -4,7 +4,6 @@
 enum State
 {
     Error,
-    Waiting,
     Reset,
     Running,
     UI_Upload_Reset,

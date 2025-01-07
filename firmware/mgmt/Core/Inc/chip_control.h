@@ -9,4 +9,8 @@ void NetBootloaderMode();
 void NetNormalMode();
 void NetHoldInReset();
 
+void NormalStart();
+
+void WaitForNetReady();
+
 #endif

@@ -46,7 +46,7 @@ public:
             write_idx = 0;
         }
 
-        unread++;
+        ++unread;
         return buffer[write_idx++];
     }
 
@@ -57,7 +57,7 @@ public:
         if (write_idx >= size)
             write_idx = 0;
 
-        unread++;
+        ++unread;
     }
 
     void Write(T* input, const uint16_t count)
