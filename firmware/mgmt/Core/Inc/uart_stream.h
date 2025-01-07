@@ -4,6 +4,7 @@
 #include "stm32f0xx_hal.h"
 
 #include "state.h"
+#include <string.h>
 
 #define COMMAND_TIMEOUT 1000
 #define TRANSMISSION_TIMEOUT 30000
