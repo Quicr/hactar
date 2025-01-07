@@ -254,8 +254,28 @@ private:
         const uint16_t font_height);
     static inline void PushMemoryParameter(DrawMemory& memory,
         const uint32_t val, const int16_t num_bytes);
+    // Non-destructive retrieval
     template<typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = 0>
-    static inline T PullMemoryParameter(DrawMemory& memory);
+    static inline T PullMemoryParameter(DrawMemory& memory)
+    {
+        const int16_t bytes = sizeof(T);
+        T output = 0;
+        uint8_t& idx = memory.read_idx;
+
+        for (int16_t i = 0; i < bytes && i < memory.write_idx; ++i)
+        {
+            output |= memory.parameters[idx] << (8 * i);
+            ++idx;
+        }
+
+        // Restart where we read from if the index is zero
+        if (idx >= memory.write_idx)
+        {
+            idx = 0;
+        }
+
+        return output;
+    }
     static inline void FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
         const uint16_t i, const uint16_t j, const uint8_t colour_high,
         const uint8_t colour_low) __attribute__((always_inline));
