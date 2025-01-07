@@ -973,28 +973,6 @@ inline void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
     }
 }
 
-// Non-destructive retrieval
-template<typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = 0>
-inline T Screen::PullMemoryParameter(DrawMemory& memory)
-{
-    const int16_t bytes = sizeof(T);
-    T output = 0;
-    uint8_t& idx = memory.read_idx;
-
-    for (int16_t i = 0; i < bytes && i < memory.write_idx; ++i)
-    {
-        output |= memory.parameters[idx] << (8 * i);
-        ++idx;
-    }
-
-    // Restart where we read from if the index is zero
-    if (idx >= memory.write_idx)
-    {
-        idx = 0;
-    }
-
-    return output;
-}
 
 // TODO colour HIGH and colour LOW to save calculating it everytime.
 inline void Screen::FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
