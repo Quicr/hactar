@@ -90,7 +90,7 @@ void UIHoldInReset()
 void WaitForNetReady(const enum State* state)
 {
     // Read from the Net chip
-    uint32_t timeout = HAL_GetTick() + 3000;
+    uint32_t timeout = HAL_GetTick() + 5000;
     while (*state != Reset
         && HAL_GetTick() < timeout
         && HAL_GPIO_ReadPin(NET_STAT_GPIO_Port, NET_STAT_Pin) != GPIO_PIN_SET
