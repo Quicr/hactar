@@ -195,7 +195,7 @@ int app_main()
         if (HAL_GetTick() > blinky)
         {
             HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            HAL_UART_Transmit(&huart1, (const uint8_t*)"UI ALIVE\n", 9, HAL_MAX_DELAY);
+            HAL_UART_Transmit(&huart1, (const uint8_t*)"UI ALIVE\r\n", 10, HAL_MAX_DELAY);
             blinky = HAL_GetTick() + 2000;
         }
 
