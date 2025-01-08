@@ -66,16 +66,17 @@ void AudioChip::Init()
     SetRegister(0x36, 0b0'0010'0110);
     SetRegister(0x37, 0b0'1110'1001);
 
-    // Set ADCDIV to get 16Khz from SYSCLK (0x03)
-    // Set DACDIV to get 16Khz from SYSCLK (0x03)
+    // Set ADCDIV to get 8kHz from SYSCLK
+    // Set DACDIV to get 8kHz from SYSCLK
     // Post scale the PLL to be divided by 2
     // Set the clock (Select the PLL) (0x01)
-    SetRegister(0x04, 0b0'1101'1101);
+    SetRegister(0x04, 0b1'1011'0101);
 
     // Set the clock division
     // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
-    // BCLKDIV = SYSCLK / 6 = 2.048Mhz
-    SetRegister(0x08, 0b1'1100'1001);
+    // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
+    // Expected BCLK = sample_rate * channels * bits per channel, so 16khz * 2 * 16 = 512Khz
+    SetRegister(0x08, 0b1'1100'1100);
 
     // Disable soft mute and ADC high pass filter
     SetRegister(0x05, 0b0'0000'0000);
@@ -102,8 +103,8 @@ void AudioChip::Init()
     SetRegister(0x22, 0b1'0000'0000);
     SetRegister(0x25, 0b1'0000'0000);
 
-    // Change the ALC sample rate -> 16K
-    SetRegister(0x1B, 0b0'0000'0011);
+    // Change the ALC sample rate -> 8kHz
+    SetRegister(0x1B, 0b0'0000'0101);
 
     // Enable DAC softmute
     SetBit(0x06, 3, 1);

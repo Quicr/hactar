@@ -34,6 +34,8 @@ void Serial::WriteTask(void* param)
 {
     Serial* self = (Serial*)param;
     packet_t* tx_packet = nullptr;
+    self->audio_packets_sent = 0;
+
 
     while (1)
     {
@@ -52,128 +54,43 @@ void Serial::WriteTask(void* param)
         uart_write_bytes(self->uart, tx_packet->data, tx_packet->length);
 
         tx_packet->is_ready = false;
+        ++self->audio_packets_sent;
+        ESP_LOGI("uart tx", "audio serial packet sent %lu", self->audio_packets_sent);
+
     }
 }
+
+// Loopback version
+// void Serial::WriteTask(void* param)
+// {
+//     Serial* self = (Serial*)param;
+//     packet_t* tx_packet = nullptr;
+//     self->audio_packets_sent = 0;
+
+//     while (1)
+//     {
+//         vTaskDelay(10 / portTICK_PERIOD_MS);
+
+//         if (!self->rx_packets.Peek().is_ready)
+//         {
+//             continue;
+//         }
+
+//         // Write it to serial
+//         tx_packet = &self->rx_packets.Read();
+
+//         uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
+
+//         uart_write_bytes(self->uart, tx_packet->data, tx_packet->length);
+
+//         tx_packet->is_ready = false;
+//         ++self->audio_packets_sent;
+//     }
+// }
 
 Serial::packet_t* Serial::Write()
 {
     return &tx_packets.Write();
-}
-
-void Serial::ReadTask2(void* param)
-{
-    static constexpr size_t Local_Buff_Size = 2048;
-    static uint8_t buff[Local_Buff_Size];
-
-    Serial* self = (Serial*)param;
-
-    size_t buffered_bytes = 0;
-    int num_bytes = 0;
-    packet_t* packet = nullptr;
-
-    uint32_t total_recv = 0;
-    uint16_t bytes_read = 0;
-
-    int idx = 0;
-
-    while (1)
-    {
-        // vTaskDelay(10 / portTICK_PERIOD_MS);
-
-        // Check if there are buffered bytes if not continue
-        // uart_get_buffered_data_len(self->uart, &buffered_bytes);
-
-        // if (buffered_bytes < 0)
-        // {
-        //     continue;
-        // }
-
-        // const uint32_t to_recv = std::min(buffered_bytes, Local_Buff_Size);
-        num_bytes = uart_read_bytes(self->uart, buff, 100, 10 / portTICK_PERIOD_MS);
-        total_recv += num_bytes;
-        idx = 0;
-
-        if (num_bytes <= 0)
-        {
-            continue;
-        }
-        ESP_LOGW("uart rx", "num bytes %d", num_bytes);
-
-        while (idx < num_bytes)
-        {
-            if (packet == nullptr)
-            {
-                ESP_LOGI("uart rx", "Next packet");
-                bytes_read = 0;
-
-
-                // Get the packet's pointer
-                packet = &self->rx_packets.Write();
-                packet->is_ready = false;
-
-                // Get the length
-                // Little endian format
-                // We use idx, because if we are already partially through the 
-                // data we want to grab those next set of bytes.
-                while (bytes_read < 2 && idx < num_bytes)
-                {
-                    packet->data[bytes_read++] = buff[idx++];
-                    ESP_LOGI("uart rx", "len = %u, bytes remaining %d", packet->length, num_bytes - idx);
-                }
-
-
-                ESP_LOGI("uart rx", "total bytes: %d, current read idx %d", num_bytes, idx);
-            }
-            else if (bytes_read < 2)
-            {
-                packet->data[bytes_read++] = buff[idx++];
-                ESP_LOGI("uart rx", "There wasn't enough bytes to finish the length of the packet");
-                ESP_LOGI("uart rx", "len = %u", packet->length);
-                continue;
-            }
-            else
-            {
-                // Just copy the bytes
-                while (bytes_read < packet->length && idx < num_bytes)
-                {
-                    packet->data[bytes_read] = buff[idx];
-                    ++bytes_read;
-                    ++idx;
-                }
-
-                if (bytes_read >= packet->length)
-                {
-                    // ESP_LOGI("uart rx", "packet len: %u type: %d", packet->length, (int)packet->type);
-
-                    // Done the packet
-                    packet->is_ready = true;
-
-                    // Determine what to do with it
-                    switch (packet->type)
-                    {
-                        case Packet_Type::Ready:
-                        {
-                            // ready message ignore for now
-                            break;
-                        }
-                        case Packet_Type::Audio:
-                        {
-                            ++self->audio_packets_recv;
-                            ESP_LOGI("uart rx", "audio packet recv %lu", self->audio_packets_recv);
-
-                            break;
-                        }
-                        default:
-                        {
-                            break;
-                        }
-                    }
-
-                    packet = nullptr;
-                }
-            }
-        }
-    }
 }
 
 void Serial::ReadTask(void* param)
@@ -184,11 +101,7 @@ void Serial::ReadTask(void* param)
     uart_event_t event;
     static constexpr size_t Local_Buff_Size = 2048;
     uint8_t buff[Local_Buff_Size];
-    // packet_t* packet = nullptr;
-    packet_t* packet = new packet_t();
-    packet->length = 0;
-    
-    bool partial_packet = false;
+    packet_t* packet = nullptr;
 
     uint32_t total_recv = 0;
     uint16_t bytes_read = 0;
@@ -207,13 +120,6 @@ void Serial::ReadTask(void* param)
         {
             case UART_DATA:
             {
-                // TODO should I put a while loop on top of getting buffered data until we get
-                // zero bytes??
-
-
-                // By default the max length is 120-121 (timing stuff) as the
-                // default fifo buffer size is 128 and an interrupt is sent at
-                // 120
                 uart_get_buffered_data_len(self->uart, &buffered_bytes);
 
                 // If the number of buffered bytes is less than 2 and 
@@ -224,7 +130,7 @@ void Serial::ReadTask(void* param)
                     continue;
                 }
 
-                ESP_LOGW("uart rx", "buffered bytes %zu", buffered_bytes);
+                // ESP_LOGW("uart rx", "buffered bytes %zu", buffered_bytes);
 
                 const uint32_t to_recv = buffered_bytes < Local_Buff_Size ? buffered_bytes : Local_Buff_Size;
                 num_bytes = uart_read_bytes(self->uart, buff, to_recv, portMAX_DELAY);
@@ -233,42 +139,36 @@ void Serial::ReadTask(void* param)
 
                 while (idx < num_bytes)
                 {
-                    if (!partial_packet)
+                    if (packet == nullptr)
                     {
-                        partial_packet = true;
-                        ESP_LOGI("uart rx", "Next packet");
+                        // Reset the number of bytes read for our next packet
                         bytes_read = 0;
 
-
-                        // Get the packet's pointer
-                        // packet = &self->rx_packets.Write();
+                        packet = &self->rx_packets.Write();
                         packet->is_ready = false;
-
-                        packet->length = static_cast<uint16_t>(packet->data[idx + 0]) | static_cast<uint16_t>(packet->data[idx + 1]) << 8;
 
                         // Get the length
                         // Little endian format
-                        // We use idx, because if we are already partially through the 
-                        // data we want to grab those next set of bytes.
-                        // while (bytes_read < 2 && idx < num_bytes)
-                        // {
-                        //     packet->data[bytes_read++] = buff[idx++];
-                        //     ESP_LOGI("uart rx", "len = %u", packet->length);
-
-                        // }
-                        idx+=2;
-                        bytes_read+=2;
+                        // We use idx, because if we are already partially
+                        // through the buffered data we want to grab those 
+                        // next set of bytes.
+                        while (bytes_read < 2 && idx < num_bytes)
+                        {
+                            packet->data[bytes_read++] = buff[idx++];
+                        }
                     }
-                    // else if (bytes_read < 2)
-                    // {
-                    //     packet->data[bytes_read++] = buff[idx++];
-                    //     ESP_LOGI("uart rx", "There wasn't enough bytes to finish the length of the packet");
-                    //     ESP_LOGI("uart rx", "len = %u", packet->length);
-                    //     continue;
-                    // }
+                    else if (bytes_read < 2)
+                    {
+                        // If we get here then packet has been set to something 
+                        // other than nullptr and only one byte has been 
+                        // read which is insufficient to compare against the len
+                        packet->data[bytes_read++] = buff[idx++];
+                        continue;
+                    }
                     else
                     {
-                        // Just copy the bytes
+                        // We can copy bytes until we run out of space 
+                        // or out of buffered bytes
                         while (bytes_read < packet->length && idx < num_bytes)
                         {
                             packet->data[bytes_read] = buff[idx];
@@ -278,11 +178,10 @@ void Serial::ReadTask(void* param)
 
                         if (bytes_read >= packet->length)
                         {
-                            // ESP_LOGI("uart rx", "packet len: %u type: %d", packet->length, (int)packet->type);
-
                             // Done the packet
                             packet->is_ready = true;
 
+                            // TODO make a task that checks packets ??
                             // Determine what to do with it
                             switch (packet->type)
                             {
@@ -294,7 +193,7 @@ void Serial::ReadTask(void* param)
                                 case Packet_Type::Audio:
                                 {
                                     ++self->audio_packets_recv;
-                                    ESP_LOGI("uart rx", "audio packet recv %lu", self->audio_packets_recv);
+                                    ESP_LOGI("uart rx", "audio packet recv %lu, packet len %u", self->audio_packets_recv, packet->length);
 
                                     break;
                                 }
@@ -304,6 +203,7 @@ void Serial::ReadTask(void* param)
                                 }
                             }
 
+                            // Null out our packet pointer
                             packet = nullptr;
                         }
                     }

@@ -190,6 +190,8 @@ int app_main()
 
     uint32_t blinky = 0;
 
+    uint32_t time_start = HAL_GetTick();
+
     while (1)
     {
         if (HAL_GetTick() > blinky)
@@ -235,7 +237,7 @@ int app_main()
             // audio, text, mls packets etc.
 
             // Get the length and the type
-            uint16_t len = serial.Read() << 8 | serial.Read();
+            uint16_t len = serial.Read() | serial.Read() << 8;
             uint8_t type = serial.Read();
 
             // Get the "room"
@@ -495,7 +497,7 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 
 
-void SlowSendTest(int delay)
+void SlowSendTest(int delay, int num)
 {
     uint8_t tmp[Serial_Audio_Buff_Sz] = {
         Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
