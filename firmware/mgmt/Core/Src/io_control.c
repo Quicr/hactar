@@ -10,6 +10,11 @@ void PowerCycle(GPIO_TypeDef* port, uint16_t pin, uint32_t delay)
     HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
 }
 
+void HoldInReset(GPIO_TypeDef* port, uint16_t pin)
+{
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+}
+
 void ChangeToInput(GPIO_TypeDef* port, uint16_t pin)
 {
     HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);

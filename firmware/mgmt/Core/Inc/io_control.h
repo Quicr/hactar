@@ -7,6 +7,7 @@
 
 
 void PowerCycle(GPIO_TypeDef* port, uint16_t pin, uint32_t delay);
+void HoldInReset(GPIO_TypeDef* port, uint16_t pin);
 void ChangeToInput(GPIO_TypeDef* port, uint16_t pin);
 void ChangeToOutput(GPIO_TypeDef* port, uint16_t pin);
 void Usart1_Net_Upload_Runnning_Debug_Reset();

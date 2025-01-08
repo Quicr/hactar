@@ -79,6 +79,7 @@ static void MX_USART1_UART_Init(void);
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -359,7 +360,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, UI_STAT_Pin|LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT0_Pin
+  HAL_GPIO_WritePin(GPIOB, LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_NRST_Pin
                           |NET_NRST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : UI_STAT_Pin LEDA_R_Pin LEDA_G_Pin LEDA_B_Pin */
@@ -375,9 +376,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(NET_STAT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDB_R_Pin LEDB_G_Pin LEDB_B_Pin UI_BOOT0_Pin
+  /*Configure GPIO pins : LEDB_R_Pin LEDB_G_Pin LEDB_B_Pin UI_NRST_Pin
                            NET_NRST_Pin NET_BOOT_Pin UI_BOOT1_Pin */
-  GPIO_InitStruct.Pin = LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_BOOT0_Pin
+  GPIO_InitStruct.Pin = LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_NRST_Pin
                           |NET_NRST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -404,11 +405,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
   HAL_GPIO_Init(MCLK_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : UI_NRST_Pin */
-  GPIO_InitStruct.Pin = UI_NRST_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pin : UI_BOOT0_Pin */
+  GPIO_InitStruct.Pin = UI_BOOT0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(UI_NRST_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(UI_BOOT0_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
