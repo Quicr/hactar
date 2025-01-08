@@ -59,7 +59,7 @@ inline void InitScreen();
 inline void WaitForNetReady();
 inline void AudioCallback();
 
-void SlowSendTest(int delay);
+void SlowSendTest(int delay, int num);
 void InterHactarRoundTripTest();
 
 #ifdef __cplusplus

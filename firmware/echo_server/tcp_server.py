@@ -11,7 +11,7 @@ def handle_client(client_socket):
     try:
         while True:
             # Receive data from the client
-            data = client_socket.recv(1024)  # Buffer size 1024 bytes
+            data = client_socket.recv(355)  # Buffer size 1024 bytes
             if not data:
                 break  # Connection closed by the client
             recv += 1;
