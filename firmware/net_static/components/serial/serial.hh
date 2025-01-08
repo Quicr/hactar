@@ -31,9 +31,9 @@ public:
                 uint16_t length;
                 Packet_Type type;
             };
-            uint8_t data[PACKET_SIZE];
+            uint8_t data[PACKET_SIZE] = {0};
         };
-        bool is_ready;
+        bool is_ready = false;
     } packet_t;
 
     Serial(const uart_port_t uart, QueueHandle_t& queue,
@@ -43,13 +43,16 @@ public:
     uint16_t NumReadyRxPackets();
     packet_t* GetReadyRxPacket();
 
+    packet_t* Write();
+
     // REMOVEME
     uint32_t audio_packets_recv;
 private:
     static void WriteTask(void* param);
     static void ReadTask(void* param);
+    static void ReadTask2(void* param);
 
-    void HandleRxEvent(uart_event_t event);
+    void HandleRxEvent(uart_event_t& event);
     void HandleRxData();
 
     // TODO remove

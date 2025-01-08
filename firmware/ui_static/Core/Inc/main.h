@@ -57,10 +57,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define DISP_DC_Pin GPIO_PIN_13
-#define DISP_DC_GPIO_Port GPIOC
-#define DISP_CS_Pin GPIO_PIN_14
-#define DISP_CS_GPIO_Port GPIOC
+#define DISP_RST_Pin GPIO_PIN_13
+#define DISP_RST_GPIO_Port GPIOC
+#define DISP_BL_Pin GPIO_PIN_14
+#define DISP_BL_GPIO_Port GPIOC
 #define MCLK_Pin GPIO_PIN_0
 #define MCLK_GPIO_Port GPIOH
 #define NC_Pin GPIO_PIN_1
@@ -137,10 +137,10 @@ void Error_Handler(void);
 #define I2S_ADCDAT_GPIO_Port GPIOB
 #define I2S_DACDAT_Pin GPIO_PIN_5
 #define I2S_DACDAT_GPIO_Port GPIOB
-#define DISP_BL_Pin GPIO_PIN_8
-#define DISP_BL_GPIO_Port GPIOB
-#define DISP_RST_Pin GPIO_PIN_9
-#define DISP_RST_GPIO_Port GPIOB
+#define DISP_CS_Pin GPIO_PIN_8
+#define DISP_CS_GPIO_Port GPIOB
+#define DISP_DC_Pin GPIO_PIN_9
+#define DISP_DC_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

@@ -147,6 +147,9 @@ int app_main()
     serial_tx_buffer[0] = 3;
     serial_tx_buffer[1] = 0;
     serial_tx_buffer[2] = Serial::Ready;
+
+    // SlowSendTest(10);
+
     // serial.Write(serial_tx_buffer, 3);
     // HAL_Delay(100);
     // while (!net_replied)
@@ -184,8 +187,18 @@ int app_main()
     HAL_Delay(5000);
     audio_chip.StartI2S();
     bool stop = false;
+
+    uint32_t blinky = 0;
+
     while (1)
     {
+        if (HAL_GetTick() > blinky)
+        {
+            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+            HAL_UART_Transmit(&huart1, (const uint8_t*)"UI ALIVE\r\n", 10, HAL_MAX_DELAY);
+            blinky = HAL_GetTick() + 2000;
+        }
+
         num_loops++;
         while (sleeping)
         {
@@ -240,7 +253,7 @@ int app_main()
                     serial.Read(serial_rx_audio_buff + 35, Serial_Audio_Buff_Sz, AudioChip::Audio_Buffer_Sz_2);
 
                     // expand the data
-                   AudioCodec::ALawExpand(serial_rx_audio_buff+35, tx_ptr, AudioChip::Audio_Buffer_Sz_2);
+                    AudioCodec::ALawExpand(serial_rx_audio_buff + 35, tx_ptr, AudioChip::Audio_Buffer_Sz_2);
                     is_reading = false;
                     break;
                 }
@@ -482,7 +495,7 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 
 
-void SlowSendTest()
+void SlowSendTest(int delay)
 {
     uint8_t tmp[Serial_Audio_Buff_Sz] = {
         Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
@@ -497,7 +510,7 @@ void SlowSendTest()
 
     while (true)
     {
-        HAL_Delay(5000);
+        HAL_Delay(delay);
         serial.Write(tmp, Serial_Audio_Buff_Sz);
         // HAL_Delay(20);
         // serial.Read(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);
