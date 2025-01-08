@@ -14,7 +14,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2016 STMicroelectronics.
+  * Copyright (c) 2017 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -605,9 +605,6 @@ HAL_StatusTypeDef HAL_RTCEx_DeactivateTamper(RTC_HandleTypeDef *hrtc, uint32_t T
   */
 void HAL_RTCEx_TamperTimeStampIRQHandler(RTC_HandleTypeDef *hrtc)
 {
-  /* Clear the EXTI's Flag for RTC Timestamp and Tamper */
-  __HAL_RTC_TAMPER_TIMESTAMP_EXTI_CLEAR_FLAG();
-
   /* Get the Timestamp interrupt source enable status */
   if (__HAL_RTC_TIMESTAMP_GET_IT_SOURCE(hrtc, RTC_IT_TS) != 0U)
   {
@@ -621,8 +618,7 @@ void HAL_RTCEx_TamperTimeStampIRQHandler(RTC_HandleTypeDef *hrtc)
       HAL_RTCEx_TimeStampEventCallback(hrtc);
 #endif /* USE_HAL_RTC_REGISTER_CALLBACKS */
 
-      /* Clear the Timestamp interrupt pending bit after returning from callback
-         as RTC_TSTR and RTC_TSDR registers are cleared when TSF bit is reset */
+      /* Clear the Timestamp interrupt pending bit */
       __HAL_RTC_TIMESTAMP_CLEAR_FLAG(hrtc, RTC_FLAG_TSF);
     }
   }
@@ -633,15 +629,15 @@ void HAL_RTCEx_TamperTimeStampIRQHandler(RTC_HandleTypeDef *hrtc)
     /* Get the pending status of the Tamper 1 Interrupt */
     if (__HAL_RTC_TAMPER_GET_FLAG(hrtc, RTC_FLAG_TAMP1F) != 0U)
     {
-      /* Clear the Tamper interrupt pending bit */
-      __HAL_RTC_TAMPER_CLEAR_FLAG(hrtc, RTC_FLAG_TAMP1F);
-
       /* Tamper callback */
 #if (USE_HAL_RTC_REGISTER_CALLBACKS == 1)
       hrtc->Tamper1EventCallback(hrtc);
 #else
       HAL_RTCEx_Tamper1EventCallback(hrtc);
 #endif /* USE_HAL_RTC_REGISTER_CALLBACKS */
+
+      /* Clear the Tamper interrupt pending bit */
+      __HAL_RTC_TAMPER_CLEAR_FLAG(hrtc, RTC_FLAG_TAMP1F);
     }
   }
 
@@ -652,18 +648,21 @@ void HAL_RTCEx_TamperTimeStampIRQHandler(RTC_HandleTypeDef *hrtc)
     /* Get the pending status of the Tamper 2 Interrupt */
     if (__HAL_RTC_TAMPER_GET_FLAG(hrtc, RTC_FLAG_TAMP2F) != 0U)
     {
-      /* Clear the Tamper interrupt pending bit */
-      __HAL_RTC_TAMPER_CLEAR_FLAG(hrtc, RTC_FLAG_TAMP2F);
-
       /* Tamper callback */
 #if (USE_HAL_RTC_REGISTER_CALLBACKS == 1)
       hrtc->Tamper2EventCallback(hrtc);
 #else
       HAL_RTCEx_Tamper2EventCallback(hrtc);
 #endif /* USE_HAL_RTC_REGISTER_CALLBACKS */
+
+      /* Clear the Tamper interrupt pending bit */
+      __HAL_RTC_TAMPER_CLEAR_FLAG(hrtc, RTC_FLAG_TAMP2F);
     }
   }
 #endif /* RTC_TAMPER2_SUPPORT */
+
+  /* Clear the EXTI's Flag for RTC Timestamp and Tamper */
+  __HAL_RTC_TAMPER_TIMESTAMP_EXTI_CLEAR_FLAG();
 
   /* Change RTC state */
   hrtc->State = HAL_RTC_STATE_READY;
@@ -980,8 +979,7 @@ HAL_StatusTypeDef HAL_RTCEx_SetWakeUpTimer_IT(RTC_HandleTypeDef *hrtc, uint32_t 
     /* Wait till RTC WUTWF flag is reset and if timeout is reached exit */
     do
     {
-      count = count - 1U;
-      if (count == 0U)
+      if (count-- == 0U)
       {
         /* Enable the write protection for RTC registers */
         __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
@@ -1008,8 +1006,7 @@ HAL_StatusTypeDef HAL_RTCEx_SetWakeUpTimer_IT(RTC_HandleTypeDef *hrtc, uint32_t 
   /* Wait till RTC WUTWF flag is set and if timeout is reached exit */
   do
   {
-    count = count - 1U;
-    if (count == 0U)
+    if (count-- == 0U)
     {
       /* Enable the write protection for RTC registers */
       __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
@@ -1133,22 +1130,22 @@ uint32_t HAL_RTCEx_GetWakeUpTimer(RTC_HandleTypeDef *hrtc)
   */
 void HAL_RTCEx_WakeUpTimerIRQHandler(RTC_HandleTypeDef *hrtc)
 {
-  /* Clear the EXTI's line Flag for RTC WakeUpTimer */
-  __HAL_RTC_WAKEUPTIMER_EXTI_CLEAR_FLAG();
-
   /* Get the pending status of the Wakeup timer Interrupt */
   if (__HAL_RTC_WAKEUPTIMER_GET_FLAG(hrtc, RTC_FLAG_WUTF) != 0U)
   {
-    /* Clear the Wakeup timer interrupt pending bit */
-    __HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(hrtc, RTC_FLAG_WUTF);
-
     /* Wakeup timer callback */
 #if (USE_HAL_RTC_REGISTER_CALLBACKS == 1)
     hrtc->WakeUpTimerEventCallback(hrtc);
 #else
     HAL_RTCEx_WakeUpTimerEventCallback(hrtc);
 #endif /* USE_HAL_RTC_REGISTER_CALLBACKS */
+
+    /* Clear the Wakeup timer interrupt pending bit */
+    __HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(hrtc, RTC_FLAG_WUTF);
   }
+
+  /* Clear the EXTI's line Flag for RTC WakeUpTimer */
+  __HAL_RTC_WAKEUPTIMER_EXTI_CLEAR_FLAG();
 
   /* Change RTC state */
   hrtc->State = HAL_RTC_STATE_READY;
