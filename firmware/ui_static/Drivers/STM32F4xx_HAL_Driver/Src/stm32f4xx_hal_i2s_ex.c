@@ -210,15 +210,17 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive(I2S_HandleTypeDef *hi2s,
                                             uint32_t Timeout)
 {
   uint32_t tmp1 = 0U;
+  HAL_StatusTypeDef errorcode = HAL_OK;
 
   if (hi2s->State != HAL_I2S_STATE_READY)
   {
-    return HAL_BUSY;
+    errorcode = HAL_BUSY;
+    goto error;
   }
 
   if ((pTxData == NULL) || (pRxData == NULL) || (Size == 0U))
   {
-    return HAL_ERROR;
+    return  HAL_ERROR;
   }
 
   /* Process Locked */
@@ -279,11 +281,8 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive(I2S_HandleTypeDef *hi2s,
         {
           /* Set the error code */
           SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_TIMEOUT);
-          hi2s->State = HAL_I2S_STATE_READY;
-
-          /* Process UnLock */
-          __HAL_UNLOCK(hi2s);
-          return HAL_ERROR;
+          errorcode = HAL_ERROR;
+          goto error;
         }
         /* Write Data on DR register */
         hi2s->Instance->DR = (*pTxData++);
@@ -306,11 +305,8 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive(I2S_HandleTypeDef *hi2s,
         {
           /* Set the error code */
           SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_TIMEOUT);
-          hi2s->State = HAL_I2S_STATE_READY;
-
-          /* Process UnLock */
-          __HAL_UNLOCK(hi2s);
-          return HAL_ERROR;
+          errorcode = HAL_ERROR;
+          goto error;
         }
         /* Read Data from DR register */
         (*pRxData++) = I2SxEXT(hi2s->Instance)->DR;
@@ -358,11 +354,8 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive(I2S_HandleTypeDef *hi2s,
         {
           /* Set the error code */
           SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_TIMEOUT);
-          hi2s->State = HAL_I2S_STATE_READY;
-
-          /* Process UnLock */
-          __HAL_UNLOCK(hi2s);
-          return HAL_ERROR;
+          errorcode = HAL_ERROR;
+          goto error;
         }
         /* Write Data on DR register */
         I2SxEXT(hi2s->Instance)->DR = (*pTxData++);
@@ -385,11 +378,8 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive(I2S_HandleTypeDef *hi2s,
         {
           /* Set the error code */
           SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_TIMEOUT);
-          hi2s->State = HAL_I2S_STATE_READY;
-
-          /* Process UnLock */
-          __HAL_UNLOCK(hi2s);
-          return HAL_ERROR;
+          errorcode = HAL_ERROR;
+          goto error;
         }
         /* Read Data from DR register */
         (*pRxData++) = hi2s->Instance->DR;
@@ -408,17 +398,15 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive(I2S_HandleTypeDef *hi2s,
     }
   }
 
-  hi2s->State = HAL_I2S_STATE_READY;
-  __HAL_UNLOCK(hi2s);
-
   if (hi2s->ErrorCode != HAL_I2S_ERROR_NONE)
   {
-    return HAL_ERROR;
+    errorcode = HAL_ERROR;
   }
-  else
-  {
-    return HAL_OK;
-  }
+
+error :
+  hi2s->State = HAL_I2S_STATE_READY;
+  __HAL_UNLOCK(hi2s);
+  return errorcode;
 }
 
 /**
@@ -442,10 +430,12 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive_IT(I2S_HandleTypeDef *hi2s,
                                                uint16_t Size)
 {
   uint32_t tmp1 = 0U;
+  HAL_StatusTypeDef errorcode = HAL_OK;
 
   if (hi2s->State != HAL_I2S_STATE_READY)
   {
-    return HAL_BUSY;
+    errorcode = HAL_BUSY;
+    goto error;
   }
 
   if ((pTxData == NULL) || (pRxData == NULL) || (Size == 0U))
@@ -520,14 +510,15 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive_IT(I2S_HandleTypeDef *hi2s,
     }
   }
 
-  __HAL_UNLOCK(hi2s);
   /* Enable I2Sext peripheral */
   __HAL_I2SEXT_ENABLE(hi2s);
 
   /* Enable I2S peripheral */
   __HAL_I2S_ENABLE(hi2s);
 
-  return HAL_OK;
+error :
+  __HAL_UNLOCK(hi2s);
+  return errorcode;
 }
 
 /**
@@ -552,10 +543,12 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive_DMA(I2S_HandleTypeDef *hi2s,
 {
   uint32_t *tmp = NULL;
   uint32_t tmp1 = 0U;
+  HAL_StatusTypeDef errorcode = HAL_OK;
 
   if (hi2s->State != HAL_I2S_STATE_READY)
   {
-    return HAL_BUSY;
+    errorcode = HAL_BUSY;
+    goto error;
   }
 
   if ((pTxData == NULL) || (pRxData == NULL) || (Size == 0U))
@@ -627,6 +620,16 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive_DMA(I2S_HandleTypeDef *hi2s,
 
     /* Enable Tx DMA Request */
     SET_BIT(hi2s->Instance->CR2, SPI_CR2_TXDMAEN);
+
+    /* Check if the I2S is already enabled */
+    if ((hi2s->Instance->I2SCFGR & SPI_I2SCFGR_I2SE) != SPI_I2SCFGR_I2SE)
+    {
+      /* Enable I2Sext(receiver) before enabling I2Sx peripheral */
+      __HAL_I2SEXT_ENABLE(hi2s);
+
+      /* Enable I2S peripheral after the I2Sext */
+      __HAL_I2S_ENABLE(hi2s);
+    }
   }
   else
   {
@@ -650,19 +653,20 @@ HAL_StatusTypeDef HAL_I2SEx_TransmitReceive_DMA(I2S_HandleTypeDef *hi2s,
 
     /* Enable Rx DMA Request */
     SET_BIT(hi2s->Instance->CR2, SPI_CR2_RXDMAEN);
+
+    /* Check if the I2S is already enabled */
+    if ((hi2s->Instance->I2SCFGR & SPI_I2SCFGR_I2SE) != SPI_I2SCFGR_I2SE)
+    {
+      /* Enable I2Sext(transmitter) before enabling I2Sx peripheral */
+      __HAL_I2SEXT_ENABLE(hi2s);
+      /* Enable I2S peripheral before the I2Sext */
+      __HAL_I2S_ENABLE(hi2s);
+    }
   }
 
+error :
   __HAL_UNLOCK(hi2s);
-  /* Check if the I2S is already enabled */
-  if ((hi2s->Instance->I2SCFGR & SPI_I2SCFGR_I2SE) != SPI_I2SCFGR_I2SE)
-  {
-    /* Enable I2Sext(transmitter) before enabling I2Sx peripheral */
-    __HAL_I2SEXT_ENABLE(hi2s);
-    /* Enable I2S peripheral before the I2Sext */
-    __HAL_I2S_ENABLE(hi2s);
-  }
-
-  return HAL_OK;
+  return errorcode;
 }
 
 /**
