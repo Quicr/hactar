@@ -22,7 +22,7 @@ FIRMWARE = ${TARGET}.bin
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -O0
+OPT = -Os
 # OPT = -O3
 
 #######################################
@@ -298,6 +298,9 @@ upload: compile
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS_SWD} ; \
 	fi \
+
+upload_cube_uart:
+	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_USART_ARGS}
 
 program: compile upload
 
