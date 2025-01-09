@@ -106,7 +106,7 @@ void RoomView::Update(uint32_t current_tick)
             while (room_packets->Unread() > 0)
             {
                 // Parse the packets for the room
-                auto rx_packet = room_packets->Read();
+                auto rx_packet = std::move(room_packets->Read());
 
                 // Build the string that will be the room
                 std::unique_ptr<qchat::Room> room =
@@ -191,6 +191,8 @@ void RoomView::SelectRoom()
     }
 
     ConnectToRoom(std::move(rooms[room_id]));
+
+    // ChangeView("/plain");
 }
 
 void RoomView::ConnectToRoom(std::unique_ptr<qchat::Room> room)

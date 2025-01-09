@@ -3,6 +3,8 @@
 #include "serial_packet_manager.hh"
 #include "serial_packet.hh"
 #include "wifi.hh"
+#include "qsession.hh"
+#include "ring_buffer.hh"
 
 #define MAX_AP 10
 
@@ -16,6 +18,7 @@ public:
     NetManager(SerialPacketManager& ui_layer,
                 Wifi& wifi);
     void Update();
+    static void HandleAudio(void* param);
     static void HandleSerial(void* param);
     // static void HandleNetwork(void* param);
 private:
@@ -31,9 +34,13 @@ private:
     void GetRoomsCommand();
 
     SerialPacketManager& ui_layer;
+
+
     Wifi& wifi;
     // std::optional<std::thread> handler_thread;
     static constexpr auto inbound_object_timeout = std::chrono::milliseconds(100);
-    // std::shared_ptr<QSession> quicr_session;
-    // std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects;
+    std::shared_ptr<QSession> quicr_session;
+    std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects;
+    RingBuffer<std::unique_ptr<SerialPacket>> audio_buffer;
+    bool audio_buffered;
 };
