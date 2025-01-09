@@ -92,10 +92,10 @@ void Error_Handler(void);
 #define USB_RX1_MGMT_GPIO_Port GPIOA
 #define USB_TX1_MGMT_Pin GPIO_PIN_10
 #define USB_TX1_MGMT_GPIO_Port GPIOA
-#define UI_NRST_Pin GPIO_PIN_15
-#define UI_NRST_GPIO_Port GPIOA
-#define UI_BOOT0_Pin GPIO_PIN_3
-#define UI_BOOT0_GPIO_Port GPIOB
+#define UI_BOOT0_Pin GPIO_PIN_15
+#define UI_BOOT0_GPIO_Port GPIOA
+#define UI_NRST_Pin GPIO_PIN_3
+#define UI_NRST_GPIO_Port GPIOB
 #define NET_NRST_Pin GPIO_PIN_4
 #define NET_NRST_GPIO_Port GPIOB
 #define NET_BOOT_Pin GPIO_PIN_5

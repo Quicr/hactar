@@ -1,6 +1,7 @@
 #include "uart_stream.h"
 
 #include "chip_control.h"
+#include "main.h"
 
 void HandleRx(uart_stream_t* rx_stream, uint16_t num_received)
 {

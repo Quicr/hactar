@@ -2,9 +2,9 @@
 
 
 #include <iostream>
-#include "audio_codec.hh"
 
 #include <map>
+#include <cstdint>
 
 class AudioCodec
 {

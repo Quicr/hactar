@@ -1,5 +1,6 @@
 #pragma once
 
+template <typename T>
 class SwapBuffer
 {
 public:
@@ -8,13 +9,13 @@ public:
         GPIO_PinState dc_level;
         bool is_ready;
         size_t len;
-        uint8_t* data;
+        T* data;
     };
 
     SwapBuffer(size_t buffer_size):
         buffer_size(buffer_size),
-        dual_buffers{ swap_buffer_t{GPIO_PIN_RESET, 0, 0, new uint8_t[buffer_size]},
-                      swap_buffer_t{GPIO_PIN_RESET, 0, 0, new uint8_t[buffer_size]} },
+        dual_buffers{ swap_buffer_t{GPIO_PIN_RESET, 0, 0, new T[buffer_size]},
+                      swap_buffer_t{GPIO_PIN_RESET, 0, 0, new T[buffer_size]} },
         back_buff(&dual_buffers[0]),
         front_buff(&dual_buffers[1])
     {
