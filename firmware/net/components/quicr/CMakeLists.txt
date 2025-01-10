@@ -2,6 +2,7 @@
 set(priv_requires
     pthread
     lwip
+    mbedtls
     )
 
 idf_component_register(
@@ -10,6 +11,7 @@ idf_component_register(
     REQUIRED_IDF_TARGETS esp32s3
 )
 
+
+
 add_subdirectory(lib)
-target_include_directories(quicr-transport PRIVATE ${IDF_PATH}/components/pthread/include)
 target_link_libraries(${COMPONENT_LIB} INTERFACE quicr)
