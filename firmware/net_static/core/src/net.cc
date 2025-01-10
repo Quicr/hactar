@@ -31,13 +31,67 @@
 // TODO tcp client should now also receive packets and push them to serial
 
 Serial* ui_layer;
+int sock;
+uint32_t packets_sent = 0;
+uint32_t packets_recv = 0;
 
-static void TCPClientTask(void* params)
+static void TCPClientSend(void* params)
 {
-    static const char* tcp_tag = "TCP Client Task";
-    uint32_t packets_sent = 0;
-    uint32_t packets_recv = 0;
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    static const char* tcp_tag = "TCP Send";
+
+    Serial::packet_t* rx_packet = nullptr;
+    while (true)
+    {
+        // vTaskDelay(10 / portTICK_PERIOD_MS);
+        // Get the data from our serial
+        rx_packet = ui_layer->GetReadyRxPacket();
+        if (rx_packet == nullptr)
+        {
+            continue;
+        }
+
+        int err = send(sock, rx_packet->data, rx_packet->length, 0);
+        if (err < 0)
+        {
+            ESP_LOGE(tcp_tag, "Error sending data: errno %d", err);
+        }
+        else
+        {
+            ++packets_sent;
+            ESP_LOGI(tcp_tag, "Data sent %lu", packets_sent);
+        }
+    }
+    close(sock);
+    ESP_LOGI(tcp_tag, "socket closed");
+    vTaskDelete(NULL);
+}
+
+static void TCPClientRecv(void* params)
+{
+    static const char* tcp_tag = "TCP Send";
+    
+    Serial::packet_t* tx_packet = nullptr;
+    while (true)
+    {
+        tx_packet = ui_layer->Write();
+        int len = recv(sock, tx_packet->data, 355, 0);
+        if (len < 0)
+        {
+            ESP_LOGE(tcp_tag, "No data received from server");
+        }
+        else
+        {
+            ESP_LOGI(tcp_tag, "Received: len %d, total recv %lu, packet_len %u", len, ++packets_recv, tx_packet->length);
+            tx_packet->is_ready = true;
+            tx_packet = nullptr;
+        }
+    }
+}
+
+static void TCPClientBegin()
+{
+    static const char* tcp_tag = "TCP client begin";
+    sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0)
     {
         ESP_LOGE(tcp_tag, "Unable to create socket");
@@ -58,48 +112,8 @@ static void TCPClientTask(void* params)
         vTaskDelete(NULL);
     }
     ESP_LOGI(tcp_tag, "Connected to server");
-
-    Serial::packet_t* rx_packet = nullptr;
-    Serial::packet_t* tx_packet = nullptr;
-    while (true)
-    {
-        vTaskDelay(10/portTICK_PERIOD_MS);
-        // Get the data from our serial
-        rx_packet = ui_layer->GetReadyRxPacket();
-        if (rx_packet == nullptr)
-        {
-            continue;
-        }
-        
-        err = send(sock, rx_packet->data, rx_packet->length, 0);
-        if (err < 0)
-        {
-            ESP_LOGE(tcp_tag, "Error sending data: errno %d", err);
-        }
-        else
-        {
-            ++packets_sent;
-            ESP_LOGI(tcp_tag, "Data sent %lu", packets_sent);
-        }
-        
-        tx_packet = ui_layer->Write();
-        int len = recv(sock, tx_packet->data, 355, 0);
-        if (len < 0)
-        {
-            ESP_LOGE(tcp_tag, "No data received from server");
-        }
-        else
-        {
-            ESP_LOGI(tcp_tag, "Received: len %d, total recv %lu, packet_len %u", len, ++packets_recv, tx_packet->length);
-            tx_packet->is_ready = true;
-            tx_packet = nullptr;
-        }
-    }
-    close(sock);
-    ESP_LOGI(tcp_tag, "socket closed");
-    vTaskDelete(NULL);
+    xTaskCreate(TCPClientSend, "tcp_client_send_task", 4096, NULL, 5, NULL);
 }
-
 
 extern "C" void app_main(void)
 {
@@ -128,7 +142,7 @@ extern "C" void app_main(void)
         RTS_PIN, CTS_PIN, ESP_INTR_FLAG_LOWMED);
 
 
-    ui_layer = new Serial(UART1, uart_queue, 4096 * 4, 4096 *4, 30, 30);
+    ui_layer = new Serial(UART1, uart_queue, 4096 * 4, 4096 * 4, 30, 30);
     Wifi wifi;
     wifi.Connect(SSID, SSID_PWD);
 
@@ -139,7 +153,7 @@ extern "C" void app_main(void)
     }
     // TODO we need to wait until the tcp client is also connected before we say we can take 
     // packets
-    xTaskCreate(TCPClientTask, "tcp_client_task", 4096, NULL, 5, NULL);
+    TCPClientBegin();
 
     gpio_set_level(NET_LED_R, 1);
     gpio_set_level(NET_LED_G, 1);
