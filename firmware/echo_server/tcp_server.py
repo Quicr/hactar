@@ -11,17 +11,17 @@ def handle_client(client_socket):
     try:
         while True:
             # Receive data from the client
-            data = client_socket.recv(355)  # Buffer size 1024 bytes
+            data = client_socket.recv(355)  # Buffer size 355 bytes
             if not data:
                 break  # Connection closed by the client
             recv += 1;
             print(f"Received message: {len(data)}, recv: {recv}")
 
             # Send data to all other connected clients
-            for client in clients:
+            # for client in clients:
                 # if client != client_socket:  # Don't send back to the sender
-                client.send(data)
-                print(f"Forwarded message to {client.getpeername()}")
+            client_socket.send(data)
+            print(f"Forwarded message to {client_socket.getpeername()}")
     except Exception as e:
         print(f"Error with client {client_socket.getpeername()}: {e}")
     finally:
