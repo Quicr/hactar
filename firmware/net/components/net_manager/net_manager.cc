@@ -201,15 +201,6 @@ void NetManager::HandleSerial(void* param)
 //             uint32_t room_len = rx_packet->GetData<uint32_t>(offset, 4);
 //             uint32_t off = offset + 4;
 
-<<<<<<< HEAD
-//             // Get the room uri
-//             std::string room_uri;
-//             for (int i =0; i < room_len; ++i)
-//             {
-//                 room_uri.push_back(rx_packet->GetData<char>(off, 1));
-//                 off += 1;
-//             }
-=======
             // Get the room uri
             std::string room_uri;
             for (int i = 0; i < room_len; ++i)
@@ -217,37 +208,11 @@ void NetManager::HandleSerial(void* param)
                 room_uri.push_back(rx_packet->GetData<char>(off, 1));
                 off += 1;
             }
->>>>>>> main
 
 //             // Get the audio len
 //             uint16_t audio_len = rx_packet->GetData<uint16_t>(off, 2);
 //             off += 2;
 
-<<<<<<< HEAD
-//             std::vector<uint8_t> msg;
-//             msg.reserve(audio_len + 1); // +1 for type
-//             msg.push_back((uint8_t)qchat::MessageTypes::Audio);
-//             Logger::Log(Logger::Level::Info, "Audio len ", audio_len);
-//             for (uint16_t i = 0; i < audio_len; ++i)
-//             {
-//                 msg.push_back(rx_packet->GetData<uint8_t>(off, 1));
-//                 off+=1;
-//             }
-
-//             auto nspace = quicr_session->to_namespace(room_uri);
-
-//             Logger::Log(Logger::Level::Info, "Send audio to quicr session to publish");
-//             quicr_session->publish(nspace, msg);
-//             break;
-//         }
-//         default:
-//         {
-//             Logger::Log(Logger::Level::Warn, "NetManager:QChatMessage: Unknown Message");
-//             break;
-//         }
-//     }
-// }
-=======
             // this is a hack for now until quicr is fixed.
             std::vector<uint8_t> msg;
             msg.reserve(audio_len + 1); // +1 for type
@@ -307,7 +272,6 @@ void NetManager::HandleSerial(void* param)
         }
     }
 }
->>>>>>> main
 
 // void NetManager::HandleWatchMessage(void* params)
 // {
