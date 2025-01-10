@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include <iostream>
 
+#include <quicr/client.h>
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -17,12 +18,12 @@
 
 #include "serial_esp.hh"
 #include "serial_packet_manager.hh"
-#include "net_manager.hh"
+//#include "net_manager.hh"
 
 #include "wifi.hh"
 #include "net_pins.hh"
 
-#include "qsession.hh"
+//#include "qsession.hh"
 #include "logger.hh"
 
 extern "C" void app_main(void)
@@ -54,7 +55,7 @@ extern "C" void app_main(void)
             blink_cnt = 0;
         }
 
-        manager->Update();
+//        manager->Update();
 
         auto state = wifi->GetState();
         if (state == Wifi::State::Connected && !qsession_connected)
@@ -134,7 +135,7 @@ void SetupComponents()
     // };
     // qsession = std::make_shared<QSession>(relay, inbound_queue);
 
-    manager = new NetManager(*ui_layer, *wifi);
+//    manager = new NetManager(*ui_layer, *wifi);
 
     // Wait for wifi to finish initializing
     while (!wifi->IsInitialized())

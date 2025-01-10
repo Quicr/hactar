@@ -3,7 +3,7 @@
 
 HactarSubscribeTrackHandler::HactarSubscribeTrackHandler(
     const quicr::FullTrackName& full_track_name):
-    SubscribeTrackHandler(full_track_name)
+    SubscribeTrackHandler(full_track_name, 2, quicr::messages::GroupOrder::kAscending, quicr::messages::FilterType::LatestGroup)
 {
 
 }
