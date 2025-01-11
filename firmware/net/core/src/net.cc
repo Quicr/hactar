@@ -18,34 +18,26 @@
 
 #include "serial_esp.hh"
 #include "serial_packet_manager.hh"
-//#include "net_manager.hh"
 
 #include "wifi.hh"
 #include "net_pins.hh"
-
-//#include "qsession.hh"
 #include "logger.hh"
 
 extern "C" void app_main(void)
 {
     SetupPins();
-    SetupComponents();
 
-    gpio_set_level(NET_LED_R, 1);
-    gpio_set_level(NET_LED_G, 1);
-    gpio_set_level(NET_LED_B, 1);
-    gpio_set_level(NET_DEBUG_1, 0);
-    gpio_set_level(NET_DEBUG_2, 0);
-    gpio_set_level(NET_DEBUG_3, 0);
+    // TODO: this comes from eeprom
+    DeviceSetupConfig dev_config{};
 
-    int next = 0;
-    gpio_set_level(NET_LED_R, 0);
+    SetupComponents(dev_config);
 
-    // Ready for normal operations
-    gpio_set_level(NET_STAT, 1);
+    PostSetup();
 
     // This is the lazy way of doing it, otherwise we should use a esp_timer.
     uint32_t blink_cnt = 0;
+    int next = 0;
+
     while (1)
     {
         if (blink_cnt++ == 100)
@@ -55,14 +47,21 @@ extern "C" void app_main(void)
             blink_cnt = 0;
         }
 
-//        manager->Update();
-
         auto state = wifi->GetState();
-        if (state == Wifi::State::Connected && !qsession_connected)
+        if (state == Wifi::State::Connected)
         {
-            Logger::Log(Logger::Level::Info, "Net app_main Connecting to QSession");
-            // qsession->connect();
-            qsession_connected = true;
+            Logger::Log(Logger::Level::Info, "WiFi Connection Success");
+        }
+
+        if (moq_session->GetStatus() == moqt::Session::Status::kNotReady) {
+            if (moq_session->Connect() != quicr::Transport::Status::kConnecting) {
+                Logger::Log(Logger::Level::Error, "MOQ Transport Session Connection Failure");
+                break;
+            }
+        }
+
+        if (moq_session->GetStatus() == moqt::Session::Status::kReady) {
+            Logger::Log(Logger::Level::Info, "MOQ Transport Connected");
         }
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -108,34 +107,33 @@ static void SetupPins()
         .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
     };
 
-    // uart_intr_config_t uart1_intr = {
-    //     .intr_enable_mask
-    // }
-
     // Setup serial interface for ui
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart1_config, 4096);
+
 
     Logger::Log(Logger::Level::Info, "Pin setup complete");
 }
 
-void SetupComponents()
+void SetupComponents(const DeviceSetupConfig& dev_config)
 {
     // UART to the ui
     ui_layer = new SerialPacketManager(ui_uart1);
+
+    // wifi
     wifi = new Wifi(*ui_layer);
 
-    // inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
-    // char default_relay [] = "192.168.50.20";
-    // auto relay_name = default_relay;
-    // uint16_t port = 1234;
-    // quicr::RelayInfo relay{
-    //     .hostname = relay_name,
-    //     .port = port,
-    //     .proto = quicr::RelayInfo::Protocol::UDP
-    // };
-    // qsession = std::make_shared<QSession>(relay, inbound_queue);
+    // moq transport
+    quicr::ClientConfig config;
+    // TODO: Get this from eeprom
+    config.endpoint_id = dev_config.moq_endpoint_id;
+    config.connect_uri = dev_config.moq_connect_uri;
+    config.transport_config.debug = true;
 
-//    manager = new NetManager(*ui_layer, *wifi);
+    config.transport_config.use_reset_wait_strategy = false;
+    config.transport_config.time_queue_max_duration = 5000;
+    if (!moq_session) {
+        moq_session = moqt::Session::Create(config, false);
+    }
 
     // Wait for wifi to finish initializing
     while (!wifi->IsInitialized())
@@ -144,4 +142,20 @@ void SetupComponents()
     }
 
     Logger::Log(Logger::Level::Info, "Components ready");
+}
+
+
+void PostSetup() {
+    gpio_set_level(NET_LED_R, 1);
+    gpio_set_level(NET_LED_G, 1);
+    gpio_set_level(NET_LED_B, 1);
+    gpio_set_level(NET_DEBUG_1, 0);
+    gpio_set_level(NET_DEBUG_2, 0);
+    gpio_set_level(NET_DEBUG_3, 0);
+
+    gpio_set_level(NET_LED_R, 0);
+
+    // Ready for normal operations
+    gpio_set_level(NET_STAT, 1);
+
 }
