@@ -3,20 +3,11 @@
  #include <memory>
  #include <map>
 
- #include <UrlEncoder.h>
 
  #include <quicr/client.h>
  #include <quicr/name.h>
 
- #include "hactar_subscribe_track_handler.hh"
- #include "hactar_publish_track_handler.hh"
-
- // Rough notes
- // watch a room --> publish_intent with publisher_uri for the room and subscribe for room_uri
- // TODO needs to maintain a connected state, and when it connects
- // we need to send a message to the ui to inform it that quicr is ready
-
- class QSession
+ class QChatSession
  {
 
  public:
