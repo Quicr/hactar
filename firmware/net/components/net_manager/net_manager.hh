@@ -17,8 +17,13 @@ public:
     //             std::shared_ptr<AsyncQueue<QuicrObject>> inbound_objects);
     NetManager(SerialPacketManager& ui_layer,
                 Wifi& wifi);
+
+    NetManager(Wifi& wifi);
+
     void Update();
+
     static void HandleAudio(void* param);
+
     static void HandleSerial(void* param);
     // static void HandleNetwork(void* param);
 private:
