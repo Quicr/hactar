@@ -2,6 +2,3 @@
 	path = firmware/net/components/quicr/lib
 	url = git@github.com:Quicr/libquicr.git
 	branch = main
-[submodule "firmware/net/components/numero_uri/lib"]
-	path = firmware/net/components/numero_uri/lib
-	url = git@github.com:Quicr/numero-uri.git
