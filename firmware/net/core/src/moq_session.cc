@@ -1,8 +1,5 @@
 #include <moq_session.hh>
 
-using namespace moqt;
-
-
 void Session::StatusChanged(int status) {
     switch (status) {
         case Status::kReady:

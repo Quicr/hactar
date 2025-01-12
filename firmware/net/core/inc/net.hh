@@ -10,7 +10,6 @@
 #include "logger.hh"
 #include "serial_esp.hh"
 #include "serial_packet_manager.hh"
-#include "moq_session.hh"
 
 #include "wifi.hh"
 
@@ -24,9 +23,7 @@ static SerialEsp* ui_uart1 = nullptr;
 static SerialPacketManager* ui_layer = nullptr;
 static SerialPacketManager* audio_layer = nullptr;
 static Wifi* wifi = nullptr;
-static std::shared_ptr<moqt::Session> moq_session = nullptr;
-
 static void SetupPins();
-static void SetupComponents(const DeviceSetupConfig&);
+static void SetupComponents(const DeviceSetupConfig& config);
 static void PostSetup();
 
