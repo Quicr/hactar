@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <iostream>
+#include <memory>
 
 #include <quicr/client.h>
 #include "esp_log.h"
@@ -22,15 +22,37 @@
 #include "wifi.hh"
 #include "net_pins.hh"
 #include "logger.hh"
+#include "moq_session.hh"
+
+static std::shared_ptr<Session> moq_session = nullptr;
 
 extern "C" void app_main(void)
 {
     SetupPins();
 
     // TODO: this comes from eeprom
-    DeviceSetupConfig dev_config{};
+    DeviceSetupConfig dev_config;
+    // UART to the ui
+    ui_layer = new SerialPacketManager(ui_uart1);
+    // wifi
+    wifi = new Wifi(*ui_layer);
+    // moq transport
+    quicr::ClientConfig config;
+    // TODO: Get this from eeprom
+    config.endpoint_id = dev_config.moq_endpoint_id;
+    config.connect_uri = dev_config.moq_connect_uri;
+    config.transport_config.debug = true;
+    config.transport_config.use_reset_wait_strategy = false;
+    config.transport_config.time_queue_max_duration = 5000;
+    quicr::Client* client = new quicr::Client(config);
 
-    SetupComponents(dev_config);
+    // Wait for wifi to finish initializing
+    while (!wifi->IsInitialized())
+    {
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+
+    Logger::Log(Logger::Level::Info, "Components ready");
 
     PostSetup();
 
@@ -53,14 +75,14 @@ extern "C" void app_main(void)
             Logger::Log(Logger::Level::Info, "WiFi Connection Success");
         }
 
-        if (moq_session->GetStatus() == moqt::Session::Status::kNotReady) {
+        if (moq_session->GetStatus() == Session::Status::kNotReady) {
             if (moq_session->Connect() != quicr::Transport::Status::kConnecting) {
                 Logger::Log(Logger::Level::Error, "MOQ Transport Session Connection Failure");
                 break;
             }
         }
 
-        if (moq_session->GetStatus() == moqt::Session::Status::kReady) {
+        if (moq_session->GetStatus() == Session::Status::kReady) {
             Logger::Log(Logger::Level::Info, "MOQ Transport Connected");
         }
 
@@ -70,6 +92,7 @@ extern "C" void app_main(void)
 
 static void SetupPins()
 {
+
     gpio_config_t io_conf = {};
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
@@ -110,38 +133,12 @@ static void SetupPins()
     // Setup serial interface for ui
     ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart1_config, 4096);
 
-
     Logger::Log(Logger::Level::Info, "Pin setup complete");
 }
 
-void SetupComponents(const DeviceSetupConfig& dev_config)
+void SetupComponents(const DeviceSetupConfig& config)
 {
-    // UART to the ui
-    ui_layer = new SerialPacketManager(ui_uart1);
 
-    // wifi
-    wifi = new Wifi(*ui_layer);
-
-    // moq transport
-    quicr::ClientConfig config;
-    // TODO: Get this from eeprom
-    config.endpoint_id = dev_config.moq_endpoint_id;
-    config.connect_uri = dev_config.moq_connect_uri;
-    config.transport_config.debug = true;
-
-    config.transport_config.use_reset_wait_strategy = false;
-    config.transport_config.time_queue_max_duration = 5000;
-    if (!moq_session) {
-        moq_session = moqt::Session::Create(config, false);
-    }
-
-    // Wait for wifi to finish initializing
-    while (!wifi->IsInitialized())
-    {
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
-
-    Logger::Log(Logger::Level::Info, "Components ready");
 }
 
 
