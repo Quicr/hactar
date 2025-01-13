@@ -296,10 +296,14 @@ upload_prog: compile
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
 	fi \
 
-upload: compile
+upload_cube: compile
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS_SWD} ; \
 	fi \
+
+upload: compile
+	st-flash --reset --format ihex write   ./build/ui_static.hex
+
 
 program: compile upload
 
