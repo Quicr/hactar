@@ -20,6 +20,10 @@ idf-clean:
 compile:
 	idf.py -B $(BUILD_PATH) build
 
+init_upload: compile	
+	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/bootloader/bootloader.bin ${BOOTLOADER_ADDR} verify exit"
+	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/partition_table/partition-table.bin ${PT_ADDR} verify exit"
+
 upload: compile 
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ./build/net.bin 0x10000 verify exit"
 	python3 ../tools/command_sender.py ${CONSOLE_PORT} 115200 reset
