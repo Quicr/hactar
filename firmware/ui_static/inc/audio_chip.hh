@@ -3,8 +3,9 @@
 #include "stm32.h"
 #include "stm32f4xx_hal_i2c.h"
 #include "stm32f4xx_hal_i2s.h"
+#include "constants.hh"
 
-#include "memory"
+#include <memory>
 
 extern UART_HandleTypeDef huart1;
 
@@ -46,9 +47,7 @@ public:
     bool RxBufferReady();
 
     void ISRCallback();
-
-    uint16_t AudioBufferSize() const;
-    uint16_t AudioBufferSize_2() const;
+    
     void ClearTxBuffer();
 
     void Transmit(uint16_t* tx, const size_t size);
@@ -66,15 +65,6 @@ public:
 
     uint16_t* TxBuffer();
     const uint16_t* RxBuffer();
-
-    double phase;
-    double phases[3] = { 0, 0, 0 };
-
-
-    static constexpr uint16_t Sample_Rate = 16'000; // 16khz
-
-    static constexpr uint16_t Audio_Buffer_Sz = 640;
-    static constexpr uint16_t Audio_Buffer_Sz_2 = Audio_Buffer_Sz / 2;
 
 private:
     enum AudioFlag
@@ -110,9 +100,9 @@ private:
     I2S_HandleTypeDef* i2s;
     I2C_HandleTypeDef* i2c;
 
-    uint16_t tx_buffer[Audio_Buffer_Sz];
+    uint16_t tx_buffer[constants::Audio_Buffer_Sz];
     uint16_t* tx_ptr;
-    uint16_t rx_buffer[Audio_Buffer_Sz];
+    uint16_t rx_buffer[constants::Audio_Buffer_Sz];
     uint16_t* rx_ptr;
     uint32_t buff_mod;
 

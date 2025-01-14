@@ -90,16 +90,22 @@ void Serial::Read(uint8_t** data, size_t& num_bytes)
     }
 }
 
+void Serial::Write(const uint8_t data)
+{
+    ChangeFreeState();
+    HAL_UART_Transmit_DMA(uart, &data, 1);
+}
+
 void Serial::Write(const uint8_t* data, const size_t size)
 {
-    if (uart->gState != HAL_UART_STATE_READY)
-    {
-        Error_Handler();
-        return;
-    }
-
-    tx_is_free = false;
+    ChangeFreeState();
     HAL_UART_Transmit_DMA(uart, data, size);
+}
+
+void Serial::Write(const packet_t& packet)
+{
+    ChangeFreeState();
+    HAL_UART_Transmit_DMA(uart, packet.data, packet.length);
 }
 
 size_t Serial::Unread()
@@ -111,7 +117,7 @@ void Serial::RxEvent(const uint16_t idx)
 {
     // NOTE- Do NOT put a breakpoint in here, the callbacks will
     // get blocked will get memory access errors because the
-    // callback on your breakpoint will through off the values and then
+    // callback on your breakpoint will throw off the values and then
     // will cause the value to be at the wrong idx and everything will go
     // ka-boom, crash, plop. Overflow errors and stuff.
     const uint16_t num_recv = idx - write_idx;
@@ -131,4 +137,16 @@ bool Serial::IsFree()
 void Serial::Free()
 {
     tx_is_free = true;
+}
+
+void Serial::ChangeFreeState()
+{
+    // TODO use tx free?
+    if (uart->gState != HAL_UART_STATE_READY)
+    {
+        Error_Handler();
+        return;
+    }
+
+    tx_is_free = false;
 }

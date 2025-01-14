@@ -10,6 +10,9 @@
 
 #include "fib.hh"
 
+#include "packet_t.hh"   
+#include "ui_net_link.hh"
+
 #include <string.h>
 
 #include <random>
@@ -94,27 +97,8 @@ Screen screen(
     Screen::Orientation::flipped_portrait
 );
 
-constexpr uint32_t QMessage_Room_Length = 32;
-constexpr uint32_t Serial_Start_Bytes = 3;
-constexpr uint32_t Serial_Header_Sz = Serial_Start_Bytes + QMessage_Room_Length;
-constexpr uint32_t Serial_QMessage_Room_Offset = Serial_Start_Bytes;
-constexpr uint32_t Serial_Audio_Buff_Sz = AudioChip::Audio_Buffer_Sz_2 + Serial_Header_Sz;
-
-// Make tx and rx buffers for audio
-uint8_t serial_tx_audio_buff[Serial_Audio_Buff_Sz] = {
-    Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
-    Serial::Packet_Type::Audio };
-// The bytes that take up the room should be set at some point
-uint8_t serial_rx_audio_buff[Serial_Audio_Buff_Sz] = {
-    Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
-    Serial::Packet_Type::Audio };
-
-uint8_t serial_tx_buffer[400] = { 0 };
-uint8_t serial_rx_buffer[400] = { 0 };
-
-// Make a pointer that is to JUST the audio data section of the buffer
-uint8_t* serial_tx_audio_offset_ptr = serial_tx_audio_buff + Serial_Header_Sz;
-uint8_t* serial_rx_audio_offset_ptr = serial_rx_audio_buff + Serial_Header_Sz;
+packet_t talk_packet;
+packet_t play_buffer;
 
 volatile bool sleeping = true;
 volatile bool error = false;
@@ -140,48 +124,12 @@ int app_main()
     Colour curr = Colour::Blue;
     const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
 
+    bool ptt_down = false;
+
     // TODO Fix
     WaitForNetReady();
 
     // TODO Probe for a reply from the net chip using serial
-    serial_tx_buffer[0] = 3;
-    serial_tx_buffer[1] = 0;
-    serial_tx_buffer[2] = Serial::Ready;
-
-    // SlowSendTest(10);
-
-    // serial.Write(serial_tx_buffer, 3);
-    // HAL_Delay(100);
-    // while (!net_replied)
-    // {
-    //     if (serial.Unread() >= 3)
-    //     {
-    //         // Read
-    //         serial.Read(serial_rx_buffer, 255, 3);
-
-    //         if (serial_rx_buffer[2] == Serial::Ready)
-    //         {
-    //             net_replied = true;
-    //         }
-    //     }
-
-    // }
-
-        // HAL_UART_Transmit(&huart2, serial_tx_audio_buff, Serial_Audio_Buff_Sz, HAL_MAX_DELAY);
-        // HAL_UART_Transmit(&huart2, serial_tx_audio_buff, Serial_Audio_Buff_Sz, HAL_MAX_DELAY);
-    // HAL_Delay(5000);
-    // // for (int i = 0 ; i < 100; ++i)
-    // while(true)
-    // {
-    //     HAL_UART_Transmit_DMA(&huart2, serial_tx_audio_buff, Serial_Audio_Buff_Sz);
-    //     // serial.Write(serial_tx_audio_buff, Serial_Audio_Buff_Sz);
-    //     HAL_Delay(10);
-    // }
-    // bool x = true;
-    // while (x)
-    // {
-
-    // }
 
     // TODO test clock stability by switching a debug pin on and off and measure it with the scope
     HAL_Delay(5000);
@@ -214,21 +162,37 @@ int app_main()
         {
             Error_Handler();
         }
-
         // If we broke out then that means we got an audio callback
 
+
         // Compand our audio
-        AudioCodec::ALawCompand(audio_chip.RxBuffer(), serial_tx_audio_offset_ptr, AudioChip::Audio_Buffer_Sz_2);
+        if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
+        {
+            // TODO channel id
+            ui_net_link::TalkStart talk_start = { 0 };
+            ui_net_link::Serialize(talk_start, talk_packet);
+            serial.Write(talk_packet);
+            ptt_down = true;
+        }
+        else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down) 
+        {
+            ui_net_link::TalkStop talk_stop = { 0 };
+            ui_net_link::Serialize(talk_stop, talk_packet);
+            serial.Write(talk_packet);
+            ptt_down = false;
+        }
+
+        if (ptt_down)
+        {
+            ui_net_link::AudioObject talk_frame = { 0 };
+
+            AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
+            ui_net_link::Serialize(talk_frame, talk_packet);
+            serial.Write(talk_packet);
+        }
         RaiseFlag(Rx_Audio_Companded);
 
-        // Try to send packets
-        serial.Write(serial_tx_audio_buff, Serial_Audio_Buff_Sz);
-
-
         // If there are bytes available read them
-        // TODO need to make sure that there is 3 or more bytes.
-        // TODO remake this, its garbage.
-
         bool is_reading = true;
         if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET)
         {
@@ -244,37 +208,6 @@ int app_main()
 
                 // Get the "room"
                 // THIS IS DUMMY DATA
-                serial.Read(serial_rx_audio_buff + 3, QMessage_Room_Length, QMessage_Room_Length);
-
-                switch (type)
-                {
-                    case Serial::Audio:
-                    {
-                        // Copy the audio from the buffer to the audio buffer
-                        uint16_t* tx_ptr = audio_chip.TxBuffer();
-
-                        // copy the data to the audio serial rx buff
-                        serial.Read(serial_rx_audio_buff + 35, Serial_Audio_Buff_Sz, AudioChip::Audio_Buffer_Sz_2);
-
-                        // expand the data
-                        AudioCodec::ALawExpand(serial_rx_audio_buff + 35, tx_ptr, AudioChip::Audio_Buffer_Sz_2);
-                        is_reading = false;
-                        break;
-                    }
-                    case Serial::Text:
-                    {
-                        // ProcessText(len);
-                        break;
-                    }
-                    case Serial::MLS:
-                    {
-                        break;
-                    }
-                    default:
-                    {
-                        break;
-                    }
-                }
             }
         }
 
@@ -370,30 +303,30 @@ inline void CheckFlags()
     }
 }
 
-inline void ProcessText(uint16_t len)
-{
-    // Get the room
-    uint8_t room[QMessage_Room_Length];
-    serial.Read(room, QMessage_Room_Length, QMessage_Room_Length);
-    len -= Serial_Header_Sz;
+// inline void ProcessText(uint16_t len)
+// {
+//     // Get the room
+//     uint8_t room[QMessage_Room_Length];
+//     serial.Read(room, QMessage_Room_Length, QMessage_Room_Length);
+//     len -= Serial_Header_Sz;
 
-    uint8_t* serial_data = nullptr;
-    size_t num_bytes = len;
+//     uint8_t* serial_data = nullptr;
+//     size_t num_bytes = len;
 
-    while (len > 0)
-    {
-        // Get the text
-        serial.Read(&serial_data, num_bytes);
+//     while (len > 0)
+//     {
+//         // Get the text
+//         serial.Read(&serial_data, num_bytes);
 
-        // Now we have the text data
-        screen.AppendText((const char*)serial_data, num_bytes);
+//         // Now we have the text data
+//         screen.AppendText((const char*)serial_data, num_bytes);
 
-        len -= num_bytes;
-    }
+//         len -= num_bytes;
+//     }
 
-    // Commit the text
-    screen.CommitText();
-}
+//     // Commit the text
+//     screen.CommitText();
+// }
 
 void InitScreen()
 {
@@ -502,57 +435,59 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 void SlowSendTest(int delay, int num)
 {
-    uint8_t tmp[Serial_Audio_Buff_Sz] = {
-        Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
-        Serial::Packet_Type::Audio
-    };
+    // TODO FIX
+    // uint8_t tmp[Serial_Audio_Buff_Sz] = {
+    //     Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
+    //     Serial::Packet_Type::Audio
+    // };
 
-    // Fill the tmp audio buffer with random
-    for (int i = 35; i < Serial_Audio_Buff_Sz; ++i)
-    {
-        tmp[i] = rand() % 0xFF;
-    }
+    // // Fill the tmp audio buffer with random
+    // for (int i = 35; i < Serial_Audio_Buff_Sz; ++i)
+    // {
+    //     tmp[i] = rand() % 0xFF;
+    // }
 
-    while (true)
-    {
-        HAL_Delay(delay);
-        serial.Write(tmp, Serial_Audio_Buff_Sz);
-        // HAL_Delay(20);
-        // serial.Read(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);
-    }
+    // while (true)
+    // {
+    //     HAL_Delay(delay);
+    //     serial.Write(tmp, Serial_Audio_Buff_Sz);
+    //     // HAL_Delay(20);
+    //     // serial.Read(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);
+    // }
 }
 
 void InterHactarRoundTripTest()
 {
-    uint8_t tmp[Serial_Audio_Buff_Sz] = {
-        Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
-        Serial::Packet_Type::Audio
-    };
+    // TODO fix
+    // uint8_t tmp[Serial_Audio_Buff_Sz] = {
+    //     Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
+    //     Serial::Packet_Type::Audio
+    // };
 
-    // Fill the tmp audio buffer with random
-    for (int i = 35; i < Serial_Audio_Buff_Sz; ++i)
-    {
-        tmp[i] = rand() % 0xFF;
-    }
+    // // Fill the tmp audio buffer with random
+    // for (int i = 35; i < Serial_Audio_Buff_Sz; ++i)
+    // {
+    //     tmp[i] = rand() % 0xFF;
+    // }
 
-    while (true)
-    {
-        HAL_Delay(100);
-        serial.Write(tmp, Serial_Audio_Buff_Sz);
-        HAL_Delay(20);
-        serial.Read(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);
+    // while (true)
+    // {
+    //     HAL_Delay(100);
+    //     serial.Write(tmp, Serial_Audio_Buff_Sz);
+    //     HAL_Delay(20);
+    //     serial.Read(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);
 
-        // Compare the two
-        bool is_eq = true;
-        for (int i = 0 ; i < Serial_Audio_Buff_Sz;++i)
-        {
-            if (tmp[i] != serial_rx_buffer[i])
-            {
-                while (true)
-                {
-                    Error_Handler();
-                }
-            }
-        }
-    }
+    //     // Compare the two
+    //     bool is_eq = true;
+    //     for (int i = 0 ; i < Serial_Audio_Buff_Sz;++i)
+    //     {
+    //         if (tmp[i] != serial_rx_buffer[i])
+    //         {
+    //             while (true)
+    //             {
+    //                 Error_Handler();
+    //             }
+    //         }
+    //     }
+    // }
 }

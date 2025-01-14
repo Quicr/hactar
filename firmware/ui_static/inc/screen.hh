@@ -164,7 +164,7 @@ private:
         uint8_t write_idx = 0;
         uint8_t read_idx = 0;
         uint8_t parameters[Memory_Size]{ 0 }; // A bunch of data params to run the next command
-    };
+    }; // 4+1+2+2+2+2+1+1+1+32 = 48 bytes
 
 public:
     enum Orientation
@@ -301,7 +301,7 @@ private:
     uint16_t view_width;
     uint16_t row_bytes;
 
-    DrawMemory memories[Num_Memories];
+    DrawMemory memories[Num_Memories]; 
     uint32_t memory_read_idx;
     uint32_t memories_in_use;
     uint32_t memory_write_idx;
@@ -333,5 +333,6 @@ private:
 
     // Window: 308-320px
     char usr_buffer[Max_Characters];
-
 };
+
+// 44226 bytes approximately.
