@@ -4,7 +4,7 @@
 #include "moq_track_reader.hh"
 #include "utils.hh"
 
-using namespace moqt;
+using namespace moq;
 
 void
 TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data)
