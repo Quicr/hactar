@@ -21,9 +21,10 @@ struct DeviceSetupConfig {
 };
 
 
-static SerialEsp* ui_uart1 = nullptr;
+static std::unique_ptr<SerialEsp> ui_uart1 = nullptr;
 static std::unique_ptr<SerialPacketManager> ui_layer = nullptr;
-static SerialPacketManager* audio_layer = nullptr;
+static std::unique_ptr<SerialPacketManager> audio_layer = nullptr;
+
 static void SetupPins();
 static void SetupComponents(const DeviceSetupConfig& config);
 static void PostSetup();

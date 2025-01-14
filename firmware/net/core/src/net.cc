@@ -33,7 +33,7 @@ extern "C" void app_main(void)
     SetupPins();
 
     // UART to the ui
-    ui_layer = std::make_unique<SerialPacketManager>(ui_uart1);
+    ui_layer = std::make_unique<SerialPacketManager>(ui_uart1.get());
 
     // wifi
     Wifi wifi;
@@ -65,7 +65,7 @@ extern "C" void app_main(void)
     Logger::Log(Logger::Level::Info, "MOQ Transport Calling Connect ");
     if (moq_session.Connect() != quicr::Transport::Status::kConnecting) {
         Logger::Log(Logger::Level::Error, "MOQ Transport Session Connection Failure");
-        return;
+        exit(-1);
     }
 
     // This is the lazy way of doing it, otherwise we should use a esp_timer.
@@ -94,13 +94,15 @@ extern "C" void app_main(void)
                 break;
         }
 
+        size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+        Logger::Log(Logger::Level::Warn, "Free Heap Size: ", free_heap);
+
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
 static void SetupPins()
 {
-
     gpio_config_t io_conf = {};
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
@@ -139,7 +141,7 @@ static void SetupPins()
     };
 
     // Setup serial interface for ui
-    ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart1_config, 4096);
+    ui_uart1 = std::make_unique<SerialEsp>(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart1_config, 4096);
 
     Logger::Log(Logger::Level::Info, "Pin setup complete");
 }
@@ -150,7 +152,8 @@ void SetupComponents(const DeviceSetupConfig& config)
 }
 
 
-void PostSetup() {
+void PostSetup()
+{
     gpio_set_level(NET_LED_R, 1);
     gpio_set_level(NET_LED_G, 1);
     gpio_set_level(NET_LED_B, 1);
