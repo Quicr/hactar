@@ -10,25 +10,26 @@
 
 namespace moqt {
 
-    class TrackReader : public quicr::SubscribeTrackHandler
-    {
+    class TrackReader : public quicr::SubscribeTrackHandler {
     public:
-        Reader(const quicr::FullTrackName& full_track_name)
+        TrackReader(const quicr::FullTrackName &full_track_name)
                 : SubscribeTrackHandler(full_track_name,
                                         3,
                                         quicr::messages::GroupOrder::kAscending,
-                                        quicr::messages::FilterType::LatestObject)
+                                        quicr::messages::FilterType::LatestObject) {}
 
-        {}
-
-        ~Reader() = default;
+        ~TrackReader() = default;
 
         //
         // overrides from SubscribeTrackHandler
         //
-        void ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data) override;
+        void ObjectReceived(const quicr::ObjectHeaders &headers, quicr::BytesSpan data) override;
+
         void StatusChanged(Status status) override;
+
+    private:
     };
+
 }
 
 #endif

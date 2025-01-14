@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 Cisco Systems
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include "../inc/moq_track_reader.hh"
+#include "moq_track_reader.hh"
 #include "utils.hh"
 
 using namespace moqt;
@@ -9,8 +9,7 @@ using namespace moqt;
 void
 TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data)
 {
-    std::string msg(data.begin(), data.end());
-    SPDLOG_INFO("Object Received: {0}", to_hex(data));
+    SPDLOG_INFO("Object Received: {0}", to_hex({data.begin(), data.end()}));
 }
 
 void
