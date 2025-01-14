@@ -14,7 +14,7 @@
 #include "wifi.hh"
 
 struct DeviceSetupConfig {
-    std::string moq_connect_uri {"moqt://relay.us-west-2.quicr.ctgpoc.com:33437"};
+    std::string moq_connect_uri {"moq://192.168.10.246:1234"};
     std::string moq_endpoint_id {"hactar-12-suhas"};
 };
 
