@@ -13,7 +13,7 @@ TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpa
 }
 
 void
-TrackReader::StatusChanged(quicr::SubscribeTrackHandler::Status status)
+TrackReader::StatusChanged(TrackReader::Status status)
 {
     switch (status) {
         case Status::kOk: {
