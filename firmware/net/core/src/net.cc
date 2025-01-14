@@ -14,6 +14,7 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "nvs_flash.h"
+#include "esp_heap_caps.h"
 #include "esp_event.h"
 
 #include "serial_esp.hh"
@@ -24,7 +25,8 @@
 #include "logger.hh"
 #include "moq_session.hh"
 
-static std::shared_ptr<Session> moq_session = nullptr;
+
+static std::shared_ptr<moqt::Session> moq_session = nullptr;
 
 extern "C" void app_main(void)
 {
@@ -33,10 +35,9 @@ extern "C" void app_main(void)
 
     SetupPins();
 
-    // TODO: this comes from eeprom
-    DeviceSetupConfig dev_config;
     // UART to the ui
     ui_layer = new SerialPacketManager(ui_uart1);
+
     // wifi
     wifi = new Wifi();
     wifi->Connect("m10x-interference", "goodlife");
@@ -51,25 +52,29 @@ extern "C" void app_main(void)
 
     PostSetup();
 
-    // moq transport
+
+    // setup moq transport
     quicr::ClientConfig config;
-    // TODO: Get this from eeprom
-    config.endpoint_id = "";
+    config.endpoint_id = "hactar-ev12-snk";
     config.connect_uri = "moq://192.168.10.246:1234";
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;
     config.transport_config.tls_cert_filename = "";
     config.transport_config.tls_key_filename = "";
-    quicr::Client* client = new quicr::Client(config);
+
+    //quicr::Client* client = new quicr::Client(config);
+
+    moq_session = moqt::Session::Create(config);
 
     Logger::Log(Logger::Level::Info, "MOQ Transport Calling Connect ");
-    if (client->Connect() != quicr::Transport::Status::kConnecting) {
+    if (moq_session->Connect() != quicr::Transport::Status::kConnecting) {
         Logger::Log(Logger::Level::Error, "MOQ Transport Session Connection Failure");
         exit(-1);
     }
 
     Logger::Log(Logger::Level::Info, "Now I am entering the loooooop");
+
     // This is the lazy way of doing it, otherwise we should use a esp_timer.
     uint32_t blink_cnt = 0;
     int next = 0;
@@ -83,21 +88,16 @@ extern "C" void app_main(void)
             blink_cnt = 0;
         }
 
+        Logger::Log(Logger::Level::Info, "MOQ Transport Status " + std::to_string(static_cast<int>(moq_session->GetStatus())));
 
-        auto state = wifi->GetState();
-        if (wifi->IsConnected())
-        {
-            Logger::Log(Logger::Level::Info, "WiFi Connection Success");
-        }
-
-        Logger::Log(Logger::Level::Info, "MOQ Transport Status " + std::to_string(static_cast<int>(client->GetStatus())));
-
-        if (client->GetStatus() == Session::Status::kReady) {
+        if (moq_session->GetStatus() == moqt::Session::Status::kReady) {
             Logger::Log(Logger::Level::Info, "MOQ Transport Connected");
         }
 
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+        ESP_LOGW("[NET]", "Free Heap Size: %d ", free_heap);
 
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
