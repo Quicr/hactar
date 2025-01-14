@@ -191,6 +191,7 @@ int app_main()
             serial.Write(talk_packet);
         }
         RaiseFlag(Rx_Audio_Companded);
+        RaiseFlag(Rx_Audio_Transmitted);
 
         // If there are bytes available read them
         bool is_reading = true;
