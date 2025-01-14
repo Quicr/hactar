@@ -13,6 +13,8 @@
 
 #include "wifi.hh"
 
+#include <memory>
+
 struct DeviceSetupConfig {
     std::string moq_connect_uri {"moq://192.168.10.246:1234"};
     std::string moq_endpoint_id {"hactar-12-suhas"};
@@ -20,9 +22,8 @@ struct DeviceSetupConfig {
 
 
 static SerialEsp* ui_uart1 = nullptr;
-static SerialPacketManager* ui_layer = nullptr;
+static std::unique_ptr<SerialPacketManager> ui_layer = nullptr;
 static SerialPacketManager* audio_layer = nullptr;
-static Wifi* wifi = nullptr;
 static void SetupPins();
 static void SetupComponents(const DeviceSetupConfig& config);
 static void PostSetup();

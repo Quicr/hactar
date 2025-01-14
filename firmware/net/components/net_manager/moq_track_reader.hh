@@ -8,7 +8,7 @@
 
 #include <quicr/client.h>
 
-namespace moqt {
+namespace moq {
 
     class TrackReader : public quicr::SubscribeTrackHandler {
     public:
