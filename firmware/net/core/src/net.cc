@@ -85,6 +85,7 @@ extern "C" void app_main(void)
         switch(moq_session.GetStatus())
         {
             case moq::Session::Status::kConnecting:
+            case moq::Session::Status::kPendingSeverSetup:
                 break;
             case moq::Session::Status::kReady:
                 // TODO: Do stuff here
