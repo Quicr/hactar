@@ -10,7 +10,7 @@
 
 #include <quicr/track_name.h>
 
-namespace moqt {
+namespace moq {
 
     static std::string Stringify(const quicr::FullTrackName& ftn)
     {

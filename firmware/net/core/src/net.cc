@@ -1,11 +1,5 @@
 #include "net.hh"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <inttypes.h>
-#include <memory>
-
 #include <quicr/client.h>
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -25,8 +19,11 @@
 #include "logger.hh"
 #include "moq_session.hh"
 
-
-static std::shared_ptr<moqt::Session> moq_session = nullptr;
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <inttypes.h>
+#include <memory>
 
 extern "C" void app_main(void)
 {
@@ -36,22 +33,22 @@ extern "C" void app_main(void)
     SetupPins();
 
     // UART to the ui
-    ui_layer = new SerialPacketManager(ui_uart1);
+    ui_layer = std::make_unique<SerialPacketManager>(ui_uart1.get());
 
     // wifi
-    wifi = new Wifi();
-    wifi->Connect("m10x-interference", "goodlife");
+    Wifi wifi;
+    wifi.Connect("m10x-interference", "goodlife");
 
-    while (!wifi->IsConnected())
+    while (!wifi.IsConnected())
     {
-        ESP_LOGW("net.cc", "REMOVE ME - Waiting to connect to wifi");
+        // TODO: Remove this.
+        Logger::Log(Logger::Level::Warn, "Waiting to connect to wifi");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 
     Logger::Log(Logger::Level::Info, "Components ready");
 
     PostSetup();
-
 
     // setup moq transport
     quicr::ClientConfig config;
@@ -63,23 +60,20 @@ extern "C" void app_main(void)
     config.transport_config.tls_cert_filename = "";
     config.transport_config.tls_key_filename = "";
 
-    //quicr::Client* client = new quicr::Client(config);
-
-    moq_session = moqt::Session::Create(config);
+    moq::Session moq_session(config);
 
     Logger::Log(Logger::Level::Info, "MOQ Transport Calling Connect ");
-    if (moq_session->Connect() != quicr::Transport::Status::kConnecting) {
+    if (moq_session.Connect() != quicr::Transport::Status::kConnecting) {
         Logger::Log(Logger::Level::Error, "MOQ Transport Session Connection Failure");
         exit(-1);
     }
-
-    Logger::Log(Logger::Level::Info, "Now I am entering the loooooop");
 
     // This is the lazy way of doing it, otherwise we should use a esp_timer.
     uint32_t blink_cnt = 0;
     int next = 0;
 
-    while (1)
+    bool terminate = false;
+    while (!terminate)
     {
         if (blink_cnt++ == 100)
         {
@@ -88,14 +82,20 @@ extern "C" void app_main(void)
             blink_cnt = 0;
         }
 
-        Logger::Log(Logger::Level::Info, "MOQ Transport Status " + std::to_string(static_cast<int>(moq_session->GetStatus())));
-
-        if (moq_session->GetStatus() == moqt::Session::Status::kReady) {
-            Logger::Log(Logger::Level::Info, "MOQ Transport Connected");
+        switch(moq_session.GetStatus())
+        {
+            case moq::Session::Status::kConnecting:
+                break;
+            case moq::Session::Status::kReady:
+                // TODO: Do stuff here
+                break;
+            default:
+                terminate = true;
+                break;
         }
 
         size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-        ESP_LOGW("[NET]", "Free Heap Size: %d ", free_heap);
+        Logger::Log(Logger::Level::Warn, "Free Heap Size: ", free_heap);
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
@@ -103,7 +103,6 @@ extern "C" void app_main(void)
 
 static void SetupPins()
 {
-
     gpio_config_t io_conf = {};
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
@@ -142,7 +141,7 @@ static void SetupPins()
     };
 
     // Setup serial interface for ui
-    ui_uart1 = new SerialEsp(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart1_config, 4096);
+    ui_uart1 = std::make_unique<SerialEsp>(UART1, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, uart1_config, 4096);
 
     Logger::Log(Logger::Level::Info, "Pin setup complete");
 }
@@ -153,7 +152,8 @@ void SetupComponents(const DeviceSetupConfig& config)
 }
 
 
-void PostSetup() {
+void PostSetup()
+{
     gpio_set_level(NET_LED_R, 1);
     gpio_set_level(NET_LED_G, 1);
     gpio_set_level(NET_LED_B, 1);

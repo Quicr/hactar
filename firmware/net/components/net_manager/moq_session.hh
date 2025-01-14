@@ -1,23 +1,21 @@
 #ifndef __MOQT_SESSION__
 #define __MOQT_SESSION__
 
-#include <quicr/client.h>
-#include <map>
-
 #include "moq_track_reader.hh"
 
-namespace moqt {
+#include <quicr/client.h>
+
+#include <map>
+
+namespace moq {
 /**
 * MoQSession identifies a client session with the MOQ Peer
 */
 class Session : public quicr::Client {
 public:
-    static std::shared_ptr <Session> Create(const quicr::ClientConfig &cfg) {
-        return std::shared_ptr<Session>(new Session(cfg));
-    }
+    using quicr::Client::Client;
 
-    Session(const quicr::ClientConfig &cfg)
-            : quicr::Client(cfg) {}
+    virtual ~Session() = default;
 
     void StatusChanged(Status status) override;
 
@@ -31,7 +29,6 @@ public:
     void stop_write_track(const std::string& track_name);
 
 private:
-
     Session() = delete;
     Session(const Session &) = delete;
     Session(Session &&) noexcept = delete;
@@ -42,8 +39,8 @@ private:
         std::shared_ptr<TrackReader> reader;
     };
 
+private:
     std::map<std::string, std::shared_ptr<TrackReader>> readers;
-
 };
 
 }
