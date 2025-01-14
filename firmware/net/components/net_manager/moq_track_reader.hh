@@ -18,7 +18,7 @@ namespace moq {
                                         quicr::messages::GroupOrder::kAscending,
                                         quicr::messages::FilterType::LatestObject) {}
 
-        ~TrackReader() = default;
+        virtual ~TrackReader() = default;
 
         //
         // overrides from SubscribeTrackHandler

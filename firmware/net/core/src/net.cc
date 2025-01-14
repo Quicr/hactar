@@ -25,6 +25,29 @@
 #include <inttypes.h>
 #include <memory>
 
+static quicr::FullTrackName const MakeFullTrackName(const std::string& track_namespace,
+                                                 const std::string& track_name,
+                                                 uint64_t track_alias) noexcept
+{
+    const auto split = [](std::string str, const std::string& delimiter) {
+        std::vector<std::string> tokens;
+
+        std::size_t pos = 0;
+        while ((pos = str.find(delimiter)) != std::string::npos) {
+            tokens.emplace_back(str.substr(0, pos));
+            str.erase(0, pos + delimiter.length());
+        }
+        tokens.emplace_back(std::move(str));
+
+        return tokens;
+    };
+
+    quicr::FullTrackName full_track_name{ quicr::TrackNamespace{ split(track_namespace, ",") },
+                                    { track_name.begin(), track_name.end() },
+                                    track_alias };
+    return full_track_name;
+}
+
 extern "C" void app_main(void)
 {
 
@@ -41,7 +64,6 @@ extern "C" void app_main(void)
 
     while (!wifi.IsConnected())
     {
-        // TODO: Remove this.
         Logger::Log(Logger::Level::Warn, "Waiting to connect to wifi");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
@@ -53,7 +75,7 @@ extern "C" void app_main(void)
     // setup moq transport
     quicr::ClientConfig config;
     config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = "moq://192.168.10.246:1234";
+    config.connect_uri = "moq://192.168.10.236:1234";
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;
@@ -72,7 +94,15 @@ extern "C" void app_main(void)
     uint32_t blink_cnt = 0;
     int next = 0;
 
+
+    bool sub = false;
     bool terminate = false;
+
+    std::shared_ptr<moq::TrackWriter> pub_track_handler;
+    uint64_t group_id{ 0 };
+    uint64_t object_id{ 0 };
+    uint64_t subgroup_id{ 0 };
+
     while (!terminate)
     {
         if (blink_cnt++ == 100)
@@ -85,18 +115,49 @@ extern "C" void app_main(void)
         switch(moq_session.GetStatus())
         {
             case moq::Session::Status::kConnecting:
+                [[fallthrough]];
             case moq::Session::Status::kPendingSeverSetup:
                 break;
             case moq::Session::Status::kReady:
-                // TODO: Do stuff here
+                if (!pub_track_handler)
+                {
+                    pub_track_handler = std::make_shared<moq::TrackWriter>(MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kStream /*mode*/, 2 /*prirority*/, 3000 /*ttl*/);
+                    moq_session.PublishTrack(pub_track_handler);
+                    Logger::Log(Logger::Level::Info, "Started publisher");
+                }
+
+                if (!sub)
+                {
+                    auto track_handler = std::make_shared<moq::TrackReader>(MakeFullTrackName("test", "test", 2001));
+                    moq_session.SubscribeTrack(track_handler);
+                    Logger::Log(Logger::Level::Info, "Started subscriber");
+                    sub = true;
+                }
+
+                if (pub_track_handler->GetStatus() == moq::TrackWriter::Status::kOk)
+                {
+                    size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+                    std::string msg = "Available heap size: " + std::to_string(free_heap) + " bytes";
+
+                    quicr::ObjectHeaders obj_headers = {
+                        group_id,
+                        object_id++,
+                        subgroup_id,
+                        msg.size(),
+                        quicr::ObjectStatus::kAvailable,
+                        2 /*priority*/,
+                        3000 /* ttl */,
+                        std::nullopt,
+                        std::nullopt,
+                    };
+
+                    pub_track_handler->PublishObject(obj_headers, {reinterpret_cast<uint8_t*>(msg.data()), msg.size()});
+                }
                 break;
             default:
                 terminate = true;
                 break;
         }
-
-        size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-        Logger::Log(Logger::Level::Warn, "Free Heap Size: ", free_heap);
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
