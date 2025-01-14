@@ -230,47 +230,50 @@ int app_main()
         // TODO remake this, its garbage.
 
         bool is_reading = true;
-        while (serial.Unread() && is_reading)
+        if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET)
         {
-            // TODO decide how to do this.
-            // Need to determine what kind of packet
-            // audio, text, mls packets etc.
-
-            // Get the length and the type
-            uint16_t len = serial.Read() | serial.Read() << 8;
-            uint8_t type = serial.Read();
-
-            // Get the "room"
-            // THIS IS DUMMY DATA
-            serial.Read(serial_rx_audio_buff + 3, QMessage_Room_Length, QMessage_Room_Length);
-
-            switch (type)
+            while (serial.Unread() && is_reading)
             {
-                case Serial::Audio:
-                {
-                    // Copy the audio from the buffer to the audio buffer
-                    uint16_t* tx_ptr = audio_chip.TxBuffer();
+                // TODO decide how to do this.
+                // Need to determine what kind of packet
+                // audio, text, mls packets etc.
 
-                    // copy the data to the audio serial rx buff
-                    serial.Read(serial_rx_audio_buff + 35, Serial_Audio_Buff_Sz, AudioChip::Audio_Buffer_Sz_2);
+                // Get the length and the type
+                uint16_t len = serial.Read() | serial.Read() << 8;
+                uint8_t type = serial.Read();
 
-                    // expand the data
-                    AudioCodec::ALawExpand(serial_rx_audio_buff + 35, tx_ptr, AudioChip::Audio_Buffer_Sz_2);
-                    is_reading = false;
-                    break;
-                }
-                case Serial::Text:
+                // Get the "room"
+                // THIS IS DUMMY DATA
+                serial.Read(serial_rx_audio_buff + 3, QMessage_Room_Length, QMessage_Room_Length);
+
+                switch (type)
                 {
-                    // ProcessText(len);
-                    break;
-                }
-                case Serial::MLS:
-                {
-                    break;
-                }
-                default:
-                {
-                    break;
+                    case Serial::Audio:
+                    {
+                        // Copy the audio from the buffer to the audio buffer
+                        uint16_t* tx_ptr = audio_chip.TxBuffer();
+
+                        // copy the data to the audio serial rx buff
+                        serial.Read(serial_rx_audio_buff + 35, Serial_Audio_Buff_Sz, AudioChip::Audio_Buffer_Sz_2);
+
+                        // expand the data
+                        AudioCodec::ALawExpand(serial_rx_audio_buff + 35, tx_ptr, AudioChip::Audio_Buffer_Sz_2);
+                        is_reading = false;
+                        break;
+                    }
+                    case Serial::Text:
+                    {
+                        // ProcessText(len);
+                        break;
+                    }
+                    case Serial::MLS:
+                    {
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
                 }
             }
         }
