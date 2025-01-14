@@ -75,7 +75,7 @@ void AudioChip::Init()
     // Set the clock division
     // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
     // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
-    // Expected BCLK = sample_rate * channels * bits per channel, so 16khz * 2 * 16 = 512Khz
+    // Expected BCLK = constants::sample_rate * channels * bits per channel, so 16khz * 2 * 16 = 512Khz
     SetRegister(0x08, 0b1'1100'1100);
 
     // Disable soft mute and ADC high pass filter
@@ -355,7 +355,7 @@ bool AudioChip::RxBufferReady()
 
 void AudioChip::StartI2S()
 {
-    auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, Audio_Buffer_Sz);
+    auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Audio_Buffer_Sz);
 
     if (output == HAL_OK)
     {
@@ -382,23 +382,24 @@ const uint16_t* AudioChip::RxBuffer()
     return rx_ptr;
 }
 
-uint8_t buff[AudioChip::Audio_Buffer_Sz_2] = {0};
 void AudioChip::ISRCallback()
 {
-    // SampleSineWave(rx_buffer, Audio_Buffer_Sz_2, 0,
+    // DELETE ME LATER JUST FOR TESTING
+    static uint8_t buff[constants::Audio_Buffer_Sz_2] = {0};
+    // SampleSineWave(rx_buffer, constants::Audio_Buffer_Sz_2, 0,
     //     1000, 440, phase, false);
 
 
-    const uint16_t offset = buff_mod * Audio_Buffer_Sz_2;
+    const uint16_t offset = buff_mod * constants::Audio_Buffer_Sz_2;
     tx_ptr = tx_buffer + offset;
     rx_ptr = rx_buffer + offset;
     buff_mod = !buff_mod;
 
     if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET)
     {
-        AudioCodec::ALawCompand(rx_ptr, buff, Audio_Buffer_Sz_2);
-        AudioCodec::ALawExpand(buff, tx_ptr, Audio_Buffer_Sz_2);
-        // for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
+        AudioCodec::ALawCompand(rx_ptr, buff, constants::Audio_Buffer_Sz_2);
+        AudioCodec::ALawExpand(buff, tx_ptr, constants::Audio_Buffer_Sz_2);
+        // for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
         // {
         //     tx_ptr[i] = rx_ptr[i];
         // }
@@ -406,7 +407,7 @@ void AudioChip::ISRCallback()
     else
     {
         // Clear the transmission buffer
-        for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
+        for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
         {
             tx_ptr[i] = 0;
         }
@@ -416,19 +417,9 @@ void AudioChip::ISRCallback()
     RaiseFlag(AudioFlag::Tx_Ready);
 }
 
-uint16_t AudioChip::AudioBufferSize() const
-{
-    return Audio_Buffer_Sz;
-}
-
-uint16_t AudioChip::AudioBufferSize_2() const
-{
-    return Audio_Buffer_Sz_2;
-}
-
 void AudioChip::ClearTxBuffer()
 {
-    for (uint16_t i = 0; i < Audio_Buffer_Sz; ++i)
+    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
     {
         tx_buffer[i] = 0;
     }
@@ -437,7 +428,7 @@ void AudioChip::ClearTxBuffer()
 void AudioChip::Transmit(uint16_t* buff, const size_t size)
 {
     uint16_t* tmp_ptr = tx_ptr;
-    for (size_t i = 0; i < Audio_Buffer_Sz && i < size; ++i)
+    for (size_t i = 0; i < constants::Audio_Buffer_Sz && i < size; ++i)
     {
         tmp_ptr[i] = buff[i];
     }
@@ -450,7 +441,7 @@ void AudioChip::Recieve(uint16_t* buff, const size_t size)
     // Make a tmp pointer so that if there is an interrupt during transfer
     // then our pointer won't change
     uint16_t* tmp_ptr = rx_ptr;
-    for (size_t i = 0 ; i < Audio_Buffer_Sz && i < size; ++i)
+    for (size_t i = 0 ; i < constants::Audio_Buffer_Sz && i < size; ++i)
     {
         buff[i] = tmp_ptr[i];
     }
@@ -473,7 +464,7 @@ void AudioChip::SampleSineWave(const uint16_t num_samples,
 
         for (uint16_t i = 0; i < samples; ++i)
         {
-            const double step = (double)i / Sample_Rate;
+            const double step = (double)i / constants::Sample_Rate;
             const double sample = amplitude * sin(angular_freq * step + phase);
 
             // Add offset to handle negative numbers and overflow back around
@@ -488,7 +479,7 @@ void AudioChip::SampleSineWave(const uint16_t num_samples,
     {
         for (uint16_t i = 0; i < samples; ++i)
         {
-            const double step = (double)i / Sample_Rate;
+            const double step = (double)i / constants::Sample_Rate;
             const double sample = amplitude * sin(angular_freq * step + phase);
 
             // Add offset to handle negative numbers and overflow back around
@@ -497,7 +488,7 @@ void AudioChip::SampleSineWave(const uint16_t num_samples,
         }
     }
 
-    phase += angular_freq * (double(samples) / Sample_Rate);
+    phase += angular_freq * (double(samples) / constants::Sample_Rate);
     while (phase > TWO_PI)
     {
         phase -= TWO_PI;
@@ -520,7 +511,7 @@ void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
 
         for (uint16_t i = 0; i < samples; ++i)
         {
-            const double step = (double)i / Sample_Rate;
+            const double step = (double)i / constants::Sample_Rate;
             const double sample = amplitude * sin(angular_freq * step + phase);
 
             // Add offset to handle negative numbers and overflow back around
@@ -535,7 +526,7 @@ void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
     {
         for (uint16_t i = 0; i < samples; ++i)
         {
-            const double step = (double)i / Sample_Rate;
+            const double step = (double)i / constants::Sample_Rate;
             const double sample = amplitude * sin(angular_freq * step + phase);
 
             // Add offset to handle negative numbers and overflow back around
@@ -544,7 +535,7 @@ void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
         }
     }
 
-    phase += angular_freq * (double(samples) / Sample_Rate);
+    phase += angular_freq * (double(samples) / constants::Sample_Rate);
     while (phase > TWO_PI)
     {
         phase -= TWO_PI;

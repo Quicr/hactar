@@ -2,18 +2,11 @@
 
 #include "main.h"
 
+#include "packet_t.hh"
+
 class Serial
 {
 public:
-    enum Packet_Type: uint8_t
-    {
-        Null,
-        Ready,
-        Audio,
-        Text,
-        MLS,
-
-    };
 
     Serial(UART_HandleTypeDef* uart);
     ~Serial();
@@ -24,7 +17,9 @@ public:
     void Read(uint8_t* data, const size_t size, const size_t num_bytes);
     void Read(uint8_t** data, size_t& num_bytes);
     void UpdateReadHead(size_t amt);
+    void Write(const uint8_t data);
     void Write(const uint8_t* data, const size_t size);
+    void Write(const packet_t& packet);
     size_t Unread();
 
     void RxEvent(const uint16_t idx);
@@ -32,6 +27,8 @@ public:
     void Free();
 
 protected:
+    void ChangeFreeState();
+
     static constexpr size_t Rx_Buff_Sz = 2048;
 
     UART_HandleTypeDef* uart;
