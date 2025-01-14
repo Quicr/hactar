@@ -20,13 +20,13 @@ idf-clean:
 compile:
 	idf.py -B $(BUILD_PATH) build
 
-init_upload: compile	
+init_upload: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/bootloader/bootloader.bin ${BOOTLOADER_ADDR} verify exit"
-	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/partition_table/partition-table.bin ${PT_ADDR} verify exit"
+	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/partition_table/partition-table.bin ${PARITIONS_ADDR} verify exit"
 
-upload: compile 
+upload: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ./build/net.bin 0x10000 verify exit"
-	python3 ../tools/command_sender.py ${CONSOLE_PORT} 115200 debug 
+	python3 ../tools/command_sender.py ${CONSOLE_PORT} 115200 debug
 
 upload-old: compile
 	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" \
