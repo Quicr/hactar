@@ -82,7 +82,7 @@ void SerialEsp::RxEvent(void* parameter)
             continue;
         }
 
-        printf("net-serial[%d]: Event size: %d, type: %d\n", serial->uart, event.size, event.type);
+        //printf("net-serial[%d]: Event size: %d, type: %d\n", serial->uart, event.size, event.type);
 
         switch (event.type)
         {
