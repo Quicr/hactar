@@ -18,35 +18,13 @@
 #include "net_pins.hh"
 #include "logger.hh"
 #include "moq_session.hh"
-
+#include "utils.hh"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include <memory>
 
-static quicr::FullTrackName const MakeFullTrackName(const std::string& track_namespace,
-                                                 const std::string& track_name,
-                                                 uint64_t track_alias) noexcept
-{
-    const auto split = [](std::string str, const std::string& delimiter) {
-        std::vector<std::string> tokens;
-
-        std::size_t pos = 0;
-        while ((pos = str.find(delimiter)) != std::string::npos) {
-            tokens.emplace_back(str.substr(0, pos));
-            str.erase(0, pos + delimiter.length());
-        }
-        tokens.emplace_back(std::move(str));
-
-        return tokens;
-    };
-
-    quicr::FullTrackName full_track_name{ quicr::TrackNamespace{ split(track_namespace, ",") },
-                                    { track_name.begin(), track_name.end() },
-                                    track_alias };
-    return full_track_name;
-}
 
 extern "C" void app_main(void)
 {
@@ -75,7 +53,7 @@ extern "C" void app_main(void)
     // setup moq transport
     quicr::ClientConfig config;
     config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = "moq://192.168.10.236:1234";
+    config.connect_uri = "moq://192.168.10.246:1234";
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;
@@ -121,14 +99,14 @@ extern "C" void app_main(void)
             case moq::Session::Status::kReady:
                 if (!pub_track_handler)
                 {
-                    pub_track_handler = std::make_shared<moq::TrackWriter>(MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kStream /*mode*/, 2 /*prirority*/, 3000 /*ttl*/);
+                    pub_track_handler = std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kStream /*mode*/, 2 /*prirority*/, 3000 /*ttl*/);
                     moq_session.PublishTrack(pub_track_handler);
                     Logger::Log(Logger::Level::Info, "Started publisher");
                 }
 
                 if (!sub)
                 {
-                    auto track_handler = std::make_shared<moq::TrackReader>(MakeFullTrackName("test", "test", 2001));
+                    auto track_handler = std::make_shared<moq::TrackReader>(moq::MakeFullTrackName("test", "test", 2001));
                     moq_session.SubscribeTrack(track_handler);
                     Logger::Log(Logger::Level::Info, "Started subscriber");
                     sub = true;
@@ -137,7 +115,7 @@ extern "C" void app_main(void)
                 if (pub_track_handler->GetStatus() == moq::TrackWriter::Status::kOk)
                 {
                     size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-                    std::string msg = "Available heap size: " + std::to_string(free_heap) + " bytes";
+                    std::string msg = "Available heap size in a loop: " + std::to_string(free_heap) + " bytes";
 
                     quicr::ObjectHeaders obj_headers = {
                         group_id,
