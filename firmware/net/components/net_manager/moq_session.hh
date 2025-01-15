@@ -2,6 +2,7 @@
 #define __MOQT_SESSION__
 
 #include "moq_track_reader.hh"
+#include "moq_audio_track_reader.hh"
 #include "moq_track_writer.hh"
 
 #include <quicr/client.h>
