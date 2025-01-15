@@ -112,7 +112,7 @@ void Serial::ReadTask(void* param)
     while (1)
     {
         // Wait for an event in the queue
-        if (!xQueueReceive(self->queue, (void*)&event, 10 / portTICK_PERIOD_MS))
+        if (!xQueueReceive(self->queue, (void*)&event, portMAX_DELAY))
         {
             continue;
         }
@@ -122,7 +122,7 @@ void Serial::ReadTask(void* param)
             {
                 uart_get_buffered_data_len(self->uart, &buffered_bytes);
 
-                // If the number of buffered bytes is less than 2 and 
+                // If the number of buffered bytes is less than 2 and
                 // we haven't started a packet we want to wait a bit longer.
                 // Otherwise, on every byte we want to read
                 if (buffered_bytes <= 0)
@@ -150,7 +150,7 @@ void Serial::ReadTask(void* param)
                         // Get the length
                         // Little endian format
                         // We use idx, because if we are already partially
-                        // through the buffered data we want to grab those 
+                        // through the buffered data we want to grab those
                         // next set of bytes.
                         while (bytes_read < 2 && idx < num_bytes)
                         {
@@ -159,15 +159,15 @@ void Serial::ReadTask(void* param)
                     }
                     else if (bytes_read < 2)
                     {
-                        // If we get here then packet has been set to something 
-                        // other than nullptr and only one byte has been 
+                        // If we get here then packet has been set to something
+                        // other than nullptr and only one byte has been
                         // read which is insufficient to compare against the len
                         packet->data[bytes_read++] = buff[idx++];
                         continue;
                     }
                     else
                     {
-                        // We can copy bytes until we run out of space 
+                        // We can copy bytes until we run out of space
                         // or out of buffered bytes
                         while (bytes_read < packet->length && idx < num_bytes)
                         {

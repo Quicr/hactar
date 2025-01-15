@@ -50,7 +50,7 @@ std::unique_ptr<Serial> InitializeQueuedUART(const uart_config_t& uart_config,
     res = uart_param_config(uart_port, &uart_config);
     ESP_LOGI("Initialize UART", "install res=%d\n", res);
 
-    return std::make_unique<Serial>(uart_port, uart_queue, 4096*4, 4096*4, 30, 30);
+    return std::make_unique<Serial>(uart_port, uart_queue, 4096*2, 4096*2, 3, 3);
 }
 
 void IntitializeLEDs()
