@@ -384,33 +384,15 @@ const uint16_t* AudioChip::RxBuffer()
 
 void AudioChip::ISRCallback()
 {
-    // DELETE ME LATER JUST FOR TESTING
-    static uint8_t buff[constants::Audio_Buffer_Sz_2] = {0};
-    // SampleSineWave(rx_buffer, constants::Audio_Buffer_Sz_2, 0,
-    //     1000, 440, phase, false);
-
-
     const uint16_t offset = buff_mod * constants::Audio_Buffer_Sz_2;
     tx_ptr = tx_buffer + offset;
     rx_ptr = rx_buffer + offset;
     buff_mod = !buff_mod;
 
-    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET)
+    // Clear the transmission buffer
+    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
     {
-        AudioCodec::ALawCompand(rx_ptr, buff, constants::Audio_Buffer_Sz_2);
-        AudioCodec::ALawExpand(buff, tx_ptr, constants::Audio_Buffer_Sz_2);
-        // for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
-        // {
-        //     tx_ptr[i] = rx_ptr[i];
-        // }
-    }
-    else
-    {
-        // Clear the transmission buffer
-        for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
-        {
-            tx_ptr[i] = 0;
-        }
+        tx_ptr[i] = 0;
     }
 
     RaiseFlag(AudioFlag::Rx_Ready);

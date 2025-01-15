@@ -2,6 +2,7 @@
 
 #include "main.h"
 
+#include "ring_buffer.hh"
 #include "packet_t.hh"
 
 class Serial
@@ -23,6 +24,7 @@ public:
     size_t Unread();
 
     void RxEvent(const uint16_t idx);
+    void TxEvent();
     bool IsFree();
     void Free();
 
@@ -33,7 +35,11 @@ protected:
 
     UART_HandleTypeDef* uart;
     volatile bool tx_is_free;
+    bool packet_started;
+    uint16_t bytes_read;
     uint8_t rx_buff[Rx_Buff_Sz];
+    RingBuffer<packet_t> rx_packets;
+    packet_t* rx_packet;
     uint32_t write_idx;
     uint32_t read_idx;
     uint32_t unread;
