@@ -51,8 +51,6 @@ impl AppState {
                 let data_fn = move |data: &[f32], _: &cpal::InputCallbackInfo| {
                     let mut storage = storage_clone.lock().unwrap();
                     storage.extend_from_slice(data);
-
-                    println!("record {}", data.len());
                 };
 
                 let err_fn = move |err| {
@@ -62,7 +60,6 @@ impl AppState {
                 let host = cpal::default_host();
                 let input_device = host.default_input_device().unwrap();
                 let config = input_device.default_input_config().unwrap();
-                println!("config {:?}", config);
                 let input_stream = input_device
                     .build_input_stream(&config.into(), data_fn, err_fn, None)
                     .unwrap();
@@ -109,9 +106,6 @@ impl AppState {
                     }
 
                     data[(2 * len)..].fill(0.);
-
-                    println!("play {}", len);
-
                     *storage = storage.split_off(len);
 
                     if storage.is_empty() {
@@ -126,7 +120,6 @@ impl AppState {
                 let host = cpal::default_host();
                 let output_device = host.default_output_device().unwrap();
                 let config = output_device.default_output_config().unwrap();
-                println!("config {:?}", config);
                 let output_stream = output_device
                     .build_output_stream(&config.into(), data_fn, err_fn, None)
                     .unwrap();
@@ -170,7 +163,6 @@ fn play_done_cb() {
 
 #[tauri::command]
 fn button_press(name: &str) {
-    println!("Received button press: {}", name);
     let mut state = STATE.get().unwrap().lock().unwrap();
     match name {
         "MouseDown" => state.start_transmit(),
