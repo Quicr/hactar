@@ -103,7 +103,7 @@ packet_t play_buffer;
 volatile bool sleeping = true;
 volatile bool error = false;
 bool net_replied = false;
-constexpr uint32_t Expected_Flags = 0b0000'1111;
+constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1 ;
 uint32_t flags = Expected_Flags;
 uint32_t est_time_ms = 0;
 uint32_t num_loops = 0;
@@ -155,14 +155,10 @@ int app_main()
             // LowPowerMode();
         }
 
-
-        // LEDS(HIGH, HIGH, HIGH);
-
         if (error)
         {
             Error_Handler();
         }
-        // If we broke out then that means we got an audio callback
 
 
         // Compand our audio
@@ -194,23 +190,8 @@ int app_main()
         RaiseFlag(Rx_Audio_Transmitted);
 
         // If there are bytes available read them
-        bool is_reading = true;
-        if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET)
-        {
-            while (serial.Unread() && is_reading)
-            {
-                // TODO decide how to do this.
-                // Need to determine what kind of packet
-                // audio, text, mls packets etc.
 
-                // Get the length and the type
-                uint16_t len = serial.Read() | serial.Read() << 8;
-                uint8_t type = serial.Read();
-
-                // Get the "room"
-                // THIS IS DUMMY DATA
-            }
-        }
+        // TODO read packets
 
 
         // Use remaining time to draw
@@ -436,25 +417,20 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 void SlowSendTest(int delay, int num)
 {
-    // TODO FIX
-    // uint8_t tmp[Serial_Audio_Buff_Sz] = {
-    //     Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
-    //     Serial::Packet_Type::Audio
-    // };
+    packet_t packet;   
+    packet.length = constants::Audio_Buffer_Sz_2 + 2;
 
-    // // Fill the tmp audio buffer with random
-    // for (int i = 35; i < Serial_Audio_Buff_Sz; ++i)
-    // {
-    //     tmp[i] = rand() % 0xFF;
-    // }
+    // Fill the tmp audio buffer with random
+    for (int i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
+    {
+        packet.payload[i] = i;
+    }
 
-    // while (true)
-    // {
-    //     HAL_Delay(delay);
-    //     serial.Write(tmp, Serial_Audio_Buff_Sz);
-    //     // HAL_Delay(20);
-    //     // serial.Read(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);
-    // }
+    while (true)
+    {
+        HAL_Delay(delay);
+        serial.Write(packet);
+    }
 }
 
 void InterHactarRoundTripTest()

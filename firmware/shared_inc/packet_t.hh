@@ -9,8 +9,10 @@
 #endif
 
 #define LENGTH_TYPE uint16_t
-#define SERIAL_HEADER_SIZE sizeof(LENGTH_TYPE)
-#define PAYLOAD_SIZE PACKET_SIZE - SERIAL_HEADER_SIZE
+
+constexpr size_t Packet_Length_Size = sizeof(LENGTH_TYPE);
+constexpr size_t Packet_Header_Size = Packet_Length_Size;
+constexpr size_t Packet_Payload_Size = PACKET_SIZE - Packet_Header_Size;
 
 typedef struct
 {
@@ -19,7 +21,7 @@ typedef struct
         struct 
         {
             uint16_t length;
-            uint8_t payload[PAYLOAD_SIZE];
+            uint8_t payload[Packet_Payload_Size];
         };
         uint8_t data[PACKET_SIZE] = {0};
     };
