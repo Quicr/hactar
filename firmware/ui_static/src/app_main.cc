@@ -425,8 +425,9 @@ void SlowSendTest(int delay, int num)
     {
         packet.payload[i] = i;
     }
-
-    while (true)
+    
+    int i = 0;
+    while (i++ != num)
     {
         HAL_Delay(delay);
         serial.Write(packet);
