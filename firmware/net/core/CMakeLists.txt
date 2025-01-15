@@ -1,4 +1,4 @@
-set(SOURCE ./src/net.cc)
+set(SOURCE ./src/net.cc ./src/peripherals.cc)
 
 #idf_component_register(SRCS ${SOURCE}
 #    INCLUDE_DIRS inc ../../shared_inc/
@@ -6,4 +6,4 @@ set(SOURCE ./src/net.cc)
 
 idf_component_register(SRCS ${SOURCE}
     INCLUDE_DIRS inc ../../shared_inc/
-    REQUIRES driver serial_esp logger quicr wifi net_manager)
+    REQUIRES driver serial logger quicr wifi net_manager)

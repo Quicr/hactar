@@ -8,9 +8,8 @@
 #include "esp_event.h"
 
 #include "logger.hh"
-#include "serial_esp.hh"
-#include "serial_packet_manager.hh"
 
+#include "serial.hh"
 #include "wifi.hh"
 
 #include <memory>
@@ -21,11 +20,7 @@ struct DeviceSetupConfig {
 };
 
 
-static std::unique_ptr<SerialEsp> ui_uart1 = nullptr;
-static std::unique_ptr<SerialPacketManager> ui_layer = nullptr;
-static std::unique_ptr<SerialPacketManager> audio_layer = nullptr;
+static std::unique_ptr<Serial> ui_layer = nullptr;
 
-static void SetupPins();
 static void SetupComponents(const DeviceSetupConfig& config);
-static void PostSetup();
 
