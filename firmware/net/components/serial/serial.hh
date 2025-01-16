@@ -8,10 +8,6 @@
 
 #include "packet_t.hh"
 
-#ifndef PACKET_SIZE
-#define PACKET_SIZE 512
-#endif
-
 class Serial
 {
 public:
@@ -21,9 +17,9 @@ public:
         const size_t tx_rings, const size_t rx_rings);
 
     uint16_t NumReadyRxPackets();
-    packet_t* GetReadyRxPacket();
-
+    packet_t* Read();
     packet_t* Write();
+
 
     // REMOVEME
     uint32_t audio_packets_recv;

@@ -302,7 +302,7 @@ upload_cube: compile
 	fi \
 
 upload: compile
-	st-flash --reset --format ihex write   ./build/ui_static.hex
+	st-flash --reset --format ihex write ./build/ui_static.hex
 
 
 program: compile upload

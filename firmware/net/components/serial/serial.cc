@@ -1,4 +1,5 @@
 #include "serial.hh"
+#include "packet_builder.hh"
 
 #include "esp_log.h"
 
@@ -18,7 +19,7 @@ Serial::Serial(const uart_port_t uart, QueueHandle_t& queue,
     xTaskCreate(WriteTask, "serial_write_task", tx_task_sz, this, 1, NULL);
 }
 
-packet_t* Serial::GetReadyRxPacket()
+packet_t* Serial::Read()
 {
     if (!rx_packets.Peek().is_ready)
     {
@@ -77,11 +78,12 @@ void Serial::WriteTask(void* param)
 //         }
 
 //         // Write it to serial
+//         ESP_LOGI("uart tx", "Trasmit");
 //         tx_packet = &self->rx_packets.Read();
 
 //         uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
 
-//         uart_write_bytes(self->uart, tx_packet->data, tx_packet->length);
+//         uart_write_bytes(self->uart, tx_packet->data, tx_packet->length + Packet_Length_Size);
 
 //         tx_packet->is_ready = false;
 //         ++self->audio_packets_sent;
@@ -122,7 +124,7 @@ void Serial::ReadTask(void* param)
             {
                 uart_get_buffered_data_len(self->uart, &buffered_bytes);
 
-                // If the number of buffered bytes is less than 2 and
+                // If the number of buffered bytes is less than 2 and 
                 // we haven't started a packet we want to wait a bit longer.
                 // Otherwise, on every byte we want to read
                 if (buffered_bytes <= 0)
@@ -135,57 +137,10 @@ void Serial::ReadTask(void* param)
                 const uint32_t to_recv = buffered_bytes < Local_Buff_Size ? buffered_bytes : Local_Buff_Size;
                 num_bytes = uart_read_bytes(self->uart, buff, to_recv, portMAX_DELAY);
                 total_recv += num_bytes;
-                uint32_t idx = 0;
+                ESP_LOGI("[net] serial rx", "num_bytes %d", num_bytes);
 
-                while (idx < num_bytes)
-                {
-                    if (packet == nullptr)
-                    {
-                        // Reset the number of bytes read for our next packet
-                        bytes_read = 0;
+                BuildPacket(buff, num_bytes, self->rx_packets);
 
-                        packet = &self->rx_packets.Write();
-                        packet->is_ready = false;
-
-                        // Get the length
-                        // Little endian format
-                        // We use idx, because if we are already partially
-                        // through the buffered data we want to grab those
-                        // next set of bytes.
-                        while (bytes_read < 2 && idx < num_bytes)
-                        {
-                            packet->data[bytes_read++] = buff[idx++];
-                        }
-                    }
-                    else if (bytes_read < 2)
-                    {
-                        // If we get here then packet has been set to something
-                        // other than nullptr and only one byte has been
-                        // read which is insufficient to compare against the len
-                        packet->data[bytes_read++] = buff[idx++];
-                        continue;
-                    }
-                    else
-                    {
-                        // We can copy bytes until we run out of space
-                        // or out of buffered bytes
-                        while (bytes_read < packet->length && idx < num_bytes)
-                        {
-                            packet->data[bytes_read] = buff[idx];
-                            ++bytes_read;
-                            ++idx;
-                        }
-
-                        if (bytes_read >= packet->length)
-                        {
-                            // Done the packet
-                            packet->is_ready = true;
-
-                            // Null out our packet pointer
-                            packet = nullptr;
-                        }
-                    }
-                }
                 break;
             }
             case UART_FIFO_OVF: // FIFO overflow
