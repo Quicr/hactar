@@ -54,7 +54,7 @@ void Serial::WriteTask(void* param)
 
         tx_packet->is_ready = false;
         ++self->num_sent;
-        ESP_LOGI("uart tx", "serial packet sent %lu", self->num_sent);
+        // ESP_LOGI("uart tx", "serial packet sent %lu", self->num_sent);
 
     }
 }
@@ -138,7 +138,7 @@ void Serial::ReadTask(void* param)
                 total_recv += num_bytes;
 
                 self->num_recv += BuildPacket(buff, num_bytes, self->rx_packets);
-                ESP_LOGI("uart tx", "serial packet sent %lu", self->num_recv);
+                // ESP_LOGI("uart tx", "serial packet sent %lu", self->num_recv);
                 break;
             }
             case UART_FIFO_OVF: // FIFO overflow

@@ -113,7 +113,7 @@ extern "C" void app_main(void)
         case moq::Session::Status::kReady:
             if (!pub_track_handler)
             {
-                pub_track_handler = std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kStream /*mode*/, 2 /*prirority*/, 3000 /*ttl*/);
+                pub_track_handler = std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kStream, 2, 3000);
                 moq_session.PublishTrack(pub_track_handler);
                 Logger::Log(Logger::Level::Info, "Started publisher");
             }
@@ -129,13 +129,11 @@ extern "C" void app_main(void)
             {
                 while (auto packet = ui_layer->Read())
                 {
-                    std::vector<uint8_t> data(packet->payload, packet->payload + packet->length);
-
                     quicr::ObjectHeaders obj_headers = {
                         group_id,
                         object_id++,
                         subgroup_id,
-                        data.size(),
+                        packet->length,
                         quicr::ObjectStatus::kAvailable,
                         2 /*priority*/,
                         3000 /* ttl */,
@@ -143,7 +141,7 @@ extern "C" void app_main(void)
                         std::nullopt,
                     };
 
-                    pub_track_handler->PublishObject(obj_headers, data);
+                    pub_track_handler->PublishObject(obj_headers, {packet->payload, packet->length});
                 }
             }
 
@@ -157,8 +155,9 @@ extern "C" void app_main(void)
 
                     auto packet = ui_layer->Write();
                     packet->length = data->size();
-                    std::memcpy(&packet->payload, data->data(), data->size());
+                    std::memcpy(packet->payload, data->data(), data->size());
                     packet->is_ready = true;
+                    vTaskDelay(20 / portTICK_PERIOD_MS);
                 }
                 sub_track_handler->Pause();
             }
