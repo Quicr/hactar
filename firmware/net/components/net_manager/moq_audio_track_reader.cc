@@ -40,7 +40,7 @@ AudioTrackReader::StatusChanged(AudioTrackReader::Status status)
 
 quicr::BytesSpan moq::AudioTrackReader::Front() noexcept
 {
-    if (!_playing || _buffer.size() < _min_depth)
+    if (!_playing || _buffer.empty())
     {
         return quicr::BytesSpan();
     }
@@ -50,7 +50,7 @@ quicr::BytesSpan moq::AudioTrackReader::Front() noexcept
 
 std::optional<std::vector<uint8_t>> moq::AudioTrackReader::PopFront() noexcept
 {
-    if (!_playing || _buffer.size() < _min_depth)
+    if (!_playing || _buffer.empty())
     {
         return std::optional<std::vector<uint8_t>>();
     }

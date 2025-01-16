@@ -113,7 +113,7 @@ extern "C" void app_main(void)
         case moq::Session::Status::kReady:
             if (!pub_track_handler)
             {
-                pub_track_handler = std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kStream, 2, 3000);
+                pub_track_handler = std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kDatagram, 2, 100);
                 moq_session.PublishTrack(pub_track_handler);
                 Logger::Log(Logger::Level::Info, "Started publisher");
             }
@@ -129,11 +129,12 @@ extern "C" void app_main(void)
             {
                 while (auto packet = ui_layer->Read())
                 {
+                    std::vector<uint8_t> data(packet->payload, packet->payload + packet->length);
                     quicr::ObjectHeaders obj_headers = {
                         group_id,
                         object_id++,
                         subgroup_id,
-                        packet->length,
+                        data.size(),
                         quicr::ObjectStatus::kAvailable,
                         2 /*priority*/,
                         3000 /* ttl */,
@@ -141,7 +142,7 @@ extern "C" void app_main(void)
                         std::nullopt,
                     };
 
-                    pub_track_handler->PublishObject(obj_headers, {packet->payload, packet->length});
+                    pub_track_handler->PublishObject(obj_headers, data);
                 }
             }
 
@@ -157,7 +158,7 @@ extern "C" void app_main(void)
                     packet->length = data->size();
                     std::memcpy(packet->payload, data->data(), data->size());
                     packet->is_ready = true;
-                    vTaskDelay(20 / portTICK_PERIOD_MS);
+                    vTaskDelay(10 / portTICK_PERIOD_MS);
                 }
                 sub_track_handler->Pause();
             }

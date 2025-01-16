@@ -13,7 +13,7 @@ namespace moq
     class AudioTrackReader : public quicr::SubscribeTrackHandler
     {
     public:
-        AudioTrackReader(const quicr::FullTrackName &full_track_name, size_t min_depth = 5, size_t max_depth = std::numeric_limits<size_t>::max());
+        AudioTrackReader(const quicr::FullTrackName &full_track_name, size_t min_depth = 10, size_t max_depth = std::numeric_limits<size_t>::max());
 
         virtual ~AudioTrackReader() = default;
 
@@ -22,7 +22,7 @@ namespace moq
         void StatusChanged(Status status) override;
 
         void Pause() { _playing = false;}
-        void Play() { _playing = true; }
+        void Play() { _playing = _buffer.size() >= _min_depth; }
 
         bool IsPlaying() const noexcept { return _playing; }
 

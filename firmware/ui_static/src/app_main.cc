@@ -103,6 +103,7 @@ packet_t talk_packet;
 packet_t play_buffer;
 
 packet_t* play_packet = nullptr;
+size_t num_packets = 0;
 
 volatile bool sleeping = true;
 volatile bool error = false;
@@ -154,7 +155,7 @@ int app_main()
         if (HAL_GetTick() > blinky)
         {
             HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            // Logger::Log(Logger::Level::Error, "UI ALIVE");
+            Logger::Log(Logger::Level::Error, "UI ALIVE");
             blinky = HAL_GetTick() + 2000;
         }
 
@@ -200,9 +201,14 @@ int app_main()
 
         // If there are bytes available read them
         play_packet = serial.Read();
-        if (play_packet != nullptr)
+        if (play_packet)
         {
-            Logger::Log(Logger::Level::Info, "play");
+            if (++num_packets % 100 == 0)
+            {
+                Logger::Log(Logger::Level::Info, ".");
+                num_packets = 0;
+            }
+
             // TODO check type, assume audio for now.
             ui_net_link::Deserialize(*play_packet, play_frame);
             AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
