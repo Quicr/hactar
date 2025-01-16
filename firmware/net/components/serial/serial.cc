@@ -50,7 +50,7 @@ void Serial::WriteTask(void* param)
 
         uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
 
-        uart_write_bytes(self->uart, tx_packet->data, tx_packet->length);
+        uart_write_bytes(self->uart, tx_packet->data, tx_packet->length + Packet_Length_Size);
 
         tx_packet->is_ready = false;
         ++self->num_sent;
