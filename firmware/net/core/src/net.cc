@@ -127,7 +127,7 @@ extern "C" void app_main(void)
 
             if (pub_track_handler->GetStatus() == moq::TrackWriter::Status::kOk)
             {
-                while (auto packet = ui_layer->GetReadyRxPacket())
+                while (auto packet = ui_layer->Read())
                 {
                     std::vector<uint8_t> data(packet->payload, packet->payload + packet->length);
 
