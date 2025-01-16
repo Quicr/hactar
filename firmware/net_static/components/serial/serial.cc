@@ -1,4 +1,5 @@
 #include "serial.hh"
+#include "packet_builder.hh"
 
 #include "esp_log.h"
 
@@ -18,7 +19,7 @@ Serial::Serial(const uart_port_t uart, QueueHandle_t& queue,
     xTaskCreate(WriteTask, "serial_write_task", tx_task_sz, this, 1, NULL);
 }
 
-Serial::packet_t* Serial::GetReadyRxPacket()
+packet_t* Serial::Read()
 {
     if (!rx_packets.Peek().is_ready)
     {
@@ -30,54 +31,24 @@ Serial::packet_t* Serial::GetReadyRxPacket()
     return packet;
 }
 
-void Serial::WriteTask(void* param)
-{
-    Serial* self = (Serial*)param;
-    packet_t* tx_packet = nullptr;
-    self->audio_packets_sent = 0;
-
-
-    while (1)
-    {
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-
-        if (!self->tx_packets.Peek().is_ready)
-        {
-            continue;
-        }
-
-        // Write it to serial
-        tx_packet = &self->tx_packets.Read();
-
-        uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
-
-        uart_write_bytes(self->uart, tx_packet->data, tx_packet->length);
-
-        tx_packet->is_ready = false;
-        ++self->audio_packets_sent;
-        ESP_LOGI("uart tx", "audio serial packet sent %lu", self->audio_packets_sent);
-
-    }
-}
-
-// Loopback version
 // void Serial::WriteTask(void* param)
 // {
 //     Serial* self = (Serial*)param;
 //     packet_t* tx_packet = nullptr;
 //     self->audio_packets_sent = 0;
 
+
 //     while (1)
 //     {
 //         vTaskDelay(10 / portTICK_PERIOD_MS);
 
-//         if (!self->rx_packets.Peek().is_ready)
+//         if (!self->tx_packets.Peek().is_ready)
 //         {
 //             continue;
 //         }
 
 //         // Write it to serial
-//         tx_packet = &self->rx_packets.Read();
+//         tx_packet = &self->tx_packets.Read();
 
 //         uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
 
@@ -85,10 +56,41 @@ void Serial::WriteTask(void* param)
 
 //         tx_packet->is_ready = false;
 //         ++self->audio_packets_sent;
+//         ESP_LOGI("uart tx", "audio serial packet sent %lu", self->audio_packets_sent);
+
 //     }
 // }
 
-Serial::packet_t* Serial::Write()
+// Loopback version
+void Serial::WriteTask(void* param)
+{
+    Serial* self = (Serial*)param;
+    packet_t* tx_packet = nullptr;
+    self->audio_packets_sent = 0;
+
+    while (1)
+    {
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+
+        if (!self->rx_packets.Peek().is_ready)
+        {
+            continue;
+        }
+
+        // Write it to serial
+        ESP_LOGI("uart tx", "Trasmit");
+        tx_packet = &self->rx_packets.Read();
+
+        uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
+
+        uart_write_bytes(self->uart, tx_packet->data, tx_packet->length + Packet_Length_Size);
+
+        tx_packet->is_ready = false;
+        ++self->audio_packets_sent;
+    }
+}
+
+packet_t* Serial::Write()
 {
     return &tx_packets.Write();
 }
@@ -112,7 +114,7 @@ void Serial::ReadTask(void* param)
     while (1)
     {
         // Wait for an event in the queue
-        if (!xQueueReceive(self->queue, (void*)&event, 10 / portTICK_PERIOD_MS))
+        if (!xQueueReceive(self->queue, (void*)&event, portMAX_DELAY))
         {
             continue;
         }
@@ -135,79 +137,10 @@ void Serial::ReadTask(void* param)
                 const uint32_t to_recv = buffered_bytes < Local_Buff_Size ? buffered_bytes : Local_Buff_Size;
                 num_bytes = uart_read_bytes(self->uart, buff, to_recv, portMAX_DELAY);
                 total_recv += num_bytes;
-                uint32_t idx = 0;
+                ESP_LOGI("[net] serial rx", "num_bytes %d", num_bytes);
 
-                while (idx < num_bytes)
-                {
-                    if (packet == nullptr)
-                    {
-                        // Reset the number of bytes read for our next packet
-                        bytes_read = 0;
+                BuildPacket(buff, num_bytes, self->rx_packets);
 
-                        packet = &self->rx_packets.Write();
-                        packet->is_ready = false;
-
-                        // Get the length
-                        // Little endian format
-                        // We use idx, because if we are already partially
-                        // through the buffered data we want to grab those 
-                        // next set of bytes.
-                        while (bytes_read < 2 && idx < num_bytes)
-                        {
-                            packet->data[bytes_read++] = buff[idx++];
-                        }
-                    }
-                    else if (bytes_read < 2)
-                    {
-                        // If we get here then packet has been set to something 
-                        // other than nullptr and only one byte has been 
-                        // read which is insufficient to compare against the len
-                        packet->data[bytes_read++] = buff[idx++];
-                        continue;
-                    }
-                    else
-                    {
-                        // We can copy bytes until we run out of space 
-                        // or out of buffered bytes
-                        while (bytes_read < packet->length && idx < num_bytes)
-                        {
-                            packet->data[bytes_read] = buff[idx];
-                            ++bytes_read;
-                            ++idx;
-                        }
-
-                        if (bytes_read >= packet->length)
-                        {
-                            // Done the packet
-                            packet->is_ready = true;
-
-                            // TODO make a task that checks packets ??
-                            // Determine what to do with it
-                            switch (packet->type)
-                            {
-                                case Packet_Type::Ready:
-                                {
-                                    // ready message ignore for now
-                                    break;
-                                }
-                                case Packet_Type::Audio:
-                                {
-                                    ++self->audio_packets_recv;
-                                    ESP_LOGI("uart rx", "audio packet recv %lu, packet len %u", self->audio_packets_recv, packet->length);
-
-                                    break;
-                                }
-                                default:
-                                {
-                                    break;
-                                }
-                            }
-
-                            // Null out our packet pointer
-                            packet = nullptr;
-                        }
-                    }
-                }
                 break;
             }
             case UART_FIFO_OVF: // FIFO overflow

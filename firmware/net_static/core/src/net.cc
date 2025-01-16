@@ -35,85 +35,85 @@ int sock;
 uint32_t packets_sent = 0;
 uint32_t packets_recv = 0;
 
-static void TCPClientSend(void* params)
-{
-    static const char* tcp_tag = "TCP Send";
+// static void TCPClientSend(void* params)
+// {
+//     static const char* tcp_tag = "TCP Send";
 
-    Serial::packet_t* rx_packet = nullptr;
-    while (true)
-    {
-        // vTaskDelay(10 / portTICK_PERIOD_MS);
-        // Get the data from our serial
-        rx_packet = ui_layer->GetReadyRxPacket();
-        if (rx_packet == nullptr)
-        {
-            continue;
-        }
+//     Serial::packet_t* rx_packet = nullptr;
+//     while (true)
+//     {
+//         // vTaskDelay(10 / portTICK_PERIOD_MS);
+//         // Get the data from our serial
+//         rx_packet = ui_layer->GetReadyRxPacket();
+//         if (rx_packet == nullptr)
+//         {
+//             continue;
+//         }
 
-        int err = send(sock, rx_packet->data, rx_packet->length, 0);
-        if (err < 0)
-        {
-            ESP_LOGE(tcp_tag, "Error sending data: errno %d", err);
-        }
-        else
-        {
-            ++packets_sent;
-            ESP_LOGI(tcp_tag, "Data sent %lu", packets_sent);
-        }
-    }
-    close(sock);
-    ESP_LOGI(tcp_tag, "socket closed");
-    vTaskDelete(NULL);
-}
+//         int err = send(sock, rx_packet->data, rx_packet->length, 0);
+//         if (err < 0)
+//         {
+//             ESP_LOGE(tcp_tag, "Error sending data: errno %d", err);
+//         }
+//         else
+//         {
+//             ++packets_sent;
+//             ESP_LOGI(tcp_tag, "Data sent %lu", packets_sent);
+//         }
+//     }
+//     close(sock);
+//     ESP_LOGI(tcp_tag, "socket closed");
+//     vTaskDelete(NULL);
+// }
 
-static void TCPClientRecv(void* params)
-{
-    static const char* tcp_tag = "TCP Send";
+// static void TCPClientRecv(void* params)
+// {
+//     static const char* tcp_tag = "TCP Send";
     
-    Serial::packet_t* tx_packet = nullptr;
-    while (true)
-    {
-        tx_packet = ui_layer->Write();
-        int len = recv(sock, tx_packet->data, 355, 0);
-        if (len < 0)
-        {
-            ESP_LOGE(tcp_tag, "No data received from server");
-        }
-        else
-        {
-            ESP_LOGI(tcp_tag, "Received: len %d, total recv %lu, packet_len %u", len, ++packets_recv, tx_packet->length);
-            tx_packet->is_ready = true;
-            tx_packet = nullptr;
-        }
-    }
-}
+//     Serial::packet_t* tx_packet = nullptr;
+//     while (true)
+//     {
+//         tx_packet = ui_layer->Write();
+//         int len = recv(sock, tx_packet->data, 355, 0);
+//         if (len < 0)
+//         {
+//             ESP_LOGE(tcp_tag, "No data received from server");
+//         }
+//         else
+//         {
+//             ESP_LOGI(tcp_tag, "Received: len %d, total recv %lu, packet_len %u", len, ++packets_recv, tx_packet->length);
+//             tx_packet->is_ready = true;
+//             tx_packet = nullptr;
+//         }
+//     }
+// }
 
-static void TCPClientBegin()
-{
-    static const char* tcp_tag = "TCP client begin";
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0)
-    {
-        ESP_LOGE(tcp_tag, "Unable to create socket");
-        vTaskDelete(NULL);
-    }
+// static void TCPClientBegin()
+// {
+//     static const char* tcp_tag = "TCP client begin";
+//     sock = socket(AF_INET, SOCK_STREAM, 0);
+//     if (sock < 0)
+//     {
+//         ESP_LOGE(tcp_tag, "Unable to create socket");
+//         vTaskDelete(NULL);
+//     }
 
-    struct sockaddr_in dest_addr;
-    dest_addr.sin_addr.s_addr = inet_addr(TEST_SERVER_IP);
-    dest_addr.sin_family = AF_INET;
-    dest_addr.sin_port = htons(TEST_SERVER_PORT);
+//     struct sockaddr_in dest_addr;
+//     dest_addr.sin_addr.s_addr = inet_addr(TEST_SERVER_IP);
+//     dest_addr.sin_family = AF_INET;
+//     dest_addr.sin_port = htons(TEST_SERVER_PORT);
 
 
-    // Connect to server
-    int err = connect(sock, (struct sockaddr*)&dest_addr, sizeof(dest_addr));
-    if (err < 0)
-    {
-        ESP_LOGE(tcp_tag, "Socket unable to connect errno %d", err);
-        vTaskDelete(NULL);
-    }
-    ESP_LOGI(tcp_tag, "Connected to server");
-    xTaskCreate(TCPClientSend, "tcp_client_send_task", 4096, NULL, 5, NULL);
-}
+//     // Connect to server
+//     int err = connect(sock, (struct sockaddr*)&dest_addr, sizeof(dest_addr));
+//     if (err < 0)
+//     {
+//         ESP_LOGE(tcp_tag, "Socket unable to connect errno %d", err);
+//         vTaskDelete(NULL);
+//     }
+//     ESP_LOGI(tcp_tag, "Connected to server");
+//     xTaskCreate(TCPClientSend, "tcp_client_send_task", 4096, NULL, 5, NULL);
+// }
 
 extern "C" void app_main(void)
 {
@@ -143,17 +143,17 @@ extern "C" void app_main(void)
 
 
     ui_layer = new Serial(UART1, uart_queue, 4096 * 4, 4096 * 4, 30, 30);
-    Wifi wifi;
-    wifi.Connect(SSID, SSID_PWD);
+    // Wifi wifi;
+    // wifi.Connect(SSID, SSID_PWD);
 
-    while (!wifi.IsConnected())
-    {
-        ESP_LOGW("net.cc", "REMOVE ME - Waiting to connect to wifi");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
+    // while (!wifi.IsConnected())
+    // {
+    //     ESP_LOGW("net.cc", "REMOVE ME - Waiting to connect to wifi");
+    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
+    // }
     // TODO we need to wait until the tcp client is also connected before we say we can take 
     // packets
-    TCPClientBegin();
+    // TCPClientBegin();
 
     gpio_set_level(NET_LED_R, 1);
     gpio_set_level(NET_LED_G, 1);
@@ -170,6 +170,7 @@ extern "C" void app_main(void)
     uint32_t blink_cnt = 0;
     while (1)
     {
+        Logger::Log(Logger::Level::Info, "Net Alive");
 
 
         // manager->Update();
@@ -182,7 +183,7 @@ extern "C" void app_main(void)
         //     qsession_connected = true;
         // }
 
-        vTaskDelay(1600 / portTICK_PERIOD_MS);
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
 }
 
