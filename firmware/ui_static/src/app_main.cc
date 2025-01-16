@@ -12,10 +12,12 @@
 
 #include "packet_t.hh"   
 #include "ui_net_link.hh"
+#include "logger.hh"
 
 #include <string.h>
 
 #include <random>
+
 
 #define HIGH GPIO_PIN_SET
 #define LOW GPIO_PIN_RESET
@@ -100,6 +102,8 @@ Screen screen(
 packet_t talk_packet;
 packet_t play_buffer;
 
+packet_t* play_packet = nullptr;
+
 volatile bool sleeping = true;
 volatile bool error = false;
 bool net_replied = false;
@@ -109,13 +113,17 @@ uint32_t est_time_ms = 0;
 uint32_t num_loops = 0;
 uint32_t ticks_ms = 0;
 
+ui_net_link::AudioObject play_frame;
+
 int app_main()
 {
+    HAL_Delay(1000);
     audio_chip.Init();
     InitScreen();
+    LEDS(LOW, LOW, LOW);
     serial.StartReceive();
-
     LEDS(HIGH, HIGH, HIGH);
+
 
     uint32_t timeout;
     uint32_t current_tick;
@@ -130,6 +138,7 @@ int app_main()
     WaitForNetReady();
 
     // TODO Probe for a reply from the net chip using serial
+    // SlowSendTest(100, 10);
 
     // TODO test clock stability by switching a debug pin on and off and measure it with the scope
     HAL_Delay(5000);
@@ -145,7 +154,7 @@ int app_main()
         if (HAL_GetTick() > blinky)
         {
             HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            HAL_UART_Transmit(&huart1, (const uint8_t*)"UI ALIVE\r\n", 10, HAL_MAX_DELAY);
+            // Logger::Log(Logger::Level::Error, "UI ALIVE");
             blinky = HAL_GetTick() + 2000;
         }
 
@@ -157,7 +166,7 @@ int app_main()
 
         if (error)
         {
-            Error_Handler();
+            // Error_Handler();
         }
 
 
@@ -167,14 +176,14 @@ int app_main()
             // TODO channel id
             ui_net_link::TalkStart talk_start = { 0 };
             ui_net_link::Serialize(talk_start, talk_packet);
-            serial.Write(talk_packet);
+            // serial.Write(talk_packet);
             ptt_down = true;
         }
         else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down) 
         {
             ui_net_link::TalkStop talk_stop = { 0 };
             ui_net_link::Serialize(talk_stop, talk_packet);
-            serial.Write(talk_packet);
+            // serial.Write(talk_packet);
             ptt_down = false;
         }
 
@@ -190,9 +199,14 @@ int app_main()
         RaiseFlag(Rx_Audio_Transmitted);
 
         // If there are bytes available read them
-
-        // TODO read packets
-
+        play_packet = serial.Read();
+        if (play_packet != nullptr)
+        {
+            Logger::Log(Logger::Level::Info, "play");
+            // TODO check type, assume audio for now.
+            ui_net_link::Deserialize(*play_packet, play_frame);
+            AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
+        }
 
         // Use remaining time to draw
         if (est_time_ms > redraw)
@@ -344,6 +358,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     if (huart->Instance == USART2)
     {
+        // Logger::Log(Logger::Level::Info, "rx", size);
         serial.RxEvent(size);
     }
 }
@@ -418,14 +433,15 @@ void assert_failed(uint8_t* file, uint32_t line)
 void SlowSendTest(int delay, int num)
 {
     packet_t packet;   
-    packet.length = constants::Audio_Buffer_Sz_2 + 2;
-
+    ui_net_link::AudioObject talk_frame = { 0 };
     // Fill the tmp audio buffer with random
     for (int i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
     {
-        packet.payload[i] = i;
+        talk_frame.data[i+2] = i;
     }
-    
+
+    ui_net_link::Serialize(talk_frame, packet);
+
     int i = 0;
     while (i++ != num)
     {

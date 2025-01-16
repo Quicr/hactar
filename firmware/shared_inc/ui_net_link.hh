@@ -104,12 +104,12 @@ namespace ui_net_link
 
     static void Serialize(const AudioObject& talk_frame, packet_t& packet)
     {
-        const uint16_t num_extra_byes = 2;
-        packet.length = Packet_Header_Size + num_extra_byes + constants::Audio_Buffer_Sz_2;
+        const uint16_t num_extra_bytes = 2;
+        packet.length = num_extra_bytes + constants::Audio_Buffer_Sz_2;
         packet.payload[0] = (uint8_t)Packet_Type::AudioObjects;
         packet.payload[1] = talk_frame.channel_id;
 
-        constexpr uint32_t payload_offset = num_extra_byes; 
+        constexpr uint32_t payload_offset = num_extra_bytes; 
         memcpy(packet.payload+payload_offset, talk_frame.data, constants::Audio_Buffer_Sz_2);
 
         packet.is_ready = true;
