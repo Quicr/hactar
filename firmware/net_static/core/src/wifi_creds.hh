@@ -1,3 +1,3 @@
 #pragma once
-const char* SSID = "";
-const char* SSID_PWD = "";
+const char* SSID = "Hactar";
+const char* SSID_PWD = "Hactar";
