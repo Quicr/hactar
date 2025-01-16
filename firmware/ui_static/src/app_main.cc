@@ -10,7 +10,7 @@
 
 #include "fib.hh"
 
-#include "packet_t.hh"   
+#include "packet_t.hh"
 #include "ui_net_link.hh"
 #include "logger.hh"
 
@@ -179,7 +179,7 @@ int app_main()
             // serial.Write(talk_packet);
             ptt_down = true;
         }
-        else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down) 
+        else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
         {
             ui_net_link::TalkStop talk_stop = { 0 };
             ui_net_link::Serialize(talk_stop, talk_packet);
@@ -432,7 +432,7 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 void SlowSendTest(int delay, int num)
 {
-    packet_t packet;   
+    packet_t packet;
     ui_net_link::AudioObject talk_frame = { 0 };
     // Fill the tmp audio buffer with random
     for (int i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
