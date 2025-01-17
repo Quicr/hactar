@@ -39,7 +39,7 @@ uint32_t packets_recv = 0;
 // {
 //     static const char* tcp_tag = "TCP Send";
 
-//     Serial::packet_t* rx_packet = nullptr;
+//     Serial::link_packet_t* rx_packet = nullptr;
 //     while (true)
 //     {
 //         // vTaskDelay(10 / portTICK_PERIOD_MS);
@@ -69,8 +69,8 @@ uint32_t packets_recv = 0;
 // static void TCPClientRecv(void* params)
 // {
 //     static const char* tcp_tag = "TCP Send";
-    
-//     Serial::packet_t* tx_packet = nullptr;
+
+//     Serial::link_packet_t* tx_packet = nullptr;
 //     while (true)
 //     {
 //         tx_packet = ui_layer->Write();
@@ -142,7 +142,7 @@ extern "C" void app_main(void)
         RTS_PIN, CTS_PIN, ESP_INTR_FLAG_LOWMED);
 
 
-    ui_layer = new Serial(UART1, uart_queue, 4096 * 4, 4096 * 4, 30, 30);
+    ui_layer = new Serial(UART1, uart_queue, 4096 * 2, 4096 * 2, 3, 3);
     // Wifi wifi;
     // wifi.Connect(SSID, SSID_PWD);
 
@@ -151,7 +151,7 @@ extern "C" void app_main(void)
     //     ESP_LOGW("net.cc", "REMOVE ME - Waiting to connect to wifi");
     //     vTaskDelay(1000 / portTICK_PERIOD_MS);
     // }
-    // TODO we need to wait until the tcp client is also connected before we say we can take 
+    // TODO we need to wait until the tcp client is also connected before we say we can take
     // packets
     // TCPClientBegin();
 

@@ -6,7 +6,7 @@
 
 #include "ring_buffer.hh"
 
-#include "packet_t.hh"
+#include "link_packet_t.hh"
 
 class Serial
 {
@@ -17,13 +17,9 @@ public:
         const size_t tx_rings, const size_t rx_rings);
 
     uint16_t NumReadyRxPackets();
-    packet_t* Read();
-    packet_t* Write();
+    link_packet_t* Read();
+    link_packet_t* Write();
 
-
-    // REMOVEME
-    uint32_t audio_packets_recv;
-    uint32_t audio_packets_sent;
 private:
     static void WriteTask(void* param);
     static void ReadTask(void* param);
@@ -31,16 +27,12 @@ private:
     void HandleRxEvent(uart_event_t& event);
     void HandleRxData();
 
-    // TODO remove
-    static const size_t audio_sz = 355;
-
-
     uart_port_t uart;
     QueueHandle_t& queue;
 
-    bool tx_data_ready;
-    bool synced;
+    RingBuffer<link_packet_t> tx_packets;
+    RingBuffer<link_packet_t> rx_packets;
 
-    RingBuffer<packet_t> tx_packets;
-    RingBuffer<packet_t> rx_packets;
+    uint32_t num_recv;
+    uint32_t num_sent;
 };

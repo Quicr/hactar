@@ -3,7 +3,7 @@
 #include "main.h"
 
 #include "ring_buffer.hh"
-#include "packet_t.hh"
+#include "link_packet_t.hh"
 
 class Serial
 {
@@ -15,10 +15,10 @@ public:
     void StartReceive();
     void Reset();
 
-    packet_t* Read();
+    link_packet_t* Read();
     void Write(const uint8_t data);
     void Write(const uint8_t* data, const size_t size);
-    void Write(const packet_t& packet);
+    void Write(const link_packet_t& packet);
     size_t Unread();
 
     void UpdateReadHead(size_t amt);
@@ -36,8 +36,8 @@ protected:
     volatile bool tx_is_free;
     bool packet_started;
     uint8_t rx_buff[Rx_Buff_Sz];
-    RingBuffer<packet_t> rx_packets;
-    packet_t* rx_packet;
+    RingBuffer<link_packet_t> rx_packets;
+    link_packet_t* rx_packet;
     uint16_t write_idx;
     uint16_t read_idx;
     uint16_t unread;
