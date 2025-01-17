@@ -8,18 +8,21 @@
 #define PACKET_SIZE 512
 #endif
 
-#define LENGTH_TYPE uint16_t
+#define PACKET_TYPE_TYPE uint8_t
+#define PACKET_LENGTH_TYPE uint16_t
 
-constexpr size_t Packet_Length_Size = sizeof(LENGTH_TYPE);
-constexpr size_t Packet_Header_Size = Packet_Length_Size;
+constexpr size_t Packet_Type_Size = sizeof(PACKET_TYPE_TYPE);
+constexpr size_t Packet_Length_Size = sizeof(PACKET_LENGTH_TYPE);
+constexpr size_t Packet_Header_Size = Packet_Length_Size + Packet_Type_Size;
 constexpr size_t Packet_Payload_Size = PACKET_SIZE - Packet_Header_Size;
 
-struct packet_t
+struct link_packet_t
 {
     union
     {
-        struct 
+        struct
         {
+            uint8_t type;
             uint16_t length;
             uint8_t payload[Packet_Payload_Size];
         } __attribute((packed));

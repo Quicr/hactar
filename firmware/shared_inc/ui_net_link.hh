@@ -1,6 +1,6 @@
 #pragma once
 
-#include "packet_t.hh"
+#include "link_packet_t.hh"
 #include "audio_codec.hh"
 #include "audio_chip.hh"
 
@@ -10,6 +10,8 @@ namespace ui_net_link
 {
     enum struct Packet_Type: uint8_t
     {
+        GetAudioLinkPacket,
+        GetTextLinkPacket,
         TalkStart,
         TalkStop,
         PlayStart,
@@ -27,7 +29,6 @@ namespace ui_net_link
     {
         uint8_t channel_id;
     };
-    
 
     struct TalkStop
     {
@@ -50,97 +51,97 @@ namespace ui_net_link
         uint8_t data[constants::Audio_Buffer_Sz_2];
     };
 
-    void Serialize(const TalkStart& talk_start, packet_t& packet)
-    {   
-        packet.length = 4;
-
-        // Packet type
-        packet.payload[0] = (uint8_t)Packet_Type::TalkStart;
-
-        // Channel id
-        packet.payload[1] = talk_start.channel_id;
-
-        packet.is_ready = true;
-    }
-
-    static void Serialize(const TalkStop& talk_stop, packet_t& packet)
+    // TODO USE THIS
+    void BuildGetLinkPacket(link_packet_t& packet)
     {
-        packet.length = 4;
-
-        // Packet type
-        packet.payload[0] = (uint8_t)Packet_Type::TalkStop;
-
-        // Channel id
-        packet.payload[1] = talk_stop.channel_id;
-
+        packet.type = (uint8_t)Packet_Type::GetAudioLinkPacket;
+        packet.length = 0;
         packet.is_ready = true;
     }
 
-    static void Serialize(const PlayStart& play_start, packet_t& packet)
-    {   
-        packet.length = 4;
-
-        // Packet type
-        packet.payload[0] = (uint8_t)Packet_Type::PlayStart;
-
-        // Channel id
-        packet.payload[1] = play_start.channel_id;
-        
-        packet.is_ready = true;
-    }
-
-    static void Serialize(const PlayStop& play_stop, packet_t& packet)
+    void Serialize(const TalkStart& talk_start, link_packet_t& packet)
     {
-        packet.length = 4;
-
-        // Packet type
-        packet.payload[0] = (uint8_t)Packet_Type::PlayStop;
+        packet.type = (uint8_t)Packet_Type::TalkStart;
+        packet.length = 1;
 
         // Channel id
-        packet.payload[1] = play_stop.channel_id;
+        packet.payload[0] = talk_start.channel_id;
 
         packet.is_ready = true;
     }
 
-    static void Serialize(const AudioObject& talk_frame, packet_t& packet)
+    static void Serialize(const TalkStop& talk_stop, link_packet_t& packet)
     {
-        const uint16_t num_extra_bytes = 2;
+        packet.type = (uint8_t)Packet_Type::TalkStop;
+        packet.length = 1;
+
+        // Channel id
+        packet.payload[0] = talk_stop.channel_id;
+
+        packet.is_ready = true;
+    }
+
+    static void Serialize(const PlayStart& play_start, link_packet_t& packet)
+    {
+        packet.type = (uint8_t)Packet_Type::PlayStart;
+        packet.length = 1;
+
+        // Channel id
+        packet.payload[0] = play_start.channel_id;
+
+        packet.is_ready = true;
+    }
+
+    static void Serialize(const PlayStop& play_stop, link_packet_t& packet)
+    {
+        packet.type = (uint8_t)Packet_Type::PlayStop;
+        packet.length = 1;
+
+        // Channel id
+        packet.payload[0] = play_stop.channel_id;
+
+        packet.is_ready = true;
+    }
+
+    static void Serialize(const AudioObject& talk_frame, link_packet_t& packet)
+    {
+        const uint16_t num_extra_bytes = 1;
+        packet.type = (uint8_t)Packet_Type::AudioObjects;
         packet.length = num_extra_bytes + constants::Audio_Buffer_Sz_2;
-        packet.payload[0] = (uint8_t)Packet_Type::AudioObjects;
-        packet.payload[1] = talk_frame.channel_id;
+        packet.payload[0] = talk_frame.channel_id;
 
-        constexpr uint32_t payload_offset = num_extra_bytes; 
+        constexpr uint32_t payload_offset = num_extra_bytes;
         memcpy(packet.payload+payload_offset, talk_frame.data, constants::Audio_Buffer_Sz_2);
 
         packet.is_ready = true;
     }
 
-    static void Deserialize(const packet_t& packet, TalkStart& talk_start)
+    static void Deserialize(const link_packet_t& packet, TalkStart& talk_start)
     {
-        talk_start.channel_id = packet.payload[1];
+        talk_start.channel_id = packet.payload[0];
     }
 
-    static void Deserialize(const packet_t& packet, TalkStop& talk_stop)
+    static void Deserialize(const link_packet_t& packet, TalkStop& talk_stop)
     {
-        talk_stop.channel_id = packet.payload[1];
+        talk_stop.channel_id = packet.payload[0];
     }
 
-    static void Deserialize(const packet_t& packet, PlayStart& play_start)
+    static void Deserialize(const link_packet_t& packet, PlayStart& play_start)
     {
-        play_start.channel_id = packet.payload[1];      
+        play_start.channel_id = packet.payload[0];
     }
 
-    static void Deserialize(const packet_t& packet, PlayStop& play_stop)
+    static void Deserialize(const link_packet_t& packet, PlayStop& play_stop)
     {
-        play_stop.channel_id = packet.payload[1];
+        play_stop.channel_id = packet.payload[0];
     }
 
-    static void Deserialize(const packet_t& packet, AudioObject& audio_object)
+    static void Deserialize(const link_packet_t& packet, AudioObject& audio_object)
     {
-        audio_object.channel_id = packet.payload[1];
-        
-        constexpr uint32_t payload_offset = 2; 
-        memcpy(audio_object.data, packet.payload + payload_offset, constants::Audio_Buffer_Sz_2); 
+        audio_object.channel_id = packet.payload[0];
+
+        constexpr uint32_t payload_offset = 1;
+        memcpy(audio_object.data, packet.payload + payload_offset, constants::Audio_Buffer_Sz_2);
     }
 
     // TODO serialize and deserialize for audioobjectS

@@ -34,14 +34,14 @@ void Serial::Reset()
     StartReceive();
 }
 
-packet_t* Serial::Read()
+link_packet_t* Serial::Read()
 {
     while (unread > 0)
     {
-        uint16_t bytes_to_read = unread;   
+        uint16_t bytes_to_read = unread;
         if (read_idx + bytes_to_read > Rx_Buff_Sz)
         {
-            bytes_to_read = Rx_Buff_Sz - read_idx;   
+            bytes_to_read = Rx_Buff_Sz - read_idx;
         }
 
         // Builds packet and sets is_ready to true when a packet is done.
@@ -60,7 +60,7 @@ packet_t* Serial::Read()
         return nullptr;
     }
 
-    packet_t* packet = &rx_packets.Read();
+    link_packet_t* packet = &rx_packets.Read();
     packet->is_ready = false;
     return packet;
 }
@@ -77,7 +77,7 @@ void Serial::Write(const uint8_t* data, const size_t size)
     HAL_UART_Transmit_DMA(uart, data, size);
 }
 
-void Serial::Write(const packet_t& packet)
+void Serial::Write(const link_packet_t& packet)
 {
     ChangeFreeState();
     Logger::Log(Logger::Level::Info, "send", packet.length+Packet_Length_Size);
@@ -91,7 +91,7 @@ void Serial::RxEvent(const uint16_t fifo_idx)
     // callback on your breakpoint will throw off the values and then
     // will cause the value to be at the wrong idx and everything will go
     // ka-boom, crash, plop. Overflow errors and stuff.
-    
+
     const uint16_t num_recv = fifo_idx - write_idx;
     write_idx += num_recv;
     unread += num_recv;
