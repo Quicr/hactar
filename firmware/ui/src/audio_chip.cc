@@ -160,14 +160,6 @@ bool AudioChip::SetRegister(uint8_t address, uint16_t data)
     registers[address].bytes[0] |= uint8_t((data >> 8) & Top_Bit_Mask);
     registers[address].bytes[1] = uint8_t(data & Bot_Bit_Mask);
 
-    const uint8_t end[2] = { '\n','\n' };
-    const uint8_t test[4] = { '1', '0', '1', '\n' };
-    // HAL_UART_Transmit(&huart1, test, 4, HAL_MAX_DELAY);
-    // HAL_UART_Transmit(&huart1, ToBinaryString(&registers[address].addr, 1), 9, HAL_MAX_DELAY);
-    // HAL_UART_Transmit(&huart1, ToBinaryString(&registers[address].bytes[0], 1), 9, HAL_MAX_DELAY);
-    // HAL_UART_Transmit(&huart1, ToBinaryString(&registers[address].bytes[1], 1), 9, HAL_MAX_DELAY);
-    // HAL_UART_Transmit(&huart1, end, 2, HAL_MAX_DELAY);
-
     // Write the register to the chip
     return (WriteRegister(address) == HAL_OK);
 }
@@ -212,7 +204,9 @@ bool AudioChip::SetBit(uint8_t address, uint8_t bit, uint8_t set)
     {
         // Upper bit
         // First make sure only the first bit is actually set
-        uint8_t set_mask = (bit - 7) & 0x01;
+        uint8_t set_mask = (bit - 7) & data;
+
+        // Upper register, so the 8th bit is the lower of the upper register
         uint8_t reset_mask = 0xFE;
 
         registers[address].bytes[0] &= reset_mask;
@@ -222,7 +216,7 @@ bool AudioChip::SetBit(uint8_t address, uint8_t bit, uint8_t set)
     {
         // Lower bits
         // Reset mask
-        uint8_t set_mask = (1 << bit);
+        uint8_t set_mask = (data << bit);
         uint8_t reset_mask = ~set_mask;
 
         registers[address].bytes[1] &= reset_mask;
@@ -429,123 +423,6 @@ void AudioChip::Recieve(uint16_t* buff, const size_t size)
     }
 
     LowerFlag(AudioFlag::Rx_Ready);
-}
-
-void AudioChip::SampleSineWave(const uint16_t num_samples,
-    const uint16_t start_idx, const double amplitude, const double freq,
-    double& phase, const bool stereo)
-{
-    constexpr uint16_t offset = 2000;
-    constexpr double TWO_PI = M_PI * 2;
-    const double angular_freq = TWO_PI * freq;
-    double current_phase = 0.0f;
-    uint16_t samples = num_samples;
-    if (stereo)
-    {
-        samples = samples / 2;
-
-        for (uint16_t i = 0; i < samples; ++i)
-        {
-            const double step = (double)i / constants::Sample_Rate;
-            const double sample = amplitude * sin(angular_freq * step + phase);
-
-            // Add offset to handle negative numbers and overflow back around
-            // to their regular values for the positive numbers
-            const uint16_t int_sample = uint16_t(offset + sample) + 1;
-
-            tx_buffer[start_idx + (i * 2)] = int_sample;
-            tx_buffer[start_idx + (i * 2 + 1)] = int_sample;
-        }
-    }
-    else
-    {
-        for (uint16_t i = 0; i < samples; ++i)
-        {
-            const double step = (double)i / constants::Sample_Rate;
-            const double sample = amplitude * sin(angular_freq * step + phase);
-
-            // Add offset to handle negative numbers and overflow back around
-            // to their regular values for the positive numbers
-            tx_buffer[start_idx + i] = uint16_t(offset + sample);
-        }
-    }
-
-    phase += angular_freq * (double(samples) / constants::Sample_Rate);
-    while (phase > TWO_PI)
-    {
-        phase -= TWO_PI;
-    }
-}
-
-// Static version
-void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
-    const uint16_t start_idx, const double amplitude, const double freq,
-    double& phase, const bool stereo)
-{
-    constexpr uint16_t offset = 2000;
-    constexpr double TWO_PI = M_PI * 2;
-    const double angular_freq = TWO_PI * freq;
-    double current_phase = 0.0f;
-    uint16_t samples = num_samples;
-    if (stereo)
-    {
-        samples = samples / 2;
-
-        for (uint16_t i = 0; i < samples; ++i)
-        {
-            const double step = (double)i / constants::Sample_Rate;
-            const double sample = amplitude * sin(angular_freq * step + phase);
-
-            // Add offset to handle negative numbers and overflow back around
-            // to their regular values for the positive numbers
-            const uint16_t int_sample = uint16_t(offset + sample) + 1;
-
-            buff[start_idx + (i * 2)] = int_sample;
-            buff[start_idx + (i * 2 + 1)] = int_sample;
-        }
-    }
-    else
-    {
-        for (uint16_t i = 0; i < samples; ++i)
-        {
-            const double step = (double)i / constants::Sample_Rate;
-            const double sample = amplitude * sin(angular_freq * step + phase);
-
-            // Add offset to handle negative numbers and overflow back around
-            // to their regular values for the positive numbers
-            buff[start_idx + i] = uint16_t(offset + sample);
-        }
-    }
-
-    phase += angular_freq * (double(samples) / constants::Sample_Rate);
-    while (phase > TWO_PI)
-    {
-        phase -= TWO_PI;
-    }
-}
-
-void AudioChip::SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
-    const uint16_t start_idx, const double amplitutde, double freqs [], double phases [],
-    const uint16_t num_freqs, const bool stereo)
-{
-
-    // Clear the buffer first
-    for (uint16_t i = 0; i < num_samples; ++i)
-    {
-        buff[start_idx + i] = 0;
-    }
-
-    for (uint16_t i = 0 ; i < num_freqs; ++i)
-    {
-        uint16_t harmonic[num_samples] = { 0 };
-        SampleSineWave(harmonic, num_samples, 0,
-            amplitutde, freqs[i], phases[i], stereo);
-
-        for (uint16_t i = 0; i < num_samples; ++i)
-        {
-            buff[start_idx + i] += harmonic[i];
-        }
-    }
 }
 
 inline void AudioChip::RaiseFlag(AudioFlag flag)
