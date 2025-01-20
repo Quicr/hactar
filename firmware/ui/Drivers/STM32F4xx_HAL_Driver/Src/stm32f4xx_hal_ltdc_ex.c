@@ -74,18 +74,16 @@ HAL_StatusTypeDef HAL_LTDCEx_StructInitFromVideoConfig(LTDC_HandleTypeDef *hltdc
   /* The following polarity is inverted:
                      LTDC_DEPOLARITY_AL <-> LTDC_DEPOLARITY_AH */
 
-#if !defined(POLARITIES_INVERSION_UPDATED)
   /* Note 1 : Code in line w/ Current LTDC specification */
   hltdc->Init.DEPolarity = (VidCfg->DEPolarity == \
                             DSI_DATA_ENABLE_ACTIVE_HIGH) ? LTDC_DEPOLARITY_AL : LTDC_DEPOLARITY_AH;
   hltdc->Init.VSPolarity = (VidCfg->VSPolarity == DSI_VSYNC_ACTIVE_HIGH) ? LTDC_VSPOLARITY_AH : LTDC_VSPOLARITY_AL;
   hltdc->Init.HSPolarity = (VidCfg->HSPolarity == DSI_HSYNC_ACTIVE_HIGH) ? LTDC_HSPOLARITY_AH : LTDC_HSPOLARITY_AL;
-#else
+
   /* Note 2: Code to be used in case LTDC polarities inversion updated in the specification */
-  hltdc->Init.DEPolarity = VidCfg->DEPolarity << 29;
-  hltdc->Init.VSPolarity = VidCfg->VSPolarity << 29;
-  hltdc->Init.HSPolarity = VidCfg->HSPolarity << 29;
-#endif /* POLARITIES_INVERSION_UPDATED */
+  /* hltdc->Init.DEPolarity = VidCfg->DEPolarity << 29;
+     hltdc->Init.VSPolarity = VidCfg->VSPolarity << 29;
+     hltdc->Init.HSPolarity = VidCfg->HSPolarity << 29; */
 
   /* Retrieve vertical timing parameters from DSI */
   hltdc->Init.VerticalSync       = VidCfg->VerticalSyncActive - 1U;
@@ -117,18 +115,17 @@ HAL_StatusTypeDef HAL_LTDCEx_StructInitFromAdaptedCommandConfig(LTDC_HandleTypeD
                      LTDC_VSPOLARITY_AL <-> LTDC_VSPOLARITY_AH
                      LTDC_HSPOLARITY_AL <-> LTDC_HSPOLARITY_AH)*/
 
-#if !defined(POLARITIES_INVERSION_UPDATED)
   /* Note 1 : Code in line w/ Current LTDC specification */
   hltdc->Init.DEPolarity = (CmdCfg->DEPolarity == \
                             DSI_DATA_ENABLE_ACTIVE_HIGH) ? LTDC_DEPOLARITY_AL : LTDC_DEPOLARITY_AH;
   hltdc->Init.VSPolarity = (CmdCfg->VSPolarity == DSI_VSYNC_ACTIVE_HIGH) ? LTDC_VSPOLARITY_AL : LTDC_VSPOLARITY_AH;
   hltdc->Init.HSPolarity = (CmdCfg->HSPolarity == DSI_HSYNC_ACTIVE_HIGH) ? LTDC_HSPOLARITY_AL : LTDC_HSPOLARITY_AH;
-#else
+
   /* Note 2: Code to be used in case LTDC polarities inversion updated in the specification */
-  hltdc->Init.DEPolarity = CmdCfg->DEPolarity << 29;
-  hltdc->Init.VSPolarity = CmdCfg->VSPolarity << 29;
-  hltdc->Init.HSPolarity = CmdCfg->HSPolarity << 29;
-#endif /* POLARITIES_INVERSION_UPDATED */
+  /* hltdc->Init.DEPolarity = CmdCfg->DEPolarity << 29;
+     hltdc->Init.VSPolarity = CmdCfg->VSPolarity << 29;
+     hltdc->Init.HSPolarity = CmdCfg->HSPolarity << 29; */
+
   return HAL_OK;
 }
 

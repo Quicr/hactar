@@ -1,6 +1,5 @@
 #include "audio_chip.hh"
-
-#include "logger.hh"
+#include "audio_codec.hh"
 
 #include "main.h"
 
@@ -18,11 +17,11 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     i2s(&hi2s),
     i2c(&hi2c),
     tx_buffer{ 0 },
-    tx_ptr{tx_buffer},
+    tx_ptr{ tx_buffer },
     rx_buffer{ 0 },
-    rx_ptr{rx_buffer}
+    rx_ptr{ rx_buffer },
+    buff_mod(0)
 {
-    Init();
 }
 
 AudioChip::~AudioChip()
@@ -67,16 +66,17 @@ void AudioChip::Init()
     SetRegister(0x36, 0b0'0010'0110);
     SetRegister(0x37, 0b0'1110'1001);
 
-    // Set ADCDIV to get 16Khz from SYSCLK (0x03)
-    // Set DACDIV to get 16Khz from SYSCLK (0x03)
+    // Set ADCDIV to get 8kHz from SYSCLK
+    // Set DACDIV to get 8kHz from SYSCLK
     // Post scale the PLL to be divided by 2
     // Set the clock (Select the PLL) (0x01)
-    SetRegister(0x04, 0b0'1101'1101);
+    SetRegister(0x04, 0b1'1011'0101);
 
     // Set the clock division
     // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
-    // BCLKDIV = SYSCLK / 6 = 2.048Mhz
-    SetRegister(0x08, 0b1'1100'1001);
+    // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
+    // Expected BCLK = constants::sample_rate * channels * bits per channel, so 16khz * 2 * 16 = 512Khz
+    SetRegister(0x08, 0b1'1100'1100);
 
     // Disable soft mute and ADC high pass filter
     SetRegister(0x05, 0b0'0000'0000);
@@ -89,6 +89,9 @@ void AudioChip::Init()
     SetRegister(0x02, 0b1'0111'1111);
     SetRegister(0x03, 0b1'0111'1111);
 
+    // Enable mono mixer
+    SetBit(0x17, 4, 1);
+
     // Enable the outputs
     SetRegister(0x31, 0b0'0111'0111);
 
@@ -100,8 +103,8 @@ void AudioChip::Init()
     SetRegister(0x22, 0b1'0000'0000);
     SetRegister(0x25, 0b1'0000'0000);
 
-    // Change the ALC sample rate -> 16K
-    SetRegister(0x1B, 0b0'0000'0011);
+    // Change the ALC sample rate -> 8kHz
+    SetRegister(0x1B, 0b0'0000'0101);
 
     // Enable DAC softmute
     SetBit(0x06, 3, 1);
@@ -120,16 +123,8 @@ void AudioChip::Init()
 
     // SetRegister(0x1D, 0b0'0100'0000);
 
-    // FIXME makes it sound like crap
-    // Enable mono mixer
-    // SetBit(0x1A, 1, 1);
 
     UnmuteMic();
-
-    // Need a 1s delay before starting I2S for some reason.
-    HAL_Delay(1000);
-
-    StartI2S();
 }
 
 void AudioChip::Reset()
@@ -146,7 +141,7 @@ HAL_StatusTypeDef AudioChip::WriteRegister(uint8_t address)
     HAL_StatusTypeDef result = HAL_I2C_Master_Transmit(i2c,
         Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
 
-    HAL_Delay(100);
+    HAL_Delay(10);
 
     return result;
 }
@@ -164,14 +159,6 @@ bool AudioChip::SetRegister(uint8_t address, uint16_t data)
     // Set the register data
     registers[address].bytes[0] |= uint8_t((data >> 8) & Top_Bit_Mask);
     registers[address].bytes[1] = uint8_t(data & Bot_Bit_Mask);
-
-    const uint8_t end[2] = { '\n','\n' };
-    const uint8_t test[4] = { '1', '0', '1', '\n' };
-    // HAL_UART_Transmit(&huart1, test, 4, HAL_MAX_DELAY);
-    // HAL_UART_Transmit(&huart1, ToBinaryString(&registers[address].addr, 1), 9, HAL_MAX_DELAY);
-    // HAL_UART_Transmit(&huart1, ToBinaryString(&registers[address].bytes[0], 1), 9, HAL_MAX_DELAY);
-    // HAL_UART_Transmit(&huart1, ToBinaryString(&registers[address].bytes[1], 1), 9, HAL_MAX_DELAY);
-    // HAL_UART_Transmit(&huart1, end, 2, HAL_MAX_DELAY);
 
     // Write the register to the chip
     return (WriteRegister(address) == HAL_OK);
@@ -217,7 +204,9 @@ bool AudioChip::SetBit(uint8_t address, uint8_t bit, uint8_t set)
     {
         // Upper bit
         // First make sure only the first bit is actually set
-        uint8_t set_mask = (bit - 7) & 0x01;
+        uint8_t set_mask = (bit - 7) & data;
+
+        // Upper register, so the 8th bit is the lower of the upper register
         uint8_t reset_mask = 0xFE;
 
         registers[address].bytes[0] &= reset_mask;
@@ -227,7 +216,7 @@ bool AudioChip::SetBit(uint8_t address, uint8_t bit, uint8_t set)
     {
         // Lower bits
         // Reset mask
-        uint8_t set_mask = (1 << bit);
+        uint8_t set_mask = (data << bit);
         uint8_t reset_mask = ~set_mask;
 
         registers[address].bytes[1] &= reset_mask;
@@ -360,7 +349,7 @@ bool AudioChip::RxBufferReady()
 
 void AudioChip::StartI2S()
 {
-    auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, Audio_Buffer_Sz);
+    auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Audio_Buffer_Sz);
 
     if (output == HAL_OK)
     {
@@ -377,101 +366,36 @@ void AudioChip::StopI2S()
 
 uint16_t* AudioChip::TxBuffer()
 {
-    LowerFlag(AudioFlag::Tx_Ready);
-    return tx_buffer;
+    // LowerFlag(AudioFlag::Tx_Ready);
+    return tx_ptr;
 }
 
 const uint16_t* AudioChip::RxBuffer()
 {
-    LowerFlag(AudioFlag::Rx_Ready);
-    return rx_buffer;
+    // LowerFlag(AudioFlag::Rx_Ready);
+    return rx_ptr;
 }
 
-void AudioChip::HalfCompleteCallback()
+void AudioChip::ISRCallback()
 {
-    // UNCOMMENT THIS TO TEST THE AUDIO OUTPUT
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz_2, 0,
-    //     1000, 440, phase, true);
-    // END UNCOMMENT
+    const uint16_t offset = buff_mod * constants::Audio_Buffer_Sz_2;
+    tx_ptr = tx_buffer + offset;
+    rx_ptr = rx_buffer + offset;
+    buff_mod = !buff_mod;
 
-    // UNCOMMENT THIS TO TEST THE AUDIO MIC
-    // Copy the mic data to the speakers
-    // END UNCOMMENT
-    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET)
+    // Clear the transmission buffer
+    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
     {
-        for (uint16_t i = 0; i < Audio_Buffer_Sz_2; i+=2)
-        {
-            tx_buffer[i] = rx_buffer[i] + 5000;
-            tx_buffer[i+1] = rx_buffer[i+1] + 5000;
-        }
+        tx_ptr[i] = 0;
     }
-    else
-    {
-        // COMMENT THE BELOW OUT FOR TESTING
-        // Clear the first half of the buffer
-
-        for (uint16_t i = 0; i < Audio_Buffer_Sz_2; ++i)
-        {
-            tx_buffer[i] = 0;
-        }
-    }
-
-
-    tx_ptr = tx_buffer;
-    rx_ptr = rx_buffer;
 
     RaiseFlag(AudioFlag::Rx_Ready);
     RaiseFlag(AudioFlag::Tx_Ready);
-}
-
-void AudioChip::CompleteCallback()
-{
-    // UNCOMMENT THIS TO TEST THE AUDIO OUTPUT
-    // SampleSineWave(tx_buffer, Audio_Buffer_Sz_2, Audio_Buffer_Sz_2,
-    //     1000, 440, phase, true);
-    // END UNCOMMENT
-
-    // UNCOMMENT THIS TO TEST THE AUDIO MIC
-    // Copy the mic data to the speakers
-    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET)
-    {
-        for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; i+=2)
-        {
-            tx_buffer[i] = rx_buffer[i] + 5000;
-            tx_buffer[i+1] = rx_buffer[i+1] + 5000;
-        }
-        // END UNCOMMENT
-    }
-    else
-    {
-        // COMMENT THE BELOW OUT FOR TESTING
-        // Clear the second half of the buffer
-        for (uint16_t i = Audio_Buffer_Sz_2; i < Audio_Buffer_Sz; ++i)
-        {
-            tx_buffer[i] = 0;
-        }
-    }
-
-    tx_ptr = tx_buffer + Audio_Buffer_Sz_2;
-    rx_ptr = rx_buffer + Audio_Buffer_Sz_2;
-
-    RaiseFlag(AudioFlag::Rx_Ready);
-    RaiseFlag(AudioFlag::Tx_Ready);
-}
-
-uint16_t AudioChip::AudioBufferSize() const
-{
-    return Audio_Buffer_Sz;
-}
-
-uint16_t AudioChip::AudioBufferSize_2() const
-{
-    return Audio_Buffer_Sz_2;
 }
 
 void AudioChip::ClearTxBuffer()
 {
-    for (uint16_t i = 0; i < Audio_Buffer_Sz; ++i)
+    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
     {
         tx_buffer[i] = 0;
     }
@@ -480,7 +404,7 @@ void AudioChip::ClearTxBuffer()
 void AudioChip::Transmit(uint16_t* buff, const size_t size)
 {
     uint16_t* tmp_ptr = tx_ptr;
-    for (size_t i = 0; i < Audio_Buffer_Sz && i < size; ++i)
+    for (size_t i = 0; i < constants::Audio_Buffer_Sz && i < size; ++i)
     {
         tmp_ptr[i] = buff[i];
     }
@@ -493,162 +417,12 @@ void AudioChip::Recieve(uint16_t* buff, const size_t size)
     // Make a tmp pointer so that if there is an interrupt during transfer
     // then our pointer won't change
     uint16_t* tmp_ptr = rx_ptr;
-    for (size_t i = 0 ; i < Audio_Buffer_Sz && i < size; ++i)
+    for (size_t i = 0 ; i < constants::Audio_Buffer_Sz && i < size; ++i)
     {
         buff[i] = tmp_ptr[i];
     }
 
     LowerFlag(AudioFlag::Rx_Ready);
-}
-
-void AudioChip::SampleSineWave(const uint16_t num_samples,
-    const uint16_t start_idx, const double amplitude, const double freq,
-    double& phase, const bool stereo)
-{
-    constexpr uint16_t offset = 2000;
-    constexpr double TWO_PI = M_PI * 2;
-    const double angular_freq = TWO_PI * freq;
-    double current_phase = 0.0f;
-    uint16_t samples = num_samples;
-    if (stereo)
-    {
-        samples = samples / 2;
-
-        for (uint16_t i = 0; i < samples; ++i)
-        {
-            const double step = (double)i / Sample_Rate;
-            const double sample = amplitude * sin(angular_freq * step + phase);
-
-            // Add offset to handle negative numbers and overflow back around
-            // to their regular values for the positive numbers
-            const uint16_t int_sample = uint16_t(offset + sample) + 1;
-
-            tx_buffer[start_idx + (i * 2)] = int_sample;
-            tx_buffer[start_idx + (i * 2 + 1)] = int_sample;
-        }
-    }
-    else
-    {
-        for (uint16_t i = 0; i < samples; ++i)
-        {
-            const double step = (double)i / Sample_Rate;
-            const double sample = amplitude * sin(angular_freq * step + phase);
-
-            // Add offset to handle negative numbers and overflow back around
-            // to their regular values for the positive numbers
-            tx_buffer[start_idx + i] = uint16_t(offset + sample);
-        }
-    }
-
-    phase += angular_freq * (double(samples) / Sample_Rate);
-    while (phase > TWO_PI)
-    {
-        phase -= TWO_PI;
-    }
-}
-
-// Static version
-void AudioChip::SampleSineWave(uint16_t* buff, const uint16_t num_samples,
-    const uint16_t start_idx, const double amplitude, const double freq,
-    double& phase, const bool stereo)
-{
-    constexpr uint16_t offset = 2000;
-    constexpr double TWO_PI = M_PI * 2;
-    const double angular_freq = TWO_PI * freq;
-    double current_phase = 0.0f;
-    uint16_t samples = num_samples;
-    if (stereo)
-    {
-        samples = samples / 2;
-
-        for (uint16_t i = 0; i < samples; ++i)
-        {
-            const double step = (double)i / Sample_Rate;
-            const double sample = amplitude * sin(angular_freq * step + phase);
-
-            // Add offset to handle negative numbers and overflow back around
-            // to their regular values for the positive numbers
-            const uint16_t int_sample = uint16_t(offset + sample) + 1;
-
-            buff[start_idx + (i * 2)] = int_sample;
-            buff[start_idx + (i * 2 + 1)] = int_sample;
-        }
-    }
-    else
-    {
-        for (uint16_t i = 0; i < samples; ++i)
-        {
-            const double step = (double)i / Sample_Rate;
-            const double sample = amplitude * sin(angular_freq * step + phase);
-
-            // Add offset to handle negative numbers and overflow back around
-            // to their regular values for the positive numbers
-            buff[start_idx + i] = uint16_t(offset + sample);
-        }
-    }
-
-    phase += angular_freq * (double(samples) / Sample_Rate);
-    while (phase > TWO_PI)
-    {
-        phase -= TWO_PI;
-    }
-}
-
-void AudioChip::SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
-    const uint16_t start_idx, const double amplitutde, double freqs [], double phases [],
-    const uint16_t num_freqs, const bool stereo)
-{
-
-    // Clear the buffer first
-    for (uint16_t i = 0; i < num_samples; ++i)
-    {
-        buff[start_idx + i] = 0;
-    }
-
-    for (uint16_t i = 0 ; i < num_freqs; ++i)
-    {
-        uint16_t harmonic[num_samples] = { 0 };
-        SampleSineWave(harmonic, num_samples, 0,
-            amplitutde, freqs[i], phases[i], stereo);
-
-        for (uint16_t i = 0; i < num_samples; ++i)
-        {
-            buff[start_idx + i] += harmonic[i];
-        }
-    }
-}
-
-void AudioChip::SendSawToothWave()
-{
-    uint32_t sample_rate = 16'000;
-    float amplitude = 2;
-    float freq = 1000.0;
-    float period = sample_rate / freq;
-
-    uint16_t num_samples = 256;
-    static uint16_t buff[256];
-
-    for (int i = 0; i < num_samples; ++i)
-    {
-        float phase = fmod(i, period) / period;
-
-        float sawtooth_value = amplitude * (2 * phase - 1);
-
-        if (sawtooth_value > 1.0f)
-        {
-            sawtooth_value = 1.0f;
-        }
-        else if (sawtooth_value < -1.0f)
-        {
-            sawtooth_value = -1.0f;
-        }
-
-        buff[i] = (uint16_t)((sawtooth_value + 1.0f) * 32767);
-    }
-
-    HAL_I2S_Transmit(i2s, buff, num_samples, HAL_MAX_DELAY);
-
-    HAL_Delay(10);
 }
 
 inline void AudioChip::RaiseFlag(AudioFlag flag)

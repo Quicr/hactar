@@ -1,37 +1,72 @@
 #include "main.h"
 #include "app_main.hh"
 
-#include <string>
-#include "font.hh"
-#include "port_pin.hh"
-#include "push_release_button.hh"
+#include "audio_chip.hh"
+#include "audio_codec.hh"
 
 #include "screen.hh"
-#include "q10_keyboard.hh"
-#include "eeprom.hh"
-#include "user_interface_manager.hh"
 
-#include "serial_stm.hh"
-#include "led.hh"
-#include "audio_chip.hh"
+#include "serial.hh"
 
-#include <hpke/random.h>
-#include <hpke/digest.h>
-#include <hpke/signature.h>
-#include <hpke/hpke.h>
+#include "link_packet_t.hh"
+#include "ui_net_link.hh"
 
-#include <crypto/cmox_crypto.h>
-#include <cstring>
+#include <string.h>
 
-#include <mls/state.h>
+#include <random>
 
-#include <memory>
-#include <cmath>
-#include <sstream>
 
-#include "logger.hh"
-#include <stdio.h>
-#include <stdlib.h>
+#define HIGH GPIO_PIN_SET
+#define LOW GPIO_PIN_RESET
+
+void reverse(char* str, int length)
+{
+    int start = 0;
+    int end = length - 1;
+    while (start < end)
+    {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+char* itoa(int value, char* str, int base)
+{
+    if (base < 2 || base > 36)
+    { // Base check: only supports bases 2-36
+        *str = '\0';
+        return str;
+    }
+
+    bool isNegative = false;
+    if (value < 0 && base == 10)
+    { // Handle negative numbers in base 10
+        isNegative = true;
+        value = -value;
+    }
+
+    int i = 0;
+    do
+    {
+        int digit = value % base;
+        str[i++] = (digit > 9) ? (digit - 10 + 'a') : (digit + '0');
+        value /= base;
+    } while (value != 0);
+
+    if (isNegative)
+    {
+        str[i++] = '-';
+    }
+
+    str[i] = '\0'; // Null-terminate the string
+
+    reverse(str, i); // Reverse the string to correct order
+
+    return str;
+}
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -44,116 +79,278 @@ extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern RNG_HandleTypeDef hrng;
 
+AudioChip audio_chip(hi2s3, hi2c1);
 
-port_pin cs = { DISP_CS_GPIO_Port, DISP_CS_Pin };
-port_pin dc = { DISP_DC_GPIO_Port, DISP_DC_Pin };
-port_pin rst = { DISP_RST_GPIO_Port, DISP_RST_Pin };
-port_pin bl = { DISP_BL_GPIO_Port, DISP_BL_Pin };
+Serial serial(&huart2);
 
-Screen screen(hspi1, cs, dc, rst, bl, Screen::Orientation::portrait);
+Screen screen(
+    hspi1,
+    DISP_CS_GPIO_Port,
+    DISP_CS_Pin,
+    DISP_DC_GPIO_Port,
+    DISP_DC_Pin,
+    DISP_RST_GPIO_Port,
+    DISP_RST_Pin,
+    DISP_BL_GPIO_Port,
+    DISP_BL_Pin,
+    Screen::Orientation::flipped_portrait
+);
 
-// Set the port pins and groups for the keyboard columns
-port_pin col_pins[Q10_COLS] =
-{
-    { KB_COL1_GPIO_Port, KB_COL1_Pin },
-    { KB_COL2_GPIO_Port, KB_COL2_Pin },
-    { KB_COL3_GPIO_Port, KB_COL3_Pin },
-    { KB_COL4_GPIO_Port, KB_COL4_Pin },
-    { KB_COL5_GPIO_Port, KB_COL5_Pin },
-};
+link_packet_t talk_packet;
+link_packet_t play_buffer;
+link_packet_t* play_packet = nullptr;
+uint8_t link_send_space[20] = { 0 }; // change as needed
 
-// Set the port pins and groups for the keyboard rows
-port_pin row_pins[Q10_ROWS] =
-{
-    { KB_ROW1_GPIO_Port, KB_ROW1_Pin },
-    { KB_ROW2_GPIO_Port, KB_ROW2_Pin },
-    { KB_ROW3_GPIO_Port, KB_ROW3_Pin },
-    { KB_ROW4_GPIO_Port, KB_ROW4_Pin },
-    { KB_ROW5_GPIO_Port, KB_ROW5_Pin },
-    { KB_ROW6_GPIO_Port, KB_ROW6_Pin },
-    { KB_ROW7_GPIO_Port, KB_ROW7_Pin },
-};
+size_t num_packets = 0;
 
-// Create the keyboard object
-static Q10Keyboard keyboard(col_pins, row_pins, 200, 100, &htim2);
+volatile bool sleeping = true;
+volatile bool error = false;
+bool net_replied = false;
+constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1 ;
+uint32_t flags = Expected_Flags;
+uint32_t est_time_ms = 0;
+uint32_t num_loops = 0;
+uint32_t ticks_ms = 0;
 
-SerialStm* net_serial_interface = nullptr;
-AudioChip* audio = nullptr;
+ui_net_link::AudioObject play_frame;
 
-uint8_t random_byte()
-{
-    // XXX(RLB) This is 4x slower than it could be, because we only take the
-    // low-order byte of the four bytes in a uint32_t.
-    /// BER, I don't know if that is necessarily true, since we would be
-    // pulling a 32 bit number from hardware anyways.
-    auto value = uint32_t(0);
-    HAL_RNG_GenerateRandomNumber(&hrng, &value);
-    return value;
-}
-
-extern char _end;  // End of BSS section
-extern char _estack;  // Start of stack
-
-static char* heap_end = &_end;
-
-// Function to get the remaining heap size
-size_t getFreeHeapSize(void)
-{
-    char* current_heap_end = heap_end;
-    return &_estack - current_heap_end;
-}
-
-// TODO we have an issue regarding the free-ness of memories
-// we get stuck waiting forever for a memory to run
-// for some reason.
-// Don't know why
 int app_main()
 {
-    audio = new AudioChip(hi2s3, hi2c1);
+    HAL_Delay(1000);
+    audio_chip.Init();
+    InitScreen();
+    LEDS(LOW, LOW, LOW);
+    serial.StartReceive();
+    LEDS(HIGH, HIGH, HIGH);
 
-    // Reserve the first 32 bytes, and the total size is 255 bytes - 1k bits
-    EEPROM eeprom(hi2c1, 32, 255);
 
-    screen.Begin();
-    HAL_TIM_Base_Start_IT(&htim3);
+    uint32_t timeout;
+    uint32_t current_tick;
+    uint32_t redraw = uwTick;
+    Colour next = Colour::Green;
+    Colour curr = Colour::Blue;
+    const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
 
-    // Initialize the keyboard
-    keyboard.Begin();
+    bool ptt_down = false;
 
-    net_serial_interface = new SerialStm(&huart2, 2048);
-
-    UserInterfaceManager ui_manager(screen, keyboard,
-        *net_serial_interface, eeprom, *audio);
-
-    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
-
-    // Initialize the cryptographic library
-    const auto rv = cmox_initialize(nullptr);
-    Logger::Log(Logger::Level::Info, "app init:", rv == CMOX_INIT_SUCCESS);
-
-    // Delayed condition
-    uint32_t blink = HAL_GetTick();
-
+    // TODO Fix
     WaitForNetReady();
-    Logger::Log(Logger::Level::Info, "Hactar is ready");
 
-    // TestScreenInit(C_BLACK);
+    // TODO Probe for a reply from the net chip using serial
+    // SlowSendTest(100, 10);
+
+    // TODO test clock stability by switching a debug pin on and off and measure it with the scope
+    HAL_Delay(5000);
+    audio_chip.StartI2S();
+    bool stop = false;
+
+    uint32_t blinky = 0;
+
+    uint32_t time_start = HAL_GetTick();
+
+    uint32_t num_awaiting_packets = 0;
+
     while (1)
     {
-        ui_manager.Update();
+        if (HAL_GetTick() > blinky)
+        {
+            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+            // Logger::Log(Logger::Level::Error, "UI ALIVE");
+            blinky = HAL_GetTick() + 2000;
+        }
 
-        // TestScreen();
+        num_loops++;
+        while (sleeping)
+        {
+            // LowPowerMode();
+        }
 
-        // if (HAL_GetTick() > blink)
+        if (error)
+        {
+            // Error_Handler();
+        }
+
+        if (num_awaiting_packets < 2)
+        {
+            // ask for packets?
+            ui_net_link::BuildGetLinkPacket(link_send_space);
+            serial.Write(link_send_space, 3);
+            ++num_awaiting_packets;
+        }
+
+
+        // Compand our audio
+        if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
+        {
+            // TODO channel id
+            ui_net_link::TalkStart talk_start = { 0 };
+            ui_net_link::Serialize(talk_start, talk_packet);
+            // serial.Write(talk_packet);
+            ptt_down = true;
+        }
+        else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
+        {
+            ui_net_link::TalkStop talk_stop = { 0 };
+            ui_net_link::Serialize(talk_stop, talk_packet);
+            // serial.Write(talk_packet);
+            ptt_down = false;
+        }
+
+        if (ptt_down)
+        {
+            ui_net_link::AudioObject talk_frame = { 0, 0 };
+
+            AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
+            ui_net_link::Serialize(talk_frame, talk_packet);
+            serial.Write(talk_packet);
+        }
+        RaiseFlag(Rx_Audio_Companded);
+        RaiseFlag(Rx_Audio_Transmitted);
+
+        // If there are bytes available read them
+        // TODO packet handling
+        // play_packet = serial.Read();
+        // if (play_packet)
         // {
-        //     HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-        //     blink = HAL_GetTick() + 1000;
+        //     if (++num_packets % 100 == 0)
+        //     {
+        //         // Logger::Log(Logger::Level::Info, ".");
+        //         num_packets = 0;
+        //     }
+
+
+
+        //     // TODO check type, assume audio for now.
+        //     ui_net_link::Deserialize(*play_packet, play_frame);
+        //     AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
         // }
+
+        // Use remaining time to draw
+        if (est_time_ms > redraw)
+        {
+            screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
+            screen.DrawRectangle(0, 10, 0, 10, 2, next);
+            screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
+            screen.DrawString(0, 28, hello, 48, font5x8, next, curr);
+            const uint16_t width = 50;
+            const uint16_t height = 50;
+            const uint16_t x_inc = width + 2;
+            const uint16_t y_inc = height + 1;
+
+            // swap
+            Colour tmp = curr;
+            curr = next;
+            next = tmp;
+            redraw = est_time_ms + 1600;
+        }
+
+        // Draw what we can
+        screen.Draw(0);
+        RaiseFlag(Draw_Complete);
+
+        sleeping = true;
+        stop = true;
     }
 
     return 0;
+}
+
+inline void LEDR(GPIO_PinState state)
+{
+    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, state);
+}
+
+inline void LEDG(GPIO_PinState state)
+{
+    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, state);
+}
+
+inline void LEDB(GPIO_PinState state)
+{
+    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, state);
+}
+
+inline void LEDS(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b)
+{
+    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, r);
+    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, g);
+    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, b);
+}
+
+inline void RaiseFlag(Timer_Flags flag)
+{
+    if (error)
+    {
+        return;
+    }
+    flags |= 1 << flag;
+}
+
+inline void LowerFlag(Timer_Flags flag)
+{
+    flags &= ~(1 << flag);
+}
+
+inline void LowPowerMode()
+{
+    HAL_SuspendTick();
+    HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+}
+
+inline void WakeUp()
+{
+
+    HAL_ResumeTick();
+    sleeping = false;
+}
+
+inline void CheckFlags()
+{
+    if (flags != Expected_Flags)
+    {
+        error = true;
+    }
+    else
+    {
+        flags = 0;
+    }
+}
+
+// inline void ProcessText(uint16_t len)
+// {
+//     // Get the room
+//     uint8_t room[QMessage_Room_Length];
+//     serial.Read(room, QMessage_Room_Length, QMessage_Room_Length);
+//     len -= Serial_Header_Sz;
+
+//     uint8_t* serial_data = nullptr;
+//     size_t num_bytes = len;
+
+//     while (len > 0)
+//     {
+//         // Get the text
+//         serial.Read(&serial_data, num_bytes);
+
+//         // Now we have the text data
+//         screen.AppendText((const char*)serial_data, num_bytes);
+
+//         len -= num_bytes;
+//     }
+
+//     // Commit the text
+//     screen.CommitText();
+// }
+
+void InitScreen()
+{
+    screen.Init();
+    // Do the first draw
+    screen.FillRectangle(0, WIDTH, 0, HEIGHT, Colour::Black);
+    for (int i = 0; i < 320; i += Screen::Num_Rows)
+    {
+        screen.Draw(0xFFFF);
+    }
+    screen.EnableBacklight();
 }
 
 void WaitForNetReady()
@@ -164,63 +361,58 @@ void WaitForNetReady()
     }
 }
 
+inline void AudioCallback()
+{
+    audio_chip.ISRCallback();
+    est_time_ms += 20;
+    ticks_ms = HAL_GetTick();
+    CheckFlags();
+    WakeUp();
+    RaiseFlag(Audio_Interrupt);
+}
+
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     if (huart->Instance == USART2)
     {
-        net_serial_interface->RxEvent(size);
+        // Logger::Log(Logger::Level::Info, "rx", size);
+        serial.RxEvent(size);
     }
 }
+
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-    HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
     if (huart->Instance == USART2)
     {
-        net_serial_interface->TxEvent();
+        serial.Free();
+        RaiseFlag(Rx_Audio_Transmitted);
     }
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
-    uint16_t err;
-    UNUSED(err);
     if (huart->Instance == USART2)
     {
-        net_serial_interface->Reset();
-        HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
-
-        // Read the err codes to clear them
-        err = huart->Instance->SR;
-
-        net_serial_interface->StartRx();
+        serial.Reset();
     }
 }
 
 void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef* hi2s)
 {
     UNUSED(hi2s);
-    // HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-    audio->HalfCompleteCallback();
+    AudioCallback();
 }
 
 void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 {
     UNUSED(hi2s);
-    // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
-    audio->CompleteCallback();
+    AudioCallback();
 }
 
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
     UNUSED(hspi);
-    screen.SpiComplete();
-}
-
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
-{
-    volatile int x = 10;
-    x += 10;
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
@@ -228,78 +420,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        keyboard.Read();
+        // keyboard.Read();
     }
     else if (htim->Instance == TIM3)
     {
-        screen.Draw();
+        // screen.Draw();
     }
-}
-
-void TestScreenInit(uint16_t colour)
-{
-    screen.EnableBackLight();
-    screen.FillScreen(colour);
-}
-
-void TestScreen()
-{
-    static uint16_t colour = C_GREEN;
-    static uint16_t c = 0;
-
-    if (c == 0)
-    {
-        colour = C_GREEN;
-        ++c;
-    }
-    else if (c == 1)
-    {
-        colour = C_BLUE;
-        ++c;
-    }
-    else
-    {
-        colour = C_RED;
-        c = 0;
-    }
-
-    screen.DrawRectangleAsync(0, 10, 0, 10, 1, colour);
-    screen.FillRectangleAsync(10, 20, 0, 10, colour);
-    screen.DrawLineAsync(30, 40, 0, 10, 5, colour);
-
-    screen.DrawPixelAsync(40, 1, colour);
-    screen.DrawPixelAsync(42, 1, colour);
-    screen.DrawPixelAsync(40, 3, colour);
-    screen.DrawPixelAsync(42, 3, colour);
-
-    screen.DrawArrowAsync(50, 0, 20, 10, 1, Screen::ArrowDirection::Up, colour);
-    screen.DrawArrowAsync(60, 21, 20, 10, 1, Screen::ArrowDirection::Down, colour);
-    screen.DrawArrowAsync(75, 10, 20, 10, 1, Screen::ArrowDirection::Left, colour);
-    screen.DrawArrowAsync(95, 30, 20, 10, 1, Screen::ArrowDirection::Right, colour);
-
-    screen.FillArrowAsync(105, 0, 20, 10, Screen::ArrowDirection::Up, colour);
-    screen.FillArrowAsync(115, 21, 20, 10, Screen::ArrowDirection::Down, colour);
-    screen.FillArrowAsync(130, 10, 20, 10, Screen::ArrowDirection::Left, colour);
-    screen.FillArrowAsync(150, 30, 20, 10, Screen::ArrowDirection::Right, colour);
-
-    screen.DrawCharacterAsync(0, 30, 'H', font5x8, colour, C_BLACK);
-    screen.DrawCharacterAsync(6, 30, 'H', font6x8, colour, C_BLACK);
-    screen.DrawCharacterAsync(13, 30, 'H', font7x12, colour, C_BLACK);
-    screen.DrawCharacterAsync(21, 30, 'H', font11x16, colour, C_BLACK);
-
-    screen.DrawStringBoxAsync(1, 100, 40, 60, "Hello world, look at my string!", 31, font5x8, colour, C_BLACK, true);
-    screen.DrawStringBoxAsync(101, 141, 40, 90, "Hello Hello Hello", 17, font5x8, colour, C_BLACK, true);
-
-    screen.DrawTriangleAsync(0, 65, 10, 65, 5, 70, 1, colour);
-    screen.FillTriangleAsync(15, 65, 25, 65, 20, 70, colour);
-
-    const uint16_t points [][2] = { {0, 80}, {40, 85}, {25, 95}, {5, 90} };
-    screen.DrawPolygonAsync(sizeof(points) / sizeof(points[0]), points, 1, colour);
-    const uint16_t points_2 [][2] = { {45, 80}, {85, 85}, {70, 95}, {50, 90} };
-    screen.FillPolygonAsync(sizeof(points_2) / sizeof(points_2[0]), points_2, colour);
-
-    screen.DrawCircleAsync(15, 115, 15, colour);
-    screen.FillCircleAsync(60, 115, 15, colour);
 }
 
 #ifdef USE_FULL_ASSERT
@@ -318,3 +444,61 @@ void assert_failed(uint8_t* file, uint32_t line)
         /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+
+
+void SlowSendTest(int delay, int num)
+{
+    link_packet_t packet;
+    ui_net_link::AudioObject talk_frame = { 0, 0 };
+    // Fill the tmp audio buffer with random
+    for (int i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
+    {
+        talk_frame.data[i] = i;
+    }
+
+    ui_net_link::Serialize(talk_frame, packet);
+
+    int i = 0;
+    while (i++ != num)
+    {
+        HAL_Delay(delay);
+        serial.Write(packet);
+    }
+}
+
+void InterHactarRoundTripTest()
+{
+    // TODO fix
+    // uint8_t tmp[Serial_Audio_Buff_Sz] = {
+    //     Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
+    //     Serial::Packet_Type::Audio
+    // };
+
+    // // Fill the tmp audio buffer with random
+    // for (int i = 35; i < Serial_Audio_Buff_Sz; ++i)
+    // {
+    //     tmp[i] = rand() % 0xFF;
+    // }
+
+    // while (true)
+    // {
+    //     HAL_Delay(100);
+    //     serial.Write(tmp, Serial_Audio_Buff_Sz);
+    //     HAL_Delay(20);
+    //     serial.Read(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);
+
+    //     // Compare the two
+    //     bool is_eq = true;
+    //     for (int i = 0 ; i < Serial_Audio_Buff_Sz;++i)
+    //     {
+    //         if (tmp[i] != serial_rx_buffer[i])
+    //         {
+    //             while (true)
+    //             {
+    //                 Error_Handler();
+    //             }
+    //         }
+    //     }
+    // }
+}

@@ -3,13 +3,13 @@
  * Title:        arm_min_q7.c
  * Description:  Minimum value of a Q7 vector
  *
- * $Date:        23 April 2021
- * $Revision:    V1.9.0
+ * $Date:        27. January 2017
+ * $Revision:    V.1.5.1
  *
- * Target Processor: Cortex-M and Cortex-A cores
+ * Target Processor: Cortex-M cores
  * -------------------------------------------------------------------- */
 /*
- * Copyright (C) 2010-2021 ARM Limited or its affiliates. All rights reserved.
+ * Copyright (C) 2010-2017 ARM Limited or its affiliates. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -26,250 +26,130 @@
  * limitations under the License.
  */
 
-#include "dsp/statistics_functions.h"
+#include "arm_math.h"
 
 /**
-  @ingroup groupStats
+ * @ingroup groupStats
  */
 
 
 /**
-  @addtogroup Min
-  @{
+ * @addtogroup Min
+ * @{
  */
+
 
 /**
-  @brief         Minimum value of a Q7 vector.
-  @param[in]     pSrc       points to the input vector
-  @param[in]     blockSize  number of samples in input vector
-  @param[out]    pResult    minimum value returned here
-  @param[out]    pIndex     index of minimum value returned here
-  @return        none
+ * @brief Minimum value of a Q7 vector.
+ * @param[in]       *pSrc points to the input vector
+ * @param[in]       blockSize length of the input vector
+ * @param[out]      *pResult minimum value returned here
+ * @param[out]      *pIndex index of minimum value returned here
+ * @return none.
  */
-#if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
-
-#include "arm_helium_utils.h"
-
-static void arm_small_blk_min_q7(
-    const q7_t * pSrc,
-    uint8_t blockSize,
-    q7_t * pResult,
-    uint32_t * pIndex)
-{
-    uint32_t  blkCnt;           /* loop counters */
-    q7x16_t        vecSrc;
-    q7x16_t        curExtremValVec = vdupq_n_s8(Q7_MAX);
-    q7_t            minValue = Q7_MAX,temp;
-    uint32_t        idx = blockSize;
-    uint8x16_t      indexVec;
-    uint8x16_t      curExtremIdxVec;
-    mve_pred16_t    p0;
-
-
-    indexVec = vidupq_u8((uint32_t)0, 1);
-    curExtremIdxVec = vdupq_n_u8(0);
-
-    blkCnt = blockSize >> 4;
-    while (blkCnt > 0U)
-    {
-        vecSrc = vldrbq_s8(pSrc);  
-        pSrc += 16;
-        /*
-         * Get current min per lane and current index per lane
-         * when a min is selected
-         */
-        p0 = vcmpleq(vecSrc, curExtremValVec);
-        curExtremValVec = vpselq(vecSrc, curExtremValVec, p0);
-        curExtremIdxVec = vpselq(indexVec, curExtremIdxVec, p0);
-
-        indexVec = indexVec +  16;
-        /*
-         * Decrement the blockSize loop counter
-         */
-        blkCnt--;
-    }
-    
-    /*
-     * Get min value across the vector
-     */
-    minValue = vminvq(minValue, curExtremValVec);
-    /*
-     * set index for lower values to min possible index
-     */
-    p0 = vcmpleq(curExtremValVec, minValue);
-    indexVec = vpselq(curExtremIdxVec, vdupq_n_u8(blockSize), p0);
-    /*
-     * Get min index which is thus for a min value
-     */
-    idx = vminvq(idx, indexVec);
-
-    blkCnt = blockSize & 0xF;
-    while (blkCnt > 0U)
-    {
-      /* Initialize minVal to the next consecutive values one by one */
-      temp = *pSrc++;
-  
-      /* compare for the minimum value */
-      if (minValue > temp)
-      {
-        /* Update the minimum value and it's index */
-        minValue = temp;
-        idx = blockSize - blkCnt;
-      }
-  
-      /* Decrement loop counter */
-      blkCnt--;
-    }
-    /*
-     * Save result
-     */
-    *pIndex = idx;
-    *pResult = minValue;
-}
 
 void arm_min_q7(
-  const q7_t * pSrc,
-        uint32_t blockSize,
-        q7_t * pResult,
-        uint32_t * pIndex)
+  q7_t * pSrc,
+  uint32_t blockSize,
+  q7_t * pResult,
+  uint32_t * pIndex)
 {
-    int32_t   totalSize = blockSize;
+#if defined (ARM_MATH_DSP)
+  /* Run the below code for Cortex-M4 and Cortex-M3 */
 
-    if (totalSize <= UINT8_MAX)
-    {
-        arm_small_blk_min_q7(pSrc, blockSize, pResult, pIndex);
-    }
-    else
-    {
-        uint32_t  curIdx = 0;
-        q7_t      curBlkExtr = Q7_MAX;
-        uint32_t  curBlkPos = 0;
-        uint32_t  curBlkIdx = 0;
-        /*
-         * process blocks of 255 elts
-         */
-        while (totalSize >= UINT8_MAX)
-        {
-            const q7_t     *curSrc = pSrc;
+  q7_t minVal1, minVal2, out;                    /* Temporary variables to store the output value. */
+  uint32_t blkCnt, outIndex, count;              /* loop counter */
 
-            arm_small_blk_min_q7(curSrc, UINT8_MAX, pResult, pIndex);
-            if (*pResult < curBlkExtr)
-            {
-                /*
-                 * update partial extrema
-                 */
-                curBlkExtr = *pResult;
-                curBlkPos = *pIndex;
-                curBlkIdx = curIdx;
-            }
-            curIdx++;
-            pSrc += UINT8_MAX;
-            totalSize -= UINT8_MAX;
-        }
-        /*
-         * remainder
-         */
-        arm_small_blk_min_q7(pSrc, totalSize, pResult, pIndex);
-        if (*pResult < curBlkExtr)
-        {
-            curBlkExtr = *pResult;
-            curBlkPos = *pIndex;
-            curBlkIdx = curIdx;
-        }
-        *pIndex = curBlkIdx * UINT8_MAX + curBlkPos;
-        *pResult = curBlkExtr;
-    }
-}
-#else
-void arm_min_q7(
-  const q7_t * pSrc,
-        uint32_t blockSize,
-        q7_t * pResult,
-        uint32_t * pIndex)
-{
-        q7_t minVal, out;                              /* Temporary variables to store the output value. */
-        uint32_t blkCnt, outIndex;                     /* Loop counter */
-
-#if defined (ARM_MATH_LOOPUNROLL)
-        uint32_t index;                                /* index of maximum value */
-#endif
-
-  /* Initialise index value to zero. */
+  /* Initialise the count value. */
+  count = 0U;
+  /* Initialise the index value to zero. */
   outIndex = 0U;
   /* Load first input value that act as reference value for comparision */
   out = *pSrc++;
 
-#if defined (ARM_MATH_LOOPUNROLL)
-  /* Initialise index of maximum value. */
-  index = 0U;
-
-  /* Loop unrolling: Compute 4 outputs at a time */
+  /* Loop unrolling */
   blkCnt = (blockSize - 1U) >> 2U;
 
   while (blkCnt > 0U)
   {
-    /* Initialize minVal to next consecutive values one by one */
-    minVal = *pSrc++;
+    /* Initialize minVal to the next consecutive values one by one */
+    minVal1 = *pSrc++;
+    minVal2 = *pSrc++;
 
     /* compare for the minimum value */
-    if (out > minVal)
+    if (out > minVal1)
     {
-      /* Update the minimum value and it's index */
-      out = minVal;
-      outIndex = index + 1U;
+      /* Update the minimum value and its index */
+      out = minVal1;
+      outIndex = count + 1U;
     }
 
-    minVal = *pSrc++;
-    if (out > minVal)
+    /* compare for the minimum value */
+    if (out > minVal2)
     {
-      out = minVal;
-      outIndex = index + 2U;
+      /* Update the minimum value and its index */
+      out = minVal2;
+      outIndex = count + 2U;
     }
 
-    minVal = *pSrc++;
-    if (out > minVal)
+    /* Initialize minVal to the next consecutive values one by one */
+    minVal1 = *pSrc++;
+    minVal2 = *pSrc++;
+
+    /* compare for the minimum value */
+    if (out > minVal1)
     {
-      out = minVal;
-      outIndex = index + 3U;
+      /* Update the minimum value and its index */
+      out = minVal1;
+      outIndex = count + 3U;
     }
 
-    minVal = *pSrc++;
-    if (out > minVal)
+    /* compare for the minimum value */
+    if (out > minVal2)
     {
-      out = minVal;
-      outIndex = index + 4U;
+      /* Update the minimum value and its index */
+      out = minVal2;
+      outIndex = count + 4U;
     }
 
-    index += 4U;
+    count += 4U;
 
-    /* Decrement loop counter */
+    /* Decrement the loop counter */
     blkCnt--;
   }
 
-  /* Loop unrolling: Compute remaining outputs */
+  /* if (blockSize - 1U) is not multiple of 4 */
   blkCnt = (blockSize - 1U) % 4U;
 
 #else
+  /* Run the below code for Cortex-M0 */
 
-  /* Initialize blkCnt with number of samples */
+  q7_t minVal1, out;                             /* Temporary variables to store the output value. */
+  uint32_t blkCnt, outIndex;                     /* loop counter */
+
+  /* Initialise the index value to zero. */
+  outIndex = 0U;
+  /* Load first input value that act as reference value for comparision */
+  out = *pSrc++;
+
   blkCnt = (blockSize - 1U);
 
-#endif /* #if defined (ARM_MATH_LOOPUNROLL) */
+#endif /* #if defined (ARM_MATH_DSP) */
 
   while (blkCnt > 0U)
   {
     /* Initialize minVal to the next consecutive values one by one */
-    minVal = *pSrc++;
+    minVal1 = *pSrc++;
 
     /* compare for the minimum value */
-    if (out > minVal)
+    if (out > minVal1)
     {
       /* Update the minimum value and it's index */
-      out = minVal;
+      out = minVal1;
       outIndex = blockSize - blkCnt;
     }
 
-    /* Decrement loop counter */
+    /* Decrement the loop counter */
     blkCnt--;
   }
 
@@ -277,8 +157,7 @@ void arm_min_q7(
   *pResult = out;
   *pIndex = outIndex;
 }
-#endif /* defined(ARM_MATH_MVEI) */
 
 /**
-  @} end of Min group
+ * @} end of Min group
  */

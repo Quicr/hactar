@@ -26,7 +26,7 @@ public:
 
         std::cout << size << std::endl;
 
-        buffer = new T[this->size]{ 0 };
+        buffer = new T[this->size]{};
     }
 
     ~RingBuffer()
