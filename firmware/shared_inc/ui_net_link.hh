@@ -2,7 +2,6 @@
 
 #include "link_packet_t.hh"
 #include "audio_codec.hh"
-#include "audio_chip.hh"
 
 #include <cstring>
 
@@ -51,12 +50,11 @@ namespace ui_net_link
         uint8_t data[constants::Audio_Buffer_Sz_2];
     };
 
-    // TODO USE THIS
-    void BuildGetLinkPacket(link_packet_t& packet)
+    void BuildGetLinkPacket(uint8_t* buff)
     {
-        packet.type = (uint8_t)Packet_Type::GetAudioLinkPacket;
-        packet.length = 0;
-        packet.is_ready = true;
+        buff[0] = (uint8_t)Packet_Type::GetAudioLinkPacket;
+        buff[1] = 0;
+        buff[2] = 0;
     }
 
     void Serialize(const TalkStart& talk_start, link_packet_t& packet)

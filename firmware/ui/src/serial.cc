@@ -121,7 +121,7 @@ void Serial::ChangeFreeState()
     // TODO use tx free?
     if (uart->gState != HAL_UART_STATE_READY)
     {
-        Error_Handler();
+        // Error_Handler();
         return;
     }
 
