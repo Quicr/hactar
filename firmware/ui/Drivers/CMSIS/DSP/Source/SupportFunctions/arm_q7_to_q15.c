@@ -3,13 +3,13 @@
  * Title:        arm_q7_to_q15.c
  * Description:  Converts the elements of the Q7 vector to Q15 vector
  *
- * $Date:        23 April 2021
- * $Revision:    V1.9.0
+ * $Date:        27. January 2017
+ * $Revision:    V.1.5.1
  *
- * Target Processor: Cortex-M and Cortex-A cores
+ * Target Processor: Cortex-M cores
  * -------------------------------------------------------------------- */
 /*
- * Copyright (C) 2010-2021 ARM Limited or its affiliates. All rights reserved.
+ * Copyright (C) 2010-2017 ARM Limited or its affiliates. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -26,102 +26,63 @@
  * limitations under the License.
  */
 
-#include "dsp/support_functions.h"
+#include "arm_math.h"
 
 /**
-  @ingroup groupSupport
+ * @ingroup groupSupport
  */
 
 /**
-  @addtogroup q7_to_x
-  @{
+ * @addtogroup q7_to_x
+ * @{
  */
+
+
+
 
 /**
-  @brief         Converts the elements of the Q7 vector to Q15 vector.
-  @param[in]     pSrc       points to the Q7 input vector
-  @param[out]    pDst       points to the Q15 output vector
-  @param[in]     blockSize  number of samples in each vector
-  @return        none
-
-  @par           Details
-                   The equation used for the conversion process is:
-  <pre>
-      pDst[n] = (q15_t) pSrc[n] << 8;   0 <= n < blockSize.
-  </pre>
+ * @brief Converts the elements of the Q7 vector to Q15 vector.
+ * @param[in]       *pSrc points to the Q7 input vector
+ * @param[out]      *pDst points to the Q15 output vector
+ * @param[in]       blockSize length of the input vector
+ * @return none.
+ *
+ * \par Description:
+ *
+ * The equation used for the conversion process is:
+ *
+ * <pre>
+ * 	pDst[n] = (q15_t) pSrc[n] << 8;   0 <= n < blockSize.
+ * </pre>
+ *
  */
 
-#if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
+
 void arm_q7_to_q15(
-  const q7_t * pSrc,
-        q15_t * pDst,
-        uint32_t blockSize)
+  q7_t * pSrc,
+  q15_t * pDst,
+  uint32_t blockSize)
 {
+  q7_t *pIn = pSrc;                              /* Src pointer */
+  uint32_t blkCnt;                               /* loop counter */
 
-    uint32_t  blkCnt;           /* loop counters */
-    q15x8_t vecDst;
-    q7_t const *pSrcVec;
+#if defined (ARM_MATH_DSP)
+  q31_t in;
+  q31_t in1, in2;
+  q31_t out1, out2;
 
+  /* Run the below code for Cortex-M4 and Cortex-M3 */
 
-    pSrcVec = (q7_t const *) pSrc;
-    blkCnt = blockSize >> 3;
-    while (blkCnt > 0U)
-    {
-        /* C = (q15_t) A << 8 */
-        /* convert from q7 to q15 and then store the results in the destination buffer */
-        /* load q7 + 32-bit widening */
-        vecDst = vldrbq_s16(pSrcVec);    
-        pSrcVec += 8;
-        vecDst = vecDst << 8;
-        vstrhq(pDst, vecDst);   
-        pDst += 8;
-        /*
-         * Decrement the blockSize loop counter
-         */
-        blkCnt--;
-    }
-
-  blkCnt = blockSize & 7;
-  while (blkCnt > 0U)
-  {
-    /* C = (q15_t) A << 8 */
-
-    /* Convert from q7 to q15 and store result in destination buffer */
-    *pDst++ = (q15_t) * pSrcVec++ << 8;
-
-    /* Decrement loop counter */
-    blkCnt--;
-  }
-
-}
-#else
-void arm_q7_to_q15(
-  const q7_t * pSrc,
-        q15_t * pDst,
-        uint32_t blockSize)
-{
-        uint32_t blkCnt;                               /* Loop counter */
-  const q7_t *pIn = pSrc;                              /* Source pointer */
-
-#if defined (ARM_MATH_LOOPUNROLL) && defined (ARM_MATH_DSP)
-        q31_t in;
-        q31_t in1, in2;
-        q31_t out1, out2;
-#endif
-
-#if defined (ARM_MATH_LOOPUNROLL)
-
-  /* Loop unrolling: Compute 4 outputs at a time */
+  /*loop Unrolling */
   blkCnt = blockSize >> 2U;
 
+  /* First part of the processing with loop unrolling.  Compute 4 outputs at a time.
+   ** a second loop below computes the remaining 1 to 3 samples. */
   while (blkCnt > 0U)
   {
     /* C = (q15_t) A << 8 */
-
-    /* Convert from q7 to q15 and store result in destination buffer */
-#if defined (ARM_MATH_DSP)
-
-    in = read_q7x4_ia (&pIn);
+    /* convert from q7 to q15 and then store the results in the destination buffer */
+    in = *__SIMD32(pIn)++;
 
     /* rotatate in by 8 and extend two q7_t values to q15_t values */
     in1 = __SXTB16(__ROR(in, 8));
@@ -136,53 +97,49 @@ void arm_q7_to_q15(
     in2 = in2 & 0xFF00FF00;
 
 #ifndef ARM_MATH_BIG_ENDIAN
+
     out2 = __PKHTB(in1, in2, 16);
     out1 = __PKHBT(in2, in1, 16);
+
 #else
+
     out1 = __PKHTB(in1, in2, 16);
     out2 = __PKHBT(in2, in1, 16);
+
 #endif
 
-    write_q15x2_ia (&pDst, out1);
-    write_q15x2_ia (&pDst, out2);
+    *__SIMD32(pDst)++ = out1;
+    *__SIMD32(pDst)++ = out2;
 
-#else
-
-    *pDst++ = (q15_t) *pIn++ << 8;
-    *pDst++ = (q15_t) *pIn++ << 8;
-    *pDst++ = (q15_t) *pIn++ << 8;
-    *pDst++ = (q15_t) *pIn++ << 8;
-
-#endif /* #if defined (ARM_MATH_DSP) */
-
-    /* Decrement loop counter */
+    /* Decrement the loop counter */
     blkCnt--;
   }
 
-  /* Loop unrolling: Compute remaining outputs */
+  /* If the blockSize is not a multiple of 4, compute any remaining output samples here.
+   ** No loop unrolling is used. */
   blkCnt = blockSize % 0x4U;
 
 #else
 
-  /* Initialize blkCnt with number of samples */
+  /* Run the below code for Cortex-M0 */
+
+  /* Loop over blockSize number of values */
   blkCnt = blockSize;
 
-#endif /* #if defined (ARM_MATH_LOOPUNROLL) */
+#endif /* #if defined (ARM_MATH_DSP) */
 
   while (blkCnt > 0U)
   {
     /* C = (q15_t) A << 8 */
-
-    /* Convert from q7 to q15 and store result in destination buffer */
+    /* convert from q7 to q15 and then store the results in the destination buffer */
     *pDst++ = (q15_t) * pIn++ << 8;
 
-    /* Decrement loop counter */
+    /* Decrement the loop counter */
     blkCnt--;
   }
 
 }
-#endif /* defined(ARM_MATH_MVEI) */
 
 /**
-  @} end of q7_to_x group
+ * @} end of q7_to_x group
  */
