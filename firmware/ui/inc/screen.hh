@@ -1,13 +1,13 @@
 #pragma once
 
+#include "main.h"
 #include "stm32.h"
-#include "port_pin.hh"
+
 #include "font.hh"
-#include "ring_memory_pool.hh"
-#include "swap_buffer.hh"
 
-#include <string>
+#include <type_traits>
 
+// TODO move into screen as constexpr
 #define SF_RST 0x01U // Software reset
 #define PWRC_A 0xCBU // Power control A
 #define PWRC_B 0xCFU // Power control B
@@ -35,6 +35,8 @@
 #define RA_SET 0x2BU // Row address set
 #define WR_RAM 0x2CU // Write to RAM
 
+#define NORON 0x13U
+
 #define MAD_CTL_MY  0x80U
 #define MAD_CTL_MX  0x40U
 #define MAD_CTL_MV  0x20U
@@ -43,8 +45,15 @@
 #define MAD_CTL_BGR 0x08U
 #define MAD_CTL_MH  0x04U
 
+// Vertical scroll definition
+#define VSCRDEF 0x33U
+
+// Vertical scroll address
+#define VSCRSADD 0x37U
+
 // Some basic colours
 #define	C_BLACK         0x0000U
+#define C_WHITE         0xFFFFU
 #define	C_BLUE          0x001FU
 #define	C_RED           0xF800U
 #define C_LIGHT_GREEN   0x3626U
@@ -52,307 +61,278 @@
 #define C_CYAN          0x07FFU
 #define C_MAGENTA       0xF81FU
 #define C_YELLOW        0xFFE0U
-#define C_WHITE         0xFFFFU
 #define C_GREY          0xCE59U
 
 // Default orientation
-#define WIDTH                240U
-#define HEIGHT               320U
-#define PORTRAIT_DATA           (MAD_CTL_MY | MAD_CTL_BGR)
-#define FLIPPED_PORTRAIT_DATA   (MAD_CTL_MX | MAD_CTL_BGR)
+#define WIDTH                   uint16_t(240)
+#define HEIGHT                  uint16_t(320)
+#define PORTRAIT_DATA           (MAD_CTL_MX | MAD_CTL_BGR)
+#define FLIPPED_PORTRAIT_DATA   (MAD_CTL_MY | MAD_CTL_BGR)
 #define LEFT_LANDSCAPE_DATA     (MAD_CTL_MV | MAD_CTL_BGR)
 #define RIGHT_LANDSCAPE_DATA    (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
 
+// enum Colour: uint16_t
+// {
+//     NOP = 0x0000U,
+//     Black = 0x0001U,
+//     White = 0xFFFFU,
+//     Red = 0xF800U,
+//     Blue = 0x001FU,
+//     Light_Green = 0x3626U,
+//     Green = 0x07E0U,
+//     Cyan = 0x07FFU,
+//     Magenta = 0xF81FU,
+//     Yellow = 0xFFE0U,
+//     Grey = 0xCE59U,
+// };
+
+enum class Colour: uint8_t
+{
+    Black = 0,
+    White,
+    Blue,
+    Red,
+    Light_Green,
+    Green,
+    Cyan,
+    Magenta,
+    Yellow,
+    Grey,
+};
+
 class Screen
 {
-private:
-    // TODO remove
-    static constexpr uint32_t Max_Chunk_Size = 16384U;
-    static constexpr uint32_t Chunk_Buffer_Size = 2048UL;
-
-    static constexpr uint32_t Num_Memories = 40;
+public:
+    static constexpr uint32_t Num_Rows = 10;
+    // TODO find a sweet spot for num memories
+    static constexpr uint32_t Num_Memories = 50;
     static constexpr uint32_t Memory_Size = 32;
+    static constexpr uint32_t Title_Length = 18;
+    static constexpr uint32_t Max_Texts = 35;
+    static constexpr uint32_t Max_Characters = 48;
+    static constexpr uint16_t Top_Fixed_Area = 20;
+    static constexpr uint16_t Bottom_Fixed_Area = 20;
+    static constexpr uint16_t Scroll_Area_Height = HEIGHT - (Top_Fixed_Area + Bottom_Fixed_Area);
+    static constexpr uint16_t Scroll_Area_Top = Top_Fixed_Area;
+    static constexpr uint16_t Scroll_Area_Bottom = HEIGHT - Bottom_Fixed_Area;
+    static constexpr uint32_t Half_Width_Pixel_Size = WIDTH / 2;
+    static constexpr uint32_t Width_Pixel_Size = WIDTH * 2;
+    static constexpr uint32_t Scan_Window_Dbl_Sz = Width_Pixel_Size * 2;
 
-    enum class MemoryStatus
+private:
+    struct YBound
     {
-        Unused = 0,
+        uint16_t y1 = 0;
+        uint16_t y2 = 0;
+    };
+
+    enum class MemoryStatus: uint8_t
+    {
+        Free = 0,
         In_Progress,
-        Complete
     };
 
-    struct ScreenMemory
+    static constexpr uint16_t Colour_Map []
     {
-        void (*callback)(Screen& screen, ScreenMemory& memory) = nullptr;
-        void (*post_callback)(Screen& screen, ScreenMemory& memory) = nullptr;
-        MemoryStatus status = MemoryStatus::Unused;
-        uint8_t parameters[Memory_Size]{0}; // A bunch of data params to run the next command
+        C_BLACK,
+        C_WHITE,
+        C_BLUE,
+        C_RED,
+        C_LIGHT_GREEN,
+        C_GREEN,
+        C_CYAN,
+        C_MAGENTA,
+        C_YELLOW,
+        C_GREY
     };
+
+    struct DrawMemory;
+
+    typedef bool (*MemoryCallback)(DrawMemory& memory,
+        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+        const int16_t y1, const int16_t y2);
+
+    struct DrawMemory
+    {
+        MemoryCallback callback = nullptr;
+        MemoryStatus status = MemoryStatus::Free;
+        uint16_t x1 = 0;
+        uint16_t x2 = 0;
+        uint16_t y1 = 0;
+        uint16_t y2 = 0;
+        Colour colour = Colour::Black;
+        uint8_t write_idx = 0;
+        uint8_t read_idx = 0;
+        uint8_t parameters[Memory_Size]{ 0 }; // A bunch of data params to run the next command
+    }; // 4+1+2+2+2+2+1+1+1+32 = 48 bytes
 
 public:
-    enum Orientation {
+    enum Orientation
+    {
         portrait,
         flipped_portrait,
         left_landscape,
         right_landscape
     };
 
-    enum ArrowDirection {
-        Left,
-        Up,
-        Right,
-        Down
-    };
+    Screen(
+        SPI_HandleTypeDef& hspi,
+        GPIO_TypeDef* cs_port,
+        const uint16_t cs_pin,
+        GPIO_TypeDef* dc_port,
+        const uint16_t dc_pin,
+        GPIO_TypeDef* rst_port,
+        const uint16_t rst_pin,
+        GPIO_TypeDef* bl_port,
+        const uint16_t bl_pin,
+        Orientation orientation
+    );
 
-    // I will need each of the pins to be input
-    Screen(SPI_HandleTypeDef &spi,
-           port_pin cs,
-           port_pin dc,
-           port_pin rst,
-           port_pin bl,
-           Orientation _orientation);
-    ~Screen();
-
-    // General interfacing functions
-    void Begin();
-    void Update(uint32_t current_tick);
-    void Draw();
-
-    // Public command functions
-    void DisableBackLight();
-    void EnableBackLight();
+    void Init();
+    void Draw(uint32_t timeout);
     void Reset();
-    void SetOrientation(Orientation _orientation);
     void Sleep();
     void Wake();
-
-    // Sync functions
-    void DrawArrowBlocking(const uint16_t tip_x, const uint16_t tip_y,
-                   const uint16_t length, const uint16_t width,
-                   const ArrowDirection direction, const uint16_t colour);
-
-    void DrawCircleBlocking(const uint16_t x, const uint16_t y, const uint16_t r,
-                    const uint16_t colour); // TODO
-
-    void DrawHorizontalLineBlocking(const uint16_t x1, const uint16_t x2,
-                            const uint16_t y, const uint16_t thickness,
-                            const uint16_t colour);
-
-    void DrawLineBlocking(uint16_t x1, uint16_t y1,
-                  uint16_t x2, uint16_t y2,
-                  const uint16_t colour);
-
-    void DrawPixelBlocking(const uint16_t x, const uint16_t y, const uint16_t colour);
-
-    void DrawPolygonBlocking(const size_t count, const uint16_t points[][2], const uint16_t colour);
-
-    void DrawRectangleBlocking(const uint16_t x_start, const uint16_t y_start,
-                       const uint16_t x_end, const uint16_t y_end,
-                       const uint16_t thickness, const uint16_t colour);
-
-    void DrawBlockAnimateStringBlocking(const uint16_t x, const uint16_t y,
-                                const std::string &str, const Font &font,
-                                const uint16_t fg, const uint16_t bg,
-                                const uint16_t delay);
-
-    void DrawTextBlocking(const uint16_t x, const uint16_t y, const std::string &str,
-                    const Font &font, const uint16_t fg, const uint16_t bg,
-                    const bool wordwrap = false,
-                    uint32_t max_chunk_size=Max_Chunk_Size);
-
-    void DrawTextboxBlocking(uint16_t x_pos,
-                     uint16_t y_pos,
-                     const uint16_t x_window_start,
-                     const uint16_t y_window_start,
-                     const uint16_t x_window_end,
-                     const uint16_t y_window_end,
-                     const std::string &str,
-                     const Font &font,
-                     const uint16_t fg,
-                     const uint16_t bg);
-
-    void DrawTriangleBlocking(const uint16_t x1, const uint16_t y1,
-                      const uint16_t x2, const uint16_t y2,
-                      const uint16_t x3, const uint16_t y3,
-                      const uint16_t colour);
-
-    void FillArrowBlocking(const uint16_t tip_x, const uint16_t tip_y,
-                   const uint16_t length, const uint16_t width,
-                   const ArrowDirection direction, const uint16_t colour);
-
-    void FillCircleBlocking(const uint16_t x, const uint16_t y, const uint16_t r,
-                    const uint16_t fg, const uint16_t bg);
-
-    void FillPolygonBlocking(const size_t count,
-                     const int16_t points [][2],
-                     const uint16_t colour);
-
-    void FillRectangleBlocking(const uint16_t x_start,
-                       const uint16_t y_start,
-                       uint16_t x_end,
-                       uint16_t y_end,
-                       const uint16_t colour,
-                       uint32_t max_chunk_size=Max_Chunk_Size);
-
-    void FillScreen(const uint16_t colour, bool async=true);
-
-    void FillTriangleBlocking(const uint16_t x1, const uint16_t y1,
-                      const uint16_t x2, const uint16_t y2,
-                      const uint16_t x3, const uint16_t y3,
-                      const uint16_t colour);
-
-    void DrawCharacterBlocking(uint16_t x_start,
-                       uint16_t y_start,
-                       const uint16_t x_window_begin,
-                       const uint16_t y_window_begin,
-                       const uint16_t x_window_end,
-                       const uint16_t y_window_end,
-                       const char ch,
-                       const Font &font,
-                       const uint16_t fg,
-                       const uint16_t bg);
-
-    // Async functions
-    void DrawArrowAsync(const uint16_t tip_x, const uint16_t tip_y,
-                   const uint16_t length, const uint16_t width,
-                   const uint16_t thickness, const ArrowDirection direction,
-                   const uint16_t colour);
-
-    void DrawCharacterAsync(uint16_t x, uint16_t y, const char ch,
-        const Font& font, const uint16_t fg, const uint16_t bg);
-
-    void DrawCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
-                    const uint16_t colour);
-
-    void DrawLineAsync(const uint16_t x1, const uint16_t x2,
-                       const uint16_t y1, const uint16_t y2,
-                       const  uint16_t thickness,
-                       const uint16_t colour);
-    void DrawPixelAsync(const uint16_t x, const uint16_t y,
-                        const uint16_t colour);
-
-    void DrawPolygonAsync(const size_t count, const uint16_t points[][2],
-                          const uint16_t thickness, const uint16_t colour);
-
-    void DrawRectangleAsync(const uint16_t x1, const uint16_t x2,
-        const uint16_t y1, const uint16_t y2, const uint16_t thickness,
-        const uint16_t colour);
-
-    void DrawStringAsync(const uint16_t x, const uint16_t y, const char* str,
-        const uint16_t len, const Font& font, const uint16_t fg,
-        const uint16_t bg, const bool word_wrap);
-
-    void DrawStringAsync(const uint16_t x, const uint16_t y,
-        const std::string str, const Font& font, const uint16_t fg,
-        const uint16_t bg, const bool word_wrap);
-
-    void DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
-        const uint16_t y1, const uint16_t y2,
-        const char* str, const uint16_t len,
-        const Font& font, const uint16_t fg, const uint16_t bg,
-        const bool draw_box);
-
-    void DrawStringBoxAsync(const uint16_t x1, const uint16_t x2,
-        const uint16_t y1, const uint16_t y2,
-        const std::string str, const Font& font,
-        const uint16_t fg, const uint16_t bg,
-        const bool draw_box);
-
-    void DrawTriangleAsync(const uint16_t x1, const uint16_t y1,
-                           const uint16_t x2, const uint16_t y2,
-                           const uint16_t x3, const uint16_t y3,
-                           const uint16_t thickness, const uint16_t colour);
-
-    void FillArrowAsync(const uint16_t tip_x, const uint16_t tip_y,
-                   const uint16_t length, const uint16_t width,
-                   const ArrowDirection direction, const uint16_t colour);
-
-    void FillCircleAsync(const uint16_t x, const uint16_t y, const uint16_t r,
-                    const uint16_t colour);
-
-    void FillPolygonAsync(const size_t count, const uint16_t points[][2],
-                          const uint16_t colour);
-
-    void FillTriangleAsync(const uint16_t x1, const uint16_t y1,
-                           const uint16_t x2, const uint16_t y2,
-                           const uint16_t x3, const uint16_t y3,
-                           const uint16_t colour);
-
-    void FillRectangleAsync(uint16_t x1,
-                            uint16_t x2,
-                            uint16_t y1,
-                            uint16_t y2,
-                            const uint16_t colour);
-
-
-
-    // Helper Functions
-    void SpiComplete();
-    uint16_t ViewWidth() const;
-    uint16_t ViewHeight() const;
-    uint16_t GetStringWidth(const uint16_t str_len, const Font& font) const;
-    uint16_t GetStringCenter(const uint16_t str_len, const Font& font) const;
-    uint16_t GetStringCenterMargin(const uint16_t str_len, const Font& font) const;
-    uint16_t GetStringLeftDistanceFromRightEdge(const uint16_t str_len, const Font& font) const;
-    uint16_t RGB888ToRGB565(const uint32_t colour);
-
-
-private:
-    // Private gpio functions
+    void EnableBacklight();
+    void DisableBacklight();
     inline void Select();
     inline void Deselect();
 
-    // Private sync command functions
-    void SetWritablePixels(uint16_t x_start, uint16_t y_start, uint16_t x_end,
-                           uint16_t y_end);
-    void WriteCommand(uint8_t command);
-    void WriteData(uint8_t* data, uint32_t data_size);
+    void SetOrientation(const Orientation orientation);
+    void FillRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
+        uint16_t y2, const Colour colour);
+    void DrawRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
+        uint16_t y2, const uint16_t thickness, const Colour colour);
+    void DrawCharacter(uint16_t x, uint16_t y, const char ch, const Font& font,
+        const Colour fg, const Colour bg);
+    void DrawString(uint16_t x, uint16_t y, const char* str,
+        const uint16_t length, const Font& font,
+        const Colour fg, const Colour bg);
+    void DefineScrollArea(const uint16_t tfa_idx,
+        const uint16_t vsa_idx, const uint16_t bfa_idx);
+    void ScrollScreen(const uint16_t scroll_idx, bool up);
+
+    void AppendText(const char* text, const uint32_t len);
+    void CommitText();
+
+private:
+    inline void WaitForSPIComplete();
+    inline void SetPinToCommand();
+    inline void SetPinToData();
+    void WriteCommand(uint8_t cmd);
+    void WriteCommand(uint8_t cmd, uint8_t* data, const uint32_t sz);
+    void WriteDataWithSet(uint8_t data);
+    void WriteDataWithSet(uint8_t* data, const uint32_t data_size);
     void WriteData(uint8_t data);
-    void WriteDataSyncDMA(uint8_t* data, const uint32_t data_size);
+    void WriteData(uint8_t* data, const uint32_t data_size);
+    void SetWriteablePixels(const int16_t x1, const int16_t x2,
+        const int16_t y1, const int16_t y2);
+    DrawMemory& AllocateMemory(const uint16_t x1, const uint16_t x2,
+        const uint16_t y1, const uint16_t y2, const Colour colour,
+        MemoryCallback callback);
+    void NormalMode();
 
-    // Private async command functions
-    ScreenMemory* SetWriteWindowAsync(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
-    static void SetColumnsCommandAsync(Screen& screen, ScreenMemory& memory);
-    static void SetColumnsDataAsync(Screen& screen, ScreenMemory& memory);
-    static void SetRowsCommandAsync(Screen& screen, ScreenMemory& memory);
-    static void SetRowsDataAsync(Screen& screen, ScreenMemory& memory);
-    static void WriteToRamCommandAsync(Screen& screen, ScreenMemory& memory);
-    bool WriteAsync(SwapBuffer<uint8_t>::swap_buffer_t* buff);
+    // Private functions
+    static bool DrawRectangleProcedure(DrawMemory& memory,
+        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+        const int16_t y1, const int16_t y2);
+    static bool FillRectangleProcedure(DrawMemory& memory,
+        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+        const int16_t y1, const int16_t y2);
+    static bool DrawCharacterProcedure(DrawMemory& memory,
+        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+        const int16_t y1, const int16_t y2);
+    static bool DrawStringProcedure(DrawMemory& memory,
+        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+        const int16_t y1, const int16_t y2);
 
-    ScreenMemory* RetrieveFreeMemory();
-    void HandleReadyMemory();
-    void HandleVideoBuffer();
+    inline void HandleBounds(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2);
 
-    // Async procedure functions
-    static void DrawCharacterProcedure(Screen& screen, ScreenMemory& memory);
-    static void DrawLineAsyncProcedure(Screen& screen, ScreenMemory& memory);
-    static void DrawPixelAsyncProcedure(Screen& screen, ScreenMemory& memory);
-    static void FillRectangleAsyncProcedure(Screen& screen, ScreenMemory& memory);
+    static inline uint8_t* GetCharAddr(uint8_t* font_data,
+        const uint8_t ch,
+        const uint16_t font_width,
+        const uint16_t font_height);
+    static inline void PushMemoryParameter(DrawMemory& memory,
+        const uint32_t val, const int16_t num_bytes);
+    // Non-destructive retrieval
+    template<typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = 0>
+    static inline T PullMemoryParameter(DrawMemory& memory)
+    {
+        const int16_t bytes = sizeof(T);
+        T output = 0;
+        uint8_t& idx = memory.read_idx;
 
+        for (int16_t i = 0; i < bytes && i < memory.write_idx; ++i)
+        {
+            output |= memory.parameters[idx] << (8 * i);
+            ++idx;
+        }
 
-    // Private helpers
-    void Clip(const uint16_t x_start, const uint16_t y_start, uint16_t &x_end,
-              uint16_t &y_end);
-    inline void WaitUntilSPIFree();
-    void WaitForFreeMemory(const uint16_t minimum = 1);
+        // Restart where we read from if the index is zero
+        if (idx >= memory.write_idx)
+        {
+            idx = 0;
+        }
 
+        return output;
+    }
+    static inline void FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+        const uint16_t i, const uint16_t j, const uint8_t colour_high,
+        const uint8_t colour_low) __attribute__((always_inline));
+    static inline void FillLineAtIdx(uint8_t* line, const uint16_t i,
+        const uint16_t j, const uint16_t colour) __attribute__((always_inline));
+    static inline YBound GetYBounds(const uint16_t y1, const uint16_t y2,
+        const uint16_t mem_y1, const uint16_t mem_y2) __attribute__((always_inline));
 
     // Variables
-    SPI_HandleTypeDef *spi_handle;
-    port_pin cs;
-    port_pin dc;
-    port_pin rst;
-    port_pin bl;
+    SPI_HandleTypeDef* spi;
+
+    GPIO_TypeDef* cs_port;
+    const uint16_t cs_pin;
+    GPIO_TypeDef* dc_port;
+    const uint16_t dc_pin;
+    GPIO_TypeDef* rst_port;
+    const uint16_t rst_pin;
+    GPIO_TypeDef* bl_port;
+    const uint16_t bl_pin;
+
     Orientation orientation;
     uint16_t view_height;
     uint16_t view_width;
+    uint16_t row_bytes;
 
-    SwapBuffer<uint8_t> video_buff;
-    SwapBuffer<uint8_t>::swap_buffer_t* video_write_buff;
+    DrawMemory memories[Num_Memories]; 
+    uint32_t memory_read_idx;
+    uint32_t memories_in_use;
+    uint32_t memory_write_idx;
+    uint16_t row;
+    uint16_t end_row;
 
-    ScreenMemory memories[Num_Memories];
-    ScreenMemory* live_memory;
+    uint16_t row_start_update;
+    uint16_t row_end_update;
 
-    volatile uint32_t memories_write_idx;
-    volatile uint32_t memories_read_idx;
-    volatile uint32_t free_memories;
+    bool updating;
+    bool restart_update;
+
+    // Each byte stores two pixels
+    uint8_t matrix[HEIGHT][WIDTH / 2];
+
+    // Double buff
+    uint8_t scan_window[Scan_Window_Dbl_Sz];
+
+    // Window: 0-20px
+    // Max 18 characters
+    char title_buffer[Title_Length];
+
+    // Window: 20 - 308px
+    uint32_t text_idx;
+    uint32_t texts_in_use;
+    uint32_t scroll_offset;
+    char text_buffer[Max_Texts][Max_Characters];
+    char text_lens[Max_Texts];
+
+    // Window: 308-320px
+    char usr_buffer[Max_Characters];
 };
+
+// 44226 bytes approximately.
