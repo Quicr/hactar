@@ -1,4 +1,4 @@
-#include "net.hh"
+#include "net_test.hh"
 
 #include <stdio.h>
 #include <string.h>
