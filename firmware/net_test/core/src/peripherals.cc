@@ -1,7 +1,7 @@
 #include "peripherals.hh"
 
 
-#include "net.hh"
+#include "net_test.hh"
 
 extern QueueHandle_t uart_queue;
 
