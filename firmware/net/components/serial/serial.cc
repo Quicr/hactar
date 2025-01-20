@@ -1,4 +1,5 @@
 #include "serial.hh"
+#include "link_packet_t.hh"
 #include "packet_builder.hh"
 
 #include "esp_log.h"
@@ -18,14 +19,14 @@ Serial::Serial(const uart_port_t uart, QueueHandle_t& queue,
     xTaskCreate(WriteTask, "serial_write_task", tx_task_sz, this, 1, NULL);
 }
 
-packet_t* Serial::Read()
+link_packet_t* Serial::Read()
 {
     if (!rx_packets.Peek().is_ready)
     {
         return nullptr;
     }
 
-    packet_t* packet = &rx_packets.Read();
+    link_packet_t* packet = &rx_packets.Read();
     packet->is_ready = false;
     return packet;
 }
@@ -34,7 +35,7 @@ packet_t* Serial::Read()
 void Serial::WriteTask(void* param)
 {
     Serial* self = (Serial*)param;
-    packet_t* tx_packet = nullptr;
+    link_packet_t* tx_packet = nullptr;
 
     while (1)
     {
@@ -50,7 +51,7 @@ void Serial::WriteTask(void* param)
 
         uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
 
-        uart_write_bytes(self->uart, tx_packet->data, tx_packet->length + Packet_Length_Size);
+        uart_write_bytes(self->uart, tx_packet->data, tx_packet->length + Packet_Header_Size);
 
         tx_packet->is_ready = false;
         ++self->num_sent;
@@ -64,7 +65,7 @@ void Serial::WriteTask(void* param)
 void Serial::WriteTask(void* param)
 {
     Serial* self = (Serial*)param;
-    packet_t* tx_packet = nullptr;
+    link_packet_t* tx_packet = nullptr;
 
     while (1)
     {
@@ -80,7 +81,7 @@ void Serial::WriteTask(void* param)
 
         uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
 
-        uart_write_bytes(self->uart, tx_packet->data, tx_packet->length + Packet_Length_Size);
+        uart_write_bytes(self->uart, tx_packet->data, tx_packet->length + Packet_Header_Size);
 
         tx_packet->is_ready = false;
         ++self->num_sent;
@@ -89,7 +90,7 @@ void Serial::WriteTask(void* param)
 }
 #endif
 
-packet_t* Serial::Write()
+link_packet_t* Serial::Write()
 {
     return &tx_packets.Write();
 }
@@ -102,7 +103,7 @@ void Serial::ReadTask(void* param)
     uart_event_t event;
     static constexpr size_t Local_Buff_Size = 2048;
     uint8_t buff[Local_Buff_Size];
-    packet_t* packet = nullptr;
+    link_packet_t* packet = nullptr;
 
     uint32_t total_recv = 0;
     uint16_t bytes_read = 0;

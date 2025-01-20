@@ -31,6 +31,7 @@ void Serial::Reset()
 {
     HAL_UART_AbortReceive_IT(uart);
     uint16_t err = uart->Instance->SR;
+    UNUSED(err);
     StartReceive();
 }
 
@@ -80,8 +81,7 @@ void Serial::Write(const uint8_t* data, const size_t size)
 void Serial::Write(const link_packet_t& packet)
 {
     ChangeFreeState();
-    Logger::Log(Logger::Level::Info, "send", packet.length+Packet_Length_Size);
-    HAL_UART_Transmit_DMA(uart, packet.data, packet.length+Packet_Length_Size);
+    HAL_UART_Transmit_DMA(uart, packet.data, packet.length+Packet_Header_Size);
 }
 
 void Serial::RxEvent(const uint16_t fifo_idx)

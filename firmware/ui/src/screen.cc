@@ -176,7 +176,7 @@ void Screen::Draw(uint32_t timeout)
 
     // Go through all of the memories
     const uint16_t y1 = row;
-    const uint16_t y2 = (end_row - row) < Num_Rows ? end_row : row + Num_Rows;
+    const uint16_t y2 = (end_row - row) < (uint16_t)Num_Rows ? end_row : row + Num_Rows;
 
     uint32_t memories_read = 0;
     uint32_t num_memories_used = memories_in_use;
@@ -535,7 +535,7 @@ void Screen::AppendText(const char* text, const uint32_t len)
     size_t idx = 0;
     while (text_len < Max_Characters && idx < num_bytes)
     {
-        text_buf[text_len++] = text[idx++];
+        text_buf[uint32_t(text_len++)] = text[idx++];
     }
 }
 
@@ -988,14 +988,6 @@ inline void Screen::FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size
     {
         matrix[i][idx] = (matrix[i][idx] & 0x0F) | colour_high;
     }
-}
-
-inline void Screen::FillLineAtIdx(uint8_t* line,
-    const uint16_t i, const uint16_t j, const uint16_t colour)
-{
-    const uint16_t idx = j * 2;
-    line[idx] = static_cast<uint8_t>(colour >> 8);
-    line[idx + 1] = static_cast<uint8_t>(colour);
 }
 
 inline Screen::YBound Screen::GetYBounds(const uint16_t y1, const uint16_t y2,

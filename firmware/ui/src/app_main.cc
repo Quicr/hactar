@@ -8,11 +8,8 @@
 
 #include "serial.hh"
 
-#include "fib.hh"
-
-#include "packet_t.hh"
+#include "link_packet_t.hh"
 #include "ui_net_link.hh"
-#include "logger.hh"
 
 #include <string.h>
 
@@ -99,10 +96,10 @@ Screen screen(
     Screen::Orientation::flipped_portrait
 );
 
-packet_t talk_packet;
-packet_t play_buffer;
+link_packet_t talk_packet;
+link_packet_t play_buffer;
 
-packet_t* play_packet = nullptr;
+link_packet_t* play_packet = nullptr;
 size_t num_packets = 0;
 
 volatile bool sleeping = true;
@@ -155,7 +152,7 @@ int app_main()
         if (HAL_GetTick() > blinky)
         {
             HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            Logger::Log(Logger::Level::Error, "UI ALIVE");
+            // Logger::Log(Logger::Level::Error, "UI ALIVE");
             blinky = HAL_GetTick() + 2000;
         }
 
@@ -190,7 +187,7 @@ int app_main()
 
         if (ptt_down)
         {
-            ui_net_link::AudioObject talk_frame = { 0 };
+            ui_net_link::AudioObject talk_frame = { 0, 0};
 
             AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
             ui_net_link::Serialize(talk_frame, talk_packet);
@@ -205,7 +202,7 @@ int app_main()
         {
             if (++num_packets % 100 == 0)
             {
-                Logger::Log(Logger::Level::Info, ".");
+                // Logger::Log(Logger::Level::Info, ".");
                 num_packets = 0;
             }
 
@@ -438,12 +435,12 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 void SlowSendTest(int delay, int num)
 {
-    packet_t packet;
-    ui_net_link::AudioObject talk_frame = { 0 };
+    link_packet_t packet;
+    ui_net_link::AudioObject talk_frame = { 0, 0 };
     // Fill the tmp audio buffer with random
     for (int i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
     {
-        talk_frame.data[i+2] = i;
+        talk_frame.data[i] = i;
     }
 
     ui_net_link::Serialize(talk_frame, packet);
