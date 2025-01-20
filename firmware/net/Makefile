@@ -29,8 +29,7 @@ upload: compile
 	python3 ../tools/command_sender.py ${CONSOLE_PORT} 115200 debug
 
 upload-old: compile
-	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" \
-	`	-bin=${BUILD_PATH} --port=/dev/ttyUSB0=${PORT)
+	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" -bin=${BUILD_PATH} --port=${PORT}
 
 upload_esptool:
 	python3 ../tools/command_sender.py ${PORT} ${BAUD} net_upload

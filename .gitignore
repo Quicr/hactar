@@ -18,3 +18,4 @@ hardware/**/#auto_saved_files#
 
 dist/
 .vscode
+*code-workspace

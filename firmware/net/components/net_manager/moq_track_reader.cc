@@ -9,7 +9,7 @@ using namespace moq;
 void
 TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data)
 {
-    SPDLOG_INFO("Object Received: {0}", to_hex({data.begin(), data.end()}));
+    SPDLOG_INFO("Object Received ({}): {}", headers.object_id, to_hex({data.begin(), data.end()}));
 }
 
 void
