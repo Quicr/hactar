@@ -11,6 +11,7 @@
 #include "esp_heap_caps.h"
 #include "esp_event.h"
 
+#include "ui_net_link.hh"
 #include "peripherals.hh"
 #include "serial.hh"
 #include "wifi.hh"
@@ -86,6 +87,8 @@ extern "C" void app_main(void)
     uint32_t blink_cnt = 0;
     int next = 0;
 
+    int num_packets_requested = 0;
+
     bool terminate = false;
 
     std::shared_ptr<moq::TrackWriter> pub_track_handler;
@@ -102,6 +105,43 @@ extern "C" void app_main(void)
             gpio_set_level(NET_LED_R, next);
             next = next ? 0 : 1;
             blink_cnt = 0;
+        }
+
+
+
+        // TODO obviously this should not be in here, because
+        // we can have packets that are irrelevant to be send
+        // over wifi.
+        // Handle packet type
+        while (auto packet = ui_layer->Read())
+        {
+            switch ((ui_net_link::Packet_Type)packet->type)
+            {
+                case ui_net_link::Packet_Type::GetAudioLinkPacket:
+                {
+                    
+                    break;
+                }
+                case ui_net_link::Packet_Type::TalkStart:
+                {
+                    // TODO
+                    break;
+                }
+                case ui_net_link::Packet_Type::TalkStop:
+                {
+                    // TODO
+                    break;
+                }
+                case ui_net_link::Packet_Type::AudioObject:
+                {
+                    // Push audio packet into a jitter buff
+                    break;
+                }
+                default:
+                {
+
+                }
+            }
         }
 
         switch (moq_session.GetStatus())

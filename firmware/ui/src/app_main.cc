@@ -98,8 +98,9 @@ Screen screen(
 
 link_packet_t talk_packet;
 link_packet_t play_buffer;
-
 link_packet_t* play_packet = nullptr;
+uint8_t link_send_space[20] = { 0 }; // change as needed
+
 size_t num_packets = 0;
 
 volatile bool sleeping = true;
@@ -147,6 +148,8 @@ int app_main()
 
     uint32_t time_start = HAL_GetTick();
 
+    uint32_t num_awaiting_packets = 0;
+
     while (1)
     {
         if (HAL_GetTick() > blinky)
@@ -165,6 +168,14 @@ int app_main()
         if (error)
         {
             // Error_Handler();
+        }
+
+        if (num_awaiting_packets < 2)
+        {
+            // ask for packets?
+            ui_net_link::BuildGetLinkPacket(link_send_space);
+            serial.Write(link_send_space, 3);
+            ++num_awaiting_packets;
         }
 
 
@@ -187,7 +198,7 @@ int app_main()
 
         if (ptt_down)
         {
-            ui_net_link::AudioObject talk_frame = { 0, 0};
+            ui_net_link::AudioObject talk_frame = { 0, 0 };
 
             AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
             ui_net_link::Serialize(talk_frame, talk_packet);
@@ -197,19 +208,22 @@ int app_main()
         RaiseFlag(Rx_Audio_Transmitted);
 
         // If there are bytes available read them
-        play_packet = serial.Read();
-        if (play_packet)
-        {
-            if (++num_packets % 100 == 0)
-            {
-                // Logger::Log(Logger::Level::Info, ".");
-                num_packets = 0;
-            }
+        // TODO packet handling
+        // play_packet = serial.Read();
+        // if (play_packet)
+        // {
+        //     if (++num_packets % 100 == 0)
+        //     {
+        //         // Logger::Log(Logger::Level::Info, ".");
+        //         num_packets = 0;
+        //     }
 
-            // TODO check type, assume audio for now.
-            ui_net_link::Deserialize(*play_packet, play_frame);
-            AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
-        }
+
+
+        //     // TODO check type, assume audio for now.
+        //     ui_net_link::Deserialize(*play_packet, play_frame);
+        //     AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
+        // }
 
         // Use remaining time to draw
         if (est_time_ms > redraw)
