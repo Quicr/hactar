@@ -2,6 +2,7 @@
 
 #include "link_packet_t.hh"
 #include "audio_codec.hh"
+#include "constants.hh"
 
 #include <cstring>
 
