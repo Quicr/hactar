@@ -20,7 +20,7 @@ namespace ui_net_link
         MoQConnecting,
         MoQReady,
         AudioObject,
-        AudioObjects,
+        AudioMultiObject,
         WifiConnected,
         WifiDisconnected,
     };
@@ -105,7 +105,7 @@ namespace ui_net_link
     static void Serialize(const AudioObject& talk_frame, link_packet_t& packet)
     {
         const uint16_t num_extra_bytes = 1;
-        packet.type = (uint8_t)Packet_Type::AudioObjects;
+        packet.type = (uint8_t)Packet_Type::AudioObject;
         packet.length = num_extra_bytes + constants::Audio_Buffer_Sz_2;
         packet.payload[0] = talk_frame.channel_id;
 
