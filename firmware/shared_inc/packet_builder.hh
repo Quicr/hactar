@@ -2,7 +2,7 @@
 
 #include "ring_buffer.hh"
 #include "link_packet_t.hh"
-
+#include "logger.hh"
 
 static int BuildPacket(const uint8_t* buff, const uint32_t num_bytes, RingBuffer<link_packet_t>& packets)
 {
@@ -34,9 +34,9 @@ static int BuildPacket(const uint8_t* buff, const uint32_t num_bytes, RingBuffer
         }
 
         if (bytes_read >= packet->length + Packet_Header_Size
-            && bytes_read >= PACKET_SIZE)
+            || bytes_read >= PACKET_SIZE)
         {
-            // Logger::Log(Logger::Level::Info, "packet ready");
+            // Logger::Log(Logger::Level::Info, "packet ready type:", (int)packet->type);
             // Done the packet
             packet->is_ready = true;
 
