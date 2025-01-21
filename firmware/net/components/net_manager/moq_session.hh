@@ -6,6 +6,7 @@
 #include "moq_track_writer.hh"
 
 #include <quicr/client.h>
+#include <quicr/detail/defer.h>
 
 #include <map>
 
