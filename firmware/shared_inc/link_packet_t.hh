@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #ifndef PACKET_SIZE
-#define PACKET_SIZE 512
+#define PACKET_SIZE 511
 #endif
 
 #define PACKET_TYPE_TYPE uint8_t
@@ -16,6 +16,7 @@ constexpr size_t Packet_Length_Size = sizeof(PACKET_LENGTH_TYPE);
 constexpr size_t Packet_Header_Size = Packet_Length_Size + Packet_Type_Size;
 constexpr size_t Packet_Payload_Size = PACKET_SIZE - Packet_Header_Size;
 
+// TODO change data to be a pointer to a memory location.
 struct link_packet_t
 {
     union
