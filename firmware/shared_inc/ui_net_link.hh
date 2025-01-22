@@ -16,13 +16,12 @@ namespace ui_net_link
         TalkStop,
         PlayStart,
         PlayStop,
-        MoQDisconnected,
-        MoQConnecting,
-        MoQReady,
+        MoQStatus,
         AudioObject,
         AudioMultiObject,
-        WifiConnected,
-        WifiDisconnected,
+        SSIDRequest,
+        WifiConnect,
+        WifiStatus
     };
 
     struct TalkStart
@@ -51,14 +50,14 @@ namespace ui_net_link
         uint8_t data[constants::Audio_Buffer_Sz_2];
     };
 
-    void BuildGetLinkPacket(uint8_t* buff)
+    static void BuildGetLinkPacket(uint8_t* buff)
     {
         buff[0] = (uint8_t)Packet_Type::GetAudioLinkPacket;
         buff[1] = 0;
         buff[2] = 0;
     }
 
-    void Serialize(const TalkStart& talk_start, link_packet_t& packet)
+    static void Serialize(const TalkStart& talk_start, link_packet_t& packet)
     {
         packet.type = (uint8_t)Packet_Type::TalkStart;
         packet.length = 1;
