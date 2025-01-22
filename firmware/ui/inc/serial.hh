@@ -9,7 +9,7 @@ class Serial
 {
 public:
 
-    Serial(UART_HandleTypeDef* uart);
+    Serial(UART_HandleTypeDef* uart, const uint16_t num_rx_packets);
     ~Serial();
 
     void StartReceive();
@@ -33,10 +33,9 @@ protected:
     static constexpr size_t Rx_Buff_Sz = 2048;
 
     UART_HandleTypeDef* uart;
-    volatile bool tx_is_free;
-    bool packet_started;
-    uint8_t rx_buff[Rx_Buff_Sz];
     RingBuffer<link_packet_t> rx_packets;
+    volatile bool tx_is_free;
+    uint8_t rx_buff[Rx_Buff_Sz];
     link_packet_t* rx_packet;
     uint16_t write_idx;
     uint16_t read_idx;

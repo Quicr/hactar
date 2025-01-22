@@ -6,13 +6,15 @@
 
 // TODO unify into ui and net
 
-Serial::Serial(UART_HandleTypeDef* uart):
+Serial::Serial(UART_HandleTypeDef* uart, const uint16_t num_rx_packets):
     uart(uart),
+    rx_packets(num_rx_packets),
     tx_is_free(true),
-    packet_started(false),
     rx_buff{ 0 },
-    rx_packets(7),
-    rx_packet(nullptr)
+    rx_packet(nullptr),
+    write_idx(0),
+    read_idx(0),
+    unread(0)
 {
 
 }
