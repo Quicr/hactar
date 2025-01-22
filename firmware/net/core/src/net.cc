@@ -97,7 +97,7 @@ extern "C" void app_main(void)
     uint64_t group_id{0};
     uint64_t object_id{0};
     uint64_t subgroup_id{0};
-    
+
     quicr::ObjectHeaders obj_headers = {
         group_id,
         object_id,
@@ -126,11 +126,19 @@ extern "C" void app_main(void)
         return;
     }
 
+    pub_track_handler.reset(new moq::TrackWriter(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kDatagram, 2, 100));
+    moq_session.PublishTrack(pub_track_handler);
+    Logger::Log(Logger::Level::Info, "Started publisher");
+
+    sub_track_handler.reset(new moq::AudioTrackReader(moq::MakeFullTrackName("hactar-audio", "test", 2001)));
+    moq_session.SubscribeTrack(sub_track_handler);
+    Logger::Log(Logger::Level::Info, "Started subscriber");
+
     gpio_set_level(NET_STAT, 1);
 
     while (true)
     {
-        defer(vTaskDelay(100 / portTICK_PERIOD_MS));
+        vTaskDelay(100 / portTICK_PERIOD_MS);
 
         // FIXME: Use esp_timer instead.
         if (blink_cnt++ == 100)
@@ -138,6 +146,11 @@ extern "C" void app_main(void)
             gpio_set_level(NET_LED_R, next);
             next = next ? 0 : 1;
             blink_cnt = 0;
+        }
+
+        if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk && pub_track_handler && pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
+        {
+            continue;
         }
 
         while (auto packet = ui_layer->Read())
@@ -150,43 +163,15 @@ extern "C" void app_main(void)
                 break;
             }
             case ui_net_link::Packet_Type::TalkStart:
-                if (pub_track_handler)
-                {
-                    moq_session.UnpublishTrack(pub_track_handler);
-                }
-
-                // TODO: Get the namespace/name/alias from the payload channel id.
-                pub_track_handler.reset(new moq::TrackWriter(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kDatagram, 2, 100));
-                moq_session.PublishTrack(pub_track_handler);
-                Logger::Log(Logger::Level::Info, "Started publisher");
-
-                if (sub_track_handler)
-                {
-                    moq_session.UnsubscribeTrack(sub_track_handler);
-                }
-
-                // TODO: Get the namespace/name/alias from the payload channel id.
-                sub_track_handler.reset(new moq::AudioTrackReader(moq::MakeFullTrackName("hactar-audio", "test", 2001)));
-                moq_session.SubscribeTrack(sub_track_handler);
-                Logger::Log(Logger::Level::Info, "Started subscriber");
-
                 break;
             case ui_net_link::Packet_Type::TalkStop:
-                moq_session.UnpublishTrack(pub_track_handler);
-                moq_session.UnsubscribeTrack(sub_track_handler);
                 break;
             case ui_net_link::Packet_Type::AudioMultiObject:
                 [[fallthrough]];
             case ui_net_link::Packet_Type::AudioObject:
             {
-                if (pub_track_handler && pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
-                {
-                    // TODO: Store and forward.
-                    continue;
-                }
-
                 std::vector<uint8_t> data(packet->payload, packet->payload + packet->length);
-                
+
                 obj_headers.object_id++;
                 obj_headers.payload_length = data.size();
 
@@ -202,11 +187,6 @@ extern "C" void app_main(void)
 
         while (num_audio_requests > 0)
         {
-            if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
-            {
-                break;
-            }
-
             auto data = sub_track_handler->PopFront();
             if (!data.has_value())
             {
