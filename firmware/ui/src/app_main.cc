@@ -10,6 +10,7 @@
 
 #include "link_packet_t.hh"
 #include "ui_net_link.hh"
+#include "logger.hh"
 
 #include <string.h>
 
@@ -101,7 +102,7 @@ link_packet_t play_buffer;
 link_packet_t* play_packet = nullptr;
 uint8_t link_send_space[20] = { 0 }; // change as needed
 
-size_t num_packets = 0;
+size_t num_packets_recv = 0;
 
 volatile bool sleeping = true;
 volatile bool error = false;
@@ -185,14 +186,14 @@ int app_main()
             // TODO channel id
             ui_net_link::TalkStart talk_start = { 0 };
             ui_net_link::Serialize(talk_start, talk_packet);
-            // serial.Write(talk_packet);
+            serial.Write(talk_packet);
             ptt_down = true;
         }
         else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
         {
             ui_net_link::TalkStop talk_stop = { 0 };
             ui_net_link::Serialize(talk_stop, talk_packet);
-            // serial.Write(talk_packet);
+            serial.Write(talk_packet);
             ptt_down = false;
         }
 
@@ -207,23 +208,7 @@ int app_main()
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
-        // If there are bytes available read them
-        // TODO packet handling
-        // play_packet = serial.Read();
-        // if (play_packet)
-        // {
-        //     if (++num_packets % 100 == 0)
-        //     {
-        //         // Logger::Log(Logger::Level::Info, ".");
-        //         num_packets = 0;
-        //     }
-
-
-
-        //     // TODO check type, assume audio for now.
-        //     ui_net_link::Deserialize(*play_packet, play_frame);
-        //     AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
-        // }
+        HandleRecvLinkPackets();
 
         // Use remaining time to draw
         if (est_time_ms > redraw)
@@ -315,6 +300,50 @@ inline void CheckFlags()
         flags = 0;
     }
 }
+
+void HandleRecvLinkPackets()
+{
+    // If there are bytes available read them
+    play_packet = serial.Read();
+    if (play_packet)
+    {
+        if (++num_packets_recv % 100 == 0)
+        {
+            Logger::Log(Logger::Level::Info, ".");
+            num_packets_recv = 0;
+        }
+
+        switch ((ui_net_link::Packet_Type)play_packet->type)
+        {
+            case ui_net_link::Packet_Type::AudioMultiObject:
+            case ui_net_link::Packet_Type::AudioObject:
+            {
+                ui_net_link::Deserialize(*play_packet, play_frame);
+                AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
+                break;
+            };
+            case ui_net_link::Packet_Type::MoQStatus:
+            {
+                break;
+            }
+            case ui_net_link::Packet_Type::WifiConnect:
+            {
+                break;
+            }
+            case ui_net_link::Packet_Type::WifiStatus:
+            {
+                break;
+            }
+            default:
+            {
+                play_packet->is_ready = false;
+                Error_Handler();
+                break;
+            }
+        }
+    }
+}
+
 
 // inline void ProcessText(uint16_t len)
 // {

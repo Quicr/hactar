@@ -55,6 +55,7 @@ inline void LowerFlag(Timer_Flags flag);
 inline void LowPowerMode();
 inline void WakeUp();
 inline void CheckFlags();
+inline void HandleRecvLinkPackets();
 inline void ProcessText(uint16_t len);
 inline void InitScreen();
 inline void WaitForNetReady();
