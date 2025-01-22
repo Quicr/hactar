@@ -22,7 +22,7 @@ namespace moq
         void StatusChanged(Status status) override;
 
         void Pause() { _playing = false;}
-        void Play() { _playing = _buffer.size() >= _min_depth; }
+        void TryPlay() { _playing = !_buffer.empty() && _buffer.size() >= _min_depth; }
 
         bool IsPlaying() const noexcept { return _playing; }
 

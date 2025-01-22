@@ -23,7 +23,7 @@ public:
     template <typename... T>
     static void Log(Level level, const T&... args)
     {
-        auto ss = std::stringstream();
+        auto ss = std::ostringstream();
         (..., (ss << args << ' '));
 
         const auto line = ss.str();
@@ -47,7 +47,7 @@ public:
 
     static std::string to_hex(const uint8_t* data, size_t size)
     {
-        std::stringstream hex(std::ios_base::out);
+        std::ostringstream hex(std::ios_base::out);
         hex.flags(std::ios::hex);
         for (size_t i = 0; i < size; ++i)
         {

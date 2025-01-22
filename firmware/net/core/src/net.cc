@@ -80,6 +80,8 @@ extern "C" void app_main(void)
     if (moq_session.Connect() != quicr::Transport::Status::kConnecting)
     {
         Logger::Log(Logger::Level::Error, "MOQ Transport Session Connection Failure");
+
+        // TODO: Don't exit, retry connection
         exit(-1);
     }
 
@@ -87,7 +89,7 @@ extern "C" void app_main(void)
     uint32_t blink_cnt = 0;
     int next = 0;
 
-    int num_packets_requested = 0;
+    int num_audio_requests = 0;
 
     std::shared_ptr<moq::TrackWriter> pub_track_handler;
     std::shared_ptr<moq::AudioTrackReader> sub_track_handler;
@@ -95,6 +97,18 @@ extern "C" void app_main(void)
     uint64_t group_id{0};
     uint64_t object_id{0};
     uint64_t subgroup_id{0};
+    
+    quicr::ObjectHeaders obj_headers = {
+        group_id,
+        object_id,
+        subgroup_id,
+        0,
+        quicr::ObjectStatus::kAvailable,
+        2 /*priority*/,
+        3000 /* ttl */,
+        std::nullopt,
+        std::nullopt,
+    };
 
     while (moq_session.GetStatus() != moq::Session::Status::kReady)
     {
@@ -112,24 +126,13 @@ extern "C" void app_main(void)
         return;
     }
 
-    if (!pub_track_handler)
-    {
-        pub_track_handler = std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kDatagram, 2, 100);
-        moq_session.PublishTrack(pub_track_handler);
-        Logger::Log(Logger::Level::Info, "Started publisher");
-    }
-
-    if (!sub_track_handler)
-    {
-        sub_track_handler = std::make_shared<moq::AudioTrackReader>(moq::MakeFullTrackName("hactar-audio", "test", 2001), 1);
-        moq_session.SubscribeTrack(sub_track_handler);
-        Logger::Log(Logger::Level::Info, "Started subscriber");
-    }
+    gpio_set_level(NET_STAT, 1);
 
     while (true)
     {
         defer(vTaskDelay(100 / portTICK_PERIOD_MS));
 
+        // FIXME: Use esp_timer instead.
         if (blink_cnt++ == 100)
         {
             gpio_set_level(NET_LED_R, next);
@@ -137,54 +140,55 @@ extern "C" void app_main(void)
             blink_cnt = 0;
         }
 
-        if (pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk || sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
-        {
-            continue;
-        }
-
-        sub_track_handler->Play();
-
         while (auto packet = ui_layer->Read())
         {
             switch ((ui_net_link::Packet_Type)packet->type)
             {
             case ui_net_link::Packet_Type::GetAudioLinkPacket:
             {
-                Logger::Log(Logger::Level::Warn, "Received request for audio");
-                auto data = sub_track_handler->PopFront();
-                if (!data.has_value())
-                {
-                    continue;
-                }
-                Logger::Log(Logger::Level::Warn, "Responding to request for audio");
-
-
-                auto link_packet = ui_layer->Write();
-                link_packet->length = data->size();
-                std::memcpy(link_packet->payload, data->data(), data->size());
-                link_packet->is_ready = true;
+                ++num_audio_requests;
                 break;
             }
             case ui_net_link::Packet_Type::TalkStart:
-                [[fallthrough]];
+                if (pub_track_handler)
+                {
+                    moq_session.UnpublishTrack(pub_track_handler);
+                }
+
+                // TODO: Get the namespace/name/alias from the payload channel id.
+                pub_track_handler.reset(new moq::TrackWriter(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kDatagram, 2, 100));
+                moq_session.PublishTrack(pub_track_handler);
+                Logger::Log(Logger::Level::Info, "Started publisher");
+
+                if (sub_track_handler)
+                {
+                    moq_session.UnsubscribeTrack(sub_track_handler);
+                }
+
+                // TODO: Get the namespace/name/alias from the payload channel id.
+                sub_track_handler.reset(new moq::AudioTrackReader(moq::MakeFullTrackName("hactar-audio", "test", 2001)));
+                moq_session.SubscribeTrack(sub_track_handler);
+                Logger::Log(Logger::Level::Info, "Started subscriber");
+
+                break;
             case ui_net_link::Packet_Type::TalkStop:
+                moq_session.UnpublishTrack(pub_track_handler);
+                moq_session.UnsubscribeTrack(sub_track_handler);
+                break;
+            case ui_net_link::Packet_Type::AudioMultiObject:
                 [[fallthrough]];
             case ui_net_link::Packet_Type::AudioObject:
             {
-                Logger::Log(Logger::Level::Warn, "Received audio, forwarding to relay");
-                
+                if (pub_track_handler && pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
+                {
+                    // TODO: Store and forward.
+                    continue;
+                }
+
                 std::vector<uint8_t> data(packet->payload, packet->payload + packet->length);
-                quicr::ObjectHeaders obj_headers = {
-                    group_id,
-                    object_id++,
-                    subgroup_id,
-                    data.size(),
-                    quicr::ObjectStatus::kAvailable,
-                    2 /*priority*/,
-                    3000 /* ttl */,
-                    std::nullopt,
-                    std::nullopt,
-                };
+                
+                obj_headers.object_id++;
+                obj_headers.payload_length = data.size();
 
                 pub_track_handler->PublishObject(obj_headers, data);
                 break;
@@ -192,6 +196,30 @@ extern "C" void app_main(void)
             default:
                 break;
             }
+        }
+
+        sub_track_handler->TryPlay();
+
+        while (num_audio_requests > 0)
+        {
+            if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
+            {
+                break;
+            }
+
+            auto data = sub_track_handler->PopFront();
+            if (!data.has_value())
+            {
+                break;
+            }
+
+            auto link_packet = ui_layer->Write();
+            link_packet->type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
+            link_packet->length = data->size();
+            std::memcpy(link_packet->payload, data->data(), data->size());
+            link_packet->is_ready = true;
+
+            --num_audio_requests;
         }
 
         sub_track_handler->Pause();
