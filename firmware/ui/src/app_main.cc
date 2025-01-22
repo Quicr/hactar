@@ -82,7 +82,7 @@ extern RNG_HandleTypeDef hrng;
 
 AudioChip audio_chip(hi2s3, hi2c1);
 
-Serial serial(&huart2);
+Serial serial(&huart2, 7);
 
 Screen screen(
     hspi1,
@@ -173,6 +173,8 @@ int app_main()
 
         if (num_awaiting_packets < 2)
         {
+
+            // Logger::Log(Logger::Level::Info, "r");
             // ask for packets?
             ui_net_link::BuildGetLinkPacket(link_send_space);
             serial.Write(link_send_space, 3);
@@ -187,7 +189,7 @@ int app_main()
             ui_net_link::TalkStart talk_start = { 0 };
             ui_net_link::Serialize(talk_start, talk_packet);
             serial.Write(talk_packet);
-            Logger::Log(Logger::Level::Error, "PTT pressed");
+            // Logger::Log(Logger::Level::Error, "PTTD");
             ptt_down = true;
         }
         else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
@@ -195,12 +197,14 @@ int app_main()
             ui_net_link::TalkStop talk_stop = { 0 };
             ui_net_link::Serialize(talk_stop, talk_packet);
             serial.Write(talk_packet);
-            Logger::Log(Logger::Level::Error, "PTT released");
+            // Logger::Log(Logger::Level::Error, "PTTU");
             ptt_down = false;
         }
 
         if (ptt_down)
         {
+            // Logger::Log(Logger::Level::Error, "AS");
+
             ui_net_link::AudioObject talk_frame = { 0, 0 };
 
             AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
@@ -309,7 +313,7 @@ void HandleRecvLinkPackets()
     play_packet = serial.Read();
     if (play_packet)
     {
-        if (++num_packets_recv % 100 == 0)
+        if (++num_packets_recv == 100)
         {
             Logger::Log(Logger::Level::Info, ".");
             num_packets_recv = 0;
@@ -320,6 +324,7 @@ void HandleRecvLinkPackets()
             case ui_net_link::Packet_Type::AudioMultiObject:
             case ui_net_link::Packet_Type::AudioObject:
             {
+                // Logger::Log(Logger::Level::Info, "AR");
                 --num_awaiting_packets;
                 ui_net_link::Deserialize(*play_packet, play_frame);
                 AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
