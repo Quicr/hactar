@@ -112,6 +112,7 @@ uint32_t flags = Expected_Flags;
 uint32_t est_time_ms = 0;
 uint32_t num_loops = 0;
 uint32_t ticks_ms = 0;
+uint32_t num_awaiting_packets = 0;
 
 ui_net_link::AudioObject play_frame;
 
@@ -149,7 +150,6 @@ int app_main()
 
     uint32_t time_start = HAL_GetTick();
 
-    uint32_t num_awaiting_packets = 0;
 
     while (1)
     {
@@ -180,13 +180,14 @@ int app_main()
         }
 
 
-        // Compand our audio
+        // Send talk start and sot packets
         if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
         {
             // TODO channel id
             ui_net_link::TalkStart talk_start = { 0 };
             ui_net_link::Serialize(talk_start, talk_packet);
             serial.Write(talk_packet);
+            Logger::Log(Logger::Level::Error, "PTT pressed");
             ptt_down = true;
         }
         else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
@@ -194,6 +195,7 @@ int app_main()
             ui_net_link::TalkStop talk_stop = { 0 };
             ui_net_link::Serialize(talk_stop, talk_packet);
             serial.Write(talk_packet);
+            Logger::Log(Logger::Level::Error, "PTT released");
             ptt_down = false;
         }
 
@@ -318,6 +320,7 @@ void HandleRecvLinkPackets()
             case ui_net_link::Packet_Type::AudioMultiObject:
             case ui_net_link::Packet_Type::AudioObject:
             {
+                --num_awaiting_packets;
                 ui_net_link::Deserialize(*play_packet, play_frame);
                 AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
                 break;
