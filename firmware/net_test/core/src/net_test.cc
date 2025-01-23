@@ -33,7 +33,10 @@
 
 #define NET_UI_UART_PORT UART_NUM_1
 #define NET_UI_UART_DEV UART1
+#define NET_UI_UART_TX_PIN 17
+#define NET_UI_UART_RX_PIN 18
 #define NET_UI_UART_RX_BUFF_SIZE 1024
+#define NET_UI_UART_TX_BUFF_SIZE 1024
 #define NET_UI_UART_RING_TX_NUM 30
 #define NET_UI_UART_RING_RX_NUM 30
 
@@ -62,8 +65,11 @@ extern "C" void app_main(void)
         .source_clk = UART_SCLK_DEFAULT
     };
 
-    ui_link = new Serial(NET_UI_UART_PORT, NET_UI_UART_DEV, ETS_UART1_INTR_SOURCE, net_ui_uart_config, 
-        NET_UI_UART_RX_BUFF_SIZE, NET_UI_UART_RING_TX_NUM, NET_UI_UART_RING_RX_NUM);
+    ui_link = new Serial(NET_UI_UART_PORT, NET_UI_UART_DEV, ETS_UART1_INTR_SOURCE,
+        net_ui_uart_config,
+        NET_UI_UART_TX_PIN, NET_UI_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
+        NET_UI_UART_RX_BUFF_SIZE, NET_UI_UART_TX_BUFF_SIZE,
+        NET_UI_UART_RING_TX_NUM, NET_UI_UART_RING_RX_NUM);
 
     // TODO move ui layer init to this function
     // ui_link = InitializeQueuedUART(uart1_config, UI_UART2, uart_queue,
@@ -106,7 +112,7 @@ extern "C" void app_main(void)
             // ui_link->num_rx_intr, "num recv", ui_link->num_rx_recv);
 
         ESP_LOGI("main", "net alive, rx intr %ld, rx recv %ld, data[0]=%d, data[1]=%d, data[2]=%d, data[3]=%d",
-            ui_link->num_rx_intr, ui_link->num_rx_recv, (int)ui_link->rx_isr_buff[0], (int)ui_link->rx_isr_buff[1], (int)ui_link->rx_isr_buff[2], (int)ui_link->rx_isr_buff[3]);
+            ui_link->num_rx_intr, ui_link->num_rx_recv, ui_link->rx(0), ui_link->rx(1), ui_link->rx(2), ui_link->rx(3));
 
 
         // manager->Update();
