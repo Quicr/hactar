@@ -49,8 +49,6 @@ void Serial::WriteTask(void* param)
         // Write it to serial
         tx_packet = &self->tx_packets.Read();
 
-        uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
-
         uart_write_bytes(self->uart, tx_packet->data, tx_packet->length + Packet_Header_Size);
 
         tx_packet->is_ready = false;
@@ -95,6 +93,7 @@ link_packet_t* Serial::Write()
     return &tx_packets.Write();
 }
 
+#if 0
 void Serial::ReadTask(void* param)
 {
     Serial* self = (Serial*)param;
@@ -114,7 +113,7 @@ void Serial::ReadTask(void* param)
     while (1)
     {
         // Wait for an event in the queue
-        if (!xQueueReceive(self->queue, (void*)&event, portMAX_DELAY))
+        if (!xQueueReceive(self->queue, (void*)&event, 10 / portTICK_PERIOD_MS))
         {
             continue;
         }
@@ -186,3 +185,50 @@ void Serial::ReadTask(void* param)
         }
     }
 }
+
+#else
+
+
+void Serial::ReadTask(void* param)
+{
+    Serial* self = (Serial*)param;
+    ESP_LOGI("uart rx", "Started!!!");
+
+    uart_event_t event;
+    static constexpr size_t Local_Buff_Size = 2048;
+    uint8_t buff[Local_Buff_Size];
+
+    uint32_t total_recv = 0;
+    uint16_t bytes_read = 0;
+
+    size_t buffered_bytes = 0;
+    int num_bytes = 0;
+
+    while (1)
+    {
+
+        // Wait for an event in the queue
+        uart_get_buffered_data_len(self->uart, &buffered_bytes);
+
+        // If the number of buffered bytes is less than 2 and
+        // we haven't started a packet we want to wait a bit longer.
+        // Otherwise, on every byte we want to read
+        if (buffered_bytes <= 0)
+        {
+            vTaskDelay(10 / portTICK_PERIOD_MS);
+            continue;
+        }
+
+        // ESP_LOGW("uart rx", "buffered bytes %zu", buffered_bytes);
+
+        const uint32_t to_recv = buffered_bytes < Local_Buff_Size ? buffered_bytes : Local_Buff_Size;
+        num_bytes = uart_read_bytes(self->uart, buff, to_recv, portMAX_DELAY);
+        total_recv += num_bytes;
+
+        self->num_recv += BuildPacket(buff, num_bytes, self->rx_packets);
+        // ESP_LOGI("uart tx", "serial packet sent %lu", self->num_recv);
+    }
+}
+
+
+#endif
