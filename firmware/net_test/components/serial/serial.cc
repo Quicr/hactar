@@ -4,17 +4,22 @@
 #include "esp_log.h"
 
 Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_t intr_source,
-    const uart_config_t uart_config, const uint32_t rx_isr_buff_sz,
+    const uart_config_t uart_config, const int tx_pin, const int rx_pin, 
+    const int rts_pin, const int cts_pin,
+    const uint32_t rx_isr_buff_sz, const uint32_t tx_isr_buff_sz,
     const uint32_t tx_rings, const uint32_t rx_rings):
-    rx_isr_buff(new uint8_t[rx_isr_buff_sz]{0}),
     port(port),
     uart(uart),
     rx_isr_buff_sz(rx_isr_buff_sz),
+    rx_isr_buff(new uint8_t[rx_isr_buff_sz]{0}),
+    tx_isr_buff_sz(tx_isr_buff_sz),
+    tx_isr_buff(new uint8_t[tx_isr_buff_sz]{0}),
     tx_packets(tx_rings),
     rx_packets(rx_rings),
     rx_isr_buff_write(0),
-    rx_isr_buff_read(0)
-
+    rx_isr_buff_read(0),
+    tx_isr_buff_write(0),
+    tx_isr_buff_read(0)
 {
     // Start the tasks
     // xTaskCreate(ReadTask, "serial_read_task", rx_task_sz, this, 1, NULL);
@@ -23,7 +28,7 @@ Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_
 
     // TODO add pins
     ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(port, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_set_pin(port, tx_pin, rx_pin, rts_pin, cts_pin));
     ESP_ERROR_CHECK(uart_set_line_inverse(port, UART_SIGNAL_TXD_INV));
 
     ESP_ERROR_CHECK(esp_intr_alloc(intr_source, NULL, ISRHandler, (void*)this, &isr_handle));
