@@ -3,19 +3,45 @@
 
 #include "esp_log.h"
 
-Serial::Serial(const uart_port_t uart, QueueHandle_t& queue,
-    const size_t tx_task_sz, const size_t rx_task_sz,
-    const size_t tx_rings, const size_t rx_rings):
+Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_t intr_source,
+    const uart_config_t uart_config, const uint32_t rx_isr_buff_sz,
+    const uint32_t tx_rings, const uint32_t rx_rings):
+    rx_isr_buff(new uint8_t[rx_isr_buff_sz]{0}),
+    port(port),
     uart(uart),
-    queue(queue),
+    rx_isr_buff_sz(rx_isr_buff_sz),
     tx_packets(tx_rings),
     rx_packets(rx_rings),
-    num_recv(0),
-    num_sent(0)
+    rx_isr_buff_write(0),
+    rx_isr_buff_read(0)
+
 {
     // Start the tasks
-    xTaskCreate(ReadTask, "serial_read_task", rx_task_sz, this, 1, NULL);
-    xTaskCreate(WriteTask, "serial_write_task", tx_task_sz, this, 1, NULL);
+    // xTaskCreate(ReadTask, "serial_read_task", rx_task_sz, this, 1, NULL);
+    // xTaskCreate(WriteTask, "serial_write_task", tx_task_sz, this, 1, NULL);
+
+
+    // TODO add pins
+    ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
+    ESP_ERROR_CHECK(uart_set_pin(port, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_set_line_inverse(port, UART_SIGNAL_TXD_INV));
+
+    ESP_ERROR_CHECK(esp_intr_alloc(intr_source, NULL, ISRHandler, (void*)this, &isr_handle));
+
+    // Enable interrupt for full fifo, and rx timeout.
+    // Enable interrupt for tx transmit complete
+    uart_intr_config_t uintr_cfg = {
+      .intr_enable_mask = (UART_RXFIFO_FULL_INT_ENA_M | UART_RXFIFO_TOUT_INT_CLR | UART_TX_DONE_INT_ENA_M),
+      .rx_timeout_thresh = 1,
+      .txfifo_empty_intr_thresh = 0,
+      .rxfifo_full_thresh = 68,
+    };
+    ESP_ERROR_CHECK(uart_intr_config(port, &uintr_cfg));
+}
+
+Serial::~Serial()
+{
+    delete [] rx_isr_buff;
 }
 
 link_packet_t* Serial::Read()
@@ -30,158 +56,68 @@ link_packet_t* Serial::Read()
     return packet;
 }
 
-#if 0
-void Serial::WriteTask(void* param)
-{
-    Serial* self = (Serial*)param;
-    link_packet_t* tx_packet = nullptr;
-
-    while (1)
-    {
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-
-        if (!self->tx_packets.Peek().is_ready)
-        {
-            continue;
-        }
-
-        // Write it to serial
-        tx_packet = &self->tx_packets.Read();
-
-        uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
-
-        uart_write_bytes(self->uart, tx_packet->data, tx_packet->length + Packet_Header_Size);
-
-        tx_packet->is_ready = false;
-        ++self->num_sent;
-        // ESP_LOGI("uart tx", "serial packet sent %lu", self->num_sent);
-
-    }
-}
-#else
-
-// Loopback version
-void Serial::WriteTask(void* param)
-{
-    Serial* self = (Serial*)param;
-    link_packet_t* tx_packet = nullptr;
-
-    while (1)
-    {
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-
-        if (!self->rx_packets.Peek().is_ready)
-        {
-            continue;
-        }
-
-        // Write it to serial
-        tx_packet = &self->rx_packets.Read();
-
-        uart_wait_tx_done(self->uart, 5 / portTICK_PERIOD_MS);
-
-        uart_write_bytes(self->uart, tx_packet->data, tx_packet->length + Packet_Header_Size);
-
-        tx_packet->is_ready = false;
-        ++self->num_sent;
-        ESP_LOGI("uart tx", "serial packet sent %lu", self->num_sent);
-    }
-}
-#endif
 
 link_packet_t* Serial::Write()
 {
     return &tx_packets.Write();
 }
 
+#if 0
+void Serial::WriteTask(void* param)
+{
+
+}
+#else
+
+// Loopback version
+void Serial::WriteTask(void* param)
+{
+
+}
+#endif
 void Serial::ReadTask(void* param)
 {
-    Serial* self = (Serial*)param;
-    ESP_LOGI("uart rx", "Started!!!");
 
-    uart_event_t event;
-    static constexpr size_t Local_Buff_Size = 2048;
-    uint8_t buff[Local_Buff_Size];
-    link_packet_t* packet = nullptr;
+}
 
-    uint32_t total_recv = 0;
-    uint16_t bytes_read = 0;
 
-    size_t buffered_bytes = 1;
-    int num_bytes = 0;
+void IRAM_ATTR Serial::ISRHandler(void* args)
+{
+    Serial* self = (Serial*)args;
 
-    while (1)
+    // Parity error intr
+    if (self->uart.int_st.parity_err_int_st)
     {
-        // Wait for an event in the queue
-        if (!xQueueReceive(self->queue, (void*)&event, portMAX_DELAY))
+        uart_clear_intr_status(self->port, UART_PARITY_ERR_INT_CLR);
+        abort();
+    }
+    else if (self->uart.int_st.tx_done_int_st)
+    {
+        // Transmit done intr
+        // TODO check tx buffer and send data
+        // TODO use half threshold as a double buffer interrupt
+        // uart_ll_write_txfifo();
+        uart_clear_intr_status(self->port, UART_TX_DONE_INT_CLR);
+    }
+    else if (self->uart.status.rxfifo_cnt)
+    {
+        ++self->num_rx_intr;
+        // Loop until we've emptied the buff if a small buffer has been
+        // designated then this will cover overflowing.
+        while (self->uart.status.rxfifo_cnt)
         {
-            continue;
+            while (self->uart.status.rxfifo_cnt && self->rx_isr_buff_write < self->rx_isr_buff_sz)
+            {
+                self->num_rx_recv++;
+                self->rx_isr_buff[self->rx_isr_buff_write++] = self->uart.fifo.rxfifo_rd_byte;
+            }
+
+            if (self->rx_isr_buff_write >= self->rx_isr_buff_sz)
+            {
+                self->rx_isr_buff_write = 0;
+            }
         }
-        switch (event.type)
-        {
-            case UART_DATA:
-            {
-                uart_get_buffered_data_len(self->uart, &buffered_bytes);
-
-                // If the number of buffered bytes is less than 2 and
-                // we haven't started a packet we want to wait a bit longer.
-                // Otherwise, on every byte we want to read
-                if (buffered_bytes <= 0)
-                {
-                    continue;
-                }
-
-                // ESP_LOGW("uart rx", "buffered bytes %zu", buffered_bytes);
-
-                const uint32_t to_recv = buffered_bytes < Local_Buff_Size ? buffered_bytes : Local_Buff_Size;
-                num_bytes = uart_read_bytes(self->uart, buff, to_recv, portMAX_DELAY);
-                total_recv += num_bytes;
-
-                self->num_recv += BuildPacket(buff, num_bytes, self->rx_packets);
-                // ESP_LOGI("uart tx", "serial packet sent %lu", self->num_recv);
-                break;
-            }
-            case UART_FIFO_OVF: // FIFO overflow
-            {
-
-                printf("UART FIFO Overflow!\n");
-                uart_flush_input(self->uart); // Flush the input to recover
-                xQueueReset(self->queue);   // Reset the event queue
-                break;
-            }
-            case UART_BUFFER_FULL: // RX buffer full
-            {
-
-                printf("UART Buffer Full!\n");
-                uart_flush_input(self->uart); // Flush the input to recover
-                xQueueReset(self->queue);   // Reset the event queue
-                break;
-            }
-            case UART_PARITY_ERR: // Parity error
-            {
-
-                printf("UART Parity Error!\n");
-                uart_flush_input(self->uart); // Flush the input to recover
-                xQueueReset(self->queue);   // Reset the event queue
-                break;
-            }
-            case UART_FRAME_ERR: // Frame error
-            {
-
-                printf("UART Frame Error!\n");
-                uart_flush_input(self->uart); // Flush the input to recover
-                xQueueReset(self->queue);   // Reset the event queue
-                break;
-            }
-            default:
-            {
-
-                printf("Unhandled UART event type: %d\n", event.type);
-                uart_flush_input(self->uart); // Flush the input to recover
-                xQueueReset(self->queue);   // Reset the event queue
-                break;
-            }
-
-        }
+        uart_clear_intr_status(self->port, UART_RXFIFO_FULL_INT_CLR);
+        uart_clear_intr_status(self->port, UART_RXFIFO_TOUT_INT_CLR);
     }
 }
