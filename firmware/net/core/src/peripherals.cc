@@ -36,12 +36,18 @@ std::unique_ptr<Serial> InitializeQueuedUART(const uart_config_t& uart_config,
     const int rx_pin,
     const int rts_pin,
     const int cts_pin,
-    const long int intr_priority
+    const long int intr_priority,
+    const uint16_t serial_tx_task_sz,
+    const uint16_t serial_rx_task_sz,
+    const uint16_t serial_ring_tx_num,
+    const uint16_t serial_ring_rx_num
 )
 {
 
     esp_err_t res;
-    res = uart_driver_install(uart_port, rx_buff_size, tx_buff_size, event_queue_size, &uart_queue, intr_priority);
+    // res = uart_driver_install(uart_port, rx_buff_size, tx_buff_size, event_queue_size, &uart_queue, intr_priority);
+    // ESP_LOGI("Initialize UART", "install res=%d\n", res);
+    res = uart_driver_install(uart_port, rx_buff_size, tx_buff_size, 0, NULL, intr_priority);
     ESP_LOGI("Initialize UART", "install res=%d\n", res);
 
     res = uart_set_pin(uart_port, tx_pin, rx_pin, rts_pin, cts_pin);
@@ -50,7 +56,9 @@ std::unique_ptr<Serial> InitializeQueuedUART(const uart_config_t& uart_config,
     res = uart_param_config(uart_port, &uart_config);
     ESP_LOGI("Initialize UART", "install res=%d\n", res);
 
-    return std::make_unique<Serial>(uart_port, uart_queue, 4096*2, 4096*2, 3, 3);
+    return std::make_unique<Serial>(uart_port, uart_queue,
+        serial_tx_task_sz, serial_rx_task_sz,
+        serial_ring_tx_num, serial_ring_rx_num);
 }
 
 void IntitializeLEDs()

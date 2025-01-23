@@ -32,7 +32,11 @@
 #define TX_BUFF_SIZE 1024
 #define TX_BUFF_SIZE_2 TX_BUFF_SIZE / 2
 #define RX_BUFF_SIZE 1024
-#define EVENT_QUEUE_SIZE 20
+#define EVENT_QUEUE_SIZE 40
+#define SERIAL_TX_TASK_SZ 4096
+#define SERIAL_RX_TASK_SZ 4096
+#define SERIAL_RING_TX_NUM 30
+#define SERIAL_RING_RX_NUM 30
 
 void InitializeGPIO();
 void IntitializeLEDs();
@@ -47,7 +51,11 @@ std::unique_ptr<Serial> InitializeQueuedUART(const uart_config_t& uart_config,
     const int rx_pin,
     const int rts_pin,
     const int cts_pin,
-    const long int intr_priority
+    const long int intr_priority,
+    const uint16_t serial_tx_task_sz,
+    const uint16_t serial_rx_task_sz,
+    const uint16_t serial_ring_tx_num,
+    const uint16_t serial_ring_rx_num
 );
 
 #endif
