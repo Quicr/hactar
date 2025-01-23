@@ -45,9 +45,11 @@ extern "C" void app_main(void)
     };
     QueueHandle_t uart_queue;
     ui_layer = InitializeQueuedUART(uart1_config, UART1, uart_queue,
-                                    RX_BUFF_SIZE, TX_BUFF_SIZE,
+                                    RX_BUFF_SIZE*4, TX_BUFF_SIZE,
                                     EVENT_QUEUE_SIZE, TX_PIN, RX_PIN,
-                                    RTS_PIN, CTS_PIN, ESP_INTR_FLAG_LOWMED);
+                                    RTS_PIN, CTS_PIN, ESP_INTR_FLAG_LOWMED,
+                                    SERIAL_TX_TASK_SZ, SERIAL_RX_TASK_SZ,
+                                    SERIAL_RING_TX_NUM, SERIAL_RING_RX_NUM);
 
     // wifi
     Wifi wifi;
@@ -67,7 +69,7 @@ extern "C" void app_main(void)
     // setup moq transport
     quicr::ClientConfig config;
     config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = "moq://192.168.10.236:1234";
+    config.connect_uri = "moq://192.168.50.20:1234";
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;
@@ -90,6 +92,7 @@ extern "C" void app_main(void)
     int next = 0;
 
     int num_audio_requests = 0;
+    int num_sent_link_audio = 0;
 
     std::shared_ptr<moq::TrackWriter> pub_track_handler;
     std::shared_ptr<moq::AudioTrackReader> sub_track_handler;
@@ -138,7 +141,7 @@ extern "C" void app_main(void)
 
     while (true)
     {
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
 
         // FIXME: Use esp_timer instead.
         if (blink_cnt++ == 100)
@@ -159,6 +162,7 @@ extern "C" void app_main(void)
             {
             case ui_net_link::Packet_Type::GetAudioLinkPacket:
             {
+                // Logger::Log(Logger::Level::Info, "recvreq");
                 ++num_audio_requests;
                 break;
             }
@@ -170,6 +174,11 @@ extern "C" void app_main(void)
                 [[fallthrough]];
             case ui_net_link::Packet_Type::AudioObject:
             {
+                if (++num_sent_link_audio == 10)
+                {
+                    Logger::Log(Logger::Level::Info, "-");
+                    num_sent_link_audio = 0;
+                }
                 std::vector<uint8_t> data(packet->payload, packet->payload + packet->length);
 
                 obj_headers.object_id++;
