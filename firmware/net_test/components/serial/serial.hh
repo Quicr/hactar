@@ -26,6 +26,8 @@ public:
     link_packet_t* Read();
     link_packet_t* Write();
 
+    void TestWrite();
+
     int rx(int idx)
     {
         return rx_isr_buff[idx];
@@ -36,7 +38,8 @@ public:
 private:
     static void WriteTask(void* param);
     static void ReadTask(void* param);
-    static void ISRHandler(void* args);
+    static bool IRAM_ATTR Transmit(Serial* self);
+    static void IRAM_ATTR ISRHandler(void* args);
 
     uart_port_t port;
     uart_dev_t& uart;
@@ -52,4 +55,8 @@ private:
     uint32_t rx_isr_buff_read;
     uint32_t tx_isr_buff_write;
     uint32_t tx_isr_buff_read;
+    uint32_t tx_unwritten;
+
+    bool tx_free;
+    int32_t num_to_write;
 };
