@@ -105,8 +105,10 @@ extern "C" void app_main(void)
     // This is the lazy way of doing it, otherwise we should use a esp_timer.
     uint32_t blink_cnt = 0;
     uint32_t last_check = 0;
+
     while (1)
     {
+        ui_link->TestWrite();
         // Logger::Log(Logger::Level::Info, "Net Alive");
         // Logger::Log(Logger::Level::Info, "rx intr", 
             // ui_link->num_rx_intr, "num recv", ui_link->num_rx_recv);
@@ -125,7 +127,7 @@ extern "C" void app_main(void)
         //     qsession_connected = true;
         // }
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 }
 
