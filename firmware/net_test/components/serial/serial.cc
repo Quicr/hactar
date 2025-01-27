@@ -7,23 +7,24 @@
 Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_t intr_source,
     const uart_config_t uart_config, const int tx_pin, const int rx_pin,
     const int rts_pin, const int cts_pin,
-    const uint32_t rx_isr_buff_sz, const uint32_t tx_isr_buff_sz,
+    const uint32_t rx_buff_sz, const uint32_t tx_buff_sz,
     const uint32_t tx_rings, const uint32_t rx_rings):
     port(port),
     uart(uart),
-    rx_isr_buff_sz(rx_isr_buff_sz),
-    rx_isr_buff(new uint8_t[rx_isr_buff_sz]{ 0 }),
-    tx_isr_buff_sz(tx_isr_buff_sz),
-    tx_isr_buff(new uint8_t[tx_isr_buff_sz]{ 0 }),
+    rx_buff_sz(rx_buff_sz),
+    rx_buff(new uint8_t[rx_buff_sz]{ 0 }),
+    tx_buff_sz(tx_buff_sz),
+    tx_buff(new uint8_t[tx_buff_sz]{ 0 }),
     tx_packets(tx_rings),
     rx_packets(rx_rings),
-    rx_isr_buff_write(0),
-    rx_isr_buff_read(0),
-    tx_isr_buff_write(0),
-    tx_isr_buff_read(0),
-    tx_unwritten(0),
-    tx_free(true),
-    num_to_write(0)
+    rx_buff_write(0),
+    rx_buff_read(0),
+    unread(0),
+    tx_buff_write(0),
+    tx_buff_read(0),
+    untransmitted(0),
+    num_transmitting(0),
+    tx_free(true)
 {
     // Start the tasks
     // xTaskCreate(ReadTask, "serial_read_task", rx_task_sz, this, 1, NULL);
@@ -41,7 +42,6 @@ Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_
     uart_intr_config_t uintr_cfg = {
       .intr_enable_mask = (UART_RXFIFO_FULL_INT_ENA_M | UART_RXFIFO_TOUT_INT_CLR | UART_TX_DONE_INT_ENA_M),
       .rx_timeout_thresh = 1,
-      .txfifo_empty_intr_thresh = 0,
       .rxfifo_full_thresh = 68,
     };
     ESP_ERROR_CHECK(uart_intr_config(port, &uintr_cfg));
@@ -49,12 +49,33 @@ Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_
 
 Serial::~Serial()
 {
-    delete [] rx_isr_buff;
-    delete [] tx_isr_buff;
+    delete [] rx_buff;
+    delete [] tx_buff;
 }
 
 link_packet_t* Serial::Read()
 {
+    while (unread > 0)
+    {
+        uint16_t bytes_to_read = unread;
+
+        if (rx_buff_read + bytes_to_read > rx_buff_sz)
+        {
+            bytes_to_read = rx_buff_sz - rx_buff_read;
+        }
+
+        // Builds packet and sets is_ready to true when a packet is done.
+        BuildPacket(rx_buff + rx_buff_read, bytes_to_read, rx_packets);
+        unread -= bytes_to_read;
+        rx_buff_read += bytes_to_read;
+
+        if (rx_buff_read >= rx_buff_sz)
+        {
+            rx_buff_read = 0;
+        }
+
+    }
+
     if (!rx_packets.Peek().is_ready)
     {
         return nullptr;
@@ -65,82 +86,75 @@ link_packet_t* Serial::Read()
     return packet;
 }
 
-
-link_packet_t* Serial::Write()
+void Serial::Write(const link_packet_t* packet)
 {
-    return &tx_packets.Write();
-}
+    uint16_t total_bytes = packet->length + Packet_Header_Size;
+    // Logger::Log(Logger::Level::Info, "packet len", packet->length);
+    size_t data_offset = 0;
 
-void Serial::TestWrite()
-{
-    // Write
+    // Update the number of bytes to write by how many total will be 
+    // sent by this packet.
+    untransmitted += total_bytes;
 
-
-
-
-
-    for (int i = 0 ; i < tx_isr_buff_sz; ++i)
+    if (tx_buff_write + total_bytes > tx_buff_sz)
     {
-        tx_isr_buff[tx_isr_buff_write] = (uint8_t)(rand() % 255);
-        tx_isr_buff_write++;
-        tx_unwritten++;
-        if (tx_isr_buff_write >= tx_isr_buff_sz)
-        {
-            tx_isr_buff_write = 0;
-        }
+        const uint16_t diff = tx_buff_sz - tx_buff_write;
+        memcpy(tx_buff + tx_buff_write, packet->data, diff);
+
+        // Reset the buff write head since we are at the end.
+        tx_buff_write = 0;
+
+        // Minus off the amount of bytes copied
+        total_bytes -= diff;
+
+        // Set the offset for the packet data
+        data_offset = diff;
     }
-    Transmit(this);
+
+    // Copy the data into the tx_buff
+    memcpy(tx_buff + tx_buff_write, packet->data + data_offset, total_bytes);
+
+    tx_buff_write += total_bytes;
+
+    BeginTransmit();
 }
 
-#if 0
-void Serial::WriteTask(void* param)
+void Serial::BeginTransmit()
 {
+    if (!tx_free)
+    {
+        return;
+    }
 
-}
-#else
-
-// Loopback version
-void Serial::WriteTask(void* param)
-{
-
-}
-#endif
-void Serial::ReadTask(void* param)
-{
-
+    Serial::Transmit(this);
 }
 
 // NOTE TO YE TO WHOM MAY COME TO CHANGE THIS FUNCTION, DO NOT PUT 
 // LOGGING INTO THIS FUNCTION, IT WILL CAUSE AN AUTOMATIC CRASH AND NOT 
 // TELL YOU WHY
-bool Serial::Transmit(Serial* self)
+void Serial::Transmit(Serial* self)
 {
-    if (!self->tx_free)
+    // Get the number of bytes that are in the read buff
+    self->num_transmitting = self->untransmitted;
+
+    if (self->num_transmitting == 0)
     {
-        return false;
+        self->tx_free = true;
+        return;
     }
     self->tx_free = false;
 
-    // Get the number of bytes that are in the read buff
-    self->num_to_write = self->tx_unwritten;
-
-    if (self->num_to_write == 0)
+    if (self->num_transmitting > self->tx_buff_sz - self->tx_buff_read)
     {
-        return false;
-    }
-
-    if (self->num_to_write > self->tx_isr_buff_sz - self->tx_isr_buff_read) 
-    {
-        self->num_to_write = self->tx_isr_buff_sz - self->tx_isr_buff_read;
+        self->num_transmitting = self->tx_buff_sz - self->tx_buff_read;
     }
 
     // Greater than our fifo has room for clamp it.
-    if (self->num_to_write > (128 - self->uart.status.txfifo_cnt))
+    if (self->num_transmitting > (128 - self->uart.status.txfifo_cnt))
     {
-        self->num_to_write = 128 - self->uart.status.txfifo_cnt;
+        self->num_transmitting = 128 - self->uart.status.txfifo_cnt;
     }
-    uart_ll_write_txfifo(&self->uart, self->tx_isr_buff + self->tx_isr_buff_read, self->num_to_write);
-    return true;
+    uart_ll_write_txfifo(&self->uart, self->tx_buff + self->tx_buff_read, self->num_transmitting);
 }
 
 // NOTE TO YE TO WHOM MAY COME TO CHANGE THIS FUNCTION, DO NOT PUT 
@@ -158,40 +172,47 @@ void Serial::ISRHandler(void* args)
     }
     else if (self->uart.int_st.tx_done_int_st)
     {
-        // Transmit done intr
         uart_clear_intr_status(self->port, UART_TX_DONE_INT_CLR);
 
-        self->tx_isr_buff_read += self->num_to_write;
-        self->tx_unwritten -= self->num_to_write;
+        // Advance the read head
+        self->tx_buff_read += self->num_transmitting;
+        self->untransmitted -= self->num_transmitting;
 
-        if (self->tx_isr_buff_read >= self->tx_isr_buff_sz)
+        if (self->tx_buff_read >= self->tx_buff_sz)
         {
-            self->tx_isr_buff_read = 0;
+            self->tx_buff_read = self->tx_buff_read - self->tx_buff_sz;
         }
-        self->tx_free = true;
 
-        // Try to transmit more we have more to transmit
         Serial::Transmit(self);
     }
     else if (self->uart.status.rxfifo_cnt)
     {
-        ++self->num_rx_intr;
         // Loop until we've emptied the buff if a small buffer has been
         // designated then this will cover overflowing.
         while (self->uart.status.rxfifo_cnt)
         {
-            while (self->uart.status.rxfifo_cnt && self->rx_isr_buff_write < self->rx_isr_buff_sz)
+            // Note- Reading from uart.fifo.rxfifo_rd_byte automatically
+            // decrements uart.status.rxfifo_cnt
+            uint32_t bytes_to_read = self->uart.status.rxfifo_cnt;
+            if (bytes_to_read + self->rx_buff_write > self->rx_buff_sz)
             {
-                self->num_rx_recv++;
-                self->rx_isr_buff[self->rx_isr_buff_write++] = self->uart.fifo.rxfifo_rd_byte;
+                bytes_to_read = self->rx_buff_sz - self->rx_buff_write;
+            }
+            self->unread += bytes_to_read;
+            
+            while (bytes_to_read)
+            {
+                self->rx_buff[self->rx_buff_write++] = self->uart.fifo.rxfifo_rd_byte;
+                --bytes_to_read;
             }
 
-            if (self->rx_isr_buff_write >= self->rx_isr_buff_sz)
+            if (self->rx_buff_write >= self->rx_buff_sz)
             {
-                self->rx_isr_buff_write = 0;
+                self->rx_buff_write = 0;
             }
         }
         uart_clear_intr_status(self->port, UART_RXFIFO_FULL_INT_CLR);
         uart_clear_intr_status(self->port, UART_RXFIFO_TOUT_INT_CLR);
     }
 }
+
