@@ -34,14 +34,14 @@ Wifi::Wifi():
 
 Wifi::~Wifi()
 {
-    Logger::Log(Logger::Level::Info, "Delete wifi");
+    NET_LOG_INFO("Delete wifi");
     vTaskDelete(connect_task);
 }
 
 void Wifi::Connect(const char* ssid, const char* password)
 {
-    Logger::Log(Logger::Level::Error, "ssid len", std::min(strlen(ssid), (size_t)sizeof(wifi_cfg.sta.ssid)));
-    Logger::Log(Logger::Level::Error, "ssid pwd len", std::min(strlen(password), (size_t)sizeof(wifi_cfg.sta.password)));
+    NET_LOG_ERROR("ssid len", std::min(strlen(ssid), (size_t)sizeof(wifi_cfg.sta.ssid)));
+    NET_LOG_ERROR("ssid pwd len", std::min(strlen(password), (size_t)sizeof(wifi_cfg.sta.password)));
     Connect(ssid,
         std::min(strlen(ssid), (size_t)sizeof(wifi_cfg.sta.ssid)),
         password,
@@ -66,7 +66,7 @@ void Wifi::Connect(const char* ssid,
         password,
         password_len);
 
-    Logger::Log(Logger::Level::Error, "ssid:", wifi_cfg.sta.ssid, ", password:", wifi_cfg.sta.password);
+    NET_LOG_ERROR("ssid: %s password: %s", ssid, password);
 
     while (!xSemaphoreTake(connect_semaphore, 1000))
     {
@@ -78,7 +78,7 @@ void Wifi::Connect(const char* ssid,
     state = State::ReadyToConnect;
 
     xSemaphoreGive(connect_semaphore);
-    Logger::Log(Logger::Level::Info, "SetCredentialsTask() Ready to connect state: ", (int)state);
+    NET_LOG_INFO("SetCredentialsTask() Ready to connect state: %i", (int)state);
 }
 
 esp_err_t Wifi::Deinitialize()
@@ -140,14 +140,14 @@ esp_err_t Wifi::Initialize()
 
     while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY))
     {
-        Logger::Log(Logger::Level::Error, "Semaphore should not be in use now????");
+        NET_LOG_ERROR("Semaphore should not be in use now????");
     };
 
-    Logger::Log(Logger::Level::Info, "Begin initialization:");
+    NET_LOG_INFO("Begin initialization:");
 
     if (state != State::NotInitialized)
     {
-        Logger::Log(Logger::Level::Error, "Failed to initialized, not in state NotInitialized but in state: %d", (int)state);
+        NET_LOG_ERROR("Failed to initialized, not in state NotInitialized but in state: %d", (int)state);
         return ESP_ERR_INVALID_STATE;
     }
 
@@ -155,7 +155,7 @@ esp_err_t Wifi::Initialize()
     ESP_ERROR_CHECK(status);
 
     // Init the nvs
-    Logger::Log(Logger::Level::Info, "Init the nvs");
+    NET_LOG_INFO("Init the nvs");
     status = nvs_flash_init();
     if (status == ESP_ERR_NVS_NO_FREE_PAGES || status == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
@@ -164,7 +164,7 @@ esp_err_t Wifi::Initialize()
         ESP_ERROR_CHECK(status);
     }
 
-    Logger::Log(Logger::Level::Info, "Init netif");
+    NET_LOG_INFO("Init netif");
     status = esp_netif_init();
     ESP_ERROR_CHECK(status);
 
@@ -178,7 +178,7 @@ esp_err_t Wifi::Initialize()
 
     status = esp_wifi_init(&wifi_init_cfg);
     ESP_ERROR_CHECK(status);
-    Logger::Log(Logger::Level::Info, "Init complete, status %d", (int)state);
+    NET_LOG_INFO("Init complete, status %d", (int)state);
 
     status = esp_event_handler_instance_register(WIFI_EVENT,
         ESP_EVENT_ANY_ID,
@@ -204,7 +204,7 @@ esp_err_t Wifi::Initialize()
     // status = esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg);
     // ESP_ERROR_CHECK(status);
 
-    Logger::Log(Logger::Level::Info, "Start wifi");
+    NET_LOG_INFO("Start wifi");
     status = esp_wifi_start();
     ESP_ERROR_CHECK(status);
 
@@ -250,13 +250,13 @@ void Wifi::ConnectTask(void* params)
         }
         // Give semaphore in IP/HTTP events
 
-        Logger::Log(Logger::Level::Info, "connect() state ", (int)instance->state);
+        NET_LOG_INFO("connect() state ", (int)instance->state);
 
         esp_err_t status = { ESP_OK };
         ESP_ERROR_CHECK(esp_wifi_connect());
         if (status == ESP_OK)
         {
-            Logger::Log(Logger::Level::Info, "moving to connecting state");
+            NET_LOG_INFO("moving to connecting state");
             instance->state = State::Connecting;
         }
     }
@@ -280,7 +280,7 @@ void Wifi::EventHandler(void* arg, esp_event_base_t event_base,
 inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
 {
     const wifi_event_t event_type{ static_cast<wifi_event_t>(event_id) };
-    Logger::Log(Logger::Level::Info, "Wifi Event -- event", (int)event_id);
+    NET_LOG_INFO("Wifi Event -- event", (int)event_id);
 
     switch (event_type)
     {
@@ -288,7 +288,7 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
         {
             state = State::Initialized;
             is_initialized = true;
-            Logger::Log(Logger::Level::Info, "Wifi Event - Initialized");
+            NET_LOG_INFO("Wifi Event - Initialized");
             xSemaphoreGive(connect_semaphore);
             break;
         }
@@ -296,13 +296,13 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
         {
             state = State::WaitingForIP;
             // SendWifiConnectedPacket();
-            Logger::Log(Logger::Level::Info, "Wifi Event - Waiting for IP");
+            NET_LOG_INFO("Wifi Event - Waiting for IP");
             xSemaphoreGive(connect_semaphore);
             break;
         }
         case WIFI_EVENT_STA_DISCONNECTED:
         {
-            Logger::Log(Logger::Level::Info, "Wifi Event - Disconnected");
+            NET_LOG_INFO("Wifi Event - Disconnected");
             // Every time the wifi fails to connect to a network
             // a disconnected event is called
             if (state == State::Connecting)
@@ -313,7 +313,7 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
                     state = State::InvalidCredentials;
                     failed_attempts = 0;
                     // SendWifiFailedToConnectPacket();
-                    Logger::Log(Logger::Level::Error, "Max failed attempts, invalid credentials");
+                    NET_LOG_ERROR("Max failed attempts, invalid credentials");
                 }
                 else
                 {
@@ -346,13 +346,13 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
 
 inline void Wifi::IpEvents(int32_t event_id)
 {
-    Logger::Log(Logger::Level::Info, "IP Event - %d", (int)event_id);
+    NET_LOG_INFO("IP Event - %d", (int)event_id);
 
     switch (event_id)
     {
         case IP_EVENT_STA_GOT_IP:
         {
-            Logger::Log(Logger::Level::Info, "IP Event - Got IP");
+            NET_LOG_INFO("IP Event - Got IP");
             failed_attempts = 0;
             state = State::Connected;
             xSemaphoreGive(connect_semaphore);
@@ -364,7 +364,7 @@ inline void Wifi::IpEvents(int32_t event_id)
             {
                 state = State::WaitingForIP;
             }
-            Logger::Log(Logger::Level::Info, "IP Event - Lost IP");
+            NET_LOG_INFO("IP Event - Lost IP");
             xSemaphoreGive(connect_semaphore);
             break;
         }

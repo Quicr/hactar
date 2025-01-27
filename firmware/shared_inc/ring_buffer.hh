@@ -3,8 +3,6 @@
 #include <stdint.h>
 #include <utility>
 
-#include <iostream>
-
 #define DEFAULT_BUFFER_SIZE 32
 
 template <typename T>
@@ -23,8 +21,6 @@ public:
         {
             this->size = 1;
         }
-
-        std::cout << size << std::endl;
 
         buffer = new T[this->size]{};
     }
@@ -50,7 +46,7 @@ public:
         return buffer[write_idx++];
     }
 
-    void Write(T d_in) noexcept 
+    void Write(T d_in) noexcept
     {
         buffer[write_idx++] = std::move(d_in);
 
@@ -90,7 +86,7 @@ public:
         {
             unread--;
         }
-        
+
         T d_out = std::move(buffer[read_idx++]);
 
         if (read_idx >= size)
@@ -119,11 +115,11 @@ public:
 
     void Read(T& d_out, bool& is_end)
     {
-        if (unread > 0) 
+        if (unread > 0)
         {
             unread--;
         }
-        
+
         d_out = buffer[read_idx++];
 
         if (read_idx >= size)

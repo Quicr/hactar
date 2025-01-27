@@ -16,7 +16,7 @@ void Session::StatusChanged(Status status)
             Logger::Log(Logger::Level::Info, "MOQ Connection connected and now pending server setup");
             break;
         default:
-            Logger::Log(Logger::Level::Error, "MOQ Connection failed: ", static_cast<int>(status));
+            Logger::Log(Logger::Level::Error, "MOQ Connection failed: %i", static_cast<int>(status));
             break;
     }
 }
