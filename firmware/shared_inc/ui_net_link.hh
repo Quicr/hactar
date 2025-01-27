@@ -50,14 +50,14 @@ namespace ui_net_link
         uint8_t data[constants::Audio_Buffer_Sz_2];
     };
 
-    static void BuildGetLinkPacket(uint8_t* buff)
+    [[maybe_unused]] static void BuildGetLinkPacket(uint8_t* buff)
     {
         buff[0] = (uint8_t)Packet_Type::GetAudioLinkPacket;
         buff[1] = 0;
         buff[2] = 0;
     }
 
-    static void Serialize(const TalkStart& talk_start, link_packet_t& packet)
+    [[maybe_unused]] static void Serialize(const TalkStart& talk_start, link_packet_t& packet)
     {
         packet.type = (uint8_t)Packet_Type::TalkStart;
         packet.length = 1;
@@ -68,7 +68,7 @@ namespace ui_net_link
         packet.is_ready = true;
     }
 
-    static void Serialize(const TalkStop& talk_stop, link_packet_t& packet)
+    [[maybe_unused]] static void Serialize(const TalkStop& talk_stop, link_packet_t& packet)
     {
         packet.type = (uint8_t)Packet_Type::TalkStop;
         packet.length = 1;
@@ -79,7 +79,7 @@ namespace ui_net_link
         packet.is_ready = true;
     }
 
-    static void Serialize(const PlayStart& play_start, link_packet_t& packet)
+    [[maybe_unused]] static void Serialize(const PlayStart& play_start, link_packet_t& packet)
     {
         packet.type = (uint8_t)Packet_Type::PlayStart;
         packet.length = 1;
@@ -90,7 +90,7 @@ namespace ui_net_link
         packet.is_ready = true;
     }
 
-    static void Serialize(const PlayStop& play_stop, link_packet_t& packet)
+    [[maybe_unused]] static void Serialize(const PlayStop& play_stop, link_packet_t& packet)
     {
         packet.type = (uint8_t)Packet_Type::PlayStop;
         packet.length = 1;
@@ -101,7 +101,7 @@ namespace ui_net_link
         packet.is_ready = true;
     }
 
-    static void Serialize(const AudioObject& talk_frame, link_packet_t& packet)
+    [[maybe_unused]] static void Serialize(const AudioObject& talk_frame, link_packet_t& packet)
     {
         const uint16_t num_extra_bytes = 1;
         packet.type = (uint8_t)Packet_Type::AudioObject;
@@ -114,27 +114,27 @@ namespace ui_net_link
         packet.is_ready = true;
     }
 
-    static void Deserialize(const link_packet_t& packet, TalkStart& talk_start)
+    [[maybe_unused]] static void Deserialize(const link_packet_t& packet, TalkStart& talk_start)
     {
         talk_start.channel_id = packet.payload[0];
     }
 
-    static void Deserialize(const link_packet_t& packet, TalkStop& talk_stop)
+    [[maybe_unused]] static void Deserialize(const link_packet_t& packet, TalkStop& talk_stop)
     {
         talk_stop.channel_id = packet.payload[0];
     }
 
-    static void Deserialize(const link_packet_t& packet, PlayStart& play_start)
+    [[maybe_unused]] static void Deserialize(const link_packet_t& packet, PlayStart& play_start)
     {
         play_start.channel_id = packet.payload[0];
     }
 
-    static void Deserialize(const link_packet_t& packet, PlayStop& play_stop)
+    [[maybe_unused]] static void Deserialize(const link_packet_t& packet, PlayStop& play_stop)
     {
         play_stop.channel_id = packet.payload[0];
     }
 
-    static void Deserialize(const link_packet_t& packet, AudioObject& audio_object)
+    [[maybe_unused]] static void Deserialize(const link_packet_t& packet, AudioObject& audio_object)
     {
         audio_object.channel_id = packet.payload[0];
 
