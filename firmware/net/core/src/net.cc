@@ -26,8 +26,10 @@
 
 extern "C" void app_main(void)
 {
+    NET_LOG_ERROR("Internal SRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+    NET_LOG_ERROR("PSRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
-    Logger::Log(Logger::Level::Info, "Starting Net Main");
+    NET_LOG_INFO("Starting Net Main");
 
     InitializeGPIO();
     IntitializeLEDs();
@@ -53,18 +55,18 @@ extern "C" void app_main(void)
 
     // wifi
     Wifi wifi;
-    wifi.Connect("m10x-interference", "goodlife");
+    wifi.Connect("moq-interference", "goodlife");
 
     while (!wifi.IsConnected())
     {
-        Logger::Log(Logger::Level::Warn, "Waiting to connect to wifi");
+        NET_LOG_WARN("Waiting to connect to wifi");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 
     // FIXME: Avoids possible Brownout
     vTaskDelay(10000 / portTICK_PERIOD_MS);
 
-    Logger::Log(Logger::Level::Info, "Components ready");
+    NET_LOG_INFO("Components ready");
 
     // setup moq transport
     quicr::ClientConfig config;
@@ -78,10 +80,10 @@ extern "C" void app_main(void)
 
     moq::Session moq_session(config);
 
-    Logger::Log(Logger::Level::Info, "MOQ Transport Calling Connect ");
+    NET_LOG_INFO("MOQ Transport Calling Connect");
     if (moq_session.Connect() != quicr::Transport::Status::kConnecting)
     {
-        Logger::Log(Logger::Level::Error, "MOQ Transport Session Connection Failure");
+        NET_LOG_ERROR("MOQ Transport Session Connection Failure");
 
         // TODO: Don't exit, retry connection
         exit(-1);
@@ -131,11 +133,11 @@ extern "C" void app_main(void)
 
     pub_track_handler.reset(new moq::TrackWriter(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kDatagram, 2, 100));
     moq_session.PublishTrack(pub_track_handler);
-    Logger::Log(Logger::Level::Info, "Started publisher");
+    NET_LOG_INFO("Started publisher");
 
     sub_track_handler.reset(new moq::AudioTrackReader(moq::MakeFullTrackName("hactar-audio", "test", 2001)));
     moq_session.SubscribeTrack(sub_track_handler);
-    Logger::Log(Logger::Level::Info, "Started subscriber");
+    NET_LOG_INFO("Started subscriber");
 
     gpio_set_level(NET_STAT, 1);
 
@@ -162,7 +164,7 @@ extern "C" void app_main(void)
             {
             case ui_net_link::Packet_Type::GetAudioLinkPacket:
             {
-                // Logger::Log(Logger::Level::Info, "recvreq");
+                // NET_LOG_INFO("recvreq");
                 ++num_audio_requests;
                 break;
             }
@@ -176,7 +178,7 @@ extern "C" void app_main(void)
             {
                 if (++num_sent_link_audio == 10)
                 {
-                    Logger::Log(Logger::Level::Info, "-");
+                    NET_LOG_INFO("-");
                     num_sent_link_audio = 0;
                 }
                 std::vector<uint8_t> data(packet->payload, packet->payload + packet->length);
