@@ -106,15 +106,25 @@ extern "C" void app_main(void)
     uint32_t blink_cnt = 0;
     uint32_t last_check = 0;
 
+    Logger::Log(Logger::Level::Info, "Start!");
+    link_packet_t* recv = nullptr;
     while (1)
     {
-        ui_link->TestWrite();
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+        recv = ui_link->Read();
+        if (recv == nullptr)
+        {
+            continue;
+        }
+
+        ui_link->Write(recv);
+
         // Logger::Log(Logger::Level::Info, "Net Alive");
         // Logger::Log(Logger::Level::Info, "rx intr", 
             // ui_link->num_rx_intr, "num recv", ui_link->num_rx_recv);
 
-        ESP_LOGI("main", "net alive, rx intr %ld, rx recv %ld, data[0]=%d, data[1]=%d, data[2]=%d, data[3]=%d",
-            ui_link->num_rx_intr, ui_link->num_rx_recv, ui_link->rx(0), ui_link->rx(1), ui_link->rx(2), ui_link->rx(3));
+        // ESP_LOGI("main", "net alive, rx intr %ld, rx recv %ld, data[0]=%d, data[1]=%d, data[2]=%d, data[3]=%d",
+        //     ui_link->num_rx_intr, ui_link->num_rx_recv, ui_link->rx(0), ui_link->rx(1), ui_link->rx(2), ui_link->rx(3));
 
 
         // manager->Update();
@@ -127,7 +137,6 @@ extern "C" void app_main(void)
         //     qsession_connected = true;
         // }
 
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 }
 
