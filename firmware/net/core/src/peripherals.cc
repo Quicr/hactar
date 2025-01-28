@@ -26,41 +26,6 @@ void InitializeGPIO()
     gpio_config(&io_conf);
 }
 
-std::unique_ptr<Serial> InitializeQueuedUART(const uart_config_t& uart_config,
-    const uart_port_t& uart_port,
-    QueueHandle_t& uart_queue,
-    const int rx_buff_size,
-    const int tx_buff_size,
-    const int event_queue_size,
-    const int tx_pin,
-    const int rx_pin,
-    const int rts_pin,
-    const int cts_pin,
-    const long int intr_priority,
-    const uint16_t serial_tx_task_sz,
-    const uint16_t serial_rx_task_sz,
-    const uint16_t serial_ring_tx_num,
-    const uint16_t serial_ring_rx_num
-)
-{
-
-    esp_err_t res;
-    // res = uart_driver_install(uart_port, rx_buff_size, tx_buff_size, event_queue_size, &uart_queue, intr_priority);
-    // ESP_LOGI("Initialize UART", "install res=%d\n", res);
-    res = uart_driver_install(uart_port, rx_buff_size, tx_buff_size, 0, NULL, intr_priority);
-    ESP_LOGI("Initialize UART", "install res=%d\n", res);
-
-    res = uart_set_pin(uart_port, tx_pin, rx_pin, rts_pin, cts_pin);
-    ESP_LOGI("Initialize UART", "uart set pin res=%d\n", res);
-
-    res = uart_param_config(uart_port, &uart_config);
-    ESP_LOGI("Initialize UART", "install res=%d\n", res);
-
-    return std::make_unique<Serial>(uart_port, uart_queue,
-        serial_tx_task_sz, serial_rx_task_sz,
-        serial_ring_tx_num, serial_ring_rx_num);
-}
-
 void IntitializeLEDs()
 {
     gpio_config_t io_conf = {};
