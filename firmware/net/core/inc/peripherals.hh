@@ -24,38 +24,9 @@
 #define NET_STAT_MASK       1ULL << NET_STAT
 #define NET_DEBUG_MASK      1ULL << NET_DEBUG_1 | 1ULL << NET_DEBUG_2 | 1ULL << NET_DEBUG_3
 
-#define UART1 UART_NUM_1
-#define TX_PIN GPIO_NUM_17
-#define RX_PIN GPIO_NUM_18
-#define CTS_PIN UART_PIN_NO_CHANGE
-#define RTS_PIN UART_PIN_NO_CHANGE
-#define TX_BUFF_SIZE 1024
-#define TX_BUFF_SIZE_2 TX_BUFF_SIZE / 2
-#define RX_BUFF_SIZE 1024
-#define EVENT_QUEUE_SIZE 40
-#define SERIAL_TX_TASK_SZ 4096
-#define SERIAL_RX_TASK_SZ 4096
-#define SERIAL_RING_TX_NUM 30
-#define SERIAL_RING_RX_NUM 30
 
 void InitializeGPIO();
 void IntitializeLEDs();
 void IntitializePWM();
-std::unique_ptr<Serial> InitializeQueuedUART(const uart_config_t& uart_config,
-    const uart_port_t& uart_port,
-    QueueHandle_t& uart_queue,
-    const int rx_buff_size,
-    const int tx_buff_size,
-    const int event_queue_size,
-    const int tx_pin,
-    const int rx_pin,
-    const int rts_pin,
-    const int cts_pin,
-    const long int intr_priority,
-    const uint16_t serial_tx_task_sz,
-    const uint16_t serial_rx_task_sz,
-    const uint16_t serial_ring_tx_num,
-    const uint16_t serial_ring_rx_num
-);
 
 #endif
