@@ -1,11 +1,15 @@
 #include "net.hh"
 
+#include "sdkconfig.h"
+
 #include <quicr/client.h>
+
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "driver/uart.h"
 #include "nvs_flash.h"
 #include "esp_heap_caps.h"
@@ -24,6 +28,15 @@
 #include <inttypes.h>
 #include <memory>
 
+#define NET_UI_UART_PORT UART_NUM_1
+#define NET_UI_UART_DEV UART1
+#define NET_UI_UART_TX_PIN 17
+#define NET_UI_UART_RX_PIN 18
+#define NET_UI_UART_RX_BUFF_SIZE 1024
+#define NET_UI_UART_TX_BUFF_SIZE 1024
+#define NET_UI_UART_RING_TX_NUM 30
+#define NET_UI_UART_RING_RX_NUM 30
+
 extern "C" void app_main(void)
 {
     NET_LOG_ERROR("Internal SRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
@@ -36,7 +49,7 @@ extern "C" void app_main(void)
 
     // UART to the ui
 
-    uart_config_t uart1_config = {
+    uart_config_t net_ui_uart_config = {
         .baud_rate = 921600,
         .data_bits = UART_DATA_8_BITS,
         .parity = UART_PARITY_EVEN,
@@ -45,13 +58,13 @@ extern "C" void app_main(void)
         .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
     };
-    QueueHandle_t uart_queue;
-    ui_layer = InitializeQueuedUART(uart1_config, UART1, uart_queue,
-                                    RX_BUFF_SIZE*4, TX_BUFF_SIZE,
-                                    EVENT_QUEUE_SIZE, TX_PIN, RX_PIN,
-                                    RTS_PIN, CTS_PIN, ESP_INTR_FLAG_LOWMED,
-                                    SERIAL_TX_TASK_SZ, SERIAL_RX_TASK_SZ,
-                                    SERIAL_RING_TX_NUM, SERIAL_RING_RX_NUM);
+
+
+    Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV, ETS_UART1_INTR_SOURCE,
+        net_ui_uart_config,
+        NET_UI_UART_TX_PIN, NET_UI_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
+        NET_UI_UART_RX_BUFF_SIZE, NET_UI_UART_TX_BUFF_SIZE,
+        NET_UI_UART_RING_RX_NUM, NET_UI_UART_RING_TX_NUM);
 
     // wifi
     Wifi wifi;
@@ -146,9 +159,10 @@ extern "C" void app_main(void)
         vTaskDelay(10 / portTICK_PERIOD_MS);
 
         // FIXME: Use esp_timer instead.
+        // NOTE- 100 * 10ms = 1000ms :)
         if (blink_cnt++ == 100)
         {
-            gpio_set_level(NET_LED_R, next);
+            gpio_set_level(NET_LED_G, next);
             next = next ? 0 : 1;
             blink_cnt = 0;
         }
@@ -158,7 +172,7 @@ extern "C" void app_main(void)
             continue;
         }
 
-        while (auto packet = ui_layer->Read())
+        while (auto packet = ui_layer.Read())
         {
             switch ((ui_net_link::Packet_Type)packet->type)
             {
@@ -204,11 +218,7 @@ extern "C" void app_main(void)
                 break;
             }
 
-            auto link_packet = ui_layer->Write();
-            link_packet->type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
-            link_packet->length = data->size();
-            std::memcpy(link_packet->payload, data->data(), data->size());
-            link_packet->is_ready = true;
+            ui_layer.Write(data->data(), data->size());
 
             --num_audio_requests;
         }
