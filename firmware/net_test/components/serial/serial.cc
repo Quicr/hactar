@@ -26,12 +26,6 @@ Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_
     num_transmitting(0),
     tx_free(true)
 {
-    // Start the tasks
-    // xTaskCreate(ReadTask, "serial_read_task", rx_task_sz, this, 1, NULL);
-    // xTaskCreate(WriteTask, "serial_write_task", tx_task_sz, this, 1, NULL);
-
-
-    // TODO add pins
     ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(port, tx_pin, rx_pin, rts_pin, cts_pin));
 
@@ -89,17 +83,19 @@ link_packet_t* Serial::Read()
 void Serial::Write(const link_packet_t* packet)
 {
     uint16_t total_bytes = packet->length + Packet_Header_Size;
+    Write(packet->data, total_bytes);
+}
+
+void Serial::Write(const uint8_t* data, const size_t size)
+{
+    uint16_t total_bytes = size;
     // Logger::Log(Logger::Level::Info, "packet len", packet->length);
     size_t data_offset = 0;
-
-    // Update the number of bytes to write by how many total will be 
-    // sent by this packet.
-    untransmitted += total_bytes;
 
     if (tx_buff_write + total_bytes > tx_buff_sz)
     {
         const uint16_t diff = tx_buff_sz - tx_buff_write;
-        memcpy(tx_buff + tx_buff_write, packet->data, diff);
+        memcpy(tx_buff + tx_buff_write, data, diff);
 
         // Reset the buff write head since we are at the end.
         tx_buff_write = 0;
@@ -112,15 +108,14 @@ void Serial::Write(const link_packet_t* packet)
     }
 
     // Copy the data into the tx_buff
-    memcpy(tx_buff + tx_buff_write, packet->data + data_offset, total_bytes);
+    memcpy(tx_buff + tx_buff_write, data + data_offset, total_bytes);
 
     tx_buff_write += total_bytes;
 
-    BeginTransmit();
-}
+    // Update the number of bytes to write by how many total will be 
+    // sent by this packet. Needs to be at AFTER the data is copied
+    untransmitted += size;
 
-void Serial::BeginTransmit()
-{
     if (!tx_free)
     {
         return;
@@ -144,6 +139,7 @@ void Serial::Transmit(Serial* self)
     }
     self->tx_free = false;
 
+    // Ensure that we don't access illegal memory > tx_buff_sz
     if (self->num_transmitting > self->tx_buff_sz - self->tx_buff_read)
     {
         self->num_transmitting = self->tx_buff_sz - self->tx_buff_read;
@@ -170,7 +166,8 @@ void Serial::ISRHandler(void* args)
         uart_clear_intr_status(self->port, UART_PARITY_ERR_INT_CLR);
         abort();
     }
-    else if (self->uart.int_st.tx_done_int_st)
+
+    if (self->uart.int_st.tx_done_int_st)
     {
         uart_clear_intr_status(self->port, UART_TX_DONE_INT_CLR);
 
@@ -180,7 +177,7 @@ void Serial::ISRHandler(void* args)
 
         if (self->tx_buff_read >= self->tx_buff_sz)
         {
-            self->tx_buff_read = self->tx_buff_read - self->tx_buff_sz;
+            self->tx_buff_read = 0;
         }
 
         Serial::Transmit(self);
@@ -199,7 +196,7 @@ void Serial::ISRHandler(void* args)
                 bytes_to_read = self->rx_buff_sz - self->rx_buff_write;
             }
             self->unread += bytes_to_read;
-            
+
             while (bytes_to_read)
             {
                 self->rx_buff[self->rx_buff_write++] = self->uart.fifo.rxfifo_rd_byte;

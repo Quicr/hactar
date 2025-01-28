@@ -71,14 +71,6 @@ extern "C" void app_main(void)
         NET_UI_UART_RX_BUFF_SIZE, NET_UI_UART_TX_BUFF_SIZE,
         NET_UI_UART_RING_TX_NUM, NET_UI_UART_RING_RX_NUM);
 
-    // TODO move ui layer init to this function
-    // ui_link = InitializeQueuedUART(uart1_config, UI_UART2, uart_queue,
-    //     RX_BUFF_SIZE, TX_BUFF_SIZE,
-    //     EVENT_QUEUE_SIZE, TX_PIN, RX_PIN,
-    //     RTS_PIN, CTS_PIN, ESP_INTR_FLAG_LOWMED,
-    //     SERIAL_TX_TASK_SZ, SERIAL_RX_TASK_SZ,
-    //     SERIAL_RING_TX_NUM, SERIAL_RING_RX_NUM);
-
     // Wifi wifi;
     // wifi.Connect(SSID, SSID_PWD);
 

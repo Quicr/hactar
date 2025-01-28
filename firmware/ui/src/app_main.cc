@@ -118,13 +118,23 @@ ui_net_link::AudioObject play_frame;
 
 int app_main()
 {
-    HAL_Delay(1000);
+    HAL_Delay(5000);
     audio_chip.Init();
     InitScreen();
     LEDS(LOW, LOW, LOW);
     serial.StartReceive();
     LEDS(HIGH, HIGH, HIGH);
 
+    // TODO Fix
+    WaitForNetReady();
+    // SlowSendTest(10, 1000);
+    // while (1)
+    // {
+
+    // }
+    
+
+    InterHactarRoundTripTest(15, -1);
 
     uint32_t timeout;
     uint32_t current_tick;
@@ -135,8 +145,6 @@ int app_main()
 
     bool ptt_down = false;
 
-    // TODO Fix
-    WaitForNetReady();
 
     // TODO Probe for a reply from the net chip using serial
     // SlowSendTest(100, 10);
@@ -313,7 +321,7 @@ void HandleRecvLinkPackets()
     play_packet = serial.Read();
     if (play_packet)
     {
-        if (++num_packets_recv == 100)
+        if (++num_packets_recv == 10)
         {
             UI_LOG_ERROR(".");
             num_packets_recv = 0;
@@ -504,38 +512,82 @@ void SlowSendTest(int delay, int num)
     }
 }
 
-void InterHactarRoundTripTest()
+void InterHactarRoundTripTest(int delay, int num)
 {
-    // TODO fix
-    // uint8_t tmp[Serial_Audio_Buff_Sz] = {
-    //     Serial_Audio_Buff_Sz & 0xFF, Serial_Audio_Buff_Sz >> 8,
-    //     Serial::Packet_Type::Audio
-    // };
+    UI_LOG_INFO("Start");
 
-    // // Fill the tmp audio buffer with random
-    // for (int i = 35; i < Serial_Audio_Buff_Sz; ++i)
-    // {
-    //     tmp[i] = rand() % 0xFF;
-    // }
+    const size_t buff_sz = 321;
+    link_packet_t tmp;
+    // Fill the tmp audio buffer with random
+    tmp.type = 0;
+    tmp.length = buff_sz;
+    for (int i = 0; i < buff_sz; ++i)
+    {
+        tmp.payload[i] = rand() % 0xFF;
+    }
 
-    // while (true)
-    // {
-    //     HAL_Delay(100);
-    //     serial.Write(tmp, Serial_Audio_Buff_Sz);
-    //     HAL_Delay(20);
-    //     serial.Read(serial_rx_buffer, 400, Serial_Audio_Buff_Sz);
+    uint64_t num_good = 0;
 
-    //     // Compare the two
-    //     bool is_eq = true;
-    //     for (int i = 0 ; i < Serial_Audio_Buff_Sz;++i)
-    //     {
-    //         if (tmp[i] != serial_rx_buffer[i])
-    //         {
-    //             while (true)
-    //             {
-    //                 Error_Handler();
-    //             }
-    //         }
-    //     }
-    // }
+    link_packet_t* recv = nullptr;
+    int idx = 0;
+    uint32_t timeout = 0;
+    uint32_t last_packet_time = HAL_GetTick();
+    uint32_t total_elapsed = 0;
+    while (true)
+    {
+        serial.Write(tmp);
+        // HAL_Delay(delay);
+
+        while (true)
+        {
+            recv = serial.Read();
+            if (recv != nullptr)
+            {
+                break;
+            }
+        }
+
+        ++num_good;
+        uint32_t now = HAL_GetTick();
+        
+        // Compare the two
+        bool is_eq = true;
+        for (int i = 0 ; i < buff_sz;++i)
+        {
+            if (tmp.payload[i] != recv->payload[i])
+            {
+                while (true)
+                {
+                    Error_Handler();
+                }
+            }
+        }
+
+        for (int i = 0; i < buff_sz; ++i)
+        {
+            tmp.payload[i] = rand() % 0xFF;
+        }
+
+        total_elapsed += now - last_packet_time;
+        if (num_good >= 100)
+        {
+            UI_LOG_INFO(". %ld", total_elapsed / 100);
+
+            total_elapsed = 0;
+            num_good = 0;
+        }
+
+        last_packet_time = now;
+
+        if (idx++ == num)
+        {
+            break;
+        }
+
+        if (HAL_GetTick() > timeout)
+        {
+            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+            timeout = HAL_GetTick() + 2000;
+        }
+    }
 }

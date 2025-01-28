@@ -26,12 +26,11 @@ public:
     link_packet_t* Read();
     link_packet_t* Write();
     void Write(const link_packet_t* packet);
+    void Write(const uint8_t* data, const size_t size);
 
 private:
-    void BeginTransmit();
-    // TODO force inline?
-    static void IRAM_ATTR Transmit(Serial* self);
-    static void IRAM_ATTR ISRHandler(void* args);
+    static IRAM_ATTR void Transmit(Serial* self);
+    static IRAM_ATTR void ISRHandler(void* args);
 
     uart_port_t port;
     uart_dev_t& uart;
