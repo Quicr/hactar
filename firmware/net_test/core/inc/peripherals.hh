@@ -30,7 +30,6 @@ void IntitializeLEDs();
 void IntitializePWM();
 Serial* InitializeQueuedUART(const uart_config_t& uart_config,
     const uart_port_t& uart_port,
-    QueueHandle_t& uart_queue,
     const int rx_buff_size,
     const int tx_buff_size,
     const int event_queue_size,
