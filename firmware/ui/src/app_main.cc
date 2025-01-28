@@ -156,7 +156,7 @@ int app_main()
         if (HAL_GetTick() > blinky)
         {
             HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            // Logger::Log(Logger::Level::Error, "UI ALIVE");
+            // UI_LOG_ERROR("UI ALIVE");
             blinky = HAL_GetTick() + 2000;
         }
 
@@ -174,7 +174,7 @@ int app_main()
         if (num_awaiting_packets < 2)
         {
 
-            // Logger::Log(Logger::Level::Info, "r");
+            // UI_LOG_ERROR("r");
             // ask for packets?
             ui_net_link::BuildGetLinkPacket(link_send_space);
             serial.Write(link_send_space, 3);
@@ -189,7 +189,7 @@ int app_main()
             ui_net_link::TalkStart talk_start = { 0 };
             ui_net_link::Serialize(talk_start, talk_packet);
             serial.Write(talk_packet);
-            // Logger::Log(Logger::Level::Error, "PTTD");
+            // UI_LOG_ERROR("PTTD");
             ptt_down = true;
         }
         else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
@@ -197,13 +197,13 @@ int app_main()
             ui_net_link::TalkStop talk_stop = { 0 };
             ui_net_link::Serialize(talk_stop, talk_packet);
             serial.Write(talk_packet);
-            // Logger::Log(Logger::Level::Error, "PTTU");
+            // UI_LOG_ERROR("PTTU");
             ptt_down = false;
         }
 
         if (ptt_down)
         {
-            // Logger::Log(Logger::Level::Error, "AS");
+            // UI_LOG_ERROR("AS");
 
             ui_net_link::AudioObject talk_frame = { 0, 0 };
 
@@ -315,7 +315,7 @@ void HandleRecvLinkPackets()
     {
         if (++num_packets_recv == 100)
         {
-            Logger::Log(Logger::Level::Info, ".");
+            UI_LOG_ERROR(".");
             num_packets_recv = 0;
         }
 
@@ -324,7 +324,7 @@ void HandleRecvLinkPackets()
             case ui_net_link::Packet_Type::AudioMultiObject:
             case ui_net_link::Packet_Type::AudioObject:
             {
-                // Logger::Log(Logger::Level::Info, "AR");
+                // UI_LOG_ERROR("AR");
                 --num_awaiting_packets;
                 ui_net_link::Deserialize(*play_packet, play_frame);
                 AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
@@ -412,7 +412,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     if (huart->Instance == USART2)
     {
-        // Logger::Log(Logger::Level::Info, "rx", size);
+        // UI_LOG_ERROR("rx", size);
         serial.RxEvent(size);
     }
 }
