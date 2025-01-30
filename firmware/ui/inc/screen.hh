@@ -1,6 +1,6 @@
 #pragma once
 
-#include "main.h"
+#include "app_main.hh"
 #include "stm32.h"
 
 #include "font.hh"
@@ -301,7 +301,7 @@ private:
     uint16_t view_width;
     uint16_t row_bytes;
 
-    DrawMemory memories[Num_Memories]; 
+    DrawMemory memories[Num_Memories];
     uint32_t memory_read_idx;
     uint32_t memories_in_use;
     uint32_t memory_write_idx;
