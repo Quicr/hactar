@@ -227,7 +227,7 @@ void Screen::Draw(uint32_t timeout)
             default:
             {
                 // Should never be able to get here.
-                Error_Handler();
+                Error("Screen Draw", "Should be impossible to get here!");
                 break;
             }
         }
@@ -637,7 +637,7 @@ Screen::DrawMemory& Screen::AllocateMemory(const uint16_t x1, const uint16_t x2,
 {
     if (memories_in_use >= Num_Memories)
     {
-        Error_Handler();
+        Error("Screen Draw", "Num memories overflow");
     }
 
     if (memory_write_idx >= Num_Memories)
