@@ -96,40 +96,38 @@ static void LinkPacketTask(void* args)
     {
         vTaskDelay(10 / portTICK_PERIOD_MS);
 
-        auto packet = ui_layer.Read();
-        if (packet == nullptr)
+        while (auto packet = ui_layer.Read())
         {
-            continue;
-        }
-
-        switch ((ui_net_link::Packet_Type)packet->type)
-        {
-            case ui_net_link::Packet_Type::GetAudioLinkPacket:
+            switch ((ui_net_link::Packet_Type)packet->type)
             {
-                // NET_LOG_INFO("recvreq");
-                ++num_audio_requests;
-                break;
-            }
-            case ui_net_link::Packet_Type::TalkStart:
-                break;
-            case ui_net_link::Packet_Type::TalkStop:
-                break;
-            case ui_net_link::Packet_Type::AudioMultiObject:
-                [[fallthrough]];
-            case ui_net_link::Packet_Type::AudioObject:
-            {
-                // NET_LOG_INFO("serial recv audio");
-                link_data_obj obj;
-                obj.data = std::move(std::vector<uint8_t>(packet->payload, packet->payload + packet->length));
-                obj.headers.object_id++;
-                obj.headers.payload_length = obj.data.size();
-                std::lock_guard<std::mutex> lock(object_mux);
-                moq_objects.push_back(std::move(obj));
+                case ui_net_link::Packet_Type::GetAudioLinkPacket:
+                {
+                    // NET_LOG_INFO("recvreq");
+                    ++num_audio_requests;
+                    break;
+                }
+                case ui_net_link::Packet_Type::TalkStart:
+                    break;
+                case ui_net_link::Packet_Type::TalkStop:
+                    break;
+                case ui_net_link::Packet_Type::AudioMultiObject:
+                    [[fallthrough]];
+                case ui_net_link::Packet_Type::AudioObject:
+                {
+                    // NET_LOG_INFO("serial recv audio");
+                    
+                    std::lock_guard<std::mutex> _(object_mux);
 
-                break;
+                    auto& obj = moq_objects.emplace_back();
+                    obj.data.assign(packet->payload, packet->payload + packet->length);
+                    obj.headers.object_id++;
+                    obj.headers.payload_length = obj.data.size();
+
+                    break;
+                }
+                default:
+                    break;
             }
-            default:
-                break;
         }
     }
 }
@@ -168,9 +166,9 @@ static void MoqPubTask(void* args)
             // NET_LOG_INFO("pub audio");
 
             std::lock_guard<std::mutex> lock(object_mux);
-            link_data_obj obj = std::move(moq_objects.front());
-            moq_objects.pop_front();
+            const link_data_obj& obj = moq_objects.front();
             pub_track_handler->PublishObject(obj.headers, obj.data);
+            moq_objects.pop_front();
         }
     }
 
