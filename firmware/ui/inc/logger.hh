@@ -58,9 +58,9 @@ public:
     template <typename... T>
     static void Log(Level level, const char* format, const T&... args)
     {
-        char log_line[MAX_LOG_LENGTH];
+        static char log_line[MAX_LOG_LENGTH] = {0};
         std::sprintf(log_line, format, args...);
-        
+
         char line[MAX_LOG_LENGTH + 11];
         const auto line_size = std::sprintf(line, "[UI][%s] %s\n", log_level_string(level).c_str(), log_line);
 
