@@ -6,14 +6,22 @@
 
 // TODO unify into ui and net
 
-Serial::Serial(UART_HandleTypeDef* uart, const uint16_t num_rx_packets):
+Serial::Serial(UART_HandleTypeDef* uart, const uint16_t num_rx_packets,
+    uint8_t& tx_buff, const uint32_t tx_buff_sz,
+    uint8_t& rx_buff, const uint32_t rx_buff_sz):
     uart(uart),
     rx_packets(num_rx_packets),
-    tx_is_free(true),
-    rx_buff{ 0 },
-    rx_packet(nullptr),
-    write_idx(0),
-    read_idx(0),
+    tx_buff(&tx_buff),
+    tx_buff_sz(tx_buff_sz),
+    rx_buff(&rx_buff),
+    rx_buff_sz(rx_buff_sz),
+    tx_write_idx(0),
+    tx_read_idx(0),
+    tx_free(true),
+    unsent(0),
+    num_to_send(0),
+    rx_write_idx(0),
+    rx_read_idx(0),
     unread(0)
 {
 
@@ -26,7 +34,7 @@ Serial::~Serial()
 
 void Serial::StartReceive()
 {
-    HAL_UARTEx_ReceiveToIdle_DMA(uart, rx_buff, Rx_Buff_Sz);
+    HAL_UARTEx_ReceiveToIdle_DMA(uart, rx_buff, rx_buff_sz);
 }
 
 void Serial::Reset()
@@ -42,19 +50,19 @@ link_packet_t* Serial::Read()
     while (unread > 0)
     {
         uint16_t bytes_to_read = unread;
-        if (read_idx + bytes_to_read > Rx_Buff_Sz)
+        if (rx_read_idx + bytes_to_read > rx_buff_sz)
         {
-            bytes_to_read = Rx_Buff_Sz - read_idx;
+            bytes_to_read = rx_buff_sz - rx_read_idx;
         }
 
         // Builds packet and sets is_ready to true when a packet is done.
-        BuildPacket(rx_buff+read_idx, bytes_to_read, rx_packets);
+        BuildPacket(rx_buff + rx_read_idx, bytes_to_read, rx_packets);
         unread -= bytes_to_read;
-        read_idx += bytes_to_read;
+        rx_read_idx += bytes_to_read;
 
-        if (read_idx >= Rx_Buff_Sz)
+        if (rx_read_idx >= rx_buff_sz)
         {
-            read_idx = 0;
+            rx_read_idx = 0;
         }
     }
 
@@ -70,23 +78,76 @@ link_packet_t* Serial::Read()
 
 void Serial::Write(const uint8_t data)
 {
-    ChangeFreeState();
-    HAL_UART_Transmit_DMA(uart, &data, 1);
-}
-
-void Serial::Write(const uint8_t* data, const size_t size)
-{
-    ChangeFreeState();
-    HAL_UART_Transmit_DMA(uart, data, size);
+    Write(&data, 1);
 }
 
 void Serial::Write(const link_packet_t& packet)
 {
-    ChangeFreeState();
-    HAL_UART_Transmit_DMA(uart, packet.data, packet.length+Packet_Header_Size);
+    Write(packet.data, packet.length + link_packet_t::Header_Size);
 }
 
-void Serial::RxEvent(const uint16_t fifo_idx)
+void Serial::Write(const uint8_t* data, const uint16_t size)
+{
+    uint16_t total_bytes = size;
+    uint16_t offset = 0;
+
+    // Check if overflow
+    if (unsent + total_bytes > tx_buff_sz)
+    {
+        Error_Handler();
+    }
+
+    if (tx_write_idx + total_bytes >= tx_buff_sz)
+    {
+        uint16_t diff = tx_buff_sz - tx_write_idx;
+
+        // copy into tx_buff
+        memcpy(tx_buff + tx_write_idx, data, diff);
+
+        total_bytes -= diff;
+        offset += diff;
+        tx_write_idx = 0;
+    }
+
+    memcpy(tx_buff + tx_write_idx, data + offset, total_bytes);
+
+    tx_write_idx += total_bytes;
+    unsent += size;
+
+    if (!tx_free)
+    {
+        return;
+    }
+
+    Transmit(this);
+}
+
+void Serial::Transmit(Serial* self)
+{
+    // Nothing to send
+    if (self->unsent == 0)
+    {
+        self->tx_free = true;
+        return;
+    }
+    self->tx_free = false;
+    self->num_to_send = self->unsent;
+
+    // Prevent tx buff overflow
+    if (self->num_to_send + self->tx_read_idx >= self->tx_buff_sz)
+    {
+        self->num_to_send = self->tx_buff_sz - self->tx_read_idx;
+    }
+
+    HAL_UART_Transmit_DMA(self->uart, self->tx_buff + self->tx_read_idx, self->num_to_send);
+}
+
+const UART_HandleTypeDef* Serial::UART()
+{
+    return uart;
+}
+
+void Serial::RxISR(Serial* self, const uint16_t fifo_idx)
 {
     // NOTE- Do NOT put a breakpoint in here, the callbacks will
     // get blocked will get memory access errors because the
@@ -94,38 +155,24 @@ void Serial::RxEvent(const uint16_t fifo_idx)
     // will cause the value to be at the wrong idx and everything will go
     // ka-boom, crash, plop. Overflow errors and stuff.
 
-    const uint16_t num_recv = fifo_idx - write_idx;
-    write_idx += num_recv;
-    unread += num_recv;
-    if (write_idx >= Rx_Buff_Sz)
+    const uint16_t num_recv = fifo_idx - self->rx_write_idx;
+    self->rx_write_idx += num_recv;
+    self->unread += num_recv;
+    if (self->rx_write_idx >= self->rx_buff_sz)
     {
-        write_idx = write_idx - Rx_Buff_Sz;
+        self->rx_write_idx = self->rx_write_idx - self->rx_buff_sz;
     }
 }
 
-void Serial::TxEvent()
+void Serial::TxISR(Serial* self)
 {
+    self->unsent -= self->num_to_send;
+    self->tx_read_idx += self->num_to_send;
 
-}
-
-bool Serial::IsFree()
-{
-    return tx_is_free;
-}
-
-void Serial::Free()
-{
-    tx_is_free = true;
-}
-
-void Serial::ChangeFreeState()
-{
-    // TODO use tx free?
-    if (uart->gState != HAL_UART_STATE_READY)
+    if (self->tx_read_idx >= self->tx_buff_sz)
     {
-        // Error_Handler();
-        return;
+        self->tx_read_idx = 0;
     }
 
-    tx_is_free = false;
+    Serial::Transmit(self);
 }

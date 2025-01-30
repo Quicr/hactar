@@ -9,6 +9,7 @@ template <typename T>
 class RingBuffer
 {
 public:
+// TODO constructor that takes a bucket space of type T
     RingBuffer(const uint16_t size = DEFAULT_BUFFER_SIZE):
         size(size),
         read_idx(0),
