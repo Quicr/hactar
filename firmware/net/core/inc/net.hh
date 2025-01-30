@@ -20,7 +20,5 @@ struct DeviceSetupConfig {
 };
 
 
-static std::unique_ptr<Serial> ui_layer = nullptr;
-
 static void SetupComponents(const DeviceSetupConfig& config);
 

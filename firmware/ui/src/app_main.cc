@@ -110,7 +110,7 @@ Screen screen(
 
 link_packet_t talk_packet;
 link_packet_t play_buffer;
-link_packet_t* play_packet = nullptr;
+link_packet_t* link_packet = nullptr;
 
 size_t num_packets_recv = 0;
 
@@ -137,14 +137,6 @@ int app_main()
 
     // TODO Fix
     WaitForNetReady();
-    // SlowSendTest(10, 1000);
-    // while (1)
-    // {
-
-    // }
-
-
-    InterHactarFullRoundTripTest(20, -1);
 
     uint32_t timeout;
     uint32_t current_tick;
@@ -168,6 +160,9 @@ int app_main()
 
     uint32_t time_start = HAL_GetTick();
 
+
+    uint32_t start = 0;
+    uint32_t end = 0;
 
     while (1)
     {
@@ -328,23 +323,23 @@ inline void CheckFlags()
 void HandleRecvLinkPackets()
 {
     // If there are bytes available read them
-    play_packet = serial.Read();
-    if (play_packet)
+    link_packet = serial.Read();
+    if (link_packet)
     {
-        if (++num_packets_recv == 10)
+        if (++num_packets_recv == 100)
         {
             UI_LOG_ERROR(".");
             num_packets_recv = 0;
         }
 
-        switch ((ui_net_link::Packet_Type)play_packet->type)
+        switch ((ui_net_link::Packet_Type)link_packet->type)
         {
             case ui_net_link::Packet_Type::AudioMultiObject:
             case ui_net_link::Packet_Type::AudioObject:
             {
                 // UI_LOG_ERROR("AR");
                 --num_awaiting_packets;
-                ui_net_link::Deserialize(*play_packet, play_frame);
+                ui_net_link::Deserialize(*link_packet, play_frame);
                 AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
                 break;
             };
@@ -362,7 +357,7 @@ void HandleRecvLinkPackets()
             }
             default:
             {
-                play_packet->is_ready = false;
+                link_packet->is_ready = false;
                 Error_Handler();
                 break;
             }

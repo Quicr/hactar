@@ -36,6 +36,10 @@ void IntitializeLEDs()
     io_conf.pull_down_en = (gpio_pulldown_t)0;
     io_conf.pull_up_en = (gpio_pullup_t)0;
     gpio_config(&io_conf);
+
+    gpio_set_level(NET_LED_R, 1);
+    gpio_set_level(NET_LED_G, 1);
+    gpio_set_level(NET_LED_B, 1);
 }
 
 void IntitializePWM()
