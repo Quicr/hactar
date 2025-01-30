@@ -37,9 +37,13 @@ void Serial::StartReceive()
     HAL_UARTEx_ReceiveToIdle_DMA(uart, rx_buff, rx_buff_sz);
 }
 
-void Serial::Reset()
+void Serial::Stop()
 {
     HAL_UART_AbortReceive_IT(uart);
+}
+
+void Serial::Reset()
+{
     uint16_t err = uart->Instance->SR;
     UNUSED(err);
     StartReceive();
@@ -94,7 +98,7 @@ void Serial::Write(const uint8_t* data, const uint16_t size)
     // Check if overflow
     if (unsent + total_bytes > tx_buff_sz)
     {
-        Error_Handler();
+        Error("Serial write", "Transmit buffer overflow!");
     }
 
     if (tx_write_idx + total_bytes >= tx_buff_sz)
@@ -156,11 +160,16 @@ void Serial::RxISR(Serial* self, const uint16_t fifo_idx)
     // ka-boom, crash, plop. Overflow errors and stuff.
 
     const uint16_t num_recv = fifo_idx - self->rx_write_idx;
-    self->rx_write_idx += num_recv;
     self->unread += num_recv;
+    self->rx_write_idx = fifo_idx;
     if (self->rx_write_idx >= self->rx_buff_sz)
     {
         self->rx_write_idx = self->rx_write_idx - self->rx_buff_sz;
+    }
+
+    if (self->unread > self->rx_buff_sz)
+    {
+        Error("Serial rx isr", "Overflowed rx buffer");
     }
 }
 
