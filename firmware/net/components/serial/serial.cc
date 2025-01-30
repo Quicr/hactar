@@ -82,7 +82,7 @@ link_packet_t* Serial::Read()
 
 void Serial::Write(const link_packet_t* packet)
 {
-    uint16_t total_bytes = packet->length + Packet_Header_Size;
+    uint16_t total_bytes = packet->length + link_packet_t::Header_Size;
     Write(packet->data, total_bytes);
 }
 
@@ -112,7 +112,7 @@ void Serial::Write(const uint8_t* data, const size_t size)
 
     tx_buff_write += total_bytes;
 
-    // Update the number of bytes to write by how many total will be 
+    // Update the number of bytes to write by how many total will be
     // sent by this packet. Needs to be at AFTER the data is copied
     untransmitted += size;
 
@@ -124,8 +124,8 @@ void Serial::Write(const uint8_t* data, const size_t size)
     Serial::Transmit(this);
 }
 
-// NOTE TO YE TO WHOM MAY COME TO CHANGE THIS FUNCTION, DO NOT PUT 
-// LOGGING INTO THIS FUNCTION, IT WILL CAUSE AN AUTOMATIC CRASH AND NOT 
+// NOTE TO YE TO WHOM MAY COME TO CHANGE THIS FUNCTION, DO NOT PUT
+// LOGGING INTO THIS FUNCTION, IT WILL CAUSE AN AUTOMATIC CRASH AND NOT
 // TELL YOU WHY
 void Serial::Transmit(Serial* self)
 {
@@ -153,8 +153,8 @@ void Serial::Transmit(Serial* self)
     uart_ll_write_txfifo(&self->uart, self->tx_buff + self->tx_buff_read, self->num_transmitting);
 }
 
-// NOTE TO YE TO WHOM MAY COME TO CHANGE THIS FUNCTION, DO NOT PUT 
-// LOGGING INTO THIS FUNCTION, IT WILL CAUSE AN AUTOMATIC CRASH AND NOT 
+// NOTE TO YE TO WHOM MAY COME TO CHANGE THIS FUNCTION, DO NOT PUT
+// LOGGING INTO THIS FUNCTION, IT WILL CAUSE AN AUTOMATIC CRASH AND NOT
 // TELL YOU WHY
 void Serial::ISRHandler(void* args)
 {
