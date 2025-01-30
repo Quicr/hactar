@@ -62,7 +62,8 @@ inline void WaitForNetReady();
 inline void AudioCallback();
 
 void SlowSendTest(int delay, int num);
-void InterHactarRoundTripTest(int delay, int num);
+void InterHactarSerialRoundTripTest(int delay, int num);
+void InterHactarFullRoundTripTest(int delay, int num);
 
 #ifdef __cplusplus
 }

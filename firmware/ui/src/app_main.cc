@@ -80,9 +80,20 @@ extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern RNG_HandleTypeDef hrng;
 
-AudioChip audio_chip(hi2s3, hi2c1);
+// Buffer declarations
+static constexpr uint16_t net_ui_serial_tx_buff_sz = 2048;
+uint8_t net_ui_serial_tx_buff[net_ui_serial_tx_buff_sz] = { 0 };
+static constexpr uint16_t net_ui_serial_rx_buff_sz = 2048;
+uint8_t net_ui_serial_rx_buff[net_ui_serial_rx_buff_sz] = { 0 };
+static constexpr uint16_t net_ui_serial_num_rx_packets = 7;
 
-Serial serial(&huart2, 7);
+uint8_t link_send_space[20] = { 0 }; // change as needed
+
+static AudioChip audio_chip(hi2s3, hi2c1);
+
+static Serial serial(&huart2, net_ui_serial_num_rx_packets,
+    *net_ui_serial_tx_buff, net_ui_serial_tx_buff_sz,
+    *net_ui_serial_rx_buff, net_ui_serial_rx_buff_sz);
 
 Screen screen(
     hspi1,
@@ -100,7 +111,6 @@ Screen screen(
 link_packet_t talk_packet;
 link_packet_t play_buffer;
 link_packet_t* play_packet = nullptr;
-uint8_t link_send_space[20] = { 0 }; // change as needed
 
 size_t num_packets_recv = 0;
 
@@ -132,9 +142,9 @@ int app_main()
     // {
 
     // }
-    
 
-    InterHactarRoundTripTest(15, -1);
+
+    InterHactarFullRoundTripTest(20, -1);
 
     uint32_t timeout;
     uint32_t current_tick;
@@ -231,10 +241,10 @@ int app_main()
             screen.DrawRectangle(0, 10, 0, 10, 2, next);
             screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
             screen.DrawString(0, 28, hello, 48, font5x8, next, curr);
-            const uint16_t width = 50;
-            const uint16_t height = 50;
-            const uint16_t x_inc = width + 2;
-            const uint16_t y_inc = height + 1;
+            // const uint16_t width = 50;
+            // const uint16_t height = 50;
+            // const uint16_t x_inc = width + 2;
+            // const uint16_t y_inc = height + 1;
 
             // swap
             Colour tmp = curr;
@@ -418,18 +428,18 @@ inline void AudioCallback()
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
-    if (huart->Instance == USART2)
+    if (huart->Instance == serial.UART()->Instance)
     {
-        // UI_LOG_ERROR("rx", size);
-        serial.RxEvent(size);
+        // UI_LOG_ERROR("rx %u", size);
+        Serial::RxISR(&serial, size);
     }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == USART2)
+    if (huart->Instance == serial.UART()->Instance)
     {
-        serial.Free();
+        Serial::TxISR(&serial);
         RaiseFlag(Rx_Audio_Transmitted);
     }
 }
@@ -512,31 +522,36 @@ void SlowSendTest(int delay, int num)
     }
 }
 
-void InterHactarRoundTripTest(int delay, int num)
+void InterHactarSerialRoundTripTest(int delay, int num)
 {
+    HAL_Delay(1000);
     UI_LOG_INFO("Start");
 
     const size_t buff_sz = 321;
     link_packet_t tmp;
     // Fill the tmp audio buffer with random
-    tmp.type = 0;
+    tmp.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
     tmp.length = buff_sz;
-    for (int i = 0; i < buff_sz; ++i)
+    for (size_t i = 0; i < buff_sz; ++i)
     {
         tmp.payload[i] = rand() % 0xFF;
     }
 
     uint64_t num_good = 0;
+    uint64_t total_packets = 0;
 
     link_packet_t* recv = nullptr;
     int idx = 0;
     uint32_t timeout = 0;
-    uint32_t last_packet_time = HAL_GetTick();
     uint32_t total_elapsed = 0;
+    uint32_t start = 0;
+    uint32_t end = 0;
     while (true)
     {
+        start = HAL_GetTick();
         serial.Write(tmp);
-        // HAL_Delay(delay);
+
+        HAL_Delay(delay);
 
         while (true)
         {
@@ -547,11 +562,10 @@ void InterHactarRoundTripTest(int delay, int num)
             }
         }
 
-        ++num_good;
-        uint32_t now = HAL_GetTick();
-        
+        end = HAL_GetTick();
+
+
         // Compare the two
-        bool is_eq = true;
         for (int i = 0 ; i < buff_sz;++i)
         {
             if (tmp.payload[i] != recv->payload[i])
@@ -562,22 +576,98 @@ void InterHactarRoundTripTest(int delay, int num)
                 }
             }
         }
+        ++num_good;
 
         for (int i = 0; i < buff_sz; ++i)
         {
             tmp.payload[i] = rand() % 0xFF;
         }
 
-        total_elapsed += now - last_packet_time;
+        total_elapsed += end - start;
         if (num_good >= 100)
         {
-            UI_LOG_INFO(". %ld", total_elapsed / 100);
+            total_packets += num_good;
+            UI_LOG_INFO("t %ld r %lld ", total_elapsed / 100, total_packets);
 
             total_elapsed = 0;
             num_good = 0;
         }
 
-        last_packet_time = now;
+        if (idx++ == num)
+        {
+            break;
+        }
+
+        if (HAL_GetTick() > timeout)
+        {
+            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+            timeout = HAL_GetTick() + 2000;
+        }
+    }
+}
+
+void InterHactarFullRoundTripTest(int delay, int num)
+{
+    HAL_Delay(20000);
+    UI_LOG_INFO("Start");
+
+    const size_t buff_sz = 321;
+    link_packet_t tmp;
+    // Fill the tmp audio buffer with random
+    tmp.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
+    tmp.length = buff_sz;
+    for (int i = 0; i < buff_sz; ++i)
+    {
+        tmp.payload[i] = rand() % 0xFF;
+    }
+
+    ui_net_link::BuildGetLinkPacket(link_send_space);
+    serial.Write(link_send_space, 3);
+    HAL_Delay(1);
+
+    for (int i = 0; i < 20; ++i)
+    {
+        serial.Write(tmp);
+        HAL_Delay(delay);
+    }
+    UI_LOG_WARN("Sent");
+
+    uint64_t num_recv = 0;
+
+    link_packet_t* recv = nullptr;
+    int idx = 0;
+    uint32_t timeout = 0;
+    uint32_t end = 0;
+    uint32_t total_elapsed = 0;
+    uint32_t total_sent = 0;
+    while (true)
+    {
+        HAL_Delay(delay);
+        serial.Write(tmp);
+        uint32_t start = HAL_GetTick();
+        serial.Write(link_send_space, 3);
+
+        while (true)
+        {
+            recv = serial.Read();
+            if (recv != nullptr)
+            {
+                break;
+            }
+        }
+
+        ++num_recv;
+
+        uint32_t end = HAL_GetTick();
+        total_elapsed += (end - start);
+        if (num_recv >= 10)
+        {
+            total_sent += num_recv;
+            UI_LOG_INFO("t %ld s %ld", total_elapsed / 10, total_sent);
+
+            total_elapsed = 0;
+            num_recv = 0;
+        }
 
         if (idx++ == num)
         {

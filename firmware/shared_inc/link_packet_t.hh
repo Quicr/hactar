@@ -11,21 +11,21 @@
 #define PACKET_TYPE_TYPE uint8_t
 #define PACKET_LENGTH_TYPE uint16_t
 
-constexpr size_t Packet_Type_Size = sizeof(PACKET_TYPE_TYPE);
-constexpr size_t Packet_Length_Size = sizeof(PACKET_LENGTH_TYPE);
-constexpr size_t Packet_Header_Size = Packet_Length_Size + Packet_Type_Size;
-constexpr size_t Packet_Payload_Size = PACKET_SIZE - Packet_Header_Size;
 
 // TODO change data to be a pointer to a memory location.
 struct link_packet_t
 {
+    static constexpr size_t Type_Size = sizeof(PACKET_TYPE_TYPE);
+    static constexpr size_t Length_Size = sizeof(PACKET_LENGTH_TYPE);
+    static constexpr size_t Header_Size = Length_Size + Type_Size;
+    static constexpr size_t Payload_Size = PACKET_SIZE - Header_Size;
     union
     {
         struct
         {
             uint8_t type;
             uint16_t length;
-            uint8_t payload[Packet_Payload_Size];
+            uint8_t payload[Payload_Size];
         } __attribute((packed));
         uint8_t data[PACKET_SIZE] = {0};
     };

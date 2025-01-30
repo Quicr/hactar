@@ -26,14 +26,14 @@ static int BuildPacket(const uint8_t* buff, const uint32_t num_bytes, RingBuffer
         // We can copy bytes until we run out of space
         // or out of buffered bytes
         // Little endian format!
-        while (bytes_read < packet->length + Packet_Header_Size
+        while (bytes_read < packet->length + link_packet_t::Header_Size
             && idx < num_bytes
             && bytes_read < PACKET_SIZE)
         {
             packet->data[bytes_read++] = buff[idx++];
         }
 
-        if (bytes_read >= packet->length + Packet_Header_Size
+        if (bytes_read >= packet->length + link_packet_t::Header_Size
             || bytes_read >= PACKET_SIZE)
         {
             // Logger::Log(Logger::Level::Info, "packet ready type:", (int)packet->type);
