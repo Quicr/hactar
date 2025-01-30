@@ -94,7 +94,7 @@ static void LinkPacketTask(void* args)
     NET_LOG_INFO("Start link packet task");
     while (true)
     {
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        vTaskDelay(5 / portTICK_PERIOD_MS);
 
         while (auto packet = ui_layer.Read())
         {
@@ -154,7 +154,7 @@ static void MoqPubTask(void* args)
 
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        vTaskDelay(5 / portTICK_PERIOD_MS);
 
         if (pub_track_handler && pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
         {
@@ -198,7 +198,7 @@ static void MoqSubTask(void* args)
 
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        vTaskDelay(5 / portTICK_PERIOD_MS);
         if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
         {
             // TODO handling
@@ -207,6 +207,7 @@ static void MoqSubTask(void* args)
 
         sub_track_handler->TryPlay();
 
+        link_packet_t link_packet;
         while (num_audio_requests > 0)
         {
             auto data = sub_track_handler->PopFront();
@@ -217,7 +218,6 @@ static void MoqSubTask(void* args)
 
             // NET_LOG_INFO("sub audio");
 
-            link_packet_t link_packet;
             link_packet.type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
             link_packet.length = data->size();
             std::memcpy(link_packet.payload, data->data(), data->size());
@@ -226,8 +226,6 @@ static void MoqSubTask(void* args)
 
             --num_audio_requests;
         }
-
-        sub_track_handler->Pause();
 
     }
 
@@ -265,7 +263,7 @@ extern "C" void app_main(void)
     // setup moq transport
     quicr::ClientConfig config;
     config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = "moq://192.168.50.20:1234";
+    config.connect_uri = "moq://relay.quicr.ctgpoc.com:33437";
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;
