@@ -81,11 +81,11 @@ extern TIM_HandleTypeDef htim3;
 extern RNG_HandleTypeDef hrng;
 
 // Buffer declarations
-static constexpr uint16_t net_ui_serial_tx_buff_sz = 2048;
+static constexpr uint16_t net_ui_serial_tx_buff_sz = 4096;
 uint8_t net_ui_serial_tx_buff[net_ui_serial_tx_buff_sz] = { 0 };
-static constexpr uint16_t net_ui_serial_rx_buff_sz = 2048;
+static constexpr uint16_t net_ui_serial_rx_buff_sz = 4096;
 uint8_t net_ui_serial_rx_buff[net_ui_serial_rx_buff_sz] = { 0 };
-static constexpr uint16_t net_ui_serial_num_rx_packets = 7;
+static constexpr uint16_t net_ui_serial_num_rx_packets = 30;
 
 uint8_t link_send_space[20] = { 0 }; // change as needed
 
@@ -164,6 +164,10 @@ int app_main()
     uint32_t start = 0;
     uint32_t end = 0;
 
+    uint32_t num_req_sent = 0;
+
+    uint32_t next_print = 0;
+
     while (1)
     {
         if (HAL_GetTick() > blinky)
@@ -174,6 +178,11 @@ int app_main()
         }
 
         num_loops++;
+        if (HAL_GetTick() > next_print)
+        {
+            UI_LOG_ERROR("req: %lu", num_req_sent);
+            next_print = HAL_GetTick() + 1000;
+        }
         while (sleeping)
         {
             // LowPowerMode();
@@ -181,19 +190,18 @@ int app_main()
 
         if (error)
         {
-            // Error_Handler();
+            // Error("Main loop", "Flags did not match expected");
         }
 
         if (num_awaiting_packets < 2)
         {
-
-            // UI_LOG_ERROR("r");
+            // UI_LOG_ERROR("pushreq");
             // ask for packets?
             ui_net_link::BuildGetLinkPacket(link_send_space);
             serial.Write(link_send_space, 3);
+            ++num_req_sent;
             ++num_awaiting_packets;
         }
-
 
         // Send talk start and sot packets
         if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
@@ -323,9 +331,14 @@ inline void CheckFlags()
 void HandleRecvLinkPackets()
 {
     // If there are bytes available read them
-    link_packet = serial.Read();
-    if (link_packet)
+    while (true)
     {
+        link_packet = serial.Read();
+        if (!link_packet)
+        {
+            break;
+        }
+
         if (++num_packets_recv == 100)
         {
             UI_LOG_ERROR(".");
@@ -334,6 +347,12 @@ void HandleRecvLinkPackets()
 
         switch ((ui_net_link::Packet_Type)link_packet->type)
         {
+            case ui_net_link::Packet_Type::TalkStart:
+            case ui_net_link::Packet_Type::TalkStop:
+            case ui_net_link::Packet_Type::GetAudioLinkPacket:
+            {
+                break;
+            }
             case ui_net_link::Packet_Type::AudioMultiObject:
             case ui_net_link::Packet_Type::AudioObject:
             {
@@ -357,8 +376,8 @@ void HandleRecvLinkPackets()
             }
             default:
             {
-                link_packet->is_ready = false;
-                Error_Handler();
+                UI_LOG_ERROR("Packet type %d, %u", (int)link_packet->type, link_packet->length);
+                Error("Link packet handler", "Received a packet type that has no handler");
                 break;
             }
         }
@@ -495,6 +514,21 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 #endif /* USE_FULL_ASSERT */
 
+inline void Error(const char* who, const char* why)
+{
+    // Disable interrupts
+    audio_chip.StopI2S();
+    serial.Stop();
+
+    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, HIGH);
+    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, HIGH);
+    while (1)
+    {
+        UI_LOG_ERROR("Error has occurred; who: %s; why: %s", who, why);
+        HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+        HAL_Delay(1000);
+    }
+}
 
 
 void SlowSendTest(int delay, int num)
@@ -567,7 +601,7 @@ void InterHactarSerialRoundTripTest(int delay, int num)
             {
                 while (true)
                 {
-                    Error_Handler();
+                    Error("InterHactarSerialRoundTripTest", "Send didn't match received");
                 }
             }
         }

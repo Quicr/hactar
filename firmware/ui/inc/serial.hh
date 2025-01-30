@@ -1,6 +1,6 @@
 #pragma once
 
-#include "main.h"
+#include "app_main.hh"
 
 #include "ring_buffer.hh"
 #include "link_packet_t.hh"
@@ -18,6 +18,7 @@ public:
     ~Serial();
 
     void StartReceive();
+    void Stop();
     void Reset();
 
     link_packet_t* Read();

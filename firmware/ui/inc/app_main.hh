@@ -60,6 +60,7 @@ inline void ProcessText(uint16_t len);
 inline void InitScreen();
 inline void WaitForNetReady();
 inline void AudioCallback();
+inline void Error(const char* who, const char* why);
 
 void SlowSendTest(int delay, int num);
 void InterHactarSerialRoundTripTest(int delay, int num);
