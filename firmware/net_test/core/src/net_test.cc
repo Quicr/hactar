@@ -30,6 +30,8 @@
 
 #include "ui_net_link.hh"
 
+#include "logger.hh"
+
 #define TEST_SERVER_IP "192.168.50.20"
 #define TEST_SERVER_PORT 12345
 
@@ -96,23 +98,56 @@ extern "C" void app_main(void)
 
 
     Logger::Log(Logger::Level::Info, "Start!");
+    int r_next = 0;
     link_packet_t* recv = nullptr;
+    uint32_t num_recv = 0;
+    uint32_t num_sent = 0;
+
+    link_packet_t fake_audio;
+    fake_audio.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
+    fake_audio.length = 321;
+    fake_audio.payload[0] = 1;
+
+    for (uint16_t i = 1; i < fake_audio.length; ++i)
+    {
+        fake_audio.payload[i] = rand() % 0xFF;
+    }
+
+    int next_log = 0;
+
     while (1)
     {
+        // vTaskDelay(20/ portTICK_PERIOD_MS);
+        // ui_link->Write(&fake_audio);
+        // gpio_set_level(NET_LED_R, r_next);
+        // r_next = !r_next;
+
+
         vTaskDelay(5 / portTICK_PERIOD_MS);
         while ((recv = ui_link->Read()))
         {
+            ++num_recv;
+
+            gpio_set_level(NET_LED_R, r_next);
+            r_next = !r_next;
             switch ((ui_net_link::Packet_Type)recv->type)
             {
                 case ui_net_link::Packet_Type::AudioObject:
                 {
                     ui_link->Write(recv);
+                    ++num_sent;
                     break;
                 }
                 default:
                     break;
             }
+        }
 
+        ++next_log;
+        if (next_log > 1000/5)
+        {
+            NET_LOG_INFO("num recv %lu, num sent %lu", num_recv, num_sent);
+            next_log = 0;
         }
     }
 }

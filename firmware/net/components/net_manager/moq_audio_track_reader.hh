@@ -29,6 +29,7 @@ namespace moq
         quicr::BytesSpan Front() noexcept;
         void Pop() noexcept { _buffer.pop(); }
         std::optional<std::vector<uint8_t>> PopFront() noexcept;
+        size_t NumAvailable() noexcept;
 
     private:
         std::queue<std::vector<uint8_t>> _buffer;

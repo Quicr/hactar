@@ -81,9 +81,9 @@ extern TIM_HandleTypeDef htim3;
 extern RNG_HandleTypeDef hrng;
 
 // Buffer declarations
-static constexpr uint16_t net_ui_serial_tx_buff_sz = 4096;
+static constexpr uint16_t net_ui_serial_tx_buff_sz = 8192;
 uint8_t net_ui_serial_tx_buff[net_ui_serial_tx_buff_sz] = { 0 };
-static constexpr uint16_t net_ui_serial_rx_buff_sz = 4096;
+static constexpr uint16_t net_ui_serial_rx_buff_sz = 8192;
 uint8_t net_ui_serial_rx_buff[net_ui_serial_rx_buff_sz] = { 0 };
 static constexpr uint16_t net_ui_serial_num_rx_packets = 30;
 
@@ -128,8 +128,16 @@ uint32_t num_req_sent = 0;
 uint32_t num_packets_rx = 0;
 uint32_t num_packets_tx = 0;
 
+ui_net_link::AudioObject talk_frame = { 0, 0 };
+
 int app_main()
 {
+
+    for (int i = 0; i < 320; ++i)
+    {
+        talk_frame.data[i] = i % 0xFF;
+    }
+
     audio_chip.Init();
     audio_chip.StartI2S();
     HAL_Delay(5000);
@@ -182,6 +190,7 @@ int app_main()
             ui_net_link::BuildGetLinkPacket(link_send_space);
             serial.Write(link_send_space, 3);
             ++num_req_sent;
+            ++num_packets_tx;
             ++num_awaiting_packets;
         }
 
@@ -192,27 +201,27 @@ int app_main()
             ui_net_link::TalkStart talk_start = { 0 };
             ui_net_link::Serialize(talk_start, talk_packet);
             serial.Write(talk_packet);
+            ++num_packets_tx;
             // UI_LOG_ERROR("PTTD");
             ptt_down = true;
         }
-        else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
-        {
-            ui_net_link::TalkStop talk_stop = { 0 };
-            ui_net_link::Serialize(talk_stop, talk_packet);
-            serial.Write(talk_packet);
+        // else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
+        // {
+            // ui_net_link::TalkStop talk_stop = { 0 };
+            // ui_net_link::Serialize(talk_stop, talk_packet);
+            // serial.Write(talk_packet);
+            // ++num_packets_tx;
             // UI_LOG_ERROR("PTTU");
             // ptt_down = false;
-        }
+        // }
 
         if (ptt_down)
         {
             // UI_LOG_ERROR("AS");
 
-            ui_net_link::AudioObject talk_frame = { 0, 0 };
-
-            AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
+            // AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
             ui_net_link::Serialize(talk_frame, talk_packet);
-            HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+            // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
             serial.Write(talk_packet);
             ++num_packets_tx;
         }

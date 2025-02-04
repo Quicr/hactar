@@ -1,6 +1,5 @@
 #include "serial.hh"
 #include "packet_builder.hh"
-#include "logger.hh"
 
 #include "esp_log.h"
 #include <random>
@@ -30,15 +29,14 @@ Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_
     ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(port, tx_pin, rx_pin, rts_pin, cts_pin));
 
-    esp_intr_alloc(intr_source, 0, ISRHandler, (void*)this, &isr_handle);
+    ESP_ERROR_CHECK(esp_intr_alloc(intr_source, NULL, ISRHandler, (void*)this, &isr_handle));
 
     // Enable interrupt for full fifo, and rx timeout.
     // Enable interrupt for tx transmit complete
     uart_intr_config_t uintr_cfg = {
-      .intr_enable_mask = (UART_RXFIFO_FULL_INT_ENA_M | UART_RXFIFO_TOUT_INT_ENA_M | UART_TX_DONE_INT_ENA_M),
+      .intr_enable_mask = (UART_RXFIFO_FULL_INT_ENA_M | UART_RXFIFO_TOUT_INT_CLR | UART_TX_DONE_INT_ENA_M),
       .rx_timeout_thresh = 1,
-      .txfifo_empty_intr_thresh = 0,
-      .rxfifo_full_thresh = 68,
+      .rxfifo_full_thresh = 60,
     };
     ESP_ERROR_CHECK(uart_intr_config(port, &uintr_cfg));
 }
@@ -53,9 +51,9 @@ link_packet_t* Serial::Read()
 {
     while (unread > 0)
     {
-        uint32_t bytes_to_read = unread;
+        uint16_t bytes_to_read = unread;
 
-        if (rx_buff_read + bytes_to_read >= rx_buff_sz)
+        if (rx_buff_read + bytes_to_read > rx_buff_sz)
         {
             bytes_to_read = rx_buff_sz - rx_buff_read;
         }
@@ -84,24 +82,19 @@ link_packet_t* Serial::Read()
 
 void Serial::Write(const link_packet_t* packet)
 {
-    Write(packet->data, packet->length + link_packet_t::Header_Size);
+    uint16_t total_bytes = packet->length + link_packet_t::Header_Size;
+    Write(packet->data, total_bytes);
 }
 
 void Serial::Write(const uint8_t* data, const size_t size)
 {
-    size_t total_bytes = size;
+    uint16_t total_bytes = size;
     // Logger::Log(Logger::Level::Info, "packet len", packet->length);
     size_t data_offset = 0;
 
-
-    if (untransmitted + total_bytes > tx_buff_sz)
-    {
-        ESP_LOGI("ERROR Serial write", "Transmit buffer overflow!");
-    }
-
     if (tx_buff_write + total_bytes > tx_buff_sz)
     {
-        const uint32_t diff = tx_buff_sz - tx_buff_write;
+        const uint16_t diff = tx_buff_sz - tx_buff_write;
         memcpy(tx_buff + tx_buff_write, data, diff);
 
         // Reset the buff write head since we are at the end.
@@ -157,11 +150,6 @@ void Serial::Transmit(Serial* self)
     {
         self->num_transmitting = 128 - self->uart.status.txfifo_cnt;
     }
-
-    if (self->num_transmitting > 32)
-    {
-        self->num_transmitting = 32;
-    }
     uart_ll_write_txfifo(&self->uart, self->tx_buff + self->tx_buff_read, self->num_transmitting);
 }
 
@@ -172,57 +160,79 @@ void Serial::ISRHandler(void* args)
 {
     Serial* self = (Serial*)args;
 
-    // Parity error intr
-    if (self->uart.int_st.parity_err_int_st)
+    uint32_t intr_status = 0;
+    while (1)
     {
-        uart_clear_intr_status(self->port, UART_PARITY_ERR_INT_CLR);
-        abort();
-    }
+        intr_status = uart_ll_get_intsts_mask(&self->uart);
 
-    if (self->uart.int_st.tx_done_int_st)
-    {
-        uart_clear_intr_status(self->port, UART_TX_DONE_INT_CLR);
-
-        // Advance the read head
-        self->tx_buff_read += self->num_transmitting;
-        self->untransmitted -= self->num_transmitting;
-
-        if (self->tx_buff_read >= self->tx_buff_sz)
+        if (intr_status == 0)
         {
-            self->tx_buff_read = 0;
+            break;
         }
 
-        Serial::Transmit(self);
-    }
-
-    if (self->uart.status.rxfifo_cnt)
-    {
-        // Loop until we've emptied the buff if a small buffer has been
-        // designated then this will cover overflowing.
-        while (self->uart.status.rxfifo_cnt)
+        // Parity error intr
+        if (intr_status & UART_INTR_PARITY_ERR)
         {
-            // Note- Reading from uart.fifo.rxfifo_rd_byte automatically
-            // decrements uart.status.rxfifo_cnt
-            uint32_t bytes_to_read = self->uart.status.rxfifo_cnt;
-            if (bytes_to_read + self->rx_buff_write > self->rx_buff_sz)
-            {
-                bytes_to_read = self->rx_buff_sz - self->rx_buff_write;
-            }
-            self->unread += bytes_to_read;
-
-            while (bytes_to_read)
-            {
-                self->rx_buff[self->rx_buff_write++] = self->uart.fifo.rxfifo_rd_byte;
-                --bytes_to_read;
-            }
-
-            if (self->rx_buff_write >= self->rx_buff_sz)
-            {
-                self->rx_buff_write = 0;
-            }
+            uart_ll_clr_intsts_mask(&self->uart, UART_PARITY_ERR_INT_CLR_M);
+            abort();
+            continue;
         }
-        uart_clear_intr_status(self->port, UART_RXFIFO_FULL_INT_CLR);
-        uart_clear_intr_status(self->port, UART_RXFIFO_TOUT_INT_CLR);
+        else if (intr_status & UART_INTR_TX_DONE)
+        {
+
+            // Advance the read head
+            self->tx_buff_read += self->num_transmitting;
+            self->untransmitted -= self->num_transmitting;
+
+            if (self->tx_buff_read >= self->tx_buff_sz)
+            {
+                self->tx_buff_read = 0;
+            }
+
+            uart_ll_clr_intsts_mask(&self->uart, UART_TX_DONE_INT_CLR_M);
+            Serial::Transmit(self);
+            continue;
+        }
+        else if (intr_status & UART_INTR_RXFIFO_TOUT)
+        {
+            uart_ll_clr_intsts_mask(&self->uart, UART_RXFIFO_TOUT_INT_CLR_M);
+            Serial::RxHandler(self);
+            continue;
+        }
+        else if (intr_status & UART_INTR_RXFIFO_FULL)
+        {
+            uart_ll_clr_intsts_mask(&self->uart, UART_RXFIFO_FULL_INT_CLR_M);
+            Serial::RxHandler(self);
+            continue;
+        }
+    }
+}
+
+void Serial::RxHandler(Serial* self)
+{
+    // Loop until we've emptied the buff if a small buffer has been
+    // designated then this will cover overflowing.
+    while (self->uart.status.rxfifo_cnt)
+    {
+        // Note- Reading from uart.fifo.rxfifo_rd_byte automatically
+        // decrements uart.status.rxfifo_cnt
+        uint32_t bytes_to_read = self->uart.status.rxfifo_cnt;
+        if (bytes_to_read + self->rx_buff_write > self->rx_buff_sz)
+        {
+            bytes_to_read = self->rx_buff_sz - self->rx_buff_write;
+        }
+        self->unread += bytes_to_read;
+
+        while (bytes_to_read)
+        {
+            self->rx_buff[self->rx_buff_write++] = self->uart.fifo.rxfifo_rd_byte;
+            --bytes_to_read;
+        }
+
+        if (self->rx_buff_write >= self->rx_buff_sz)
+        {
+            self->rx_buff_write = 0;
+        }
     }
 }
 

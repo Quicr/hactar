@@ -16,7 +16,8 @@ public:
         read_idx(0),
         write_idx(0),
         unread(0),
-        buffer(nullptr)
+        buffer(nullptr),
+        busy(false)
     {
         // Don't allow a zero for buffer size
         if (this->size == 0)
@@ -32,34 +33,38 @@ public:
         delete [] buffer;
     }
 
-    T& operator [](const size_t i)
-    {
-        return buffer[i];
-    }
-
     T& Write() noexcept
     {
+        BusySet();
         if (write_idx >= size)
         {
             write_idx = 0;
         }
 
         ++unread;
-        return buffer[write_idx++];
+        T& out = buffer[write_idx++];
+
+        BusyReset();
+        return out;
     }
 
     void Write(T d_in) noexcept
     {
+        BusySet();
         buffer[write_idx++] = std::move(d_in);
 
         if (write_idx >= size)
             write_idx = 0;
 
         ++unread;
+
+        BusyReset();
     }
 
     void Write(T* input, const uint16_t count)
     {
+        BusySet();
+
         size_t input_off = 0;
 
         // Buffer is nearly full so we need to wrap around to the front
@@ -80,10 +85,14 @@ public:
         {
             buffer[write_idx++] = std::move(input[i]);
         }
+
+        BusyReset();
     }
 
     T Take() noexcept
     {
+        BusySet();
+
         if (unread > 0)
         {
             unread--;
@@ -96,11 +105,14 @@ public:
             read_idx = 0;
         }
 
+        BusyReset();
         return d_out;
     }
 
     T& Read() noexcept
     {
+        BusySet();
+
         if (unread > 0)
         {
             unread--;
@@ -112,11 +124,14 @@ public:
             read_idx = 0;
         }
 
+        BusyReset();
         return d_out;
     }
 
     void Read(T& d_out, bool& is_end)
     {
+        BusySet();
+
         if (unread > 0)
         {
             unread--;
@@ -130,6 +145,7 @@ public:
         }
 
         is_end = read_idx == write_idx;
+        BusyReset();
     }
 
     const T& Peek() const
@@ -162,35 +178,28 @@ public:
         return size;
     }
 
-    void MoveWriteHead(uint16_t idx)
-    {
-        // TODO put into some error state so that programmer knows of the error
-        if (idx > size)
-        {
-            return;
-        }
-
-        write_idx = idx;
-    }
-
-    // This is only really useful for the ring buffering from the
-    // stm lib
-    inline void UpdateWriteHead(uint16_t idx)
-    {
-        const uint16_t num_recv = idx - write_idx;
-        unread += num_recv;
-        write_idx += num_recv;
-
-        if (write_idx >= size)
-        {
-            write_idx = write_idx - size;
-        }
-    }
-
 private:
+    inline void BusySet()
+    {
+        if (busy)
+        {
+            while (true)
+            {
+
+            }
+        }
+        busy = true;
+    }
+
+    inline void BusyReset()
+    {
+        busy = false;
+    }
+
     uint16_t size;
     uint16_t read_idx; // start
     uint16_t write_idx; // end
     uint16_t unread;
     T* buffer;
+    bool busy;
 };
