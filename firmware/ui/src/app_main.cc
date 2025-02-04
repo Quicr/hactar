@@ -205,15 +205,15 @@ int app_main()
             // UI_LOG_ERROR("PTTD");
             ptt_down = true;
         }
-        // else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
-        // {
-            // ui_net_link::TalkStop talk_stop = { 0 };
-            // ui_net_link::Serialize(talk_stop, talk_packet);
-            // serial.Write(talk_packet);
-            // ++num_packets_tx;
+        else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
+        {
+            ui_net_link::TalkStop talk_stop = { 0 };
+            ui_net_link::Serialize(talk_stop, talk_packet);
+            serial.Write(talk_packet);
+            ++num_packets_tx;
             // UI_LOG_ERROR("PTTU");
-            // ptt_down = false;
-        // }
+            ptt_down = false;
+        }
 
         if (ptt_down)
         {
