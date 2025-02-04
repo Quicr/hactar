@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <cstddef>
 #include <utility>
 
 #define DEFAULT_BUFFER_SIZE 32
