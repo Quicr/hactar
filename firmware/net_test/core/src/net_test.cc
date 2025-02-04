@@ -28,6 +28,8 @@
 
 #include "esp_event.h"
 
+#include "ui_net_link.hh"
+
 #define TEST_SERVER_IP "192.168.50.20"
 #define TEST_SERVER_PORT 12345
 
@@ -45,7 +47,6 @@ Serial* ui_link;
 
 extern "C" void app_main(void)
 {
-    QueueHandle_t uart_queue;
     InitializeGPIO();
     IntitializeLEDs();
     // Not using for now
@@ -94,68 +95,28 @@ extern "C" void app_main(void)
     gpio_set_level(NET_STAT, 1);
 
 
-    // This is the lazy way of doing it, otherwise we should use a esp_timer.
-    uint32_t blink_cnt = 0;
-    uint32_t last_check = 0;
-
     Logger::Log(Logger::Level::Info, "Start!");
     link_packet_t* recv = nullptr;
     while (1)
     {
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-        recv = ui_link->Read();
-        if (recv == nullptr)
+        vTaskDelay(5 / portTICK_PERIOD_MS);
+        while ((recv = ui_link->Read()))
         {
-            continue;
+            switch ((ui_net_link::Packet_Type)recv->type)
+            {
+                case ui_net_link::Packet_Type::AudioObject:
+                {
+                    ui_link->Write(recv);
+                    break;
+                }
+                default:
+                    break;
+            }
+
         }
-
-        ui_link->Write(recv);
-
-        // Logger::Log(Logger::Level::Info, "Net Alive");
-        // Logger::Log(Logger::Level::Info, "rx intr", 
-            // ui_link->num_rx_intr, "num recv", ui_link->num_rx_recv);
-
-        // ESP_LOGI("main", "net alive, rx intr %ld, rx recv %ld, data[0]=%d, data[1]=%d, data[2]=%d, data[3]=%d",
-        //     ui_link->num_rx_intr, ui_link->num_rx_recv, ui_link->rx(0), ui_link->rx(1), ui_link->rx(2), ui_link->rx(3));
-
-
-        // manager->Update();
-
-        // auto state = wifi->GetState();
-        // if (state == Wifi::State::Connected && !qsession_connected)
-        // {
-        //     Logger::Log(Logger::Level::Info, "Net app_main Connecting to QSession");
-        //     qsession->connect();
-        //     qsession_connected = true;
-        // }
-
     }
 }
 
 void SetupComponents()
 {
-
-
-    // wifi = new Wifi(*ui_layer);
-
-    // inbound_queue = std::make_shared<AsyncQueue<QuicrObject>>();
-    char default_relay [] = "192.168.50.20";
-    auto relay_name = default_relay;
-    uint16_t port = 1234;
-    // quicr::RelayInfo relay{
-    //     .hostname = relay_name,`````````
-    //     .port = port,
-    //     .proto = quicr::RelayInfo::Protocol::UDP
-    // };
-    // qsession = std::make_shared<QSession>(relay, inbound_queue);
-
-    // manager = new NetManager(*ui_layer, *wifi, qsession, inbound_queue);
-
-    // Wait for wifi to finish initializing
-    // while (!wifi->IsInitialized())
-    // {
-    //     vTaskDelay(10 / portTICK_PERIOD_MS);
-    // }
-
-    Logger::Log(Logger::Level::Info, "Components ready");
 }

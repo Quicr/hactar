@@ -22,10 +22,6 @@
 #ifndef __APP_MAIN_HH
 #define __APP_MAIN_HH
 
-#ifndef UNUSED
-#define UNUSED(expr) do { (void)(expr); } while(0)
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -33,7 +29,6 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32.h"
-
 
 enum Timer_Flags
 {
@@ -60,7 +55,7 @@ inline void ProcessText(uint16_t len);
 inline void InitScreen();
 inline void WaitForNetReady();
 inline void AudioCallback();
-inline void Error(const char* who, const char* why);
+void Error(const char* who, const char* why);
 
 void SlowSendTest(int delay, int num);
 void InterHactarSerialRoundTripTest(int delay, int num);

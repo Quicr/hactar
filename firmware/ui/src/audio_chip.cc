@@ -349,6 +349,8 @@ bool AudioChip::RxBufferReady()
 
 void AudioChip::StartI2S()
 {
+    // NOTE- Do not remove delay the audio chip needs time to stabilize
+    HAL_Delay(20);
     auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Audio_Buffer_Sz);
 
     if (output == HAL_OK)

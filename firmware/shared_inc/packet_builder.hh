@@ -4,6 +4,7 @@
 #include "link_packet_t.hh"
 #include "logger.hh"
 
+// TODO move to serial_handler
 static int BuildPacket(const uint8_t* buff, const uint32_t num_bytes, RingBuffer<link_packet_t>& packets)
 {
     static link_packet_t* packet = nullptr;
