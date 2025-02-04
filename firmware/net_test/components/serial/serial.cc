@@ -1,5 +1,6 @@
 #include "serial.hh"
 #include "packet_builder.hh"
+#include "logger.hh"
 
 #include "esp_log.h"
 #include <random>
@@ -29,13 +30,14 @@ Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_
     ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(port, tx_pin, rx_pin, rts_pin, cts_pin));
 
-    ESP_ERROR_CHECK(esp_intr_alloc(intr_source, NULL, ISRHandler, (void*)this, &isr_handle));
+    esp_intr_alloc(intr_source, 0, ISRHandler, (void*)this, &isr_handle);
 
     // Enable interrupt for full fifo, and rx timeout.
     // Enable interrupt for tx transmit complete
     uart_intr_config_t uintr_cfg = {
-      .intr_enable_mask = (UART_RXFIFO_FULL_INT_ENA_M | UART_RXFIFO_TOUT_INT_CLR | UART_TX_DONE_INT_ENA_M),
+      .intr_enable_mask = (UART_RXFIFO_FULL_INT_ENA_M | UART_RXFIFO_TOUT_INT_ENA_M | UART_TX_DONE_INT_ENA_M),
       .rx_timeout_thresh = 1,
+      .txfifo_empty_intr_thresh = 0,
       .rxfifo_full_thresh = 68,
     };
     ESP_ERROR_CHECK(uart_intr_config(port, &uintr_cfg));
@@ -51,9 +53,9 @@ link_packet_t* Serial::Read()
 {
     while (unread > 0)
     {
-        uint16_t bytes_to_read = unread;
+        uint32_t bytes_to_read = unread;
 
-        if (rx_buff_read + bytes_to_read > rx_buff_sz)
+        if (rx_buff_read + bytes_to_read >= rx_buff_sz)
         {
             bytes_to_read = rx_buff_sz - rx_buff_read;
         }
@@ -87,13 +89,19 @@ void Serial::Write(const link_packet_t* packet)
 
 void Serial::Write(const uint8_t* data, const size_t size)
 {
-    uint16_t total_bytes = size;
+    size_t total_bytes = size;
     // Logger::Log(Logger::Level::Info, "packet len", packet->length);
     size_t data_offset = 0;
 
+
+    if (untransmitted + total_bytes > tx_buff_sz)
+    {
+        ESP_LOGI("ERROR Serial write", "Transmit buffer overflow!");
+    }
+
     if (tx_buff_write + total_bytes > tx_buff_sz)
     {
-        const uint16_t diff = tx_buff_sz - tx_buff_write;
+        const uint32_t diff = tx_buff_sz - tx_buff_write;
         memcpy(tx_buff + tx_buff_write, data, diff);
 
         // Reset the buff write head since we are at the end.
@@ -149,6 +157,11 @@ void Serial::Transmit(Serial* self)
     {
         self->num_transmitting = 128 - self->uart.status.txfifo_cnt;
     }
+
+    if (self->num_transmitting > 32)
+    {
+        self->num_transmitting = 32;
+    }
     uart_ll_write_txfifo(&self->uart, self->tx_buff + self->tx_buff_read, self->num_transmitting);
 }
 
@@ -181,7 +194,8 @@ void Serial::ISRHandler(void* args)
 
         Serial::Transmit(self);
     }
-    else if (self->uart.status.rxfifo_cnt)
+
+    if (self->uart.status.rxfifo_cnt)
     {
         // Loop until we've emptied the buff if a small buffer has been
         // designated then this will cover overflowing.

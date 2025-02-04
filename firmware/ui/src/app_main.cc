@@ -112,8 +112,6 @@ link_packet_t talk_packet;
 link_packet_t play_buffer;
 link_packet_t* link_packet = nullptr;
 
-size_t num_packets_recv = 0;
-
 volatile bool sleeping = true;
 volatile bool error = false;
 bool net_replied = false;
@@ -126,20 +124,22 @@ uint32_t num_awaiting_packets = 0;
 
 ui_net_link::AudioObject play_frame;
 
+uint32_t num_req_sent = 0;
+uint32_t num_packets_rx = 0;
+uint32_t num_packets_tx = 0;
+
 int app_main()
 {
-    HAL_Delay(5000);
     audio_chip.Init();
+    audio_chip.StartI2S();
+    HAL_Delay(5000);
     InitScreen();
     LEDS(LOW, LOW, LOW);
     serial.StartReceive();
     LEDS(HIGH, HIGH, HIGH);
 
-    // TODO Fix
     WaitForNetReady();
 
-    uint32_t timeout;
-    uint32_t current_tick;
     uint32_t redraw = uwTick;
     Colour next = Colour::Green;
     Colour curr = Colour::Blue;
@@ -147,25 +147,7 @@ int app_main()
 
     bool ptt_down = false;
 
-
-    // TODO Probe for a reply from the net chip using serial
-    // SlowSendTest(100, 10);
-
-    // TODO test clock stability by switching a debug pin on and off and measure it with the scope
-    HAL_Delay(5000);
-    audio_chip.StartI2S();
-    bool stop = false;
-
     uint32_t blinky = 0;
-
-    uint32_t time_start = HAL_GetTick();
-
-
-    uint32_t start = 0;
-    uint32_t end = 0;
-
-    uint32_t num_req_sent = 0;
-
     uint32_t next_print = 0;
 
     while (1)
@@ -180,7 +162,7 @@ int app_main()
         num_loops++;
         if (HAL_GetTick() > next_print)
         {
-            UI_LOG_ERROR("req: %lu", num_req_sent);
+            UI_LOG_ERROR("r %lu, rx %lu, tx %lu", num_req_sent, num_packets_rx, num_packets_tx);
             next_print = HAL_GetTick() + 1000;
         }
         while (sleeping)
@@ -219,7 +201,7 @@ int app_main()
             ui_net_link::Serialize(talk_stop, talk_packet);
             serial.Write(talk_packet);
             // UI_LOG_ERROR("PTTU");
-            ptt_down = false;
+            // ptt_down = false;
         }
 
         if (ptt_down)
@@ -230,7 +212,9 @@ int app_main()
 
             AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
             ui_net_link::Serialize(talk_frame, talk_packet);
+            HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
             serial.Write(talk_packet);
+            ++num_packets_tx;
         }
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
@@ -261,7 +245,6 @@ int app_main()
         RaiseFlag(Draw_Complete);
 
         sleeping = true;
-        stop = true;
     }
 
     return 0;
@@ -339,11 +322,7 @@ void HandleRecvLinkPackets()
             break;
         }
 
-        if (++num_packets_recv == 100)
-        {
-            UI_LOG_ERROR(".");
-            num_packets_recv = 0;
-        }
+        ++num_packets_rx;
 
         switch ((ui_net_link::Packet_Type)link_packet->type)
         {
@@ -357,6 +336,7 @@ void HandleRecvLinkPackets()
             case ui_net_link::Packet_Type::AudioObject:
             {
                 // UI_LOG_ERROR("AR");
+                HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
                 --num_awaiting_packets;
                 ui_net_link::Deserialize(*link_packet, play_frame);
                 AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
@@ -376,7 +356,7 @@ void HandleRecvLinkPackets()
             }
             default:
             {
-                UI_LOG_ERROR("Packet type %d, %u", (int)link_packet->type, link_packet->length);
+                UI_LOG_ERROR("Packet type %d, %u, %lu, %lu", (int)link_packet->type, link_packet->length, num_awaiting_packets, num_packets_rx);
                 Error("Link packet handler", "Received a packet type that has no handler");
                 break;
             }
@@ -442,9 +422,9 @@ inline void AudioCallback()
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
+    // UI_LOG_ERROR("rx %u", size);
     if (huart->Instance == serial.UART()->Instance)
     {
-        // UI_LOG_ERROR("rx %u", size);
         Serial::RxISR(&serial, size);
     }
 }
@@ -460,9 +440,9 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == USART2)
+    if (huart->Instance == serial.UART()->Instance)
     {
-        serial.Reset();
+        Error("UART error callback", "dunno");
     }
 }
 
@@ -595,7 +575,7 @@ void InterHactarSerialRoundTripTest(int delay, int num)
 
 
         // Compare the two
-        for (int i = 0 ; i < buff_sz;++i)
+        for (size_t i = 0 ; i < buff_sz;++i)
         {
             if (tmp.payload[i] != recv->payload[i])
             {
@@ -607,7 +587,7 @@ void InterHactarSerialRoundTripTest(int delay, int num)
         }
         ++num_good;
 
-        for (int i = 0; i < buff_sz; ++i)
+        for (size_t i = 0; i < buff_sz; ++i)
         {
             tmp.payload[i] = rand() % 0xFF;
         }
@@ -645,7 +625,7 @@ void InterHactarFullRoundTripTest(int delay, int num)
     // Fill the tmp audio buffer with random
     tmp.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
     tmp.length = buff_sz;
-    for (int i = 0; i < buff_sz; ++i)
+    for (size_t i = 0; i < buff_sz; ++i)
     {
         tmp.payload[i] = rand() % 0xFF;
     }
@@ -666,7 +646,6 @@ void InterHactarFullRoundTripTest(int delay, int num)
     link_packet_t* recv = nullptr;
     int idx = 0;
     uint32_t timeout = 0;
-    uint32_t end = 0;
     uint32_t total_elapsed = 0;
     uint32_t total_sent = 0;
     while (true)
