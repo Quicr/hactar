@@ -79,7 +79,6 @@ syscalls.c
 
 # User C/C++ sources
 SRCS_CC	   = $(shell find src -name '*.cc' -exec basename {} \;)
-SRCS_CC += serial_handler.cc
 
 SRCS_C    += $(shell find src -name '*.c' -exec basename {} \;)
 
@@ -98,7 +97,6 @@ INCS =  \
 
 INCS += $(addprefix -I,$(shell find inc -type d))
 INCS += $(addprefix -I,$(shell find Core/Inc -type d))
-INCS += $(addprefix -I,$(shell find ../shared -type d))
 INCS += -I../shared_inc
 
 #######################################
@@ -107,7 +105,6 @@ INCS += -I../shared_inc
 VPATH =  $(shell find src -type d)
 VPATH +=  $(shell find Core/Src -type d)
 VPATH += Drivers/STM32F4xx_HAL_Driver/Src
-VPATH +=  $(shell find ../shared -type d)
 # VPATH     += $(BSP_SRC_DIR)
 # VPATH     += $(CMSIS_CORE_SRC_DIR)
 # VPATH     += $(CMSIS_DEVICE_SRC_DIR)
