@@ -34,13 +34,14 @@
 #define NET_UI_UART_DEV UART1
 #define NET_UI_UART_TX_PIN 17
 #define NET_UI_UART_RX_PIN 18
-#define NET_UI_UART_RX_BUFF_SIZE 1024
-#define NET_UI_UART_TX_BUFF_SIZE 1024
+#define NET_UI_UART_RX_BUFF_SIZE 8192
+#define NET_UI_UART_TX_BUFF_SIZE 8192
 #define NET_UI_UART_RING_TX_NUM 30
 #define NET_UI_UART_RING_RX_NUM 30
 
 
-int num_audio_requests = 0;
+SemaphoreHandle_t num_audio_requests = xSemaphoreCreateCounting(10, 0);
+
 int num_sent_link_audio = 0;
 
 
@@ -103,7 +104,7 @@ static void LinkPacketTask(void* args)
                 case ui_net_link::Packet_Type::GetAudioLinkPacket:
                 {
                     // NET_LOG_INFO("recvreq");
-                    ++num_audio_requests;
+                    xSemaphoreGive(num_audio_requests);
                     break;
                 }
                 case ui_net_link::Packet_Type::TalkStart:
@@ -115,7 +116,7 @@ static void LinkPacketTask(void* args)
                 case ui_net_link::Packet_Type::AudioObject:
                 {
                     // NET_LOG_INFO("serial recv audio");
-                    
+
                     std::lock_guard<std::mutex> _(object_mux);
 
                     auto& obj = moq_objects.emplace_back();
@@ -196,6 +197,7 @@ static void MoqSubTask(void* args)
         NET_LOG_INFO("Subscribed");
     }
 
+    link_packet_t link_packet;
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
         vTaskDelay(5 / portTICK_PERIOD_MS);
@@ -207,15 +209,10 @@ static void MoqSubTask(void* args)
 
         sub_track_handler->TryPlay();
 
-        link_packet_t link_packet;
-        while (num_audio_requests > 0)
+
+        if (sub_track_handler->NumAvailable() && xSemaphoreTake(num_audio_requests, 0))
         {
             auto data = sub_track_handler->PopFront();
-            if (!data.has_value())
-            {
-                break;
-            }
-
             // NET_LOG_INFO("sub audio");
 
             link_packet.type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
@@ -224,7 +221,6 @@ static void MoqSubTask(void* args)
             link_packet.is_ready = true;
             ui_layer.Write(&link_packet);
 
-            --num_audio_requests;
         }
 
     }
@@ -263,7 +259,7 @@ extern "C" void app_main(void)
     // setup moq transport
     quicr::ClientConfig config;
     config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = "moq://relay.quicr.ctgpoc.com:33437";
+    config.connect_uri = "moq://192.168.50.20:33435";
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;

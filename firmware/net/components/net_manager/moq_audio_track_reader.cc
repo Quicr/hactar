@@ -59,3 +59,9 @@ std::optional<std::vector<uint8_t>> moq::AudioTrackReader::PopFront() noexcept
     _buffer.pop();
     return value;
 }
+
+
+size_t moq::AudioTrackReader::NumAvailable() noexcept
+{
+    return _buffer.size();
+}

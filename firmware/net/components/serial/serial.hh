@@ -31,6 +31,7 @@ public:
 private:
     static IRAM_ATTR void Transmit(Serial* self);
     static IRAM_ATTR void ISRHandler(void* args);
+    FORCE_INLINE_ATTR void RxHandler(Serial* arg);
 
     uart_port_t port;
     uart_dev_t& uart;
