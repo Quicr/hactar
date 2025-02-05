@@ -263,7 +263,7 @@ extern "C" void app_main(void)
     // setup moq transport
     quicr::ClientConfig config;
     config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = "moq://192.168.50.20:33435";
+    config.connect_uri = "moq://relay.quicr.ctgpoc.com:33435";
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;
