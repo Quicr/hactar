@@ -133,10 +133,10 @@ ui_net_link::AudioObject talk_frame = { 0, 0 };
 int app_main()
 {
 
-    for (int i = 0; i < 320; ++i)
-    {
-        talk_frame.data[i] = i % 0xFF;
-    }
+    // for (int i = 0; i < 320; ++i)
+    // {
+    //     talk_frame.data[i] = i % 0xFF;
+    // }
 
     audio_chip.Init();
     audio_chip.StartI2S();
@@ -168,11 +168,11 @@ int app_main()
         }
 
         num_loops++;
-        if (HAL_GetTick() > next_print)
-        {
-            UI_LOG_ERROR("r %lu, rx %lu, tx %lu", num_req_sent, num_packets_rx, num_packets_tx);
-            next_print = HAL_GetTick() + 1000;
-        }
+        // if (HAL_GetTick() > next_print)
+        // {
+        //     UI_LOG_ERROR("r %lu, rx %lu, tx %lu", num_req_sent, num_packets_rx, num_packets_tx);
+        //     next_print = HAL_GetTick() + 1000;
+        // }
         while (sleeping)
         {
             // LowPowerMode();
@@ -219,9 +219,9 @@ int app_main()
         {
             // UI_LOG_ERROR("AS");
 
-            // AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
+            AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
             ui_net_link::Serialize(talk_frame, talk_packet);
-            // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+            HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
             serial.Write(talk_packet);
             ++num_packets_tx;
         }
