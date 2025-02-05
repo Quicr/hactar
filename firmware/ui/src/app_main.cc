@@ -81,9 +81,9 @@ extern TIM_HandleTypeDef htim3;
 extern RNG_HandleTypeDef hrng;
 
 // Buffer declarations
-static constexpr uint16_t net_ui_serial_tx_buff_sz = 8192;
+static constexpr uint16_t net_ui_serial_tx_buff_sz = 1024;
 uint8_t net_ui_serial_tx_buff[net_ui_serial_tx_buff_sz] = { 0 };
-static constexpr uint16_t net_ui_serial_rx_buff_sz = 8192;
+static constexpr uint16_t net_ui_serial_rx_buff_sz = 1024;
 uint8_t net_ui_serial_rx_buff[net_ui_serial_rx_buff_sz] = { 0 };
 static constexpr uint16_t net_ui_serial_num_rx_packets = 30;
 
@@ -432,7 +432,7 @@ inline void AudioCallback()
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     // UI_LOG_ERROR("rx %u", size);
-    if (huart->Instance == serial.UART()->Instance)
+    if (huart->Instance == Serial::UART(&serial)->Instance)
     {
         Serial::RxISR(&serial, size);
     }
@@ -440,7 +440,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == serial.UART()->Instance)
+    if (huart->Instance == Serial::UART(&serial)->Instance)
     {
         Serial::TxISR(&serial);
         RaiseFlag(Rx_Audio_Transmitted);
@@ -449,7 +449,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == serial.UART()->Instance)
+    if (huart->Instance == Serial::UART(&serial)->Instance)
     {
         Error("UART error callback", "dunno");
     }
