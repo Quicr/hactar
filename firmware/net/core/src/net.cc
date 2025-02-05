@@ -40,7 +40,7 @@
 #define NET_UI_UART_RING_RX_NUM 30
 
 
-SemaphoreHandle_t num_audio_requests = xSemaphoreCreateCounting(10, 0);
+int num_audio_requests = 0;
 
 int num_sent_link_audio = 0;
 
@@ -104,7 +104,7 @@ static void LinkPacketTask(void* args)
                 case ui_net_link::Packet_Type::GetAudioLinkPacket:
                 {
                     // NET_LOG_INFO("recvreq");
-                    xSemaphoreGive(num_audio_requests);
+                    ++num_audio_requests;
                     break;
                 }
                 case ui_net_link::Packet_Type::TalkStart:
@@ -210,9 +210,14 @@ static void MoqSubTask(void* args)
         sub_track_handler->TryPlay();
 
 
-        if (sub_track_handler->NumAvailable() && xSemaphoreTake(num_audio_requests, 0))
+        while (num_audio_requests > 0)
         {
             auto data = sub_track_handler->PopFront();
+            if (!data.has_value())
+            {
+                break;
+            }
+            num_audio_requests--;
             // NET_LOG_INFO("sub audio");
 
             link_packet.type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
@@ -220,7 +225,6 @@ static void MoqSubTask(void* args)
             std::memcpy(link_packet.payload, data->data(), data->size());
             link_packet.is_ready = true;
             ui_layer.Write(&link_packet);
-
         }
 
     }
