@@ -1,0 +1,49 @@
+#pragma once
+
+#include "../../shared_inc/ring_buffer.hh"
+#include "../../shared_inc/link_packet_t.hh"
+
+class SerialHandler
+{
+public:
+    SerialHandler(const uint16_t num_rx_packets,
+        uint8_t& tx_buff, const uint32_t tx_buff_sz,
+        uint8_t& rx_buff, const uint32_t rx_buff_sz,
+        void (*Transmit)(void* self),
+        void* transmit_arg);
+    ~SerialHandler();
+
+    link_packet_t* Read();
+
+    void Write(const uint8_t data);
+    void Write(const link_packet_t& packet);
+    void Write(const uint8_t* data, const uint16_t size);
+
+    uint16_t Unread();
+    uint16_t Unsent();
+
+protected:
+    void UpdateRx(const uint16_t num_recv);
+    void UpdateTx();
+    void PrepTransmit();
+
+    RingBuffer<link_packet_t> rx_packets;
+
+    uint8_t* tx_buff;
+    uint32_t tx_buff_sz;
+    uint8_t* rx_buff;
+    uint32_t rx_buff_sz;
+
+    uint16_t tx_write_idx;
+    uint16_t tx_read_idx;
+    bool tx_free;
+    uint16_t unsent;
+    uint16_t num_to_send;
+
+    uint16_t rx_write_idx;
+    uint16_t rx_read_idx;
+    uint16_t unread;
+
+    void (*Transmit)(void* self);
+    void* transmit_arg;
+};
