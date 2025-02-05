@@ -95,7 +95,7 @@ static void LinkPacketTask(void* args)
     NET_LOG_INFO("Start link packet task");
     while (true)
     {
-        vTaskDelay(5 / portTICK_PERIOD_MS);
+        vTaskDelay(2.5 / portTICK_PERIOD_MS);
 
         while (auto packet = ui_layer.Read())
         {
@@ -155,7 +155,7 @@ static void MoqPubTask(void* args)
 
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(5 / portTICK_PERIOD_MS);
+        vTaskDelay(2.5 / portTICK_PERIOD_MS);
 
         if (pub_track_handler && pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
         {
@@ -200,7 +200,7 @@ static void MoqSubTask(void* args)
     link_packet_t link_packet;
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(5 / portTICK_PERIOD_MS);
+        vTaskDelay(2.5 / portTICK_PERIOD_MS);
         if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
         {
             // TODO handling
