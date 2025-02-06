@@ -17,6 +17,16 @@ enum PttState {
     Playing(Arc<Mutex<Vec<Sample>>>, Stream),
 }
 
+impl core::fmt::Debug for PttState {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Idle => f.debug_struct("PttState::Idle").finish(),
+            Self::Recording(..) => f.debug_struct("PttState::Recording").finish(),
+            Self::Playing(..) => f.debug_struct("PttState::Playing").finish(),
+        }
+    }
+}
+
 // The streams are not safe to use across threads, but they're never actually used.  We just hold
 // them to keep them alive.
 unsafe impl Send for PttState {}
@@ -66,11 +76,14 @@ impl AppState {
 
                 input_stream.play().unwrap();
 
-                app.emit::<&str>("State", "Recording").unwrap();
+                app.emit::<&str>("PttState", "Recording").unwrap();
                 PttState::Recording(storage, input_stream)
             }
 
-            _ => unreachable!(),
+            state => {
+                println!("Invalid state: {:?}", state);
+                unreachable!();
+            }
         };
     }
 
@@ -109,7 +122,7 @@ impl AppState {
                     *storage = storage.split_off(len);
 
                     if storage.is_empty() {
-                        std::thread::spawn(play_done_cb);
+                        std::thread::spawn(ptt_play_done_cb);
                     }
                 };
 
@@ -126,7 +139,7 @@ impl AppState {
 
                 output_stream.play().unwrap();
 
-                app.emit::<&str>("State", "Playing").unwrap();
+                app.emit::<&str>("PttState", "Playing").unwrap();
                 PttState::Playing(storage, output_stream)
             }
 
@@ -143,7 +156,7 @@ impl AppState {
                 // Stop the stream so that we shut down gracefully.
                 output_stream.pause().unwrap();
 
-                app.emit::<&str>("State", "Idle").unwrap();
+                app.emit::<&str>("PttState", "Idle").unwrap();
                 PttState::Idle
             }
 
@@ -152,23 +165,40 @@ impl AppState {
     }
 }
 
-static STATE: OnceCell<Mutex<AppState>> = OnceCell::new();
-
+static PTT_STATE: OnceCell<Mutex<AppState>> = OnceCell::new();
 static APP_HANDLE: OnceCell<tauri::AppHandle> = OnceCell::new();
 
-fn play_done_cb() {
-    let mut state = STATE.get().unwrap().lock().unwrap();
+fn ptt_play_done_cb() {
+    let mut state = PTT_STATE.get().unwrap().lock().unwrap();
     state.return_to_idle();
 }
 
 #[tauri::command]
-fn button_press(name: &str) {
-    let mut state = STATE.get().unwrap().lock().unwrap();
+fn ptt_button_press(name: &str) {
+    let mut state = PTT_STATE.get().unwrap().lock().unwrap();
     match name {
-        "MouseDown" => state.start_transmit(),
-        "MouseUp" => state.stop_transmit(),
+        "mousedown" => state.start_transmit(),
+        "mouseup" => state.stop_transmit(),
         _ => state.return_to_idle(),
     }
+}
+
+#[tauri::command]
+fn ai_button_press(name: &str) {
+    // TODO
+    println!("AI button press");
+}
+
+#[tauri::command]
+fn keydown(code: &str) {
+    // TODO actually handle
+    println!("keydown: {}", code);
+}
+
+#[tauri::command]
+fn keyup(code: &str) {
+    // TODO actually handle
+    println!("keyup: {}", code);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -176,10 +206,15 @@ pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
             APP_HANDLE.set(app.handle().clone()).unwrap();
-            STATE.set(Mutex::new(AppState::new())).unwrap();
+            PTT_STATE.set(Mutex::new(AppState::new())).unwrap();
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![button_press])
+        .invoke_handler(tauri::generate_handler![
+            ai_button_press,
+            ptt_button_press,
+            keydown,
+            keyup
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

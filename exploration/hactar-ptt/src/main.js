@@ -1,38 +1,73 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 
-let timerButtonEl;
-let timerLogEl;
+let pttButtonEl;
+let pttLogEl;
+let aiButtonEl;
+let aiLogEl;
 
-async function button_press(name) {
-  await invoke("button_press", { name });
+async function ptt_button_press(name) {
+  await invoke("ptt_button_press", { name });
 }
 
-window.addEventListener("DOMContentLoaded", async () => {
-  timerButtonEl = document.querySelector("#timer-button");
-  timerLogEl = document.querySelector("#timer-log");
+async function ai_button_press(name) {
+  await invoke("ai_button_press", { name });
+}
 
-  timerButtonEl.addEventListener("mousedown", (e) => {
+window.addEventListener("load", async () => {
+  // Configure the PTT button
+  pttButtonEl = document.querySelector("#ptt-button");
+
+  pttButtonEl.addEventListener("mousedown", (e) => {
     e.preventDefault();
-    button_press("MouseDown");
+    ptt_button_press("mousedown");
   });
 
-  timerButtonEl.addEventListener("mouseup", (e) => {
+  pttButtonEl.addEventListener("mouseup", (e) => {
     e.preventDefault();
-    button_press("MouseUp");
+    ptt_button_press("mousedown");
   });
 
-  const unlisten = await listen('State', (e) => {
+  // Configure the AI button
+  aiButtonEl = document.querySelector("#ai-button");
+
+  aiButtonEl.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    ai_button_press("MouseDown");
+  });
+
+  aiButtonEl.addEventListener("mouseup", (e) => {
+    e.preventDefault();
+    ai_button_press("MouseUp");
+  });
+
+  let asClass = (code) => {
+    return "." + code;
+  }
+
+  // Capture keyboard events
+  document.addEventListener("keydown", (e) => {
+    document.querySelector(asClass(e.code)).classList.add("active");
+    invoke("keydown", { code: e.code });
+  });
+
+  document.addEventListener("keyup", (e) => {
+    document.querySelector(asClass(e.code)).classList.remove("active");
+    invoke("keyup", { code: e.code });
+  });
+
+  // Await events
+  const unlisten = await listen('PttState', (e) => {
     console.log("Got State update from listen()", e);
     if (e.payload === "Idle") {
-      timerButtonEl.innerText = "PUSH TO TALK";
-      timerButtonEl.disabled = false;
+      pttButtonEl.innerText = "PTT";
+      pttButtonEl.disabled = false;
     } else if (e.payload === "Recording") {
-      timerButtonEl.innerText = "RECORDING";
-      timerButtonEl.disabled = false;
+      pttButtonEl.innerText = "RECORDING";
+      pttButtonEl.disabled = false;
     } else if (e.payload === "Playing") {
-      timerButtonEl.innerText = "PLAYING";
-      timerButtonEl.disabled = true;
+      pttButtonEl.innerText = "PLAYING";
+      pttButtonEl.disabled = true;
     }
   })
 });
