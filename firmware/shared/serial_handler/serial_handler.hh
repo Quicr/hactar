@@ -6,6 +6,13 @@
 class SerialHandler
 {
 public:
+
+    static constexpr uint8_t END = 0xC0;
+    static constexpr uint8_t ESC = 0xDB;
+    static constexpr uint8_t ESC_END = 0xDC;
+    static constexpr uint8_t ESC_ESC = 0xDD;
+
+
     SerialHandler(const uint16_t num_rx_packets,
         uint8_t& tx_buff, const uint32_t tx_buff_sz,
         uint8_t& rx_buff, const uint32_t rx_buff_sz,
@@ -22,7 +29,22 @@ public:
     uint16_t Unread();
     uint16_t Unsent();
 
+
+    // TODO DELETEME
+    uint16_t RxBuffWriteIdx()
+    {
+        return rx_write_idx;
+    }
+    uint16_t RxBuffReadIdx()
+    {
+        return rx_read_idx;
+    }
+
 protected:
+
+    inline __attribute__((always_inline)) void WriteToTxBuff(const uint8_t data);
+    inline __attribute__((always_inline)) uint8_t ReadFromRxBuff();
+
     void UpdateRx(const uint16_t num_recv);
     void UpdateTx();
     void PrepTransmit();
@@ -43,7 +65,11 @@ protected:
     uint16_t rx_write_idx;
     uint16_t rx_read_idx;
     uint16_t unread;
+    bool escaped;
 
     void (*Transmit)(void* self);
     void* transmit_arg;
+
+    link_packet_t* packet;
+    uint32_t bytes_read;
 };

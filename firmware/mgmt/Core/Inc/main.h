@@ -59,6 +59,7 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define UI_STAT_Pin GPIO_PIN_0
 #define UI_STAT_GPIO_Port GPIOA
+#define UI_STAT_EXTI_IRQn EXTI0_1_IRQn
 #define NET_STAT_Pin GPIO_PIN_1
 #define NET_STAT_GPIO_Port GPIOA
 #define UI_RX1_MGMT_Pin GPIO_PIN_2
@@ -73,9 +74,6 @@ void Error_Handler(void);
 #define LEDA_B_GPIO_Port GPIOA
 #define LEDB_R_Pin GPIO_PIN_0
 #define LEDB_R_GPIO_Port GPIOB
-#define USB_RTS_Pin GPIO_PIN_1
-#define USB_RTS_GPIO_Port GPIOB
-#define USB_RTS_EXTI_IRQn EXTI0_1_IRQn
 #define NET_RX1_MGMT_Pin GPIO_PIN_10
 #define NET_RX1_MGMT_GPIO_Port GPIOB
 #define NET_TX1_MGMT_Pin GPIO_PIN_11
