@@ -60,6 +60,7 @@ void Error(const char* who, const char* why);
 void SlowSendTest(int delay, int num);
 void InterHactarSerialRoundTripTest(int delay, int num);
 void InterHactarFullRoundTripTest(int delay, int num);
+void DumpRxBuff();
 
 inline void LedROn();
 inline void LedROff();

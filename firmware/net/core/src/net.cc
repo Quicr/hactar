@@ -34,8 +34,8 @@
 #define NET_UI_UART_DEV UART1
 #define NET_UI_UART_TX_PIN 17
 #define NET_UI_UART_RX_PIN 18
-#define NET_UI_UART_RX_BUFF_SIZE 2048
-#define NET_UI_UART_TX_BUFF_SIZE 2048
+#define NET_UI_UART_RX_BUFF_SIZE 4096
+#define NET_UI_UART_TX_BUFF_SIZE 4096
 #define NET_UI_UART_RING_TX_NUM 30
 #define NET_UI_UART_RING_RX_NUM 30
 
@@ -50,11 +50,10 @@ int num_sent_link_audio = 0;
 int64_t last_req_time_us = 0;
 
 uart_config_t net_ui_uart_config = {
-    // .baud_rate = 921600,
     .baud_rate = 921600,
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_DISABLE,
-    .stop_bits = UART_STOP_BITS_1,
+    .stop_bits = UART_STOP_BITS_2,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_DISABLE,
     .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
@@ -135,7 +134,14 @@ static void LinkPacketTask(void* args)
                     break;
                 }
                 default:
-                    NET_LOG_ERROR("Got a packet without a handler");
+                    NET_LOG_ERROR("Got a packet without a handler %d", (int)packet->type);
+
+                    // for (int i = 0 ; i < NET_UI_UART_RX_BUFF_SIZE; ++i)
+                    // {
+                    //     NET_LOG_INFO("idx %d: %d", i, (int)net_ui_uart_rx_buff[i]);
+                    // }
+                    // abort();
+
                     break;
             }
         }
@@ -317,6 +323,9 @@ extern "C" void app_main(void)
     xTaskCreate(LinkPacketTask, "link packet handler", 4096, NULL, 10, NULL);
 
     // bool is_ready = false;
+
+    uint8_t buff [] = { 3, 0, 0, 1 };
+    ui_layer.Write(buff, 4);
 
     while (true)
     {
