@@ -64,12 +64,12 @@ protected:
 
     uint16_t rx_write_idx;
     uint16_t rx_read_idx;
-    uint16_t unread;
-    bool escaped;
+    volatile uint16_t unread;
 
     void (*Transmit)(void* self);
     void* transmit_arg;
 
     link_packet_t* packet;
     uint32_t bytes_read;
+    bool escaped;
 };

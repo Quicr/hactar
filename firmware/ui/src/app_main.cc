@@ -81,9 +81,9 @@ extern TIM_HandleTypeDef htim3;
 extern RNG_HandleTypeDef hrng;
 
 // Buffer declarations
-static constexpr uint16_t net_ui_serial_tx_buff_sz = 1024;
+static constexpr uint16_t net_ui_serial_tx_buff_sz = 2048;
 uint8_t net_ui_serial_tx_buff[net_ui_serial_tx_buff_sz] = { 0 };
-static constexpr uint16_t net_ui_serial_rx_buff_sz = 1024;
+static constexpr uint16_t net_ui_serial_rx_buff_sz = 2048;
 uint8_t net_ui_serial_rx_buff[net_ui_serial_rx_buff_sz] = { 0 };
 static constexpr uint16_t net_ui_serial_num_rx_packets = 30;
 
@@ -132,6 +132,9 @@ ui_net_link::AudioObject talk_frame = { 0, 0 };
 bool started = false;
 uint32_t last_rx_time = 0;
 
+bool stop = false;
+
+
 int app_main()
 {
 
@@ -148,6 +151,7 @@ int app_main()
     LEDS(HIGH, HIGH, HIGH);
 
     // WaitForNetReady();
+    InterHactarSerialRoundTripTest(20, -1);
 
     uint32_t redraw = uwTick;
     Colour next = Colour::Green;
@@ -159,67 +163,21 @@ int app_main()
     uint32_t blinky = 0;
     uint32_t next_print = 0;
 
-    // // Wait for net chip to say ready
-    // bool net_not_ready = true;
-    // while (net_not_ready)
-    // {
-    //     auto packet = serial.Read();
-    //     if (!packet)
-    //     {
-    //         continue;
-    //     }
-
-    //     switch ((ui_net_link::Packet_Type)packet->type)
-    //     {
-    //         case ui_net_link::Packet_Type::PowerOnReady:
-    //         {
-    //             net_not_ready = false;
-    //             break;
-    //         }
-    //         default:
-    //         {
-    //             break;
-    //         }
-    //     }
-    // }
-
-
     while (1)
     {
         if (HAL_GetTick() > blinky)
         {
             HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            // UI_LOG_ERROR("UI ALIVE");
             blinky = HAL_GetTick() + 2000;
         }
 
         num_loops++;
         if (HAL_GetTick() > next_print)
         {
-            UI_LOG_ERROR("r %lu, rx %lu, tx %lu", num_req_sent, num_packets_rx, num_packets_tx);
+            UI_LOG_ERROR("rx %lu, tx %lu", num_packets_rx, num_packets_tx);
             next_print = HAL_GetTick() + 1000;
         }
 
-        // if (started && HAL_GetTick() > last_rx_time + 1000)
-        // {
-        //     HAL_Delay(20000);
-        //     char dmp[256];
-        //     UI_LOG_INFO("rx w idx %u, rx r idx %u", serial.RxBuffWriteIdx(), serial.RxBuffReadIdx());
-        //     // Dump the rx buff slowly
-        //     for (int i = 0 ; i < net_ui_serial_rx_buff_sz; ++i)
-        //     {
-        //         itoa(i, dmp, 10);
-        //         HAL_UART_Transmit(&huart1, (uint8_t*)dmp, strlen(dmp), HAL_MAX_DELAY);
-
-        //         HAL_UART_Transmit(&huart1, (uint8_t*)": ", 2, HAL_MAX_DELAY);
-        //         itoa(net_ui_serial_rx_buff[i], dmp, 10);
-        //         HAL_UART_Transmit(&huart1, (uint8_t*)dmp, strlen(dmp), HAL_MAX_DELAY);
-
-        //         HAL_UART_Transmit(&huart1, (uint8_t*)"\n", 1, HAL_MAX_DELAY);
-        //         HAL_Delay(2);
-        //     }
-        //     Error("Main loop", "rx stopped receiving data, dumping");
-        // }
         while (sleeping)
         {
             // LowPowerMode();
@@ -230,26 +188,6 @@ int app_main()
             // Error("Main loop", "Flags did not match expected");
         }
 
-        // if (num_audio_req_packets < 2)
-        // {
-        //     // UI_LOG_ERROR("pushreq");
-        //     // ask for packets?
-        //     // ui_net_link::BuildGetLinkPacket(link_send_space);
-        //     // serial.Write(link_send_space, 3);
-        //     ++num_audio_req_packets;
-        // }
-
-        // if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
-        // {
-        //     HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, HIGH);
-        // }
-
-        // if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET)
-        // {
-        //     HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
-        // }
-
-
         // Send talk start and sot packets
         if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
         {
@@ -257,30 +195,27 @@ int app_main()
             ui_net_link::TalkStart talk_start = { 0 };
             ui_net_link::Serialize(talk_start, talk_packet);
             serial.Write(talk_packet);
-            ++num_packets_tx;
+            // ++num_packets_tx;
             ptt_down = true;
-            // UI_LOG_ERROR("PTTD");
         }
         else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
         {
-            ui_net_link::TalkStop talk_stop = { 0 };
-            ui_net_link::Serialize(talk_stop, talk_packet);
-            serial.Write(talk_packet);
-            ++num_packets_tx;
-            ptt_down = false;
-            // UI_LOG_ERROR("PTTU");
+            // ui_net_link::TalkStop talk_stop = { 0 };
+            // ui_net_link::Serialize(talk_stop, talk_packet);
+            // serial.Write(talk_packet);
+            // // ++num_packets_tx;
+            // ptt_down = false;
         }
 
         if (ptt_down)
         {
-            // UI_LOG_ERROR("AS");
-
             AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
             ui_net_link::Serialize(talk_frame, talk_packet);
-            // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+            HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
             serial.Write(talk_packet);
             ++num_packets_tx;
         }
+
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
@@ -402,11 +337,10 @@ void HandleRecvLinkPackets()
             case ui_net_link::Packet_Type::AudioMultiObject:
             case ui_net_link::Packet_Type::AudioObject:
             {
-                // UI_LOG_ERROR("AR");
                 HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
-                --num_audio_req_packets;
                 ui_net_link::Deserialize(*link_packet, play_frame);
                 AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
+                --num_audio_req_packets;
                 if (num_audio_req_packets == 0)
                 {
                     HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
@@ -518,7 +452,8 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
     if (huart->Instance == Serial::UART(&serial)->Instance)
     {
-        Error("UART error callback", "dunno");
+        serial.Stop();
+        serial.StartReceive();
     }
 }
 
@@ -581,12 +516,12 @@ void assert_failed(uint8_t* file, uint32_t line)
 inline void Error(const char* who, const char* why)
 {
     // Disable interrupts
+    UI_LOG_ERROR("Error has occurred; who: %s; why: %s", who, why);
     audio_chip.StopI2S();
     serial.Stop();
 
     HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, HIGH);
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, HIGH);
-    UI_LOG_ERROR("Error has occurred; who: %s; why: %s", who, why);
     while (1)
     {
         HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
@@ -635,6 +570,7 @@ void InterHactarSerialRoundTripTest(int delay, int num)
 
     link_packet_t* recv = nullptr;
     int idx = 0;
+    uint32_t err_timeout = 0;
     uint32_t timeout = 0;
     uint32_t total_elapsed = 0;
     uint32_t start = 0;
@@ -642,8 +578,9 @@ void InterHactarSerialRoundTripTest(int delay, int num)
     while (true)
     {
         start = HAL_GetTick();
+        UI_LOG_INFO("Tx");
         serial.Write(tmp);
-
+        err_timeout = HAL_GetTick() + 1000;
         HAL_Delay(delay);
 
         while (true)
@@ -651,9 +588,15 @@ void InterHactarSerialRoundTripTest(int delay, int num)
             recv = serial.Read();
             if (recv != nullptr)
             {
+                if (HAL_GetTick() > err_timeout)
+                {
+                    Error("InterHactarSerialRoundTripTest", "Never received loopback");
+                }
                 break;
             }
         }
+        UI_LOG_INFO("Rx");
+
 
         end = HAL_GetTick();
 
@@ -772,6 +715,26 @@ void InterHactarFullRoundTripTest(int delay, int num)
             timeout = HAL_GetTick() + 2000;
         }
     }
+}
+
+void DumpRxBuff()
+{
+    char dmp[256];
+    UI_LOG_INFO("rx w idx %u, rx r idx %u", serial.RxBuffWriteIdx(), serial.RxBuffReadIdx());
+    // Dump the rx buff slowly
+    for (int i = 0 ; i < net_ui_serial_rx_buff_sz; ++i)
+    {
+        itoa(i, dmp, 10);
+        HAL_UART_Transmit(&huart1, (uint8_t*)dmp, strlen(dmp), HAL_MAX_DELAY);
+
+        HAL_UART_Transmit(&huart1, (uint8_t*)": ", 2, HAL_MAX_DELAY);
+        itoa(net_ui_serial_rx_buff[i], dmp, 10);
+        HAL_UART_Transmit(&huart1, (uint8_t*)dmp, strlen(dmp), HAL_MAX_DELAY);
+
+        HAL_UART_Transmit(&huart1, (uint8_t*)"\n", 1, HAL_MAX_DELAY);
+        HAL_Delay(2);
+    }
+    Error("Main loop", "rx stopped receiving data, dumping");
 }
 
 void LedROn()

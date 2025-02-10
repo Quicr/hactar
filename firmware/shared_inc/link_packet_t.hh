@@ -9,7 +9,7 @@
 #define PACKET_READY_TYPE uint8_t
 
 #ifndef PACKET_SIZE
-#define PACKET_SIZE 512 - sizeof(PACKET_READY_TYPE)
+#define PACKET_SIZE 512
 #endif
 
 // TODO change data to be a pointer to a memory location.
