@@ -35,13 +35,15 @@ void Serial::Reset()
     rx_read_idx = 0;
 
     link_packet_t* packets = rx_packets.Buffer();
-    for (int i =0 ; i < rx_packets.Size(); ++i)
+    for (int i = 0 ; i < rx_packets.Size(); ++i)
     {
         packets[i].is_ready = false;
     }
 
     packet = nullptr;
     bytes_read = 0;
+
+    StartReceive();
 }
 
 void Serial::ResetRecv()

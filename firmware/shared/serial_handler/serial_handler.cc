@@ -1,6 +1,7 @@
 #include "serial_handler.hh"
 
 #include <memory.h>
+#include <stdio.h>
 
 SerialHandler::SerialHandler(const uint16_t num_rx_packets,
     uint8_t& tx_buff, const uint32_t tx_buff_sz,
@@ -23,7 +24,8 @@ SerialHandler::SerialHandler(const uint16_t num_rx_packets,
     Transmit(Transmit),
     transmit_arg(transmit_arg),
     packet(nullptr),
-    bytes_read(0)
+    bytes_read(0),
+    escaped(false)
 {
 
 }
@@ -37,15 +39,17 @@ SerialHandler::~SerialHandler()
 
 link_packet_t* SerialHandler::Read()
 {
+
+    // FOR SOME REASON UNREAD is becoming == 0 when there are still bytes to
+    // read. Need to figure that out.
     uint8_t byte = 0;
     while (unread > 0)
     {
+        // Get a byte
         byte = ReadFromRxBuff();
 
         if (packet == nullptr)
         {
-            // Logger::Log(Logger::Level::Info, "Next packet");
-
             packet = &rx_packets.Write();
             packet->is_ready = false;
 
@@ -53,7 +57,7 @@ link_packet_t* SerialHandler::Read()
             bytes_read = 0;
         }
 
-        if (byte == END)
+        if (byte == END && bytes_read == packet->length + link_packet_t::Header_Size)
         {
             packet->is_ready = true;
 
@@ -61,14 +65,24 @@ link_packet_t* SerialHandler::Read()
             packet = nullptr;
             continue;
         }
+        else if (byte == END && bytes_read != packet->length + link_packet_t::Header_Size)
+        {
+            printf("frame error 1\n");
+            // TODO report frame error ERROR
+
+            packet->is_ready = false;
+            packet = nullptr;
+            continue;
+        }
 
         if (bytes_read >= PACKET_SIZE)
         {
+            printf("frame error 2\n");
             // Hit maximum size and didn't get an end packet
             // TODO ERROR
 
             // TODO REMOVE ME temporary
-            packet->is_ready = true;
+            packet->is_ready = false;
 
             // Null out our packet pointer
             packet = nullptr;
@@ -128,7 +142,7 @@ void SerialHandler::Write(const uint8_t* data, const uint16_t size)
     uint16_t i = 0;
     uint16_t num_frame_bytes = 0;
 
-    while (i < size)
+    for (uint16_t i = 0 ; i < size; ++i)
     {
         if (data[i] == END)
         {
@@ -146,13 +160,11 @@ void SerialHandler::Write(const uint8_t* data, const uint16_t size)
         {
             WriteToTxBuff(data[i]);
         }
-
-        ++i;
     }
 
+    // End frame
     WriteToTxBuff(END);
     unsent += size + 1;
-
 
     if (unsent > tx_buff_sz)
     {
@@ -185,7 +197,7 @@ uint16_t SerialHandler::Unsent()
 
 void SerialHandler::WriteToTxBuff(const uint8_t data)
 {
-    if (tx_write_idx > tx_buff_sz)
+    if (tx_write_idx >= tx_buff_sz)
     {
         tx_write_idx = 0;
     }
@@ -194,12 +206,15 @@ void SerialHandler::WriteToTxBuff(const uint8_t data)
 
 uint8_t SerialHandler::ReadFromRxBuff()
 {
-    if (rx_read_idx > rx_buff_sz)
+    if (rx_read_idx >= rx_buff_sz)
     {
         rx_read_idx = 0;
     }
     --unread;
-    return rx_buff[rx_read_idx++];
+    uint8_t byte = rx_buff[rx_read_idx];
+    rx_buff[rx_read_idx++] = 0;
+
+    return byte;
 }
 
 

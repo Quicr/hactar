@@ -39,12 +39,13 @@
 #define NET_UI_UART_DEV UART1
 #define NET_UI_UART_TX_PIN 17
 #define NET_UI_UART_RX_PIN 18
-#define NET_UI_UART_RX_BUFF_SIZE 1024
-#define NET_UI_UART_TX_BUFF_SIZE 1024
+#define NET_UI_UART_RX_BUFF_SIZE 2048
+#define NET_UI_UART_TX_BUFF_SIZE 2048
 #define NET_UI_UART_RING_TX_NUM 30
 #define NET_UI_UART_RING_RX_NUM 30
 
-Serial* ui_link;
+uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = { 0 };
+uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = { 0 };
 
 
 extern "C" void app_main(void)
@@ -61,18 +62,19 @@ extern "C" void app_main(void)
     uart_config_t net_ui_uart_config = {
         .baud_rate = 921600,
         .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_EVEN,
-        .stop_bits = UART_STOP_BITS_1,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_2,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_DEFAULT
     };
 
-    ui_link = new Serial(NET_UI_UART_PORT, NET_UI_UART_DEV, ETS_UART1_INTR_SOURCE,
+    Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV, ETS_UART1_INTR_SOURCE,
         net_ui_uart_config,
         NET_UI_UART_TX_PIN, NET_UI_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
-        NET_UI_UART_RX_BUFF_SIZE, NET_UI_UART_TX_BUFF_SIZE,
-        NET_UI_UART_RING_TX_NUM, NET_UI_UART_RING_RX_NUM);
+        *net_ui_uart_tx_buff, NET_UI_UART_TX_BUFF_SIZE,
+        *net_ui_uart_rx_buff, NET_UI_UART_RX_BUFF_SIZE,
+        NET_UI_UART_RING_RX_NUM);
 
     // Wifi wifi;
     // wifi.Connect(SSID, SSID_PWD);
@@ -115,18 +117,31 @@ extern "C" void app_main(void)
 
     int next_log = 0;
 
+    uint32_t timeout = esp_timer_get_time() + 5 * 10e5;
+
     while (1)
     {
         // vTaskDelay(20/ portTICK_PERIOD_MS);
-        // ui_link->Write(&fake_audio);
+        // ui_layer.Write(&fake_audio);
         // gpio_set_level(NET_LED_R, r_next);
         // r_next = !r_next;
 
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+        if (esp_timer_get_time() > timeout)
+        {
+            // dump
+            for (int i = 0; i < NET_UI_UART_RX_BUFF_SIZE; ++i)
+            {
+                NET_LOG_INFO("idx %d: %d", i, (int)net_ui_uart_rx_buff[i]);
+                vTaskDelay(20 / portTICK_PERIOD_MS);
+            }
+        }
 
-        vTaskDelay(5 / portTICK_PERIOD_MS);
-        while ((recv = ui_link->Read()))
+        while ((recv = ui_layer.Read()))
         {
             ++num_recv;
+            NET_LOG_INFO("Rx");
+
 
             gpio_set_level(NET_LED_R, r_next);
             r_next = !r_next;
@@ -134,20 +149,15 @@ extern "C" void app_main(void)
             {
                 case ui_net_link::Packet_Type::AudioObject:
                 {
-                    ui_link->Write(recv);
+                    timeout = esp_timer_get_time() + 5 * 10e5;
+                    NET_LOG_INFO("Tx");
+                    ui_layer.Write(*recv);
                     ++num_sent;
                     break;
                 }
                 default:
                     break;
             }
-        }
-
-        ++next_log;
-        if (next_log > 1000/5)
-        {
-            NET_LOG_INFO("num recv %lu, num sent %lu", num_recv, num_sent);
-            next_log = 0;
         }
     }
 }

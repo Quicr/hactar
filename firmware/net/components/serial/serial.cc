@@ -21,7 +21,7 @@ Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_
     // Enable interrupt for full fifo, and rx timeout.
     // Enable interrupt for tx transmit complete
     uart_intr_config_t uintr_cfg = {
-      .intr_enable_mask = (UART_RXFIFO_FULL_INT_ENA_M | UART_RXFIFO_TOUT_INT_CLR | UART_TX_DONE_INT_ENA_M),
+      .intr_enable_mask = (UART_RXFIFO_FULL_INT_ENA_M | UART_RXFIFO_TOUT_INT_ENA_M | UART_TX_DONE_INT_ENA_M),
       .rx_timeout_thresh = 1,
       .rxfifo_full_thresh = 60,
     };
