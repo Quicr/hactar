@@ -35,9 +35,9 @@ def ReadSerial():
         try:
             if uart.in_waiting:
                 data = uart.readline().decode()
-                if (dump):
-                    with open(dump_file, "a") as my_file:
-                        my_file.write(data);
+                # if (dump):
+                #     with open(dump_file, "a") as my_file:
+                #         my_file.write(data);
                 print("\r\033[0m" + erase + data, end="")
                 print("\033[1m\033[92mEnter a command:\033[0m")
         except Exception as ex:

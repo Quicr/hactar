@@ -61,8 +61,8 @@ public:
         static char log_line[MAX_LOG_LENGTH] = {0};
         std::sprintf(log_line, format, args...);
 
-        char line[MAX_LOG_LENGTH + 11];
-        const auto line_size = std::sprintf(line, "[UI][%s] %s\n", log_level_string(level).c_str(), log_line);
+        char line[MAX_LOG_LENGTH + 8];
+        const auto line_size = std::sprintf(line, "[UI-%s] %s\n", log_level_string(level).c_str(), log_line);
 
         const auto *line_ptr = reinterpret_cast<const uint8_t *>(line);
         HAL_UART_Transmit(&huart1, line_ptr, line_size, HAL_MAX_DELAY);
@@ -84,10 +84,10 @@ private:
     {
         switch (level)
         {
-        case Level::Error: return "ERRR";
-        case Level::Warn:  return "WARN";
-        case Level::Info:  return "INFO";
-        case Level::Debug: return "DBUG";
+        case Level::Error: return "E";
+        case Level::Warn:  return "W";
+        case Level::Info:  return "I";
+        case Level::Debug: return "D";
         }
 
         return "UNKN";
