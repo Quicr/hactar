@@ -120,7 +120,7 @@ uint32_t flags = Expected_Flags;
 uint32_t est_time_ms = 0;
 uint32_t num_loops = 0;
 uint32_t ticks_ms = 0;
-uint32_t num_awaiting_packets = 0;
+uint32_t num_audio_req_packets = 0;
 
 ui_net_link::AudioObject play_frame;
 
@@ -129,6 +129,8 @@ uint32_t num_packets_rx = 0;
 uint32_t num_packets_tx = 0;
 
 ui_net_link::AudioObject talk_frame = { 0, 0 };
+bool started = false;
+uint32_t last_rx_time = 0;
 
 int app_main()
 {
@@ -140,13 +142,12 @@ int app_main()
 
     audio_chip.Init();
     audio_chip.StartI2S();
-    HAL_Delay(5000);
     InitScreen();
     LEDS(LOW, LOW, LOW);
     serial.StartReceive();
     LEDS(HIGH, HIGH, HIGH);
 
-    WaitForNetReady();
+    // WaitForNetReady();
 
     uint32_t redraw = uwTick;
     Colour next = Colour::Green;
@@ -157,6 +158,31 @@ int app_main()
 
     uint32_t blinky = 0;
     uint32_t next_print = 0;
+
+    // // Wait for net chip to say ready
+    // bool net_not_ready = true;
+    // while (net_not_ready)
+    // {
+    //     auto packet = serial.Read();
+    //     if (!packet)
+    //     {
+    //         continue;
+    //     }
+
+    //     switch ((ui_net_link::Packet_Type)packet->type)
+    //     {
+    //         case ui_net_link::Packet_Type::PowerOnReady:
+    //         {
+    //             net_not_ready = false;
+    //             break;
+    //         }
+    //         default:
+    //         {
+    //             break;
+    //         }
+    //     }
+    // }
+
 
     while (1)
     {
@@ -173,6 +199,27 @@ int app_main()
             UI_LOG_ERROR("r %lu, rx %lu, tx %lu", num_req_sent, num_packets_rx, num_packets_tx);
             next_print = HAL_GetTick() + 1000;
         }
+
+        // if (started && HAL_GetTick() > last_rx_time + 1000)
+        // {
+        //     HAL_Delay(20000);
+        //     char dmp[256];
+        //     UI_LOG_INFO("rx w idx %u, rx r idx %u", serial.RxBuffWriteIdx(), serial.RxBuffReadIdx());
+        //     // Dump the rx buff slowly
+        //     for (int i = 0 ; i < net_ui_serial_rx_buff_sz; ++i)
+        //     {
+        //         itoa(i, dmp, 10);
+        //         HAL_UART_Transmit(&huart1, (uint8_t*)dmp, strlen(dmp), HAL_MAX_DELAY);
+
+        //         HAL_UART_Transmit(&huart1, (uint8_t*)": ", 2, HAL_MAX_DELAY);
+        //         itoa(net_ui_serial_rx_buff[i], dmp, 10);
+        //         HAL_UART_Transmit(&huart1, (uint8_t*)dmp, strlen(dmp), HAL_MAX_DELAY);
+
+        //         HAL_UART_Transmit(&huart1, (uint8_t*)"\n", 1, HAL_MAX_DELAY);
+        //         HAL_Delay(2);
+        //     }
+        //     Error("Main loop", "rx stopped receiving data, dumping");
+        // }
         while (sleeping)
         {
             // LowPowerMode();
@@ -183,16 +230,25 @@ int app_main()
             // Error("Main loop", "Flags did not match expected");
         }
 
-        if (num_awaiting_packets < 2)
-        {
-            // UI_LOG_ERROR("pushreq");
-            // ask for packets?
-            ui_net_link::BuildGetLinkPacket(link_send_space);
-            serial.Write(link_send_space, 3);
-            ++num_req_sent;
-            ++num_packets_tx;
-            ++num_awaiting_packets;
-        }
+        // if (num_audio_req_packets < 2)
+        // {
+        //     // UI_LOG_ERROR("pushreq");
+        //     // ask for packets?
+        //     // ui_net_link::BuildGetLinkPacket(link_send_space);
+        //     // serial.Write(link_send_space, 3);
+        //     ++num_audio_req_packets;
+        // }
+
+        // if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
+        // {
+        //     HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, HIGH);
+        // }
+
+        // if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET)
+        // {
+        //     HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
+        // }
+
 
         // Send talk start and sot packets
         if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
@@ -202,24 +258,24 @@ int app_main()
             ui_net_link::Serialize(talk_start, talk_packet);
             serial.Write(talk_packet);
             ++num_packets_tx;
-            // UI_LOG_ERROR("PTTD");
             ptt_down = true;
+            // UI_LOG_ERROR("PTTD");
         }
-        // else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
-        // {
-            // ui_net_link::TalkStop talk_stop = { 0 };
-            // ui_net_link::Serialize(talk_stop, talk_packet);
-            // serial.Write(talk_packet);
-            // ++num_packets_tx;
+        else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
+        {
+            ui_net_link::TalkStop talk_stop = { 0 };
+            ui_net_link::Serialize(talk_stop, talk_packet);
+            serial.Write(talk_packet);
+            ++num_packets_tx;
+            ptt_down = false;
             // UI_LOG_ERROR("PTTU");
-            // ptt_down = false;
-        // }
+        }
 
         if (ptt_down)
         {
             // UI_LOG_ERROR("AS");
 
-            // AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
+            AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
             ui_net_link::Serialize(talk_frame, talk_packet);
             // HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
             serial.Write(talk_packet);
@@ -332,6 +388,8 @@ void HandleRecvLinkPackets()
         }
 
         ++num_packets_rx;
+        started = true;
+        last_rx_time = HAL_GetTick();
 
         switch ((ui_net_link::Packet_Type)link_packet->type)
         {
@@ -346,9 +404,13 @@ void HandleRecvLinkPackets()
             {
                 // UI_LOG_ERROR("AR");
                 HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
-                --num_awaiting_packets;
+                --num_audio_req_packets;
                 ui_net_link::Deserialize(*link_packet, play_frame);
                 AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
+                if (num_audio_req_packets == 0)
+                {
+                    HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
+                }
                 break;
             };
             case ui_net_link::Packet_Type::MoQStatus:
@@ -365,8 +427,10 @@ void HandleRecvLinkPackets()
             }
             default:
             {
-                UI_LOG_ERROR("Packet type %d, %u, %lu, %lu", (int)link_packet->type, link_packet->length, num_awaiting_packets, num_packets_rx);
-                Error("Link packet handler", "Received a packet type that has no handler");
+                UI_LOG_ERROR("Packet type %d, %u, %lu, %lu", (int)link_packet->type, link_packet->length, num_audio_req_packets, num_packets_rx);
+                // Error("Link packet handler", "Received a packet type that has no handler");
+                last_rx_time = 0;
+                serial.Reset();
                 break;
             }
         }
@@ -413,10 +477,10 @@ void InitScreen()
 
 void WaitForNetReady()
 {
-    while (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_RESET)
-    {
-        HAL_Delay(10);
-    }
+    // while (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_RESET)
+    // {
+    //     HAL_Delay(10);
+    // }
 }
 
 inline void AudioCallback()
@@ -426,6 +490,9 @@ inline void AudioCallback()
     ticks_ms = HAL_GetTick();
     CheckFlags();
     WakeUp();
+
+    HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, HIGH);
+    ++num_audio_req_packets;
     RaiseFlag(Audio_Interrupt);
 }
 
@@ -452,6 +519,14 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
     if (huart->Instance == Serial::UART(&serial)->Instance)
     {
         Error("UART error callback", "dunno");
+    }
+}
+
+void HAL_UART_AbortReceiveCpltCallback(UART_HandleTypeDef* huart)
+{
+    if (huart->Instance == Serial::UART(&serial)->Instance)
+    {
+        serial.StartReceive();
     }
 }
 
@@ -511,9 +586,9 @@ inline void Error(const char* who, const char* why)
 
     HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, HIGH);
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, HIGH);
+    UI_LOG_ERROR("Error has occurred; who: %s; why: %s", who, why);
     while (1)
     {
-        UI_LOG_ERROR("Error has occurred; who: %s; why: %s", who, why);
         HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
         HAL_Delay(1000);
     }
@@ -697,4 +772,70 @@ void InterHactarFullRoundTripTest(int delay, int num)
             timeout = HAL_GetTick() + 2000;
         }
     }
+}
+
+void LedROn()
+{
+    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, LOW);
+}
+
+void LedROff()
+{
+    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, HIGH);
+}
+
+void LedRToggle()
+{
+    HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+}
+
+void LedBOn()
+{
+    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, LOW);
+}
+
+void LedBOff()
+{
+    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, HIGH);
+}
+
+void LedBToggle()
+{
+    HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
+}
+
+void LedGOn()
+{
+    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, LOW);
+}
+
+void LedGOff()
+{
+    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, HIGH);
+}
+
+void LedGToggle()
+{
+    HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+}
+
+void LedsOn()
+{
+    LedROn();
+    LedBOn();
+    LedGOn();
+}
+
+void LedsOff()
+{
+    LedROff();
+    LedBOff();
+    LedGOff();
+}
+
+void LedsToggle()
+{
+    LedRToggle();
+    LedBToggle();
+    LedGToggle();
 }

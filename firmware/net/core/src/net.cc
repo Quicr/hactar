@@ -34,22 +34,26 @@
 #define NET_UI_UART_DEV UART1
 #define NET_UI_UART_TX_PIN 17
 #define NET_UI_UART_RX_PIN 18
-#define NET_UI_UART_RX_BUFF_SIZE 8192
-#define NET_UI_UART_TX_BUFF_SIZE 8192
+#define NET_UI_UART_RX_BUFF_SIZE 2048
+#define NET_UI_UART_TX_BUFF_SIZE 2048
 #define NET_UI_UART_RING_TX_NUM 30
 #define NET_UI_UART_RING_RX_NUM 30
 
+
+uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = { 0 };
+uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = { 0 };
 
 // SemaphoreHandle_t num_audio_requests = xSemaphoreCreateCounting(10, 0);
 int num_audio_requests = 0;
 
 int num_sent_link_audio = 0;
-
+int64_t last_req_time_us = 0;
 
 uart_config_t net_ui_uart_config = {
+    // .baud_rate = 921600,
     .baud_rate = 921600,
     .data_bits = UART_DATA_8_BITS,
-    .parity = UART_PARITY_EVEN,
+    .parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_DISABLE,
@@ -59,8 +63,9 @@ uart_config_t net_ui_uart_config = {
 Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV, ETS_UART1_INTR_SOURCE,
     net_ui_uart_config,
     NET_UI_UART_TX_PIN, NET_UI_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
-    NET_UI_UART_RX_BUFF_SIZE, NET_UI_UART_TX_BUFF_SIZE,
-    NET_UI_UART_RING_RX_NUM, NET_UI_UART_RING_TX_NUM);
+    *net_ui_uart_tx_buff, NET_UI_UART_TX_BUFF_SIZE,
+    *net_ui_uart_rx_buff, NET_UI_UART_RX_BUFF_SIZE,
+    NET_UI_UART_RING_RX_NUM);
 
 uint64_t group_id{ 0 };
 uint64_t object_id{ 0 };
@@ -106,7 +111,8 @@ static void LinkPacketTask(void* args)
                 {
                     // NET_LOG_INFO("recvreq");
                     // xSemaphoreGive(num_audio_requests);
-                    ++num_audio_requests;
+                    // last_req_time_us = esp_timer_get_time();
+                    // ++num_audio_requests;
                     break;
                 }
                 case ui_net_link::Packet_Type::TalkStart:
@@ -129,6 +135,7 @@ static void LinkPacketTask(void* args)
                     break;
                 }
                 default:
+                    NET_LOG_ERROR("Got a packet without a handler");
                     break;
             }
         }
@@ -211,15 +218,13 @@ static void MoqSubTask(void* args)
 
         sub_track_handler->TryPlay();
 
-
-        while (num_audio_requests > 0)
+        if (gpio_get_level(NET_STAT))
         {
             auto data = sub_track_handler->PopFront();
             if (!data.has_value())
             {
-                break;
+                continue;
             }
-            // NET_LOG_INFO("sub audio");
 
             --num_audio_requests;
 
@@ -227,10 +232,9 @@ static void MoqSubTask(void* args)
             link_packet.length = data->size();
             std::memcpy(link_packet.payload, data->data(), data->size());
             link_packet.is_ready = true;
-            ui_layer.Write(&link_packet);
-
+            ui_layer.Write(link_packet);
+            vTaskDelay(5 / portTICK_PERIOD_MS);
         }
-
     }
 
     NET_LOG_INFO("Delete sub task");
@@ -310,9 +314,9 @@ extern "C" void app_main(void)
     // Start moq tasks here
     xTaskCreate(MoqPubTask, "moq publish task", 8192, NULL, 3, NULL);
     xTaskCreate(MoqSubTask, "moq subscribe task", 8192, NULL, 2, NULL);
-    xTaskCreate(LinkPacketTask, "link packet handler", 4096, NULL, 0, NULL);
+    xTaskCreate(LinkPacketTask, "link packet handler", 4096, NULL, 10, NULL);
 
-    gpio_set_level(NET_STAT, 1);
+    // bool is_ready = false;
 
     while (true)
     {
@@ -322,6 +326,7 @@ extern "C" void app_main(void)
         // NOTE- 100 * 10ms = 1000ms :)
         if (blink_cnt++ == 1)
         {
+            NET_LOG_INFO("time %lld", esp_timer_get_time());
             gpio_set_level(NET_LED_G, next);
             next = next ? 0 : 1;
             blink_cnt = 0;

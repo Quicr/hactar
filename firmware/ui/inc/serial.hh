@@ -17,8 +17,9 @@ public:
     ~Serial();
 
     void StartReceive();
-    void Stop();
     void Reset();
+    void Stop();
+    void ResetRecv();
 
     static const UART_HandleTypeDef* UART(Serial* serial);
 

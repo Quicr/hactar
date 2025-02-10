@@ -1,5 +1,4 @@
 #include "serial.hh"
-#include "packet_builder.hh"
 
 #include <memory.h>
 
@@ -32,9 +31,26 @@ void Serial::Stop()
 
 void Serial::Reset()
 {
+    rx_write_idx = 0;
+    rx_read_idx = 0;
+
+    link_packet_t* packets = rx_packets.Buffer();
+    for (int i =0 ; i < rx_packets.Size(); ++i)
+    {
+        packets[i].is_ready = false;
+    }
+
+    packet = nullptr;
+    bytes_read = 0;
+}
+
+void Serial::ResetRecv()
+{
     uint16_t err = uart->Instance->SR;
+    Stop();
     UNUSED(err);
-    StartReceive();
+
+    Reset();
 }
 
 void Serial::Transmit(void* arg)

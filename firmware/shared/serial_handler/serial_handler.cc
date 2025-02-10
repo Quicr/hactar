@@ -1,7 +1,5 @@
 #include "serial_handler.hh"
 
-#include "../../shared_inc/packet_builder.hh"
-
 #include <memory.h>
 
 SerialHandler::SerialHandler(const uint16_t num_rx_packets,
@@ -23,7 +21,9 @@ SerialHandler::SerialHandler(const uint16_t num_rx_packets,
     rx_read_idx(0),
     unread(0),
     Transmit(Transmit),
-    transmit_arg(transmit_arg)
+    transmit_arg(transmit_arg),
+    packet(nullptr),
+    bytes_read(0)
 {
 
 }
@@ -37,22 +37,66 @@ SerialHandler::~SerialHandler()
 
 link_packet_t* SerialHandler::Read()
 {
+    uint8_t byte = 0;
     while (unread > 0)
     {
-        uint32_t num_bytes = unread;
-        if (rx_read_idx + num_bytes > rx_buff_sz)
+        byte = ReadFromRxBuff();
+
+        if (packet == nullptr)
         {
-            num_bytes = rx_buff_sz - rx_read_idx;
+            // Logger::Log(Logger::Level::Info, "Next packet");
+
+            packet = &rx_packets.Write();
+            packet->is_ready = false;
+
+            // Reset the number of bytes read for our next packet
+            bytes_read = 0;
         }
 
-        BuildPacket(rx_buff + rx_read_idx, num_bytes, rx_packets);
-
-        unread -= num_bytes;
-        rx_read_idx += num_bytes;
-
-        if (rx_read_idx >= rx_buff_sz)
+        if (byte == END)
         {
-            rx_read_idx = 0;
+            packet->is_ready = true;
+
+            // Null out our packet pointer
+            packet = nullptr;
+            continue;
+        }
+
+        if (bytes_read >= PACKET_SIZE)
+        {
+            // Hit maximum size and didn't get an end packet
+            // TODO ERROR
+
+            // TODO REMOVE ME temporary
+            packet->is_ready = true;
+
+            // Null out our packet pointer
+            packet = nullptr;
+            continue;
+        }
+
+        if (byte == ESC)
+        {
+            escaped = true;
+            continue;
+        }
+
+        if (escaped)
+        {
+            if (byte == ESC_END)
+            {
+                packet->data[bytes_read++] = END;
+            }
+            else if (byte == ESC_ESC)
+            {
+                packet->data[bytes_read++] = ESC;
+            }
+
+            escaped = false;
+        }
+        else
+        {
+            packet->data[bytes_read++] = byte;
         }
     }
 
@@ -81,29 +125,44 @@ void SerialHandler::Write(const uint8_t* data, const uint16_t size)
     uint16_t total_bytes = size;
     uint16_t offset = 0;
 
-    // Check if overflow
-    if (unsent + total_bytes > tx_buff_sz)
+    uint16_t i = 0;
+    uint16_t num_frame_bytes = 0;
+
+    while (i < size)
     {
-        // TODO
-        // Error("SerialHandler write", "Transmit buffer overflow!");
+        if (data[i] == END)
+        {
+            ++unsent;
+            WriteToTxBuff(ESC);
+            WriteToTxBuff(ESC_END);
+        }
+        else if (data[i] == ESC)
+        {
+            ++unsent;
+            WriteToTxBuff(ESC);
+            WriteToTxBuff(ESC_ESC);
+        }
+        else
+        {
+            WriteToTxBuff(data[i]);
+        }
+
+        ++i;
     }
 
-    if (tx_write_idx + total_bytes >= tx_buff_sz)
+    WriteToTxBuff(END);
+    unsent += size + 1;
+
+
+    if (unsent > tx_buff_sz)
     {
-        uint16_t diff = tx_buff_sz - tx_write_idx;
-
-        // copy into tx_buff
-        memcpy(tx_buff + tx_write_idx, data, diff);
-
-        total_bytes -= diff;
-        offset += diff;
-        tx_write_idx = 0;
+        // TODO ERROR
     }
 
-    memcpy(tx_buff + tx_write_idx, data + offset, total_bytes);
-
-    tx_write_idx += total_bytes;
-    unsent += size;
+    if (tx_write_idx > tx_read_idx)
+    {
+        // TODO error
+    }
 
     if (!tx_free)
     {
@@ -124,25 +183,25 @@ uint16_t SerialHandler::Unsent()
     return unsent;
 }
 
-void SerialHandler::PrepTransmit()
+void SerialHandler::WriteToTxBuff(const uint8_t data)
 {
-    // Nothing to send
-    if (unsent == 0)
+    if (tx_write_idx > tx_buff_sz)
     {
-        tx_free = true;
-        return;
+        tx_write_idx = 0;
     }
-    tx_free = false;
-    num_to_send = unsent;
-
-    // Prevent tx buff overflow
-    if (num_to_send + tx_read_idx >= tx_buff_sz)
-    {
-        num_to_send = tx_buff_sz - tx_read_idx;
-    }
-
-    Transmit(transmit_arg);
+    tx_buff[tx_write_idx++] = data;
 }
+
+uint8_t SerialHandler::ReadFromRxBuff()
+{
+    if (rx_read_idx > rx_buff_sz)
+    {
+        rx_read_idx = 0;
+    }
+    --unread;
+    return rx_buff[rx_read_idx++];
+}
+
 
 void SerialHandler::UpdateRx(const uint16_t num_recv)
 {
@@ -171,4 +230,24 @@ void SerialHandler::UpdateTx()
     }
 
     PrepTransmit();
+}
+
+void SerialHandler::PrepTransmit()
+{
+    // Nothing to send
+    if (unsent == 0)
+    {
+        tx_free = true;
+        return;
+    }
+    tx_free = false;
+    num_to_send = unsent;
+
+    // Prevent tx buff overflow
+    if (num_to_send + tx_read_idx >= tx_buff_sz)
+    {
+        num_to_send = tx_buff_sz - tx_read_idx;
+    }
+
+    Transmit(transmit_arg);
 }
