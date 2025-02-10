@@ -51,6 +51,24 @@ uart_stream_t usb_stream;
 uart_stream_t net_stream;
 uart_stream_t ui_stream;
 
+void HAL_GPIO_EXTI_Callback(uint16_t pin)
+{
+    if (pin == UI_STAT_Pin)
+    {
+        if (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_SET)
+        {
+            LEDA(HIGH, HIGH, LOW);
+            HAL_GPIO_WritePin(NET_STAT_GPIO_Port, NET_STAT_Pin, GPIO_PIN_SET);
+        }
+        else if (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_RESET)
+        {
+            LEDA(HIGH, HIGH, HIGH);
+            HAL_GPIO_WritePin(NET_STAT_GPIO_Port, NET_STAT_Pin, GPIO_PIN_RESET);
+        }
+    }
+
+}
+
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     // There are 3 conditions that call this function.
@@ -419,7 +437,7 @@ int app_main(void)
     net_stream.is_listening = 1;
     ui_stream.is_listening = 1;
 
-    state = UI_Debug_Reset;
+    state = Debug_Reset;
     while (1)
     {
         if (state == Reset)
