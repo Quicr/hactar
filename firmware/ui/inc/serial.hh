@@ -26,6 +26,7 @@ public:
     static void RxISR(Serial* serial, const uint16_t idx);
     static void TxISR(Serial* serial);
 protected:
+    void UpdateUnread(const uint16_t update) override;
     static void Transmit(void* arg);
 
     UART_HandleTypeDef* uart;

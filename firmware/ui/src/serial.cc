@@ -2,6 +2,8 @@
 
 #include <memory.h>
 
+#include "logger.hh"
+
 
 // TODO unify into ui and net
 
@@ -55,6 +57,15 @@ void Serial::ResetRecv()
     Reset();
 }
 
+void Serial::UpdateUnread(const uint16_t update)
+{
+    // UI_LOG_INFO("unread %d, update %d", (int)unread, (int)update);
+    __disable_irq();
+    unread -= update;
+    __enable_irq();
+    // UI_LOG_INFO("unread %d", (int)unread);
+}
+
 void Serial::Transmit(void* arg)
 {
     Serial* self = static_cast<Serial*>(arg);
@@ -74,7 +85,19 @@ void Serial::RxISR(Serial* serial, const uint16_t fifo_idx)
     // will cause the value to be at the wrong idx and everything will go
     // ka-boom, crash, plop. Overflow errors and stuff.
     const uint16_t num_recv = fifo_idx - serial->rx_write_idx;
-    serial->UpdateRx(num_recv);
+    // serial->UpdateRx(num_recv);
+    serial->unread += num_recv;
+    serial->rx_write_idx += num_recv;
+    if (serial->rx_write_idx >= serial->rx_buff_sz)
+    {
+        serial->rx_write_idx = 0;
+    }
+
+    if (serial->unread > serial->rx_buff_sz)
+    {
+        // TODO
+        // Error("SerialStm rx isr", "Overflowed rx buffer");
+    }
 }
 
 void Serial::TxISR(Serial* serial)

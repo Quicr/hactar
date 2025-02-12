@@ -118,6 +118,7 @@ extern "C" void app_main(void)
     int next_log = 0;
 
     uint32_t timeout = esp_timer_get_time() + 5 * 10e5;
+    bool printed = false;
 
     while (1)
     {
@@ -126,23 +127,22 @@ extern "C" void app_main(void)
         // gpio_set_level(NET_LED_R, r_next);
         // r_next = !r_next;
 
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-        if (esp_timer_get_time() > timeout)
+        vTaskDelay(2.5 / portTICK_PERIOD_MS);
+        if (esp_timer_get_time() > timeout && !printed)
         {
+            printed = true;
+            // NET_LOG_INFO("cached unread %d", (int)ui_layer.unread_cache);
             // dump
-            for (int i = 0; i < NET_UI_UART_RX_BUFF_SIZE; ++i)
-            {
-                NET_LOG_INFO("idx %d: %d", i, (int)net_ui_uart_rx_buff[i]);
-                vTaskDelay(20 / portTICK_PERIOD_MS);
-            }
+            // for (int i = 0; i < NET_UI_UART_RX_BUFF_SIZE; ++i)
+            // {
+            //     NET_LOG_INFO("idx %d: %d", i, (int)net_ui_uart_rx_buff[i]);
+            //     vTaskDelay(20 / portTICK_PERIOD_MS);
+            // }
         }
 
         while ((recv = ui_layer.Read()))
         {
             ++num_recv;
-            NET_LOG_INFO("Rx");
-
-
             gpio_set_level(NET_LED_R, r_next);
             r_next = !r_next;
             switch ((ui_net_link::Packet_Type)recv->type)
@@ -150,7 +150,6 @@ extern "C" void app_main(void)
                 case ui_net_link::Packet_Type::AudioObject:
                 {
                     timeout = esp_timer_get_time() + 5 * 10e5;
-                    NET_LOG_INFO("Tx");
                     ui_layer.Write(*recv);
                     ++num_sent;
                     break;
