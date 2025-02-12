@@ -53,7 +53,7 @@ uart_config_t net_ui_uart_config = {
     .baud_rate = 921600,
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_DISABLE,
-    .stop_bits = UART_STOP_BITS_1,
+    .stop_bits = UART_STOP_BITS_2,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_DISABLE,
     .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
@@ -94,6 +94,16 @@ std::shared_ptr<moq::Session> moq_session;
 std::shared_ptr<moq::TrackWriter> pub_track_handler;
 std::shared_ptr<moq::AudioTrackReader> sub_track_handler;
 
+SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
+static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
+{
+    int gpio_num = (int)arg;
+
+    if (gpio_num == NET_STAT)
+    {
+        xSemaphoreGiveFromISR(audio_req_smpr, NULL);
+    }
+}
 
 static void LinkPacketTask(void* args)
 {
@@ -224,22 +234,22 @@ static void MoqSubTask(void* args)
 
         sub_track_handler->TryPlay();
 
-        if (gpio_get_level(NET_STAT))
+        if (xSemaphoreTake(audio_req_smpr, 0))
         {
             auto data = sub_track_handler->PopFront();
             if (!data.has_value())
             {
+                // xSemaphoreGive(audio_req_smpr);
                 continue;
             }
 
-            --num_audio_requests;
+            // --num_audio_requests;
 
             link_packet.type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
             link_packet.length = data->size();
             std::memcpy(link_packet.payload, data->data(), data->size());
             link_packet.is_ready = true;
             ui_layer.Write(link_packet);
-            vTaskDelay(5 / portTICK_PERIOD_MS);
         }
     }
 
@@ -253,6 +263,20 @@ extern "C" void app_main(void)
     NET_LOG_ERROR("PSRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
     NET_LOG_INFO("Starting Net Main");
+
+
+    gpio_config_t io_conf = {
+        .pin_bit_mask = NET_STAT_MASK,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_POSEDGE
+    };
+    gpio_config(&io_conf);
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(NET_STAT, GpioIsrRisingHandler, (void*)NET_STAT);
+
+
 
     InitializeGPIO();
     IntitializeLEDs();

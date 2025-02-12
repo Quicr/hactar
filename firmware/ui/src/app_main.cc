@@ -131,6 +131,7 @@ ui_net_link::AudioObject talk_frame = { 0, 0 };
 
 int app_main()
 {
+
     audio_chip.Init();
     audio_chip.StartI2S();
     InitScreen();
@@ -197,7 +198,7 @@ int app_main()
         {
             AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
             ui_net_link::Serialize(talk_frame, talk_packet);
-            HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+            LedRToggle();
             serial.Write(talk_packet);
             ++num_packets_tx;
         }
@@ -300,8 +301,8 @@ inline void CheckFlags()
 void HandleRecvLinkPackets()
 {
     // If there are bytes available read them
-    // while (true)
-    // {
+    while (true)
+    {
         link_packet = serial.Read();
         if (!link_packet)
         {
@@ -320,14 +321,14 @@ void HandleRecvLinkPackets()
             case ui_net_link::Packet_Type::AudioMultiObject:
             case ui_net_link::Packet_Type::AudioObject:
             {
-                HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
+                // HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
                 ui_net_link::Deserialize(*link_packet, play_frame);
                 AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
-                --num_audio_req_packets;
-                if (num_audio_req_packets == 0)
-                {
-                    HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
-                }
+                // --num_audio_req_packets;
+                // if (num_audio_req_packets == 0)
+                // {
+                //     HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
+                // }
                 break;
             };
             case ui_net_link::Packet_Type::MoQStatus:
@@ -350,7 +351,7 @@ void HandleRecvLinkPackets()
                 break;
             }
         }
-    // }
+    }
 }
 
 
@@ -408,6 +409,8 @@ inline void AudioCallback()
     WakeUp();
 
     HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, HIGH);
+    HAL_TIM_Base_Start_IT(&htim3);
+
     ++num_audio_req_packets;
     RaiseFlag(Audio_Interrupt);
 }
@@ -474,7 +477,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     }
     else if (htim->Instance == TIM3)
     {
-        // screen.Draw();
+        LedBToggle();
+        HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
+        HAL_TIM_Base_Stop_IT(&htim3);
     }
 }
 

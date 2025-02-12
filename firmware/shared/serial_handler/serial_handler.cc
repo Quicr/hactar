@@ -48,6 +48,7 @@ link_packet_t* SerialHandler::Read()
         byte = ReadFromRxBuff();
         ++total_bytes_read;
 
+        // TODO clean up
         if (packet == nullptr)
         {
             packet = &rx_packets.Write();
@@ -57,7 +58,7 @@ link_packet_t* SerialHandler::Read()
             bytes_read = 0;
         }
 
-        if (byte == END)
+        if (byte == END && uint16_t(bytes_read) == uint16_t(packet->length + link_packet_t::Header_Size))
         {
             packet->is_ready = true;
 
@@ -65,18 +66,24 @@ link_packet_t* SerialHandler::Read()
             packet = nullptr;
             continue;
         }
+        else if (byte == END)
+        {
+            Logger::Log(Logger::Level::Info, "Frame len error");
+
+            packet->is_ready = false;
+            bytes_read = 0;
+            continue;
+        }
 
         if (bytes_read >= PACKET_SIZE)
         {
-            Logger::Log(Logger::Level::Info, "Frame error");
+            Logger::Log(Logger::Level::Info, "Frame overflow error");
             // Hit maximum size and didn't get an end packet
-            // TODO ERROR
 
-            // TODO REMOVE ME temporary
             packet->is_ready = false;
+            bytes_read = 0;
 
             // Null out our packet pointer
-            packet = nullptr;
             continue;
         }
 
