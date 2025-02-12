@@ -1,7 +1,8 @@
 #include "serial_handler.hh"
 
+#include "logger.hh"
+
 #include <memory.h>
-#include <stdio.h>
 
 SerialHandler::SerialHandler(const uint16_t num_rx_packets,
     uint8_t& tx_buff, const uint32_t tx_buff_sz,
@@ -39,8 +40,6 @@ SerialHandler::~SerialHandler()
 
 link_packet_t* SerialHandler::Read()
 {
-    // FOR SOME REASON UNREAD is becoming == 0 when there are still bytes to
-    // read. Need to figure that out.
     uint16_t total_bytes_read = 0;
     uint8_t byte = 0;
     while (total_bytes_read < unread)
@@ -58,7 +57,7 @@ link_packet_t* SerialHandler::Read()
             bytes_read = 0;
         }
 
-        if (byte == END && bytes_read == packet->length + link_packet_t::Header_Size)
+        if (byte == END)
         {
             packet->is_ready = true;
 
@@ -66,19 +65,10 @@ link_packet_t* SerialHandler::Read()
             packet = nullptr;
             continue;
         }
-        else if (byte == END && bytes_read != packet->length + link_packet_t::Header_Size)
-        {
-            printf("frame error 1\n");
-            // TODO report frame error ERROR
-
-            packet->is_ready = false;
-            packet = nullptr;
-            continue;
-        }
 
         if (bytes_read >= PACKET_SIZE)
         {
-            printf("frame error 2\n");
+            Logger::Log(Logger::Level::Info, "Frame error");
             // Hit maximum size and didn't get an end packet
             // TODO ERROR
 

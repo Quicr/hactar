@@ -53,7 +53,7 @@ uart_config_t net_ui_uart_config = {
     .baud_rate = 921600,
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_DISABLE,
-    .stop_bits = UART_STOP_BITS_2,
+    .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_DISABLE,
     .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
@@ -100,7 +100,7 @@ static void LinkPacketTask(void* args)
     NET_LOG_INFO("Start link packet task");
     while (true)
     {
-        vTaskDelay(2.5 / portTICK_PERIOD_MS);
+        vTaskDelay(1 / portTICK_PERIOD_MS);
 
         while (auto packet = ui_layer.Read())
         {
@@ -170,7 +170,7 @@ static void MoqPubTask(void* args)
 
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(2.5 / portTICK_PERIOD_MS);
+        vTaskDelay(1 / portTICK_PERIOD_MS);
 
         if (pub_track_handler && pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
         {
@@ -215,7 +215,7 @@ static void MoqSubTask(void* args)
     link_packet_t link_packet;
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(2.5 / portTICK_PERIOD_MS);
+        vTaskDelay(1 / portTICK_PERIOD_MS);
         if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
         {
             // TODO handling

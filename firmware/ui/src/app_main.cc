@@ -87,8 +87,6 @@ static constexpr uint16_t net_ui_serial_rx_buff_sz = 2048;
 uint8_t net_ui_serial_rx_buff[net_ui_serial_rx_buff_sz] = { 0 };
 static constexpr uint16_t net_ui_serial_num_rx_packets = 30;
 
-uint8_t link_send_space[20] = { 0 }; // change as needed
-
 static AudioChip audio_chip(hi2s3, hi2c1);
 
 static Serial serial(&huart2, net_ui_serial_num_rx_packets,
@@ -114,9 +112,10 @@ link_packet_t* link_packet = nullptr;
 
 volatile bool sleeping = true;
 volatile bool error = false;
-bool net_replied = false;
+
 constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1 ;
 uint32_t flags = Expected_Flags;
+
 uint32_t est_time_ms = 0;
 uint32_t num_loops = 0;
 uint32_t ticks_ms = 0;
@@ -129,20 +128,9 @@ uint32_t num_packets_rx = 0;
 uint32_t num_packets_tx = 0;
 
 ui_net_link::AudioObject talk_frame = { 0, 0 };
-bool started = false;
-uint32_t last_rx_time = 0;
-
-bool stop = false;
-
 
 int app_main()
 {
-
-    for (int i = 0; i < 320; ++i)
-    {
-        talk_frame.data[i] = i % 0xFF;
-    }
-
     audio_chip.Init();
     audio_chip.StartI2S();
     InitScreen();
@@ -193,16 +181,16 @@ int app_main()
             ui_net_link::TalkStart talk_start = { 0 };
             ui_net_link::Serialize(talk_start, talk_packet);
             serial.Write(talk_packet);
-            // ++num_packets_tx;
             ptt_down = true;
+            // ++num_packets_tx;
         }
         else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
         {
-            // ui_net_link::TalkStop talk_stop = { 0 };
-            // ui_net_link::Serialize(talk_stop, talk_packet);
-            // serial.Write(talk_packet);
-            // // ++num_packets_tx;
-            // ptt_down = false;
+            ui_net_link::TalkStop talk_stop = { 0 };
+            ui_net_link::Serialize(talk_stop, talk_packet);
+            serial.Write(talk_packet);
+            ptt_down = false;
+            // ++num_packets_tx;
         }
 
         if (ptt_down)
@@ -312,18 +300,15 @@ inline void CheckFlags()
 void HandleRecvLinkPackets()
 {
     // If there are bytes available read them
-    while (true)
-    {
+    // while (true)
+    // {
         link_packet = serial.Read();
         if (!link_packet)
         {
-            break;
+            return;
         }
 
         ++num_packets_rx;
-        started = true;
-        last_rx_time = HAL_GetTick();
-
         switch ((ui_net_link::Packet_Type)link_packet->type)
         {
             case ui_net_link::Packet_Type::TalkStart:
@@ -361,12 +346,11 @@ void HandleRecvLinkPackets()
             {
                 UI_LOG_ERROR("Packet type %d, %u, %lu, %lu", (int)link_packet->type, link_packet->length, num_audio_req_packets, num_packets_rx);
                 // Error("Link packet handler", "Received a packet type that has no handler");
-                last_rx_time = 0;
                 serial.Reset();
                 break;
             }
         }
-    }
+    // }
 }
 
 
@@ -651,10 +635,6 @@ void InterHactarFullRoundTripTest(int delay, int num)
         tmp.payload[i] = rand() % 0xFF;
     }
 
-    ui_net_link::BuildGetLinkPacket(link_send_space);
-    serial.Write(link_send_space, 3);
-    HAL_Delay(1);
-
     for (int i = 0; i < 20; ++i)
     {
         serial.Write(tmp);
@@ -674,8 +654,6 @@ void InterHactarFullRoundTripTest(int delay, int num)
         HAL_Delay(delay);
         serial.Write(tmp);
         uint32_t start = HAL_GetTick();
-        serial.Write(link_send_space, 3);
-
         while (true)
         {
             recv = serial.Read();

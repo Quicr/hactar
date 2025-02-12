@@ -5,6 +5,8 @@
 #include "esp_event.h"
 #include "hal/uart_ll.h"
 #include "soc/interrupts.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 #include "ring_buffer.hh"
 
@@ -27,13 +29,19 @@ public:
 
     uint16_t NumReadyRxPackets();
 
+protected:
+    void UpdateUnread(const uint16_t update) override;
+
 private:
-    static IRAM_ATTR void Transmit(void* arg);
-    static IRAM_ATTR void ISRHandler(void* args);
+    static void Transmit(void* arg);
+    static void ISRHandler(void* args);
     FORCE_INLINE_ATTR void RxHandler(Serial* arg);
 
     uart_port_t port;
     uart_dev_t& uart;
 
     uart_isr_handle_t isr_handle;
+    uint16_t update_cache;
+    SemaphoreHandle_t unread_mux;
+    SemaphoreHandle_t unread_cache;
 };
