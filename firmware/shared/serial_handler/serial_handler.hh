@@ -30,6 +30,7 @@ public:
     uint16_t Unsent();
 
 
+
     // TODO DELETEME
     uint16_t RxBuffWriteIdx()
     {
@@ -44,6 +45,7 @@ protected:
 
     inline __attribute__((always_inline)) void WriteToTxBuff(const uint8_t data);
     inline __attribute__((always_inline)) uint8_t ReadFromRxBuff();
+    virtual void UpdateUnread(const uint16_t update) = 0;
 
     void UpdateRx(const uint16_t num_recv);
     void UpdateTx();

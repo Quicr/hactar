@@ -150,8 +150,6 @@ int app_main()
     serial.StartReceive();
     LEDS(HIGH, HIGH, HIGH);
 
-    // WaitForNetReady();
-    InterHactarSerialRoundTripTest(20, -1);
 
     uint32_t redraw = uwTick;
     Colour next = Colour::Green;
@@ -578,7 +576,6 @@ void InterHactarSerialRoundTripTest(int delay, int num)
     while (true)
     {
         start = HAL_GetTick();
-        UI_LOG_INFO("Tx");
         serial.Write(tmp);
         err_timeout = HAL_GetTick() + 1000;
         HAL_Delay(delay);
@@ -595,9 +592,6 @@ void InterHactarSerialRoundTripTest(int delay, int num)
                 break;
             }
         }
-        UI_LOG_INFO("Rx");
-
-
         end = HAL_GetTick();
 
 
