@@ -39,14 +39,15 @@ SerialHandler::~SerialHandler()
 
 link_packet_t* SerialHandler::Read()
 {
-
     // FOR SOME REASON UNREAD is becoming == 0 when there are still bytes to
     // read. Need to figure that out.
+    uint16_t total_bytes_read = 0;
     uint8_t byte = 0;
-    while (unread > 0)
+    while (total_bytes_read < unread)
     {
         // Get a byte
         byte = ReadFromRxBuff();
+        ++total_bytes_read;
 
         if (packet == nullptr)
         {
@@ -114,6 +115,11 @@ link_packet_t* SerialHandler::Read()
         }
     }
 
+    if (total_bytes_read > 0)
+    {
+        UpdateUnread(total_bytes_read);
+    }
+
     if (!rx_packets.Peek().is_ready)
     {
         return nullptr;
@@ -136,23 +142,17 @@ void SerialHandler::Write(const link_packet_t& packet)
 
 void SerialHandler::Write(const uint8_t* data, const uint16_t size)
 {
-    uint16_t total_bytes = size;
-    uint16_t offset = 0;
-
-    uint16_t i = 0;
-    uint16_t num_frame_bytes = 0;
-
     for (uint16_t i = 0 ; i < size; ++i)
     {
         if (data[i] == END)
         {
-            ++unsent;
+            unsent += 1;
             WriteToTxBuff(ESC);
             WriteToTxBuff(ESC_END);
         }
         else if (data[i] == ESC)
         {
-            ++unsent;
+            unsent += 1;
             WriteToTxBuff(ESC);
             WriteToTxBuff(ESC_ESC);
         }
@@ -210,13 +210,11 @@ uint8_t SerialHandler::ReadFromRxBuff()
     {
         rx_read_idx = 0;
     }
-    --unread;
     uint8_t byte = rx_buff[rx_read_idx];
     rx_buff[rx_read_idx++] = 0;
 
     return byte;
 }
-
 
 void SerialHandler::UpdateRx(const uint16_t num_recv)
 {
@@ -236,6 +234,7 @@ void SerialHandler::UpdateRx(const uint16_t num_recv)
 
 void SerialHandler::UpdateTx()
 {
+    // TODO esp semaphore of send
     unsent -= num_to_send;
     tx_read_idx += num_to_send;
 
