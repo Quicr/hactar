@@ -22,9 +22,10 @@ SerialHandler::SerialHandler(const uint16_t num_rx_packets,
     rx_write_idx(0),
     rx_read_idx(0),
     unread(0),
+    update_cache(0),
     Transmit(Transmit),
     transmit_arg(transmit_arg),
-    packet(nullptr),
+    packet(&rx_packets.Write()),
     bytes_read(0),
     escaped(false)
 {
@@ -40,7 +41,11 @@ SerialHandler::~SerialHandler()
 
 link_packet_t* SerialHandler::Read()
 {
-    uint16_t total_bytes_read = 0;
+    // TODO for some reason when the semaphore can't be taken
+    // we get a lot of frame errors
+    // even though our update cache should be handling that
+    // by offsetting the total bytes read
+    uint16_t total_bytes_read = update_cache;
     uint8_t byte = 0;
     while (total_bytes_read < unread)
     {
@@ -48,22 +53,14 @@ link_packet_t* SerialHandler::Read()
         byte = ReadFromRxBuff();
         ++total_bytes_read;
 
-        // TODO clean up
-        if (packet == nullptr)
-        {
-            packet = &rx_packets.Write();
-            packet->is_ready = false;
-
-            // Reset the number of bytes read for our next packet
-            bytes_read = 0;
-        }
-
+        // Note if we don't cast everything, esp32 freaks out
         if (byte == END && uint16_t(bytes_read) == uint16_t(packet->length + link_packet_t::Header_Size))
         {
             packet->is_ready = true;
 
             // Null out our packet pointer
-            packet = nullptr;
+            packet = &rx_packets.Write();
+            bytes_read = 0;
             continue;
         }
         else if (byte == END)
@@ -74,16 +71,13 @@ link_packet_t* SerialHandler::Read()
             bytes_read = 0;
             continue;
         }
-
-        if (bytes_read >= PACKET_SIZE)
+        else if (bytes_read >= PACKET_SIZE)
         {
             Logger::Log(Logger::Level::Info, "Frame overflow error");
             // Hit maximum size and didn't get an end packet
 
             packet->is_ready = false;
             bytes_read = 0;
-
-            // Null out our packet pointer
             continue;
         }
 
@@ -112,7 +106,7 @@ link_packet_t* SerialHandler::Read()
         }
     }
 
-    if (total_bytes_read > 0)
+    if (total_bytes_read > 0 || update_cache > 0)
     {
         UpdateUnread(total_bytes_read);
     }
@@ -207,10 +201,7 @@ uint8_t SerialHandler::ReadFromRxBuff()
     {
         rx_read_idx = 0;
     }
-    uint8_t byte = rx_buff[rx_read_idx];
-    rx_buff[rx_read_idx++] = 0;
-
-    return byte;
+    return rx_buff[rx_read_idx++];
 }
 
 void SerialHandler::UpdateRx(const uint16_t num_recv)
