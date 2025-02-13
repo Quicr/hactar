@@ -45,9 +45,9 @@ link_packet_t* SerialHandler::Read()
     // we get a lot of frame errors
     // even though our update cache should be handling that
     // by offsetting the total bytes read
-    uint16_t total_bytes_read = update_cache;
+    uint16_t total_bytes_read = 0;
     uint8_t byte = 0;
-    while (total_bytes_read < unread)
+    while (total_bytes_read + update_cache < unread)
     {
         // Get a byte
         byte = ReadFromRxBuff();
@@ -71,7 +71,8 @@ link_packet_t* SerialHandler::Read()
             bytes_read = 0;
             continue;
         }
-        else if (bytes_read >= PACKET_SIZE)
+
+        if (bytes_read >= PACKET_SIZE)
         {
             Logger::Log(Logger::Level::Info, "Frame overflow error");
             // Hit maximum size and didn't get an end packet
