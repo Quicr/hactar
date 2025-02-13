@@ -34,11 +34,15 @@
 #define NET_UI_UART_DEV UART1
 #define NET_UI_UART_TX_PIN 17
 #define NET_UI_UART_RX_PIN 18
-#define NET_UI_UART_RX_BUFF_SIZE 4096
-#define NET_UI_UART_TX_BUFF_SIZE 4096
+#define NET_UI_UART_RX_BUFF_SIZE 8192
+#define NET_UI_UART_TX_BUFF_SIZE 8192
 #define NET_UI_UART_RING_TX_NUM 30
 #define NET_UI_UART_RING_RX_NUM 30
 
+
+TaskHandle_t serial_read_handle;
+TaskHandle_t rtos_pub_handle;
+TaskHandle_t xsub_handle;
 
 uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = { 0 };
 uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = { 0 };
@@ -59,7 +63,8 @@ uart_config_t net_ui_uart_config = {
     .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
 };
 
-Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV, ETS_UART1_INTR_SOURCE,
+Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV,
+    serial_read_handle, ETS_UART1_INTR_SOURCE,
     net_ui_uart_config,
     NET_UI_UART_TX_PIN, NET_UI_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
     *net_ui_uart_tx_buff, NET_UI_UART_TX_BUFF_SIZE,
@@ -110,7 +115,7 @@ static void LinkPacketTask(void* args)
     NET_LOG_INFO("Start link packet task");
     while (true)
     {
-        vTaskDelay(1 / portTICK_PERIOD_MS);
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         while (auto packet = ui_layer.Read())
         {
@@ -140,6 +145,9 @@ static void LinkPacketTask(void* args)
                     obj.data.assign(packet->payload, packet->payload + packet->length);
                     obj.headers.object_id++;
                     obj.headers.payload_length = obj.data.size();
+
+                    // TODO use notifies, currently it doesn't notify fast enough?
+                    // xTaskNotifyGive(rtos_pub_handle);
 
                     break;
                 }
@@ -180,7 +188,7 @@ static void MoqPubTask(void* args)
 
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(1 / portTICK_PERIOD_MS);
+        vTaskDelay(2 / portTICK_PERIOD_MS);
 
         if (pub_track_handler && pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
         {
@@ -225,7 +233,7 @@ static void MoqSubTask(void* args)
     link_packet_t link_packet;
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(1 / portTICK_PERIOD_MS);
+        vTaskDelay(2 / portTICK_PERIOD_MS);
         if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
         {
             // TODO handling
@@ -342,14 +350,9 @@ extern "C" void app_main(void)
     NET_LOG_INFO("Moq session status %d", (int)moq_session->GetStatus());
 
     // Start moq tasks here
-    xTaskCreate(MoqPubTask, "moq publish task", 8192, NULL, 3, NULL);
-    xTaskCreate(MoqSubTask, "moq subscribe task", 8192, NULL, 2, NULL);
-    xTaskCreate(LinkPacketTask, "link packet handler", 4096, NULL, 10, NULL);
-
-    // bool is_ready = false;
-
-    uint8_t buff [] = { 3, 0, 0, 1 };
-    ui_layer.Write(buff, 4);
+    xTaskCreate(MoqPubTask, "moq publish task", 8192, NULL, 3, &rtos_pub_handle);
+    xTaskCreate(MoqSubTask, "moq subscribe task", 8192, NULL, 2, &xsub_handle);
+    xTaskCreate(LinkPacketTask, "link packet handler", 4096, NULL, 10, &serial_read_handle);
 
     while (true)
     {
