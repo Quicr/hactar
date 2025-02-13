@@ -85,7 +85,7 @@ static constexpr uint16_t net_ui_serial_tx_buff_sz = 2048;
 uint8_t net_ui_serial_tx_buff[net_ui_serial_tx_buff_sz] = { 0 };
 static constexpr uint16_t net_ui_serial_rx_buff_sz = 2048;
 uint8_t net_ui_serial_rx_buff[net_ui_serial_rx_buff_sz] = { 0 };
-static constexpr uint16_t net_ui_serial_num_rx_packets = 30;
+static constexpr uint16_t net_ui_serial_num_rx_packets = 7;
 
 static AudioChip audio_chip(hi2s3, hi2c1);
 
@@ -113,7 +113,7 @@ link_packet_t* link_packet = nullptr;
 volatile bool sleeping = true;
 volatile bool error = false;
 
-constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1 ;
+constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1;
 uint32_t flags = Expected_Flags;
 
 uint32_t est_time_ms = 0;
@@ -321,16 +321,10 @@ void HandleRecvLinkPackets()
             case ui_net_link::Packet_Type::AudioMultiObject:
             case ui_net_link::Packet_Type::AudioObject:
             {
-                // HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
                 ui_net_link::Deserialize(*link_packet, play_frame);
                 AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
-                // --num_audio_req_packets;
-                // if (num_audio_req_packets == 0)
-                // {
-                //     HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
-                // }
                 break;
-            };
+            }
             case ui_net_link::Packet_Type::MoQStatus:
             {
                 break;
@@ -346,8 +340,6 @@ void HandleRecvLinkPackets()
             default:
             {
                 UI_LOG_ERROR("Packet type %d, %u, %lu, %lu", (int)link_packet->type, link_packet->length, num_audio_req_packets, num_packets_rx);
-                // Error("Link packet handler", "Received a packet type that has no handler");
-                serial.Reset();
                 break;
             }
         }

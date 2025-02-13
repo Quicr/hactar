@@ -1,9 +1,10 @@
 #include "serial.hh"
 
-#include "esp_log.h"
+#include "logger.hh"
 #include <random>
 
-Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_t intr_source,
+Serial::Serial(const uart_port_t port, uart_dev_t& uart,
+    TaskHandle_t& read_handle, const periph_interrput_t intr_source,
     const uart_config_t uart_config, const int tx_pin, const int rx_pin,
     const int rts_pin, const int cts_pin,
     uint8_t& tx_buff, const uint32_t tx_buff_sz,
@@ -12,7 +13,7 @@ Serial::Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_
     SerialHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this),
     port(port),
     uart(uart),
-    update_cache(0),
+    read_handle(read_handle),
     unread_mux(xSemaphoreCreateBinary()),
     unread_cache(xSemaphoreCreateCounting(0xFFFF, 0))
 {
@@ -55,7 +56,7 @@ void Serial::UpdateUnread(const uint16_t update)
     else
     {
         update_cache += update;
-        printf("Couldn't take semaphore\n");
+        NET_LOG_ERROR("Couldn't take semaphore");
     }
 
 }
@@ -121,7 +122,7 @@ void Serial::RxHandler(Serial* serial)
 {
     // Loop until we've emptied the buff if a small buffer has been
     // designated then this will cover overflowing.
-    if (serial->uart.status.rxfifo_cnt)
+    while (serial->uart.status.rxfifo_cnt)
     {
         // Note- Reading from uart.fifo.rxfifo_rd_byte automatically
         // decrements uart.status.rxfifo_cnt
@@ -154,12 +155,14 @@ void Serial::RxHandler(Serial* serial)
             // Couldn't get the semaphore, so lets just put this in a different
             // semaphore that counts the number of cached bytes
             // that we can pull from later
-            for (uint32_t i = 0 ;i < num_bytes; ++i)
+            for (uint32_t i = 0; i < num_bytes; ++i)
             {
                 xSemaphoreGiveFromISR(serial->unread_cache, NULL);
             }
             portYIELD_FROM_ISR(higher_priority);
         }
+
+        vTaskNotifyGiveFromISR(serial->read_handle, NULL);
     }
 }
 

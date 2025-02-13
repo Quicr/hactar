@@ -67,6 +67,7 @@ protected:
     uint16_t rx_write_idx;
     uint16_t rx_read_idx;
     volatile uint16_t unread;
+    volatile uint16_t update_cache;
 
     void (*Transmit)(void* self);
     void* transmit_arg;
