@@ -47,7 +47,7 @@ public:
     bool RxBufferReady();
 
     void ISRCallback();
-    
+
     void ClearTxBuffer();
 
     void Transmit(uint16_t* tx, const size_t size);
