@@ -10,6 +10,7 @@ namespace ui_net_link
 {
     enum struct Packet_Type: uint8_t
     {
+        PowerOnReady,
         GetAudioLinkPacket,
         GetTextLinkPacket,
         TalkStart,

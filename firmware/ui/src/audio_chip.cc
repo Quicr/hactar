@@ -386,9 +386,20 @@ void AudioChip::ISRCallback()
     buff_mod = !buff_mod;
 
     // Clear the transmission buffer
-    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
+    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
     {
-        tx_ptr[i] = 0;
+        // Copy the rx to the tx
+        for (uint16_t i =0; i < constants::Audio_Buffer_Sz_2; ++i)
+        {
+            tx_ptr[i] = rx_ptr[i];
+        }
+    }
+    else
+    {
+        for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
+        {
+            tx_ptr[i] = 0;
+        }
     }
 
     RaiseFlag(AudioFlag::Rx_Ready);

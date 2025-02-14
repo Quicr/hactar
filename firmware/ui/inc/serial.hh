@@ -5,10 +5,9 @@
 #include "ring_buffer.hh"
 #include "link_packet_t.hh"
 
-// TODO update write code to push the data into a large
-// buffer, and then use the interrupt to trigger another send.
+#include "serial_handler/serial_handler.hh"
 
-class Serial
+class Serial : public SerialHandler
 {
 public:
 
@@ -18,37 +17,17 @@ public:
     ~Serial();
 
     void StartReceive();
-    void Stop();
     void Reset();
+    void Stop();
+    void ResetRecv();
 
-    link_packet_t* Read();
-    void Write(const uint8_t data);
-    void Write(const link_packet_t& packet);
-    void Write(const uint8_t* data, const uint16_t size);
-    uint16_t Unread();
+    static const UART_HandleTypeDef* UART(Serial* serial);
 
-    const UART_HandleTypeDef* UART();
-
-    static void RxISR(Serial* self, const uint16_t idx);
-    static void TxISR(Serial* self);
+    static void RxISR(Serial* serial, const uint16_t idx);
+    static void TxISR(Serial* serial);
 protected:
-    static void Transmit(Serial* self);
+    void UpdateUnread(const uint16_t update) override;
+    static void Transmit(void* arg);
 
     UART_HandleTypeDef* uart;
-    RingBuffer<link_packet_t> rx_packets;
-
-    uint8_t* tx_buff;
-    uint32_t tx_buff_sz;
-    uint8_t* rx_buff;
-    uint32_t rx_buff_sz;
-
-    uint16_t tx_write_idx;
-    uint16_t tx_read_idx;
-    bool tx_free;
-    uint16_t unsent;
-    uint16_t num_to_send;
-
-    uint16_t rx_write_idx;
-    uint16_t rx_read_idx;
-    uint16_t unread;
 };

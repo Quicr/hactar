@@ -60,6 +60,20 @@ void Error(const char* who, const char* why);
 void SlowSendTest(int delay, int num);
 void InterHactarSerialRoundTripTest(int delay, int num);
 void InterHactarFullRoundTripTest(int delay, int num);
+void DumpRxBuff();
+
+inline void LedROn();
+inline void LedROff();
+inline void LedRToggle();
+inline void LedBOn();
+inline void LedBOff();
+inline void LedBToggle();
+inline void LedGOn();
+inline void LedGOff();
+inline void LedGToggle();
+inline void LedsOn();
+inline void LedsOff();
+inline void LedsToggle();
 
 #ifdef __cplusplus
 }
