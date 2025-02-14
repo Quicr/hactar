@@ -12,6 +12,8 @@ if (len(sys.argv) < 3):
 
 port = sys.argv[1]
 baud = sys.argv[2]
+dump = True
+dump_file = "dump.txt"
 
 uart = serial.Serial(
     port=port,
@@ -32,8 +34,11 @@ def ReadSerial():
     while running:
         try:
             if uart.in_waiting:
-                data = uart.readline()
-                print("\r\033[0m" + erase + data.decode(), end="")
+                data = uart.readline().decode()
+                # if (dump):
+                #     with open(dump_file, "a") as my_file:
+                #         my_file.write(data);
+                print("\r\033[0m" + erase + data, end="")
                 print("\033[1m\033[92mEnter a command:\033[0m")
         except Exception as ex:
             print(ex)

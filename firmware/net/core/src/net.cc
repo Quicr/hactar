@@ -40,26 +40,36 @@
 #define NET_UI_UART_RING_RX_NUM 30
 
 
+TaskHandle_t serial_read_handle;
+TaskHandle_t rtos_pub_handle;
+TaskHandle_t xsub_handle;
+
+uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = { 0 };
+uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = { 0 };
+
+// SemaphoreHandle_t num_audio_requests = xSemaphoreCreateCounting(10, 0);
 int num_audio_requests = 0;
 
 int num_sent_link_audio = 0;
-
+int64_t last_req_time_us = 0;
 
 uart_config_t net_ui_uart_config = {
     .baud_rate = 921600,
     .data_bits = UART_DATA_8_BITS,
-    .parity = UART_PARITY_EVEN,
-    .stop_bits = UART_STOP_BITS_1,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_2,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_DISABLE,
     .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
 };
 
-Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV, ETS_UART1_INTR_SOURCE,
+Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV,
+    serial_read_handle, ETS_UART1_INTR_SOURCE,
     net_ui_uart_config,
     NET_UI_UART_TX_PIN, NET_UI_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
-    NET_UI_UART_RX_BUFF_SIZE, NET_UI_UART_TX_BUFF_SIZE,
-    NET_UI_UART_RING_RX_NUM, NET_UI_UART_RING_TX_NUM);
+    *net_ui_uart_tx_buff, NET_UI_UART_TX_BUFF_SIZE,
+    *net_ui_uart_rx_buff, NET_UI_UART_RX_BUFF_SIZE,
+    NET_UI_UART_RING_RX_NUM);
 
 uint64_t group_id{ 0 };
 uint64_t object_id{ 0 };
@@ -89,13 +99,23 @@ std::shared_ptr<moq::Session> moq_session;
 std::shared_ptr<moq::TrackWriter> pub_track_handler;
 std::shared_ptr<moq::AudioTrackReader> sub_track_handler;
 
+SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
+static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
+{
+    int gpio_num = (int)arg;
+
+    if (gpio_num == NET_STAT)
+    {
+        xSemaphoreGiveFromISR(audio_req_smpr, NULL);
+    }
+}
 
 static void LinkPacketTask(void* args)
 {
     NET_LOG_INFO("Start link packet task");
     while (true)
     {
-        vTaskDelay(2.5 / portTICK_PERIOD_MS);
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         while (auto packet = ui_layer.Read())
         {
@@ -104,7 +124,9 @@ static void LinkPacketTask(void* args)
                 case ui_net_link::Packet_Type::GetAudioLinkPacket:
                 {
                     // NET_LOG_INFO("recvreq");
-                    ++num_audio_requests;
+                    // xSemaphoreGive(num_audio_requests);
+                    // last_req_time_us = esp_timer_get_time();
+                    // ++num_audio_requests;
                     break;
                 }
                 case ui_net_link::Packet_Type::TalkStart:
@@ -124,9 +146,20 @@ static void LinkPacketTask(void* args)
                     obj.headers.object_id++;
                     obj.headers.payload_length = obj.data.size();
 
+                    // TODO use notifies, currently it doesn't notify fast enough?
+                    // xTaskNotifyGive(rtos_pub_handle);
+
                     break;
                 }
                 default:
+                    NET_LOG_ERROR("Got a packet without a handler %d", (int)packet->type);
+
+                    // for (int i = 0 ; i < NET_UI_UART_RX_BUFF_SIZE; ++i)
+                    // {
+                    //     NET_LOG_INFO("idx %d: %d", i, (int)net_ui_uart_rx_buff[i]);
+                    // }
+                    // abort();
+
                     break;
             }
         }
@@ -155,7 +188,7 @@ static void MoqPubTask(void* args)
 
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(2.5 / portTICK_PERIOD_MS);
+        vTaskDelay(2 / portTICK_PERIOD_MS);
 
         if (pub_track_handler && pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
         {
@@ -200,7 +233,7 @@ static void MoqSubTask(void* args)
     link_packet_t link_packet;
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(2.5 / portTICK_PERIOD_MS);
+        vTaskDelay(2 / portTICK_PERIOD_MS);
         if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
         {
             // TODO handling
@@ -209,24 +242,23 @@ static void MoqSubTask(void* args)
 
         sub_track_handler->TryPlay();
 
-
-        while (num_audio_requests > 0)
+        if (xSemaphoreTake(audio_req_smpr, 0))
         {
             auto data = sub_track_handler->PopFront();
             if (!data.has_value())
             {
-                break;
+                // xSemaphoreGive(audio_req_smpr);
+                continue;
             }
-            num_audio_requests--;
-            // NET_LOG_INFO("sub audio");
+
+            // --num_audio_requests;
 
             link_packet.type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
             link_packet.length = data->size();
             std::memcpy(link_packet.payload, data->data(), data->size());
             link_packet.is_ready = true;
-            ui_layer.Write(&link_packet);
+            ui_layer.Write(link_packet);
         }
-
     }
 
     NET_LOG_INFO("Delete sub task");
@@ -239,6 +271,20 @@ extern "C" void app_main(void)
     NET_LOG_ERROR("PSRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
     NET_LOG_INFO("Starting Net Main");
+
+
+    gpio_config_t io_conf = {
+        .pin_bit_mask = NET_STAT_MASK,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_POSEDGE
+    };
+    gpio_config(&io_conf);
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(NET_STAT, GpioIsrRisingHandler, (void*)NET_STAT);
+
+
 
     InitializeGPIO();
     IntitializeLEDs();
@@ -304,11 +350,9 @@ extern "C" void app_main(void)
     NET_LOG_INFO("Moq session status %d", (int)moq_session->GetStatus());
 
     // Start moq tasks here
-    xTaskCreate(MoqPubTask, "moq publish task", 8192, NULL, 3, NULL);
-    xTaskCreate(MoqSubTask, "moq subscribe task", 8192, NULL, 2, NULL);
-    xTaskCreate(LinkPacketTask, "link packet handler", 4096, NULL, 0, NULL);
-
-    gpio_set_level(NET_STAT, 1);
+    xTaskCreate(MoqPubTask, "moq publish task", 8192, NULL, 3, &rtos_pub_handle);
+    xTaskCreate(MoqSubTask, "moq subscribe task", 8192, NULL, 2, &xsub_handle);
+    xTaskCreate(LinkPacketTask, "link packet handler", 4096, NULL, 10, &serial_read_handle);
 
     while (true)
     {
@@ -318,6 +362,7 @@ extern "C" void app_main(void)
         // NOTE- 100 * 10ms = 1000ms :)
         if (blink_cnt++ == 1)
         {
+            NET_LOG_INFO("time %lld", esp_timer_get_time());
             gpio_set_level(NET_LED_G, next);
             next = next ? 0 : 1;
             blink_cnt = 0;

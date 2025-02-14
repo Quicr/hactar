@@ -357,24 +357,31 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, UI_STAT_Pin|LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, NET_STAT_Pin|LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_NRST_Pin
                           |NET_NRST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : UI_STAT_Pin LEDA_R_Pin LEDA_G_Pin LEDA_B_Pin */
-  GPIO_InitStruct.Pin = UI_STAT_Pin|LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin;
+  /*Configure GPIO pin : UI_STAT_Pin */
+  GPIO_InitStruct.Pin = UI_STAT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(UI_STAT_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : NET_STAT_Pin */
+  GPIO_InitStruct.Pin = NET_STAT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(NET_STAT_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LEDA_R_Pin LEDA_G_Pin LEDA_B_Pin */
+  GPIO_InitStruct.Pin = LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : NET_STAT_Pin */
-  GPIO_InitStruct.Pin = NET_STAT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(NET_STAT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LEDB_R_Pin LEDB_G_Pin LEDB_B_Pin UI_NRST_Pin
                            NET_NRST_Pin NET_BOOT_Pin UI_BOOT1_Pin */
@@ -384,12 +391,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : USB_RTS_Pin */
-  GPIO_InitStruct.Pin = USB_RTS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(USB_RTS_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : USB_DTR_Pin */
   GPIO_InitStruct.Pin = USB_DTR_Pin;
