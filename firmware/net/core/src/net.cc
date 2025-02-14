@@ -47,9 +47,6 @@ TaskHandle_t xsub_handle;
 uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = { 0 };
 uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = { 0 };
 
-// SemaphoreHandle_t num_audio_requests = xSemaphoreCreateCounting(10, 0);
-int num_audio_requests = 0;
-
 int num_sent_link_audio = 0;
 int64_t last_req_time_us = 0;
 
@@ -116,6 +113,7 @@ static void LinkPacketTask(void* args)
     while (true)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        NET_LOG_INFO("notified");
 
         while (auto packet = ui_layer.Read())
         {
@@ -124,9 +122,7 @@ static void LinkPacketTask(void* args)
                 case ui_net_link::Packet_Type::GetAudioLinkPacket:
                 {
                     // NET_LOG_INFO("recvreq");
-                    // xSemaphoreGive(num_audio_requests);
                     // last_req_time_us = esp_timer_get_time();
-                    // ++num_audio_requests;
                     break;
                 }
                 case ui_net_link::Packet_Type::TalkStart:
@@ -197,7 +193,7 @@ static void MoqPubTask(void* args)
 
         if (moq_objects.size() > 0)
         {
-            // NET_LOG_INFO("pub audio");
+            NET_LOG_INFO("pub audio");
 
             std::lock_guard<std::mutex> lock(object_mux);
             const link_data_obj& obj = moq_objects.front();
@@ -244,14 +240,16 @@ static void MoqSubTask(void* args)
 
         if (xSemaphoreTake(audio_req_smpr, 0))
         {
+            if (sub_track_handler->NumAvailable())
+            {
+                NET_LOG_INFO("sub av %d", (int)sub_track_handler->NumAvailable());
+            }
             auto data = sub_track_handler->PopFront();
             if (!data.has_value())
             {
-                // xSemaphoreGive(audio_req_smpr);
                 continue;
             }
 
-            // --num_audio_requests;
 
             link_packet.type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
             link_packet.length = data->size();
