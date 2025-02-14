@@ -18,7 +18,8 @@ class Serial : public SerialHandler
 {
 public:
 
-    Serial(const uart_port_t port, uart_dev_t& uart, const periph_interrput_t intr_source,
+    Serial(const uart_port_t port, uart_dev_t& uart,
+        TaskHandle_t& read_handle, const periph_interrput_t intr_source,
         const uart_config_t uart_config, const int tx_pin, const int rx_pin,
         const int rts_pin, const int cts_pin,
         uint8_t& tx_buff, const uint32_t tx_buff_sz,
@@ -39,9 +40,9 @@ private:
 
     uart_port_t port;
     uart_dev_t& uart;
+    TaskHandle_t& read_handle;
 
     uart_isr_handle_t isr_handle;
-    uint16_t update_cache;
     SemaphoreHandle_t unread_mux;
     SemaphoreHandle_t unread_cache;
 };
