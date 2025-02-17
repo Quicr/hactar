@@ -79,7 +79,6 @@ syscalls.c
 
 # User C/C++ sources
 SRCS_CC	   = $(shell find src -name '*.cc' -exec basename {} \;)
-SRCS_CC += serial_handler.cc
 
 SRCS_C    += $(shell find src -name '*.c' -exec basename {} \;)
 

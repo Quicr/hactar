@@ -89,7 +89,7 @@ static constexpr uint16_t net_ui_serial_num_rx_packets = 7;
 
 static AudioChip audio_chip(hi2s3, hi2c1);
 
-static Serial serial(&huart2, net_ui_serial_num_rx_packets,
+static Serial<net_ui_serial_num_rx_packets> serial(&huart2,
     *net_ui_serial_tx_buff, net_ui_serial_tx_buff_sz,
     *net_ui_serial_rx_buff, net_ui_serial_rx_buff_sz);
 
@@ -410,24 +410,24 @@ inline void AudioCallback()
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     // UI_LOG_ERROR("rx %u", size);
-    if (huart->Instance == Serial::UART(&serial)->Instance)
+    if (huart->Instance == serial.UART()->Instance)
     {
-        Serial::RxISR(&serial, size);
+        serial.RxISR(size);
     }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == Serial::UART(&serial)->Instance)
+    if (huart->Instance == serial.UART()->Instance)
     {
-        Serial::TxISR(&serial);
+        serial.TxISR();
         RaiseFlag(Rx_Audio_Transmitted);
     }
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == Serial::UART(&serial)->Instance)
+    if (huart->Instance == serial.UART()->Instance)
     {
         serial.Stop();
         serial.StartReceive();
@@ -436,7 +436,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 
 void HAL_UART_AbortReceiveCpltCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == Serial::UART(&serial)->Instance)
+    if (huart->Instance == serial.UART()->Instance)
     {
         serial.StartReceive();
     }
