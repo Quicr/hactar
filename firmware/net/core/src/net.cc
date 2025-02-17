@@ -63,13 +63,12 @@ uart_config_t net_ui_uart_config = {
     .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
 };
 
-Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV,
+Serial<NET_UI_UART_RING_RX_NUM> ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV,
     serial_read_handle, ETS_UART1_INTR_SOURCE,
     net_ui_uart_config,
     NET_UI_UART_TX_PIN, NET_UI_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
     *net_ui_uart_tx_buff, NET_UI_UART_TX_BUFF_SIZE,
-    *net_ui_uart_rx_buff, NET_UI_UART_RX_BUFF_SIZE,
-    NET_UI_UART_RING_RX_NUM);
+    *net_ui_uart_rx_buff, NET_UI_UART_RX_BUFF_SIZE);
 
 uint64_t group_id{ 0 };
 uint64_t object_id{ 0 };
