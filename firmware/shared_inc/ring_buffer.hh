@@ -1,37 +1,23 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <cstddef>
 #include <utility>
 
 #define DEFAULT_BUFFER_SIZE 32
 
-template <typename T>
+template <typename T, size_t N>
 class RingBuffer
 {
 public:
 // TODO constructor that takes a bucket space of type T
-    RingBuffer(const uint16_t size = DEFAULT_BUFFER_SIZE):
-        size(size),
+    RingBuffer():
         read_idx(0),
         write_idx(0),
         unread(0),
-        buffer(nullptr),
         busy(false)
-    {
-        // Don't allow a zero for buffer size
-        if (this->size == 0)
-        {
-            this->size = 1;
-        }
-
-        buffer = new T[this->size]{};
-    }
-
-    ~RingBuffer()
-    {
-        delete [] buffer;
-    }
+    {}
 
     T& Write() noexcept
     {
@@ -200,6 +186,6 @@ private:
     uint16_t read_idx; // start
     uint16_t write_idx; // end
     uint16_t unread;
-    T* buffer;
+    T buffer[N];
     bool busy;
 };
