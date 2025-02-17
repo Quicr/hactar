@@ -33,7 +33,6 @@ fn main() {
         "../../ui/Core/Src/main.c",
         "../../ui/Core/Src/system_stm32f4xx.c",
         "../../ui/Core/Src/sysmem.c",
-        "../../ui/Core/Src/syscalls.c",
     ];
 
     let include_dirs = [
@@ -50,7 +49,6 @@ fn main() {
     ];
 
     cc::Build::new()
-        .cpp(true)
         .define("USE_HAL_DRIVER", None)
         .define("STM32F405xx", None)
         .includes(include_dirs)
