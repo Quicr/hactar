@@ -9,15 +9,45 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 extern "C" {
-    fn main();
+    fn HAL_Init();
+    fn SystemClock_Config();
+    fn MX_GPIO_Init();
+    fn MX_DMA_Init();
+    fn MX_ADC1_Init();
+    fn MX_I2C1_Init();
+    fn MX_I2S3_Init();
+    fn MX_SPI1_Init();
+    fn MX_USART1_UART_Init();
+    fn MX_USART2_UART_Init();
+    fn MX_TIM2_Init();
+    fn MX_RNG_Init();
+    fn MX_CRC_Init();
+    fn MX_TIM3_Init();
+    fn app_main();
 }
 
 // User main function
 #[no_mangle]
-extern "C" fn rs_main() {
+extern "C" fn rs_main() -> ! {
     unsafe {
-        main();
+        HAL_Init();
+        SystemClock_Config();
+        MX_GPIO_Init();
+        MX_DMA_Init();
+        MX_ADC1_Init();
+        MX_I2C1_Init();
+        MX_I2S3_Init();
+        MX_SPI1_Init();
+        MX_USART1_UART_Init();
+        MX_USART2_UART_Init();
+        MX_TIM2_Init();
+        MX_RNG_Init();
+        MX_CRC_Init();
+        MX_TIM3_Init();
+        app_main();
     }
+
+    loop {}
 }
 
 // Interrupt handlers
