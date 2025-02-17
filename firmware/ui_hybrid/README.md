@@ -79,3 +79,38 @@ The way out of this seems to be to solve the startup problem.  To do this, we
 will probably need to employ one of the several Rust embedded frameworks out
 there.  But since that might involve some experimentation and re-architecting,
 we might need to stick with the more complicated solution for a little while.
+
+## Steps to Simplification
+
+1. Translate the C++ code to Rust.  This will remove the need for a final
+   compile stage, so the native Rust tooling for wiring up entry points and
+   interrupt handlers can be used.
+
+2. Use the native rust tooling for entry points and interrupt handlers.
+   Remove the manual ASM file that builds the interrupt vector.
+
+These two steps will let us use `cargo` as the top-level build tooling:
+
+```
+Drivers/**/*.c ---+
+                  |
+                  +---> build.rs --+
+                  |                |
+Core/Src/*.c -----+                |
+                                   |
+                                   +---> cargo --> ui_hybrid.elf
+                                   |
+src/*.rs --------------------------+
+```
+
+The final step in the conversion (might take longer) will be:
+
+3. Use a Rust-based HAL instead of the STM-provided one.  Delete the C HAL and
+   the build.rs tooling used to build it.
+
+This will finally get us to a pure Rust build:
+
+```
+src/*.rs --> cargo --> ui_hybrid.elf
+```
+

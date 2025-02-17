@@ -34,7 +34,6 @@ fn main() {
         "../../ui/Core/Src/system_stm32f4xx.c",
         "../../ui/Core/Src/sysmem.c",
         "../../ui/Core/Src/syscalls.c",
-        "../../ui/Core/Src/stm32f4xx_it.c",
     ];
 
     let include_dirs = [
