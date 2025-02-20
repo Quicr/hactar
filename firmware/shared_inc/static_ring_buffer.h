@@ -1,7 +1,7 @@
 #ifndef STATIC_RING_BUFF_H
 #define STATIC_RING_BUFF_H
 
-#include <cstdint>
+#include <stdint.h>
 
 typedef struct
 {
@@ -51,15 +51,34 @@ uint8_t* StaticRingBuffer_Write(StaticRingBuffer* ring_buff)
     return &ring_buff->buff[ring_buff->write_idx++];
 }
 
-void StaticRingBuffer_Write(StaticRingBuffer* ring_buff, const uint8_t v)
+void StaticRingBuffer_Commit(StaticRingBuffer* ring_buff, const uint8_t v)
 {
-
     if (ring_buff->write_idx >= ring_buff->size)
     {
         ring_buff->write_idx = 0;
     }
 
     ring_buff->buff[ring_buff->write_idx++] = v;
+}
+
+int8_t StaticRingBuffer_WriteBack(StaticRingBuffer* ring)
+{
+    // Do nothing, the value has already been read
+    if (ring->write_idx == ring->read_idx)
+    {
+        return 0;
+    }
+
+    if (ring->write_idx == 0)
+    {
+        ring->write_idx = ring->size - 1;
+    }
+    else
+    {
+        --ring->write_idx;
+    }
+
+    return 1;
 }
 
 #endif
