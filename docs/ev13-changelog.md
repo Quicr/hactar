@@ -7,6 +7,12 @@
 - Added USB_CTS_MGMT to PA11
 - Added USB_RTS_MGMT to PA12
 
+Net
+- Added NET_RTS1_MGMT to IO15
+- Added NET_CTS1_MGMT to IO16
+- Moved NET_DEBUG_1 to IO5
+- Moved NET_DEBUG_1 to IO6
+- Moved NET_DEBUG_1 to IO7
 ### Hardware Changes (No affect to firmware)
 **UI chip changes**
 - Added pulldown - PB10
