@@ -13012,7 +13012,7 @@
 	)
 	(wire
 		(pts
-			(xy 149.86 207.01) (xy 149.86 205.74)
+			(xy 158.75 207.01) (xy 158.75 205.74)
 		)
 		(stroke
 			(width 0)
@@ -13112,7 +13112,7 @@
 	)
 	(wire
 		(pts
-			(xy 140.97 198.12) (xy 140.97 196.85)
+			(xy 149.86 198.12) (xy 149.86 196.85)
 		)
 		(stroke
 			(width 0)
@@ -13312,7 +13312,7 @@
 	)
 	(wire
 		(pts
-			(xy 149.86 207.01) (xy 157.48 207.01)
+			(xy 158.75 207.01) (xy 166.37 207.01)
 		)
 		(stroke
 			(width 0)
@@ -13332,7 +13332,7 @@
 	)
 	(wire
 		(pts
-			(xy 140.97 210.82) (xy 148.59 210.82)
+			(xy 149.86 210.82) (xy 157.48 210.82)
 		)
 		(stroke
 			(width 0)
@@ -14112,7 +14112,7 @@
 	)
 	(wire
 		(pts
-			(xy 149.86 196.85) (xy 149.86 198.12)
+			(xy 158.75 196.85) (xy 158.75 198.12)
 		)
 		(stroke
 			(width 0)
@@ -14242,7 +14242,7 @@
 	)
 	(polyline
 		(pts
-			(xy 160.02 215.9) (xy 160.02 191.77)
+			(xy 168.91 215.9) (xy 168.91 191.77)
 		)
 		(stroke
 			(width 0)
@@ -16142,7 +16142,7 @@
 	)
 	(wire
 		(pts
-			(xy 140.97 210.82) (xy 140.97 205.74)
+			(xy 149.86 210.82) (xy 149.86 205.74)
 		)
 		(stroke
 			(width 0)
@@ -16392,7 +16392,7 @@
 	)
 	(polyline
 		(pts
-			(xy 160.02 191.77) (xy 133.35 191.77)
+			(xy 168.91 191.77) (xy 142.24 191.77)
 		)
 		(stroke
 			(width 0)
@@ -16542,7 +16542,7 @@
 	)
 	(polyline
 		(pts
-			(xy 133.35 215.9) (xy 160.02 215.9)
+			(xy 142.24 215.9) (xy 168.91 215.9)
 		)
 		(stroke
 			(width 0)
@@ -17802,7 +17802,7 @@
 	)
 	(polyline
 		(pts
-			(xy 133.35 191.77) (xy 133.35 215.9)
+			(xy 142.24 191.77) (xy 142.24 215.9)
 		)
 		(stroke
 			(width 0)
@@ -19610,7 +19610,7 @@
 	)
 	(rectangle
 		(start 27.94 191.77)
-		(end 132.08 275.59)
+		(end 140.97 275.59)
 		(stroke
 			(width 0)
 			(type default)
@@ -19965,7 +19965,7 @@
 	)
 	(text "I2C BUS"
 		(exclude_from_sim no)
-		(at 133.35 191.77 0)
+		(at 142.24 191.77 0)
 		(effects
 			(font
 				(size 5 5)
@@ -20937,7 +20937,7 @@
 		(uuid "659e1960-18cf-4d57-9269-26d4ece9a98d")
 	)
 	(label "UI_SDA"
-		(at 157.48 207.01 180)
+		(at 166.37 207.01 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21037,7 +21037,7 @@
 		(uuid "7464b7b9-12a8-4fe7-a12c-f2624c06ca94")
 	)
 	(label "UI_SCL"
-		(at 148.59 210.82 180)
+		(at 157.48 210.82 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -25685,7 +25685,7 @@
 	)
 	(symbol
 		(lib_id "Device:R_US")
-		(at 149.86 201.93 0)
+		(at 158.75 201.93 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -25693,7 +25693,7 @@
 		(dnp no)
 		(uuid "3480b285-1c05-4ce6-9786-09887fe9c123")
 		(property "Reference" "R7"
-			(at 147.828 203.2 90)
+			(at 156.718 203.2 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -25702,7 +25702,7 @@
 			)
 		)
 		(property "Value" "1k5"
-			(at 151.638 203.454 90)
+			(at 160.528 203.454 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -25711,7 +25711,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 148.082 201.93 90)
+			(at 156.972 201.93 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -25720,7 +25720,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 149.86 201.93 0)
+			(at 158.75 201.93 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -25729,7 +25729,7 @@
 			)
 		)
 		(property "Description" "Resistor, US symbol"
-			(at 149.86 201.93 0)
+			(at 158.75 201.93 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -25738,7 +25738,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C25867"
-			(at 149.86 201.93 0)
+			(at 158.75 201.93 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29032,7 +29032,7 @@
 	)
 	(symbol
 		(lib_id "Device:R_US")
-		(at 140.97 201.93 0)
+		(at 149.86 201.93 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -29040,7 +29040,7 @@
 		(dnp no)
 		(uuid "5633cd73-11f2-405b-b021-ef749434023e")
 		(property "Reference" "R8"
-			(at 138.938 203.454 90)
+			(at 147.828 203.454 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29049,7 +29049,7 @@
 			)
 		)
 		(property "Value" "1k5"
-			(at 143.002 203.2 90)
+			(at 151.892 203.2 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29058,7 +29058,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 139.192 201.93 90)
+			(at 148.082 201.93 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29067,7 +29067,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 140.97 201.93 0)
+			(at 149.86 201.93 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29076,7 +29076,7 @@
 			)
 		)
 		(property "Description" "Resistor, US symbol"
-			(at 140.97 201.93 0)
+			(at 149.86 201.93 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29085,7 +29085,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C25867"
-			(at 140.97 201.93 0)
+			(at 149.86 201.93 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29110,7 +29110,7 @@
 	)
 	(symbol
 		(lib_id "power:+3.3V")
-		(at 149.86 196.85 0)
+		(at 158.75 196.85 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -29118,7 +29118,7 @@
 		(dnp no)
 		(uuid "564652fe-c7d5-47df-a8df-05f4186ecf43")
 		(property "Reference" "#PWR0113"
-			(at 149.86 200.66 0)
+			(at 158.75 200.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29127,7 +29127,7 @@
 			)
 		)
 		(property "Value" "+3.3V"
-			(at 149.606 193.548 0)
+			(at 158.496 193.548 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29135,7 +29135,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 149.86 196.85 0)
+			(at 158.75 196.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29144,7 +29144,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 149.86 196.85 0)
+			(at 158.75 196.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29153,7 +29153,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
-			(at 149.86 196.85 0)
+			(at 158.75 196.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29588,7 +29588,7 @@
 	)
 	(symbol
 		(lib_id "power:+3.3V")
-		(at 140.97 196.85 0)
+		(at 149.86 196.85 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -29596,7 +29596,7 @@
 		(dnp no)
 		(uuid "5fd9f213-4915-4005-ad5d-d9516f5a022e")
 		(property "Reference" "#PWR0111"
-			(at 140.97 200.66 0)
+			(at 149.86 200.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29605,7 +29605,7 @@
 			)
 		)
 		(property "Value" "+3.3V"
-			(at 140.716 193.548 0)
+			(at 149.606 193.548 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29613,7 +29613,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 140.97 196.85 0)
+			(at 149.86 196.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29622,7 +29622,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 140.97 196.85 0)
+			(at 149.86 196.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -29631,7 +29631,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
-			(at 140.97 196.85 0)
+			(at 149.86 196.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
