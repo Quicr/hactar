@@ -12395,10 +12395,6 @@
 		(uuid "23a8dee2-de8f-4c5d-b7d2-a616367d479e")
 	)
 	(no_connect
-		(at 360.68 91.44)
-		(uuid "2a707ee2-b96e-4d23-a355-4089a928f2db")
-	)
-	(no_connect
 		(at 73.66 116.84)
 		(uuid "2df087f2-8073-4f1a-8c92-25629de76d4b")
 	)
@@ -12439,16 +12435,8 @@
 		(uuid "62e4ad64-0339-457c-b20d-9614b6d26345")
 	)
 	(no_connect
-		(at 227.33 109.22)
-		(uuid "6364a718-ec88-41ff-aebc-b51e64b3f44a")
-	)
-	(no_connect
 		(at 34.29 257.81)
 		(uuid "660a8c4a-ac88-4c85-838e-ff043f1b392d")
-	)
-	(no_connect
-		(at 227.33 106.68)
-		(uuid "69f075eb-a85f-41fb-996d-3d69ecb2dd27")
 	)
 	(no_connect
 		(at 256.54 203.2)
@@ -12545,10 +12533,6 @@
 	(no_connect
 		(at 196.85 111.76)
 		(uuid "eb1f11dc-a668-4b1d-8881-c2eb37aa1398")
-	)
-	(no_connect
-		(at 360.68 142.24)
-		(uuid "ec328199-2ef6-488e-a408-7602586a4ff0")
 	)
 	(no_connect
 		(at 115.57 226.06)
@@ -13679,6 +13663,16 @@
 			(type default)
 		)
 		(uuid "258da6f1-7fa2-4969-aadc-368ba16a22f5")
+	)
+	(wire
+		(pts
+			(xy 346.71 91.44) (xy 360.68 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "259a3c25-fd1d-4115-b4b3-9a9295cb7c14")
 	)
 	(wire
 		(pts
@@ -16612,6 +16606,16 @@
 	)
 	(wire
 		(pts
+			(xy 227.33 109.22) (xy 242.57 109.22)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "959cc525-84c1-4df0-b275-8040f09c7083")
+	)
+	(wire
+		(pts
 			(xy 58.42 144.78) (xy 73.66 144.78)
 		)
 		(stroke
@@ -18812,6 +18816,16 @@
 	)
 	(wire
 		(pts
+			(xy 227.33 106.68) (xy 242.57 106.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e9294e76-1ac3-4e99-8bbe-59ab498a1fdf")
+	)
+	(wire
+		(pts
 			(xy 196.85 330.2) (xy 196.85 342.9)
 		)
 		(stroke
@@ -18829,6 +18843,16 @@
 			(type default)
 		)
 		(uuid "e992ed68-780e-4439-bd71-f904bd39a606")
+	)
+	(wire
+		(pts
+			(xy 346.71 142.24) (xy 360.68 142.24)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e9ed2960-120f-4e61-9e59-12fbd77b6c71")
 	)
 	(wire
 		(pts
@@ -19765,6 +19789,16 @@
 		)
 		(uuid "33029f2a-dc00-41b5-a3b4-6466ad48ed99")
 	)
+	(text "WAKE UP PIN"
+		(exclude_from_sim no)
+		(at 355.6 88.9 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+		)
+		(uuid "34a21fc2-a454-4982-b18d-a3d3ce526797")
+	)
 	(text "BOOTLOADER"
 		(exclude_from_sim no)
 		(at 355.6 162.052 0)
@@ -20356,6 +20390,16 @@
 		)
 		(uuid "10c2acc2-437d-4f8a-bafa-276dc9c9ef26")
 	)
+	(label "UI_RTS2_NET"
+		(at 346.71 93.98 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "11255b09-b070-4748-b319-ce79009db042")
+	)
 	(label "LEDA_R"
 		(at 173.99 78.74 180)
 		(effects
@@ -20886,16 +20930,6 @@
 		)
 		(uuid "51d71707-8af7-4f58-86ce-52161e144f3c")
 	)
-	(label "Wake up Pin"
-		(at 360.68 91.44 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "51f4139e-1e47-4a6c-846d-2b0e0a70a8b8")
-	)
 	(label "UI_RTS1_MGMT"
 		(at 121.92 93.98 180)
 		(effects
@@ -21286,6 +21320,16 @@
 		)
 		(uuid "8d9455c1-4b8b-492f-91e4-5417631c6066")
 	)
+	(label "UI_LED_B"
+		(at 346.71 142.24 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8da3e756-e48b-46a4-9c27-4364aab0a4c1")
+	)
 	(label "I2S_DACDAT"
 		(at 485.14 247.65 180)
 		(effects
@@ -21445,6 +21489,16 @@
 			(justify right bottom)
 		)
 		(uuid "9f662bfa-890c-4980-b83f-15073b4cdee1")
+	)
+	(label "UI_CTS2_NET"
+		(at 346.71 91.44 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "a0800cbe-24e1-47b5-8680-23ff8721624e")
 	)
 	(label "UI_RX2_NET"
 		(at 346.71 99.06 0)
@@ -21626,6 +21680,16 @@
 		)
 		(uuid "b08b7713-29e0-4010-ba5a-b6b2224de454")
 	)
+	(label "UI_RTS2_NET"
+		(at 242.57 106.68 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "b1435522-114f-4d78-8fa5-4a6d9a6e318e")
+	)
 	(label "KB_ROW7"
 		(at 373.38 267.97 180)
 		(effects
@@ -21806,6 +21870,16 @@
 		)
 		(uuid "bf0ea2ef-fcb2-47da-8ca8-8d3cc9d2b7aa")
 	)
+	(label "UI_CTS2_NET"
+		(at 242.57 109.22 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "c1e11979-6c84-4be8-bb77-4893a3f5c7dc")
+	)
 	(label "USB_CTS_MGMT"
 		(at 130.81 220.98 180)
 		(effects
@@ -21835,16 +21909,6 @@
 			(justify left bottom)
 		)
 		(uuid "c712aec5-b268-4279-95ea-553933ced047")
-	)
-	(label "UI_LED_B"
-		(at 346.71 93.98 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "c7552f5e-fdda-4f6c-85d4-b85c8f2a821e")
 	)
 	(label "DISP_CS"
 		(at 314.96 228.6 0)

@@ -16,8 +16,11 @@
 - Added USB_RTS_MGMT to PA12
 - Moved UI_DEBUG_1 to PC12
 - Moved UI_DEBUG_2 to PD2
-- ADDED_UI_CTS1_MGMT to PA11
+- Added UI_CTS1_MGMT to PA11
 - Added UI_RTS1_MGMT to PA12
+- Moved UI_LED_B to PB3
+- Added UI_CTS2_NET to PA0
+- Added UI_RTS2_NET to PA1
 
 Net
 - Added NET_RTS1_MGMT to IO15
@@ -25,6 +28,8 @@ Net
 - Moved NET_DEBUG_1 to IO5
 - Moved NET_DEBUG_1 to IO6
 - Moved NET_DEBUG_1 to IO7
+- Added UI_RTS2_NET to IO19
+- Added UI_CTS2_NET to IO20
 ### Hardware Changes (No affect to firmware)
 **UI chip changes**
 - Added pulldown - PB10
