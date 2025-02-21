@@ -2,10 +2,22 @@
 # Schematic 
 
 ### Firmware changes 
+**MGMT**
+- Moved UI_STAT to PB9
+- Moved NET_STAT to PB7
+- Moved LEDB_G to PB6
+- Moved USB_DTR_MGMT to PB2
+- Added UI_RTS1_MGMT to PA0
+- Added UI_CTS1_MGMT to PA1
+
 **UI**
 - Removed KB_LED - PB10
 - Added USB_CTS_MGMT to PA11
 - Added USB_RTS_MGMT to PA12
+- Moved UI_DEBUG_1 to PC12
+- Moved UI_DEBUG_2 to PD2
+- ADDED_UI_CTS1_MGMT to PA11
+- Added UI_RTS1_MGMT to PA12
 
 Net
 - Added NET_RTS1_MGMT to IO15
