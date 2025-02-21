@@ -11,7 +11,7 @@ typedef struct
     uint16_t write_idx;
 } StaticRingBuffer;
 
-void StaticRingBuffer_Init(StaticRingBuffer* ring_buff, uint8_t* buff, const uint16_t size)
+static void StaticRingBuffer_Init(StaticRingBuffer* ring_buff, uint8_t* buff, const uint16_t size)
 {
     ring_buff->buff = buff;
     ring_buff->size = size;
@@ -19,7 +19,7 @@ void StaticRingBuffer_Init(StaticRingBuffer* ring_buff, uint8_t* buff, const uin
     ring_buff->write_idx = 0;
 }
 
-uint8_t StaticRingBuffer_Available(StaticRingBuffer* ring_buff)
+static uint8_t StaticRingBuffer_Available(StaticRingBuffer* ring_buff)
 {
     if (ring_buff->write_idx >= ring_buff->read_idx)
     {
@@ -31,7 +31,7 @@ uint8_t StaticRingBuffer_Available(StaticRingBuffer* ring_buff)
     }
 }
 
-uint8_t StaticRingBuffer_Read(StaticRingBuffer* ring_buff)
+static uint8_t StaticRingBuffer_Read(StaticRingBuffer* ring_buff)
 {
     if (ring_buff->read_idx >= ring_buff->size)
     {
@@ -41,7 +41,7 @@ uint8_t StaticRingBuffer_Read(StaticRingBuffer* ring_buff)
     return ring_buff->buff[ring_buff->read_idx++];
 }
 
-uint8_t* StaticRingBuffer_Write(StaticRingBuffer* ring_buff)
+static uint8_t* StaticRingBuffer_Write(StaticRingBuffer* ring_buff)
 {
     if (ring_buff->write_idx >= ring_buff->size)
     {
@@ -51,7 +51,7 @@ uint8_t* StaticRingBuffer_Write(StaticRingBuffer* ring_buff)
     return &ring_buff->buff[ring_buff->write_idx++];
 }
 
-void StaticRingBuffer_Commit(StaticRingBuffer* ring_buff, const uint8_t v)
+static void StaticRingBuffer_Commit(StaticRingBuffer* ring_buff, const uint8_t v)
 {
     if (ring_buff->write_idx >= ring_buff->size)
     {
@@ -61,7 +61,7 @@ void StaticRingBuffer_Commit(StaticRingBuffer* ring_buff, const uint8_t v)
     ring_buff->buff[ring_buff->write_idx++] = v;
 }
 
-int8_t StaticRingBuffer_WriteBack(StaticRingBuffer* ring)
+static int8_t StaticRingBuffer_WriteBack(StaticRingBuffer* ring)
 {
     // Do nothing, the value has already been read
     if (ring->write_idx == ring->read_idx)

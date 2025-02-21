@@ -79,45 +79,33 @@ static const uint8_t Symb_Char_Map[Q10_COLS][Q10_ROWS] =
     { '+', '"', '-', BAK, SPK, '.', '\''}, // col5
 };
 
-// uint32_t debounce_timeout[Q10_COLS][Q10_ROWS] =
-// {
-//     { 0, 0, 0, 0, 0, 0, 0 }, // col1
-//     { 0, 0, 0, 0, 0, 0, 0 }, // col2
-//     { 0, 0, 0, 0, 0, 0, 0 }, // col3
-//     { 0, 0, 0, 0, 0, 0, 0 }, // col4
-//     { 0, 0, 0, 0, 0, 0, 0 }, // col5
-// };
-
-static uint8_t col_buff[10];
-static uint8_t row_buff[10];
-
 typedef struct
 {
     GPIO_TypeDef* col_ports[Q10_COLS];
     uint16_t col_pins[Q10_COLS];
+    uint8_t latch[Q10_COLS];
+    uint32_t debounce[Q10_COLS][Q10_ROWS];
     GPIO_TypeDef* row_ports[Q10_ROWS];
     uint16_t row_pins[Q10_ROWS];
     StaticRingBuffer* ch_ring;
-    StaticRingBuffer col_press_ring;
-    StaticRingBuffer row_press_ring;
-    uint8_t latch[Q10_COLS];
-    uint32_t debounce[Q10_COLS][Q10_ROWS];
+    uint32_t debounce_duration;
+    uint32_t repeat_duration;
     uint32_t flags;
 } Keyboard;
+
 
 void KB_Init(Keyboard* kb,
     GPIO_TypeDef* col_ports[Q10_COLS],
     uint16_t col_pins[Q10_COLS],
     GPIO_TypeDef* row_ports[Q10_ROWS],
     uint16_t row_pins[Q10_ROWS],
-    StaticRingBuffer* ch
+    StaticRingBuffer* ch_ring,
+    uint32_t debounce_duration,
+    uint32_t repeat_duration
 );
 
 void KB_Scan(Keyboard* kb, const uint32_t ticks);
-uint16_t KB_Num_Available(Keyboard* kb);
+uint16_t KB_NumAvailable(Keyboard* kb);
 uint8_t KB_Read(Keyboard* kb);
-uint8_t KB_ReadFlag(Keyboard* kb, KB_Flags flag);
-void KB_RaiseFlag(Keyboard* kb, KB_Flags flag);
-void KB_LowerFlag(Keyboard* kb, KB_Flags flag);
 
 #endif

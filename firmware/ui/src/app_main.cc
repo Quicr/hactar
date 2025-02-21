@@ -16,6 +16,8 @@
 
 #include <random>
 
+#include "keyboard.h"
+
 
 #define HIGH GPIO_PIN_SET
 #define LOW GPIO_PIN_RESET
@@ -129,8 +131,56 @@ uint32_t num_packets_tx = 0;
 
 ui_net_link::AudioObject talk_frame = { 0, 0 };
 
+GPIO_TypeDef* col_ports[Q10_COLS] = {
+    KB_COL1_GPIO_Port,
+    KB_COL2_GPIO_Port,
+    KB_COL3_GPIO_Port,
+    KB_COL4_GPIO_Port,
+    KB_COL5_GPIO_Port,
+};
+
+uint16_t col_pins[Q10_COLS] = {
+    KB_COL1_Pin,
+    KB_COL2_Pin,
+    KB_COL3_Pin,
+    KB_COL4_Pin,
+    KB_COL5_Pin,
+};
+
+GPIO_TypeDef* row_ports[Q10_ROWS] = {
+    KB_ROW1_GPIO_Port,
+    KB_ROW2_GPIO_Port,
+    KB_ROW3_GPIO_Port,
+    KB_ROW4_GPIO_Port,
+    KB_ROW5_GPIO_Port,
+    KB_ROW6_GPIO_Port,
+    KB_ROW7_GPIO_Port,
+};
+
+uint16_t row_pins[Q10_ROWS] = {
+    KB_ROW1_Pin,
+    KB_ROW2_Pin,
+    KB_ROW3_Pin,
+    KB_ROW4_Pin,
+    KB_ROW5_Pin,
+    KB_ROW6_Pin,
+    KB_ROW7_Pin,
+};
+
+static constexpr uint16_t kb_ring_buff_sz = 5;
+uint8_t kb_ring_buff[kb_ring_buff_sz] = { 0 };
+StaticRingBuffer ch_ring{
+    kb_ring_buff,
+    kb_ring_buff_sz,
+    0,
+    0
+};
+
+Keyboard keyboard;
 int app_main()
 {
+    KB_Init(&keyboard, col_ports, col_pins, row_ports, row_pins, &ch_ring, 80, 40);
+    HAL_TIM_Base_Start_IT(&htim2);
 
     audio_chip.Init();
     audio_chip.StartI2S();
@@ -138,7 +188,6 @@ int app_main()
     LEDS(LOW, LOW, LOW);
     serial.StartReceive();
     LEDS(HIGH, HIGH, HIGH);
-
 
     uint32_t redraw = uwTick;
     Colour next = Colour::Green;
@@ -465,7 +514,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        // keyboard.Read();
+        KB_Scan(&keyboard, HAL_GetTick());
     }
     else if (htim->Instance == TIM3)
     {
