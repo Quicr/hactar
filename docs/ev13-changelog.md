@@ -50,4 +50,4 @@ Mgmt chip changes
 - Added USB_CTS_MGMT
 
 **Audio chip**
-- 
+- Put all unused inputs and outputs for audio chip to GNDA
