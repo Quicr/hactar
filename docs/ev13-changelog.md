@@ -40,6 +40,7 @@ Net
 - Added pulldown - PB13
 - Added pulldown - PA11
 - Added pulldown - PA12
+- Moved pulldown on UI_BOOT1 to ui section.
 
 Net chip changes
 
