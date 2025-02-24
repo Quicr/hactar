@@ -48,3 +48,6 @@ Mgmt chip changes
 - Renamed USB_RTS to USB_RTS_MGMT
 - Renamed USB_DTR to USB_DTR_MGMT
 - Added USB_CTS_MGMT
+
+**Audio chip**
+- 
