@@ -55,3 +55,6 @@ Mgmt chip changes
 
 **Audio chip**
 - Put all unused inputs and outputs for audio chip to GNDA
+
+**General**
+- Add resistor to MCO to GND on CN5

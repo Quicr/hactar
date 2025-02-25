@@ -11871,6 +11871,12 @@
 		(uuid "0cf9f388-df49-4c33-827a-9bc4a43fdef3")
 	)
 	(junction
+		(at 496.57 240.03)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "0e22102a-dc69-44d9-97b2-c83136b89146")
+	)
+	(junction
 		(at 71.12 370.84)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -16242,7 +16248,7 @@
 	)
 	(wire
 		(pts
-			(xy 485.14 240.03) (xy 468.63 240.03)
+			(xy 468.63 240.03) (xy 496.57 240.03)
 		)
 		(stroke
 			(width 0)
@@ -16369,6 +16375,16 @@
 			(type default)
 		)
 		(uuid "7f2aee9b-75ac-44e9-9ea9-9551a6ba81d5")
+	)
+	(wire
+		(pts
+			(xy 497.84 240.03) (xy 496.57 240.03)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "810eee5c-6510-4f41-91be-4b60e2bf8b1c")
 	)
 	(wire
 		(pts
@@ -21057,7 +21073,7 @@
 		(uuid "285e5e19-e50d-41be-b912-f7fdc4631cf0")
 	)
 	(label "MCLK"
-		(at 485.14 240.03 180)
+		(at 497.84 240.03 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -25245,6 +25261,72 @@
 			(project ""
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "SW1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 496.57 245.11 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "2cf0e3e6-8624-4e00-84d1-239b4c2a644c")
+		(property "Reference" "#PWR64"
+			(at 496.57 251.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 496.57 248.666 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 496.57 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 496.57 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 496.57 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "14f42332-47c5-43d0-ae5e-f699191ae4c6")
+		)
+		(instances
+			(project "EV13 Board Design"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "#PWR64")
 					(unit 1)
 				)
 			)
@@ -31804,6 +31886,84 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR0119")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small_US")
+		(at 496.57 242.57 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "7771fcfe-cf35-45de-8369-cb6a25be083c")
+		(property "Reference" "R50"
+			(at 498.094 241.046 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "47k"
+			(at 497.84 242.824 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 496.57 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 496.57 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small US symbol"
+			(at 496.57 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C25879"
+			(at 496.57 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "52d416ee-8221-426d-9f0e-0e346e571d0d")
+		)
+		(pin "2"
+			(uuid "323080bf-a3de-40f7-ada3-cf3f12776543")
+		)
+		(instances
+			(project "EV13 Board Design"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "R50")
 					(unit 1)
 				)
 			)
