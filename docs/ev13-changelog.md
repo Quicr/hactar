@@ -9,6 +9,8 @@
 - Moved USB_DTR_MGMT to PB2
 - Added UI_RTS1_MGMT to PA0
 - Added UI_CTS1_MGMT to PA1
+- Added USB_CC1_DETECT
+- Added USB_CC2_DETECT
 
 **UI**
 - Removed KB_LED - PB10
@@ -21,6 +23,8 @@
 - Moved UI_LED_B to PB3
 - Added UI_CTS2_NET to PA0
 - Added UI_RTS2_NET to PA1
+- Removed USB_CC1_DETECT
+- Removed USB_CC2_DETECT
 
 Net
 - Added NET_RTS1_MGMT to IO15
