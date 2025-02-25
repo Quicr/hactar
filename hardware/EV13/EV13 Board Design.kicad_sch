@@ -12695,10 +12695,6 @@
 		(uuid "23a8dee2-de8f-4c5d-b7d2-a616367d479e")
 	)
 	(no_connect
-		(at 73.66 116.84)
-		(uuid "2df087f2-8073-4f1a-8c92-25629de76d4b")
-	)
-	(no_connect
 		(at 196.85 104.14)
 		(uuid "2fe80442-68c4-4569-abd9-c3807783411f")
 	)
@@ -12749,10 +12745,6 @@
 	(no_connect
 		(at 227.33 114.3)
 		(uuid "8ce7d097-e1f3-4d1d-ae17-5dc6bc506057")
-	)
-	(no_connect
-		(at 73.66 114.3)
-		(uuid "95357a2c-e19e-4d10-ada9-584e18b1c585")
 	)
 	(no_connect
 		(at 340.36 274.32)
@@ -13077,6 +13069,16 @@
 			(type default)
 		)
 		(uuid "0ad36030-b49a-4c41-846d-f93f59229d0e")
+	)
+	(wire
+		(pts
+			(xy 55.88 116.84) (xy 73.66 116.84)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0af2c20d-4e88-4d5c-beb7-8fbaa5fcea47")
 	)
 	(polyline
 		(pts
@@ -16227,6 +16229,16 @@
 			(type default)
 		)
 		(uuid "7a92377c-a65d-45f0-b1cc-06c346464130")
+	)
+	(wire
+		(pts
+			(xy 55.88 114.3) (xy 73.66 114.3)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7b2f60a5-4f3d-4d47-8b30-946912617dce")
 	)
 	(wire
 		(pts
@@ -21124,6 +21136,16 @@
 		)
 		(uuid "34124e42-599b-4d93-875d-100e530d672d")
 	)
+	(label "USB_CC1_DETECT"
+		(at 55.88 116.84 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "3437d867-e5b0-470f-a466-1d5dec8ad9d4")
+	)
 	(label "DISP_DC"
 		(at 314.96 226.06 0)
 		(effects
@@ -21493,16 +21515,6 @@
 			(justify right bottom)
 		)
 		(uuid "6614d0cd-2807-44b4-8186-b79dc1f9b638")
-	)
-	(label "USB_CC2_DETECT"
-		(at 416.56 119.38 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "6a6ef50c-0190-4571-b017-d48415410210")
 	)
 	(label "NET_STAT"
 		(at 242.57 111.76 180)
@@ -22024,6 +22036,16 @@
 		)
 		(uuid "a7bad0df-ec23-4afb-8572-5f9b81140796")
 	)
+	(label "USB_CC2_DETECT"
+		(at 55.88 114.3 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "a82c109d-e928-4fdd-88fa-a0d1a934dc93")
+	)
 	(label "USB_RTS_MGMT"
 		(at 121.92 124.46 180)
 		(effects
@@ -22063,16 +22085,6 @@
 			(justify right bottom)
 		)
 		(uuid "a94f1d73-99a5-4d9b-a733-73c1f506a355")
-	)
-	(label "USB_CC1_DETECT"
-		(at 416.56 121.92 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "aaef7bb5-437b-4d11-95b2-46aa5e8f3949")
 	)
 	(label "UI_RTS1_MGMT"
 		(at 323.85 121.92 0)
