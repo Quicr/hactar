@@ -23,6 +23,7 @@ inline uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
     // Heavily influenced from
     // https://en.wikipedia.org/wiki/G.711
     // https://www.ti.com/lit/an/spra634/spra634.pdf
+    // https://www.cs.columbia.edu/~hgs/research/projects/NetworkAudioLibrary/nal_spring/
 
     int16_t sample = u_sample;
 
@@ -41,7 +42,7 @@ inline uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
     {
         // Sample is negative
         // Get the abs of the val
-        sample = -sample;
+        sample = -(sample+1);
     }
 
     // Find the first bit set in our 13 bits
@@ -63,7 +64,7 @@ inline uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
     }
     else
     {
-        mantissa = (sample >> (exponent+3)) & 0x0F;
+        mantissa = (sample >> (exponent + 3)) & 0x0F;
         // Shift the exponent to the front of output since the last 4 bits are
         // for our bit values
         exponent <<= 4;
@@ -78,6 +79,7 @@ inline uint16_t AudioCodec::ALawExpand(uint8_t sample)
     // Heavily influenced from
     // https://en.wikipedia.org/wiki/G.711
     // https://www.ti.com/lit/an/spra634/spra634.pdf
+    // https://www.cs.columbia.edu/~hgs/research/projects/NetworkAudioLibrary/nal_spring/
 
     // Restore the value and invert the sign
     sample ^= 0xD5;
@@ -94,11 +96,11 @@ inline uint16_t AudioCodec::ALawExpand(uint8_t sample)
     // Some spooky m̸̹̫̅͑́a̷̺̪͑̔g̷̛͈̩̪͋͗ī̴̹c̷̲͔̈̓ ȃ̵̘͙d̶̮͘d̵̮͐͠i̷͇̔t̵̡͌̀ͅì̸̥̊o̸͈̬̾̈́n̵̤̤̈́ here that is not explained anywhere
     if (exponent == 0)
     {
-        mantissa = (mantissa + 0x0001) << 2;
+        mantissa = (mantissa + 0x0001) << 3;
     }
     else
     {
-        mantissa = (mantissa + 0x0021) << (exponent + 1);
+        mantissa = (mantissa + 0x0021) << (exponent + 2);
     }
 
     if (sign)
