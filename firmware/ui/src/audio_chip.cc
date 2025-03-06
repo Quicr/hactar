@@ -3,13 +3,7 @@
 
 #include "main.h"
 
-// NOTE MCLK = 12Mhz
-#include <math.h>
-// For some reason M_PI is not defined when including math.h even though it
-// should be. Therefore, we need to do it ourselves.
-#ifndef  M_PI
-#define  M_PI  3.1415926535897932384626433
-#endif
+#include "logger.hh"
 
 extern UART_HandleTypeDef huart1;
 
@@ -20,7 +14,10 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     tx_ptr{ tx_buffer },
     rx_buffer{ 0 },
     rx_ptr{ rx_buffer },
-    buff_mod(0)
+    buff_mod(0),
+    flags(0),
+    volume(Default_Volume),
+    mic_volume(Default_Mic_Volume)
 {
 }
 
@@ -86,8 +83,7 @@ void AudioChip::Init()
     SetRegister(0x07, 0b0'0100'1110);
 
     // Set the left and right headphone volumes
-    SetRegister(0x02, 0b1'0111'1111);
-    SetRegister(0x03, 0b1'0111'1111);
+    VolumeSet(volume);
 
     // Enable mono mixer
     SetBit(0x17, 4, 1);
@@ -134,14 +130,104 @@ void AudioChip::Reset()
     HAL_Delay(100);
 }
 
+void AudioChip::VolumeSet(const int16_t vol)
+{
+    volume = vol;
+    if (volume >= Max_Volume)
+    {
+        volume = Max_Volume;
+    }
+    else if (volume < Min_Volume)
+    {
+        volume = Min_Volume;
+    }
+
+    // Clear the volume section of the register
+    // Set the vol bit to 0 so the volume is set into the intermediate
+    // register
+    SetBits(0x02, 0b1'0111'1111, volume);
+
+    // Then flip the first bit (which is the update volume bit)
+    // for both headphones
+    SetBits(0x03, 0b1'0111'1111, 0x100 + volume);
+}
+
+void AudioChip::VolumeAdjust(const int16_t db)
+{
+    VolumeSet(volume + db);
+}
+
+void AudioChip::VolumeUp()
+{
+    VolumeSet(volume + 1);
+}
+
+void AudioChip::VolumeDown()
+{
+    VolumeSet(volume - 1);
+}
+
+void AudioChip::VolumeReset()
+{
+    VolumeSet(Default_Volume);
+}
+
+uint16_t AudioChip::Volume()
+{
+    return volume;
+}
+
+void AudioChip::MicVolumeSet(const int16_t vol)
+{
+    if (vol >= Max_Mic_Volume)
+    {
+        mic_volume = Max_Mic_Volume;
+    }
+    else if (vol <= Min_Mic_Volume)
+    {
+        mic_volume = Min_Mic_Volume;
+    }
+    else
+    {
+        mic_volume = vol;
+    }
+
+    // Then flip the first bit (which is the update mic_volume bit)
+    // for both headphones
+    SetBits(0x00, 0b1'0011'1111, 0x100 + mic_volume);
+}
+
+void AudioChip::MicVolumeAdjust(const int16_t steps)
+{
+    MicVolumeSet(mic_volume + steps);
+}
+
+void AudioChip::MicVolumeUp()
+{
+    MicVolumeSet(mic_volume + 1);
+}
+
+void AudioChip::MicVolumeDown()
+{
+    MicVolumeSet(mic_volume - 1);
+}
+
+void AudioChip::MicVolumeReset()
+{
+    MicVolumeSet(Default_Mic_Volume);
+}
+
+uint16_t AudioChip::MicVolume()
+{
+    return mic_volume;
+}
+
 HAL_StatusTypeDef AudioChip::WriteRegister(uint8_t address)
 {
     // PrintRegisterData(address);
 
     HAL_StatusTypeDef result = HAL_I2C_Master_Transmit(i2c,
         Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
-
-    HAL_Delay(10);
 
     return result;
 }
@@ -318,7 +404,7 @@ void AudioChip::MuteMic()
 {
     SetBits(0x00, 0b1'1000'0000, 0b0'1000'0000);
 
-    SetBits(0x2B, 0b0'0111'0000, 0b0'0000'0000);
+    SetBits(0x2B, 0b0'0000'1110, 0b0'0000'0000);
 
     SetBit(0x19, 1, 0);
 }
@@ -330,8 +416,8 @@ void AudioChip::UnmuteMic()
     // Disable LINMUTE
     SetBits(0x00, 0b1'1000'0000, 0b1'0000'0000);
 
-    // Set LIN3BOOST to +0dB
-    SetBits(0x2B, 0b0'0111'0000, 0b0'0101'0000);
+    // Set LIN2BOOST to +0dB
+    SetBits(0x2B, 0b0'0000'1110, 0b0'0000'1010);
 
     // Enable MIC bias
     SetBit(0x19, 1, 1);
@@ -368,13 +454,11 @@ void AudioChip::StopI2S()
 
 uint16_t* AudioChip::TxBuffer()
 {
-    // LowerFlag(AudioFlag::Tx_Ready);
     return tx_ptr;
 }
 
 const uint16_t* AudioChip::RxBuffer()
 {
-    // LowerFlag(AudioFlag::Rx_Ready);
     return rx_ptr;
 }
 
@@ -386,20 +470,9 @@ void AudioChip::ISRCallback()
     buff_mod = !buff_mod;
 
     // Clear the transmission buffer
-    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
+    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
     {
-        // Copy the rx to the tx
-        for (uint16_t i =0; i < constants::Audio_Buffer_Sz_2; ++i)
-        {
-            tx_ptr[i] = rx_ptr[i];
-        }
-    }
-    else
-    {
-        for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
-        {
-            tx_ptr[i] = 0;
-        }
+        tx_ptr[i] = 0;
     }
 
     RaiseFlag(AudioFlag::Rx_Ready);
@@ -412,30 +485,6 @@ void AudioChip::ClearTxBuffer()
     {
         tx_buffer[i] = 0;
     }
-}
-
-void AudioChip::Transmit(uint16_t* buff, const size_t size)
-{
-    uint16_t* tmp_ptr = tx_ptr;
-    for (size_t i = 0; i < constants::Audio_Buffer_Sz && i < size; ++i)
-    {
-        tmp_ptr[i] = buff[i];
-    }
-
-    LowerFlag(AudioFlag::Tx_Ready);
-}
-
-void AudioChip::Recieve(uint16_t* buff, const size_t size)
-{
-    // Make a tmp pointer so that if there is an interrupt during transfer
-    // then our pointer won't change
-    uint16_t* tmp_ptr = rx_ptr;
-    for (size_t i = 0 ; i < constants::Audio_Buffer_Sz && i < size; ++i)
-    {
-        buff[i] = tmp_ptr[i];
-    }
-
-    LowerFlag(AudioFlag::Rx_Ready);
 }
 
 inline void AudioChip::RaiseFlag(AudioFlag flag)

@@ -1375,7 +1375,7 @@ const uint8_t font7x12_table[] =
 	0x00, //
 };
 
-Font font7x12 = {
+const Font font7x12 = {
   7, // Width
   12, // Height
   font7x12_table,

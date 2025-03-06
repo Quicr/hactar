@@ -4,9 +4,10 @@
 #include "audio_chip.hh"
 #include "audio_codec.hh"
 
-#include "screen.hh"
-
 #include "serial.hh"
+#include "screen.hh"
+#include "keyboard.hh"
+#include "renderer.hh"
 
 #include "link_packet_t.hh"
 #include "ui_net_link.hh"
@@ -16,7 +17,6 @@
 
 #include <random>
 
-#include "keyboard.h"
 
 
 #define HIGH GPIO_PIN_SET
@@ -64,6 +64,43 @@ char* itoa(int value, char* str, int base)
         str[i++] = '-';
     }
 
+    str[i] = '\0'; // Null-terminate the string
+
+    reverse(str, i); // Reverse the string to correct order
+
+    return str;
+}
+
+char* itoa(int value, char* str, int& len, int base)
+{
+    if (base < 2 || base > 36)
+    { // Base check: only supports bases 2-36
+        *str = '\0';
+        len = 0;
+        return str;
+    }
+
+    bool isNegative = false;
+    if (value < 0 && base == 10)
+    { // Handle negative numbers in base 10
+        isNegative = true;
+        value = -value;
+    }
+
+    int i = 0;
+    do
+    {
+        int digit = value % base;
+        str[i++] = (digit > 9) ? (digit - 10 + 'a') : (digit + '0');
+        value /= base;
+    } while (value != 0);
+
+    if (isNegative)
+    {
+        str[i++] = '-';
+    }
+
+    len = i;
     str[i] = '\0'; // Null-terminate the string
 
     reverse(str, i); // Reverse the string to correct order
@@ -168,19 +205,14 @@ uint16_t row_pins[Q10_ROWS] = {
 };
 
 static constexpr uint16_t kb_ring_buff_sz = 5;
-uint8_t kb_ring_buff[kb_ring_buff_sz] = { 0 };
-StaticRingBuffer ch_ring{
-    kb_ring_buff,
-    kb_ring_buff_sz,
-    0,
-    0
-};
+RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
 
-Keyboard keyboard;
+Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
 int app_main()
 {
-    KB_Init(&keyboard, col_ports, col_pins, row_ports, row_pins, &ch_ring, 80, 40);
     HAL_TIM_Base_Start_IT(&htim2);
+
+    Renderer renderer(screen, keyboard);
 
     audio_chip.Init();
     audio_chip.StartI2S();
@@ -210,7 +242,7 @@ int app_main()
         num_loops++;
         if (HAL_GetTick() > next_print)
         {
-            UI_LOG_ERROR("rx %lu, tx %lu", num_packets_rx, num_packets_tx);
+            // UI_LOG_ERROR("rx %lu, tx %lu", num_packets_rx, num_packets_tx);
             next_print = HAL_GetTick() + 1000;
         }
 
@@ -252,33 +284,71 @@ int app_main()
             ++num_packets_tx;
         }
 
+        if (true || HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
+        {
+            auto tx_buff = audio_chip.TxBuffer();
+            auto rx_buff = audio_chip.RxBuffer();
+
+            AudioCodec::ALawCompand(rx_buff, talk_frame.data, constants::Audio_Buffer_Sz_2);
+            AudioCodec::ALawExpand(talk_frame.data, tx_buff, constants::Audio_Buffer_Sz_2);
+        }
+
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
         HandleRecvLinkPackets();
 
-        // Use remaining time to draw
-        if (est_time_ms > redraw)
-        {
-            screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
-            screen.DrawRectangle(0, 10, 0, 10, 2, next);
-            screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
-            screen.DrawString(0, 28, hello, 48, font5x8, next, curr);
-            // const uint16_t width = 50;
-            // const uint16_t height = 50;
-            // const uint16_t x_inc = width + 2;
-            // const uint16_t y_inc = height + 1;
-
-            // swap
-            Colour tmp = curr;
-            curr = next;
-            next = tmp;
-            redraw = est_time_ms + 1600;
-        }
-
-        // Draw what we can
-        screen.Draw(0);
+        renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
+
+        if (keyboard.NumAvailable() > 0)
+        {
+            uint8_t ch = keyboard.Read();
+            static char vol_str[10];
+            static char mic_str[10];
+            int len = 0;
+            if (ch == 'i')
+            {
+                audio_chip.VolumeAdjust(6);
+                UI_LOG_INFO("volume %d", audio_chip.Volume());
+            }
+            if (ch == 'k')
+            {
+                audio_chip.VolumeAdjust(-6);
+                UI_LOG_INFO("volume %d", audio_chip.Volume());
+            }
+            if (ch == 'm')
+            {
+                audio_chip.VolumeReset();
+                UI_LOG_INFO("volume %d", audio_chip.Volume());
+            }
+
+            if (ch == 'w')
+            {
+                audio_chip.MicVolumeAdjust(8);
+                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
+            }
+            if (ch == 's')
+            {
+                audio_chip.MicVolumeAdjust(-8);
+                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
+            }
+            if (ch == 'z')
+            {
+                audio_chip.MicVolumeReset();
+                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
+            }
+
+            itoa(audio_chip.Volume(), vol_str, len, 10);
+            screen.FillRectangle(0, 240, 30, 48, Colour::Black);
+            screen.DrawString(0, 30, "Volume ", 7, font5x8, Colour::White, Colour::Black);
+            screen.DrawString(7*font5x8.width, 30, vol_str, len, font5x8, Colour::White, Colour::Black);
+
+
+            itoa(audio_chip.MicVolume(), mic_str, len, 10);
+            screen.DrawString(0, 40, "Mic Vol ", 8, font5x8, Colour::White, Colour::Black);
+            screen.DrawString(8*font5x8.width, 40, mic_str, len, font5x8, Colour::White, Colour::Black);
+        }
 
         sleeping = true;
     }
@@ -514,7 +584,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        KB_Scan(&keyboard, HAL_GetTick());
+        keyboard.Scan(HAL_GetTick());
     }
     else if (htim->Instance == TIM3)
     {

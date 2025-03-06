@@ -16,15 +16,15 @@ typedef struct {
     const uint8_t *data;
 } Font;
 
-extern Font font5x8;
-extern Font font6x8;
-extern Font font7x12;
-extern Font font11x16;
-extern Font mic5x8;
+extern const Font font5x8;
+extern const Font font6x8;
+extern const Font font7x12;
+extern const Font font11x16;
+extern const Font mic5x8;
 
 
-static Font& GetFont(Fonts font) __attribute__((unused));
-static Font& GetFont(Fonts font)
+static const Font& GetFont(Fonts font) __attribute__((unused));
+static const Font& GetFont(Fonts font)
 {
     switch (font)
     {

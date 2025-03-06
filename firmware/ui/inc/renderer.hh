@@ -1,22 +1,35 @@
 #pragma once
 
 #include "screen.hh"
+#include "keyboard.hh"
 
 class Renderer
 {
 public:
-    enum class View : uint8_t
+    enum class View: uint8_t
     {
         Startup = 0,
-
+        Wifi,
+        Rooms,
+        Chat
     };
 
-    Renderer(Screen& screen);
+    Renderer(Screen& screen,
+        Keyboard& keyboard
+    );
 
-    void Render() noexcept;
+    void Render(const uint32_t ticks) noexcept;
 private:
-    void StartupView();
+    void StartupView(const uint32_t ticks) noexcept;
+    void WifiView(const uint32_t ticks) noexcept;
+    void RoomsView(const uint32_t ticks) noexcept;
+    void ChatView(const uint32_t ticks) noexcept;
+
+    void Refresh(const uint32_t ticks) noexcept;
 
     Screen& screen;
+    Keyboard& keyboard;
     View view;
+
+    bool change_view;
 };
