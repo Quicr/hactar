@@ -515,7 +515,7 @@
       "plot": "~/cisco/ev12.pdf",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "EV12 Board Design.step",
+      "step": "../../models/ev12/EV12 Board Design.step",
       "svg": "~/cisco/ev12.svg",
       "vrml": "EV12 Board Design.wrl"
     },
