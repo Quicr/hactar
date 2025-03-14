@@ -27,6 +27,9 @@ public:
     void Init();
     void Reset();
 
+    void SetClocks();
+    void SetStereo();
+
     bool ReadRegister(uint8_t address, uint16_t& value);
 
     void StartI2S();
@@ -110,7 +113,7 @@ private:
     static constexpr uint16_t Max_Mic_Volume = 0b11'1111;
     // -17.25db
     static constexpr uint16_t Min_Mic_Volume = 0b00'0000;
-    static constexpr uint16_t Default_Mic_Volume = 0b11'0111;
+    static constexpr uint16_t Default_Mic_Volume = 0b11'1111;
     static constexpr float Default_Mic_Volume_dB = (0.75 * Default_Mic_Volume) - 17.25;
 
     I2S_HandleTypeDef* i2s;

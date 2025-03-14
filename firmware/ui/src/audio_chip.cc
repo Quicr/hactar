@@ -2,6 +2,7 @@
 #include "audio_codec.hh"
 
 #include "main.h"
+#include "app_main.hh"
 
 #include "logger.hh"
 
@@ -19,6 +20,7 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     volume(Default_Volume),
     mic_volume(Default_Mic_Volume)
 {
+
 }
 
 AudioChip::~AudioChip()
@@ -35,6 +37,7 @@ void AudioChip::Init()
     // Set the power
     SetRegister(0x19, 0b0'1111'1110);
 
+
     // Enable outputs
     SetRegister(0x1A, 0b1'1110'0001);
 
@@ -42,51 +45,18 @@ void AudioChip::Init()
     // SetRegister(0x2F, 0b0'0000'0000);
     SetRegister(0x2F, 0b0'0010'1100);
 
-    // Enable PLL integer mode.
-    /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
-    *   5 < PLLN < 13
-    *   int R = f2 / 12
-    *   PLLN = int R.
-    *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
-    *   R = 98.304 / 12 = 8.192
-    *   int R = 0x8
-    *   K = int(2^24 * (R - PLLN))
-    *     = int(2^24 * (8.192 - 8))
-    *     = 3221225
-    *     = 0x3126E9 -> but the table says 0x3126E8
-    *                                       = 0b0011'0001'0010'0110'1110'1001
-    **/
-    SetRegister(0x34, 0b0'0001'1000);
-
-    // Pg 85 version
-    SetRegister(0x35, 0b0'0011'0001);
-    SetRegister(0x36, 0b0'0010'0110);
-    SetRegister(0x37, 0b0'1110'1001);
-
-    // Set ADCDIV to get 8kHz from SYSCLK
-    // Set DACDIV to get 8kHz from SYSCLK
-    // Post scale the PLL to be divided by 2
-    // Set the clock (Select the PLL) (0x01)
-    SetRegister(0x04, 0b1'1011'0101);
-
-    // Set the clock division
-    // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
-    // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
-    // Expected BCLK = constants::sample_rate * channels * bits per channel, so 16khz * 2 * 16 = 512Khz
-    SetRegister(0x08, 0b1'1100'1100);
-
     // Disable soft mute and ADC high pass filter
     SetRegister(0x05, 0b0'0000'0000);
 
-    // Set the Master mode (1), I2S to 16 bit words
-    // Set audio data format to i2s mode
-    SetRegister(0x07, 0b0'0100'1110);
+    SetClocks();
 
     // Set the left and right headphone volumes
+    MicVolumeSet(mic_volume);
     VolumeSet(volume);
 
     // Enable mono mixer
     SetBit(0x17, 4, 1);
+    SetBit(0x2A, 6, 0);
 
     // Enable the outputs
     SetRegister(0x31, 0b0'0111'0111);
@@ -99,11 +69,11 @@ void AudioChip::Init()
     SetRegister(0x22, 0b1'0000'0000);
     SetRegister(0x25, 0b1'0000'0000);
 
-    // Change the ALC sample rate -> 8kHz
-    SetRegister(0x1B, 0b0'0000'0101);
+    SetBits(0x2B, 0b0'0111'0000, 0b0'0111'000);
 
     // Enable DAC softmute
     SetBit(0x06, 3, 1);
+
 
     // Noise gate threshold
     // SetRegister(0x14, 0b0'1111'1001);
@@ -119,6 +89,9 @@ void AudioChip::Init()
 
     // SetRegister(0x1D, 0b0'0100'0000);
 
+            // Set the Master mode (1), I2S to 16 bit words
+            // Set audio data format to i2s mode
+            SetRegister(0x07, 0b0'0100'0010);
 
     UnmuteMic();
 }
@@ -128,6 +101,76 @@ void AudioChip::Reset()
     // Reset the wm8960
     SetRegister(0x0F, 0b1'0000'0000);
     HAL_Delay(100);
+}
+
+// NOTE- These are hard coded values in the constants.hh file
+// for this function
+void AudioChip::SetClocks()
+{
+    switch (constants::Sample_Rate)
+    {
+        case constants::SampleRates::_8khz:
+        {
+            // Enable PLL integer mode.
+            /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
+            *   5 < PLLN < 13
+            *   int R = f2 / 12
+            *   PLLN = int R.
+            *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
+            *   R = 98.304 / 12 = 8.192
+            *   int R = 0x8
+            *   K = int(2^24 * (R - PLLN))
+            *     = int(2^24 * (8.192 - 8))
+            *     = 3221225
+            *     = 0x3126E9 -> but the table says 0x3126E8
+            *                                       = 0b0011'0001'0010'0110'1110'1001
+            **/
+            SetRegister(0x34, 0b0'0001'1000);
+
+            // Pg 85 version
+            SetRegister(0x35, 0b0'0011'0001);
+            SetRegister(0x36, 0b0'0010'0110);
+            SetRegister(0x37, 0b0'1110'1001);
+
+            // Set ADCDIV to get 8kHz from SYSCLK
+            // Set DACDIV to get 8kHz from SYSCLK
+            // Post scale the PLL to be divided by 2
+            // Set the clock (Select the PLL) (0x01)
+            SetRegister(0x04, 0b1'1011'0101);
+
+            // Set the clock division
+            // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
+            // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
+            // Expected BCLK = constants::sample_rate * channels * bits per channel, so 16khz * 2 * 16 = 512Khz
+            SetRegister(0x08, 0b1'1100'1100);
+
+            // Change the ALC sample rate -> 8kHz
+            SetRegister(0x1B, 0b0'0000'0101);
+
+            break;
+        }
+        case constants::SampleRates::_16khz:
+        {
+
+            break;
+        }
+        default:
+        {
+            Error("Audio chip set frequencies", "Frequency set that doesn't exist");
+            break;
+        }
+    }
+}
+
+
+// NOTE- These are hard coded values in the constants.hh file
+// for this function
+void AudioChip::SetStereo()
+{
+    if (constants::Stereo)
+    {
+
+    }
 }
 
 void AudioChip::VolumeSet(const int16_t vol)
@@ -354,9 +397,6 @@ bool AudioChip::ReadRegister(uint8_t address, uint16_t& value)
 
 void AudioChip::TurnOnLeftInput3()
 {
-    // Turn off differential input
-    TurnOffLeftDifferentialInput();
-
     EnableLeftMicPGA();
 
     SetBit(0x20, 7, 1);
