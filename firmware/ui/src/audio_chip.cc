@@ -49,14 +49,11 @@ void AudioChip::Init()
     SetRegister(0x05, 0b0'0000'0000);
 
     SetClocks();
+    SetStereo();
 
     // Set the left and right headphone volumes
     MicVolumeSet(mic_volume);
     VolumeSet(volume);
-
-    // Enable mono mixer
-    SetBit(0x17, 4, 1);
-    SetBit(0x2A, 6, 0);
 
     // Enable the outputs
     SetRegister(0x31, 0b0'0111'0111);
@@ -91,7 +88,7 @@ void AudioChip::Init()
 
             // Set the Master mode (1), I2S to 16 bit words
             // Set audio data format to i2s mode
-            SetRegister(0x07, 0b0'0100'0010);
+    SetRegister(0x07, 0b0'0100'0010);
 
     UnmuteMic();
 }
@@ -141,17 +138,65 @@ void AudioChip::SetClocks()
             // Set the clock division
             // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
             // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
-            // Expected BCLK = constants::sample_rate * channels * bits per channel, so 16khz * 2 * 16 = 512Khz
+            // Expected BCLK = constants::sample_rate * channels * frame bits per sample
+            // Note- we need to do 32 bit frames because there is not an option to do a
+            // BCLK of 256KHz
+            // 8000Hz * 2 * 32 = 512KHz
             SetRegister(0x08, 0b1'1100'1100);
 
             // Change the ALC sample rate -> 8kHz
             SetRegister(0x1B, 0b0'0000'0101);
+
+            // Change the I2S setting accordingly
+            i2s->Init.AudioFreq = I2S_AUDIOFREQ_8K;
+            HAL_I2S_Init(i2s);
 
             break;
         }
         case constants::SampleRates::_16khz:
         {
 
+            /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
+            *   5 < PLLN < 13
+            *   int R = f2 / 12
+            *   PLLN = int R.
+            *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
+            *   R = 98.304 / 12 = 8.192
+            *   int R = 0x8
+            *   K = int(2^24 * (R - PLLN))
+            *     = int(2^24 * (8.192 - 8))
+            *     = 3221225
+            *     = 0x3126E9 -> but the table says 0x3126E8
+            *                                       = 0b0011'0001'0010'0110'1110'1001
+            **/
+            // Enable PLL integer mode.
+            SetRegister(0x34, 0b0'0001'1000);
+
+            // Pg 85 version
+            SetRegister(0x35, 0b0'0011'0001);
+            SetRegister(0x36, 0b0'0010'0110);
+            SetRegister(0x37, 0b0'1110'1001);
+
+            // Set ADCDIV to get 16kHz from SYSCLK
+            // Set DACDIV to get 16kHz from SYSCLK
+            // Post scale the PLL to be divided by 2
+            // Set the clock (Select the PLL) (0x01)
+            // Set to 16Khz
+            SetRegister(0x04, 0b0'1101'1101);
+
+            // Set the clock division
+            // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
+            // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
+            // Expected BCLK = constants::sample_rate * channels * frame bits per sample, so 16khz * 2 * 16 = 512Khz
+            // 16000Hz * 2 * 32 = 1.024MHz
+            SetRegister(0x08, 0b1'1100'1001);
+
+            // Change the ALC sample rate -> 8kHz
+            SetRegister(0x1B, 0b0'0000'0011);
+
+            // Change the I2S setting accordingly
+            i2s->Init.AudioFreq = I2S_AUDIOFREQ_16K;
+            HAL_I2S_Init(i2s);
             break;
         }
         default:
@@ -169,7 +214,15 @@ void AudioChip::SetStereo()
 {
     if (constants::Stereo)
     {
-
+        // Disable mono mixer
+        SetBit(0x17, 4, 0);
+        SetBit(0x2A, 6, 1);
+    }
+    else
+    {
+        // Enable mono mixer
+        SetBit(0x17, 4, 1);
+        SetBit(0x2A, 6, 0);
     }
 }
 
@@ -477,7 +530,7 @@ void AudioChip::StartI2S()
 {
     // NOTE- Do not remove delay the audio chip needs time to stabilize
     HAL_Delay(20);
-    auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Audio_Buffer_Sz);
+    auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Total_Audio_Buffer_Sz);
 
     if (output == HAL_OK)
     {
@@ -504,13 +557,13 @@ const uint16_t* AudioChip::RxBuffer()
 
 void AudioChip::ISRCallback()
 {
-    const uint16_t offset = buff_mod * constants::Audio_Buffer_Sz_2;
+    const uint16_t offset = buff_mod * constants::Audio_Buffer_Sz;
     tx_ptr = tx_buffer + offset;
     rx_ptr = rx_buffer + offset;
     buff_mod = !buff_mod;
 
     // Clear the transmission buffer
-    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
+    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
     {
         tx_ptr[i] = 0;
     }
@@ -521,7 +574,7 @@ void AudioChip::ISRCallback()
 
 void AudioChip::ClearTxBuffer()
 {
-    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
+    for (uint16_t i = 0; i < constants::Total_Audio_Buffer_Sz; ++i)
     {
         tx_buffer[i] = 0;
     }

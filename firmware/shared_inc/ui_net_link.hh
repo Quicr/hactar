@@ -47,7 +47,7 @@ namespace ui_net_link
     struct AudioObject
     {
         uint8_t channel_id;
-        uint8_t data[constants::Audio_Buffer_Sz_2];
+        uint8_t data[constants::Audio_Phonic_Sz];
     };
 
     [[maybe_unused]] static void BuildGetLinkPacket(uint8_t* buff)
@@ -105,11 +105,11 @@ namespace ui_net_link
     {
         const uint16_t num_extra_bytes = 1;
         packet.type = (uint8_t)Packet_Type::AudioObject;
-        packet.length = num_extra_bytes + constants::Audio_Buffer_Sz_2;
+        packet.length = num_extra_bytes + constants::Audio_Phonic_Sz;
         packet.payload[0] = talk_frame.channel_id;
 
         constexpr uint32_t payload_offset = num_extra_bytes;
-        memcpy(packet.payload+payload_offset, talk_frame.data, constants::Audio_Buffer_Sz_2);
+        memcpy(packet.payload+payload_offset, talk_frame.data, constants::Audio_Phonic_Sz);
 
         packet.is_ready = true;
     }
@@ -139,7 +139,7 @@ namespace ui_net_link
         audio_object.channel_id = packet.payload[0];
 
         constexpr uint32_t payload_offset = 1;
-        memcpy(audio_object.data, packet.payload + payload_offset, constants::Audio_Buffer_Sz_2);
+        memcpy(audio_object.data, packet.payload + payload_offset, constants::Audio_Phonic_Sz);
     }
 
     // TODO serialize and deserialize for audioobjectS

@@ -231,8 +231,17 @@ int app_main()
     uint32_t blinky = 0;
     uint32_t next_print = 0;
 
+    uint32_t count_loops_timeout = HAL_GetTick() + 1000;
+    bool done_counting_loops = false;
+
     while (1)
     {
+        if (HAL_GetTick() >= count_loops_timeout && !done_counting_loops)
+        {
+            UI_LOG_ERROR("num_loops %d", num_loops);
+            done_counting_loops = true;
+        }
+
         if (HAL_GetTick() > blinky)
         {
             HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
@@ -277,7 +286,9 @@ int app_main()
 
         if (ptt_down)
         {
-            AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
+            AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz,
+                talk_frame.data, constants::Audio_Buffer_Sz, true, constants::Stereo);
+
             ui_net_link::Serialize(talk_frame, talk_packet);
             LedRToggle();
             serial.Write(talk_packet);
@@ -289,8 +300,10 @@ int app_main()
             auto tx_buff = audio_chip.TxBuffer();
             auto rx_buff = audio_chip.RxBuffer();
 
-            AudioCodec::ALawCompand(rx_buff, talk_frame.data, constants::Audio_Buffer_Sz_2);
-            AudioCodec::ALawExpand(talk_frame.data, tx_buff, constants::Audio_Buffer_Sz_2);
+            AudioCodec::ALawCompand(rx_buff, constants::Audio_Buffer_Sz,
+                talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
+
+            AudioCodec::ALawExpand(talk_frame.data, constants::Audio_Phonic_Sz, tx_buff, constants::Audio_Buffer_Sz, constants::Stereo, true);
         }
 
         RaiseFlag(Rx_Audio_Companded);
@@ -342,12 +355,12 @@ int app_main()
             itoa(audio_chip.Volume(), vol_str, len, 10);
             screen.FillRectangle(0, 240, 30, 48, Colour::Black);
             screen.DrawString(0, 30, "Volume ", 7, font5x8, Colour::White, Colour::Black);
-            screen.DrawString(7*font5x8.width, 30, vol_str, len, font5x8, Colour::White, Colour::Black);
+            screen.DrawString(7 * font5x8.width, 30, vol_str, len, font5x8, Colour::White, Colour::Black);
 
 
             itoa(audio_chip.MicVolume(), mic_str, len, 10);
             screen.DrawString(0, 40, "Mic Vol ", 8, font5x8, Colour::White, Colour::Black);
-            screen.DrawString(8*font5x8.width, 40, mic_str, len, font5x8, Colour::White, Colour::Black);
+            screen.DrawString(8 * font5x8.width, 40, mic_str, len, font5x8, Colour::White, Colour::Black);
         }
 
         sleeping = true;
@@ -440,8 +453,11 @@ void HandleRecvLinkPackets()
             case ui_net_link::Packet_Type::AudioMultiObject:
             case ui_net_link::Packet_Type::AudioObject:
             {
+                // TODO we need to know if it is mono or stereo data
+                // that we have received
+                // For now assume we receive mono
                 ui_net_link::Deserialize(*link_packet, play_frame);
-                AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
+                AudioCodec::ALawExpand(play_frame.data, constants::Audio_Buffer_Sz, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, true, constants::Stereo);
                 break;
             }
             case ui_net_link::Packet_Type::MoQStatus:
@@ -633,7 +649,7 @@ void SlowSendTest(int delay, int num)
     link_packet_t packet;
     ui_net_link::AudioObject talk_frame = { 0, 0 };
     // Fill the tmp audio buffer with random
-    for (int i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
+    for (int i = 0; i < constants::Audio_Buffer_Sz; ++i)
     {
         talk_frame.data[i] = i;
     }

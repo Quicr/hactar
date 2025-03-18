@@ -119,9 +119,9 @@ private:
     I2S_HandleTypeDef* i2s;
     I2C_HandleTypeDef* i2c;
 
-    uint16_t tx_buffer[constants::Audio_Buffer_Sz];
+    uint16_t tx_buffer[constants::Total_Audio_Buffer_Sz];
     uint16_t* tx_ptr;
-    uint16_t rx_buffer[constants::Audio_Buffer_Sz];
+    uint16_t rx_buffer[constants::Total_Audio_Buffer_Sz];
     uint16_t* rx_ptr;
     uint32_t buff_mod;
 

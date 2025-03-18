@@ -1,10 +1,94 @@
- #include "audio_codec.hh"
+#include "audio_codec.hh"
 
 #include <math.h>
 
+void AudioCodec::ALawCompand(const uint16_t* input, const size_t input_len,
+    uint8_t* output, const size_t output_len, const bool input_stereo, const bool output_stereo)
+{
+    if ((input_stereo && output_stereo) || (!input_stereo && !output_stereo))
+    {
+        const size_t min_len = input_len < output_len ? input_len : output_len;
+        for (size_t i = 0; i < min_len; ++i)
+        {
+            output[i] = ALawCompand(input[i]);
+        }
+    }
+    else if (input_stereo && !output_stereo)
+    {
+        uint8_t companded = 0;
+        size_t i = 0;
+        size_t j = 0;
+        while (i < input_len && j < output_len)
+        {
+            companded = ALawCompand(input[i] + input[i + 1]);
+            output[j] = companded;
+
+            i += 2;
+            ++j;
+        }
+    }
+    else if (!input_stereo && output_stereo)
+    {
+        uint8_t companded = 0;
+        size_t i = 0;
+        size_t j = 0;
+        while (i < input_len && j < output_len)
+        {
+            companded = ALawCompand(input[i]);
+            output[j] = companded;
+            output[j + 1] = companded;
+
+            ++i;
+            j += 2;
+        }
+    }
+}
+
+void AudioCodec::ALawExpand(const uint8_t* input, const size_t input_len,
+    uint16_t* output, const size_t output_len, const bool input_stereo, const bool output_stereo)
+{
+    if ((input_stereo && output_stereo) || (!input_stereo && !output_stereo))
+    {
+        const size_t min_len = input_len < output_len ? input_len : output_len;
+        for (size_t i = 0; i < min_len; ++i)
+        {
+            output[i] = ALawExpand(input[i]);
+        }
+    }
+    else if (input_stereo && !output_stereo)
+    {
+        uint16_t expanded = 0;
+        size_t i = 0;
+        size_t j = 0;
+        while (i < input_len && j < output_len)
+        {
+            expanded = ALawExpand(input[i]) + ALawExpand(input[i + 1]);
+            output[j] = expanded;
+
+            i += 2;
+            ++j;
+        }
+    }
+    else if (!input_stereo && output_stereo)
+    {
+        uint16_t expanded = 0;
+        size_t i = 0;
+        size_t j = 0;
+        while (i < input_len && j < output_len)
+        {
+            expanded = ALawExpand(input[i]);
+            output[j] = expanded;
+            output[j + 1] = expanded;
+
+            ++i;
+            j += 2;
+        }
+    }
+}
+
 void AudioCodec::ALawCompand(const uint16_t* input, uint8_t* output, const size_t len)
 {
-    for (size_t i = 0; i < len; ++i)
+    for (size_t i = 0 ; i < len; ++i)
     {
         output[i] = ALawCompand(input[i]);
     }
@@ -42,7 +126,7 @@ inline uint8_t AudioCodec::ALawCompand(const uint16_t u_sample)
     {
         // Sample is negative
         // Get the abs of the val
-        sample = -(sample+1);
+        sample = -(sample + 1);
     }
 
     // Find the first bit set in our 13 bits
