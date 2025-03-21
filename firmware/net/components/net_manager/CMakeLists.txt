@@ -10,7 +10,6 @@ set (SOURCES
       moq_audio_track_reader.cc
       moq_track_writer.cc
       moq_session.cc
-    #net_manager.cc
 )
 
 set(CMAKE_CXX_FLAGS "-mlongcalls  -Wno-error=format -Wno-error=pessimizing-move")

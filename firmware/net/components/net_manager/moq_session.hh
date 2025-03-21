@@ -4,16 +4,27 @@
 #include "moq_track_reader.hh"
 #include "moq_audio_track_reader.hh"
 #include "moq_track_writer.hh"
+#include "constants.hh"
 
 #include <quicr/client.h>
 #include <quicr/detail/defer.h>
 
 #include <map>
 
+
 namespace moq {
 /**
 * MoQSession identifies a client session with the MOQ Peer
 */
+
+union Chunk
+{
+    uint8_t type;
+    uint8_t is_last;
+    uint32_t length;
+    uint8_t* data;
+};
+
 class Session : public quicr::Client {
 public:
     using quicr::Client::Client;

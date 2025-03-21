@@ -295,7 +295,7 @@ int app_main()
             ++num_packets_tx;
         }
 
-        if (true || HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
+        if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
         {
             auto tx_buff = audio_chip.TxBuffer();
             auto rx_buff = audio_chip.RxBuffer();
@@ -457,7 +457,7 @@ void HandleRecvLinkPackets()
                 // that we have received
                 // For now assume we receive mono
                 ui_net_link::Deserialize(*link_packet, play_frame);
-                AudioCodec::ALawExpand(play_frame.data, constants::Audio_Buffer_Sz, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, true, constants::Stereo);
+                AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, true, constants::Stereo);
                 break;
             }
             case ui_net_link::Packet_Type::MoQStatus:

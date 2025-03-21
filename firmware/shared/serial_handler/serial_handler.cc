@@ -38,6 +38,8 @@ SerialHandler::~SerialHandler()
     transmit_arg = nullptr;
 }
 
+// TODO optimize our buffers
+
 
 link_packet_t* SerialHandler::Read()
 {
@@ -72,7 +74,7 @@ link_packet_t* SerialHandler::Read()
             continue;
         }
 
-        if (bytes_read >= PACKET_SIZE)
+        if (bytes_read >= link_packet_t::Packet_Size)
         {
             Logger::Log(Logger::Level::Info, "Frame overflow error");
             // Hit maximum size and didn't get an end packet
