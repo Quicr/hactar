@@ -162,8 +162,8 @@ static void LinkPacketTask(void* args)
 
                     auto& obj = moq_objects.emplace_back();
 
-                    // Create an object
-                    obj.data.reserve(packet->length + 6);
+                    // // Create an object
+                    obj.data.resize(packet->length + 6);
                     obj.data[0] = 1;
                     obj.data[1] = 0;
                     if (talk_stopped)
@@ -173,15 +173,11 @@ static void LinkPacketTask(void* args)
                     }
 
                     uint32_t len = packet->length;
-                    memcpy(obj.data.data()+2, &len, sizeof(uint32_t));
-                    memcpy(obj.data.data()+6, packet->payload, packet->length);
+                    memcpy(obj.data.data() + 2, &len, sizeof(uint32_t));
+                    memcpy(obj.data.data() + 6, packet->payload, packet->length);
 
                     obj.headers.object_id++;
-                    obj.headers.payload_length = len;
-
-                    // obj.data.assign(packet->payload, packet->payload + packet->length);
-                    // obj.headers.object_id++;
-                    // obj.headers.payload_length = obj.data.size();
+                    obj.headers.payload_length = len + 6;
 
                     // TODO use notifies, currently it doesn't notify fast enough?
                     // xTaskNotifyGive(rtos_pub_handle);
@@ -273,6 +269,8 @@ delete_pub_task:
 
 static void MoqSubTask(void* args)
 {
+
+    link_packet_t link_packet;
     NET_LOG_INFO("Start subscribe task");
 
     if (!moq_session)
@@ -317,67 +315,81 @@ static void MoqSubTask(void* args)
         NET_LOG_INFO("Subscribed");
     }
 
+
     while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
     {
-        vTaskDelay(2 / portTICK_PERIOD_MS);
-        if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
+        try
         {
-            // TODO handling
-            continue;
-        }
-
-        sub_track_handler->TryPlay();
-
-        if (xSemaphoreTake(audio_req_smpr, 0))
-        {
-            // TODO move?
-            auto data = sub_track_handler->PopFront();
-            if (!data.has_value())
+            vTaskDelay(2 / portTICK_PERIOD_MS);
+            if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
             {
+                // TODO handling
                 continue;
             }
-            NET_LOG_INFO("Ypu");
 
-            if (data->at(0) == 1)
+            sub_track_handler->TryPlay();
+
+            if (xSemaphoreTake(audio_req_smpr, 0))
             {
-                // Is audio
-                if (data->at(1) == 1)
+                // TODO move?
+                auto data = sub_track_handler->PopFront();
+                if (!data.has_value())
                 {
-                    // is last, dunno what to do with it but may need it.
-                    // perhaps send some sort of link packet
-                    // informing the ui that we are done?
+                    continue;
                 }
+                NET_LOG_INFO("sub len %zu", data->size());
 
-                uint32_t length;
-                std::memcpy(&length, &data->data()[2], sizeof(uint32_t));
-
-                uint32_t offset = 6;
-                while (length > 0)
+                if (data->at(0) == 1)
                 {
-                    uint32_t link_packet_sz = length;
-                    if (link_packet_sz > constants::Audio_Phonic_Sz)
+                    // Is audio
+                    // NET_LOG_INFO("is audio");
+
+                    if (data->at(1) == 1)
                     {
-                        link_packet_sz = constants::Audio_Phonic_Sz;
+                        // is last, dunno what to do with it but may need it.
+                        // perhaps send some sort of link packet
+                        // informing the ui that we are done?
                     }
 
-                    link_packet_t link_packet;
-                    link_packet.type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
-                    link_packet.length = link_packet_sz;
-                    std::memcpy(link_packet.payload, data->data() + offset, link_packet_sz);
-                    link_packet.is_ready = true;
-                    ui_layer.Write(link_packet);
+                    // NET_LOG_INFO("get length");
+                    uint32_t length;
+                    std::memcpy(&length, &data->data()[2], sizeof(uint32_t));
 
-                    offset += link_packet_sz;
-                    length -= link_packet_sz;
+                    // TODO note- this won't really work because we'd still have to wait
+                    // a whole audio playout time before we can send more audio data
+                    // NET_LOG_INFO("chop up into packets");
+                    uint32_t offset = 6;
+                    while (length > 0)
+                    {
+                        uint32_t link_packet_sz = length;
+                        if (link_packet_sz > constants::Audio_Phonic_Sz+1)
+                        {
+                            link_packet_sz = constants::Audio_Phonic_Sz+1;
+                        }
+
+                        link_packet_t link_packet;
+                        link_packet.type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
+                        link_packet.length = link_packet_sz;
+                        std::memcpy(link_packet.payload, data->data() + offset, link_packet_sz);
+                        link_packet.is_ready = true;
+                        ui_layer.Write(link_packet);
+
+                        offset += link_packet_sz;
+                        length -= link_packet_sz;
+                    }
+
                 }
-
+                else
+                {
+                    // Not audio
+                    // ignore?
+                    NET_LOG_ERROR("Received a data chunk that is not audio");
+                }
             }
-            else
-            {
-                // Not audio
-                // ignore?
-                NET_LOG_ERROR("Received a data chunk that is not audio");
-            }
+        }
+        catch (const std::exception& ex)
+        {
+            ESP_LOGE("sub", "Exception in sub %s", ex.what());
         }
     }
 
@@ -509,7 +521,6 @@ extern "C" void app_main(void)
             next = next ? 0 : 1;
             heartbeat = esp_timer_get_time_ms() + 1000;
         }
-
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }

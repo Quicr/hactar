@@ -287,7 +287,7 @@ int app_main()
         if (ptt_down)
         {
             AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz,
-                talk_frame.data, constants::Audio_Buffer_Sz, true, constants::Stereo);
+                talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
 
             ui_net_link::Serialize(talk_frame, talk_packet);
             LedRToggle();
