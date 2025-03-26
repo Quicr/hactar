@@ -48,8 +48,8 @@ protected:
     virtual void UpdateUnread(const uint16_t update) = 0;
 
     void UpdateRx(const uint16_t num_recv);
-    void UpdateTx();
-    void PrepTransmit();
+    bool UpdateTx();
+    bool PrepTransmit();
 
     RingBuffer<link_packet_t> rx_packets;
 

@@ -457,7 +457,9 @@ void HandleRecvLinkPackets()
                 // that we have received
                 // For now assume we receive mono
                 ui_net_link::Deserialize(*link_packet, play_frame);
-                AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, true, constants::Stereo);
+                AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz,
+                    audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                    true);
                 break;
             }
             case ui_net_link::Packet_Type::MoQStatus:

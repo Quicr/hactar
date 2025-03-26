@@ -63,7 +63,7 @@ int num_sent_link_audio = 0;
 int64_t last_req_time_us = 0;
 
 uart_config_t net_ui_uart_config = {
-    .baud_rate = 921600,
+    .baud_rate = 460800,
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_2,
@@ -174,7 +174,7 @@ static void LinkPacketTask(void* args)
 
                     uint32_t len = packet->length;
                     memcpy(obj.data.data() + 2, &len, sizeof(uint32_t));
-                    memcpy(obj.data.data() + 6, packet->payload, packet->length);
+                    memcpy(obj.data.data() + 6, packet->payload, len);
 
                     obj.headers.object_id++;
                     obj.headers.payload_length = len + 6;
@@ -253,7 +253,6 @@ static void MoqPubTask(void* args)
         {
             continue;
         }
-        NET_LOG_INFO("pub audio");
 
         std::lock_guard<std::mutex> lock(object_mux);
         const link_data_obj& obj = moq_objects.front();
@@ -337,12 +336,10 @@ static void MoqSubTask(void* args)
                 {
                     continue;
                 }
-                NET_LOG_INFO("sub len %zu", data->size());
 
                 if (data->at(0) == 1)
                 {
                     // Is audio
-                    // NET_LOG_INFO("is audio");
 
                     if (data->at(1) == 1)
                     {
@@ -351,19 +348,18 @@ static void MoqSubTask(void* args)
                         // informing the ui that we are done?
                     }
 
-                    // NET_LOG_INFO("get length");
                     uint32_t length;
                     std::memcpy(&length, &data->data()[2], sizeof(uint32_t));
 
                     // TODO note- this won't really work because we'd still have to wait
                     // a whole audio playout time before we can send more audio data
-                    // NET_LOG_INFO("chop up into packets");
                     uint32_t offset = 6;
                     while (length > 0)
                     {
                         uint32_t link_packet_sz = length;
                         if (link_packet_sz > constants::Audio_Phonic_Sz+1)
                         {
+                            NET_LOG_INFO("split packet");
                             link_packet_sz = constants::Audio_Phonic_Sz+1;
                         }
 

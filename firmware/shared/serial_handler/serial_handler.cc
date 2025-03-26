@@ -160,14 +160,12 @@ void SerialHandler::Write(const uint8_t* data, const uint16_t size)
     WriteToTxBuff(END);
     unsent += size + 1;
 
+    // Logger::Log(Logger::Level::Info, "Sent %d", unsent);
+
     if (unsent > tx_buff_sz)
     {
         // TODO ERROR
-    }
-
-    if (tx_write_idx > tx_read_idx)
-    {
-        // TODO error
+        Logger::Log(Logger::Level::Error, "Transmit buffer full");
     }
 
     if (!tx_free)
@@ -223,7 +221,7 @@ void SerialHandler::UpdateRx(const uint16_t num_recv)
     }
 }
 
-void SerialHandler::UpdateTx()
+bool SerialHandler::UpdateTx()
 {
     // TODO esp semaphore of send
     unsent -= num_to_send;
@@ -234,16 +232,16 @@ void SerialHandler::UpdateTx()
         tx_read_idx = 0;
     }
 
-    PrepTransmit();
+    return PrepTransmit();
 }
 
-void SerialHandler::PrepTransmit()
+bool SerialHandler::PrepTransmit()
 {
     // Nothing to send
     if (unsent == 0)
     {
         tx_free = true;
-        return;
+        return false;
     }
     tx_free = false;
     num_to_send = unsent;
@@ -255,4 +253,5 @@ void SerialHandler::PrepTransmit()
     }
 
     Transmit(transmit_arg);
+    return true;
 }
