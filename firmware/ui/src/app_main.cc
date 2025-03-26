@@ -208,6 +208,9 @@ static constexpr uint16_t kb_ring_buff_sz = 5;
 RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
 
 Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
+
+uint32_t timeout = 0;
+
 int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
@@ -304,6 +307,16 @@ int app_main()
                 talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
 
             AudioCodec::ALawExpand(talk_frame.data, constants::Audio_Phonic_Sz, tx_buff, constants::Audio_Buffer_Sz, constants::Stereo, true);
+        }
+
+
+        if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET &&
+            HAL_GetTick() > timeout)
+        {
+            timeout = HAL_GetTick() + 5000;
+            ui_net_link::ChangeNamespace change_namespace = { 0, 5, "test1" };
+            ui_net_link::Serialize(change_namespace, talk_packet);
+            serial.Write(talk_packet);
         }
 
         RaiseFlag(Rx_Audio_Companded);
@@ -476,7 +489,7 @@ void HandleRecvLinkPackets()
             }
             default:
             {
-                UI_LOG_ERROR("Packet type %d, %u, %lu, %lu", (int)link_packet->type, link_packet->length, num_audio_req_packets, num_packets_rx);
+                UI_LOG_ERROR("Unhandled packet type %d, %u, %lu, %lu", (int)link_packet->type, link_packet->length, num_audio_req_packets, num_packets_rx);
                 break;
             }
         }
@@ -626,7 +639,7 @@ void assert_failed(uint8_t* file, uint32_t line)
     /* User can add his own implementation to report the file name and line number,
         e.g.: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
         /* USER CODE END 6 */
-}
+    }
 #endif /* USE_FULL_ASSERT */
 
 inline void Error(const char* who, const char* why)

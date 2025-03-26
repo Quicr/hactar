@@ -45,13 +45,16 @@
 // constexpr const char* moq_server = "moq://relay.quicr.ctgpoc.com:33437";
 constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
-std::string pub_track = "hactar-audio";
-std::string sub_track = "hactar-audio";
+std::string track_location = "store";
+std::string base_track_namespace = "ptt.arpa/v1/org1/acme";
 
+std::string pub_track = "pcm_en_8khz_mono_i16";
+std::string sub_track = "pcm_en_8khz_mono_i16";
 
 TaskHandle_t serial_read_handle = nullptr;
 TaskHandle_t rtos_pub_handle = nullptr;
 TaskHandle_t rtos_sub_handle = nullptr;
+TaskHandle_t rtos_change_namespace_handle = nullptr;
 
 uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = { 0 };
 uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = { 0 };
@@ -108,9 +111,13 @@ std::shared_ptr<moq::Session> moq_session;
 std::shared_ptr<moq::TrackWriter> pub_track_handler;
 std::shared_ptr<moq::AudioTrackReader> sub_track_handler;
 
+// TODO do I need semaphores?
+bool change_track = true;
+bool stop_pub_sub = false;
+bool pub_ready = false;
+
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 
-bool pub_ready = false;
 
 static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
@@ -120,6 +127,20 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
     {
         xSemaphoreGiveFromISR(audio_req_smpr, NULL);
     }
+}
+
+
+static void ChangeNamespaceTask(void* args)
+{
+    NET_LOG_INFO("Change namespace to %s", track_location.c_str());
+
+    // while (true)
+    // {
+    //     vTaskDelay(1000);
+    // }
+
+    rtos_change_namespace_handle = NULL;
+    vTaskDelete(NULL);
 }
 
 static void LinkPacketTask(void* args)
@@ -141,6 +162,17 @@ static void LinkPacketTask(void* args)
                     // last_req_time_us = esp_timer_get_time();
                     // ++num_audio_requests;
                     break;
+                }
+                case ui_net_link::Packet_Type::MoQChangeNamespace:
+                {
+                    // TODO check if the channel is the same and if it is don't change it.
+                    NET_LOG_INFO("got change packet");
+                    ui_net_link::ChangeNamespace change_namespace;
+                    ui_net_link::Deserialize(*packet, change_namespace);
+                    track_location = std::string(change_namespace.trackname, change_namespace.trackname_len);
+
+                    // TODO use a semaphore
+                    change_track = true;
                 }
                 case ui_net_link::Packet_Type::TalkStart:
                     break;
@@ -212,7 +244,7 @@ static void MoqPubTask(void* args)
     {
         pub_track_handler.reset(
             new moq::TrackWriter(
-                moq::MakeFullTrackName("hactar-audio", "pcm_en_16khz_mono_i16", 1001),
+                moq::MakeFullTrackName(base_track_namespace + track_location, pub_track, 1001),
                 quicr::TrackMode::kDatagram, 2, 100)
         );
 
@@ -222,7 +254,8 @@ static void MoqPubTask(void* args)
         int64_t next_print = 0;
         while (moq_session &&
             moq_session->GetStatus() == moq::Session::Status::kReady &&
-            pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
+            pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk &&
+            !change_track)
         {
             if (esp_timer_get_time_ms() > next_print)
             {
@@ -240,7 +273,9 @@ static void MoqPubTask(void* args)
 
     pub_ready = true;
 
-    while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
+    while (moq_session
+        && moq_session->GetStatus() == moq::Session::Status::kReady
+        && !change_track)
     {
         vTaskDelay(2 / portTICK_PERIOD_MS);
 
@@ -261,8 +296,9 @@ static void MoqPubTask(void* args)
     }
 
 delete_pub_task:
-    pub_ready = false;
     NET_LOG_INFO("Delete pub task");
+    pub_ready = false;
+    rtos_pub_handle = NULL;
     vTaskDelete(rtos_pub_handle);
 }
 
@@ -282,7 +318,7 @@ static void MoqSubTask(void* args)
     {
         sub_track_handler.reset(
             new moq::AudioTrackReader(
-                moq::MakeFullTrackName(sub_track, "pcm_en_16khz_mono_i16", 2001),
+                moq::MakeFullTrackName(base_track_namespace + track_location, sub_track, 2001),
                 10)
         );
         moq_session->SubscribeTrack(sub_track_handler);
@@ -293,7 +329,8 @@ static void MoqSubTask(void* args)
         int64_t next_print = 0;
         while (moq_session &&
             moq_session->GetStatus() == moq::Session::Status::kReady &&
-            sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
+            sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk &&
+            !change_track)
         {
             // if (sub_track_handler->GetStatus() != quicr::SubscribeTrackHandler::Status::kPendingResponse)
             // {
@@ -315,7 +352,9 @@ static void MoqSubTask(void* args)
     }
 
 
-    while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
+    while (moq_session &&
+        moq_session->GetStatus() == moq::Session::Status::kReady &&
+        !change_track)
     {
         try
         {
@@ -357,10 +396,10 @@ static void MoqSubTask(void* args)
                     while (length > 0)
                     {
                         uint32_t link_packet_sz = length;
-                        if (link_packet_sz > constants::Audio_Phonic_Sz+1)
+                        if (link_packet_sz > constants::Audio_Phonic_Sz + 1)
                         {
                             NET_LOG_INFO("split packet");
-                            link_packet_sz = constants::Audio_Phonic_Sz+1;
+                            link_packet_sz = constants::Audio_Phonic_Sz + 1;
                         }
 
                         link_packet_t link_packet;
@@ -391,7 +430,8 @@ static void MoqSubTask(void* args)
 
 delete_sub_task:
     NET_LOG_INFO("Delete sub task");
-    vTaskDelete(rtos_sub_handle);
+    rtos_sub_handle = NULL;
+    vTaskDelete(NULL);
 }
 
 extern "C" void app_main(void)
@@ -485,8 +525,8 @@ extern "C" void app_main(void)
                     // TODO
                     // Tell ui chip we are ready
 
-                    xTaskCreate(MoqPubTask, "moq publish task", 8192, NULL, 3, &rtos_pub_handle);
-                    xTaskCreate(MoqSubTask, "moq subscribe task", 8192, NULL, 2, &rtos_sub_handle);
+                    change_track = true;
+                    stop_pub_sub = true;
                     break;
                 }
                 case moq::Session::Status::kNotReady:
@@ -508,6 +548,18 @@ extern "C" void app_main(void)
                 }
             }
             prev_status = status;
+        }
+
+        if (status == moq::Session::Status::kReady && change_track && rtos_pub_handle == nullptr && rtos_sub_handle == nullptr)
+        {
+            change_track = false;
+
+            // This is put in just so the relay doesn't complain about changing to the same channel for now.
+            vTaskDelay(5000 / portTICK_PERIOD_MS);
+
+            // Wait until sub and pub tasks are cleaned up
+            xTaskCreate(MoqPubTask, "moq publish task", 8192, NULL, 3, &rtos_pub_handle);
+            xTaskCreate(MoqSubTask, "moq subscribe task", 8192, NULL, 2, &rtos_sub_handle);
         }
 
         if (esp_timer_get_time_ms() > heartbeat)
