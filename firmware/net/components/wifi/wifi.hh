@@ -36,6 +36,8 @@ public:
     ~Wifi();
     void operator=(const Wifi& other) = delete;
 
+    void Begin();
+
     void Connect(const char* ssid, const char* password);
     void Connect(
         const char* ssid,

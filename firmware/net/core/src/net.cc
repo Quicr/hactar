@@ -20,50 +20,58 @@
 #include "serial.hh"
 #include "wifi.hh"
 #include "logger.hh"
-#include "moq_session.hh"
+#include "moq_tasks.hh"
 #include "utils.hh"
+#include "chunk.hh"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include <memory>
 
+// TODO delete me in the near future
 #include "wifi_connect.hh"
 
-#define NET_UI_UART_PORT UART_NUM_1
-#define NET_UI_UART_DEV UART1
-#define NET_UI_UART_TX_PIN 17
-#define NET_UI_UART_RX_PIN 18
-#define NET_UI_UART_RX_BUFF_SIZE 8192
-#define NET_UI_UART_TX_BUFF_SIZE 8192
-#define NET_UI_UART_RING_TX_NUM 30
-#define NET_UI_UART_RING_RX_NUM 30
+/** EXTERNAL VARIABLES */
+// External variables defined in net.hh
 
-#define esp_timer_get_time_ms() (esp_timer_get_time() / 1000)
+uint64_t group_id = 0;
+uint64_t object_id = 0;
+uint64_t subgroup_id = 0;
 
+std::shared_ptr<moq::Session> moq_session;
+std::string base_track_namespace = "ptt.arpa/v1/org1/acme";
+std::string track_location = "store";
+std::string pub_track = "pcm_en_8khz_mono_i16";
+std::string sub_track = "pcm_en_8khz_mono_i16";
+bool pub_ready = false;
+std::mutex object_mux;
+std::mutex sub_pub_mux;
+std::deque<link_data_obj> moq_objects;
+SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
+SemaphoreHandle_t pub_change_smpr = xSemaphoreCreateBinary();
+SemaphoreHandle_t sub_change_smpr = xSemaphoreCreateBinary();
+
+/** END EXTERNAL VARIABLES */
 
 // constexpr const char* moq_server = "moq://relay.quicr.ctgpoc.com:33437";
 constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
-std::string track_location = "store";
-std::string base_track_namespace = "ptt.arpa/v1/org1/acme";
+TaskHandle_t serial_read_handle;
+StaticTask_t serial_read_buffer;
+StackType_t* serial_read_stack = nullptr;
 
-std::string pub_track = "pcm_en_8khz_mono_i16";
-std::string sub_track = "pcm_en_8khz_mono_i16";
+TaskHandle_t rtos_pub_task_handle;
+StaticTask_t rtos_pub_task_buffer;
+StackType_t* rtos_pub_task_stack = nullptr;
 
-TaskHandle_t serial_read_handle = nullptr;
-TaskHandle_t rtos_pub_handle = nullptr;
-TaskHandle_t rtos_sub_handle = nullptr;
-TaskHandle_t rtos_change_namespace_handle = nullptr;
+TaskHandle_t rtos_sub_task_handle;
+StaticTask_t rtos_sub_task_buffer;
+StackType_t* rtos_sub_task_stack = nullptr;
 
 uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = { 0 };
 uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = { 0 };
-
-// SemaphoreHandle_t num_audio_requests = xSemaphoreCreateCounting(10, 0);
-int num_audio_requests = 0;
-
-int num_sent_link_audio = 0;
-int64_t last_req_time_us = 0;
 
 uart_config_t net_ui_uart_config = {
     .baud_rate = 460800,
@@ -81,42 +89,10 @@ Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV,
     NET_UI_UART_TX_PIN, NET_UI_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
     *net_ui_uart_tx_buff, NET_UI_UART_TX_BUFF_SIZE,
     *net_ui_uart_rx_buff, NET_UI_UART_RX_BUFF_SIZE,
-    NET_UI_UART_RING_RX_NUM);
+    NET_UI_UART_RING_RX_NUM
+);
 
-uint64_t group_id{ 0 };
-uint64_t object_id{ 0 };
-uint64_t subgroup_id{ 0 };
-
-struct link_data_obj
-{
-    quicr::ObjectHeaders headers = {
-        group_id,
-        object_id,
-        subgroup_id,
-        0,
-        quicr::ObjectStatus::kAvailable,
-        2 /*priority*/,
-        3000 /* ttl */,
-        std::nullopt,
-        std::nullopt,
-    };
-    std::vector<uint8_t> data;
-};
-
-std::mutex object_mux;
-std::mutex sub_pub_mux;
-std::deque<link_data_obj> moq_objects;
-
-std::shared_ptr<moq::Session> moq_session;
-std::shared_ptr<moq::TrackWriter> pub_track_handler;
-std::shared_ptr<moq::AudioTrackReader> sub_track_handler;
-
-// TODO do I need semaphores?
-bool change_track = true;
-bool stop_pub_sub = false;
-bool pub_ready = false;
-
-SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
+Wifi wifi;
 
 
 static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
@@ -127,20 +103,6 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
     {
         xSemaphoreGiveFromISR(audio_req_smpr, NULL);
     }
-}
-
-
-static void ChangeNamespaceTask(void* args)
-{
-    NET_LOG_INFO("Change namespace to %s", track_location.c_str());
-
-    // while (true)
-    // {
-    //     vTaskDelay(1000);
-    // }
-
-    rtos_change_namespace_handle = NULL;
-    vTaskDelete(NULL);
 }
 
 static void LinkPacketTask(void* args)
@@ -157,10 +119,7 @@ static void LinkPacketTask(void* args)
             {
                 case ui_net_link::Packet_Type::GetAudioLinkPacket:
                 {
-                    // NET_LOG_INFO("recvreq");
-                    // xSemaphoreGive(num_audio_requests);
-                    // last_req_time_us = esp_timer_get_time();
-                    // ++num_audio_requests;
+                    // TODO NOTE might be a dead type
                     break;
                 }
                 case ui_net_link::Packet_Type::MoQChangeNamespace:
@@ -171,8 +130,8 @@ static void LinkPacketTask(void* args)
                     ui_net_link::Deserialize(*packet, change_namespace);
                     track_location = std::string(change_namespace.trackname, change_namespace.trackname_len);
 
-                    // TODO use a semaphore
-                    change_track = true;
+                    xSemaphoreGive(pub_change_smpr);
+                    xSemaphoreGive(sub_change_smpr);
                 }
                 case ui_net_link::Packet_Type::TalkStart:
                     break;
@@ -196,7 +155,7 @@ static void LinkPacketTask(void* args)
 
                     // // Create an object
                     obj.data.resize(packet->length + 6);
-                    obj.data[0] = 1;
+                    obj.data[0] = (uint8_t)Chunk::ContentType::Audio;
                     obj.data[1] = 0;
                     if (talk_stopped)
                     {
@@ -204,12 +163,11 @@ static void LinkPacketTask(void* args)
                         talk_stopped = false;
                     }
 
-                    uint32_t len = packet->length;
-                    memcpy(obj.data.data() + 2, &len, sizeof(uint32_t));
-                    memcpy(obj.data.data() + 6, packet->payload, len);
+                    memcpy(obj.data.data() + 2, &packet->length, sizeof(uint32_t));
+                    memcpy(obj.data.data() + 6, packet->payload, packet->length);
 
                     obj.headers.object_id++;
-                    obj.headers.payload_length = len + 6;
+                    obj.headers.payload_length = packet->length + 6;
 
                     // TODO use notifies, currently it doesn't notify fast enough?
                     // xTaskNotifyGive(rtos_pub_handle);
@@ -231,208 +189,6 @@ static void LinkPacketTask(void* args)
     }
 }
 
-static void MoqPubTask(void* args)
-{
-    NET_LOG_INFO("Start publish task");
-
-    if (!moq_session)
-    {
-        goto delete_pub_task;
-    }
-
-    // Make scope so that lock is released and mem reclaimed
-    {
-        pub_track_handler.reset(
-            new moq::TrackWriter(
-                moq::MakeFullTrackName(base_track_namespace + track_location, pub_track, 1001),
-                quicr::TrackMode::kDatagram, 2, 100)
-        );
-
-        moq_session->PublishTrack(pub_track_handler);
-        NET_LOG_INFO("Started publisher");
-
-        int64_t next_print = 0;
-        while (moq_session &&
-            moq_session->GetStatus() == moq::Session::Status::kReady &&
-            pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk &&
-            !change_track)
-        {
-            if (esp_timer_get_time_ms() > next_print)
-            {
-                NET_LOG_INFO("Waiting for pub ok!");
-                next_print = esp_timer_get_time_ms() + 2000;
-            }
-
-            // We want to check often if we are published
-            vTaskDelay(300 / portTICK_PERIOD_MS);
-            continue;
-        }
-
-        NET_LOG_INFO("Publishing!");
-    }
-
-    pub_ready = true;
-
-    while (moq_session
-        && moq_session->GetStatus() == moq::Session::Status::kReady
-        && !change_track)
-    {
-        vTaskDelay(2 / portTICK_PERIOD_MS);
-
-        if (pub_track_handler && pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
-        {
-            continue;
-        }
-
-        if (moq_objects.size() == 0)
-        {
-            continue;
-        }
-
-        std::lock_guard<std::mutex> lock(object_mux);
-        const link_data_obj& obj = moq_objects.front();
-        pub_track_handler->PublishObject(obj.headers, obj.data);
-        moq_objects.pop_front();
-    }
-
-delete_pub_task:
-    NET_LOG_INFO("Delete pub task");
-    pub_ready = false;
-    rtos_pub_handle = NULL;
-    vTaskDelete(rtos_pub_handle);
-}
-
-static void MoqSubTask(void* args)
-{
-
-    link_packet_t link_packet;
-    NET_LOG_INFO("Start subscribe task");
-
-    if (!moq_session)
-    {
-        NET_LOG_INFO("Start subscribe task");
-        goto delete_sub_task;
-    }
-
-    // Make a scope so the memory for lock is reclaimed
-    {
-        sub_track_handler.reset(
-            new moq::AudioTrackReader(
-                moq::MakeFullTrackName(base_track_namespace + track_location, sub_track, 2001),
-                10)
-        );
-        moq_session->SubscribeTrack(sub_track_handler);
-
-
-        NET_LOG_INFO("Started subscriber");
-
-        int64_t next_print = 0;
-        while (moq_session &&
-            moq_session->GetStatus() == moq::Session::Status::kReady &&
-            sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk &&
-            !change_track)
-        {
-            // if (sub_track_handler->GetStatus() != quicr::SubscribeTrackHandler::Status::kPendingResponse)
-            // {
-            //     NET_LOG_INFO("Sending subscribe");
-            //     moq_session->SubscribeTrack(sub_track_handler);
-            // }
-
-            if (esp_timer_get_time_ms() > next_print)
-            {
-                NET_LOG_INFO("sub status %d", (int)sub_track_handler->GetStatus());
-                NET_LOG_INFO("Waiting for sub ok!");
-                next_print = esp_timer_get_time_ms() + 2000;
-            }
-            vTaskDelay(300 / portTICK_PERIOD_MS);
-            continue;
-        }
-
-        NET_LOG_INFO("Subscribed");
-    }
-
-
-    while (moq_session &&
-        moq_session->GetStatus() == moq::Session::Status::kReady &&
-        !change_track)
-    {
-        try
-        {
-            vTaskDelay(2 / portTICK_PERIOD_MS);
-            if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
-            {
-                // TODO handling
-                continue;
-            }
-
-            sub_track_handler->TryPlay();
-
-            if (xSemaphoreTake(audio_req_smpr, 0))
-            {
-                // TODO move?
-                auto data = sub_track_handler->PopFront();
-                if (!data.has_value())
-                {
-                    continue;
-                }
-
-                if (data->at(0) == 1)
-                {
-                    // Is audio
-
-                    if (data->at(1) == 1)
-                    {
-                        // is last, dunno what to do with it but may need it.
-                        // perhaps send some sort of link packet
-                        // informing the ui that we are done?
-                    }
-
-                    uint32_t length;
-                    std::memcpy(&length, &data->data()[2], sizeof(uint32_t));
-
-                    // TODO note- this won't really work because we'd still have to wait
-                    // a whole audio playout time before we can send more audio data
-                    uint32_t offset = 6;
-                    while (length > 0)
-                    {
-                        uint32_t link_packet_sz = length;
-                        if (link_packet_sz > constants::Audio_Phonic_Sz + 1)
-                        {
-                            NET_LOG_INFO("split packet");
-                            link_packet_sz = constants::Audio_Phonic_Sz + 1;
-                        }
-
-                        link_packet_t link_packet;
-                        link_packet.type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
-                        link_packet.length = link_packet_sz;
-                        std::memcpy(link_packet.payload, data->data() + offset, link_packet_sz);
-                        link_packet.is_ready = true;
-                        ui_layer.Write(link_packet);
-
-                        offset += link_packet_sz;
-                        length -= link_packet_sz;
-                    }
-
-                }
-                else
-                {
-                    // Not audio
-                    // ignore?
-                    NET_LOG_ERROR("Received a data chunk that is not audio");
-                }
-            }
-        }
-        catch (const std::exception& ex)
-        {
-            ESP_LOGE("sub", "Exception in sub %s", ex.what());
-        }
-    }
-
-delete_sub_task:
-    NET_LOG_INFO("Delete sub task");
-    rtos_sub_handle = NULL;
-    vTaskDelete(NULL);
-}
 
 extern "C" void app_main(void)
 {
@@ -455,7 +211,7 @@ extern "C" void app_main(void)
     InitializeGPIO();
     IntitializeLEDs();
 
-    Wifi wifi;
+    wifi.Begin();
 
     // setup moq transport
     quicr::ClientConfig config;
@@ -470,10 +226,13 @@ extern "C" void app_main(void)
     moq_session.reset(new moq::Session(config));
 
 
+
     NET_LOG_INFO("Components ready");
 
     // Start moq tasks here
-    xTaskCreate(LinkPacketTask, "link packet handler", 4096, NULL, 10, &serial_read_handle);
+    CreateLinkPacketTask();
+    CreatePubTask();
+    CreateSubTask();
 
     int next = 0;
     int64_t heartbeat = 0;
@@ -525,8 +284,6 @@ extern "C" void app_main(void)
                     // TODO
                     // Tell ui chip we are ready
 
-                    change_track = true;
-                    stop_pub_sub = true;
                     break;
                 }
                 case moq::Session::Status::kNotReady:
@@ -550,18 +307,6 @@ extern "C" void app_main(void)
             prev_status = status;
         }
 
-        if (status == moq::Session::Status::kReady && change_track && rtos_pub_handle == nullptr && rtos_sub_handle == nullptr)
-        {
-            change_track = false;
-
-            // This is put in just so the relay doesn't complain about changing to the same channel for now.
-            vTaskDelay(5000 / portTICK_PERIOD_MS);
-
-            // Wait until sub and pub tasks are cleaned up
-            xTaskCreate(MoqPubTask, "moq publish task", 8192, NULL, 3, &rtos_pub_handle);
-            xTaskCreate(MoqSubTask, "moq subscribe task", 8192, NULL, 2, &rtos_sub_handle);
-        }
-
         if (esp_timer_get_time_ms() > heartbeat)
         {
             // NET_LOG_INFO("time %lld", esp_timer_get_time_ms());
@@ -576,3 +321,48 @@ extern "C" void app_main(void)
 
 void SetupComponents(const DeviceSetupConfig& config)
 {}
+
+bool CreateLinkPacketTask()
+{
+    constexpr size_t stack_size = 4096;
+    serial_read_stack = (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
+    if (serial_read_stack == NULL)
+    {
+        NET_LOG_INFO("Failed to allocate stack for link packet handler");
+        return false;
+    }
+    serial_read_handle = xTaskCreateStatic(LinkPacketTask, "link packet handler", stack_size, NULL, 10, serial_read_stack, &serial_read_buffer);
+
+    NET_LOG_INFO("Created link packet handler PSRAM left %ld", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    return true;
+}
+
+bool CreatePubTask()
+{
+    constexpr size_t stack_size = 8192;
+    rtos_pub_task_stack = (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
+    if (rtos_pub_task_stack == NULL)
+    {
+        NET_LOG_INFO("Failed to allocate stack for moq publish task");
+        return false;
+    }
+    rtos_pub_task_handle = xTaskCreateStatic(MoqPublishTask, "moq publish task", stack_size, NULL, 10, rtos_pub_task_stack, &rtos_pub_task_buffer);
+
+    NET_LOG_INFO("Created moq publish task PSRAM left %ld", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    return true;
+}
+
+bool CreateSubTask()
+{
+    constexpr size_t stack_size = 8192;
+    rtos_sub_task_stack = (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
+    if (rtos_sub_task_stack == NULL)
+    {
+        NET_LOG_INFO("Failed to allocate stack for moq subscribe task");
+        return false;
+    }
+    rtos_sub_task_handle = xTaskCreateStatic(MoqSubscribeTask, "moq subscribe task", stack_size, NULL, 10, rtos_sub_task_stack, &rtos_sub_task_buffer);
+
+    NET_LOG_INFO("Created moq subscribe task PSRAM left %ld", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    return true;
+}

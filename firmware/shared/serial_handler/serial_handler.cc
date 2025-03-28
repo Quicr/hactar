@@ -124,17 +124,17 @@ link_packet_t* SerialHandler::Read()
     return p;
 }
 
-void SerialHandler::Write(const uint8_t data)
+void SerialHandler::Write(const uint8_t data, const bool end_frame)
 {
-    Write(&data, 1);
+    Write(&data, 1, end_frame);
 }
 
-void SerialHandler::Write(const link_packet_t& packet)
+void SerialHandler::Write(const link_packet_t& packet, const bool end_frame)
 {
-    Write(packet.data, packet.length + link_packet_t::Header_Size);
+    Write(packet.data, packet.length + link_packet_t::Header_Size, end_frame);
 }
 
-void SerialHandler::Write(const uint8_t* data, const uint16_t size)
+void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool end_frame)
 {
     for (uint16_t i = 0 ; i < size; ++i)
     {
@@ -156,9 +156,14 @@ void SerialHandler::Write(const uint8_t* data, const uint16_t size)
         }
     }
 
+
+    unsent += size;
     // End frame
-    WriteToTxBuff(END);
-    unsent += size + 1;
+    if (end_frame)
+    {
+        WriteToTxBuff(END);
+        unsent += 1;
+    }
 
     // Logger::Log(Logger::Level::Info, "Sent %d", unsent);
 
