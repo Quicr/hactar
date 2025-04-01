@@ -2,6 +2,8 @@
 
 #include "logger.hh"
 
+#include "utils.hh"
+
 using namespace moq;
 
 void Session::StatusChanged(Status status)
@@ -19,4 +21,19 @@ void Session::StatusChanged(Status status)
             Logger::Log(Logger::Level::Error, "MOQ Connection failed: %i", static_cast<int>(status));
             break;
     }
+}
+
+
+void Session::StartAudioReadTrack(const std::string& track_name, const size_t min_depth, const size_t max_depthH)
+{
+    // Create a audio track reader
+
+    // auto sub_track_handler = std::make_shared<AudioTrackReader>(
+    //     new moq::AudioTrackReader(
+    //         moq::MakeFullTrackName(base_track_namespace + track_location, sub_track, 2001),
+    //         10)
+    // );
+
+    // sub_track_handler->GetFullTrackName().name_space
+
 }

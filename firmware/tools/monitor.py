@@ -40,6 +40,8 @@ def ReadSerial():
                 #         my_file.write(data);
                 print("\r\033[0m" + erase + data, end="")
                 print("\033[1m\033[92mEnter a command:\033[0m")
+            else:
+                time.sleep(0.05)
         except Exception as ex:
             print(ex)
 

@@ -123,6 +123,7 @@ void MoqSubscribeTask(void* arg)
                 moq::MakeFullTrackName(base_track_namespace + track_location, sub_track, 2001),
                 10)
         );
+
         moq_session->SubscribeTrack(sub_track_handler);
 
         NET_LOG_INFO("Started subscriber");

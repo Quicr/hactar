@@ -30,8 +30,18 @@
 #include <inttypes.h>
 #include <memory>
 
+
 // TODO delete me in the near future
 #include "wifi_connect.hh"
+#include "json_example.hh"
+
+
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
+// extern json channel_example_json;
+
 
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
@@ -56,7 +66,7 @@ SemaphoreHandle_t sub_change_smpr = xSemaphoreCreateBinary();
 /** END EXTERNAL VARIABLES */
 
 // constexpr const char* moq_server = "moq://relay.quicr.ctgpoc.com:33437";
-constexpr const char* moq_server = "moq://192.168.50.19:33435";
+constexpr const char* moq_server = "moq://192.168.89.38:33435";
 
 TaskHandle_t serial_read_handle;
 StaticTask_t serial_read_buffer;
@@ -195,6 +205,10 @@ extern "C" void app_main(void)
     NET_LOG_ERROR("Internal SRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     NET_LOG_ERROR("PSRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
+    // NET_LOG_ERROR("json test %d", value);
+    std::string dump = channel_example_json.at("publications")[0].at("channel_name").get<std::string>();
+    NET_LOG_ERROR("json example %s", dump.c_str());
+
     NET_LOG_INFO("Starting Net Main");
 
     gpio_config_t io_conf = {
@@ -320,7 +334,8 @@ extern "C" void app_main(void)
 }
 
 void SetupComponents(const DeviceSetupConfig& config)
-{}
+{
+}
 
 bool CreateLinkPacketTask()
 {

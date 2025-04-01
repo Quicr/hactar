@@ -1,7 +1,13 @@
 [submodule "firmware/net/components/quicr/lib"]
 	path = firmware/net/components/quicr/lib
 	url = git@github.com:Quicr/libquicr.git
-	branch = esp_compatability 
+	branch = esp_compatability
+[submodule "firmware/net/components/nlohmannjson/lib"]
+	path = firmware/net/components/nlohmannjson/lib
+	url = git@github.com:nlohmann/json.git
+	branch = https://github.com/nlohmann/json/releases/tag/v3.11.3
+
+# TODO remove me
 [submodule "firmware/net_static/components/quicr/lib"]
 	path = firmware/net_static/components/quicr/lib
 	url = git@github.com:Quicr/libquicr.git
