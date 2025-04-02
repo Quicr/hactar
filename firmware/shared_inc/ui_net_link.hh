@@ -113,7 +113,8 @@ namespace ui_net_link
 
     [[maybe_unused]] static void Serialize(const AudioObject& talk_frame, link_packet_t& packet)
     {
-        const uint16_t num_extra_bytes = 1;
+        const uint16_t num_extra_bytes = 0;
+
         packet.type = (uint8_t)Packet_Type::AudioObject;
         packet.length = num_extra_bytes + constants::Audio_Phonic_Sz;
         packet.payload[0] = talk_frame.channel_id;
@@ -167,7 +168,7 @@ namespace ui_net_link
     {
         audio_object.channel_id = packet.payload[0];
 
-        constexpr uint32_t payload_offset = 1;
+        constexpr uint32_t payload_offset = 0;
         memcpy(audio_object.data, packet.payload + payload_offset, constants::Audio_Phonic_Sz);
     }
 
