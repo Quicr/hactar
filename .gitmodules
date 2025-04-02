@@ -12,3 +12,6 @@
 	path = firmware/net_static/components/quicr/lib
 	url = git@github.com:Quicr/libquicr.git
 	branch = main
+[submodule "firmware/net/components/nlohmann_json/lib"]
+	path = firmware/net/components/nlohmann_json/lib
+	url = git@github.com:nlohmann/json.git
