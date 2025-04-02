@@ -276,7 +276,6 @@ int app_main()
             ui_net_link::Serialize(talk_start, talk_packet);
             serial.Write(talk_packet);
             ptt_down = true;
-            // ++num_packets_tx;
         }
         else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
         {
@@ -284,18 +283,12 @@ int app_main()
             ui_net_link::Serialize(talk_stop, talk_packet);
             serial.Write(talk_packet);
             ptt_down = false;
-            // ++num_packets_tx;
+            SendAudio();
         }
 
         if (ptt_down)
         {
-            AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz,
-                talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
-
-            ui_net_link::Serialize(talk_frame, talk_packet);
-            LedRToggle();
-            serial.Write(talk_packet);
-            ++num_packets_tx;
+            SendAudio();
         }
 
         if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
@@ -557,7 +550,18 @@ inline void AudioCallback()
     RaiseFlag(Audio_Interrupt);
 }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
+void SendAudio()
+{
+    AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz,
+        talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
+
+    ui_net_link::Serialize(talk_frame, talk_packet);
+    LedRToggle();
+    serial.Write(talk_packet);
+    ++num_packets_tx;
+}
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef * huart, uint16_t size)
 {
     // UI_LOG_ERROR("rx %u", size);
     if (huart->Instance == Serial::UART(&serial)->Instance)
@@ -639,7 +643,7 @@ void assert_failed(uint8_t* file, uint32_t line)
     /* User can add his own implementation to report the file name and line number,
         e.g.: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
         /* USER CODE END 6 */
-    }
+}
 #endif /* USE_FULL_ASSERT */
 
 inline void Error(const char* who, const char* why)

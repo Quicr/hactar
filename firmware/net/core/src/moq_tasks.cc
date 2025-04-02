@@ -40,7 +40,7 @@ void MoqPublishTask(void* args)
 
         pub_track_handler.reset(
             new moq::TrackWriter(
-                moq::MakeFullTrackName({"moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "channel/gardening", "ptt"}, "pcm_en_16khz_mono_i16"),
+                moq::MakeFullTrackName({"moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "channel/gardening", "ptt"}, "pcm_en_8khz_mono_i16"),
                 quicr::TrackMode::kDatagram, 2, 100)
         );
         moq_session->PublishTrack(pub_track_handler);
@@ -79,8 +79,10 @@ void MoqPublishTask(void* args)
                 continue;
             }
 
+
             std::lock_guard<std::mutex> lock(object_mux);
             const link_data_obj& obj = moq_objects.front();
+            NET_LOG_INFO("header length says %d and actual len %d", obj.headers.payload_length, obj.data.size());
             pub_track_handler->PublishObject(obj.headers, obj.data);
             moq_objects.pop_front();
         }
@@ -108,7 +110,8 @@ void MoqSubscribeTask(void* arg)
         vTaskDelay(100 / portTICK_PERIOD_MS);
 
         while (!moq_session
-            || moq_session->GetStatus() != moq::Session::Status::kReady)
+            || moq_session->GetStatus() != moq::Session::Status::kReady
+            || !pub_ready)
         {
             // Wait for moq sesssion to be set.
             if (esp_timer_get_time_ms() > next_print)
@@ -121,7 +124,7 @@ void MoqSubscribeTask(void* arg)
 
         sub_track_handler.reset(
             new moq::TrackReader(
-                moq::MakeFullTrackName({"moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "channel/gardening", "ptt"}, "pcm_en_16khz_mono_i16")
+                moq::MakeFullTrackName({"moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "channel/gardening", "ptt"}, "pcm_en_8khz_mono_i16")
             )
         );
 

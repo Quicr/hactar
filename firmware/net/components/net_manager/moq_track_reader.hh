@@ -49,7 +49,8 @@ namespace moq {
         //
 
         uint32_t ai_request_id = 0;
-        // std::map<uint32_t
+        uint64_t num_print = 0;
+        uint64_t num_recv = 0;
     };
 
 }

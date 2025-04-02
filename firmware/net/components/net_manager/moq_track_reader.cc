@@ -13,11 +13,20 @@ extern bool loopback;
 void
 TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data)
 {
+    ++num_print;
+
+    if (num_print >= 10)
+    {
+        num_recv += num_print;
+        num_print = 0;
+        SPDLOG_INFO("Recieved {}", num_recv);
+    }
     // SPDLOG_INFO("group id {} device id {}", headers.group_id, device_id);
     if (!loopback && headers.group_id == device_id)
     {
         return;
     }
+
 
     // SPDLOG_INFO("Object Received ({}): {}", headers.object_id, to_hex({ data.begin(), data.end() }));
 

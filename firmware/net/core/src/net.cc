@@ -47,7 +47,7 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = true;
+bool loopback = false;
 
 std::shared_ptr<moq::Session> moq_session;
 std::string base_track_namespace = "ptt.arpa/v1/org1/acme";
@@ -103,6 +103,11 @@ Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV,
 
 Wifi wifi;
 
+uint64_t curr_audio_isr_time = esp_timer_get_time();
+uint64_t last_audio_isr_time = esp_timer_get_time();
+
+uint64_t object_id = 0;
+
 
 static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
@@ -110,6 +115,8 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 
     if (gpio_num == NET_STAT)
     {
+        last_audio_isr_time = curr_audio_isr_time;
+        curr_audio_isr_time = esp_timer_get_time();
         xSemaphoreGiveFromISR(audio_req_smpr, NULL);
     }
 }
@@ -177,8 +184,12 @@ static void LinkPacketTask(void* args)
                     memcpy(obj.data.data() + 2, &packet->length, sizeof(packet->length));
                     memcpy(obj.data.data() + 6, packet->payload, packet->length);
 
-                    obj.headers.object_id++;
+                    obj.headers.object_id = object_id++;
                     obj.headers.payload_length = packet->length + 6;
+
+                    auto time_bytes = quicr::AsBytes(curr_audio_isr_time);
+                    obj.headers.extensions = quicr::Extensions{};
+                    obj.headers.extensions.value()[2].assign(time_bytes.begin(), time_bytes.end());
 
                     // TODO use notifies, currently it doesn't notify fast enough?
                     // xTaskNotifyGive(rtos_pub_handle);
