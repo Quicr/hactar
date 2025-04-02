@@ -2,7 +2,6 @@
 #define __MOQT_SESSION__
 
 #include "moq_track_reader.hh"
-#include "moq_audio_track_reader.hh"
 #include "moq_track_writer.hh"
 #include "constants.hh"
 
@@ -18,12 +17,44 @@ namespace moq
 * MoQSession identifies a client session with the MOQ Peer
 */
 
-union Chunk
+enum class MessageType
 {
-    uint8_t type;
-    uint8_t is_last;
-    uint32_t length;
-    uint8_t* data;
+    Media = 1,
+    AIRequest,
+    AIResponse
+};
+
+enum class Content_Type
+{
+    Audio = 0,
+    Json,
+};
+
+struct Chunk
+{
+    const MessageType type = MessageType::Media;
+    bool last_chunk;
+    std::uint32_t chunk_length;
+    quicr::Bytes chunk_data;
+};
+
+struct AIRequestChunk
+{
+    const MessageType type = MessageType::AIRequest;
+    std::uint32_t request_id;
+    bool last_chunk;
+    std::uint32_t chunk_length;
+    quicr::Bytes chunk_data;
+};
+
+struct AIResponseChunk
+{
+    const MessageType type = MessageType::AIResponse;
+    std::uint32_t request_id;
+    Content_Type content_type;
+    bool last_chunk;
+    std::uint32_t chunk_length;
+    quicr::Bytes chunk_data;
 };
 
 class Session: public quicr::Client
@@ -37,7 +68,6 @@ public:
 
     // public API - send subscribe, setup queue for incoming objects
     void StartReadTrack(const std::string& track_name);
-    void StartAudioReadTrack(const std::string& track_name, const size_t min_depth, const size_t max_depth);
     void Read();
     void StopReadTrack(const std::string& track_name);
 
@@ -59,7 +89,9 @@ private:
 
 private:
     std::map<quicr::TrackHash, std::shared_ptr<TrackReader>> readers;
-    std::map<quicr::TrackHash, std::shared_ptr<TrackWriter>> writers;
+
+    std::shared_ptr<TrackWriter> writer;
+    std::shared_ptr<TrackWriter> ai_writer;
 };
 
 }

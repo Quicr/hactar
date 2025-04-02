@@ -16,7 +16,7 @@ namespace moq {
                 : SubscribeTrackHandler(full_track_name,
                                         3,
                                         quicr::messages::GroupOrder::kAscending,
-                                        quicr::messages::FilterType::LatestObject) {}
+                                        quicr::messages::FilterType::kLatestObject) {}
 
         virtual ~TrackReader() = default;
 
@@ -27,7 +27,29 @@ namespace moq {
 
         void StatusChanged(Status status) override;
 
+        void HandleMessageChunk(const quicr::ObjectHeaders& headers, quicr::BytesSpan data);
+
+        void AudioPlay();
+        void AudioPause();
+
+        bool AudioPlaying() const noexcept;
+
+        quicr::BytesSpan AudioFront() noexcept;
+        void AudioPop() noexcept;
+        std::optional<std::vector<uint8_t>> AudioPopFront() noexcept;
+        size_t AudioNumAvailable() noexcept;
+
     private:
+        // Audio variables
+        // TODO move into an audio object?
+        std::queue<std::vector<uint8_t>> _audio_buffer;
+        bool _audio_playing = false;
+        size_t _audio_min_depth = 50;
+        size_t _audio_max_depth = std::numeric_limits<size_t>::max();
+        //
+
+        uint32_t ai_request_id = 0;
+        // std::map<uint32_t
     };
 
 }

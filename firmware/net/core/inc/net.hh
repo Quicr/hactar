@@ -29,17 +29,12 @@
 #define NET_UI_UART_RING_TX_NUM 30
 #define NET_UI_UART_RING_RX_NUM 30
 
-
-extern uint64_t group_id;
-extern uint64_t object_id;
-extern uint64_t subgroup_id;
-
 struct link_data_obj
 {
     quicr::ObjectHeaders headers = {
-        group_id,
-        object_id,
-        subgroup_id,
+        0,
+        0,
+        0,
         0,
         quicr::ObjectStatus::kAvailable,
         2 /*priority*/,

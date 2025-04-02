@@ -21,6 +21,7 @@ void MoqPublishTask(void* args)
     std::shared_ptr<moq::TrackWriter> pub_track_handler;
     int64_t next_print = 0;
 
+    // TODO loop through all of pub handlers and send their data.
     while (true)
     {
         vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -39,7 +40,7 @@ void MoqPublishTask(void* args)
 
         pub_track_handler.reset(
             new moq::TrackWriter(
-                moq::MakeFullTrackName(base_track_namespace + track_location, pub_track, 1001),
+                moq::MakeFullTrackName({"moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "channel/gardening", "ptt"}, "pcm_en_16khz_mono_i16"),
                 quicr::TrackMode::kDatagram, 2, 100)
         );
         moq_session->PublishTrack(pub_track_handler);
@@ -97,7 +98,7 @@ void MoqPublishTask(void* args)
 void MoqSubscribeTask(void* arg)
 {
     link_packet_t link_packet;
-    std::shared_ptr<moq::AudioTrackReader> sub_track_handler;
+    std::shared_ptr<moq::TrackReader> sub_track_handler;
     int64_t next_print = 0;
 
     NET_LOG_INFO("Start subscribe task");
@@ -119,9 +120,9 @@ void MoqSubscribeTask(void* arg)
         }
 
         sub_track_handler.reset(
-            new moq::AudioTrackReader(
-                moq::MakeFullTrackName(base_track_namespace + track_location, sub_track, 2001),
-                10)
+            new moq::TrackReader(
+                moq::MakeFullTrackName({"moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "channel/gardening", "ptt"}, "pcm_en_16khz_mono_i16")
+            )
         );
 
         moq_session->SubscribeTrack(sub_track_handler);
@@ -130,7 +131,7 @@ void MoqSubscribeTask(void* arg)
 
         while (moq_session &&
             moq_session->GetStatus() == moq::Session::Status::kReady &&
-            sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk &&
+            sub_track_handler->GetStatus() != moq::TrackReader::Status::kOk &&
             xSemaphoreTake(sub_change_smpr, 0) == pdFALSE)
         {
             if (esp_timer_get_time_ms() > next_print)
@@ -150,61 +151,39 @@ void MoqSubscribeTask(void* arg)
             try
             {
                 vTaskDelay(2 / portTICK_PERIOD_MS);
-                if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
+                if (sub_track_handler->GetStatus() != moq::TrackReader::Status::kOk)
                 {
                     // TODO handling
                     continue;
                 }
 
-                sub_track_handler->TryPlay();
+                sub_track_handler->AudioPlay();
 
                 if (xSemaphoreTake(audio_req_smpr, 0))
                 {
-                    // TODO move?
-                    auto data = sub_track_handler->PopFront();
+                    auto data = sub_track_handler->AudioPopFront();
                     if (!data.has_value())
                     {
                         continue;
                     }
 
-                    // Convert to chunk
-                    Chunk chunk = Chunk::Deserialize(data);
-
-                    switch (chunk.type)
+                    uint32_t offset = 0;
+                    // TODO something with last chunk?
+                    if (data->at(offset))
                     {
-                        case Chunk::ContentType::Audio:
-                        {
-                            if (chunk.is_last)
-                            {
-                                // is last, dunno what to do with it but may need it.
-                                // perhaps send some sort of link packet
-                                // informing the ui that we are done?
-                            }
-
-                            // TODO if the chunk is bigger than a chunk can handle
-                            // then we should spit it and push extra packets
-                            // onto a queue that gets handled first.
-
-                            // Hard code for now.
-
-                            link_packet_t link_packet;
-                            // link_packet.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
-                            ui_layer.Write((uint8_t)ui_net_link::Packet_Type::AudioObject, false);
-                            ui_layer.Write((uint8_t*)&chunk.length, 4, false);
-                            ui_layer.Write(chunk.data.data(), chunk.length);
-                            break;
-                        }
-                        case Chunk::ContentType::Json:
-                        {
-                            NET_LOG_INFO("Json received");
-                            break;
-                        }
-                        default:
-                        {
-                            NET_LOG_INFO("Chunk without handler received");
-                            break;
-                        }
+                        // Last chunk
                     }
+                    offset += 1;
+
+                    link_packet_t link_packet;
+                    link_packet.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
+
+                    // Get the length of the audio packet
+                    memcpy(&link_packet.length, data->data() + offset, sizeof(link_packet.length));
+                    offset += sizeof(link_packet.length);
+
+                    memcpy(link_packet.payload, data->data() + offset, link_packet.length);
+                    ui_layer.Write(link_packet);
                 }
             }
             catch (const std::exception& ex)
@@ -215,6 +194,7 @@ void MoqSubscribeTask(void* arg)
 
         if (moq_session)
         {
+            NET_LOG_INFO("Unsubscribing");
             moq_session->UnsubscribeTrack(sub_track_handler);
         }
     }

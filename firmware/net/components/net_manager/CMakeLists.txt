@@ -7,7 +7,6 @@ set(priv_requires
 
 set (SOURCES
       moq_track_reader.cc
-      moq_audio_track_reader.cc
       moq_track_writer.cc
       moq_session.cc
 )

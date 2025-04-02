@@ -14,6 +14,7 @@
 #include "nvs_flash.h"
 #include "esp_heap_caps.h"
 #include "esp_event.h"
+#include "esp_mac.h"
 
 #include "ui_net_link.hh"
 #include "peripherals.hh"
@@ -45,10 +46,8 @@ using json = nlohmann::json;
 
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
-
-uint64_t group_id = 0;
-uint64_t object_id = 0;
-uint64_t subgroup_id = 0;
+uint64_t device_id = 0;
+bool loopback = true;
 
 std::shared_ptr<moq::Session> moq_session;
 std::string base_track_namespace = "ptt.arpa/v1/org1/acme";
@@ -65,8 +64,8 @@ SemaphoreHandle_t sub_change_smpr = xSemaphoreCreateBinary();
 
 /** END EXTERNAL VARIABLES */
 
-// constexpr const char* moq_server = "moq://relay.quicr.ctgpoc.com:33437";
-constexpr const char* moq_server = "moq://192.168.89.38:33435";
+constexpr const char* moq_server = "moq://relay.quicr.ctgpoc.com:33437";
+// constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
 TaskHandle_t serial_read_handle;
 StaticTask_t serial_read_buffer;
@@ -163,9 +162,11 @@ static void LinkPacketTask(void* args)
 
                     auto& obj = moq_objects.emplace_back();
 
+                    obj.headers.group_id = device_id;
+
                     // // Create an object
                     obj.data.resize(packet->length + 6);
-                    obj.data[0] = (uint8_t)Chunk::ContentType::Audio;
+                    obj.data[0] = (uint8_t)moq::MessageType::Media;
                     obj.data[1] = 0;
                     if (talk_stopped)
                     {
@@ -173,7 +174,7 @@ static void LinkPacketTask(void* args)
                         talk_stopped = false;
                     }
 
-                    memcpy(obj.data.data() + 2, &packet->length, sizeof(uint32_t));
+                    memcpy(obj.data.data() + 2, &packet->length, sizeof(packet->length));
                     memcpy(obj.data.data() + 6, packet->payload, packet->length);
 
                     obj.headers.object_id++;
@@ -206,8 +207,8 @@ extern "C" void app_main(void)
     NET_LOG_ERROR("PSRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
     // NET_LOG_ERROR("json test %d", value);
-    std::string dump = channel_example_json.at("publications")[0].at("channel_name").get<std::string>();
-    NET_LOG_ERROR("json example %s", dump.c_str());
+    // std::string dump = channel_example_json.at("publications")[0].at("channel_name").get<std::string>();
+    // NET_LOG_ERROR("json example %s", dump.c_str());
 
     NET_LOG_INFO("Starting Net Main");
 
@@ -227,6 +228,13 @@ extern "C" void app_main(void)
 
     wifi.Begin();
 
+    std::vector<std::string> ssids;
+    wifi.ScanNetworks(&ssids);
+    for (int i = 0 ;i < ssids.size(); ++i)
+    {
+        NET_LOG_INFO("ssid %d %s", i, ssids[i].c_str());
+    }
+
     // setup moq transport
     quicr::ClientConfig config;
     config.endpoint_id = "hactar-ev12-snk";
@@ -237,9 +245,16 @@ extern "C" void app_main(void)
     config.transport_config.tls_cert_filename = "";
     config.transport_config.tls_key_filename = "";
 
+    // Use mac addr as id for my session
+    uint64_t mac = 0;
+    esp_efuse_mac_get_default((uint8_t*)&mac);
+    mac = mac >> 2;
+    mac = mac << 2;
+    device_id = mac;
+
+    NET_LOG_INFO("mac addr %llu", mac);
+
     moq_session.reset(new moq::Session(config));
-
-
 
     NET_LOG_INFO("Components ready");
 
@@ -334,8 +349,7 @@ extern "C" void app_main(void)
 }
 
 void SetupComponents(const DeviceSetupConfig& config)
-{
-}
+{}
 
 bool CreateLinkPacketTask()
 {
