@@ -98,6 +98,7 @@ static void MX_TIM3_Init(void);
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -421,9 +422,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 1600;
+  htim2.Init.Prescaler = 16800;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 100;
+  htim2.Init.Period = 200;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -468,7 +469,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 168;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 100;
+  htim3.Init.Period = 10;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -477,10 +478,6 @@ static void MX_TIM3_Init(void)
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
   if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_OnePulse_Init(&htim3, TIM_OPMODE_SINGLE) != HAL_OK)
   {
     Error_Handler();
   }
@@ -545,7 +542,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 921600;
+  huart2.Init.BaudRate = 460800;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_2;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -626,10 +623,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, KB_LED_Pin|KB_COL1_Pin|KB_COL2_Pin|DISP_CS_Pin
                           |DISP_DC_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : DISP_RST_Pin DISP_BL_Pin UI_LED_G_Pin KB_COL3_Pin
-                           KB_COL4_Pin KB_COL5_Pin */
-  GPIO_InitStruct.Pin = DISP_RST_Pin|DISP_BL_Pin|UI_LED_G_Pin|KB_COL3_Pin
-                          |KB_COL4_Pin|KB_COL5_Pin;
+  /*Configure GPIO pins : DISP_RST_Pin DISP_BL_Pin UI_LED_G_Pin */
+  GPIO_InitStruct.Pin = DISP_RST_Pin|DISP_BL_Pin|UI_LED_G_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -650,33 +645,51 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : KB_ROW5_Pin KB_ROW6_Pin UI_BOOT1_Pin KB_ROW7_Pin
-                           KB_ROW1_Pin KB_ROW2_Pin */
-  GPIO_InitStruct.Pin = KB_ROW5_Pin|KB_ROW6_Pin|UI_BOOT1_Pin|KB_ROW7_Pin
-                          |KB_ROW1_Pin|KB_ROW2_Pin;
+  /*Configure GPIO pins : KB_ROW5_Pin KB_ROW6_Pin KB_ROW7_Pin KB_ROW1_Pin
+                           KB_ROW2_Pin */
+  GPIO_InitStruct.Pin = KB_ROW5_Pin|KB_ROW6_Pin|KB_ROW7_Pin|KB_ROW1_Pin
+                          |KB_ROW2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : KB_LED_Pin KB_COL1_Pin KB_COL2_Pin DISP_CS_Pin
-                           DISP_DC_Pin */
-  GPIO_InitStruct.Pin = KB_LED_Pin|KB_COL1_Pin|KB_COL2_Pin|DISP_CS_Pin
-                          |DISP_DC_Pin;
+  /*Configure GPIO pin : UI_BOOT1_Pin */
+  GPIO_InitStruct.Pin = UI_BOOT1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(UI_BOOT1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : KB_LED_Pin DISP_CS_Pin DISP_DC_Pin */
+  GPIO_InitStruct.Pin = KB_LED_Pin|DISP_CS_Pin|DISP_DC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : KB_COL1_Pin KB_COL2_Pin */
+  GPIO_InitStruct.Pin = KB_COL1_Pin|KB_COL2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : KB_COL3_Pin KB_COL4_Pin KB_COL5_Pin */
+  GPIO_InitStruct.Pin = KB_COL3_Pin|KB_COL4_Pin|KB_COL5_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /*Configure GPIO pin : KB_ROW3_Pin */
   GPIO_InitStruct.Pin = KB_ROW3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(KB_ROW3_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : KB_ROW4_Pin */
   GPIO_InitStruct.Pin = KB_ROW4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(KB_ROW4_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : UI_STAT_Pin */

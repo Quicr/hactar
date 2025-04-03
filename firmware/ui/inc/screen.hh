@@ -107,7 +107,7 @@ public:
     // TODO find a sweet spot for num memories
     static constexpr uint32_t Num_Memories = 50;
     static constexpr uint32_t Memory_Size = 32;
-    static constexpr uint32_t Title_Length = 18;
+    static constexpr uint32_t Title_Length = 21;
     static constexpr uint32_t Max_Texts = 35;
     static constexpr uint32_t Max_Characters = 48;
     static constexpr uint16_t Top_Fixed_Area = 20;
@@ -201,6 +201,7 @@ public:
     void SetOrientation(const Orientation orientation);
     void FillRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
         uint16_t y2, const Colour colour);
+    void FillScreen(const Colour colour);
     void DrawRectangle(uint16_t x1, uint16_t x2, uint16_t y1,
         uint16_t y2, const uint16_t thickness, const Colour colour);
     void DrawCharacter(uint16_t x, uint16_t y, const char ch, const Font& font,
@@ -212,8 +213,15 @@ public:
         const uint16_t vsa_idx, const uint16_t bfa_idx);
     void ScrollScreen(const uint16_t scroll_idx, bool up);
 
+    void UpdateTitle(const char* title, const uint32_t len);
+
+    // Do I need to do this?
     void AppendText(const char* text, const uint32_t len);
     void CommitText();
+    void CommitText(const char* text, const uint32_t len);
+
+    void AppendUserText(const char* text, const uint32_t len);
+    void AppendUserText(const char ch);
 
 private:
     inline void WaitForSPIComplete();
@@ -284,6 +292,9 @@ private:
     static inline YBound GetYBounds(const uint16_t y1, const uint16_t y2,
         const uint16_t mem_y1, const uint16_t mem_y2) __attribute__((always_inline));
 
+    const Font& title_font = font11x16;
+    const Font& text_font = font5x8;
+
     // Variables
     SPI_HandleTypeDef* spi;
 
@@ -315,13 +326,14 @@ private:
     bool restart_update;
 
     // Each byte stores two pixels
+    // TODO 1d array so that I can dynamically change the orientation
     uint8_t matrix[HEIGHT][WIDTH / 2];
 
     // Double buff
     uint8_t scan_window[Scan_Window_Dbl_Sz];
 
     // Window: 0-20px
-    // Max 18 characters
+    // Max 21 characters
     char title_buffer[Title_Length];
 
     // Window: 20 - 308px

@@ -14,47 +14,75 @@
 #include "nvs_flash.h"
 #include "esp_heap_caps.h"
 #include "esp_event.h"
+#include "esp_mac.h"
 
 #include "ui_net_link.hh"
 #include "peripherals.hh"
 #include "serial.hh"
 #include "wifi.hh"
 #include "logger.hh"
-#include "moq_session.hh"
+#include "moq_tasks.hh"
 #include "utils.hh"
+#include "chunk.hh"
+#include "esp_pthread.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include <memory>
 
+
+// TODO delete me in the near future
 #include "wifi_connect.hh"
+#include "default_json.hh"
 
-#define NET_UI_UART_PORT UART_NUM_1
-#define NET_UI_UART_DEV UART1
-#define NET_UI_UART_TX_PIN 17
-#define NET_UI_UART_RX_PIN 18
-#define NET_UI_UART_RX_BUFF_SIZE 8192
-#define NET_UI_UART_TX_BUFF_SIZE 8192
-#define NET_UI_UART_RING_TX_NUM 30
-#define NET_UI_UART_RING_RX_NUM 30
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
+/** EXTERNAL VARIABLES */
+// External variables defined in net.hh
+uint64_t device_id = 0;
+bool loopback = false;
+
+std::shared_ptr<moq::Session> moq_session;
+std::string base_track_namespace = "ptt.arpa/v1/org1/acme";
+std::string track_location = "store";
+std::string pub_track = "pcm_en_8khz_mono_i16";
+std::string sub_track = "pcm_en_8khz_mono_i16";
+bool pub_ready = false;
+std::mutex object_mux;
+std::mutex sub_pub_mux;
+std::deque<link_data_obj> moq_objects;
+SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
+SemaphoreHandle_t pub_change_smpr = xSemaphoreCreateBinary();
+SemaphoreHandle_t sub_change_smpr = xSemaphoreCreateBinary();
+
+/** END EXTERNAL VARIABLES */
+
+constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33440";
+// constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
+// constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
 TaskHandle_t serial_read_handle;
-TaskHandle_t rtos_pub_handle;
-TaskHandle_t xsub_handle;
+StaticTask_t serial_read_buffer;
+StackType_t* serial_read_stack = nullptr;
+
+TaskHandle_t rtos_pub_task_handle;
+StaticTask_t rtos_pub_task_buffer;
+StackType_t* rtos_pub_task_stack = nullptr;
+
+TaskHandle_t rtos_sub_task_handle;
+StaticTask_t rtos_sub_task_buffer;
+StackType_t* rtos_sub_task_stack = nullptr;
 
 uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = { 0 };
 uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = { 0 };
 
-// SemaphoreHandle_t num_audio_requests = xSemaphoreCreateCounting(10, 0);
-int num_audio_requests = 0;
-
-int num_sent_link_audio = 0;
-int64_t last_req_time_us = 0;
-
 uart_config_t net_ui_uart_config = {
-    .baud_rate = 921600,
+    .baud_rate = 460800,
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_2,
@@ -69,43 +97,25 @@ Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV,
     NET_UI_UART_TX_PIN, NET_UI_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
     *net_ui_uart_tx_buff, NET_UI_UART_TX_BUFF_SIZE,
     *net_ui_uart_rx_buff, NET_UI_UART_RX_BUFF_SIZE,
-    NET_UI_UART_RING_RX_NUM);
+    NET_UI_UART_RING_RX_NUM
+);
 
-uint64_t group_id{ 0 };
-uint64_t object_id{ 0 };
-uint64_t subgroup_id{ 0 };
+Wifi wifi;
 
-struct link_data_obj
-{
-    quicr::ObjectHeaders headers = {
-        group_id,
-        object_id,
-        subgroup_id,
-        0,
-        quicr::ObjectStatus::kAvailable,
-        2 /*priority*/,
-        3000 /* ttl */,
-        std::nullopt,
-        std::nullopt,
-    };
-    std::vector<uint8_t> data;
-};
+uint64_t curr_audio_isr_time = esp_timer_get_time();
+uint64_t last_audio_isr_time = esp_timer_get_time();
 
-std::mutex object_mux;
-std::mutex sub_pub_mux;
-std::deque<link_data_obj> moq_objects;
+uint64_t object_id = 0;
 
-std::shared_ptr<moq::Session> moq_session;
-std::shared_ptr<moq::TrackWriter> pub_track_handler;
-std::shared_ptr<moq::AudioTrackReader> sub_track_handler;
 
-SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
     int gpio_num = (int)arg;
 
     if (gpio_num == NET_STAT)
     {
+        last_audio_isr_time = curr_audio_isr_time;
+        curr_audio_isr_time = esp_timer_get_time();
         xSemaphoreGiveFromISR(audio_req_smpr, NULL);
     }
 }
@@ -113,6 +123,7 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 static void LinkPacketTask(void* args)
 {
     NET_LOG_INFO("Start link packet task");
+    bool talk_stopped = false;
     while (true)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
@@ -123,28 +134,76 @@ static void LinkPacketTask(void* args)
             {
                 case ui_net_link::Packet_Type::GetAudioLinkPacket:
                 {
-                    // NET_LOG_INFO("recvreq");
-                    // xSemaphoreGive(num_audio_requests);
-                    // last_req_time_us = esp_timer_get_time();
-                    // ++num_audio_requests;
+                    // TODO NOTE might be a dead type
                     break;
+                }
+                case ui_net_link::Packet_Type::MoQChangeNamespace:
+                {
+                    // TODO check if the channel is the same and if it is don't change it.
+                    NET_LOG_INFO("got change packet");
+                    ui_net_link::ChangeNamespace change_namespace;
+                    ui_net_link::Deserialize(*packet, change_namespace);
+                    track_location = std::string(change_namespace.trackname, change_namespace.trackname_len);
+
+                    xSemaphoreGive(pub_change_smpr);
+                    xSemaphoreGive(sub_change_smpr);
                 }
                 case ui_net_link::Packet_Type::TalkStart:
                     break;
                 case ui_net_link::Packet_Type::TalkStop:
+                    talk_stopped = true;
                     break;
                 case ui_net_link::Packet_Type::AudioMultiObject:
                     [[fallthrough]];
                 case ui_net_link::Packet_Type::AudioObject:
                 {
+                    // If the publisher is not ready just ignore the link packet
+                    if (!pub_ready)
+                    {
+                        break;
+                    }
                     // NET_LOG_INFO("serial recv audio");
 
                     std::lock_guard<std::mutex> _(object_mux);
 
                     auto& obj = moq_objects.emplace_back();
-                    obj.data.assign(packet->payload, packet->payload + packet->length);
-                    obj.headers.object_id++;
-                    obj.headers.payload_length = obj.data.size();
+
+                    obj.headers.group_id = device_id;
+
+                    // Channel id
+                    uint32_t ext_bytes = 1;
+                    uint32_t length = packet->length;
+
+                    uint8_t channel_id = packet->payload[0];
+
+                    // Remove the bytes already read from the payload length
+                    length -= ext_bytes;
+
+                    // In the future I would want to use the audio object to transmit
+                    // that to the relay? and do less copying but thats asking a lot.
+
+
+
+
+                    // This is the chunk object without copying all of the data... again.
+                    obj.data.resize(length + 6);
+                    obj.data[0] = (uint8_t)moq::MessageType::Media;
+                    obj.data[1] = 0;
+                    if (talk_stopped)
+                    {
+                        obj.data[1] = talk_stopped;
+                        talk_stopped = false;
+                    }
+
+                    memcpy(obj.data.data() + 2, &length, sizeof(length));
+                    memcpy(obj.data.data() + 6, packet->payload + 1, length);
+
+                    obj.headers.object_id = object_id++;
+                    obj.headers.payload_length = length + 6;
+
+                    auto time_bytes = quicr::AsBytes(curr_audio_isr_time);
+                    obj.headers.extensions = quicr::Extensions{};
+                    obj.headers.extensions.value()[2].assign(time_bytes.begin(), time_bytes.end());
 
                     // TODO use notifies, currently it doesn't notify fast enough?
                     // xTaskNotifyGive(rtos_pub_handle);
@@ -166,103 +225,17 @@ static void LinkPacketTask(void* args)
     }
 }
 
-static void MoqPubTask(void* args)
+
+void set_pthread_psram()
 {
-    NET_LOG_INFO("Start publish task");
-
-    // Make scope so that lock is released and mem reclaimed
-    {
-        pub_track_handler.reset(new moq::TrackWriter(moq::MakeFullTrackName("hactar-audio", "test", 1001), quicr::TrackMode::kDatagram, 2, 100));
-        moq_session->PublishTrack(pub_track_handler);
-        NET_LOG_INFO("Started publisher");
-
-        while (pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
-        {
-            NET_LOG_INFO("Waiting for pub ok!");
-            vTaskDelay(300 / portTICK_PERIOD_MS);
-            continue;
-        }
-
-        NET_LOG_INFO("Publishing!");
-    }
-
-    while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
-    {
-        vTaskDelay(2 / portTICK_PERIOD_MS);
-
-        if (pub_track_handler && pub_track_handler->GetStatus() != moq::TrackWriter::Status::kOk)
-        {
-            continue;
-        }
-
-        if (moq_objects.size() > 0)
-        {
-            // NET_LOG_INFO("pub audio");
-
-            std::lock_guard<std::mutex> lock(object_mux);
-            const link_data_obj& obj = moq_objects.front();
-            pub_track_handler->PublishObject(obj.headers, obj.data);
-            moq_objects.pop_front();
-        }
-    }
-
-    NET_LOG_INFO("Delete pub task");
-    vTaskDelete(NULL);
-}
-
-static void MoqSubTask(void* args)
-{
-    NET_LOG_INFO("Start subscribe task");
-
-    // Make a scope so the memory for lock is reclaimed
-    {
-        sub_track_handler.reset(new moq::AudioTrackReader(moq::MakeFullTrackName("hactar-audio", "test", 2001), 10));
-        moq_session->SubscribeTrack(sub_track_handler);
-        NET_LOG_INFO("Started subscriber");
-
-        while (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
-        {
-            NET_LOG_INFO("Waiting for sub ok!");
-            vTaskDelay(300 / portTICK_PERIOD_MS);
-            continue;
-        }
-
-        NET_LOG_INFO("Subscribed");
-    }
-
-    link_packet_t link_packet;
-    while (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
-    {
-        vTaskDelay(2 / portTICK_PERIOD_MS);
-        if (sub_track_handler->GetStatus() != moq::AudioTrackReader::Status::kOk)
-        {
-            // TODO handling
-            continue;
-        }
-
-        sub_track_handler->TryPlay();
-
-        if (xSemaphoreTake(audio_req_smpr, 0))
-        {
-            auto data = sub_track_handler->PopFront();
-            if (!data.has_value())
-            {
-                // xSemaphoreGive(audio_req_smpr);
-                continue;
-            }
-
-            // --num_audio_requests;
-
-            link_packet.type = static_cast<uint8_t>(ui_net_link::Packet_Type::AudioObject);
-            link_packet.length = data->size();
-            std::memcpy(link_packet.payload, data->data(), data->size());
-            link_packet.is_ready = true;
-            ui_layer.Write(link_packet);
-        }
-    }
-
-    NET_LOG_INFO("Delete sub task");
-    vTaskDelete(NULL);
+    // esp_pthread_cfg_t cfg = esp_pthread_get_default_config();
+    // cfg.stack_size = 8192; // Set a suitable stack size
+    // cfg.stack_addr = heap_caps_malloc(cfg.stack_size, MALLOC_CAP_SPIRAM);
+    // if (cfg.stack_addr == NULL) {
+    //     printf("Failed to allocate pthread stack in PSRAM\n");
+    //     return;
+    // }
+    // esp_pthread_set_cfg(&cfg);
 }
 
 extern "C" void app_main(void)
@@ -270,8 +243,25 @@ extern "C" void app_main(void)
     NET_LOG_ERROR("Internal SRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     NET_LOG_ERROR("PSRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
-    NET_LOG_INFO("Starting Net Main");
 
+    // json publications = default_channel_json.at("publications");
+    // std::vector<std::string> track_namespace = publications[0].at("tracknamespace").get<std::vector<std::string>>();
+
+    // for (int i = 0; i < publications.size(); ++i)
+    // {
+    //     std::string dump = publications[i].at("channel_name").get<std::string>();
+    //     NET_LOG_ERROR("json example %s", dump.c_str());
+    // }
+
+    // for (int i =0 ;i < track_namespace.size(); ++i)
+    // {
+    //     std::string dump = track_namespace[i];
+    //     NET_LOG_ERROR("%s", dump.c_str());
+    // }
+
+
+
+    NET_LOG_INFO("Starting Net Main");
 
     gpio_config_t io_conf = {
         .pin_bit_mask = NET_STAT_MASK,
@@ -284,94 +274,175 @@ extern "C" void app_main(void)
     gpio_install_isr_service(0);
     gpio_isr_handler_add(NET_STAT, GpioIsrRisingHandler, (void*)NET_STAT);
 
-
-
     InitializeGPIO();
     IntitializeLEDs();
 
-    // wifi
-    Wifi wifi;
-    // REMOVEME This is so that creds stop getting pushed
-    ConnectToWifi(wifi);
+    wifi.Begin();
 
-    while (!wifi.IsConnected())
+    std::vector<std::string> ssids;
+    wifi.ScanNetworks(&ssids);
+    for (int i = 0 ;i < ssids.size(); ++i)
     {
-        NET_LOG_WARN("Waiting to connect to wifi");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        NET_LOG_INFO("ssid %d %s", i, ssids[i].c_str());
     }
-
-    // FIXME: Avoids possible Brownout
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
-
-    NET_LOG_INFO("Components ready");
-
 
     // setup moq transport
     quicr::ClientConfig config;
     config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = "moq://relay.quicr.ctgpoc.com:33435";
+    config.connect_uri = moq_server;
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;
     config.transport_config.tls_cert_filename = "";
     config.transport_config.tls_key_filename = "";
 
+    // Use mac addr as id for my session
+    uint64_t mac = 0;
+    esp_efuse_mac_get_default((uint8_t*)&mac);
+    mac = mac >> 2;
+    mac = mac << 2;
+    device_id = mac;
+
+    NET_LOG_ERROR("mac addr %llu", mac);
+
     moq_session.reset(new moq::Session(config));
 
-    NET_LOG_INFO("MOQ Transport Calling Connect");
-    if (moq_session->Connect() != quicr::Transport::Status::kConnecting)
-    {
-        NET_LOG_ERROR("MOQ Transport Session Connection Failure");
-
-        // TODO: Don't exit, retry connection
-        exit(-1);
-    }
-
-    // This is the lazy way of doing it, otherwise we should use a esp_timer.
-    uint32_t blink_cnt = 0;
-    int next = 0;
-
-    while (moq_session->GetStatus() != moq::Session::Status::kReady)
-    {
-        const auto moq_session_status = moq_session->GetStatus();
-        if (!(moq_session_status == moq::Session::Status::kConnecting || moq_session_status == moq::Session::Status::kPendingSeverSetup))
-        {
-            break;
-        }
-
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-    }
-
-    if (moq_session->GetStatus() != moq::Session::Status::kReady)
-    {
-        return;
-    }
-
-    NET_LOG_INFO("Moq session status %d", (int)moq_session->GetStatus());
+    NET_LOG_INFO("Components ready");
 
     // Start moq tasks here
-    xTaskCreate(MoqPubTask, "moq publish task", 8192, NULL, 3, &rtos_pub_handle);
-    xTaskCreate(MoqSubTask, "moq subscribe task", 8192, NULL, 2, &xsub_handle);
-    xTaskCreate(LinkPacketTask, "link packet handler", 4096, NULL, 10, &serial_read_handle);
+    CreateLinkPacketTask();
+    CreatePubTask();
+    CreateSubTask();
 
+    int next = 0;
+    int64_t heartbeat = 0;
+    bool ready_to_connect_moq = false;
+    moq::Session::Status prev_status = moq::Session::Status::kReady;
+    Wifi::State prev_wifi_state = Wifi::State::Connected;
     while (true)
     {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-        // FIXME: Use esp_timer instead.
-        // NOTE- 100 * 10ms = 1000ms :)
-        if (blink_cnt++ == 1)
+        moq::Session::Status status = moq_session->GetStatus();
+        Wifi::State wifi_state = wifi.GetState();
+        if (prev_wifi_state != wifi_state)
         {
-            NET_LOG_INFO("time %lld", esp_timer_get_time());
-            gpio_set_level(NET_LED_G, next);
-            next = next ? 0 : 1;
-            blink_cnt = 0;
+            prev_wifi_state = wifi_state;
+            switch (wifi_state)
+            {
+                case Wifi::State::Disconnected:
+                {
+                    if (status == moq::Session::Status::kConnecting ||
+                        status == moq::Session::Status::kPendingSeverSetup ||
+                        status == moq::Session::Status::kReady)
+                    {
+                        moq_session->Disconnect();
+                    }
+                }
+                case Wifi::State::Initialized:
+                {
+                    ConnectToWifi(wifi);
+                }
+                case Wifi::State::Connected:
+                {
+                    // TODO send a serial message saying we are
+                    // connected to wifi
+                    break;
+                }
+                default:
+                {
+                    // Do nothing.
+                    break;
+                }
+            }
         }
 
+        if (prev_status != status && wifi.IsConnected())
+        {
+            switch (status)
+            {
+                case moq::Session::Status::kReady:
+                {
+                    // TODO
+                    // Tell ui chip we are ready
 
+                    break;
+                }
+                case moq::Session::Status::kNotReady:
+                case moq::Session::Status::kNotConnected:
+                case moq::Session::Status::kFailedToConnect:
+                {
+                    NET_LOG_INFO("MOQ Transport Calling Connect");
+
+                    if (moq_session->Connect() != quicr::Transport::Status::kConnecting)
+                    {
+                        NET_LOG_ERROR("MOQ Transport Session Connection Failure");
+                    }
+                    break;
+                }
+                default:
+                {
+                    // TODO the rest
+                    break;
+                }
+            }
+            prev_status = status;
+        }
+
+        if (esp_timer_get_time_ms() > heartbeat)
+        {
+            // NET_LOG_INFO("time %lld", esp_timer_get_time_ms());
+            gpio_set_level(NET_LED_G, next);
+            next = next ? 0 : 1;
+            heartbeat = esp_timer_get_time_ms() + 1000;
+        }
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
 
 void SetupComponents(const DeviceSetupConfig& config)
+{}
+
+bool CreateLinkPacketTask()
 {
+    constexpr size_t stack_size = 4096;
+    serial_read_stack = (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
+    if (serial_read_stack == NULL)
+    {
+        NET_LOG_INFO("Failed to allocate stack for link packet handler");
+        return false;
+    }
+    serial_read_handle = xTaskCreateStatic(LinkPacketTask, "link packet handler", stack_size, NULL, 10, serial_read_stack, &serial_read_buffer);
+
+    NET_LOG_INFO("Created link packet handler PSRAM left %ld", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    return true;
+}
+
+bool CreatePubTask()
+{
+    constexpr size_t stack_size = 8192;
+    rtos_pub_task_stack = (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
+    if (rtos_pub_task_stack == NULL)
+    {
+        NET_LOG_INFO("Failed to allocate stack for moq publish task");
+        return false;
+    }
+    rtos_pub_task_handle = xTaskCreateStatic(MoqPublishTask, "moq publish task", stack_size, NULL, 10, rtos_pub_task_stack, &rtos_pub_task_buffer);
+
+    NET_LOG_INFO("Created moq publish task PSRAM left %ld", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    return true;
+}
+
+bool CreateSubTask()
+{
+    constexpr size_t stack_size = 8192;
+    rtos_sub_task_stack = (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
+    if (rtos_sub_task_stack == NULL)
+    {
+        NET_LOG_INFO("Failed to allocate stack for moq subscribe task");
+        return false;
+    }
+    rtos_sub_task_handle = xTaskCreateStatic(MoqSubscribeTask, "moq subscribe task", stack_size, NULL, 10, rtos_sub_task_stack, &rtos_sub_task_buffer);
+
+    NET_LOG_INFO("Created moq subscribe task PSRAM left %ld", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    return true;
 }

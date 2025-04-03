@@ -995,7 +995,7 @@ const uint8_t font5x8_table[] =
 	0x00, //
 };
 
-Font font5x8 = {
+const Font font5x8 = {
   5, // Width
   8, // Height
   font5x8_table,
