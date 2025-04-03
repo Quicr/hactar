@@ -4,5 +4,5 @@
 
 static void ConnectToWifi(Wifi& wifi)
 {
-    wifi.Connect("", "");
+    wifi.Connect("m10x-interference", "goodlife");
 }
