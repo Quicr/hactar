@@ -296,26 +296,26 @@ int app_main()
             SendAudio();
         }
 
-        if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
-        {
-            auto tx_buff = audio_chip.TxBuffer();
-            auto rx_buff = audio_chip.RxBuffer();
+        // if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
+        // {
+        //     auto tx_buff = audio_chip.TxBuffer();
+        //     auto rx_buff = audio_chip.RxBuffer();
 
-            AudioCodec::ALawCompand(rx_buff, constants::Audio_Buffer_Sz,
-                talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
+        //     AudioCodec::ALawCompand(rx_buff, constants::Audio_Buffer_Sz,
+        //         talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
 
-            AudioCodec::ALawExpand(talk_frame.data, constants::Audio_Phonic_Sz, tx_buff, constants::Audio_Buffer_Sz, constants::Stereo, true);
-        }
+        //     AudioCodec::ALawExpand(talk_frame.data, constants::Audio_Phonic_Sz, tx_buff, constants::Audio_Buffer_Sz, constants::Stereo, true);
+        // }
 
 
-        if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET &&
-            HAL_GetTick() > timeout)
-        {
-            timeout = HAL_GetTick() + 5000;
-            ui_net_link::ChangeNamespace change_namespace = { 0, 5, "test1" };
-            ui_net_link::Serialize(change_namespace, talk_packet);
-            serial.Write(talk_packet);
-        }
+        // if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET &&
+        //     HAL_GetTick() > timeout)
+        // {
+        //     timeout = HAL_GetTick() + 5000;
+        //     ui_net_link::ChangeNamespace change_namespace = { 0, 5, "test1" };
+        //     ui_net_link::Serialize(change_namespace, talk_packet);
+        //     serial.Write(talk_packet);
+        // }
 
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
