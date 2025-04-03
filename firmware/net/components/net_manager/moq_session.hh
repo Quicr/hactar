@@ -5,6 +5,7 @@
 #include "moq_track_writer.hh"
 #include "constants.hh"
 
+#include <nlohmann/json.hpp>
 #include <quicr/client.h>
 #include <quicr/detail/defer.h>
 
@@ -13,6 +14,9 @@
 
 namespace moq
 {
+
+using json = nlohmann::json;
+
 /**
 * MoQSession identifies a client session with the MOQ Peer
 */
@@ -71,9 +75,12 @@ public:
     void Read();
     void StopReadTrack(const std::string& track_name);
 
-    void StartWriteTrack(const std::string& track_name);
+    void StartWriteTrack(const json track_json);
     void Write();
     void StopWriteTrack(const std::string& track_name);
+
+    std::vector<std::shared_ptr<TrackReader>>& Readers() noexcept;
+    std::vector<std::shared_ptr<TrackReader>>& Writers() noexcept;
 
 private:
     Session() = delete;
@@ -88,10 +95,8 @@ private:
     };
 
 private:
-    std::map<quicr::TrackHash, std::shared_ptr<TrackReader>> readers;
-
-    std::shared_ptr<TrackWriter> writer;
-    std::shared_ptr<TrackWriter> ai_writer;
+    std::vector<std::shared_ptr<TrackReader>> readers;
+    std::vector<std::shared_ptr<TrackReader>> writers;
 };
 
 }

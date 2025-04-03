@@ -24,6 +24,7 @@
 #include "moq_tasks.hh"
 #include "utils.hh"
 #include "chunk.hh"
+#include "esp_pthread.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -34,20 +35,17 @@
 
 // TODO delete me in the near future
 #include "wifi_connect.hh"
-#include "json_example.hh"
+#include "default_json.hh"
 
 
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-// extern json channel_example_json;
-
-
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = true;
+bool loopback = false;
 
 std::shared_ptr<moq::Session> moq_session;
 std::string base_track_namespace = "ptt.arpa/v1/org1/acme";
@@ -64,7 +62,7 @@ SemaphoreHandle_t sub_change_smpr = xSemaphoreCreateBinary();
 
 /** END EXTERNAL VARIABLES */
 
-constexpr const char* moq_server = "moq://relay.quicr.ctgpoc.com:33437";
+constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33440";
 // constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
@@ -228,14 +226,40 @@ static void LinkPacketTask(void* args)
 }
 
 
+void set_pthread_psram()
+{
+    // esp_pthread_cfg_t cfg = esp_pthread_get_default_config();
+    // cfg.stack_size = 8192; // Set a suitable stack size
+    // cfg.stack_addr = heap_caps_malloc(cfg.stack_size, MALLOC_CAP_SPIRAM);
+    // if (cfg.stack_addr == NULL) {
+    //     printf("Failed to allocate pthread stack in PSRAM\n");
+    //     return;
+    // }
+    // esp_pthread_set_cfg(&cfg);
+}
+
 extern "C" void app_main(void)
 {
     NET_LOG_ERROR("Internal SRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     NET_LOG_ERROR("PSRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
-    // NET_LOG_ERROR("json test %d", value);
-    // std::string dump = channel_example_json.at("publications")[0].at("channel_name").get<std::string>();
-    // NET_LOG_ERROR("json example %s", dump.c_str());
+
+    // json publications = default_channel_json.at("publications");
+    // std::vector<std::string> track_namespace = publications[0].at("tracknamespace").get<std::vector<std::string>>();
+
+    // for (int i = 0; i < publications.size(); ++i)
+    // {
+    //     std::string dump = publications[i].at("channel_name").get<std::string>();
+    //     NET_LOG_ERROR("json example %s", dump.c_str());
+    // }
+
+    // for (int i =0 ;i < track_namespace.size(); ++i)
+    // {
+    //     std::string dump = track_namespace[i];
+    //     NET_LOG_ERROR("%s", dump.c_str());
+    // }
+
+
 
     NET_LOG_INFO("Starting Net Main");
 
@@ -279,7 +303,7 @@ extern "C" void app_main(void)
     mac = mac << 2;
     device_id = mac;
 
-    NET_LOG_INFO("mac addr %llu", mac);
+    NET_LOG_ERROR("mac addr %llu", mac);
 
     moq_session.reset(new moq::Session(config));
 

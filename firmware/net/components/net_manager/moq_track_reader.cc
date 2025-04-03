@@ -15,7 +15,7 @@ TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpa
 {
     ++num_print;
 
-    if (num_print >= 10)
+    if (num_print >= 20)
     {
         num_recv += num_print;
         num_print = 0;
