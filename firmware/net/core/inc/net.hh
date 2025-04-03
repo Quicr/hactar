@@ -12,6 +12,7 @@
 #include "serial.hh"
 #include "wifi.hh"
 #include "moq_session.hh"
+#include "ui_net_link.hh"
 
 #include <memory>
 

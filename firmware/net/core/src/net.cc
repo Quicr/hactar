@@ -47,7 +47,7 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = false;
+bool loopback = true;
 
 std::shared_ptr<moq::Session> moq_session;
 std::string base_track_namespace = "ptt.arpa/v1/org1/acme";
@@ -65,6 +65,7 @@ SemaphoreHandle_t sub_change_smpr = xSemaphoreCreateBinary();
 /** END EXTERNAL VARIABLES */
 
 constexpr const char* moq_server = "moq://relay.quicr.ctgpoc.com:33437";
+// constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
 TaskHandle_t serial_read_handle;
@@ -171,8 +172,23 @@ static void LinkPacketTask(void* args)
 
                     obj.headers.group_id = device_id;
 
-                    // // Create an object
-                    obj.data.resize(packet->length + 6);
+                    // Channel id
+                    uint32_t ext_bytes = 1;
+                    uint32_t length = packet->length;
+
+                    uint8_t channel_id = packet->payload[0];
+
+                    // Remove the bytes already read from the payload length
+                    length -= ext_bytes;
+
+                    // In the future I would want to use the audio object to transmit
+                    // that to the relay? and do less copying but thats asking a lot.
+
+
+
+
+                    // This is the chunk object without copying all of the data... again.
+                    obj.data.resize(length + 6);
                     obj.data[0] = (uint8_t)moq::MessageType::Media;
                     obj.data[1] = 0;
                     if (talk_stopped)
@@ -181,11 +197,11 @@ static void LinkPacketTask(void* args)
                         talk_stopped = false;
                     }
 
-                    memcpy(obj.data.data() + 2, &packet->length, sizeof(packet->length));
-                    memcpy(obj.data.data() + 6, packet->payload, packet->length);
+                    memcpy(obj.data.data() + 2, &length, sizeof(length));
+                    memcpy(obj.data.data() + 6, packet->payload + 1, length);
 
                     obj.headers.object_id = object_id++;
-                    obj.headers.payload_length = packet->length + 6;
+                    obj.headers.payload_length = length + 6;
 
                     auto time_bytes = quicr::AsBytes(curr_audio_isr_time);
                     obj.headers.extensions = quicr::Extensions{};

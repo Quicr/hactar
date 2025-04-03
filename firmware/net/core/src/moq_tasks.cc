@@ -82,7 +82,7 @@ void MoqPublishTask(void* args)
 
             std::lock_guard<std::mutex> lock(object_mux);
             const link_data_obj& obj = moq_objects.front();
-            NET_LOG_INFO("header length says %d and actual len %d", obj.headers.payload_length, obj.data.size());
+            // NET_LOG_INFO("header length says %d", obj.headers.payload_length);
             pub_track_handler->PublishObject(obj.headers, obj.data);
             moq_objects.pop_front();
         }
@@ -110,8 +110,7 @@ void MoqSubscribeTask(void* arg)
         vTaskDelay(100 / portTICK_PERIOD_MS);
 
         while (!moq_session
-            || moq_session->GetStatus() != moq::Session::Status::kReady
-            || !pub_ready)
+            || moq_session->GetStatus() != moq::Session::Status::kReady)
         {
             // Wait for moq sesssion to be set.
             if (esp_timer_get_time_ms() > next_print)
@@ -182,10 +181,20 @@ void MoqSubscribeTask(void* arg)
                     link_packet.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
 
                     // Get the length of the audio packet
-                    memcpy(&link_packet.length, data->data() + offset, sizeof(link_packet.length));
-                    offset += sizeof(link_packet.length);
+                    uint32_t audio_length = 0;
+                    memcpy(&audio_length, data->data() + offset, sizeof(audio_length));
+                    offset += sizeof(audio_length);
 
-                    memcpy(link_packet.payload, data->data() + offset, link_packet.length);
+
+                    // Channel id
+                    // TODO get channel id, for now use 1
+                    link_packet.payload[0] = 1;
+                    link_packet.length = audio_length + 1;
+
+                    memcpy(link_packet.payload + 1, data->data() + offset, audio_length);
+
+                    // NET_LOG_INFO("packet length %d", link_packet.length);
+
                     ui_layer.Write(link_packet);
                 }
             }
