@@ -211,6 +211,12 @@ Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
 
 uint32_t timeout = 0;
 
+bool ptt_down = false;
+const uint8_t ptt_channel = 0;
+
+bool ptt_ai_down = false;
+const uint8_t ptt_ai_channel = 1;
+
 int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
@@ -229,7 +235,6 @@ int app_main()
     Colour curr = Colour::Blue;
     const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
 
-    bool ptt_down = false;
 
     uint32_t blinky = 0;
     uint32_t next_print = 0;
@@ -268,51 +273,8 @@ int app_main()
             // Error("Main loop", "Flags did not match expected");
         }
 
-        // Send talk start and sot packets
-        if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
-        {
-            // TODO channel id
-            ui_net_link::TalkStart talk_start = { 0 };
-            talk_start.channel_id = 0;
-            ui_net_link::Serialize(talk_start, talk_packet);
-            serial.Write(talk_packet);
-            ptt_down = true;
-        }
-        else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
-        {
-            ui_net_link::TalkStop talk_stop = { 0 };
-            talk_stop.channel_id = 0;
-            ui_net_link::Serialize(talk_stop, talk_packet);
-            serial.Write(talk_packet);
-            ptt_down = false;
-            SendAudio();
-        }
-
-        if (ptt_down)
-        {
-            SendAudio();
-        }
-
-        if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
-        {
-            auto tx_buff = audio_chip.TxBuffer();
-            auto rx_buff = audio_chip.RxBuffer();
-
-            AudioCodec::ALawCompand(rx_buff, constants::Audio_Buffer_Sz,
-                talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
-
-            AudioCodec::ALawExpand(talk_frame.data, constants::Audio_Phonic_Sz, tx_buff, constants::Audio_Buffer_Sz, constants::Stereo, true);
-        }
-
-
-        if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET &&
-            HAL_GetTick() > timeout)
-        {
-            timeout = HAL_GetTick() + 5000;
-            ui_net_link::ChangeNamespace change_namespace = { 0, 5, "test1" };
-            ui_net_link::Serialize(change_namespace, talk_packet);
-            serial.Write(talk_packet);
-        }
+        CheckPTT();
+        CheckPTTAI();
 
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
@@ -552,12 +514,69 @@ inline void AudioCallback()
     RaiseFlag(Audio_Interrupt);
 }
 
-void SendAudio()
+void CheckPTT()
+{
+    // Send talk start and sot packets
+    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
+    {
+        // TODO channel id
+        ui_net_link::TalkStart talk_start = { 0 };
+        talk_start.channel_id = ptt_channel;
+        ui_net_link::Serialize(talk_start, talk_packet);
+        serial.Write(talk_packet);
+        ptt_down = true;
+    }
+    else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
+    {
+        ui_net_link::TalkStop talk_stop = { 0 };
+        talk_stop.channel_id = ptt_channel;
+        ui_net_link::Serialize(talk_stop, talk_packet);
+        serial.Write(talk_packet);
+        ptt_down = false;
+        SendAudio(ptt_channel);
+    }
+
+    if (ptt_down)
+    {
+        SendAudio(ptt_channel);
+    }
+}
+
+void CheckPTTAI()
+{
+
+    // Send talk start and sot packets
+    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET && !ptt_ai_down)
+    {
+        // TODO channel id
+        ui_net_link::TalkStart talk_start = { 0 };
+        talk_start.channel_id = ptt_ai_channel;
+        ui_net_link::Serialize(talk_start, talk_packet);
+        serial.Write(talk_packet);
+        ptt_ai_down = true;
+    }
+    else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET && ptt_ai_down)
+    {
+        ui_net_link::TalkStop talk_stop = { 0 };
+        talk_stop.channel_id = ptt_ai_channel;
+        ui_net_link::Serialize(talk_stop, talk_packet);
+        serial.Write(talk_packet);
+        ptt_ai_down = false;
+        SendAudio(ptt_ai_channel);
+    }
+
+    if (ptt_ai_down)
+    {
+        SendAudio(ptt_ai_channel);
+    }
+}
+
+void SendAudio(const uint8_t channel_id)
 {
     AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz,
         talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
 
-    talk_frame.channel_id = 0;
+    talk_frame.channel_id = channel_id;
     ui_net_link::Serialize(talk_frame, talk_packet);
     LedRToggle();
     serial.Write(talk_packet);

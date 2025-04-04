@@ -55,7 +55,9 @@ inline void ProcessText(uint16_t len);
 inline void InitScreen();
 inline void WaitForNetReady();
 inline void AudioCallback();
-inline void SendAudio();
+inline void CheckPTT();
+inline void CheckPTTAI();
+inline void SendAudio(const uint8_t channel_id);
 void Error(const char* who, const char* why);
 
 void SlowSendTest(int delay, int num);
