@@ -4,6 +4,7 @@
 #include "moq_track_reader.hh"
 #include "utils.hh"
 #include "moq_session.hh"
+#include "chunk.hh"
 
 using namespace moq;
 

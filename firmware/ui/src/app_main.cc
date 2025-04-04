@@ -273,6 +273,7 @@ int app_main()
         {
             // TODO channel id
             ui_net_link::TalkStart talk_start = { 0 };
+            talk_start.channel_id = 0;
             ui_net_link::Serialize(talk_start, talk_packet);
             serial.Write(talk_packet);
             ptt_down = true;
@@ -280,6 +281,7 @@ int app_main()
         else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
         {
             ui_net_link::TalkStop talk_stop = { 0 };
+            talk_stop.channel_id = 0;
             ui_net_link::Serialize(talk_stop, talk_packet);
             serial.Write(talk_packet);
             ptt_down = false;
@@ -555,13 +557,14 @@ void SendAudio()
     AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz,
         talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
 
+    talk_frame.channel_id = 0;
     ui_net_link::Serialize(talk_frame, talk_packet);
     LedRToggle();
     serial.Write(talk_packet);
     ++num_packets_tx;
 }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef * huart, uint16_t size)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     // UI_LOG_ERROR("rx %u", size);
     if (huart->Instance == Serial::UART(&serial)->Instance)

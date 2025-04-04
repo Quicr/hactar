@@ -1,41 +1,44 @@
-// #pragma once
+#pragma once
 
-// #include <stdint.h>
-// #include <optional>
-// #include <vector>
-// #include <cstring>
+namespace moq
+{
+enum class MessageType
+{
+    Media = 1,
+    AIRequest,
+    AIResponse
+};
 
-// struct Chunk
-// {
-// public:
-//     enum class ContentType:uint8_t
-//     {
-//         Audio = 0,
-//         Json,
-//     };
+enum class Content_Type
+{
+    Audio = 0,
+    Json,
+};
 
-//     ContentType type;
-//     bool is_last;
-//     uint32_t length;
-//     std::vector<uint8_t> data;
+struct Chunk
+{
+    const MessageType type = MessageType::Media;
+    bool last_chunk;
+    std::uint32_t chunk_length;
+    quicr::Bytes chunk_data;
+};
 
-//     static Chunk Deserialize(std::optional<std::vector<uint8_t>>& bytes)
-//     {
-//         Chunk chunk;
-//         uint32_t offset = 0;
-//         chunk.type = (ContentType)bytes->at(offset++);
-//         chunk.is_last = bytes->at(offset++);
+struct AIRequestChunk
+{
+    const MessageType type = MessageType::AIRequest;
+    std::uint32_t request_id;
+    bool last_chunk;
+    std::uint32_t chunk_length;
+    quicr::Bytes chunk_data;
+};
 
-//         std::memcpy(&chunk.length, bytes->data() + offset, sizeof(chunk.length));
-//         offset += sizeof(chunk.length);
-
-//         chunk.data.assign(bytes->data() + offset, bytes->data() + chunk.length + offset);
-
-//         return chunk;
-//     }
-
-//     static void Serialize()
-//     {
-
-//     }
-// };
+struct AIResponseChunk
+{
+    const MessageType type = MessageType::AIResponse;
+    std::uint32_t request_id;
+    Content_Type content_type;
+    bool last_chunk;
+    std::uint32_t chunk_length;
+    quicr::Bytes chunk_data;
+};
+}
