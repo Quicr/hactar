@@ -4,6 +4,7 @@
 #include "moq_track_reader.hh"
 #include "moq_track_writer.hh"
 #include "constants.hh"
+#include "serial.hh"
 
 #include <nlohmann/json.hpp>
 #include <quicr/client.h>
@@ -34,7 +35,7 @@ public:
     void StatusChanged(Status status) override;
 
     // public API - send subscribe, setup queue for incoming objects
-    void StartReadTrack(const std::string& track_name);
+    void StartReadTrack(const json& subscription, Serial& serial);
     void Read();
     void StopReadTrack(const std::string& track_name);
 

@@ -28,11 +28,7 @@
 extern Wifi wifi;
 extern Serial ui_layer;
 extern std::shared_ptr<moq::Session> moq_session;
-extern std::string base_track_namespace;
-extern std::string track_location;
-extern std::string sub_track;
 extern SemaphoreHandle_t audio_req_smpr;
-extern SemaphoreHandle_t sub_change_smpr;
 
 struct DeviceSetupConfig
 {
@@ -42,5 +38,3 @@ struct DeviceSetupConfig
 
 static void SetupComponents(const DeviceSetupConfig& config);
 static bool CreateLinkPacketTask();
-static bool CreatePubTask();
-static bool CreateSubTask();

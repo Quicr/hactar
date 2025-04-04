@@ -7,6 +7,7 @@
 #include <deque>
 
 #include <quicr/client.h>
+#include "serial.hh"
 
 namespace moq
 {
@@ -14,15 +15,7 @@ namespace moq
 class TrackReader: public quicr::SubscribeTrackHandler
 {
 public:
-    TrackReader(const quicr::FullTrackName& full_track_name)
-        : SubscribeTrackHandler(full_track_name,
-            3,
-            quicr::messages::GroupOrder::kAscending,
-            quicr::messages::FilterType::kLatestObject)
-    {}
-
-
-
+    TrackReader(const quicr::FullTrackName& full_track_name, Serial& serial);
     virtual ~TrackReader() = default;
 
     //
@@ -31,8 +24,6 @@ public:
     void ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data) override;
 
     void StatusChanged(Status status) override;
-
-    void HandleMessageChunk(const quicr::ObjectHeaders& headers, quicr::BytesSpan data);
 
     void AudioPlay();
     void AudioPause();
@@ -45,13 +36,21 @@ public:
     size_t AudioNumAvailable() noexcept;
 
 private:
+    static void SubscribeTask(void* param);
+
     // Audio variables
     // TODO move into an audio object?
-    std::queue<std::vector<uint8_t>> _audio_buffer;
-    bool _audio_playing = false;
-    size_t _audio_min_depth = 50;
-    size_t _audio_max_depth = std::numeric_limits<size_t>::max();
-    //
+    Serial& serial;
+    std::string track_name;
+    std::queue<std::vector<uint8_t>> audio_buffer;
+
+    bool audio_playing;
+    size_t audio_min_depth;
+    size_t audio_max_depth;
+
+    TaskHandle_t task_handle;
+    StaticTask_t task_buffer;
+    StackType_t* task_stack;
 
     uint32_t ai_request_id = 0;
     uint64_t num_print = 0;

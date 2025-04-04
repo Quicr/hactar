@@ -17,8 +17,8 @@ void Session::StartTasks() noexcept
 {
     task_helpers::Start_PSRAM_Task(PublishTrackTask, this, "Publish Tracks task", writers_task_handle,
         writers_task_buffer, &writers_task_stack, 8192, 10);
-    // task_helpers::Start_PSRAM_Task(SubscribeTrackTask, this, "Subscribe Tracks task", readers_task_handle,
-    //     readers_task_buffer, &readers_task_stack, 8192, 10);
+    task_helpers::Start_PSRAM_Task(SubscribeTrackTask, this, "Subscribe Tracks task", readers_task_handle,
+        readers_task_buffer, &readers_task_stack, 8192, 10);
 }
 
 void Session::StatusChanged(Status status)
@@ -50,6 +50,38 @@ std::shared_ptr<TrackWriter> Session::Writer(const size_t id) noexcept
     return writers[id];
 }
 
+void Session::StartReadTrack(const json& subscription, Serial& serial)
+{
+    try
+    {
+
+        // TODO something with channel name, like transmitting it to ui
+        // std::string channel_name = subscription.at("channel_name").get<std::string>();
+
+        // TODO transmit to the ui chip probably
+        // std::string lang = subscription.at("language").get<std::string>();
+
+        std::vector<std::string> track_namespace = subscription.at("tracknamespace").get<std::vector<std::string>>();
+        std::string trackname = subscription.at("trackname").get<std::string>();
+
+        std::shared_ptr<moq::TrackReader> reader = std::make_shared<moq::TrackReader>(
+            moq::MakeFullTrackName(track_namespace, trackname),serial
+        );
+
+        std::lock_guard<std::mutex> _(readers_mux);
+        readers.push_back(reader);
+
+        // TODO something with this?
+        // std::string codec = subscription.at("codec").get<std::string>();
+        // uint64_t sample_rate = subscription.at("sample_rate").get<uint64_t>();
+        // std::string channel_config = subscription.at("channelConfig").get<std::string>();
+    }
+    catch (const std::exception& ex)
+    {
+        ESP_LOGE("sub", "Exception in sub %s", ex.what());
+    }
+}
+
 void Session::StartWriteTrack(const json& publication)
 {
     try
@@ -63,13 +95,13 @@ void Session::StartWriteTrack(const json& publication)
         std::vector<std::string> track_namespace = publication.at("tracknamespace").get<std::vector<std::string>>();
         std::string trackname = publication.at("trackname").get<std::string>();
 
-        std::shared_ptr<moq::TrackWriter> publisher = std::make_shared<moq::TrackWriter>(
+        std::shared_ptr<moq::TrackWriter> writer = std::make_shared<moq::TrackWriter>(
             moq::MakeFullTrackName(track_namespace, trackname),
             quicr::TrackMode::kDatagram, 2, 100
         );
 
         std::lock_guard<std::mutex> _(writers_mux);
-        writers.push_back(publisher);
+        writers.push_back(writer);
 
         // TODO something with this?
         // std::string codec = publication.at("codec").get<std::string>();
@@ -78,7 +110,7 @@ void Session::StartWriteTrack(const json& publication)
     }
     catch (const std::exception& ex)
     {
-        ESP_LOGE("sub", "Exception in sub %s", ex.what());
+        ESP_LOGE("pub", "Exception in pub %s", ex.what());
     }
 }
 

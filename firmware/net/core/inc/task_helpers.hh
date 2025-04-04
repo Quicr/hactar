@@ -17,6 +17,6 @@ static void Start_PSRAM_Task(TaskFunction_t function, void* param, const std::st
     }
     handle = xTaskCreateStatic(function, name.c_str(), stack_size, param, priority, *stack, &buffer);
 
-    NET_LOG_WARN("Created moq publish task %s PSRAM left %ld", name.c_str(), heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    NET_LOG_WARN("Created psram task %s PSRAM left %ld", name.c_str(), heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 }
 }

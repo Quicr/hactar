@@ -5,14 +5,37 @@
 #include "utils.hh"
 #include "moq_session.hh"
 #include "chunk.hh"
+#include "macros.hh"
+#include "logger.hh"
+#include "link_packet_t.hh"
+#include "ui_net_link.hh"
+#include "task_helpers.hh"
 
 using namespace moq;
 
 extern uint64_t device_id;
 extern bool loopback;
+extern SemaphoreHandle_t audio_req_smpr;
 
-void
-TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data)
+TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
+    Serial& serial
+):
+    SubscribeTrackHandler(full_track_name,
+        3,
+        quicr::messages::GroupOrder::kAscending,
+        quicr::messages::FilterType::kLatestObject),
+    serial(serial),
+    track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end()) + std::string(full_track_name.name.begin(), full_track_name.name.end())),
+    audio_buffer(),
+    audio_playing(false),
+    audio_min_depth(50),
+    audio_max_depth(std::numeric_limits<size_t>::max())
+{
+    task_helpers::Start_PSRAM_Task(SubscribeTask, this, track_name, task_handle, task_buffer, &task_stack, 8192, 10);
+}
+
+
+void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data)
 {
     ++num_print;
 
@@ -33,9 +56,9 @@ TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpa
 
     // Parse the data
     size_t offset = 1;
-    switch ((moq::MessageType)data[0])
+    switch ((MessageType)data[0])
     {
-        case moq::MessageType::Media:
+        case MessageType::Media:
         {
             // Since the content type for media is ALWAYS audio then
             // we assume it is audio and skip the first byte which is the
@@ -43,24 +66,24 @@ TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpa
             // Let the task that sends out the audio data handle
             // the rest of the parsing
             // Skip the first byte
-            _audio_buffer.emplace(data.begin() + offset, data.end());
+            audio_buffer.emplace(data.begin() + offset, data.end());
             break;
         }
-        case moq::MessageType::AIResponse:
+        case MessageType::AIResponse:
         {
             uint32_t request_id = 0;
             std::memcpy(&request_id, data.data() + offset, sizeof(request_id));
             offset += sizeof(request_id);
 
-            switch ((moq::Content_Type)data[offset])
+            switch ((Content_Type)data[offset])
             {
-                case moq::Content_Type::Audio:
+                case Content_Type::Audio:
                 {
                     offset += 1;
-                    _audio_buffer.emplace(data.begin() + offset, data.end());
+                    audio_buffer.emplace(data.begin() + offset, data.end());
                     break;
                 }
-                case moq::Content_Type::Json:
+                case Content_Type::Json:
                 {
                     // TODO
                     break;
@@ -101,50 +124,135 @@ TrackReader::StatusChanged(TrackReader::Status status)
 }
 
 
-void moq::TrackReader::AudioPlay()
+void TrackReader::AudioPlay()
 {
-    _audio_playing = _audio_playing || (!_audio_buffer.empty() && _audio_buffer.size() >= _audio_min_depth);
+    audio_playing = audio_playing || (!audio_buffer.empty() && audio_buffer.size() >= audio_min_depth);
 }
 
-void moq::TrackReader::AudioPause()
+void TrackReader::AudioPause()
 {
-    _audio_playing = false;
+    audio_playing = false;
 }
 
-bool moq::TrackReader::AudioPlaying() const noexcept
+bool TrackReader::AudioPlaying() const noexcept
 {
-    return _audio_playing;
+    return audio_playing;
 }
 
-quicr::BytesSpan moq::TrackReader::AudioFront() noexcept
+quicr::BytesSpan TrackReader::AudioFront() noexcept
 {
-    if (!_audio_playing || _audio_buffer.empty())
+    if (!audio_playing || audio_buffer.empty())
     {
         return quicr::BytesSpan();
     }
 
-    return _audio_buffer.front();
+    return audio_buffer.front();
 }
 
-void moq::TrackReader::AudioPop() noexcept
+void TrackReader::AudioPop() noexcept
 {
-    _audio_buffer.pop();
+    audio_buffer.pop();
 }
 
-std::optional<std::vector<uint8_t>> moq::TrackReader::AudioPopFront() noexcept
+std::optional<std::vector<uint8_t>> TrackReader::AudioPopFront() noexcept
 {
-    if (!_audio_playing || _audio_buffer.empty())
+    if (!audio_playing || audio_buffer.empty())
     {
         return std::optional<std::vector<uint8_t>>();
     }
 
-    std::optional<std::vector<uint8_t>> value = std::move(_audio_buffer.front());
-    _audio_buffer.pop();
+    std::optional<std::vector<uint8_t>> value = std::move(audio_buffer.front());
+    audio_buffer.pop();
     return value;
 }
 
 
-size_t moq::TrackReader::AudioNumAvailable() noexcept
+size_t TrackReader::AudioNumAvailable() noexcept
 {
-    return _audio_buffer.size();
+    return audio_buffer.size();
+}
+
+void TrackReader::SubscribeTask(void* param)
+{
+    TrackReader* reader = static_cast<TrackReader*>(param);
+
+    while (true)
+    {
+        // Scope to reclaim variables
+        {
+            uint32_t next_print = 0;
+            // TODO add in changing sub
+            while (reader->GetStatus() != moq::TrackReader::Status::kOk)
+            {
+                if (esp_timer_get_time_ms() > next_print)
+                {
+                    NET_LOG_WARN("Subscriber on track %s waiting to for sub ok", reader->track_name.c_str());
+                    next_print = esp_timer_get_time_ms() + 2000;
+                }
+                vTaskDelay(300 / portTICK_PERIOD_MS);
+            }
+
+            NET_LOG_INFO("Subscribe to track %s", reader->track_name.c_str());
+
+            // TODO changing sub
+            while (reader->GetStatus() == TrackReader::Status::kOk)
+            {
+                // TODO use notifies and then drain the entire moq objs
+                vTaskDelay(2 / portTICK_PERIOD_MS);
+
+                // TODO move into one function
+                // TODO all of these continues could probably be condensed
+                reader->AudioPlay();
+                if (reader->AudioNumAvailable() == 0 && !reader->AudioPlaying())
+                {
+                    reader->AudioPause();
+                    continue;
+                }
+
+                if (!xSemaphoreTake(audio_req_smpr, 0))
+                {
+                    continue;
+                }
+
+                auto data = reader->AudioPopFront();
+                if (!data.has_value())
+                {
+                    continue;
+                }
+
+                uint32_t offset = 0;
+
+                if (data->at(offset))
+                {
+                    // last chunk
+                }
+                offset += 1;
+
+                link_packet_t link_packet;
+                link_packet.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
+
+                // Get the length of the audio packet
+                uint32_t audio_length = 0;
+                memcpy(&audio_length, data->data() + offset, sizeof(audio_length));
+                offset += sizeof(audio_length);
+
+
+                // Channel id
+                // TODO get channel id, for now use 0
+                // I think the channel id can just be a hash if need
+                // be, but that seems odd to use.
+                link_packet.payload[0] = 0;
+                link_packet.length = audio_length + 1;
+
+                memcpy(link_packet.payload + 1, data->data() + offset, audio_length);
+
+                // NET_LOG_INFO("packet length %d", link_packet.length);
+
+                reader->serial.Write(link_packet);
+            }
+        }
+    }
+
+    NET_LOG_ERROR("Publish task for %s has exited", reader->track_name.c_str());
+    vTaskDelete(nullptr);
 }

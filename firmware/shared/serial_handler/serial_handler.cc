@@ -136,6 +136,10 @@ void SerialHandler::Write(const link_packet_t& packet, const bool end_frame)
 
 void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool end_frame)
 {
+    #ifdef PLATFORM_ESP
+    std::lock_guard<std::mutex> _(write_mux);
+    #endif
+
     for (uint16_t i = 0 ; i < size; ++i)
     {
         if (data[i] == END)
