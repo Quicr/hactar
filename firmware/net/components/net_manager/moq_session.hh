@@ -4,6 +4,7 @@
 #include "moq_track_reader.hh"
 #include "moq_track_writer.hh"
 #include "constants.hh"
+#include "serial.hh"
 
 #include <nlohmann/json.hpp>
 #include <quicr/client.h>
@@ -21,66 +22,29 @@ using json = nlohmann::json;
 * MoQSession identifies a client session with the MOQ Peer
 */
 
-enum class MessageType
-{
-    Media = 1,
-    AIRequest,
-    AIResponse
-};
-
-enum class Content_Type
-{
-    Audio = 0,
-    Json,
-};
-
-struct Chunk
-{
-    const MessageType type = MessageType::Media;
-    bool last_chunk;
-    std::uint32_t chunk_length;
-    quicr::Bytes chunk_data;
-};
-
-struct AIRequestChunk
-{
-    const MessageType type = MessageType::AIRequest;
-    std::uint32_t request_id;
-    bool last_chunk;
-    std::uint32_t chunk_length;
-    quicr::Bytes chunk_data;
-};
-
-struct AIResponseChunk
-{
-    const MessageType type = MessageType::AIResponse;
-    std::uint32_t request_id;
-    Content_Type content_type;
-    bool last_chunk;
-    std::uint32_t chunk_length;
-    quicr::Bytes chunk_data;
-};
-
 class Session: public quicr::Client
 {
 public:
     using quicr::Client::Client;
 
+    Session(const quicr::ClientConfig& cfg);
+
     virtual ~Session() = default;
+
 
     void StatusChanged(Status status) override;
 
     // public API - send subscribe, setup queue for incoming objects
-    void StartReadTrack(const std::string& track_name);
+    void StartReadTrack(const json& subscription, Serial& serial);
     void Read();
     void StopReadTrack(const std::string& track_name);
 
-    void StartWriteTrack(const json track_json);
+    void StartWriteTrack(const json& publication);
     void Write();
     void StopWriteTrack(const std::string& track_name);
 
-    std::vector<std::shared_ptr<TrackReader>>& Readers() noexcept;
-    std::vector<std::shared_ptr<TrackReader>>& Writers() noexcept;
+    std::shared_ptr<TrackReader> Reader(const size_t id) noexcept;
+    std::shared_ptr<TrackWriter> Writer(const size_t id) noexcept;
 
 private:
     Session() = delete;
@@ -89,14 +53,22 @@ private:
     Session& operator=(const Session&) = delete;
     Session& operator=(Session&&) noexcept = delete;
 
-    struct TrackState
-    {
-        std::shared_ptr<TrackReader> reader;
-    };
+    static void PublishTrackTask(void* params);
+    static void SubscribeTrackTask(void* params);
 
-private:
+    void StartTasks() noexcept;
+
     std::vector<std::shared_ptr<TrackReader>> readers;
-    std::vector<std::shared_ptr<TrackReader>> writers;
+    std::mutex readers_mux;
+    TaskHandle_t readers_task_handle;
+    StaticTask_t readers_task_buffer;
+    StackType_t* readers_task_stack;
+
+    std::vector<std::shared_ptr<TrackWriter>> writers;
+    std::mutex writers_mux;
+    TaskHandle_t writers_task_handle;
+    StaticTask_t writers_task_buffer;
+    StackType_t* writers_task_stack;
 };
 
 }

@@ -18,8 +18,9 @@ namespace ui_net_link
         PlayStop,
         MoQStatus,
         MoQChangeNamespace,
-        AudioObject,
-        AudioMultiObject,
+        PttObject,
+        PttMultiObject,
+        PttAIObject,
         SSIDRequest,
         WifiConnect,
         WifiStatus
@@ -111,11 +112,16 @@ namespace ui_net_link
         packet.is_ready = true;
     }
 
-    [[maybe_unused]] static void Serialize(const AudioObject& talk_frame, link_packet_t& packet)
+    [[maybe_unused]] static void Serialize(const AudioObject& talk_frame, Packet_Type packet_type, link_packet_t& packet)
     {
+        if (packet_type != Packet_Type::PttObject && packet_type != Packet_Type::PttAIObject)
+        {
+            packet_type = Packet_Type::PttObject;
+        }
+
         const uint16_t num_extra_bytes = 1;
 
-        packet.type = (uint8_t)Packet_Type::AudioObject;
+        packet.type = (uint8_t)packet_type;
         packet.length = num_extra_bytes + constants::Audio_Phonic_Sz;
         packet.payload[0] = talk_frame.channel_id;
 

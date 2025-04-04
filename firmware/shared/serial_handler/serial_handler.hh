@@ -3,6 +3,10 @@
 #include "../../shared_inc/ring_buffer.hh"
 #include "../../shared_inc/link_packet_t.hh"
 
+#ifdef PLATFORM_ESP
+#include <mutex>
+#endif
+
 class SerialHandler
 {
 public:
@@ -75,4 +79,8 @@ protected:
     link_packet_t* packet;
     uint32_t bytes_read;
     bool escaped;
+
+    #ifdef PLATFORM_ESP
+    std::mutex write_mux;
+    #endif
 };
