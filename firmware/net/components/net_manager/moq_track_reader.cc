@@ -229,7 +229,8 @@ void TrackReader::SubscribeTask(void* param)
                 offset += 1;
 
                 link_packet_t link_packet;
-                link_packet.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
+                // TODO need to get the type from the link_obj type
+                link_packet.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
 
                 // Get the length of the audio packet
                 uint32_t audio_length = 0;

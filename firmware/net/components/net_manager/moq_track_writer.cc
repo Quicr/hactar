@@ -68,7 +68,7 @@ void TrackWriter::StatusChanged(TrackWriter::Status status)
     }
 }
 
-void TrackWriter::PushObject(const uint8_t* bytes, uint32_t len, const bool talk_stopped, const uint64_t timestamp)
+void TrackWriter::PushPttObject(const uint8_t* bytes, uint32_t len, const bool talk_stopped, const uint64_t timestamp)
 {
     auto time_bytes = quicr::AsBytes(timestamp);
 
@@ -87,6 +87,39 @@ void TrackWriter::PushObject(const uint8_t* bytes, uint32_t len, const bool talk
     obj.data[1] = talk_stopped;
     memcpy(obj.data.data() + 2, &len, sizeof(len));
     memcpy(obj.data.data() + 6, bytes, len);
+}
+
+void TrackWriter::PushPttAIObject(const uint8_t* bytes, uint32_t len, const bool talk_stopped,
+    const uint64_t timestamp, const uint32_t request_id)
+{
+    auto time_bytes = quicr::AsBytes(timestamp);
+    const size_t ext_bytes = 10;
+    size_t offset = 0;
+
+    std::lock_guard<std::mutex> _(obj_mux);
+
+    auto& obj = moq_objs.emplace_back();
+    obj.headers.group_id = device_id;
+    obj.headers.object_id = object_id++;
+    obj.headers.payload_length = len + ext_bytes;
+    obj.headers.extensions = quicr::Extensions{};
+    obj.headers.extensions.value()[2].assign(time_bytes.begin(), time_bytes.end());
+
+
+    obj.data.resize(len + ext_bytes);
+    obj.data[offset] = (uint8_t)moq::MessageType::AIRequest;
+    offset += sizeof(moq::MessageType);
+
+    memcpy(obj.data.data() + offset, &request_id, sizeof(request_id));
+    offset += sizeof(request_id);
+
+    obj.data[offset] = talk_stopped;
+    offset += sizeof(talk_stopped);
+
+    memcpy(obj.data.data() + offset, &len, sizeof(len));
+    offset += sizeof(len);
+
+    memcpy(obj.data.data() + offset, bytes, len);
 }
 
 void TrackWriter::PublishTask(void* params)

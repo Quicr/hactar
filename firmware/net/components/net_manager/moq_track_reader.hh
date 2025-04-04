@@ -42,6 +42,7 @@ private:
     // TODO move into an audio object?
     Serial& serial;
     std::string track_name;
+    // TODO rename to link_packet_buffer
     std::queue<std::vector<uint8_t>> audio_buffer;
 
     bool audio_playing;

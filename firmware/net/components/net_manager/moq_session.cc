@@ -7,6 +7,8 @@
 
 using namespace moq;
 
+extern uint64_t device_id;
+
 Session::Session(const quicr::ClientConfig& cfg):
     Client(cfg)
 {
@@ -63,6 +65,11 @@ void Session::StartReadTrack(const json& subscription, Serial& serial)
 
         std::vector<std::string> track_namespace = subscription.at("tracknamespace").get<std::vector<std::string>>();
         std::string trackname = subscription.at("trackname").get<std::string>();
+
+        if (trackname == "")
+        {
+            trackname = std::to_string(device_id);
+        }
 
         std::shared_ptr<moq::TrackReader> reader = std::make_shared<moq::TrackReader>(
             moq::MakeFullTrackName(track_namespace, trackname),serial

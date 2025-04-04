@@ -2,7 +2,7 @@
 
 namespace moq
 {
-enum class MessageType
+enum class MessageType : uint8_t
 {
     Media = 1,
     AIRequest,

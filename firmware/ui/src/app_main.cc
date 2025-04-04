@@ -10,13 +10,18 @@
 #include "renderer.hh"
 
 #include "link_packet_t.hh"
-#include "ui_net_link.hh"
 #include "logger.hh"
+#include "ui_net_link.hh"
 
 #include <string.h>
 
 #include <random>
 
+
+// Forward declare
+inline void CheckPTT();
+inline void CheckPTTAI();
+inline void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type);
 
 
 #define HIGH GPIO_PIN_SET
@@ -250,11 +255,11 @@ int app_main()
             done_counting_loops = true;
         }
 
-        if (HAL_GetTick() > blinky)
-        {
-            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            blinky = HAL_GetTick() + 2000;
-        }
+        // if (HAL_GetTick() > blinky)
+        // {
+        //     HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+        //     blinky = HAL_GetTick() + 2000;
+        // }
 
         num_loops++;
         if (HAL_GetTick() > next_print)
@@ -420,8 +425,12 @@ void HandleRecvLinkPackets()
             {
                 break;
             }
-            case ui_net_link::Packet_Type::AudioMultiObject:
-            case ui_net_link::Packet_Type::AudioObject:
+            case ui_net_link::Packet_Type::PttAIObject:
+            {
+                // TODO something but do let fallthrough
+            }
+            case ui_net_link::Packet_Type::PttMultiObject:
+            case ui_net_link::Packet_Type::PttObject:
             {
                 // TODO we need to know if it is mono or stereo data
                 // that we have received
@@ -525,6 +534,7 @@ void CheckPTT()
         ui_net_link::Serialize(talk_start, talk_packet);
         serial.Write(talk_packet);
         ptt_down = true;
+        LedGOn();
     }
     else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
     {
@@ -533,12 +543,13 @@ void CheckPTT()
         ui_net_link::Serialize(talk_stop, talk_packet);
         serial.Write(talk_packet);
         ptt_down = false;
-        SendAudio(ptt_channel);
+        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject);
+        LedGOff();
     }
 
     if (ptt_down)
     {
-        SendAudio(ptt_channel);
+        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject);
     }
 }
 
@@ -554,6 +565,7 @@ void CheckPTTAI()
         ui_net_link::Serialize(talk_start, talk_packet);
         serial.Write(talk_packet);
         ptt_ai_down = true;
+        LedBOn();
     }
     else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET && ptt_ai_down)
     {
@@ -562,23 +574,24 @@ void CheckPTTAI()
         ui_net_link::Serialize(talk_stop, talk_packet);
         serial.Write(talk_packet);
         ptt_ai_down = false;
-        SendAudio(ptt_ai_channel);
+        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject);
+        LedBOff();
     }
 
     if (ptt_ai_down)
     {
-        SendAudio(ptt_ai_channel);
+        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject);
     }
 }
 
-void SendAudio(const uint8_t channel_id)
+void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type)
 {
     AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz,
         talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
 
     talk_frame.channel_id = channel_id;
-    ui_net_link::Serialize(talk_frame, talk_packet);
-    LedRToggle();
+    ui_net_link::Serialize(talk_frame, packet_type, talk_packet);
+    // LedRToggle();
     serial.Write(talk_packet);
     ++num_packets_tx;
 }
@@ -645,7 +658,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     }
     else if (htim->Instance == TIM3)
     {
-        LedBToggle();
+        // LedBToggle();
         HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
         HAL_TIM_Base_Stop_IT(&htim3);
     }
@@ -695,7 +708,7 @@ void SlowSendTest(int delay, int num)
         talk_frame.data[i] = i;
     }
 
-    ui_net_link::Serialize(talk_frame, packet);
+    ui_net_link::Serialize(talk_frame, ui_net_link::Packet_Type::PttObject, packet);
 
     int i = 0;
     while (i++ != num)
@@ -713,7 +726,7 @@ void InterHactarSerialRoundTripTest(int delay, int num)
     const size_t buff_sz = 321;
     link_packet_t tmp;
     // Fill the tmp audio buffer with random
-    tmp.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
+    tmp.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
     tmp.length = buff_sz;
     for (size_t i = 0; i < buff_sz; ++i)
     {
@@ -801,7 +814,7 @@ void InterHactarFullRoundTripTest(int delay, int num)
     const size_t buff_sz = 321;
     link_packet_t tmp;
     // Fill the tmp audio buffer with random
-    tmp.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
+    tmp.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
     tmp.length = buff_sz;
     for (size_t i = 0; i < buff_sz; ++i)
     {

@@ -45,14 +45,14 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = true;
+bool loopback = false;
 
 std::shared_ptr<moq::Session> moq_session;
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 
 /** END EXTERNAL VARIABLES */
 
-constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33437";
+constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
@@ -99,6 +99,8 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
     }
 }
 
+uint32_t request_id = 0;
+
 static void LinkPacketTask(void* args)
 {
     NET_LOG_INFO("Start link packet task");
@@ -132,9 +134,29 @@ static void LinkPacketTask(void* args)
                 case ui_net_link::Packet_Type::TalkStop:
                     talk_stopped = true;
                     break;
-                case ui_net_link::Packet_Type::AudioMultiObject:
+                case ui_net_link::Packet_Type::PttAIObject:
+                {
+                    // Channel id
+                    uint32_t ext_bytes = 1;
+                    uint32_t length = packet->length;
+
+                    uint8_t channel_id = packet->payload[0];
+
+                    // Remove the bytes already read from the payload length
+                    length -= ext_bytes;
+
+                    // NET_LOG_INFO("ptt ai chid %d", (int)channel_id);
+                    // If the publisher is not ready just ignore the link packet
+                    std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
+                    writer->PushPttAIObject(packet->payload + 1, length, talk_stopped,
+                        curr_audio_isr_time, request_id);
+                    talk_stopped = false;
+
+                    break;
+                }
+                case ui_net_link::Packet_Type::PttMultiObject:
                     [[fallthrough]];
-                case ui_net_link::Packet_Type::AudioObject:
+                case ui_net_link::Packet_Type::PttObject:
                 {
                     // In the future I would want to use the audio object to transmit
                     // that to the relay? and do less copying but thats asking a lot.
@@ -150,9 +172,10 @@ static void LinkPacketTask(void* args)
                     length -= ext_bytes;
 
 
+                    // NET_LOG_INFO("chid %d", (int)channel_id);
                     // If the publisher is not ready just ignore the link packet
                     std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
-                    writer->PushObject(packet->payload + 1, length, talk_stopped, curr_audio_isr_time);
+                    writer->PushPttObject(packet->payload + 1, length, talk_stopped, curr_audio_isr_time);
                     talk_stopped = false;
 
                     // TODO use notifies, currently it doesn't notify fast enough?
@@ -281,6 +304,7 @@ extern "C" void app_main(void)
                     {
                         moq_session->Disconnect();
                     }
+                    gpio_set_level(NET_LED_G, 1);
                 }
                 case Wifi::State::Initialized:
                 {
@@ -290,6 +314,7 @@ extern "C" void app_main(void)
                 {
                     // TODO send a serial message saying we are
                     // connected to wifi
+                    gpio_set_level(NET_LED_G, 0);
                     break;
                 }
                 default:
@@ -309,7 +334,7 @@ extern "C" void app_main(void)
                 {
                     // TODO
                     // Tell ui chip we are ready
-
+                    gpio_set_level(NET_LED_B, 0);
                     break;
                 }
                 case moq::Session::Status::kNotReady:
@@ -322,6 +347,8 @@ extern "C" void app_main(void)
                     {
                         NET_LOG_ERROR("MOQ Transport Session Connection Failure");
                     }
+                    gpio_set_level(NET_LED_B, 1);
+
                     break;
                 }
                 default:
@@ -333,13 +360,13 @@ extern "C" void app_main(void)
             prev_status = status;
         }
 
-        if (esp_timer_get_time_ms() > heartbeat)
-        {
-            // NET_LOG_INFO("time %lld", esp_timer_get_time_ms());
-            gpio_set_level(NET_LED_G, next);
-            next = next ? 0 : 1;
-            heartbeat = esp_timer_get_time_ms() + 1000;
-        }
+        // if (esp_timer_get_time_ms() > heartbeat)
+        // {
+        //     // NET_LOG_INFO("time %lld", esp_timer_get_time_ms());
+        //     gpio_set_level(NET_LED_G, next);
+        //     next = next ? 0 : 1;
+        //     heartbeat = esp_timer_get_time_ms() + 1000;
+        // }
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
