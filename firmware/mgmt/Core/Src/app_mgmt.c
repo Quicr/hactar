@@ -296,7 +296,7 @@ void DebugMode()
     NormalStart();
 
     // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
+    LEDB(HIGH, LOW, HIGH);
     // Set LEDS for net
     LEDA(HIGH, HIGH, HIGH);
 
