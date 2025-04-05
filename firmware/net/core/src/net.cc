@@ -45,7 +45,7 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = false;
+bool loopback = true;
 
 std::shared_ptr<moq::Session> moq_session;
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
@@ -294,6 +294,7 @@ extern "C" void app_main(void)
         if (prev_wifi_state != wifi_state)
         {
             prev_wifi_state = wifi_state;
+            gpio_set_level(NET_LED_G, 1);
             switch (wifi_state)
             {
                 case Wifi::State::Disconnected:
@@ -304,7 +305,6 @@ extern "C" void app_main(void)
                     {
                         moq_session->Disconnect();
                     }
-                    gpio_set_level(NET_LED_G, 1);
                 }
                 case Wifi::State::Initialized:
                 {

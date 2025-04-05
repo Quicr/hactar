@@ -203,9 +203,14 @@ void TrackReader::SubscribeTask(void* param)
                 // TODO move into one function
                 // TODO all of these continues could probably be condensed
                 reader->AudioPlay();
-                if (reader->AudioNumAvailable() == 0 && !reader->AudioPlaying())
+                if (reader->AudioNumAvailable() == 0)
                 {
                     reader->AudioPause();
+                    continue;
+                }
+
+                if (!reader->AudioPlaying())
+                {
                     continue;
                 }
 
