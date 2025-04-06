@@ -45,7 +45,7 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = true;
+bool loopback = false;
 
 std::shared_ptr<moq::Session> moq_session;
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
