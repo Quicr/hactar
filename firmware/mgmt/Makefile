@@ -10,6 +10,9 @@
 #   2015-07-22 - first version
 # ------------------------------------------------
 
+SHELL := /bin/bash
+.ONESHELL:
+
 ######################################
 # target
 ######################################
@@ -34,6 +37,9 @@ WRITE_START = 0x08000000
 PROGRAMMER = CUBE
 CUBE_PROGRAMMER_SWD_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
 CUBE_PROGRAMMER_USART_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
+
+DOCKER_IMAGE = build-hactar-mgmt
+mft=compile
 
 ifeq (${PROGRAMMER}, CUBE)
 	ifeq (${OS}, WINDOWS_NT)
@@ -218,9 +224,23 @@ upload_cube_uart:
 upload_cube_swd:
 	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_SWD_ARGS}
 
+docker: docker-build
+	@docker run --rm -e target=${mft} --privileged \
+		-v ${PWD}/..:/project \
+		-v /dev:/dev \
+		-it ${DOCKER_IMAGE}
+
+docker-build:
+	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
+		docker build -t ${DOCKER_IMAGE} .; \
+	fi
+
 #######################################
 # clean up
 #######################################
+docker-clean:
+	-docker image rm ${DOCKER_IMAGE}
+
 clean:
 	-rm -fR $(BUILD_DIR)
 

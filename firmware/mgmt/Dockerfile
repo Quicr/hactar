@@ -1,7 +1,7 @@
 # This docker images can be built with "docker build -t build-hactar-ui ."
 # The docker inamge can be run to build the STM32 binary with "docker run -it -v $PWD/.:/src build-hactar-ui"
 FROM ubuntu:22.04
-LABEL description="Docker image for ui"
+LABEL description="Docker image for mgmt"
 
 RUN apt-get update
 RUN apt-get install -y build-essential git gcc-arm-none-eabi binutils-arm-none-eabi \
@@ -14,7 +14,7 @@ RUN addgroup --gid 1000 compile_user && \
 
 USER compile_user
 
-WORKDIR /src/ui
+WORKDIR /project/mgmt
 
 ENV target=compile
 

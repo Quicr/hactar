@@ -10,6 +10,9 @@
 #   2015-07-22 - first version
 # ------------------------------------------------
 
+SHELL := /bin/bash
+.ONESHELL:
+
 ######################################
 # target
 ######################################
@@ -42,6 +45,7 @@ CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable
 CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
 
 DOCKER_IMAGE = build-hactar-ui
+mft=compile
 
 ######################################
 # source
@@ -333,17 +337,21 @@ monitor:
 py_monitor:
 	python3 ../tools/monitor.py ${PORT} ${BAUD}
 
-# .PHONY: docker
-docker:
+docker: docker-build
+	@docker run --rm -e target=${mft} --privileged \
+		-v ${PWD}/..:/src \
+		-v /dev:/dev \
+		-it ${DOCKER_IMAGE}
+
+docker-build:
 	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
 		docker build -t ${DOCKER_IMAGE} .; \
 	fi
-	@docker run --rm -v ${PWD}/..:/src -it ${DOCKER_IMAGE}
 
 #######################################
 # clean up
 #######################################
-docker_clean:
+docker-clean:
 	-docker image rm ${DOCKER_IMAGE}
 
 clean:
