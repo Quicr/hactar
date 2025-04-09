@@ -12603,6 +12603,12 @@
 		(uuid "ea2a5fda-63e7-43a0-8f37-63ff0d7a7518")
 	)
 	(junction
+		(at 422.91 96.52)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "ea8304c3-e8c5-4490-a80e-c3fcb574b449")
+	)
+	(junction
 		(at 64.77 370.84)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -15380,7 +15386,7 @@
 	)
 	(wire
 		(pts
-			(xy 396.24 96.52) (xy 416.56 96.52)
+			(xy 396.24 96.52) (xy 422.91 96.52)
 		)
 		(stroke
 			(width 0)
@@ -16857,6 +16863,16 @@
 			(type default)
 		)
 		(uuid "8ca123dc-5606-44fd-9b40-47c7cf85eae2")
+	)
+	(wire
+		(pts
+			(xy 422.91 96.52) (xy 424.18 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8d25798b-d733-494d-865a-2303096c6714")
 	)
 	(wire
 		(pts
@@ -20965,7 +20981,7 @@
 		(uuid "1226e7f5-9487-4012-885e-f7f68a492cdb")
 	)
 	(label "UI_BOOT0"
-		(at 416.56 96.52 180)
+		(at 424.18 96.52 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -24927,6 +24943,71 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#FLG04")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 422.91 101.6 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "20fa7242-dcd7-4b94-a92b-82935aa77122")
+		(property "Reference" "#PWR29"
+			(at 422.91 107.95 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 422.91 105.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 422.91 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 422.91 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 422.91 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "db35dbae-fd23-4162-9876-625f967b48a6")
+		)
+		(instances
+			(project "EV13 Board Design"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "#PWR29")
 					(unit 1)
 				)
 			)
@@ -40137,6 +40218,82 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR0155")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small_US")
+		(at 422.91 99.06 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "edb99080-a49f-45c1-a621-e1edbe584450")
+		(property "Reference" "R54"
+			(at 425.45 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "4k7"
+			(at 425.704 99.568 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 422.91 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 422.91 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small US symbol"
+			(at 422.91 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C25900"
+			(at 422.91 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "a7dda38c-0456-4c43-aa9d-c2d9b7f0e97b")
+		)
+		(pin "2"
+			(uuid "8e4a7155-999b-4777-8b96-96649b1bbd01")
+		)
+		(instances
+			(project "EV13 Board Design"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "R54")
 					(unit 1)
 				)
 			)

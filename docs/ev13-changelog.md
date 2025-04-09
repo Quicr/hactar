@@ -59,3 +59,4 @@ Mgmt chip changes
 **General**
 - Add resistor to MCO to GND on CN5
 - Added RC debounce circuit to ptt and ptt ai
+- Added pulldown resistor to UI_BOOT0
