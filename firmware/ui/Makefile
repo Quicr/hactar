@@ -337,6 +337,7 @@ monitor:
 py_monitor:
 	python3 ../tools/monitor.py ${PORT} ${BAUD}
 
+# NOTE - mft is the makefile target if you want to use something other than compile
 docker: docker-build
 	@docker run --rm -e target=${mft} --privileged \
 		-v ${PWD}/..:/src \
