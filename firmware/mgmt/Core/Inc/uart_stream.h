@@ -7,38 +7,56 @@
 #include <string.h>
 
 #define COMMAND_TIMEOUT 1000
-#define TRANSMISSION_TIMEOUT 30000
 
-typedef struct _uart_stream_t
+typedef enum _
 {
-    UART_HandleTypeDef* from_uart;
-    UART_HandleTypeDef* to_uart;
-    uint8_t* rx_buffer;
-    uint16_t rx_buffer_size;
-    uint8_t* tx_buffer;
-    uint16_t tx_buffer_size;
-    uint16_t rx_read;
-    uint16_t tx_write;
-    uint16_t tx_read;
-    uint8_t tx_read_overflow; // TODO remove
-    uint8_t tx_free;
-    uint16_t pending_bytes;
-    uint8_t bytes_ready; // Data received without hitting half or complete buff
-    uint8_t first_flow; // TODO remove
-    uint32_t last_transmission_time;
-    uint8_t has_received;
-    uint8_t is_listening;
-    uint8_t command_complete;
+    Ignore,
+    Passthrough,
+    Command
+} Stream_Mode;
+
+typedef struct
+{
+    UART_HandleTypeDef* uart;
+    uint8_t* buff;
+    const uint16_t size;
+    uint16_t idx;
+} receive_t;
+
+typedef struct
+{
+    UART_HandleTypeDef* uart;
+    uint8_t* buff;
+    const uint16_t size;
+    uint16_t read;
+    uint16_t write;
+    uint16_t unsent;
+    uint8_t free;
+} transmit_t;
+
+typedef struct
+{
+    receive_t rx;
+    transmit_t tx;
+    Stream_Mode mode;
 } uart_stream_t;
 
+typedef struct
+{
+    uint8_t* buff;
+    const uint16_t sz;
+    uint16_t idx;
+    uint32_t last_update;
+} cmd_ring_buff_t;
+
 // Commands
-static const char ui_upload_cmd [] = "ui_upload";
-static const char net_upload_cmd [] = "net_upload";
-static const char debug_cmd [] = "debug";
-static const char ui_debug_cmd [] = "ui_debug";
-static const char net_debug_cmd [] = "net_debug";
-static const char reset_cmd [] = "reset";
-static const char reset_net [] = "reset_net";
+static const uint8_t ui_upload_cmd [] = "ui_upload";
+static const uint8_t net_upload_cmd [] = "net_upload";
+static const uint8_t debug_cmd [] = "debug";
+static const uint8_t ui_debug_cmd [] = "ui_debug";
+static const uint8_t net_debug_cmd [] = "net_debug";
+static const uint8_t reset_cmd [] = "reset";
+static const uint8_t reset_net [] = "reset_net";
 
 static const uint8_t ACK [] = { 0x79 };
 static const uint8_t READY [] = { 0x80 };
@@ -46,12 +64,12 @@ static const uint8_t NACK [] = { 0x1F };
 static const uint8_t HELLO [] = "WHO ARE YOU?";
 static const uint8_t HELLO_RES [] = "HELLO, I AM A HACTAR DEVICE";
 
-
-void HandleRx(uart_stream_t* uart_stream, uint16_t num_received);
-void HandleTx(uart_stream_t* uart_stream, enum State* state);
-void HandleCommands(uart_stream_t* rx_uart_stream, UART_HandleTypeDef* tx_uart, enum State* state);
-void InitUartStreamParameters(uart_stream_t* uart_stream);
-void CancelUart(uart_stream_t* uart_stream);
-void StartUartReceive(uart_stream_t* uart_stream);
+void Receive(uart_stream_t* stream, uint16_t num_received);
+void HandleCommands(uart_stream_t* stream, cmd_ring_buff_t* cmd_ring, enum State* state);
+void HandleTx(uart_stream_t* stream, enum State* state);
+void Transmit(uart_stream_t* stream, enum State* state);
+void InitUartStreamParameters(uart_stream_t* stream);
+void CancelUart(uart_stream_t* stream);
+void StartUartReceive(uart_stream_t* stream);
 
 #endif

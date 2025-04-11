@@ -9,7 +9,7 @@ import threading
 import random
 import time
 
-port = "COM11"
+port = "/dev/ttyUSB0"
 baud = 115200
 chunk_size = 16384
 
@@ -46,7 +46,7 @@ def ReadSerial():
         if has_received:
 
             # print(f"sent data {send_data}")
-            # print(f"recv data {recv_data}")
+            print(f"recv data {recv_data}")
 
             if num_recv == len(send_data):
                 # print(f"Total received {num_recv}")
@@ -85,6 +85,7 @@ def WriteSerial():
             # uart.write(send_data)
             num_chunks = len(send_data) // chunk_size
 
+            print(f"sending {num_chunks} chunks");
             start = 0
             end = 0
             for _ in range(num_chunks):
@@ -98,6 +99,7 @@ def WriteSerial():
 
             # Send remaining chunk
             chunk = send_data[end:]
+            print(chunk)
             uart.write(bytes(chunk))
 
 
@@ -154,7 +156,8 @@ rx_thread = threading.Thread(target=ReadSerial)
 rx_thread.daemon = True
 rx_thread.start()
 
-WriteCommandSerial()
+WriteSerial()
+# WriteCommandSerial()
 
 while running:
     pass

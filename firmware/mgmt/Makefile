@@ -26,13 +26,13 @@ FIRMWARE = ${TARGET}.elf
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Og
+OPT = -Os
 
 #######################################
 # programming
 #######################################
 PORT = /dev/ttyUSB0
-BAUD = 115200
+BAUD = 115000
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
 CUBE_PROGRAMMER_SWD_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
@@ -218,10 +218,10 @@ upload: compile
 upload_stflash: compile
 	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
 
-upload_cube_uart:
+upload_cube_uart: compile
 	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_USART_ARGS}
 
-upload_cube_swd:
+upload_cube_swd: compile
 	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_SWD_ARGS}
 
 docker: docker-build

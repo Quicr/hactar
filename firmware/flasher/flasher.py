@@ -145,7 +145,8 @@ def RecoverFlashSelection(flasher, chip, recover):
             flasher.uart.close()
             flasher.uart.timeout = 2
             flasher.uart.parity = serial.PARITY_NONE
-            time.sleep(4)
+            # Timeout period for mgmt
+            time.sleep(5)
             flasher.uart.open()
             uart_utils.FlashSelection(flasher.uart, chip)
             trying_to_select = False
