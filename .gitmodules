@@ -1,8 +1,7 @@
 [submodule "firmware/net/components/quicr/lib"]
 	path = firmware/net/components/quicr/lib
 	url = git@github.com:Quicr/libquicr.git
-	branch = esp_compatability 
-[submodule "firmware/net_static/components/quicr/lib"]
-	path = firmware/net_static/components/quicr/lib
-	url = git@github.com:Quicr/libquicr.git
-	branch = main
+	branch = esp_comp2
+[submodule "firmware/net/components/nlohmann_json/lib"]
+	path = firmware/net/components/nlohmann_json/lib
+	url = git@github.com:nlohmann/json.git

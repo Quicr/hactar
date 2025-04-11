@@ -1,3 +1,6 @@
+SHELL := /bin/bash
+.ONESHELL:
+
 BAUD 				= 115200
 PORT 				= /dev/ttyUSB0
 BUILD_PATH			= ./build
@@ -5,7 +8,10 @@ TARGET				= net
 
 BOOTLOADER_ADDR		= 0x00000
 PARITIONS_ADDR		= 0x08000
-PROG_ADDR		= 0x10000
+PROG_ADDR			= 0x10000
+
+DOCKER_IMAGE 		= build-hactar-net
+mft					= compile
 
 ESP_TOOL_ARGS 		= --trace --no-stub --port=${PORT} --baud=${BAUD} write_flash --no-compress \
 	${BOOTLOADER_ADDR} ${BUILD_PATH}/bootloader/bootloader.bin \
@@ -14,11 +20,24 @@ ESP_TOOL_ARGS 		= --trace --no-stub --port=${PORT} --baud=${BAUD} write_flash --
 
 all: compile
 
-idf-clean:
-	idf.py -B $(BUILD_PATH)  fullclean
+debug:
+	id
+	groups
+	docker info
 
 compile:
 	idf.py -B $(BUILD_PATH) build
+
+docker: docker-build
+	@docker run --rm -e target=${mft} --privileged \
+		-v ${PWD}/..:/project \
+		-v /dev:/dev \
+		-it ${DOCKER_IMAGE}
+
+docker-build:
+	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
+		docker build -t ${DOCKER_IMAGE} .; \
+	fi
 
 init_upload: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/bootloader/bootloader.bin ${BOOTLOADER_ADDR} verify exit"
@@ -53,3 +72,6 @@ clean:
 
 fullclean:
 	idf.py fullclean
+
+docker-clean:
+	-docker image rm ${DOCKER_IMAGE}

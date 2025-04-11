@@ -4,17 +4,25 @@
 #include "audio_chip.hh"
 #include "audio_codec.hh"
 
-#include "screen.hh"
-
 #include "serial.hh"
+#include "screen.hh"
+#include "keyboard.hh"
+#include "renderer.hh"
 
 #include "link_packet_t.hh"
+#include "logger.hh"
 #include "ui_net_link.hh"
 #include "logger.hh"
 
 #include <string.h>
 
 #include <random>
+
+
+// Forward declare
+inline void CheckPTT();
+inline void CheckPTTAI();
+inline void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type);
 
 
 #define HIGH GPIO_PIN_SET
@@ -62,6 +70,43 @@ char* itoa(int value, char* str, int base)
         str[i++] = '-';
     }
 
+    str[i] = '\0'; // Null-terminate the string
+
+    reverse(str, i); // Reverse the string to correct order
+
+    return str;
+}
+
+char* itoa(int value, char* str, int& len, int base)
+{
+    if (base < 2 || base > 36)
+    { // Base check: only supports bases 2-36
+        *str = '\0';
+        len = 0;
+        return str;
+    }
+
+    bool isNegative = false;
+    if (value < 0 && base == 10)
+    { // Handle negative numbers in base 10
+        isNegative = true;
+        value = -value;
+    }
+
+    int i = 0;
+    do
+    {
+        int digit = value % base;
+        str[i++] = (digit > 9) ? (digit - 10 + 'a') : (digit + '0');
+        value /= base;
+    } while (value != 0);
+
+    if (isNegative)
+    {
+        str[i++] = '-';
+    }
+
+    len = i;
     str[i] = '\0'; // Null-terminate the string
 
     reverse(str, i); // Reverse the string to correct order
@@ -129,8 +174,60 @@ uint32_t num_packets_tx = 0;
 
 ui_net_link::AudioObject talk_frame = { 0, 0 };
 
+GPIO_TypeDef* col_ports[Q10_COLS] = {
+    KB_COL1_GPIO_Port,
+    KB_COL2_GPIO_Port,
+    KB_COL3_GPIO_Port,
+    KB_COL4_GPIO_Port,
+    KB_COL5_GPIO_Port,
+};
+
+uint16_t col_pins[Q10_COLS] = {
+    KB_COL1_Pin,
+    KB_COL2_Pin,
+    KB_COL3_Pin,
+    KB_COL4_Pin,
+    KB_COL5_Pin,
+};
+
+GPIO_TypeDef* row_ports[Q10_ROWS] = {
+    KB_ROW1_GPIO_Port,
+    KB_ROW2_GPIO_Port,
+    KB_ROW3_GPIO_Port,
+    KB_ROW4_GPIO_Port,
+    KB_ROW5_GPIO_Port,
+    KB_ROW6_GPIO_Port,
+    KB_ROW7_GPIO_Port,
+};
+
+uint16_t row_pins[Q10_ROWS] = {
+    KB_ROW1_Pin,
+    KB_ROW2_Pin,
+    KB_ROW3_Pin,
+    KB_ROW4_Pin,
+    KB_ROW5_Pin,
+    KB_ROW6_Pin,
+    KB_ROW7_Pin,
+};
+
+static constexpr uint16_t kb_ring_buff_sz = 5;
+RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
+
+Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
+
+uint32_t timeout = 0;
+
+bool ptt_down = false;
+const uint8_t ptt_channel = 0;
+
+bool ptt_ai_down = false;
+const uint8_t ptt_ai_channel = 1;
+
 int app_main()
 {
+    HAL_TIM_Base_Start_IT(&htim2);
+
+    Renderer renderer(screen, keyboard);
 
     audio_chip.Init();
     audio_chip.StartI2S();
@@ -139,29 +236,36 @@ int app_main()
     serial.StartReceive();
     LEDS(HIGH, HIGH, HIGH);
 
-
     uint32_t redraw = uwTick;
     Colour next = Colour::Green;
     Colour curr = Colour::Blue;
     const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
 
-    bool ptt_down = false;
 
     uint32_t blinky = 0;
     uint32_t next_print = 0;
 
+    uint32_t count_loops_timeout = HAL_GetTick() + 1000;
+    bool done_counting_loops = false;
+
     while (1)
     {
-        if (HAL_GetTick() > blinky)
+        if (HAL_GetTick() >= count_loops_timeout && !done_counting_loops)
         {
-            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            blinky = HAL_GetTick() + 2000;
+            UI_LOG_ERROR("num_loops %d", num_loops);
+            done_counting_loops = true;
         }
+
+        // if (HAL_GetTick() > blinky)
+        // {
+        //     HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
+        //     blinky = HAL_GetTick() + 2000;
+        // }
 
         num_loops++;
         if (HAL_GetTick() > next_print)
         {
-            UI_LOG_ERROR("rx %lu, tx %lu", num_packets_rx, num_packets_tx);
+            // UI_LOG_ERROR("rx %lu, tx %lu", num_packets_rx, num_packets_tx);
             next_print = HAL_GetTick() + 1000;
         }
 
@@ -175,61 +279,65 @@ int app_main()
             // Error("Main loop", "Flags did not match expected");
         }
 
-        // Send talk start and sot packets
-        if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
-        {
-            // TODO channel id
-            ui_net_link::TalkStart talk_start = { 0 };
-            ui_net_link::Serialize(talk_start, talk_packet);
-            serial.Write(talk_packet);
-            ptt_down = true;
-            // ++num_packets_tx;
-        }
-        else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
-        {
-            ui_net_link::TalkStop talk_stop = { 0 };
-            ui_net_link::Serialize(talk_stop, talk_packet);
-            serial.Write(talk_packet);
-            ptt_down = false;
-            // ++num_packets_tx;
-        }
-
-        if (ptt_down)
-        {
-            AudioCodec::ALawCompand(audio_chip.RxBuffer(), talk_frame.data, constants::Audio_Buffer_Sz_2);
-            ui_net_link::Serialize(talk_frame, talk_packet);
-            LedRToggle();
-            serial.Write(talk_packet);
-            ++num_packets_tx;
-        }
+        CheckPTT();
+        CheckPTTAI();
 
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
         HandleRecvLinkPackets();
 
-        // Use remaining time to draw
-        if (est_time_ms > redraw)
-        {
-            screen.FillRectangle(0, WIDTH, 0, HEIGHT, curr);
-            screen.DrawRectangle(0, 10, 0, 10, 2, next);
-            screen.DrawCharacter(11, 0, 'h', font6x8, next, curr);
-            screen.DrawString(0, 28, hello, 48, font5x8, next, curr);
-            // const uint16_t width = 50;
-            // const uint16_t height = 50;
-            // const uint16_t x_inc = width + 2;
-            // const uint16_t y_inc = height + 1;
-
-            // swap
-            Colour tmp = curr;
-            curr = next;
-            next = tmp;
-            redraw = est_time_ms + 1600;
-        }
-
-        // Draw what we can
-        screen.Draw(0);
+        renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
+
+        if (keyboard.NumAvailable() > 0)
+        {
+            uint8_t ch = keyboard.Read();
+            static char vol_str[10];
+            static char mic_str[10];
+            int len = 0;
+            if (ch == 'i')
+            {
+                audio_chip.VolumeAdjust(6);
+                UI_LOG_INFO("volume %d", audio_chip.Volume());
+            }
+            if (ch == 'k')
+            {
+                audio_chip.VolumeAdjust(-6);
+                UI_LOG_INFO("volume %d", audio_chip.Volume());
+            }
+            if (ch == 'm')
+            {
+                audio_chip.VolumeReset();
+                UI_LOG_INFO("volume %d", audio_chip.Volume());
+            }
+
+            if (ch == 'w')
+            {
+                audio_chip.MicVolumeAdjust(8);
+                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
+            }
+            if (ch == 's')
+            {
+                audio_chip.MicVolumeAdjust(-8);
+                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
+            }
+            if (ch == 'z')
+            {
+                audio_chip.MicVolumeReset();
+                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
+            }
+
+            itoa(audio_chip.Volume(), vol_str, len, 10);
+            screen.FillRectangle(0, 240, 30, 48, Colour::Black);
+            screen.DrawString(0, 30, "Volume ", 7, font5x8, Colour::White, Colour::Black);
+            screen.DrawString(7 * font5x8.width, 30, vol_str, len, font5x8, Colour::White, Colour::Black);
+
+
+            itoa(audio_chip.MicVolume(), mic_str, len, 10);
+            screen.DrawString(0, 40, "Mic Vol ", 8, font5x8, Colour::White, Colour::Black);
+            screen.DrawString(8 * font5x8.width, 40, mic_str, len, font5x8, Colour::White, Colour::Black);
+        }
 
         sleeping = true;
     }
@@ -318,11 +426,20 @@ void HandleRecvLinkPackets()
             {
                 break;
             }
-            case ui_net_link::Packet_Type::AudioMultiObject:
-            case ui_net_link::Packet_Type::AudioObject:
+            case ui_net_link::Packet_Type::PttAIObject:
             {
+                // TODO something but do let fallthrough
+            }
+            case ui_net_link::Packet_Type::PttMultiObject:
+            case ui_net_link::Packet_Type::PttObject:
+            {
+                // TODO we need to know if it is mono or stereo data
+                // that we have received
+                // For now assume we receive mono
                 ui_net_link::Deserialize(*link_packet, play_frame);
-                AudioCodec::ALawExpand(play_frame.data, audio_chip.TxBuffer(), constants::Audio_Buffer_Sz_2);
+                AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz,
+                    audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                    true);
                 break;
             }
             case ui_net_link::Packet_Type::MoQStatus:
@@ -339,7 +456,7 @@ void HandleRecvLinkPackets()
             }
             default:
             {
-                UI_LOG_ERROR("Packet type %d, %u, %lu, %lu", (int)link_packet->type, link_packet->length, num_audio_req_packets, num_packets_rx);
+                UI_LOG_ERROR("Unhandled packet type %d, %u, %lu, %lu", (int)link_packet->type, link_packet->length, num_audio_req_packets, num_packets_rx);
                 break;
             }
         }
@@ -407,6 +524,79 @@ inline void AudioCallback()
     RaiseFlag(Audio_Interrupt);
 }
 
+void CheckPTT()
+{
+    // Send talk start and sot packets
+    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
+    {
+        // TODO channel id
+        ui_net_link::TalkStart talk_start = { 0 };
+        talk_start.channel_id = ptt_channel;
+        ui_net_link::Serialize(talk_start, talk_packet);
+        serial.Write(talk_packet);
+        ptt_down = true;
+        LedGOn();
+    }
+    else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
+    {
+        ui_net_link::TalkStop talk_stop = { 0 };
+        talk_stop.channel_id = ptt_channel;
+        ui_net_link::Serialize(talk_stop, talk_packet);
+        serial.Write(talk_packet);
+        ptt_down = false;
+        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject);
+        LedGOff();
+    }
+
+    if (ptt_down)
+    {
+        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject);
+    }
+}
+
+void CheckPTTAI()
+{
+
+    // Send talk start and sot packets
+    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET && !ptt_ai_down)
+    {
+        // TODO channel id
+        ui_net_link::TalkStart talk_start = { 0 };
+        talk_start.channel_id = ptt_ai_channel;
+        ui_net_link::Serialize(talk_start, talk_packet);
+        serial.Write(talk_packet);
+        ptt_ai_down = true;
+        LedBOn();
+    }
+    else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET && ptt_ai_down)
+    {
+        ui_net_link::TalkStop talk_stop = { 0 };
+        talk_stop.channel_id = ptt_ai_channel;
+        ui_net_link::Serialize(talk_stop, talk_packet);
+        serial.Write(talk_packet);
+        ptt_ai_down = false;
+        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject);
+        LedBOff();
+    }
+
+    if (ptt_ai_down)
+    {
+        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject);
+    }
+}
+
+void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type)
+{
+    AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz,
+        talk_frame.data, constants::Audio_Phonic_Sz, true, constants::Stereo);
+
+    talk_frame.channel_id = channel_id;
+    ui_net_link::Serialize(talk_frame, packet_type, talk_packet);
+    // LedRToggle();
+    serial.Write(talk_packet);
+    ++num_packets_tx;
+}
+
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     // UI_LOG_ERROR("rx %u", size);
@@ -465,11 +655,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        // keyboard.Read();
+        keyboard.Scan(HAL_GetTick());
     }
     else if (htim->Instance == TIM3)
     {
-        LedBToggle();
+        // LedBToggle();
         HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
         HAL_TIM_Base_Stop_IT(&htim3);
     }
@@ -514,12 +704,12 @@ void SlowSendTest(int delay, int num)
     link_packet_t packet;
     ui_net_link::AudioObject talk_frame = { 0, 0 };
     // Fill the tmp audio buffer with random
-    for (int i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
+    for (int i = 0; i < constants::Audio_Buffer_Sz; ++i)
     {
         talk_frame.data[i] = i;
     }
 
-    ui_net_link::Serialize(talk_frame, packet);
+    ui_net_link::Serialize(talk_frame, ui_net_link::Packet_Type::PttObject, packet);
 
     int i = 0;
     while (i++ != num)
@@ -537,7 +727,7 @@ void InterHactarSerialRoundTripTest(int delay, int num)
     const size_t buff_sz = 321;
     link_packet_t tmp;
     // Fill the tmp audio buffer with random
-    tmp.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
+    tmp.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
     tmp.length = buff_sz;
     for (size_t i = 0; i < buff_sz; ++i)
     {
@@ -625,7 +815,7 @@ void InterHactarFullRoundTripTest(int delay, int num)
     const size_t buff_sz = 321;
     link_packet_t tmp;
     // Fill the tmp audio buffer with random
-    tmp.type = (uint8_t)ui_net_link::Packet_Type::AudioObject;
+    tmp.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
     tmp.length = buff_sz;
     for (size_t i = 0; i < buff_sz; ++i)
     {

@@ -3,6 +3,10 @@
 #include "../../shared_inc/ring_buffer.hh"
 #include "../../shared_inc/link_packet_t.hh"
 
+#ifdef PLATFORM_ESP
+#include <mutex>
+#endif
+
 class SerialHandler
 {
 public:
@@ -22,9 +26,9 @@ public:
 
     link_packet_t* Read();
 
-    void Write(const uint8_t data);
-    void Write(const link_packet_t& packet);
-    void Write(const uint8_t* data, const uint16_t size);
+    void Write(const uint8_t data, const bool end_frame=true);
+    void Write(const link_packet_t& packet, const bool end_frame=true);
+    void Write(const uint8_t* data, const uint16_t size, const bool end_frame=true);
 
     uint16_t Unread();
     uint16_t Unsent();
@@ -48,8 +52,8 @@ protected:
     virtual void UpdateUnread(const uint16_t update) = 0;
 
     void UpdateRx(const uint16_t num_recv);
-    void UpdateTx();
-    void PrepTransmit();
+    bool UpdateTx();
+    bool PrepTransmit();
 
     RingBuffer<link_packet_t> rx_packets;
 
@@ -75,4 +79,8 @@ protected:
     link_packet_t* packet;
     uint32_t bytes_read;
     bool escaped;
+
+    #ifdef PLATFORM_ESP
+    std::mutex write_mux;
+    #endif
 };

@@ -12,6 +12,7 @@ fp-info-cache
 *.kicad_pcb-bak
 *.sch-bak
 *~
+*.FCBak
 hardware/**/*backups
 hardware/**/*~*
 hardware/**/#auto_saved_files#

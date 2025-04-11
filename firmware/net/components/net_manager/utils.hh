@@ -10,7 +10,10 @@
 
 #include <quicr/track_name.h>
 
+
 namespace moq {
+
+// extern uint64_t device_id;
 
 static quicr::FullTrackName const MakeFullTrackName(const std::string& track_namespace,
                                                     const std::string& track_name,
@@ -85,6 +88,16 @@ MakeFullTrackName(const std::string& track_namespace,
     return full_track_name;
 }
 
+// Taken from Tomas, thanks Tomas!
+static quicr::FullTrackName MakeFullTrackName(const std::vector<std::string>& entries, const std::string& name)
+{
+    quicr::FullTrackName ftn;
+    ftn.name_space = quicr::TrackNamespace{entries};
+    ftn.name.assign(name.begin(), name.end());
+    ftn.track_alias = std::nullopt;
+
+    return ftn;
+}
 
 }
 

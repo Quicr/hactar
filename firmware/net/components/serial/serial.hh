@@ -35,14 +35,11 @@ protected:
 
 private:
     static void Transmit(void* arg);
-    static void ISRHandler(void* args);
-    FORCE_INLINE_ATTR void RxHandler(Serial* arg);
+
+    static void EventTask(void* args);
 
     uart_port_t port;
-    uart_dev_t& uart;
     TaskHandle_t& read_handle;
-
-    uart_isr_handle_t isr_handle;
-    SemaphoreHandle_t unread_mux;
-    SemaphoreHandle_t unread_cache;
+    QueueHandle_t queue;
+    TaskHandle_t uart_task_handle;
 };

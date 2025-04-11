@@ -16,6 +16,15 @@ Wifi::Wifi():
     is_initialized(false),
     connect_semaphore(),
     connect_task()
+{}
+
+Wifi::~Wifi()
+{
+    NET_LOG_INFO("Delete wifi");
+    vTaskDelete(connect_task);
+}
+
+void Wifi::Begin()
 {
     connect_semaphore = xSemaphoreCreateBinary();
 
@@ -30,12 +39,6 @@ Wifi::Wifi():
         (void*)this,
         12,
         &connect_task);
-}
-
-Wifi::~Wifi()
-{
-    NET_LOG_INFO("Delete wifi");
-    vTaskDelete(connect_task);
 }
 
 void Wifi::Connect(const char* ssid, const char* password)

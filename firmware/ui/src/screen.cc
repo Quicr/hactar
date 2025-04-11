@@ -394,6 +394,11 @@ void Screen::FillRectangle(uint16_t x1, uint16_t x2,
     AllocateMemory(x1, x2, y1, y2, colour, FillRectangleProcedure);
 }
 
+void Screen::FillScreen(const Colour colour)
+{
+    FillRectangle(0, view_width, 0, view_height, colour);
+}
+
 void Screen::DrawRectangle(uint16_t x1, uint16_t x2,
     uint16_t y1, uint16_t y2, const uint16_t thickness,
     const Colour colour)
@@ -525,6 +530,21 @@ void Screen::ScrollScreen(const uint16_t scroll_idx, bool up)
     WriteDataWithSet(vert_scroll_idx_data, 2);
 }
 
+void Screen::UpdateTitle(const char* title, const uint32_t len)
+{
+    // TODO calculate left padding to center the text
+    const uint32_t actual_len = len < Title_Length ? len : Title_Length;
+    for (uint32_t i = 0; i < actual_len; ++i)
+    {
+        title_buffer[i] = title[i];
+    }
+
+    // Clear the Title section
+    // TODO constexpr of magic numbers
+    FillRectangle(0, view_width, 0, 20, Colour::Black);
+    DrawString(5, 2, title_buffer, actual_len, title_font, Colour::White, Colour::Black);
+}
+
 void Screen::AppendText(const char* text, const uint32_t len)
 {
     // Work our way down
@@ -575,6 +595,12 @@ void Screen::CommitText()
         text_idx = 0;
     }
     text_lens[text_idx] = 0;
+}
+
+void Screen::CommitText(const char* text, const uint32_t len)
+{
+    AppendText(text, len);
+    CommitText();
 }
 
 // Private functions

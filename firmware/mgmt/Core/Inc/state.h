@@ -13,7 +13,8 @@ enum State
     Debug_Reset,
     UI_Debug_Reset,
     Net_Debug_Reset,
-    Debug_Running
+    Debug_Running,
+    Loopback
 };
 
 #endif

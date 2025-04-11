@@ -15,7 +15,6 @@ public:
         size(size),
         read_idx(0),
         write_idx(0),
-        unread(0),
         buffer(nullptr),
         busy(false)
     {
@@ -41,7 +40,6 @@ public:
             write_idx = 0;
         }
 
-        ++unread;
         T& out = buffer[write_idx++];
 
         BusyReset();
@@ -55,8 +53,6 @@ public:
 
         if (write_idx >= size)
             write_idx = 0;
-
-        ++unread;
 
         BusyReset();
     }
@@ -93,11 +89,6 @@ public:
     {
         BusySet();
 
-        if (unread > 0)
-        {
-            unread--;
-        }
-
         T d_out = std::move(buffer[read_idx++]);
 
         if (read_idx >= size)
@@ -113,10 +104,6 @@ public:
     {
         BusySet();
 
-        if (unread > 0)
-        {
-            unread--;
-        }
         T& d_out = buffer[read_idx++];
 
         if (read_idx >= size)
@@ -131,11 +118,6 @@ public:
     void Read(T& d_out, bool& is_end)
     {
         BusySet();
-
-        if (unread > 0)
-        {
-            unread--;
-        }
 
         d_out = buffer[read_idx++];
 
@@ -155,12 +137,19 @@ public:
 
     uint16_t Unread() const
     {
-        return unread;
+        if (write_idx >= read_idx)
+        {
+            return write_idx - read_idx;
+        }
+        else
+        {
+            return size - read_idx + write_idx;
+        }
     }
 
     bool IsFull() const
     {
-        return size == unread;
+        return size == Unread();
     }
 
     T* Buffer()
@@ -199,7 +188,6 @@ private:
     uint16_t size;
     uint16_t read_idx; // start
     uint16_t write_idx; // end
-    uint16_t unread;
     T* buffer;
     bool busy;
 };

@@ -27,10 +27,27 @@ public:
     void Init();
     void Reset();
 
+    void SetClocks();
+    void SetStereo();
+
     bool ReadRegister(uint8_t address, uint16_t& value);
 
     void StartI2S();
     void StopI2S();
+
+    void VolumeSet(const int16_t vol);
+    void VolumeAdjust(const int16_t db);
+    void VolumeUp();
+    void VolumeDown();
+    void VolumeReset();
+    uint16_t Volume();
+
+    void MicVolumeSet(const int16_t vol);
+    void MicVolumeAdjust(const int16_t step);
+    void MicVolumeUp();
+    void MicVolumeDown();
+    void MicVolumeReset();
+    uint16_t MicVolume();
 
     void TurnOnLeftInput3();
     void TurnOffLeftInput3();
@@ -47,26 +64,14 @@ public:
     bool RxBufferReady();
 
     void ISRCallback();
-    
+
     void ClearTxBuffer();
-
-    void Transmit(uint16_t* tx, const size_t size);
-    void Recieve(uint16_t* rx, const size_t size);
-
-    void SampleSineWave(const uint16_t num_samples,
-        const uint16_t start_idx, const double amplitude, const double freq,
-        double& phase, const bool stereo);
-    static void SampleSineWave(uint16_t* buff, const uint16_t num_samples,
-        const uint16_t start_idx, const double amplitude, const double freq,
-        double& phase, const bool stereo);
-    void SampleHarmonic(uint16_t* buff, const uint16_t num_samples,
-        const uint16_t start_idx, const double amplitutde, double freqs [], double phases [],
-        const uint16_t num_freqs, const bool stereo);
 
     uint16_t* TxBuffer();
     const uint16_t* RxBuffer();
 
 private:
+// TODO use.
     enum AudioFlag
     {
         Running = 0,
@@ -97,17 +102,35 @@ private:
     static constexpr uint16_t Data_Mask = 0x01FF;
     static constexpr uint8_t Max_Address = 0x37;
 
+    // 6db
+    static constexpr uint16_t Max_Volume = 0b111'1111;
+    // -73db
+    static constexpr uint16_t Min_Volume = 0b010'1111;
+    static constexpr uint16_t Default_Volume = 0b110'0111;
+    static constexpr float Default_Volume_dB = Default_Volume - 48 - 73;
+
+    // +30db
+    static constexpr uint16_t Max_Mic_Volume = 0b11'1111;
+    // -17.25db
+    static constexpr uint16_t Min_Mic_Volume = 0b00'0000;
+    static constexpr uint16_t Default_Mic_Volume = 0b11'1111;
+    static constexpr float Default_Mic_Volume_dB = (0.75 * Default_Mic_Volume) - 17.25;
+
     I2S_HandleTypeDef* i2s;
     I2C_HandleTypeDef* i2c;
 
-    uint16_t tx_buffer[constants::Audio_Buffer_Sz];
+    uint16_t tx_buffer[constants::Total_Audio_Buffer_Sz];
     uint16_t* tx_ptr;
-    uint16_t rx_buffer[constants::Audio_Buffer_Sz];
+    uint16_t rx_buffer[constants::Total_Audio_Buffer_Sz];
     uint16_t* rx_ptr;
     uint32_t buff_mod;
 
-    uint16_t flags = 0x00;
+    uint16_t flags;
 
+    uint16_t volume;
+    uint16_t mic_volume;
+
+    // TODO do we need this?
     Register registers[Max_Address + 1] = {
         { Register(0x00, 0xa7) }, // 0x00 - 0000 0000, 1010 0111
         { Register(0x02, 0xa7) }, // 0x01 - 0000 0010, 1010 0111

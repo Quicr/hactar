@@ -3,6 +3,10 @@
 #include "logger.hh"
 #include <random>
 
+// This code is VERY specifically using espressif's serial event system which
+// has many flaws, including but not limited to taking forever and less
+// granularity.
+
 Serial::Serial(const uart_port_t port, uart_dev_t& uart,
     TaskHandle_t& read_handle, const periph_interrput_t intr_source,
     const uart_config_t uart_config, const int tx_pin, const int rx_pin,
@@ -12,157 +16,124 @@ Serial::Serial(const uart_port_t port, uart_dev_t& uart,
     const uint32_t rx_rings):
     SerialHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this),
     port(port),
-    uart(uart),
     read_handle(read_handle),
-    unread_mux(xSemaphoreCreateBinary()),
-    unread_cache(xSemaphoreCreateCounting(0xFFFF, 0))
+    uart_task_handle(nullptr)
 {
-    xSemaphoreGive(unread_mux);
     ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(port, tx_pin, rx_pin, rts_pin, cts_pin));
+    ESP_ERROR_CHECK(uart_driver_install(port, 4096, 2048, 20, &queue, 0));
 
-    ESP_ERROR_CHECK(esp_intr_alloc(intr_source, 2, ISRHandler, (void*)this, &isr_handle));
-
-    // Enable interrupt for full fifo, and rx timeout.
-    // Enable interrupt for tx transmit complete
-
-    uart_intr_config_t uintr_cfg = {
-      .intr_enable_mask = (UART_RXFIFO_FULL_INT_ENA_M | UART_RXFIFO_TOUT_INT_ENA_M | UART_TX_DONE_INT_ENA_M),
-      .rx_timeout_thresh = 1,
-      .rxfifo_full_thresh = 68,
-    };
-    ESP_ERROR_CHECK(uart_intr_config(port, &uintr_cfg));
+    xTaskCreate(EventTask, "UART Event Task", 4096, this, 10, &uart_task_handle);
 }
 
 Serial::~Serial()
 {
+    if (uart_task_handle)
+    {
+        vTaskDelete(uart_task_handle);
+    }
 
+    uart_driver_delete(port);
 }
+
 
 void Serial::UpdateUnread(const uint16_t update)
 {
-    if (xSemaphoreTake(unread_mux, 0))
-    {
-        unread -= (update + update_cache);
-        update_cache = 0;
-
-        while (xSemaphoreTake(unread_cache, 0))
-        {
-            unread += 1;
-        }
-
-        xSemaphoreGive(unread_mux);
-    }
-    else
-    {
-        update_cache += update;
-        NET_LOG_ERROR("Couldn't take semaphore");
-    }
-
+    unread -= update;
 }
 
-// NOTE TO YE TO WHOM MAY COME TO CHANGE THIS FUNCTION, DO NOT PUT
-// LOGGING INTO THIS FUNCTION, IT WILL CAUSE AN AUTOMATIC CRASH AND NOT
-// TELL YOU WHY
 void Serial::Transmit(void* arg)
 {
-    // TODO semaphores
+    // TODO semaphores?
     Serial* serial = static_cast<Serial*>(arg);
-
-    // Greater than our fifo has room for clamp it.
-    if (serial->num_to_send > (128 - serial->uart.status.txfifo_cnt))
-    {
-        serial->num_to_send = 128 - serial->uart.status.txfifo_cnt;
-    }
-    uart_ll_write_txfifo(&serial->uart, serial->tx_buff + serial->tx_read_idx, serial->num_to_send);
+    uart_write_bytes(serial->port, serial->tx_buff + serial->tx_read_idx, serial->num_to_send);
+    serial->tx_free = true;
+    serial->UpdateTx();
 }
 
-// NOTE TO YE TO WHOM MAY COME TO CHANGE THIS FUNCTION, DO NOT PUT
-// LOGGING INTO THIS FUNCTION, IT WILL CAUSE AN AUTOMATIC CRASH AND NOT
-// TELL YOU WHY
-void Serial::ISRHandler(void* args)
+void Serial::EventTask(void* arg)
 {
-    Serial* serial = (Serial*)args;
+    Serial* serial = static_cast<Serial*>(arg);
+    uart_event_t event;
 
-    uint32_t intr_status = 0;
-    while (1)
+    while (true)
     {
-        intr_status = uart_ll_get_intsts_mask(&serial->uart);
-
-        if (intr_status == 0)
+        if (!xQueueReceive(serial->queue, &event, portMAX_DELAY))
         {
-            break;
-        }
-
-        // Parity error intr
-        if (intr_status & UART_INTR_PARITY_ERR)
-        {
-            uart_ll_clr_intsts_mask(&serial->uart, UART_PARITY_ERR_INT_CLR_M);
-            abort();
             continue;
         }
-        else if (intr_status & UART_INTR_TX_DONE)
-        {
-            // Advance the read head
-            serial->UpdateTx();
 
-            uart_ll_clr_intsts_mask(&serial->uart, UART_TX_DONE_INT_CLR_M);
-            continue;
-        }
-        else if (intr_status & UART_INTR_RXFIFO_TOUT || intr_status & UART_INTR_RXFIFO_FULL)
-        {
-            Serial::RxHandler(serial);
-            uart_ll_clr_intsts_mask(&serial->uart, UART_RXFIFO_FULL_INT_CLR_M | UART_RXFIFO_TOUT_INT_CLR_M);
-            continue;
-        }
-    }
-}
+        // NET_LOG_INFO("got event, size %d", event.size);
 
-void Serial::RxHandler(Serial* serial)
-{
-    // Loop until we've emptied the buff if a small buffer has been
-    // designated then this will cover overflowing.
-    while (serial->uart.status.rxfifo_cnt)
-    {
-        // Note- Reading from uart.fifo.rxfifo_rd_byte automatically
-        // decrements uart.status.rxfifo_cnt
-        uint32_t num_bytes = serial->uart.status.rxfifo_cnt;
-        if (num_bytes + serial->rx_write_idx > serial->rx_buff_sz)
+        switch (event.type)
         {
-            num_bytes = serial->rx_buff_sz - serial->rx_write_idx;
-        }
-
-        // Pull the data out of the register
-        for (uint32_t i = 0; i < num_bytes; ++i)
-        {
-            serial->rx_buff[serial->rx_write_idx++] = serial->uart.fifo.rxfifo_rd_byte;
-        }
-
-        if (serial->rx_write_idx >= serial->rx_buff_sz)
-        {
-            serial->rx_write_idx = 0;
-        }
-
-        // Take the semaphore
-        BaseType_t higher_priority = pdFALSE;
-        if (xSemaphoreTakeFromISR(serial->unread_mux, &higher_priority))
-        {
-            serial->unread += num_bytes;
-            xSemaphoreGiveFromISR(serial->unread_mux, &higher_priority);
-        }
-        else
-        {
-            // Couldn't get the semaphore, so lets just put this in a different
-            // semaphore that counts the number of cached bytes
-            // that we can pull from later
-            for (uint32_t i = 0; i < num_bytes; ++i)
+            case UART_DATA:
             {
-                xSemaphoreGiveFromISR(serial->unread_cache, NULL);
-            }
-            portYIELD_FROM_ISR(higher_priority);
-        }
+                int space_remain;
+                int bytes_to_read;
+                int num_bytes = 0;
+                int total_read = 0;
+                while (total_read < event.size)
+                {
+                    space_remain = serial->rx_buff_sz - serial->rx_write_idx;
 
-        vTaskNotifyGiveFromISR(serial->read_handle, NULL);
+                    bytes_to_read = space_remain < event.size ? space_remain : event.size;
+
+                    num_bytes = uart_read_bytes(serial->port, serial->rx_buff + serial->rx_write_idx,
+                        bytes_to_read, 0);
+
+                    if (num_bytes == -1)
+                    {
+                        continue;
+                    }
+
+                    total_read += num_bytes;
+
+                    serial->rx_write_idx += num_bytes;
+                    if (serial->rx_write_idx >= serial->rx_buff_sz)
+                    {
+                        serial->rx_write_idx = 0;
+                    }
+
+                }
+                serial->unread += total_read;
+
+                xTaskNotifyGive(serial->read_handle);
+
+                break;
+            }
+            case UART_FIFO_OVF:
+            {
+
+                ESP_LOGW("SerialPort", "FIFO Overflow detected");
+                uart_flush_input(serial->port);
+                xQueueReset(serial->queue);
+                break;
+            }
+            case UART_BUFFER_FULL:
+            {
+                ESP_LOGW("SerialPort", "Ring buffer full");
+                uart_flush_input(serial->port);
+                xQueueReset(serial->queue);
+                break;
+            }
+            case UART_PARITY_ERR:
+            {
+
+                ESP_LOGE("SerialPort", "Parity error");
+                break;
+            }
+            case UART_FRAME_ERR:
+            {
+
+                ESP_LOGE("SerialPort", "Frame error");
+                break;
+            }
+            default:
+            {
+                ESP_LOGI("SerialPort", "Unhandled UART event type: %d", event.type);
+                break;
+            }
+        }
     }
 }
-

@@ -2,7 +2,7 @@
 
 #include "wifi.hh"
 
-void ConnectToWifi(Wifi& wifi)
+static void ConnectToWifi(Wifi& wifi)
 {
     wifi.Connect("", "");
 }

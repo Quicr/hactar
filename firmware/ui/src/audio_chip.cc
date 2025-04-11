@@ -2,14 +2,9 @@
 #include "audio_codec.hh"
 
 #include "main.h"
+#include "app_main.hh"
 
-// NOTE MCLK = 12Mhz
-#include <math.h>
-// For some reason M_PI is not defined when including math.h even though it
-// should be. Therefore, we need to do it ourselves.
-#ifndef  M_PI
-#define  M_PI  3.1415926535897932384626433
-#endif
+#include "logger.hh"
 
 extern UART_HandleTypeDef huart1;
 
@@ -20,8 +15,12 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
     tx_ptr{ tx_buffer },
     rx_buffer{ 0 },
     rx_ptr{ rx_buffer },
-    buff_mod(0)
+    buff_mod(0),
+    flags(0),
+    volume(Default_Volume),
+    mic_volume(Default_Mic_Volume)
 {
+
 }
 
 AudioChip::~AudioChip()
@@ -38,6 +37,7 @@ void AudioChip::Init()
     // Set the power
     SetRegister(0x19, 0b0'1111'1110);
 
+
     // Enable outputs
     SetRegister(0x1A, 0b1'1110'0001);
 
@@ -45,52 +45,15 @@ void AudioChip::Init()
     // SetRegister(0x2F, 0b0'0000'0000);
     SetRegister(0x2F, 0b0'0010'1100);
 
-    // Enable PLL integer mode.
-    /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
-    *   5 < PLLN < 13
-    *   int R = f2 / 12
-    *   PLLN = int R.
-    *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
-    *   R = 98.304 / 12 = 8.192
-    *   int R = 0x8
-    *   K = int(2^24 * (R - PLLN))
-    *     = int(2^24 * (8.192 - 8))
-    *     = 3221225
-    *     = 0x3126E9 -> but the table says 0x3126E8
-    *                                       = 0b0011'0001'0010'0110'1110'1001
-    **/
-    SetRegister(0x34, 0b0'0001'1000);
-
-    // Pg 85 version
-    SetRegister(0x35, 0b0'0011'0001);
-    SetRegister(0x36, 0b0'0010'0110);
-    SetRegister(0x37, 0b0'1110'1001);
-
-    // Set ADCDIV to get 8kHz from SYSCLK
-    // Set DACDIV to get 8kHz from SYSCLK
-    // Post scale the PLL to be divided by 2
-    // Set the clock (Select the PLL) (0x01)
-    SetRegister(0x04, 0b1'1011'0101);
-
-    // Set the clock division
-    // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
-    // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
-    // Expected BCLK = constants::sample_rate * channels * bits per channel, so 16khz * 2 * 16 = 512Khz
-    SetRegister(0x08, 0b1'1100'1100);
-
     // Disable soft mute and ADC high pass filter
     SetRegister(0x05, 0b0'0000'0000);
 
-    // Set the Master mode (1), I2S to 16 bit words
-    // Set audio data format to i2s mode
-    SetRegister(0x07, 0b0'0100'1110);
+    SetClocks();
+    SetStereo();
 
     // Set the left and right headphone volumes
-    SetRegister(0x02, 0b1'0111'1111);
-    SetRegister(0x03, 0b1'0111'1111);
-
-    // Enable mono mixer
-    SetBit(0x17, 4, 1);
+    MicVolumeSet(mic_volume);
+    VolumeSet(volume);
 
     // Enable the outputs
     SetRegister(0x31, 0b0'0111'0111);
@@ -103,11 +66,11 @@ void AudioChip::Init()
     SetRegister(0x22, 0b1'0000'0000);
     SetRegister(0x25, 0b1'0000'0000);
 
-    // Change the ALC sample rate -> 8kHz
-    SetRegister(0x1B, 0b0'0000'0101);
+    SetBits(0x2B, 0b0'0111'0000, 0b0'0111'000);
 
     // Enable DAC softmute
     SetBit(0x06, 3, 1);
+
 
     // Noise gate threshold
     // SetRegister(0x14, 0b0'1111'1001);
@@ -123,6 +86,9 @@ void AudioChip::Init()
 
     // SetRegister(0x1D, 0b0'0100'0000);
 
+            // Set the Master mode (1), I2S to 16 bit words
+            // Set audio data format to i2s mode
+    SetRegister(0x07, 0b0'0100'0010);
 
     UnmuteMic();
 }
@@ -134,14 +100,230 @@ void AudioChip::Reset()
     HAL_Delay(100);
 }
 
+// NOTE- These are hard coded values in the constants.hh file
+// for this function
+void AudioChip::SetClocks()
+{
+    switch (constants::Sample_Rate)
+    {
+        case constants::SampleRates::_8khz:
+        {
+            // Enable PLL integer mode.
+            /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
+            *   5 < PLLN < 13
+            *   int R = f2 / 12
+            *   PLLN = int R.
+            *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
+            *   R = 98.304 / 12 = 8.192
+            *   int R = 0x8
+            *   K = int(2^24 * (R - PLLN))
+            *     = int(2^24 * (8.192 - 8))
+            *     = 3221225
+            *     = 0x3126E9 -> but the table says 0x3126E8
+            *                                       = 0b0011'0001'0010'0110'1110'1001
+            **/
+            SetRegister(0x34, 0b0'0001'1000);
+
+            // Pg 85 version
+            SetRegister(0x35, 0b0'0011'0001);
+            SetRegister(0x36, 0b0'0010'0110);
+            SetRegister(0x37, 0b0'1110'1001);
+
+            // Set ADCDIV to get 8kHz from SYSCLK
+            // Set DACDIV to get 8kHz from SYSCLK
+            // Post scale the PLL to be divided by 2
+            // Set the clock (Select the PLL) (0x01)
+            SetRegister(0x04, 0b1'1011'0101);
+
+            // Set the clock division
+            // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
+            // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
+            // Expected BCLK = constants::sample_rate * channels * frame bits per sample
+            // Note- we need to do 32 bit frames because there is not an option to do a
+            // BCLK of 256KHz
+            // 8000Hz * 2 * 32 = 512KHz
+            SetRegister(0x08, 0b1'1100'1100);
+
+            // Change the ALC sample rate -> 8kHz
+            SetRegister(0x1B, 0b0'0000'0101);
+
+            // Change the I2S setting accordingly
+            i2s->Init.AudioFreq = I2S_AUDIOFREQ_8K;
+            HAL_I2S_Init(i2s);
+
+            break;
+        }
+        case constants::SampleRates::_16khz:
+        {
+
+            /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
+            *   5 < PLLN < 13
+            *   int R = f2 / 12
+            *   PLLN = int R.
+            *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
+            *   R = 98.304 / 12 = 8.192
+            *   int R = 0x8
+            *   K = int(2^24 * (R - PLLN))
+            *     = int(2^24 * (8.192 - 8))
+            *     = 3221225
+            *     = 0x3126E9 -> but the table says 0x3126E8
+            *                                       = 0b0011'0001'0010'0110'1110'1001
+            **/
+            // Enable PLL integer mode.
+            SetRegister(0x34, 0b0'0001'1000);
+
+            // Pg 85 version
+            SetRegister(0x35, 0b0'0011'0001);
+            SetRegister(0x36, 0b0'0010'0110);
+            SetRegister(0x37, 0b0'1110'1001);
+
+            // Set ADCDIV to get 16kHz from SYSCLK
+            // Set DACDIV to get 16kHz from SYSCLK
+            // Post scale the PLL to be divided by 2
+            // Set the clock (Select the PLL) (0x01)
+            // Set to 16Khz
+            SetRegister(0x04, 0b0'1101'1101);
+
+            // Set the clock division
+            // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
+            // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
+            // Expected BCLK = constants::sample_rate * channels * frame bits per sample, so 16khz * 2 * 16 = 512Khz
+            // 16000Hz * 2 * 32 = 1.024MHz
+            SetRegister(0x08, 0b1'1100'1001);
+
+            // Change the ALC sample rate -> 8kHz
+            SetRegister(0x1B, 0b0'0000'0011);
+
+            // Change the I2S setting accordingly
+            i2s->Init.AudioFreq = I2S_AUDIOFREQ_16K;
+            HAL_I2S_Init(i2s);
+            break;
+        }
+        default:
+        {
+            Error("Audio chip set frequencies", "Frequency set that doesn't exist");
+            break;
+        }
+    }
+}
+
+
+// NOTE- These are hard coded values in the constants.hh file
+// for this function
+void AudioChip::SetStereo()
+{
+    if (constants::Stereo)
+    {
+        // Disable mono mixer
+        SetBit(0x17, 4, 0);
+        SetBit(0x2A, 6, 1);
+    }
+    else
+    {
+        // Enable mono mixer
+        SetBit(0x17, 4, 1);
+        SetBit(0x2A, 6, 0);
+    }
+}
+
+void AudioChip::VolumeSet(const int16_t vol)
+{
+    volume = vol;
+    if (volume >= Max_Volume)
+    {
+        volume = Max_Volume;
+    }
+    else if (volume < Min_Volume)
+    {
+        volume = Min_Volume;
+    }
+
+    // Clear the volume section of the register
+    // Set the vol bit to 0 so the volume is set into the intermediate
+    // register
+    SetBits(0x02, 0b1'0111'1111, volume);
+
+    // Then flip the first bit (which is the update volume bit)
+    // for both headphones
+    SetBits(0x03, 0b1'0111'1111, 0x100 + volume);
+}
+
+void AudioChip::VolumeAdjust(const int16_t db)
+{
+    VolumeSet(volume + db);
+}
+
+void AudioChip::VolumeUp()
+{
+    VolumeSet(volume + 1);
+}
+
+void AudioChip::VolumeDown()
+{
+    VolumeSet(volume - 1);
+}
+
+void AudioChip::VolumeReset()
+{
+    VolumeSet(Default_Volume);
+}
+
+uint16_t AudioChip::Volume()
+{
+    return volume;
+}
+
+void AudioChip::MicVolumeSet(const int16_t vol)
+{
+    if (vol >= Max_Mic_Volume)
+    {
+        mic_volume = Max_Mic_Volume;
+    }
+    else if (vol <= Min_Mic_Volume)
+    {
+        mic_volume = Min_Mic_Volume;
+    }
+    else
+    {
+        mic_volume = vol;
+    }
+
+    // Then flip the first bit (which is the update mic_volume bit)
+    // for both headphones
+    SetBits(0x00, 0b1'0011'1111, 0x100 + mic_volume);
+}
+
+void AudioChip::MicVolumeAdjust(const int16_t steps)
+{
+    MicVolumeSet(mic_volume + steps);
+}
+
+void AudioChip::MicVolumeUp()
+{
+    MicVolumeSet(mic_volume + 1);
+}
+
+void AudioChip::MicVolumeDown()
+{
+    MicVolumeSet(mic_volume - 1);
+}
+
+void AudioChip::MicVolumeReset()
+{
+    MicVolumeSet(Default_Mic_Volume);
+}
+
+uint16_t AudioChip::MicVolume()
+{
+    return mic_volume;
+}
+
 HAL_StatusTypeDef AudioChip::WriteRegister(uint8_t address)
 {
     // PrintRegisterData(address);
 
     HAL_StatusTypeDef result = HAL_I2C_Master_Transmit(i2c,
         Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
-
-    HAL_Delay(10);
 
     return result;
 }
@@ -268,9 +450,6 @@ bool AudioChip::ReadRegister(uint8_t address, uint16_t& value)
 
 void AudioChip::TurnOnLeftInput3()
 {
-    // Turn off differential input
-    TurnOffLeftDifferentialInput();
-
     EnableLeftMicPGA();
 
     SetBit(0x20, 7, 1);
@@ -318,7 +497,7 @@ void AudioChip::MuteMic()
 {
     SetBits(0x00, 0b1'1000'0000, 0b0'1000'0000);
 
-    SetBits(0x2B, 0b0'0111'0000, 0b0'0000'0000);
+    SetBits(0x2B, 0b0'0000'1110, 0b0'0000'0000);
 
     SetBit(0x19, 1, 0);
 }
@@ -330,8 +509,8 @@ void AudioChip::UnmuteMic()
     // Disable LINMUTE
     SetBits(0x00, 0b1'1000'0000, 0b1'0000'0000);
 
-    // Set LIN3BOOST to +0dB
-    SetBits(0x2B, 0b0'0111'0000, 0b0'0101'0000);
+    // Set LIN2BOOST to +0dB
+    SetBits(0x2B, 0b0'0000'1110, 0b0'0000'1010);
 
     // Enable MIC bias
     SetBit(0x19, 1, 1);
@@ -351,7 +530,7 @@ void AudioChip::StartI2S()
 {
     // NOTE- Do not remove delay the audio chip needs time to stabilize
     HAL_Delay(20);
-    auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Audio_Buffer_Sz);
+    auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Total_Audio_Buffer_Sz);
 
     if (output == HAL_OK)
     {
@@ -368,38 +547,25 @@ void AudioChip::StopI2S()
 
 uint16_t* AudioChip::TxBuffer()
 {
-    // LowerFlag(AudioFlag::Tx_Ready);
     return tx_ptr;
 }
 
 const uint16_t* AudioChip::RxBuffer()
 {
-    // LowerFlag(AudioFlag::Rx_Ready);
     return rx_ptr;
 }
 
 void AudioChip::ISRCallback()
 {
-    const uint16_t offset = buff_mod * constants::Audio_Buffer_Sz_2;
+    const uint16_t offset = buff_mod * constants::Audio_Buffer_Sz;
     tx_ptr = tx_buffer + offset;
     rx_ptr = rx_buffer + offset;
     buff_mod = !buff_mod;
 
     // Clear the transmission buffer
-    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET)
+    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
     {
-        // Copy the rx to the tx
-        for (uint16_t i =0; i < constants::Audio_Buffer_Sz_2; ++i)
-        {
-            tx_ptr[i] = rx_ptr[i];
-        }
-    }
-    else
-    {
-        for (uint16_t i = 0; i < constants::Audio_Buffer_Sz_2; ++i)
-        {
-            tx_ptr[i] = 0;
-        }
+        tx_ptr[i] = 0;
     }
 
     RaiseFlag(AudioFlag::Rx_Ready);
@@ -408,34 +574,10 @@ void AudioChip::ISRCallback()
 
 void AudioChip::ClearTxBuffer()
 {
-    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
+    for (uint16_t i = 0; i < constants::Total_Audio_Buffer_Sz; ++i)
     {
         tx_buffer[i] = 0;
     }
-}
-
-void AudioChip::Transmit(uint16_t* buff, const size_t size)
-{
-    uint16_t* tmp_ptr = tx_ptr;
-    for (size_t i = 0; i < constants::Audio_Buffer_Sz && i < size; ++i)
-    {
-        tmp_ptr[i] = buff[i];
-    }
-
-    LowerFlag(AudioFlag::Tx_Ready);
-}
-
-void AudioChip::Recieve(uint16_t* buff, const size_t size)
-{
-    // Make a tmp pointer so that if there is an interrupt during transfer
-    // then our pointer won't change
-    uint16_t* tmp_ptr = rx_ptr;
-    for (size_t i = 0 ; i < constants::Audio_Buffer_Sz && i < size; ++i)
-    {
-        buff[i] = tmp_ptr[i];
-    }
-
-    LowerFlag(AudioFlag::Rx_Ready);
 }
 
 inline void AudioChip::RaiseFlag(AudioFlag flag)

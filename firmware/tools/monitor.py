@@ -6,6 +6,8 @@ import time
 import signal
 import sys
 
+# TODO crawl through devices looking for a hactar.
+
 if (len(sys.argv) < 3):
     print("Error. Need port followed by baudrate")
     exit()
@@ -21,7 +23,7 @@ uart = serial.Serial(
     bytesize=serial.EIGHTBITS,
     parity=serial.PARITY_NONE,
     stopbits=serial.STOPBITS_ONE,
-    timeout=2
+    timeout=0.5
 )
 
 print(f"\033[92mOpened port: {port}, baudrate={baud}\033[0m")
@@ -38,8 +40,11 @@ def ReadSerial():
                 # if (dump):
                 #     with open(dump_file, "a") as my_file:
                 #         my_file.write(data);
+                # print(data)
                 print("\r\033[0m" + erase + data, end="")
                 print("\033[1m\033[92mEnter a command:\033[0m")
+            else:
+                time.sleep(0.05)
         except Exception as ex:
             print(ex)
 
