@@ -47,8 +47,8 @@ upload: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ./build/net.bin 0x10000 verify exit"
 	python3 ../tools/command_sender.py ${CONSOLE_PORT} 115200 debug
 
-upload-old: compile
-	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" -bin=${BUILD_PATH} --port=${PORT}
+upload_py: compile
+	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" -bin=${BUILD_PATH}
 
 upload_esptool:
 	python3 ../tools/command_sender.py ${PORT} ${BAUD} net_upload

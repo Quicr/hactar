@@ -296,7 +296,7 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
 
 upload_py: compile
-	python3 ../flasher/flasher.py --baud=${BAUD} --chip="ui" --port=${PORT}\
+	python3 ../flasher/flasher.py --baud=${BAUD} --chip="ui" \
 								 -bin=${BUILD_DIR}/${FIRMWARE}
 
 upload_prog: compile
