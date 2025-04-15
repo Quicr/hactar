@@ -28,7 +28,7 @@ TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
     track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end()) + std::string(full_track_name.name.begin(), full_track_name.name.end())),
     audio_buffer(),
     audio_playing(false),
-    audio_min_depth(50),
+    audio_min_depth(5),
     audio_max_depth(std::numeric_limits<size_t>::max())
 {
     task_helpers::Start_PSRAM_Task(SubscribeTask, this, track_name, task_handle, task_buffer, &task_stack, 8192, 10);
