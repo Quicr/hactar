@@ -3,6 +3,8 @@
 #include "chip_control.h"
 #include "main.h"
 
+#define COMMAND_BUFF_SZ 32
+
 void Receive(uart_stream_t* stream, uint16_t num_received)
 {
     // Calculate the number of bytes have occurred since the last event
@@ -11,7 +13,7 @@ void Receive(uart_stream_t* stream, uint16_t num_received)
 
     // Faster than putting a check inside of the copy loop since this is only
     // checked once per rx event.
-    if (stream->tx.write + num_bytes > stream->tx.size)
+    if (stream->tx.write + num_bytes >= stream->tx.size)
     {
         const uint16_t bytes = stream->tx.size - stream->tx.write;
 
@@ -56,7 +58,7 @@ void HandleTx(uart_stream_t* stream, enum State* state)
     }
     case (Command):
     {
-
+        HandleCommands(stream, state);
         break;
     }
     case (Ignore):
@@ -100,10 +102,13 @@ void Transmit(uart_stream_t* stream, enum State* state)
 }
 
 void HandleCommands(uart_stream_t* stream,
-    cmd_ring_buff_t* cmd_ring,
     enum State* state)
 {
     static uint8_t ready = 0;
+    static uint8_t cmd_buff[COMMAND_BUFF_SZ] = { 0 };
+    static uint16_t idx = 0;
+    static uint32_t last_update = 0;
+
     // I don't care about performance as much in this function as
     // commands should be pretty short.
     while (stream->tx.unsent > 0)
@@ -113,7 +118,7 @@ void HandleCommands(uart_stream_t* stream,
             stream->tx.read = 0;
         }
 
-        if (cmd_ring->idx >= cmd_ring->sz)
+        if (idx >= COMMAND_BUFF_SZ)
         {
             ready = 1;
             break;
@@ -123,12 +128,12 @@ void HandleCommands(uart_stream_t* stream,
         --stream->tx.unsent;
         if (ch)
         {
-            cmd_ring->buff[cmd_ring->idx++] = ch;
-            cmd_ring->last_update = HAL_GetTick();
+            cmd_buff[idx++] = ch;
+            last_update = HAL_GetTick();
         }
         else
         {
-            if (cmd_ring->idx > 0)
+            if (idx > 0)
             {
                 ready = 1;
             }
@@ -136,80 +141,77 @@ void HandleCommands(uart_stream_t* stream,
         }
     }
 
-    if (ready || HAL_GetTick() - cmd_ring->last_update >= COMMAND_TIMEOUT)
+    if (ready || HAL_GetTick() - last_update >= COMMAND_TIMEOUT)
     {
-        if (strcmp((const char*)cmd_ring->buff, (const char*)ui_upload_cmd) == 0)
+        if (strcmp((const char*)cmd_buff, (const char*)ui_upload_cmd) == 0)
         {
             // Echo back
             HAL_UART_Transmit(stream->rx.uart, ACK, 1, HAL_MAX_DELAY);
-            *state = UI_Upload_Reset;
+            *state = UI_Upload;
         }
-        else if (strcmp((const char*)cmd_ring->buff, (const char*)net_upload_cmd) == 0)
+        else if (strcmp((const char*)cmd_buff, (const char*)net_upload_cmd) == 0)
         {
             HAL_UART_Transmit(stream->rx.uart, ACK, 1, HAL_MAX_DELAY);
-            *state = Net_Upload_Reset;
+            *state = Net_Upload;
         }
-        else if (strcmp((const char*)cmd_ring->buff, (const char*)debug_cmd) == 0)
+        else if (strcmp((const char*)cmd_buff, (const char*)debug_cmd) == 0)
         {
-            *state = Debug_Reset;
+            *state = Debug;
         }
-        else if (strcmp((const char*)cmd_ring->buff, (const char*)ui_debug_cmd) == 0)
+        else if (strcmp((const char*)cmd_buff, (const char*)ui_debug_cmd) == 0)
         {
-            *state = UI_Debug_Reset;
+            *state = UI_Debug;
         }
-        else if (strcmp((const char*)cmd_ring->buff, (const char*)net_debug_cmd) == 0)
+        else if (strcmp((const char*)cmd_buff, (const char*)net_debug_cmd) == 0)
         {
-            *state = Net_Debug_Reset;
+            *state = Net_Debug;
         }
-        else if (strcmp((const char*)cmd_ring->buff, (const char*)reset_cmd) == 0)
+        else if (strcmp((const char*)cmd_buff, (const char*)reset_cmd) == 0)
         {
-            *state = Reset;
+            *state = Normal;
         }
-        else if (strcmp((const char*)cmd_ring->buff, (const char*)reset_net) == 0)
+        else if (strcmp((const char*)cmd_buff, (const char*)reset_net) == 0)
         {
             NetNormalMode();
         }
-        else if (strcmp((const char*)cmd_ring->buff, (const char*)HELLO) == 0)
+        else if (strcmp((const char*)cmd_buff, (const char*)HELLO) == 0)
         {
             HAL_UART_Transmit(stream->rx.uart, HELLO_RES, 28, HAL_MAX_DELAY);
         }
 
         // Clear the ring
-        for (uint16_t i = 0; i < cmd_ring->idx; ++i)
+        for (uint16_t i = 0; i < idx; ++i)
         {
-            cmd_ring->buff[i] = 0;
+            cmd_buff[i] = 0;
         }
-        cmd_ring->last_update = HAL_GetTick();
-        cmd_ring->idx = 0;
+        last_update = HAL_GetTick();
+        idx = 0;
         ready = 0;
     }
 }
 
-void InitUartStreamParameters(uart_stream_t* uart_stream)
+void InitUartStream(uart_stream_t* stream)
 {
-    uart_stream->rx.idx = 0;
+    HAL_UART_Abort(stream->rx.uart);
 
-    uart_stream->tx.read = 0;
-    uart_stream->tx.write = 0;
-    uart_stream->tx.unsent = 0;
-    uart_stream->tx.free = 1;
+    stream->rx.idx = 0;
 
-    uart_stream->mode = Ignore;
+    stream->tx.read = 0;
+    stream->tx.write = 0;
+    stream->tx.unsent = 0;
+    stream->tx.free = 1;
+
+    stream->mode = Ignore;
 }
 
-void CancelUart(uart_stream_t* uart_stream)
-{
-    HAL_UART_Abort(uart_stream->rx.uart);
-}
-
-void StartUartReceive(uart_stream_t* uart_stream)
+void StartUartReceive(uart_stream_t* stream)
 {
     uint8_t attempt = 0;
     while (attempt++ != 10 &&
-        HAL_OK != HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->rx.uart, uart_stream->rx.buff, uart_stream->rx.size))
+        HAL_OK != HAL_UARTEx_ReceiveToIdle_DMA(stream->rx.uart, stream->rx.buff, stream->rx.size))
     {
         // Make sure the uart is cancelled, sometimes it doesn't want to cancel
-        CancelUart(uart_stream);
+        HAL_UART_Abort(stream->rx.uart);
     }
 
     if (attempt >= 10)

@@ -17,7 +17,7 @@ SHELL := /bin/bash
 # target
 ######################################
 TARGET = ui
-FIRMWARE = ${TARGET}.elf
+FIRMWARE = ${TARGET}.hex
 
 ######################################
 # building variables
@@ -39,7 +39,7 @@ BUILD_DIR = ./build
 #######################################
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
-PORT = /dev/ttyUSB0
+PORT =
 BAUD = 115200
 CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
 CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
@@ -296,7 +296,7 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
 
 upload_py: compile
-	python3 ../flasher/flasher.py --baud=${BAUD} --chip="ui" \
+	python3 ../flasher/flasher.py --baud=${BAUD} --chip="ui" --port=${PORT} \
 								 -bin=${BUILD_DIR}/${FIRMWARE}
 
 upload_prog: compile
