@@ -211,7 +211,6 @@ ifeq (${PROGRAMMER}, CUBE)
 endif
 
 OCD_DIR    = /usr/share/openocd/scripts
-# OCDFLAGS   = -f interface/stlink-v2.cfg -f target/${CHIP_NAME_LC}x.cfg
 OCDFLAGS   = -f interface/stlink.cfg -f target/stm32f4x.cfg
 
 
@@ -295,32 +294,35 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 
 compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
 
+upload: compile
+	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
+
 upload_py: compile
 	python3 ../flasher/flasher.py --baud=${BAUD} --chip="ui" --port=${PORT} \
 								 -bin=${BUILD_DIR}/${FIRMWARE}
 
-upload_prog: compile
+upload_cube_serial: compile
 	python3 ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
 	fi \
 
-upload_cube: compile
+upload_cube_swd: compile
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS_SWD} ; \
 	fi \
 
-upload: compile
-	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
 
-program: compile upload
+# NOTE - mft is the makefile target if you want to use something other than compile
+docker:
+	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
+		docker build -t ${DOCKER_IMAGE} .; \
+	fi
 
-info:
-	@echo "[Build path]		${BUILD_DIR}"
-	@echo "[Includes] 		${INCS}"
-	@echo "[Objects] 		${OBJECTS}"
-	@echo "[Dependencies]	${DEPS}"
-	@echo "[vpath] 			${VPATH}"
+	@docker run --rm -e target=${mft} --privileged \
+		-v ${PWD}/..:/src \
+		-v /dev:/dev \
+		-it ${DOCKER_IMAGE}
 
 dirs: ${BUILD_DIR}
 ${BUILD_DIR}:
@@ -331,23 +333,8 @@ openocd:
 	openocd $(OCDFLAGS)
 
 monitor:
-	python3 ../tools/command_sender.py ${PORT} ${BAUD} debug
-	screen ${PORT} ${BAUD}
-
-py_monitor:
 	python3 ../tools/monitor.py ${PORT} ${BAUD}
 
-# NOTE - mft is the makefile target if you want to use something other than compile
-docker: docker-build
-	@docker run --rm -e target=${mft} --privileged \
-		-v ${PWD}/..:/src \
-		-v /dev:/dev \
-		-it ${DOCKER_IMAGE}
-
-docker-build:
-	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
-		docker build -t ${DOCKER_IMAGE} .; \
-	fi
 
 format:
 	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
@@ -363,5 +350,12 @@ docker-clean:
 
 clean:
 	-rm -fR $(BUILD_DIR)
+
+info:
+	@echo "[Build path]		${BUILD_DIR}"
+	@echo "[Includes] 		${INCS}"
+	@echo "[Objects] 		${OBJECTS}"
+	@echo "[Dependencies]	${DEPS}"
+	@echo "[vpath] 			${VPATH}"
 
 # *** EOF ***
