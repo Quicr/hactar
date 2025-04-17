@@ -42,7 +42,7 @@ static std::string Stringify(const quicr::FullTrackName& ftn)
     std::stringstream ss;
     ss << "[FTN=";
     const auto& entries = ftn.name_space.GetEntries();
-    for (const auto& entry : Span{ entries }.subspan(0, ftn.name_space.GetEntries().size() - 1)) {
+    for (const auto& entry : std::span{ entries }.subspan(0, ftn.name_space.GetEntries().size() - 1)) {
         ss << std::string(entry.begin(), entry.end()) << "/";
     }
     ss << std::string(entries.back().begin(), entries.back().end());

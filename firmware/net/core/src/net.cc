@@ -234,13 +234,10 @@ extern "C" void app_main(void)
     IntitializeLEDs();
 
     wifi.Begin();
+    // wifi.Connect("fakewifi", "fakepassword");
 
-    std::vector<std::string> ssids;
-    wifi.ScanNetworks(&ssids);
-    for (int i = 0 ;i < ssids.size(); ++i)
-    {
-        NET_LOG_INFO("ssid %d %s", i, ssids[i].c_str());
-    }
+    // Some hidden wifi
+    // ConnectToWifi(wifi);
 
     // setup moq transport
     quicr::ClientConfig config;
@@ -251,6 +248,7 @@ extern "C" void app_main(void)
     config.transport_config.time_queue_max_duration = 5000;
     config.transport_config.tls_cert_filename = "";
     config.transport_config.tls_key_filename = "";
+    config.tick_service_sleep_delay_us = 30000;
 
     // Use mac addr as id for my session
     uint64_t mac = 0;
@@ -309,6 +307,7 @@ extern "C" void app_main(void)
                 case Wifi::State::Initialized:
                 {
                     ConnectToWifi(wifi);
+                    break;
                 }
                 case Wifi::State::Connected:
                 {
