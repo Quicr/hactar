@@ -244,11 +244,7 @@ extern "C" void app_main(void)
 
     wifi.Begin();
 
-    wifi.Connect("fakewifi1", "fakepassword1");
-    wifi.Connect("fakewifi2", "fakepassword2");
-    wifi.Connect("fakewifi3", "fakepassword3");
-    // wifi.Connect("fakewifi4", "fakepassword4");
-    // wifi.Connect("fakewifi5", "fakepassword5");
+    wifi.Connect("m10-interference", "goodlife");
 
     #if defined(my_ssid) && defined(my_ssid_pwd)
     wifi.Connect(my_ssid, my_ssid_pwd);
