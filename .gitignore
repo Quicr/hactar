@@ -21,3 +21,5 @@ dist/
 .vscode
 *code-workspace
 *.obsidian*
+
+*wifi_creds.hh

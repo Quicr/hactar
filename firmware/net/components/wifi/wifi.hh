@@ -28,7 +28,9 @@ public:
         InvalidCredentials,
         Disconnected,
         Error,
-        UnableToConnect
+        UnableToConnect,
+        Scan,
+        Scanning
     };
 
     Wifi();
@@ -81,19 +83,21 @@ private:
     inline void IpEvents(int32_t event_id);
 
     // Private variables
-    std::vector<ap_cred_t> ap_credentials;
-    std::vector<std::string> ssids_in_range;
+    std::vector<ap_cred_t> credentials;
+    std::vector<ap_cred_t> ap_in_range;
+    std::vector<std::string> scanned_aps;
 
-    int32_t ssid_idx;
+    int32_t ap_idx;
     int64_t last_ssid_scan;
     int64_t retry_timeout;
 
     wifi_init_config_t wifi_init_cfg;
     wifi_config_t wifi_cfg;
     State state;
+    State prev_state;
 
     bool is_initialized;
 
-    SemaphoreHandle_t connect_semaphore;
     TaskHandle_t connect_task;
+    std::mutex state_mux;
 };
