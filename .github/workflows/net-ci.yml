@@ -1,0 +1,37 @@
+name: Firmware/Net CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # format-check:
+  #   name: Format Check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: jidicula/clang-format-action@v4.13.0
+  #       with:
+  #         clang-format-version: '18'
+  #         exclude-regex: '(lib)'
+
+  build:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    container:
+      image: espressif/idf:v5.4
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y make git curl unzip cmake bash pkg-config
+
+    - name: Build
+      working-directory: ./firmware/net
+      run: make compile
