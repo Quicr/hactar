@@ -33,7 +33,7 @@ public:
         Scanning
     };
 
-    Wifi();
+    Wifi(const int64_t scan_timeout_ms = 15'000);
     Wifi(Wifi& other) = delete;
     ~Wifi();
     void operator=(const Wifi& other) = delete;
@@ -42,24 +42,18 @@ public:
 
     const std::vector<std::string>& GetNetworksInRange() const;
     void Connect(const std::string& ssid, const std::string& pwd);
-    void Connect(const char* ssid, const char* password);
-    void Connect(
-        const char* ssid,
-        const size_t ssid_len,
-        const char* password,
-        const size_t password_len);
     esp_err_t Disconnect();
 
     State GetState() const;
     bool IsConnected() const;
     bool IsInitialized() const;
 
-    typedef struct
+    struct ap_cred_t
     {
         std::string ssid;
         std::string pwd;
         uint32_t attempts;
-    } ap_cred_t;
+    };
 
 private:
     esp_err_t Initialize();
@@ -71,7 +65,7 @@ private:
 
     // Static functions
     // ESP events need to be static
-    static void WifiTask(void* params);
+    static void WifiTask(void* arg);
     static void EventHandler(void* arg,
         esp_event_base_t event_base,
         int32_t event_id,
@@ -83,6 +77,8 @@ private:
     inline void IpEvents(int32_t event_id);
 
     // Private variables
+    int64_t scan_timeout_ms;
+
     std::vector<ap_cred_t> credentials;
     std::vector<ap_cred_t> ap_in_range;
     std::vector<std::string> scanned_aps;

@@ -244,7 +244,7 @@ extern "C" void app_main(void)
 
     wifi.Begin();
 
-    wifi.Connect("m10-interference", "goodlife");
+    wifi.Connect("m10x-interference", "goodlife");
 
     #if defined(my_ssid) && defined(my_ssid_pwd)
     wifi.Connect(my_ssid, my_ssid_pwd);

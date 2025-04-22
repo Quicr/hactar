@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <iostream>
+#include <bit>
 #include <algorithm>
 #include "logger.hh"
 
@@ -10,7 +11,8 @@
 #include "../../core/inc/macros.hh"
 
 
-Wifi::Wifi():
+Wifi::Wifi(const int64_t scan_timeout_ms):
+    scan_timeout_ms(scan_timeout_ms),
     credentials(),
     ap_in_range(),
     scanned_aps(),
@@ -46,31 +48,12 @@ const std::vector<std::string>& Wifi::GetNetworksInRange() const
 
 void Wifi::Connect(const std::string& ssid, const std::string& pwd)
 {
-    if (ssid.length() == 0 || pwd.length() == 0)
+    if (ssid.empty() || pwd.empty())
     {
         return;
     }
 
-    ap_cred_t creds = { ssid, pwd, 0 };
-    credentials.push_back(std::move(creds));
-}
-
-void Wifi::Connect(const char* ssid, const char* password)
-{
-    Connect(std::string(ssid), std::string(password));
-}
-
-void Wifi::Connect(const char* ssid,
-    const size_t ssid_len,
-    const char* password,
-    const size_t password_len)
-{
-    if (ssid_len == 0 || password_len == 0)
-    {
-        return;
-    }
-
-    Connect(std::string(ssid, ssid + ssid_len), std::string(password + password_len));
+    credentials.push_back({ssid, pwd, 0});
 }
 
 esp_err_t Wifi::Deinitialize()
@@ -100,7 +83,6 @@ esp_err_t Wifi::ScanNetworks()
     // Scan the ssids
     state = State::Scanning;
 
-    // TODO lock
     esp_err_t res = esp_wifi_scan_start(NULL, true);
     if (res != ESP_OK) return res;
 
@@ -112,7 +94,7 @@ esp_err_t Wifi::ScanNetworks()
     res = esp_wifi_scan_get_ap_records(&num_aps, wifi_records);
     for (uint16_t i = 0; i < num_aps; ++i)
     {
-        std::string str = (char*)wifi_records[i].ssid;
+        std::string str = reinterpret_cast<char*>(wifi_records[i].ssid);
         scanned_aps.push_back(str);
 
         // Order of strength
@@ -139,16 +121,13 @@ void Wifi::Connect()
 
     static int32_t last_idx = -1;
 
-    if (scanned_aps.size() == 0)
+    if (scanned_aps.empty())
     {
         NET_LOG_INFO("No scanned aps");
-        // Time to scan
-        prev_state = state;
-        state = State::Scan;
         return;
     }
 
-    if (ap_in_range.size() == 0)
+    if (ap_in_range.empty())
     {
         NET_LOG_INFO("No known aps in range");
         return;
@@ -279,14 +258,14 @@ bool Wifi::IsInitialized() const
 
 /** Private functions **/
 
-void Wifi::WifiTask(void* params)
+void Wifi::WifiTask(void* arg)
 {
     // The future of this function is as follows:
     // - Try to connect to all APs
     // - Sleep until an event happens
     // - Sleep until a new ssid connect comes in
     // - Sleep for a small amount of time and rescan the networks
-    Wifi* wifi = (Wifi*)params;
+    Wifi* wifi = static_cast<Wifi*>(arg);
 
     while (true)
     {
@@ -310,17 +289,14 @@ void Wifi::WifiTask(void* params)
             }
             case State::Connecting:
             {
-                // Do nothing
                 break;
             }
             case State::WaitingForIP:
             {
-                // Do nothing
                 break;
             }
             case State::Connected:
             {
-                // Do nothing
                 break;
             }
             case State::InvalidCredentials:
@@ -341,7 +317,8 @@ void Wifi::WifiTask(void* params)
             }
             case State::Disconnected:
             {
-                // User disconnected from wifi
+                // User decided to disconnect from wifi, so we don't
+                // want to do anything until explicit connecting
                 break;
             }
             case State::Error:
@@ -378,14 +355,14 @@ void Wifi::WifiTask(void* params)
             }
         }
 
-        // NOT IN USE
+        // Note, if we have no scanned aps, then we want to scan a little more often
         if (wifi->state != State::NotInitialized
             && wifi->state != State::Error
             && wifi->state != State::Connecting
             && wifi->state != State::WaitingForIP
             && wifi->state != State::Scan
             && wifi->state != State::Scanning
-            && esp_timer_get_time_ms() - wifi->last_ssid_scan > 15'000)
+            && esp_timer_get_time_ms() - wifi->last_ssid_scan > wifi->scan_timeout_ms)
         {
             std::lock_guard<std::mutex> _(wifi->state_mux);
             wifi->prev_state = wifi->state;
@@ -400,7 +377,7 @@ void Wifi::WifiTask(void* params)
 void Wifi::EventHandler(void* arg, esp_event_base_t event_base,
     int32_t event_id, void* event_data)
 {
-    Wifi* wifi = (Wifi*)arg;
+    Wifi* wifi = static_cast<Wifi*>(arg);
 
     if (event_base == WIFI_EVENT)
     {
@@ -481,7 +458,7 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
         }
         default:
         {
-            NET_LOG_INFO("Unknown wifi event?");
+            NET_LOG_INFO("Unhandled wifi event");
             break;
         }
     }
