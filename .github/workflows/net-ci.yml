@@ -7,16 +7,6 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # format-check:
-  #   name: Format Check
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: jidicula/clang-format-action@v4.13.0
-  #       with:
-  #         clang-format-version: '18'
-  #         exclude-regex: '(lib)'
-
   build:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -38,3 +28,8 @@ jobs:
       run: |
         . $IDF_PATH/export.sh
         make -j compile
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: net.bin
+        path: build/net.bin
