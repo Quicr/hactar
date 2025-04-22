@@ -25,3 +25,13 @@ jobs:
       working-directory: ./firmware/ui
       shell: bash
       run: make -j compile
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      working-directory: ./firmware/ui
+      with:
+        name: ui
+        path: |
+          build/ui.bin
+          build/ui.elf
+          build/ui.hex

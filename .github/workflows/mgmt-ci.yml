@@ -25,3 +25,13 @@ jobs:
       working-directory: ./firmware/mgmt
       shell: bash
       run: make -j compile
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      working-directory: ./firmware/mgmt
+      with:
+        name: mgmt
+        path: |
+          build/mgmt.bin
+          build/mgmt.elf
+          build/mgmt.hex

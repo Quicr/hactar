@@ -29,7 +29,12 @@ jobs:
         . $IDF_PATH/export.sh
         make -j compile
 
-    - uses: actions/upload-artifact@v4
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      working-directory: ./firmware/net
       with:
-        name: net.bin
-        path: build/net.bin
+        name: net
+        path: |
+          build/bootloader/bootloader.bin
+          build/partition_table/partition-table.bin
+          build/net.bin
