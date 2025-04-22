@@ -37,3 +37,4 @@ jobs:
           firmware/net/build/bootloader/bootloader.bin
           firmware/net/build/partition_table/partition-table.bin
           firmware/net/build/net.bin
+          firmware/net/build/net.elf
