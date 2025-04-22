@@ -1,0 +1,40 @@
+name: Firmware/Net CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    container:
+      image: espressif/idf:v5.4
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Dependencies
+      run: |
+        apt-get update
+        apt-get install -y make git curl unzip cmake bash pkg-config
+
+    - name: Build
+      working-directory: ./firmware/net
+      shell: bash
+      run: |
+        . $IDF_PATH/export.sh
+        make -j compile
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: net
+        path: |
+          firmware/net/build/bootloader/bootloader.bin
+          firmware/net/build/partition_table/partition-table.bin
+          firmware/net/build/net.bin
+          firmware/net/build/net.elf

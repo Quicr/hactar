@@ -1,0 +1,36 @@
+name: Firmware/MGMT CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential git gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib stlink-tools python3 pip
+        pip install pyserial
+
+    - name: Build
+      working-directory: ./firmware/mgmt
+      shell: bash
+      run: make -j compile
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: mgmt
+        path: |
+          firmware/mgmt/build/mgmt.bin
+          firmware/mgmt/build/mgmt.elf
+          firmware/mgmt/build/mgmt.hex
