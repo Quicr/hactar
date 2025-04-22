@@ -31,10 +31,9 @@ jobs:
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
-      working-directory: ./firmware/net
       with:
         name: net
         path: |
-          build/bootloader/bootloader.bin
-          build/partition_table/partition-table.bin
-          build/net.bin
+          firmware/net/build/bootloader/bootloader.bin
+          firmware/net/build/partition_table/partition-table.bin
+          firmware/net/build/net.bin

@@ -28,10 +28,9 @@ jobs:
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
-      working-directory: ./firmware/ui
       with:
         name: ui
         path: |
-          build/ui.bin
-          build/ui.elf
-          build/ui.hex
+          firmware/ui/build/ui.bin
+          firmware/ui/build/ui.elf
+          firmware/ui/build/ui.hex
