@@ -20,6 +20,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     continue-on-error: true
+    shell: bash
     container:
       image: espressif/idf:v5.4
     steps:
