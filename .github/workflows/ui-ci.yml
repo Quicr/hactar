@@ -1,0 +1,27 @@
+name: Firmware/UI CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Dependencies
+      run: |
+        apt-get update
+        apt-get install -y build-essential git gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib stlink-tools python3 pip
+        pip install pyserial
+
+    - name: Build
+      working-directory: ./firmware/ui
+      shell: bash
+      run: make -j compile

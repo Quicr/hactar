@@ -37,4 +37,4 @@ jobs:
       shell: bash
       run: |
         . $IDF_PATH/export.sh
-        make compile
+        make -j compile
