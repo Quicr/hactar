@@ -1,7 +1,7 @@
 
-# Schematic 
+# Schematic
 
-### Firmware changes 
+### Firmware changes
 **MGMT**
 - Moved UI_STAT to PB9
 - Moved NET_STAT to PB7
@@ -54,7 +54,8 @@ Mgmt chip changes
 - Added USB_CTS_MGMT
 
 **Audio chip**
-- Put all unused inputs and outputs for audio chip to GNDA
+- Put all unused inputs for audio chip to GNDA
+- All unused outputs are marked as not connected
 
 **General**
 - Add resistor to MCO to GND on CN5
