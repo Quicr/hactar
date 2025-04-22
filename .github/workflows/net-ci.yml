@@ -28,10 +28,9 @@ jobs:
         submodules: recursive
 
     - name: Install Dependencies
-      shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install -y make git curl unzip cmake bash pkg-config
+        apt-get update
+        apt-get install -y make git curl unzip cmake bash pkg-config
 
     - name: Build
       working-directory: ./firmware/net
