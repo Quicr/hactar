@@ -20,7 +20,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     continue-on-error: true
-    shell: bash
     container:
       image: espressif/idf:v5.4
     steps:
@@ -29,6 +28,7 @@ jobs:
         submodules: recursive
 
     - name: Install Dependencies
+      shell: bash
       run: |
         sudo apt-get update
         sudo apt-get install -y make git curl unzip cmake bash pkg-config
