@@ -32,8 +32,6 @@
 #include <inttypes.h>
 #include <memory>
 
-
-// TODO delete me in the near future
 #include "wifi_connect.hh"
 #include "default_json.hh"
 
@@ -86,6 +84,17 @@ Wifi wifi;
 
 uint64_t curr_audio_isr_time = esp_timer_get_time();
 uint64_t last_audio_isr_time = esp_timer_get_time();
+
+// TODO remove me some day
+#ifdef __has_include
+#   if __has_include("wifi_creds.hh")
+#       include "wifi_creds.hh"
+#   else
+#       warning "wifi_creds.hh not found!!
+#   endif
+#else
+#   include "wifi_creds.hh"
+#endif
 
 static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
@@ -234,10 +243,12 @@ extern "C" void app_main(void)
     IntitializeLEDs();
 
     wifi.Begin();
-    // wifi.Connect("fakewifi", "fakepassword");
 
-    // Some hidden wifi
-    // ConnectToWifi(wifi);
+    wifi.Connect("m10x-interference", "goodlife");
+
+    #if defined(my_ssid) && defined(my_ssid_pwd)
+    wifi.Connect(my_ssid, my_ssid_pwd);
+    #endif
 
     // setup moq transport
     quicr::ClientConfig config;
@@ -289,6 +300,8 @@ extern "C" void app_main(void)
     {
         moq::Session::Status status = moq_session->GetStatus();
         Wifi::State wifi_state = wifi.GetState();
+
+        // TODO cleanup
         if (prev_wifi_state != wifi_state)
         {
             prev_wifi_state = wifi_state;
@@ -306,7 +319,6 @@ extern "C" void app_main(void)
                 }
                 case Wifi::State::Initialized:
                 {
-                    ConnectToWifi(wifi);
                     break;
                 }
                 case Wifi::State::Connected:

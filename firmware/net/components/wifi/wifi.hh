@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-
 // TODO scrolling
 #define MAX_AP 10
 
@@ -26,47 +25,47 @@ public:
         Connecting,
         WaitingForIP,
         Connected,
+        InvalidCredentials,
         Disconnected,
         Error,
-        InvalidCredentials
+        UnableToConnect,
+        Scan,
+        Scanning
     };
 
-    Wifi();
+    Wifi(const int64_t scan_timeout_ms = 15'000);
     Wifi(Wifi& other) = delete;
     ~Wifi();
     void operator=(const Wifi& other) = delete;
 
     void Begin();
 
-    void Connect(const char* ssid, const char* password);
-    void Connect(
-        const char* ssid,
-        const size_t ssid_len,
-        const char* password,
-        const size_t password_len);
+    const std::vector<std::string>& GetNetworksInRange() const;
+    void Connect(const std::string& ssid, const std::string& pwd);
     esp_err_t Disconnect();
-    esp_err_t ScanNetworks(std::vector<std::string>* ssids);
 
     State GetState() const;
     bool IsConnected() const;
     bool IsInitialized() const;
 
-private:
-    typedef struct
+    struct ap_cred_t
     {
-        char* ssid;
-        size_t ssid_len;
-        char* password;
-        const size_t password_len;
-    } wifi_creds;
+        std::string ssid;
+        std::string pwd;
+        uint32_t attempts;
+    };
 
+private:
     esp_err_t Initialize();
     // TODO test deinit and init for deep sleep.
     esp_err_t Deinitialize();
+    esp_err_t ScanNetworks();
+
+    void Connect();
 
     // Static functions
     // ESP events need to be static
-    static void ConnectTask(void* params);
+    static void WifiTask(void* arg);
     static void EventHandler(void* arg,
         esp_event_base_t event_base,
         int32_t event_id,
@@ -77,19 +76,24 @@ private:
     inline void WifiEvents(int32_t event_id, void* event_data);
     inline void IpEvents(int32_t event_id);
 
-    // inline void SendWifiConnectedPacket();
-    // inline void SendWifiDisconnectPacket();
-    // inline void SendWifiFailedToConnectPacket();
-
-
     // Private variables
+    int64_t scan_timeout_ms;
+
+    std::vector<ap_cred_t> credentials;
+    std::vector<ap_cred_t> ap_in_range;
+    std::vector<std::string> scanned_aps;
+
+    int32_t ap_idx;
+    int64_t last_ssid_scan;
+    int64_t retry_timeout;
+
     wifi_init_config_t wifi_init_cfg;
     wifi_config_t wifi_cfg;
     State state;
+    State prev_state;
 
-    uint8_t failed_attempts;
     bool is_initialized;
 
-    SemaphoreHandle_t connect_semaphore;
     TaskHandle_t connect_task;
+    std::mutex state_mux;
 };

@@ -2,20 +2,27 @@
 
 #include <mutex>
 #include <iostream>
+#include <bit>
 #include <algorithm>
 #include "logger.hh"
 
 #include "esp_log.h"
 
+#include "../../core/inc/macros.hh"
 
-Wifi::Wifi():
+
+Wifi::Wifi(const int64_t scan_timeout_ms):
+    scan_timeout_ms(scan_timeout_ms),
+    credentials(),
+    ap_in_range(),
+    scanned_aps(),
+    ap_idx(0),
     wifi_init_cfg(WIFI_INIT_CONFIG_DEFAULT()),
     wifi_cfg({}),
     state(State::NotInitialized),
-    failed_attempts(0),
     is_initialized(false),
-    connect_semaphore(),
-    connect_task()
+    connect_task(),
+    state_mux()
 {}
 
 Wifi::~Wifi()
@@ -26,14 +33,7 @@ Wifi::~Wifi()
 
 void Wifi::Begin()
 {
-    connect_semaphore = xSemaphoreCreateBinary();
-
-    // Start with a value of 1 for readability
-    xSemaphoreGive(connect_semaphore);
-
-    ESP_ERROR_CHECK(Initialize());
-
-    xTaskCreate(ConnectTask,
+    xTaskCreate(WifiTask,
         "wifi_connect_task",
         4096,
         (void*)this,
@@ -41,86 +41,47 @@ void Wifi::Begin()
         &connect_task);
 }
 
-void Wifi::Connect(const char* ssid, const char* password)
+const std::vector<std::string>& Wifi::GetNetworksInRange() const
 {
-    NET_LOG_ERROR("ssid len", std::min(strlen(ssid), (size_t)sizeof(wifi_cfg.sta.ssid)));
-    NET_LOG_ERROR("ssid pwd len", std::min(strlen(password), (size_t)sizeof(wifi_cfg.sta.password)));
-    Connect(ssid,
-        std::min(strlen(ssid), (size_t)sizeof(wifi_cfg.sta.ssid)),
-        password,
-        std::min(strlen(password), (size_t)sizeof(wifi_cfg.sta.password))
-    );
+    return scanned_aps;
 }
 
-void Wifi::Connect(const char* ssid,
-    const size_t ssid_len,
-    const char* password,
-    const size_t password_len)
+void Wifi::Connect(const std::string& ssid, const std::string& pwd)
 {
-    // Clear the current values
-    memset(wifi_cfg.sta.ssid, 0, sizeof(wifi_cfg.sta.ssid));
-    memset(wifi_cfg.sta.password, 0, sizeof(wifi_cfg.sta.password));
-
-    memcpy(wifi_cfg.sta.ssid,
-        ssid,
-        ssid_len);
-
-    memcpy(wifi_cfg.sta.password,
-        password,
-        password_len);
-
-    NET_LOG_ERROR("ssid: %s password: %s", ssid, password);
-
-    while (!xSemaphoreTake(connect_semaphore, 1000))
+    if (ssid.empty() || pwd.empty())
     {
-        Logger::Log(Logger::Level::Warn, "Connect() Waiting for semaphore");
+        return;
     }
 
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
-
-    state = State::ReadyToConnect;
-
-    xSemaphoreGive(connect_semaphore);
-    NET_LOG_INFO("SetCredentialsTask() Ready to connect state: %i", (int)state);
+    credentials.push_back({ssid, pwd, 0});
 }
 
 esp_err_t Wifi::Deinitialize()
 {
-    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY))
-    {
-        Logger::Log(Logger::Level::Warn, "Deinitialize() Waiting for semaphore");
-    }
+    std::lock_guard<std::mutex> _(state_mux);
 
     state = State::NotInitialized;
     esp_err_t status = esp_wifi_deinit();
 
-    xSemaphoreGive(connect_semaphore);
     return status;
 }
 
 esp_err_t Wifi::Disconnect()
 {
-    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY))
-    {
-        Logger::Log(Logger::Level::Warn, "Disconnect() Waiting for semaphore");
-    }
+    std::lock_guard<std::mutex> _(state_mux);
 
     state = State::Disconnected;
     esp_err_t status = esp_wifi_disconnect();
 
-    xSemaphoreGive(connect_semaphore);
     return status;
 }
 
-esp_err_t Wifi::ScanNetworks(std::vector<std::string>* ssids)
+esp_err_t Wifi::ScanNetworks()
 {
-    // TODO
-    // wifi_scan_config_t scan_config = {
-    //     .ssid = 0,
-    //     .bssid = 0,
-    //     .channel = 0,
-    //     .show_hidden = true
-    // };
+    std::lock_guard<std::mutex> _(state_mux);
+
+    // Scan the ssids
+    state = State::Scanning;
 
     esp_err_t res = esp_wifi_scan_start(NULL, true);
     if (res != ESP_OK) return res;
@@ -128,23 +89,89 @@ esp_err_t Wifi::ScanNetworks(std::vector<std::string>* ssids)
     wifi_ap_record_t wifi_records[MAX_AP];
     uint16_t num_aps = MAX_AP;
 
+    scanned_aps.clear();
+    ap_in_range.clear();
     res = esp_wifi_scan_get_ap_records(&num_aps, wifi_records);
     for (uint16_t i = 0; i < num_aps; ++i)
     {
-        std::string str = (char*)wifi_records[i].ssid;
-        ssids->push_back(str);
+        std::string str = reinterpret_cast<char*>(wifi_records[i].ssid);
+        scanned_aps.push_back(str);
+
+        // Order of strength
+        for (uint16_t j = 0; j < credentials.size(); ++j)
+        {
+            // totally inefficient, but the lists are small so eh
+            if (str == credentials[j].ssid)
+            {
+                ap_in_range.push_back(credentials[j]);
+            }
+        }
     }
 
+    NET_LOG_INFO("Num of aps in range %d", ap_in_range.size());
+
+    ap_idx = 0;
     return res;
+}
+
+void Wifi::Connect()
+{
+    NET_LOG_INFO("Connect to wifi");
+    std::lock_guard<std::mutex> _(state_mux);
+
+    static int32_t last_idx = -1;
+
+    if (scanned_aps.empty())
+    {
+        NET_LOG_INFO("No scanned aps");
+        return;
+    }
+
+    if (ap_in_range.empty())
+    {
+        NET_LOG_INFO("No known aps in range");
+        return;
+    }
+
+    if (ap_idx >= ap_in_range.size())
+    {
+        NET_LOG_ERROR("Connect: somehow got a larger ap_idx than what we have");
+        abort();
+    }
+
+    if (last_idx != ap_idx)
+    {
+        const ap_cred_t& creds = ap_in_range[ap_idx];
+
+        last_idx = ap_idx;
+
+        // Clear the current values
+        memset(wifi_cfg.sta.ssid, 0, sizeof(wifi_cfg.sta.ssid));
+        memset(wifi_cfg.sta.password, 0, sizeof(wifi_cfg.sta.password));
+
+        memcpy(wifi_cfg.sta.ssid,
+            creds.ssid.c_str(),
+            creds.ssid.length());
+
+        memcpy(wifi_cfg.sta.password,
+            creds.pwd.c_str(),
+            creds.pwd.length());
+    }
+
+    NET_LOG_ERROR("Ap Info: ssid: %s password: %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
+
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
+
+    state = State::Connecting;
+
+    NET_LOG_INFO("SetCredentialsTask() Ready to connect state: %i", (int)state);
+
+    ESP_ERROR_CHECK(esp_wifi_connect());
 }
 
 esp_err_t Wifi::Initialize()
 {
-
-    while (!xSemaphoreTake(connect_semaphore, portMAX_DELAY))
-    {
-        NET_LOG_ERROR("Semaphore should not be in use now????");
-    };
+    std::lock_guard<std::mutex> _(state_mux);
 
     NET_LOG_INFO("Begin initialization:");
 
@@ -231,68 +258,159 @@ bool Wifi::IsInitialized() const
 
 /** Private functions **/
 
-void Wifi::ConnectTask(void* params)
+void Wifi::WifiTask(void* arg)
 {
-    Wifi* instance = (Wifi*)params;
+    // The future of this function is as follows:
+    // - Try to connect to all APs
+    // - Sleep until an event happens
+    // - Sleep until a new ssid connect comes in
+    // - Sleep for a small amount of time and rescan the networks
+    Wifi* wifi = static_cast<Wifi*>(arg);
 
     while (true)
     {
+        switch (wifi->state)
+        {
+            case State::NotInitialized:
+            {
+                ESP_ERROR_CHECK(wifi->Initialize());
+                break;
+            }
+            case State::Initialized:
+            {
+                // Begin trying to connect
+                wifi->Connect();
+                break;
+            }
+            case State::ReadyToConnect:
+            {
+                wifi->Connect();
+                break;
+            }
+            case State::Connecting:
+            {
+                break;
+            }
+            case State::WaitingForIP:
+            {
+                break;
+            }
+            case State::Connected:
+            {
+                break;
+            }
+            case State::InvalidCredentials:
+            {
+                if (++wifi->ap_idx >= wifi->ap_in_range.size())
+                {
+                    NET_LOG_INFO("All ssids have been tried");
+
+                    wifi->state = State::UnableToConnect;
+                    wifi->ap_idx = 0;
+                    wifi->retry_timeout = esp_timer_get_time_ms();
+                }
+                else
+                {
+                    wifi->Connect();
+                }
+                break;
+            }
+            case State::Disconnected:
+            {
+                // User decided to disconnect from wifi, so we don't
+                // want to do anything until explicit connecting
+                break;
+            }
+            case State::Error:
+            {
+                // TODO print some error state, send error to ui
+                break;
+            }
+            case State::UnableToConnect:
+            {
+                // We'll stay in the state, and try again later.
+                if (esp_timer_get_time_ms() - wifi->retry_timeout < 10000)
+                {
+                    break;
+                }
+
+                wifi->state = State::ReadyToConnect;
+                break;
+            }
+            case State::Scan:
+            {
+                ESP_ERROR_CHECK(wifi->ScanNetworks());
+                break;
+            }
+            case State::Scanning:
+            {
+                break;
+            }
+            default:
+            {
+                // Error
+                NET_LOG_ERROR("Connect state got into an unknown state, will abort in 1 second");
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
+                abort();
+            }
+        }
+
+        // Note, if we have no scanned aps, then we want to scan a little more often
+        if (wifi->state != State::NotInitialized
+            && wifi->state != State::Error
+            && wifi->state != State::Connecting
+            && wifi->state != State::WaitingForIP
+            && wifi->state != State::Scan
+            && wifi->state != State::Scanning
+            && esp_timer_get_time_ms() - wifi->last_ssid_scan > wifi->scan_timeout_ms)
+        {
+            std::lock_guard<std::mutex> _(wifi->state_mux);
+            wifi->prev_state = wifi->state;
+            wifi->state = State::Scan;
+        }
+
         // Delay for a second
         vTaskDelay(2500 / portTICK_PERIOD_MS);
-
-        // If the state is ready to be connected to something then do it.
-        if (instance->state != State::ReadyToConnect)
-        {
-            continue;
-        }
-
-        // Try to take the semaphore
-        while (!xSemaphoreTake(instance->connect_semaphore, portMAX_DELAY))
-        {
-            Logger::Log(Logger::Level::Warn, "ConnectTask() Waiting for semaphore");
-        }
-        // Give semaphore in IP/HTTP events
-
-        NET_LOG_INFO("connect() state ", (int)instance->state);
-
-        esp_err_t status = { ESP_OK };
-        ESP_ERROR_CHECK(esp_wifi_connect());
-        if (status == ESP_OK)
-        {
-            NET_LOG_INFO("moving to connecting state");
-            instance->state = State::Connecting;
-        }
     }
 }
 
 void Wifi::EventHandler(void* arg, esp_event_base_t event_base,
     int32_t event_id, void* event_data)
 {
-    Wifi* instance = (Wifi*)arg;
+    Wifi* wifi = static_cast<Wifi*>(arg);
 
     if (event_base == WIFI_EVENT)
     {
-        instance->WifiEvents(event_id, event_data);
+        wifi->WifiEvents(event_id, event_data);
     }
     else if (event_base == IP_EVENT)
     {
-        instance->IpEvents(event_id);
+        wifi->IpEvents(event_id);
     }
 }
 
 inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
 {
     const wifi_event_t event_type{ static_cast<wifi_event_t>(event_id) };
-    NET_LOG_INFO("Wifi Event -- event", (int)event_id);
+    NET_LOG_INFO("Wifi Event -- event %d", (int)event_id);
+
+    std::lock_guard<std::mutex> _(state_mux);
 
     switch (event_type)
     {
+        case WIFI_EVENT_SCAN_DONE:
+        {
+            state = prev_state;
+            last_ssid_scan = esp_timer_get_time_ms();
+
+            NET_LOG_INFO("Wifi Event- done scanning!");
+            break;
+        }
         case WIFI_EVENT_STA_START:
         {
             state = State::Initialized;
             is_initialized = true;
             NET_LOG_INFO("Wifi Event - Initialized");
-            xSemaphoreGive(connect_semaphore);
             break;
         }
         case WIFI_EVENT_STA_CONNECTED:
@@ -300,7 +418,6 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
             state = State::WaitingForIP;
             // SendWifiConnectedPacket();
             NET_LOG_INFO("Wifi Event - Waiting for IP");
-            xSemaphoreGive(connect_semaphore);
             break;
         }
         case WIFI_EVENT_STA_DISCONNECTED:
@@ -310,12 +427,11 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
             // a disconnected event is called
             if (state == State::Connecting)
             {
-                if (++failed_attempts == MAX_ATTEMPTS)
+                if (ap_in_range[ap_idx].attempts++ >= MAX_ATTEMPTS)
                 {
                     // Reset to ready to connect
                     state = State::InvalidCredentials;
-                    failed_attempts = 0;
-                    // SendWifiFailedToConnectPacket();
+                    ap_in_range[ap_idx].attempts = 0;
                     NET_LOG_ERROR("Max failed attempts, invalid credentials");
                 }
                 else
@@ -325,12 +441,11 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
             }
             else
             {
+                NET_LOG_INFO("Fully disconnected, won't try to reconnect");
                 // If we just decide to disconnect the wifi
                 state = State::Disconnected;
-                // SendWifiDisconnectPacket();
             }
 
-            xSemaphoreGive(connect_semaphore);
             break;
         }
         case WIFI_EVENT_STA_STOP:
@@ -339,11 +454,13 @@ inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
             is_initialized = false;
 
             // This is assuming this is how it works.
-            xSemaphoreGive(connect_semaphore);
             break;
         }
         default:
+        {
+            NET_LOG_INFO("Unhandled wifi event");
             break;
+        }
     }
 }
 
@@ -351,14 +468,15 @@ inline void Wifi::IpEvents(int32_t event_id)
 {
     NET_LOG_INFO("IP Event - %d", (int)event_id);
 
+    std::lock_guard<std::mutex> _(state_mux);
+
     switch (event_id)
     {
         case IP_EVENT_STA_GOT_IP:
         {
             NET_LOG_INFO("IP Event - Got IP");
-            failed_attempts = 0;
+            ap_in_range[ap_idx].attempts = 0;
             state = State::Connected;
-            xSemaphoreGive(connect_semaphore);
             break;
         }
         case IP_EVENT_STA_LOST_IP:
@@ -368,7 +486,6 @@ inline void Wifi::IpEvents(int32_t event_id)
                 state = State::WaitingForIP;
             }
             NET_LOG_INFO("IP Event - Lost IP");
-            xSemaphoreGive(connect_semaphore);
             break;
         }
         default:
@@ -377,63 +494,3 @@ inline void Wifi::IpEvents(int32_t event_id)
         }
     }
 }
-
-// void Wifi::SendWifiConnectedPacket()
-// {
-//     auto packet = std::make_unique<SerialPacket>(8);
-
-//     // Type
-//     packet->SetData(SerialPacket::Types::Command, 0, 1);
-
-//     // Id
-//     packet->SetData(serial.NextPacketId(), 1, 2);
-
-//     // Size
-//     packet->SetData(3, 3, 2);
-
-//     packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
-
-//     packet->SetData(SerialPacket::WifiTypes::Connect, 7, 1);
-
-//     serial.EnqueuePacket(std::move(packet));
-// }
-
-// void Wifi::SendWifiDisconnectPacket()
-// {
-//     auto packet = std::make_unique<SerialPacket>(8);
-
-//     // Type
-//     packet->SetData(SerialPacket::Types::Command, 0, 1);
-
-//     // Id
-//     packet->SetData(serial.NextPacketId(), 1, 2);
-
-//     // Size
-//     packet->SetData(3, 3, 2);
-
-//     packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
-
-//     packet->SetData(SerialPacket::WifiTypes::Disconnect, 7, 1);
-
-//     serial.EnqueuePacket(std::move(packet));
-// }
-
-// void Wifi::SendWifiFailedToConnectPacket()
-// {
-//     auto packet = std::make_unique<SerialPacket>(8);
-
-//     // Type
-//     packet->SetData(SerialPacket::Types::Command, 0, 1);
-
-//     // Id
-//     packet->SetData(serial.NextPacketId(), 1, 2);
-
-//     // Size
-//     packet->SetData(3, 3, 2);
-
-//     packet->SetData(SerialPacket::Commands::Wifi, 5, 2);
-
-//     packet->SetData(SerialPacket::WifiTypes::FailedToConnect, 7, 1);
-
-//     serial.EnqueuePacket(std::move(packet));
-// }
