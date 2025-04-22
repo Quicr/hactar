@@ -35,4 +35,6 @@ jobs:
     - name: Build
       working-directory: ./firmware/net
       shell: bash
-      run: make compile
+      run: |
+        . $IDF_PATH/export.sh
+        make compile
