@@ -1,7 +1,6 @@
 #pragma once
 
 #include "stm32.h"
-
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -24,13 +23,13 @@
 #endif
 
 #if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_WARN
-#define UI_LOG_WARN(format, ...)  UI_LOG(Logger::Level::Warn, format, __VA_ARGS__)
+#define UI_LOG_WARN(format, ...) UI_LOG(Logger::Level::Warn, format, __VA_ARGS__)
 #else
 #define UI_LOG_WARN(...)
 #endif
 
 #if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_INFO
-#define UI_LOG_INFO(format, ...)  UI_LOG(Logger::Level::Info, format, __VA_ARGS__)
+#define UI_LOG_INFO(format, ...) UI_LOG(Logger::Level::Info, format, __VA_ARGS__)
 #else
 #define UI_LOG_INFO(...)
 #endif
@@ -62,9 +61,10 @@ public:
         std::sprintf(log_line, format, args...);
 
         char line[MAX_LOG_LENGTH + 8];
-        const auto line_size = std::sprintf(line, "[UI-%s] %s\n", log_level_string(level).c_str(), log_line);
+        const auto line_size =
+            std::sprintf(line, "[UI-%s] %s\n", log_level_string(level).c_str(), log_line);
 
-        const auto *line_ptr = reinterpret_cast<const uint8_t *>(line);
+        const auto* line_ptr = reinterpret_cast<const uint8_t*>(line);
         HAL_UART_Transmit(&huart1, line_ptr, line_size, HAL_MAX_DELAY);
     }
 
@@ -84,10 +84,14 @@ private:
     {
         switch (level)
         {
-        case Level::Error: return "E";
-        case Level::Warn:  return "W";
-        case Level::Info:  return "I";
-        case Level::Debug: return "D";
+        case Level::Error:
+            return "E";
+        case Level::Warn:
+            return "W";
+        case Level::Info:
+            return "I";
+        case Level::Debug:
+            return "D";
         }
 
         return "UNKN";

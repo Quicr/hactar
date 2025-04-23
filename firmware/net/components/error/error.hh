@@ -1,8 +1,8 @@
 #pragma once
 
+#include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/gpio.h"
 
 // #include "../../core/inc/net_pins.hh"
 
@@ -24,4 +24,3 @@ static void ErrorState(const char* caller,
     //     vTaskDelay(1000 / portTICK_PERIOD_MS);
     // }
 }
-

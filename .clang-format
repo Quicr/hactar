@@ -22,6 +22,7 @@ ContinuationIndentWidth: 4
 IndentAccessModifiers: false
 AccessModifierOffset: -4
 BreakConstructorInitializers: AfterColon
+IndentExternBlock: NoIndent
 
 # --- ALIGNMENT ---
 AlignAfterOpenBracket: Align
@@ -45,7 +46,26 @@ ColumnLimit: 100
 
 AlwaysBreakTemplateDeclarations: Yes
 BreakBeforeBinaryOperators: NonAssignment
-BreakBeforeBraces: Allman
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: false
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
 
 PenaltyBreakBeforeFirstCallParameter: 19 # LLVM default
 

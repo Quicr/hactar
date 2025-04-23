@@ -1,5 +1,4 @@
 #include "serial.hh"
-
 #include "logger.hh"
 #include <random>
 
@@ -7,13 +6,20 @@
 // has many flaws, including but not limited to taking forever and less
 // granularity.
 
-Serial::Serial(const uart_port_t port, uart_dev_t& uart,
-    TaskHandle_t& read_handle, const periph_interrput_t intr_source,
-    const uart_config_t uart_config, const int tx_pin, const int rx_pin,
-    const int rts_pin, const int cts_pin,
-    uint8_t& tx_buff, const uint32_t tx_buff_sz,
-    uint8_t& rx_buff, const uint32_t rx_buff_sz,
-    const uint32_t rx_rings):
+Serial::Serial(const uart_port_t port,
+               uart_dev_t& uart,
+               TaskHandle_t& read_handle,
+               const periph_interrput_t intr_source,
+               const uart_config_t uart_config,
+               const int tx_pin,
+               const int rx_pin,
+               const int rts_pin,
+               const int cts_pin,
+               uint8_t& tx_buff,
+               const uint32_t tx_buff_sz,
+               uint8_t& rx_buff,
+               const uint32_t rx_buff_sz,
+               const uint32_t rx_rings) :
     SerialHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this),
     port(port),
     read_handle(read_handle),
@@ -35,7 +41,6 @@ Serial::~Serial()
 
     uart_driver_delete(port);
 }
-
 
 void Serial::UpdateUnread(const uint16_t update)
 {
@@ -67,73 +72,72 @@ void Serial::EventTask(void* arg)
 
         switch (event.type)
         {
-            case UART_DATA:
+        case UART_DATA:
+        {
+            int space_remain;
+            int bytes_to_read;
+            int num_bytes = 0;
+            int total_read = 0;
+            while (total_read < event.size)
             {
-                int space_remain;
-                int bytes_to_read;
-                int num_bytes = 0;
-                int total_read = 0;
-                while (total_read < event.size)
+                space_remain = serial->rx_buff_sz - serial->rx_write_idx;
+
+                bytes_to_read = space_remain < event.size ? space_remain : event.size;
+
+                num_bytes = uart_read_bytes(serial->port, serial->rx_buff + serial->rx_write_idx,
+                                            bytes_to_read, 0);
+
+                if (num_bytes == -1)
                 {
-                    space_remain = serial->rx_buff_sz - serial->rx_write_idx;
-
-                    bytes_to_read = space_remain < event.size ? space_remain : event.size;
-
-                    num_bytes = uart_read_bytes(serial->port, serial->rx_buff + serial->rx_write_idx,
-                        bytes_to_read, 0);
-
-                    if (num_bytes == -1)
-                    {
-                        continue;
-                    }
-
-                    total_read += num_bytes;
-
-                    serial->rx_write_idx += num_bytes;
-                    if (serial->rx_write_idx >= serial->rx_buff_sz)
-                    {
-                        serial->rx_write_idx = 0;
-                    }
-
+                    continue;
                 }
-                serial->unread += total_read;
 
-                xTaskNotifyGive(serial->read_handle);
+                total_read += num_bytes;
 
-                break;
+                serial->rx_write_idx += num_bytes;
+                if (serial->rx_write_idx >= serial->rx_buff_sz)
+                {
+                    serial->rx_write_idx = 0;
+                }
             }
-            case UART_FIFO_OVF:
-            {
+            serial->unread += total_read;
 
-                ESP_LOGW("SerialPort", "FIFO Overflow detected");
-                uart_flush_input(serial->port);
-                xQueueReset(serial->queue);
-                break;
-            }
-            case UART_BUFFER_FULL:
-            {
-                ESP_LOGW("SerialPort", "Ring buffer full");
-                uart_flush_input(serial->port);
-                xQueueReset(serial->queue);
-                break;
-            }
-            case UART_PARITY_ERR:
-            {
+            xTaskNotifyGive(serial->read_handle);
 
-                ESP_LOGE("SerialPort", "Parity error");
-                break;
-            }
-            case UART_FRAME_ERR:
-            {
+            break;
+        }
+        case UART_FIFO_OVF:
+        {
 
-                ESP_LOGE("SerialPort", "Frame error");
-                break;
-            }
-            default:
-            {
-                ESP_LOGI("SerialPort", "Unhandled UART event type: %d", event.type);
-                break;
-            }
+            ESP_LOGW("SerialPort", "FIFO Overflow detected");
+            uart_flush_input(serial->port);
+            xQueueReset(serial->queue);
+            break;
+        }
+        case UART_BUFFER_FULL:
+        {
+            ESP_LOGW("SerialPort", "Ring buffer full");
+            uart_flush_input(serial->port);
+            xQueueReset(serial->queue);
+            break;
+        }
+        case UART_PARITY_ERR:
+        {
+
+            ESP_LOGE("SerialPort", "Parity error");
+            break;
+        }
+        case UART_FRAME_ERR:
+        {
+
+            ESP_LOGE("SerialPort", "Frame error");
+            break;
+        }
+        default:
+        {
+            ESP_LOGI("SerialPort", "Unhandled UART event type: %d", event.type);
+            break;
+        }
         }
     }
 }

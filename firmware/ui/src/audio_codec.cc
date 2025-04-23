@@ -1,9 +1,12 @@
 #include "audio_codec.hh"
-
 #include <math.h>
 
-void AudioCodec::ALawCompand(const uint16_t* input, const size_t input_len,
-    uint8_t* output, const size_t output_len, const bool input_stereo, const bool output_stereo)
+void AudioCodec::ALawCompand(const uint16_t* input,
+                             const size_t input_len,
+                             uint8_t* output,
+                             const size_t output_len,
+                             const bool input_stereo,
+                             const bool output_stereo)
 {
     if ((input_stereo && output_stereo) || (!input_stereo && !output_stereo))
     {
@@ -44,8 +47,12 @@ void AudioCodec::ALawCompand(const uint16_t* input, const size_t input_len,
     }
 }
 
-void AudioCodec::ALawExpand(const uint8_t* input, const size_t input_len,
-    uint16_t* output, const size_t output_len, const bool input_stereo, const bool output_stereo)
+void AudioCodec::ALawExpand(const uint8_t* input,
+                            const size_t input_len,
+                            uint16_t* output,
+                            const size_t output_len,
+                            const bool input_stereo,
+                            const bool output_stereo)
 {
     if ((input_stereo && output_stereo) || (!input_stereo && !output_stereo))
     {
@@ -88,7 +95,7 @@ void AudioCodec::ALawExpand(const uint8_t* input, const size_t input_len,
 
 void AudioCodec::ALawCompand(const uint16_t* input, uint8_t* output, const size_t len)
 {
-    for (size_t i = 0 ; i < len; ++i)
+    for (size_t i = 0; i < len; ++i)
     {
         output[i] = ALawCompand(input[i]);
     }

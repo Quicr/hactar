@@ -1,17 +1,14 @@
 #ifndef __MOQT_SESSION__
 #define __MOQT_SESSION__
 
+#include "constants.hh"
 #include "moq_track_reader.hh"
 #include "moq_track_writer.hh"
-#include "constants.hh"
 #include "serial.hh"
-
 #include <nlohmann/json.hpp>
 #include <quicr/client.h>
 #include <quicr/detail/defer.h>
-
 #include <map>
-
 
 namespace moq
 {
@@ -19,10 +16,10 @@ namespace moq
 using json = nlohmann::json;
 
 /**
-* MoQSession identifies a client session with the MOQ Peer
-*/
+ * MoQSession identifies a client session with the MOQ Peer
+ */
 
-class Session: public quicr::Client
+class Session : public quicr::Client
 {
 public:
     using quicr::Client::Client;
@@ -30,7 +27,6 @@ public:
     Session(const quicr::ClientConfig& cfg);
 
     virtual ~Session() = default;
-
 
     void StatusChanged(Status status) override;
 
@@ -71,5 +67,5 @@ private:
     StackType_t* writers_task_stack;
 };
 
-}
+} // namespace moq
 #endif
