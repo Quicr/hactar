@@ -12,7 +12,10 @@
 
 #ifdef CRYPTO
 #include <cmox_crypto.h>
+#include <cmox_init.h>
+#include <cmox_low_level.h>
 #include <sframe/sframe.h>
+#include <stm32f4xx_hal.h>
 #endif
 
 #include <string.h>
@@ -117,6 +120,25 @@ char* itoa(int value, char* str, int& len, int base)
 
     return str;
 }
+
+#ifdef CRYPTO
+cmox_init_retval_t cmox_ll_init(void* pArg)
+{
+    (void)pArg;
+    /* Ensure CRC is enabled for cryptographic processing */
+    __HAL_RCC_CRC_RELEASE_RESET();
+    __HAL_RCC_CRC_CLK_ENABLE();
+    return CMOX_INIT_SUCCESS;
+}
+
+cmox_init_retval_t cmox_ll_deInit(void* pArg)
+{
+    (void)pArg;
+    /* Do not turn off CRC to avoid side effect on other SW parts using it */
+    return CMOX_INIT_SUCCESS;
+}
+
+#endif
 
 // Handlers
 extern UART_HandleTypeDef huart1;

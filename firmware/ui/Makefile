@@ -34,7 +34,9 @@ OPT = -Os
 # Build path
 BUILD_DIR = ./build
 CRYPTO=
-STM32_CRYPTO_INCLUDE_DIR=
+STM32_CRYPTO_DIR=
+STM32_CRYPTO_INCLUDE_DIR=${STM32_CRYPTO_DIR}/include
+STM32_CRYPTO_LIB_DIR=${STM32_CRYPTO_DIR}/lib
 
 #######################################
 # programming
@@ -104,7 +106,7 @@ INCS =  \
 -IDrivers/CMSIS/Include
 
 ifdef CRYPTO
-	INCS += -I${STM32_CRYPTO_INCLUDE_DIR}
+INCS += -I${STM32_CRYPTO_INCLUDE_DIR}
 endif
 
 INCS += $(addprefix -I,$(shell find inc -type d))
@@ -237,10 +239,14 @@ LDSCRIPT = stm32f405rgtx_flash.ld
 
 # libraries
 # LIBS = -lc -lm -lnosys -lrdimon -lSTM32Cryptographic_CM4
-LIBS = -lc -lm -lnosys -lSTM32Cryptographic_CM4
+LIBS = -lc -lm -lnosys
 LIBDIR = -Llib
 LDFLAGS = $(MCU) --specs=nosys.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/${TARGET}.map,--cref -Wl,--gc-sections
 
+ifdef CRYPTO
+LIBS += -lSTM32Cryptographic_CM4
+LIBDIR += -L$(STM32_CRYPTO_LIB_DIR)
+endif
 #######################################
 # build the application
 #######################################
