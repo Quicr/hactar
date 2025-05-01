@@ -9,13 +9,25 @@
 #include "screen.hh"
 #include "serial.hh"
 #include "ui_net_link.hh"
+
+#ifdef CRYPTO
+#include <cmox_crypto.h>
+#include <sframe/sframe.h>
+#endif
+
 #include <string.h>
 #include <random>
+#include <span>
 
 // Forward declare
 inline void CheckPTT();
 inline void CheckPTTAI();
 inline void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type);
+
+#ifdef CRYPTO
+const std::string mls_key = "sixteen byte key";
+const std::vector<uint8_t> mls_key_bytes(mls_key.begin(), mls_key.end());
+#endif
 
 #define HIGH GPIO_PIN_SET
 #define LOW GPIO_PIN_RESET
@@ -200,6 +212,13 @@ const uint8_t ptt_ai_channel = 1;
 int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
+
+#ifdef CRYPTO
+    if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
+    {
+        throw sframe::crypto_error();
+    }
+#endif
 
     Renderer renderer(screen, keyboard);
 
@@ -391,6 +410,16 @@ void HandleRecvLinkPackets()
             return;
         }
 
+#ifdef CRYPTO
+        auto recv = sframe::MLSContext(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
+        recv.add_epoch(1, mls_key_bytes);
+
+        auto payload = recv.unprotect(
+            sframe::output_bytes{link_packet->payload, link_packet_t::Payload_Size}.subspan(1),
+            sframe::input_bytes{link_packet->payload, link_packet->length}.subspan(1), {});
+        link_packet->length = payload.size() + 1;
+#endif
+
         ++num_packets_rx;
         switch ((ui_net_link::Packet_Type)link_packet->type)
         {
@@ -566,6 +595,19 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
 
     talk_frame.channel_id = channel_id;
     ui_net_link::Serialize(talk_frame, packet_type, talk_packet);
+
+#ifdef CRYPTO
+    auto send = sframe::MLSContext(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
+    send.add_epoch(1, mls_key_bytes);
+
+    uint8_t ct[link_packet_t::Payload_Size];
+    auto payload = send.protect(
+        1, 1, ct, sframe::input_bytes{talk_packet.payload, talk_packet.length}.subspan(1), {});
+
+    std::memcpy(talk_packet.payload + 1, payload.data(), payload.size());
+    talk_packet.length = payload.size() + 1;
+#endif
+
     // LedRToggle();
     serial.Write(talk_packet);
     ++num_packets_tx;

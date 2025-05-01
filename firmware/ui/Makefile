@@ -33,6 +33,8 @@ OPT = -Os
 #######################################
 # Build path
 BUILD_DIR = ./build
+CRYPTO=
+STM32_CRYPTO_INCLUDE_DIR=
 
 #######################################
 # programming
@@ -100,6 +102,10 @@ INCS =  \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include
+
+ifdef CRYPTO
+	INCS += -I${STM32_CRYPTO_INCLUDE_DIR}
+endif
 
 INCS += $(addprefix -I,$(shell find inc -type d))
 INCS += $(addprefix -I,$(shell find Core/Inc -type d))
@@ -201,6 +207,9 @@ CFLAGS += -g -gdwarf-2
 HAL_CFLAGS += -g -gdwarf-2
 endif
 
+ifdef CRYPTO
+CFLAGS += -DCRYPTO
+endif
 
 ifeq (${PROGRAMMER}, CUBE)
 	ifeq (${OS}, WINDOWS_NT)
@@ -228,7 +237,7 @@ LDSCRIPT = stm32f405rgtx_flash.ld
 
 # libraries
 # LIBS = -lc -lm -lnosys -lrdimon -lSTM32Cryptographic_CM4
-LIBS = -lc -lm -lnosys
+LIBS = -lc -lm -lnosys -lSTM32Cryptographic_CM4
 LIBDIR = -Llib
 LDFLAGS = $(MCU) --specs=nosys.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/${TARGET}.map,--cref -Wl,--gc-sections
 
