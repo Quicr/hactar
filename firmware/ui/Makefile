@@ -33,7 +33,6 @@ OPT = -Os
 #######################################
 # Build path
 BUILD_DIR = ./build
-CRYPTO=
 STM32_CRYPTO_DIR=
 STM32_CRYPTO_INCLUDE_DIR=${STM32_CRYPTO_DIR}/include
 STM32_CRYPTO_LIB_DIR=${STM32_CRYPTO_DIR}/lib
@@ -105,7 +104,7 @@ INCS =  \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include
 
-ifdef CRYPTO
+ifdef STM32_CRYPTO_DIR
 INCS += -I${STM32_CRYPTO_INCLUDE_DIR}
 endif
 
@@ -209,7 +208,7 @@ CFLAGS += -g -gdwarf-2
 HAL_CFLAGS += -g -gdwarf-2
 endif
 
-ifdef CRYPTO
+ifdef STM32_CRYPTO_DIR
 CFLAGS += -DCRYPTO
 endif
 
@@ -243,7 +242,7 @@ LIBS = -lc -lm -lnosys
 LIBDIR = -Llib
 LDFLAGS = $(MCU) --specs=nosys.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/${TARGET}.map,--cref -Wl,--gc-sections
 
-ifdef CRYPTO
+ifdef STM32_CRYPTO_DIR
 LIBS += -lSTM32Cryptographic_CM4
 LIBDIR += -L$(STM32_CRYPTO_LIB_DIR)
 endif
