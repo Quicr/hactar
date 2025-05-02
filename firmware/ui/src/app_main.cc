@@ -28,9 +28,9 @@ inline void CheckPTTAI();
 inline void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type);
 
 #ifdef CRYPTO
-const std::string mls_key = "sixteen byte key";
-const std::vector<uint8_t> mls_key_bytes(mls_key.begin(), mls_key.end());
+constexpr const char* mls_key = "sixteen byte key";
 sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
+uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
 #endif
 
 #define HIGH GPIO_PIN_SET
@@ -242,7 +242,7 @@ int app_main()
         throw sframe::crypto_error();
     }
 
-    mls_ctx.add_epoch(1, mls_key_bytes);
+    mls_ctx.add_epoch(1, sframe::input_bytes{reinterpret_cast<const uint8_t*>(&mls_key[0]), 16});
 #endif
 
     Renderer renderer(screen, keyboard);
