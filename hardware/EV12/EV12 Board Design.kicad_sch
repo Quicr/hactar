@@ -19854,7 +19854,6 @@
 	)
 	(label "I2S_ADCDAT"
 		(at 485.14 250.19 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19865,7 +19864,6 @@
 	)
 	(label "KB_ROW3"
 		(at 373.38 292.1 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19876,7 +19874,6 @@
 	)
 	(label "KB_LED"
 		(at 339.09 303.53 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19887,7 +19884,6 @@
 	)
 	(label "NET_MTMS"
 		(at 242.57 132.08 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19898,7 +19894,6 @@
 	)
 	(label "UI_DEBUG_3"
 		(at 429.26 271.78 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19909,7 +19904,6 @@
 	)
 	(label "NET_TX1_MGMT"
 		(at 242.57 96.52 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19920,7 +19914,6 @@
 	)
 	(label "KB_COL5"
 		(at 339.09 294.64 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19931,7 +19924,6 @@
 	)
 	(label "PTT_BTN"
 		(at 411.48 116.84 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19942,7 +19934,6 @@
 	)
 	(label "I2S_ADCDAT"
 		(at 325.12 147.32 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19953,7 +19944,6 @@
 	)
 	(label "UI_RX2_NET"
 		(at 440.69 224.79 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19964,7 +19954,6 @@
 	)
 	(label "PTT_BTN"
 		(at 421.64 109.22 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19975,7 +19964,6 @@
 	)
 	(label "HP_R"
 		(at 271.78 205.74 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19986,7 +19974,6 @@
 	)
 	(label "KB_COL2"
 		(at 339.09 281.94 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19997,7 +19984,6 @@
 	)
 	(label "I2S_DACDAT"
 		(at 214.63 224.79 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20008,7 +19994,6 @@
 	)
 	(label "LEDA_R"
 		(at 173.99 78.74 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20019,7 +20004,6 @@
 	)
 	(label "UI_DEBUG_2"
 		(at 429.26 269.24 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20030,7 +20014,6 @@
 	)
 	(label "UI_BOOT0"
 		(at 411.48 99.06 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20041,7 +20024,6 @@
 	)
 	(label "UI_LED_R"
 		(at 325.12 109.22 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20052,7 +20034,6 @@
 	)
 	(label "NET_BOOT"
 		(at 452.12 287.02 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20063,7 +20044,6 @@
 	)
 	(label "UI_DEBUG_1"
 		(at 429.26 266.7 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20074,7 +20054,6 @@
 	)
 	(label "UI_TX1_MGMT"
 		(at 325.12 116.84 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20085,7 +20064,6 @@
 	)
 	(label "USB_CC1_DETECT"
 		(at 90.17 248.92 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20096,7 +20074,6 @@
 	)
 	(label "MGMT_NRST"
 		(at 59.69 93.98 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20107,7 +20084,6 @@
 	)
 	(label "KB_ROW6"
 		(at 373.38 297.18 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20118,7 +20094,6 @@
 	)
 	(label "UI_NRST"
 		(at 411.48 93.98 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20129,7 +20104,6 @@
 	)
 	(label "BATTERY_MON"
 		(at 411.48 127 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20140,7 +20114,6 @@
 	)
 	(label "KB_ROW1"
 		(at 325.12 167.64 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20151,7 +20124,6 @@
 	)
 	(label "MCLK"
 		(at 411.48 104.14 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20162,7 +20134,6 @@
 	)
 	(label "UI_SDA"
 		(at 485.14 242.57 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20173,7 +20144,6 @@
 	)
 	(label "KB_ROW2"
 		(at 373.38 279.4 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20184,7 +20154,6 @@
 	)
 	(label "KB_LED"
 		(at 325.12 162.56 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20195,7 +20164,6 @@
 	)
 	(label "UI_RX1_MGMT"
 		(at 485.14 219.71 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20206,7 +20174,6 @@
 	)
 	(label "UI_SCL"
 		(at 325.12 152.4 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20217,7 +20184,6 @@
 	)
 	(label "NET_MTDO"
 		(at 429.26 288.29 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20228,7 +20194,6 @@
 	)
 	(label "UI_BOOT1"
 		(at 325.12 142.24 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20239,7 +20204,6 @@
 	)
 	(label "KB_COL4"
 		(at 411.48 134.62 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20250,7 +20214,6 @@
 	)
 	(label "UI_TX2_NET"
 		(at 440.69 222.25 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20261,7 +20224,6 @@
 	)
 	(label "MCLK"
 		(at 485.14 240.03 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20272,7 +20234,6 @@
 	)
 	(label "I2S_BCLK"
 		(at 443.23 247.65 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20283,7 +20244,6 @@
 	)
 	(label "MGMT_SWCLK"
 		(at 121.92 129.54 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20294,7 +20254,6 @@
 	)
 	(label "NET_BOOT"
 		(at 186.69 101.6 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20305,7 +20264,6 @@
 	)
 	(label "NET_NRST"
 		(at 181.61 96.52 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20316,7 +20274,6 @@
 	)
 	(label "UI_TX1_MGMT"
 		(at 121.92 101.6 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20327,7 +20284,6 @@
 	)
 	(label "MGMT_BOOT"
 		(at 146.05 166.37 270)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20338,7 +20294,6 @@
 	)
 	(label "DISP_DC"
 		(at 314.96 226.06 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20349,7 +20304,6 @@
 	)
 	(label "UI_SCL"
 		(at 287.02 285.75 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20360,7 +20314,6 @@
 	)
 	(label "NET_DEBUG_1"
 		(at 182.88 119.38 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20371,7 +20324,6 @@
 	)
 	(label "MIC_N"
 		(at 375.92 222.25 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20382,7 +20334,6 @@
 	)
 	(label "UI_SCL"
 		(at 485.14 245.11 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20393,7 +20344,6 @@
 	)
 	(label "DISP_RST"
 		(at 314.96 223.52 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20404,7 +20354,6 @@
 	)
 	(label "DISP_BL"
 		(at 411.48 152.4 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20415,7 +20364,6 @@
 	)
 	(label "SPI1_MOSI"
 		(at 325.12 111.76 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20426,7 +20374,6 @@
 	)
 	(label "UI_TX1_MGMT"
 		(at 485.14 222.25 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20437,7 +20384,6 @@
 	)
 	(label "NET_MTDO"
 		(at 242.57 127 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20448,7 +20394,6 @@
 	)
 	(label "MGMT_BOOT"
 		(at 59.69 99.06 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20459,7 +20404,6 @@
 	)
 	(label "USB_RTS"
 		(at 58.42 124.46 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20470,7 +20414,6 @@
 	)
 	(label "NET_RX1_MGMT"
 		(at 58.42 147.32 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20481,7 +20424,6 @@
 	)
 	(label "LEDA_B"
 		(at 125.73 83.82 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20492,7 +20434,6 @@
 	)
 	(label "NET_LED_G"
 		(at 242.57 119.38 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20503,7 +20444,6 @@
 	)
 	(label "LEDB_R"
 		(at 58.42 121.92 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20514,7 +20454,6 @@
 	)
 	(label "NET_MTDI"
 		(at 242.57 129.54 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20525,7 +20464,6 @@
 	)
 	(label "KB_COL1"
 		(at 339.09 279.4 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20536,7 +20474,6 @@
 	)
 	(label "MGMT_SWDIO"
 		(at 121.92 127 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20547,7 +20484,6 @@
 	)
 	(label "KB_ROW2"
 		(at 325.12 172.72 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20558,7 +20494,6 @@
 	)
 	(label "NET_RX1_MGMT"
 		(at 452.12 292.1 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20569,7 +20504,6 @@
 	)
 	(label "KB_ROW3"
 		(at 411.48 137.16 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20580,7 +20514,6 @@
 	)
 	(label "NET_DEBUG_2"
 		(at 494.03 269.24 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20591,7 +20524,6 @@
 	)
 	(label "Wake up Pin"
 		(at 347.98 93.98 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20602,7 +20534,6 @@
 	)
 	(label "MIC_N"
 		(at 283.21 226.06 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20613,7 +20544,6 @@
 	)
 	(label "NET_TX1_MGMT"
 		(at 58.42 149.86 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20624,7 +20554,6 @@
 	)
 	(label "NET_MTDI"
 		(at 429.26 290.83 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20635,7 +20564,6 @@
 	)
 	(label "UI_SCL"
 		(at 214.63 214.63 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20646,7 +20574,6 @@
 	)
 	(label "UI_RX1_MGMT"
 		(at 325.12 119.38 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20657,7 +20584,6 @@
 	)
 	(label "USB_DTR"
 		(at 58.42 154.94 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20668,7 +20594,6 @@
 	)
 	(label "UI_LED_G"
 		(at 477.52 83.82 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20679,7 +20604,6 @@
 	)
 	(label "I2S_DACLRC"
 		(at 325.12 132.08 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20690,7 +20614,6 @@
 	)
 	(label "LEDB_G"
 		(at 58.42 157.48 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20701,7 +20624,6 @@
 	)
 	(label "I2S_ADCDAT"
 		(at 214.63 229.87 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20712,7 +20634,6 @@
 	)
 	(label "KB_ROW4"
 		(at 373.38 294.64 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20723,7 +20644,6 @@
 	)
 	(label "USB_DTR"
 		(at 129.54 231.14 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20734,7 +20654,6 @@
 	)
 	(label "UI_SDA"
 		(at 157.48 207.01 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20745,7 +20664,6 @@
 	)
 	(label "LEDA_G"
 		(at 121.92 109.22 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20756,7 +20674,6 @@
 	)
 	(label "USB_CC2_DETECT"
 		(at 411.48 121.92 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20767,7 +20684,6 @@
 	)
 	(label "NET_STAT"
 		(at 242.57 111.76 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20778,7 +20694,6 @@
 	)
 	(label "KB_ROW4"
 		(at 325.12 114.3 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20789,7 +20704,6 @@
 	)
 	(label "MGMT_SWDIO"
 		(at 402.59 224.79 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20800,7 +20714,6 @@
 	)
 	(label "NET_MTCK"
 		(at 242.57 124.46 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20811,7 +20724,6 @@
 	)
 	(label "NET_LED_G"
 		(at 303.53 86.36 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20822,7 +20734,6 @@
 	)
 	(label "UI_SWDIO"
 		(at 410.21 259.08 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20833,7 +20744,6 @@
 	)
 	(label "UI_SDA"
 		(at 287.02 283.21 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20844,7 +20754,6 @@
 	)
 	(label "UI_SCL"
 		(at 148.59 210.82 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20855,7 +20764,6 @@
 	)
 	(label "KB_LED"
 		(at 373.38 299.72 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20866,7 +20774,6 @@
 	)
 	(label "NET_NRST"
 		(at 57.15 132.08 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20877,7 +20784,6 @@
 	)
 	(label "LEDB_B"
 		(at 58.42 160.02 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20888,7 +20794,6 @@
 	)
 	(label "UI_BOOT0"
 		(at 121.92 132.08 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20899,7 +20804,6 @@
 	)
 	(label "UI_SDA"
 		(at 214.63 212.09 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20910,7 +20814,6 @@
 	)
 	(label "KB_COL4"
 		(at 339.09 292.1 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20921,7 +20824,6 @@
 	)
 	(label "RCC_OSC_IN"
 		(at 72.39 104.14 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20932,7 +20834,6 @@
 	)
 	(label "USB_RX1_MGMT"
 		(at 121.92 116.84 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20943,7 +20844,6 @@
 	)
 	(label "UI_DEBUG_3"
 		(at 325.12 104.14 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20954,7 +20854,6 @@
 	)
 	(label "MGMT_NRST"
 		(at 402.59 227.33 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20965,7 +20864,6 @@
 	)
 	(label "UI_LED_B"
 		(at 421.64 83.82 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20976,7 +20874,6 @@
 	)
 	(label "LEDA_B"
 		(at 121.92 111.76 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20987,7 +20884,6 @@
 	)
 	(label "KB_LED"
 		(at 339.09 299.72 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20998,7 +20894,6 @@
 	)
 	(label "UI_RX1_MGMT"
 		(at 121.92 99.06 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21009,7 +20904,6 @@
 	)
 	(label "NET_MTCK"
 		(at 429.26 285.75 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21020,7 +20914,6 @@
 	)
 	(label "I2S_DACDAT"
 		(at 485.14 247.65 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21031,7 +20924,6 @@
 	)
 	(label "NET_DEBUG_3"
 		(at 494.03 266.7 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21042,7 +20934,6 @@
 	)
 	(label "MGMT_NRST"
 		(at 129.54 128.27 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21053,7 +20944,6 @@
 	)
 	(label "NET_LED_B"
 		(at 242.57 116.84 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21064,7 +20954,6 @@
 	)
 	(label "I2S_DACDAT"
 		(at 325.12 149.86 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21075,7 +20964,6 @@
 	)
 	(label "UI_TX2_NET"
 		(at 325.12 99.06 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21086,7 +20974,6 @@
 	)
 	(label "UI_DEBUG_1"
 		(at 325.12 121.92 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21097,7 +20984,6 @@
 	)
 	(label "MIC_P"
 		(at 283.21 223.52 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21108,7 +20994,6 @@
 	)
 	(label "USB_RX1_MGMT"
 		(at 485.14 217.17 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21119,7 +21004,6 @@
 	)
 	(label "UI_RX2_NET"
 		(at 242.57 101.6 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21130,7 +21014,6 @@
 	)
 	(label "NET_STAT"
 		(at 121.92 96.52 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21141,7 +21024,6 @@
 	)
 	(label "KB_ROW5"
 		(at 325.12 137.16 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21152,7 +21034,6 @@
 	)
 	(label "PTT_AI_BTN"
 		(at 421.64 138.43 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21163,7 +21044,6 @@
 	)
 	(label "I2S_DACLRC"
 		(at 214.63 222.25 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21174,7 +21054,6 @@
 	)
 	(label "USB_RTS"
 		(at 129.54 233.68 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21185,7 +21064,6 @@
 	)
 	(label "UI_RX2_NET"
 		(at 325.12 101.6 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21196,7 +21074,6 @@
 	)
 	(label "DISP_RST"
 		(at 411.48 149.86 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21207,7 +21084,6 @@
 	)
 	(label "LEDB_B"
 		(at 125.73 101.6 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21218,7 +21094,6 @@
 	)
 	(label "UI_LED_R"
 		(at 477.52 78.74 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21229,7 +21104,6 @@
 	)
 	(label "LEDB_G"
 		(at 173.99 101.6 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21240,7 +21114,6 @@
 	)
 	(label "HP_L"
 		(at 375.92 227.33 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21251,7 +21124,6 @@
 	)
 	(label "KB_ROW6"
 		(at 325.12 139.7 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21262,7 +21134,6 @@
 	)
 	(label "KB_COL3"
 		(at 411.48 132.08 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21273,7 +21144,6 @@
 	)
 	(label "NET_LED_R"
 		(at 242.57 121.92 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21284,7 +21154,6 @@
 	)
 	(label "USB_TX1_MGMT"
 		(at 121.92 119.38 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21295,7 +21164,6 @@
 	)
 	(label "NET_RX1_MGMT"
 		(at 485.14 224.79 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21306,7 +21174,6 @@
 	)
 	(label "KB_COL5"
 		(at 411.48 139.7 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21317,7 +21184,6 @@
 	)
 	(label "DISP_BL"
 		(at 314.96 220.98 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21328,7 +21194,6 @@
 	)
 	(label "HP_R"
 		(at 375.92 224.79 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21339,7 +21204,6 @@
 	)
 	(label "USB_CC1_DETECT"
 		(at 411.48 124.46 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21350,7 +21214,6 @@
 	)
 	(label "KB_ROW7"
 		(at 373.38 267.97 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21361,7 +21224,6 @@
 	)
 	(label "HP_L"
 		(at 271.78 200.66 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21372,7 +21234,6 @@
 	)
 	(label "USB_RX1_MGMT"
 		(at 130.81 215.9 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21383,7 +21244,6 @@
 	)
 	(label "MGMT_BOOT"
 		(at 402.59 229.87 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21394,7 +21254,6 @@
 	)
 	(label "NET_LED_B"
 		(at 247.65 86.36 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21405,7 +21264,6 @@
 	)
 	(label "LEDB_R"
 		(at 173.99 96.52 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21416,7 +21274,6 @@
 	)
 	(label "SPI1_CLK"
 		(at 314.96 231.14 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21427,7 +21284,6 @@
 	)
 	(label "UI_SWCLK"
 		(at 325.12 129.54 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21438,7 +21294,6 @@
 	)
 	(label "KB_COL3"
 		(at 373.38 281.94 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21449,7 +21304,6 @@
 	)
 	(label "NET_NRST"
 		(at 452.12 294.64 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21460,7 +21314,6 @@
 	)
 	(label "SPI1_CLK"
 		(at 325.12 106.68 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21471,7 +21324,6 @@
 	)
 	(label "PTT_AI_BTN"
 		(at 411.48 119.38 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21482,7 +21334,6 @@
 	)
 	(label "NET_DEBUG_3"
 		(at 182.88 142.24 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21493,7 +21344,6 @@
 	)
 	(label "MCLK"
 		(at 214.63 217.17 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21504,7 +21354,6 @@
 	)
 	(label "UI_LED_G"
 		(at 411.48 129.54 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21515,7 +21364,6 @@
 	)
 	(label "MGMT_SWCLK"
 		(at 402.59 222.25 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21526,7 +21374,6 @@
 	)
 	(label "RCC_OSC_OUT"
 		(at 72.39 106.68 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21537,7 +21384,6 @@
 	)
 	(label "KB_COL2"
 		(at 325.12 175.26 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21548,7 +21394,6 @@
 	)
 	(label "NET_BOOT"
 		(at 57.15 134.62 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21559,7 +21404,6 @@
 	)
 	(label "UI_LED_B"
 		(at 325.12 96.52 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21570,7 +21414,6 @@
 	)
 	(label "DISP_CS"
 		(at 314.96 228.6 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21581,7 +21424,6 @@
 	)
 	(label "USB_TX1_MGMT"
 		(at 440.69 227.33 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21592,7 +21434,6 @@
 	)
 	(label "NET_DEBUG_1"
 		(at 494.03 271.78 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21603,7 +21444,6 @@
 	)
 	(label "UI_STAT"
 		(at 121.92 93.98 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21614,7 +21454,6 @@
 	)
 	(label "KB_ROW1"
 		(at 373.38 276.86 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21625,7 +21464,6 @@
 	)
 	(label "UI_TX2_NET"
 		(at 242.57 104.14 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21636,7 +21474,6 @@
 	)
 	(label "NET_MTMS"
 		(at 429.26 283.21 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21647,7 +21484,6 @@
 	)
 	(label "KB_ROW7"
 		(at 325.12 165.1 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21658,7 +21494,6 @@
 	)
 	(label "UI_SDA"
 		(at 325.12 154.94 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21669,7 +21504,6 @@
 	)
 	(label "MCLK"
 		(at 121.92 114.3 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21680,7 +21514,6 @@
 	)
 	(label "SPI1_MOSI"
 		(at 314.96 233.68 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21691,7 +21524,6 @@
 	)
 	(label "NET_RX1_MGMT"
 		(at 242.57 99.06 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21702,7 +21534,6 @@
 	)
 	(label "NET_TX1_MGMT"
 		(at 452.12 289.56 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21713,7 +21544,6 @@
 	)
 	(label "UI_SWDIO"
 		(at 325.12 127 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21724,7 +21554,6 @@
 	)
 	(label "UI_NRST"
 		(at 410.21 261.62 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21735,7 +21564,6 @@
 	)
 	(label "LEDA_G"
 		(at 173.99 83.82 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21746,7 +21574,6 @@
 	)
 	(label "UI_STAT"
 		(at 411.48 144.78 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21757,7 +21584,6 @@
 	)
 	(label "BATTERY_MON"
 		(at 123.19 337.82 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21768,7 +21594,6 @@
 	)
 	(label "I2S_BCLK"
 		(at 411.48 142.24 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21779,7 +21604,6 @@
 	)
 	(label "KB_COL1"
 		(at 325.12 170.18 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21790,7 +21614,6 @@
 	)
 	(label "KB_LED"
 		(at 373.38 303.53 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21801,7 +21624,6 @@
 	)
 	(label "USB_CC2_DETECT"
 		(at 90.17 251.46 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21812,7 +21634,6 @@
 	)
 	(label "UI_BOOT1"
 		(at 39.37 144.78 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21823,7 +21644,6 @@
 	)
 	(label "I2S_BCLK"
 		(at 214.63 219.71 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21834,7 +21654,6 @@
 	)
 	(label "UI_NRST"
 		(at 57.15 129.54 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21845,7 +21664,6 @@
 	)
 	(label "DISP_DC"
 		(at 325.12 160.02 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21856,7 +21674,6 @@
 	)
 	(label "NET_DEBUG_2"
 		(at 182.88 139.7 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21867,7 +21684,6 @@
 	)
 	(label "NET_TX1_MGMT"
 		(at 485.14 227.33 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21878,7 +21694,6 @@
 	)
 	(label "I2S_DACLRC"
 		(at 443.23 250.19 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21889,7 +21704,6 @@
 	)
 	(label "KB_ROW5"
 		(at 339.09 297.18 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21900,7 +21714,6 @@
 	)
 	(label "DISP_CS"
 		(at 325.12 157.48 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21911,7 +21724,6 @@
 	)
 	(label "MIC_P"
 		(at 375.92 219.71 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21922,7 +21734,6 @@
 	)
 	(label "KB_MIC"
 		(at 340.36 274.32 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21933,7 +21744,6 @@
 	)
 	(label "NET_LED_R"
 		(at 303.53 81.28 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21944,7 +21754,6 @@
 	)
 	(label "USB_TX1_MGMT"
 		(at 130.81 213.36 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21955,7 +21764,6 @@
 	)
 	(label "UI_SWCLK"
 		(at 410.21 256.54 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21966,7 +21774,6 @@
 	)
 	(label "LEDA_R"
 		(at 121.92 104.14 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21977,7 +21784,6 @@
 	)
 	(label "UI_DEBUG_2"
 		(at 325.12 124.46 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -21988,7 +21794,6 @@
 	)
 	(label "UI_BOOT0"
 		(at 410.21 264.16 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -24341,7 +24146,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Hactar_Footprints:KEY-SMD_2P-L7.1-W10.6-P4.00-LS9.0"
+		(property "Footprint" "Hactar_Footprints:SW-SMD_L7.5-W8.0-P4.50_TS-1045-A13B3-D2"
 			(at 438.15 104.14 0)
 			(effects
 				(font
@@ -34108,7 +33913,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Hactar_Footprints:KEY-SMD_2P-L7.1-W10.6-P4.00-LS9.0"
+		(property "Footprint" "Hactar_Footprints:SW-SMD_L7.5-W8.0-P4.50_TS-1045-A13B3-D2"
 			(at 438.15 133.35 0)
 			(effects
 				(font
