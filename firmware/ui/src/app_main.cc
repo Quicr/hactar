@@ -30,6 +30,7 @@ inline void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type p
 #ifdef CRYPTO
 const std::string mls_key = "sixteen byte key";
 const std::vector<uint8_t> mls_key_bytes(mls_key.begin(), mls_key.end());
+sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
 #endif
 
 #define HIGH GPIO_PIN_SET
@@ -240,6 +241,8 @@ int app_main()
     {
         throw sframe::crypto_error();
     }
+
+    mls_ctx.add_epoch(1, mls_key_bytes);
 #endif
 
     Renderer renderer(screen, keyboard);
@@ -433,10 +436,7 @@ void HandleRecvLinkPackets()
         }
 
 #ifdef CRYPTO
-        auto recv = sframe::MLSContext(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
-        recv.add_epoch(1, mls_key_bytes);
-
-        auto payload = recv.unprotect(
+        auto payload = mls_ctx.unprotect(
             sframe::output_bytes{link_packet->payload, link_packet_t::Payload_Size}.subspan(1),
             sframe::input_bytes{link_packet->payload, link_packet->length}.subspan(1), {});
         link_packet->length = payload.size() + 1;
@@ -619,11 +619,8 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
     ui_net_link::Serialize(talk_frame, packet_type, talk_packet);
 
 #ifdef CRYPTO
-    auto send = sframe::MLSContext(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
-    send.add_epoch(1, mls_key_bytes);
-
     uint8_t ct[link_packet_t::Payload_Size];
-    auto payload = send.protect(
+    auto payload = mls_ctx.protect(
         1, 1, ct, sframe::input_bytes{talk_packet.payload, talk_packet.length}.subspan(1), {});
 
     std::memcpy(talk_packet.payload + 1, payload.data(), payload.size());
