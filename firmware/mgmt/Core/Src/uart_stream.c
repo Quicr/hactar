@@ -8,8 +8,7 @@
 void Receive(uart_stream_t* stream, uint16_t num_received)
 {
     // Calculate the number of bytes have occurred since the last event
-    const uint16_t pending_bytes = num_received - stream->rx.idx;
-    uint16_t num_bytes = pending_bytes;
+    uint16_t num_bytes = num_received - stream->rx.idx;
 
     // Faster than putting a check inside of the copy loop since this is only
     // checked once per rx event.
@@ -17,24 +16,30 @@ void Receive(uart_stream_t* stream, uint16_t num_received)
     {
         const uint16_t bytes = stream->tx.size - stream->tx.write;
 
-        memcpy(stream->tx.buff + stream->tx.write,
-            stream->rx.buff + stream->rx.idx,
-            bytes);
+        if (stream->mode != Ignore)
+        {
+            memcpy(stream->tx.buff + stream->tx.write,
+                stream->rx.buff + stream->rx.idx,
+                bytes);
+            stream->tx.unsent += bytes;
+        }
 
         stream->rx.idx += bytes;
         stream->tx.write = 0;
         num_bytes -= bytes;
     }
 
-    // Copy bytes to tx buffer
-    memcpy(stream->tx.buff + stream->tx.write,
-        stream->rx.buff + stream->rx.idx,
-        num_bytes);
+    if (stream->mode != Ignore)
+    {
+        // Copy bytes to tx buffer
+        memcpy(stream->tx.buff + stream->tx.write,
+            stream->rx.buff + stream->rx.idx,
+            num_bytes);
+        stream->tx.unsent += num_bytes;
+        }
 
     stream->rx.idx += num_bytes;
     stream->tx.write += num_bytes;
-
-    stream->tx.unsent += num_bytes;
 
     // rx read head is at the end
     if (stream->rx.idx >= stream->rx.size)
@@ -49,7 +54,7 @@ void HandleTx(uart_stream_t* stream, enum State* state)
     {
     case (Passthrough):
     {
-        if (!stream->tx.free)
+        if (stream->tx.uart->gState != HAL_UART_STATE_READY && !stream->tx.free)
         {
             return;
         }
@@ -73,6 +78,18 @@ void HandleTx(uart_stream_t* stream, enum State* state)
     }
 }
 
+void TxISR(uart_stream_t* stream, enum State* state)
+{
+    stream->tx.unsent -= stream->tx.sending;
+    stream->tx.read += stream->tx.sending;
+    if (stream->tx.read >= stream->tx.size)
+    {
+        stream->tx.read = 0;
+    }
+
+    Transmit(stream, state);
+}
+
 // Both a callback and a normal function
 void Transmit(uart_stream_t* stream, enum State* state)
 {
@@ -83,22 +100,15 @@ void Transmit(uart_stream_t* stream, enum State* state)
     }
     stream->tx.free = 0;
 
-    uint16_t bytes = stream->tx.unsent;
-    if (stream->tx.read + bytes >= stream->tx.size)
+    stream->tx.sending = stream->tx.unsent;
+    if (stream->tx.read + stream->tx.sending >= stream->tx.size)
     {
-        bytes = stream->tx.size - stream->tx.read;
+        stream->tx.sending = stream->tx.size - stream->tx.read;
     }
 
     // Transmit
     HAL_UART_Transmit_DMA(stream->tx.uart,
-        stream->tx.buff + stream->tx.read, bytes);
-
-    stream->tx.unsent -= bytes;
-    stream->tx.read += bytes;
-    if (stream->tx.read >= stream->tx.size)
-    {
-        stream->tx.read = 0;
-    }
+        stream->tx.buff + stream->tx.read, stream->tx.sending);
 }
 
 void HandleCommands(uart_stream_t* stream,
@@ -146,12 +156,10 @@ void HandleCommands(uart_stream_t* stream,
         if (strcmp((const char*)cmd_buff, (const char*)ui_upload_cmd) == 0)
         {
             // Echo back
-            HAL_UART_Transmit(stream->rx.uart, ACK, 1, HAL_MAX_DELAY);
             *state = UI_Upload;
         }
         else if (strcmp((const char*)cmd_buff, (const char*)net_upload_cmd) == 0)
         {
-            HAL_UART_Transmit(stream->rx.uart, ACK, 1, HAL_MAX_DELAY);
             *state = Net_Upload;
         }
         else if (strcmp((const char*)cmd_buff, (const char*)debug_cmd) == 0)
@@ -192,16 +200,12 @@ void HandleCommands(uart_stream_t* stream,
 
 void InitUartStream(uart_stream_t* stream)
 {
-    HAL_UART_Abort(stream->rx.uart);
-
     stream->rx.idx = 0;
 
     stream->tx.read = 0;
     stream->tx.write = 0;
     stream->tx.unsent = 0;
-    stream->tx.free = 1;
-
-    stream->mode = Ignore;
+    // stream->tx.free = 1;
 }
 
 void StartUartReceive(uart_stream_t* stream)

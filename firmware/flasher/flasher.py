@@ -95,10 +95,13 @@ def main():
 
         print(f"Uploading to {len(ports)} Hactar devices on ports: {ports}")
 
+        num_attempts = 5
+        i = 0
         for port in ports:
             programmed = False
-            while not programmed:
+            while not programmed and i < num_attempts:
                 # programmed = True
+                i += 1
                 try:
                     uart = serial.Serial(
                         port=port,
@@ -106,21 +109,21 @@ def main():
                     )
 
                     print(f"Opened port: {BB}{port}{NW} "
-                          f"baudrate: {BG}{args.baud}{NW}")
+                            f"baudrate: {BG}{args.baud}{NW}")
 
                     # TODO use oop inheritance
                     if ("mgmt" in args.chip):
                         print(f"{BW}Starting MGMT Upload{NW}")
                         stm32_flasher = stm32.stm32_flasher(uart)
                         programmed = ProgramHactarSTM(stm32_flasher,
-                                                      args.chip,
-                                                      args.binary_path, False)
+                                                        args.chip,
+                                                        args.binary_path, False)
 
                     if ("ui" in args.chip):
                         print(f"{BW}Starting UI Upload{NW}")
                         stm32_flasher = stm32.stm32_flasher(uart)
                         programmed = ProgramHactarSTM(stm32_flasher, args.chip,
-                                                      args.binary_path, True)
+                                                        args.binary_path, True)
 
                     if ("net" in args.chip):
                         print(f"{BW}Starting Net Upload{NW}")
@@ -131,8 +134,9 @@ def main():
                     print(f"Done Flashing {BR}GOODBYE{NW}")
                     uart.close()
                 except Exception as ex:
-                    print(f"{BR}[Error]{NW} {ex}")
+                    print(f"{BR}[Error]{NW} {ex}, will try again")
                     uart.close()
+                    time.sleep(3)
             # End while
     except Exception as ex:
         print(f"{BR}[Error]{NW} {ex}")

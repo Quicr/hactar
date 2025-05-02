@@ -52,7 +52,7 @@ void ChangeToOutput(GPIO_TypeDef* port, uint16_t pin)
 void NormalAndNetUploadUartInit(uart_stream_t* usb_stream, UART_HandleTypeDef* tx_uart)
 {
     // Init uart1 for UI upload
-    HAL_UART_DeInit(usb_stream->rx.uart);
+    HAL_UART_DeInit(&huart1);
 
     huart1.Instance = USART1;
     huart1.Init.BaudRate = BAUD;
@@ -79,7 +79,7 @@ void NormalAndNetUploadUartInit(uart_stream_t* usb_stream, UART_HandleTypeDef* t
 void UIUploadStreamInit(uart_stream_t* usb_stream, UART_HandleTypeDef* tx_uart)
 {
     // Init uart1 for UI upload
-    if (HAL_UART_DeInit(usb_stream->rx.uart) != HAL_OK)
+    if (HAL_UART_DeInit(&huart1) != HAL_OK)
     {
         Error_Handler();
     }

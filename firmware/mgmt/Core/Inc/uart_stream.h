@@ -26,11 +26,18 @@ typedef struct
 typedef struct
 {
     UART_HandleTypeDef* uart;
+    uint8_t free;
+} uart_tx_wrapper;
+
+typedef struct
+{
+    UART_HandleTypeDef* uart;
     uint8_t* buff;
     const uint16_t size;
     uint16_t read;
     uint16_t write;
     uint16_t unsent;
+    uint16_t sending;
     uint8_t free;
 } transmit_t;
 
@@ -58,6 +65,7 @@ static const uint8_t HELLO_RES [] = "HELLO, I AM A HACTAR DEVICE";
 
 void Receive(uart_stream_t* stream, uint16_t num_received);
 void HandleCommands(uart_stream_t* stream, enum State* state);
+void TxISR(uart_stream_t* stream, enum State* state);
 void HandleTx(uart_stream_t* stream, enum State* state);
 void Transmit(uart_stream_t* stream, enum State* state);
 void InitUartStream(uart_stream_t* stream);

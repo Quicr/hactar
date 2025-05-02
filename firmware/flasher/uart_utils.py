@@ -5,7 +5,7 @@ from ansi_colours import BG, NW, BR, BB
 
 ACK = 0x79
 READY = 0x80
-
+MAX_WAIT = 15
 
 def FlashSelection(uart: serial.Serial, chip: str):
     if (chip == "mgmt" or chip == "generic_stm32"):
@@ -21,21 +21,24 @@ def FlashSelection(uart: serial.Serial, chip: str):
         send_data = [ch for ch in bytes("ui_upload", "UTF-8")]
         res = WriteBytesWaitForACK(uart, bytes(send_data))
 
-        if res != ACK:
-            raise Exception("Failed to move device into upload mode")
-
         # Change to parity even
         print(f"Update uart to parity: {BB}EVEN{NW}")
         uart.close()
         uart.parity = serial.PARITY_EVEN
-        uart.open()
+        uart.open();
 
+        i = 0
+        while res != READY:
+            res = WaitForBytes(uart, 1)
+            print(res)
+            i += 1
+            if (i >= MAX_WAIT):
+                raise Exception("NO REPLY received after activating ui upload")
+
+        print(f"Ignored{BR}", i, f"{NW}bytes while waiting for {BG}Ready{NW}")
         # Wait for a response
-        res = WaitForBytes(uart, 1)
-        if (res != READY):
-            raise Exception("NO REPLY received after activating ui upload")
-
         print(f"Activating UI Upload Mode: {BG}SUCCESS{NW}")
+
     elif (chip == "net"):
         send_data = [ch for ch in bytes("net_upload", "UTF-8")]
         res = WriteBytesWaitForACK(uart, bytes(send_data))
