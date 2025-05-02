@@ -111,7 +111,7 @@
         "padstack": "error",
         "pth_inside_courtyard": "error",
         "shorting_items": "error",
-        "silk_edge_clearance": "warning",
+        "silk_edge_clearance": "ignore",
         "silk_over_copper": "warning",
         "silk_overlap": "warning",
         "skew_out_of_range": "error",
@@ -656,13 +656,25 @@
           "label": "JLCPCB Rotation Offset",
           "name": "JLCPCB Rotation Offset",
           "show": false
+        },
+        {
+          "group_by": false,
+          "label": "MPN",
+          "name": "MPN",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "JLCPCB#",
+          "name": "JLCPCB#",
+          "show": false
         }
       ],
       "filter_string": "",
       "group_symbols": true,
       "name": "",
-      "sort_asc": true,
-      "sort_field": "Value"
+      "sort_asc": false,
+      "sort_field": "JLCPCB Part #"
     },
     "connection_grid_size": 50.0,
     "drawing": {
