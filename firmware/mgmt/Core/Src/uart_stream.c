@@ -155,7 +155,6 @@ void HandleCommands(uart_stream_t* stream,
     {
         if (strcmp((const char*)cmd_buff, (const char*)ui_upload_cmd) == 0)
         {
-            // Echo back
             *state = UI_Upload;
         }
         else if (strcmp((const char*)cmd_buff, (const char*)net_upload_cmd) == 0)

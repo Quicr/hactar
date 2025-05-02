@@ -51,7 +51,8 @@ uint8_t net_tx_buff[UART_BUFF_SZ] = { 0 };
 uint8_t usb_rx_buff[UART_BUFF_SZ] = { 0 };
 uint8_t usb_tx_buff[UART_BUFF_SZ] = { 0 };
 
-uint32_t timeout_tick = 0;
+static uint8_t uploader = 0;
+static uint32_t timeout_tick = 0;
 
 const enum State default_state = Debug;
 enum State state = default_state;
@@ -112,12 +113,6 @@ uart_stream_t usb_stream = {
     },
     .mode = Ignore,
 };
-
-// TODO somewhere there is an error
-// with transmitting and receiving where the wrong number of bytes is
-// Transmitted to usb. So could be on either rx or tx
-
-static uint8_t uploader = 0;
 
 void HAL_GPIO_EXTI_Callback(uint16_t pin)
 {
@@ -198,11 +193,14 @@ void CancelAllUart()
 int app_main(void)
 {
     state = default_state;
+
     while (1)
     {
         uploader = 0;
         TurnOffLEDs();
         CancelAllUart();
+
+        NormalAndNetUploadUartInit(&usb_stream, &huart1);
 
         switch (state)
         {
@@ -224,7 +222,6 @@ int app_main(void)
 
             UIUploadStreamInit(&usb_stream, &huart2);
             SetStreamModes(Passthrough, Passthrough, Ignore);
-
             UIBootloaderMode();
             uploader = 1;
             LEDA(HIGH, HIGH, LOW);
@@ -233,53 +230,46 @@ int app_main(void)
         }
         case Net_Upload:
         {
-            NormalAndNetUploadUartInit(&usb_stream, &huart3);
             UIHoldInReset();
-            NetBootloaderMode();
+            NormalAndNetUploadUartInit(&usb_stream, &huart3);
             SetStreamModes(Passthrough, Ignore, Passthrough);
-            LEDA(HIGH, LOW, HIGH);
+            NetBootloaderMode();
             uploader = 1;
+            LEDA(HIGH, LOW, HIGH);
             break;
         }
         case Normal:
         {
-            NetHoldInReset();
-            UINormalMode();
-
-            // NormalBoot();
             SetStreamModes(Command, Ignore, Ignore);
+            NormalBoot();
             LEDA(HIGH, LOW, LOW);
+            break;
         }
         case Debug:
         {
-            NetHoldInReset();
-            UINormalMode();
-
-            NormalAndNetUploadUartInit(&usb_stream, &huart2);
-
-            // NormalBoot();
             SetStreamModes(Command, Passthrough, Passthrough);
+            NormalBoot();
             LEDA(LOW, HIGH, HIGH);
             break;
         }
         case UI_Debug:
         {
-            NormalBoot();
             SetStreamModes(Command, Passthrough, Ignore);
+            NormalBoot();
             LEDA(LOW, HIGH, LOW);
             break;
         }
         case Net_Debug:
         {
-            NormalBoot();
             SetStreamModes(Command, Ignore, Passthrough);
+            NormalBoot();
             LEDA(LOW, LOW, HIGH);
             break;
         }
         case Loopback:
         {
-            NormalBoot();
             SetStreamModes(Passthrough, Ignore, Ignore);
+            NormalBoot();
             LEDA(LOW, LOW, LOW);
             break;
         }
@@ -287,13 +277,6 @@ int app_main(void)
         {
             Error_Handler();
         }
-        }
-
-        if (uploader)
-        {
-            // my flasher should probably expect to receive this first.
-            HAL_UART_Transmit(usb_stream.rx.uart, READY, 1, HAL_MAX_DELAY);
-            timeout_tick = HAL_GetTick();
         }
 
         state = Running;
@@ -310,7 +293,6 @@ int app_main(void)
 
 void NormalBoot()
 {
-    NormalAndNetUploadUartInit(&usb_stream, &huart1);
     UINormalMode();
     NetNormalMode();
 }
