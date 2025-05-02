@@ -17,7 +17,7 @@ namespace sframe {
       cmox_error = retval;                                                     \
       throw crypto_error();                                                    \
     }                                                                          \
-  } while (0);
+  } while (0)
 
 ///
 /// Convert between native identifiers / errors and cmox ones
