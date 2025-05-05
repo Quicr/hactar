@@ -239,7 +239,7 @@ int app_main()
 #ifdef CRYPTO
     if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
     {
-        throw sframe::crypto_error();
+        Error("main", "cmox failed to initialise");
     }
 
     mls_ctx.add_epoch(1, sframe::input_bytes{reinterpret_cast<const uint8_t*>(&mls_key[0]), 16});
