@@ -63,23 +63,16 @@
         "clearance|140930000|120487924|9c2275f3-f448-4b9a-8224-f9402af05a1e|4bf0d87e-230b-4048-9b99-588443bfbcdb",
         "footprint_type_mismatch|122270000|135930000|f60cc17f-31ab-48cb-bbfa-c77f244c3abc|00000000-0000-0000-0000-000000000000",
         "footprint_type_mismatch|147000000|143046000|dc03e130-ed52-4e50-be5e-7413cf2afb3d|00000000-0000-0000-0000-000000000000",
-        "footprint_type_mismatch|176220000|53790000|6b246cc7-b987-4113-bcca-5fd1d372f26d|00000000-0000-0000-0000-000000000000",
-        "footprint_type_mismatch|176220000|67290000|f6e7ab9d-ada8-47ae-88bc-acc2c78fe981|00000000-0000-0000-0000-000000000000",
         "hole_near_hole|121770000|136430000|5eb74b0c-33e1-4c2c-b672-d35ab8443475|558d7f57-86de-4f34-be90-7329512ffca0",
         "hole_near_hole|122270000|135930000|558d7f57-86de-4f34-be90-7329512ffca0|bf596985-8edd-4435-a369-a8af84a1501d",
         "hole_near_hole|122270000|135930000|558d7f57-86de-4f34-be90-7329512ffca0|e2d539a4-5e97-4449-8c35-d98d8bf0f99b",
         "hole_near_hole|122770000|136430000|d70e95fc-3be6-47fa-941d-a142b66a1fc3|558d7f57-86de-4f34-be90-7329512ffca0",
-        "lib_footprint_mismatch|138216401|142413763|3b78ba3e-20f9-4bd1-bff6-59af4f43c560|00000000-0000-0000-0000-000000000000",
         "silk_edge_clearance|114000000|60420000|f3237842-6194-4680-a3f5-3890d43fb27e|4319b654-2bc7-42aa-8987-220507e33da5",
         "silk_edge_clearance|114000000|62870000|f3237842-6194-4680-a3f5-3890d43fb27e|5f4d50ef-1247-428e-9193-4226cb8cd62e",
         "silk_edge_clearance|142300000|145300000|b9935939-8402-4c03-8a36-3c6ab32367fa|f8236bb9-a2bc-45e1-a075-c4dc8c76a4bd",
         "silk_edge_clearance|151700000|145300000|b9935939-8402-4c03-8a36-3c6ab32367fa|0ecd6b3b-4495-46de-8ad1-92e8cfec64aa",
         "silk_edge_clearance|160760000|145300000|b9935939-8402-4c03-8a36-3c6ab32367fa|8f78d62c-0216-4831-9d83-543af2128a07",
-        "silk_edge_clearance|165760000|145300000|b9935939-8402-4c03-8a36-3c6ab32367fa|f863fd1e-6c5e-4061-ba6f-51340fb45c0e",
-        "silk_edge_clearance|180000000|52048554|ab3e06de-cf14-49c9-baf3-56e02bc1503b|1e41d6a5-48e1-4988-a861-e4d47795ca81",
-        "silk_edge_clearance|180000000|55473354|ab3e06de-cf14-49c9-baf3-56e02bc1503b|4982395e-bb16-432b-94d4-17cf6dbc281b",
-        "silk_edge_clearance|180000000|65548554|ab3e06de-cf14-49c9-baf3-56e02bc1503b|314d3489-efdd-426a-9900-67f54e414de6",
-        "silk_edge_clearance|180000000|68973354|ab3e06de-cf14-49c9-baf3-56e02bc1503b|2358cbea-9f4c-4994-a6e3-5c467574ae66"
+        "silk_edge_clearance|165760000|145300000|b9935939-8402-4c03-8a36-3c6ab32367fa|f863fd1e-6c5e-4061-ba6f-51340fb45c0e"
       ],
       "meta": {
         "version": 2
@@ -118,7 +111,7 @@
         "padstack": "error",
         "pth_inside_courtyard": "error",
         "shorting_items": "error",
-        "silk_edge_clearance": "warning",
+        "silk_edge_clearance": "ignore",
         "silk_over_copper": "warning",
         "silk_overlap": "warning",
         "skew_out_of_range": "error",
@@ -663,13 +656,25 @@
           "label": "JLCPCB Rotation Offset",
           "name": "JLCPCB Rotation Offset",
           "show": false
+        },
+        {
+          "group_by": false,
+          "label": "MPN",
+          "name": "MPN",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "JLCPCB#",
+          "name": "JLCPCB#",
+          "show": false
         }
       ],
       "filter_string": "",
       "group_symbols": true,
       "name": "",
-      "sort_asc": true,
-      "sort_field": "Value"
+      "sort_asc": false,
+      "sort_field": "JLCPCB Part #"
     },
     "connection_grid_size": 50.0,
     "drawing": {
