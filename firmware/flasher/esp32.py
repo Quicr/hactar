@@ -290,7 +290,7 @@ class esp32_flasher:
         print(f"Activating device: {BG}SUCCESS{NW}")
 
     def ProgramESP(self, build_path: str):
-        uart_utils.SendUploadSelectionCommand(self.uart, "net_upload")
+        uart_utils.FlashSelection(self.uart, "net")
 
         self.Sync()
 

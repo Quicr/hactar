@@ -40,7 +40,6 @@ extern DMA_HandleTypeDef hdma_usart3_tx;
 #define CPU_FREQ 48'000'000
 
 #define UART_BUFF_SZ 1024
-#define COMMAND_BUFF_SZ 32
 #define TRANSMISSION_TIMEOUT 10000
 
 uint8_t ui_rx_buff[UART_BUFF_SZ] = { 0 };
@@ -52,11 +51,11 @@ uint8_t net_tx_buff[UART_BUFF_SZ] = { 0 };
 uint8_t usb_rx_buff[UART_BUFF_SZ] = { 0 };
 uint8_t usb_tx_buff[UART_BUFF_SZ] = { 0 };
 
-uint8_t command_buff[COMMAND_BUFF_SZ] = { 0 };
+static uint8_t uploader = 0;
+static uint32_t timeout_tick = 0;
 
-uint32_t timeout_tick = 0;
-
-enum State state = Reset;
+const enum State default_state = Debug;
+enum State state = default_state;
 
 uart_stream_t ui_stream = {
     .rx = {
@@ -72,6 +71,7 @@ uart_stream_t ui_stream = {
         .read = 0,
         .write = 0,
         .unsent = 0,
+        .num_sending = 0,
         .free = 1
     },
     .mode = Ignore,
@@ -91,6 +91,7 @@ uart_stream_t net_stream = {
         .read = 0,
         .write = 0,
         .unsent = 0,
+        .num_sending = 0,
         .free = 1
     },
     .mode = Ignore,
@@ -110,16 +111,10 @@ uart_stream_t usb_stream = {
         .read = 0,
         .write = 0,
         .unsent = 0,
+        .num_sending = 0,
         .free = 1
     },
     .mode = Ignore,
-};
-
-cmd_ring_buff_t cmd_ring = {
-    .buff = command_buff,
-    .sz = COMMAND_BUFF_SZ,
-    .idx = 0,
-    .last_update = 0,
 };
 
 void HAL_GPIO_EXTI_Callback(uint16_t pin)
@@ -152,24 +147,21 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
     // Which doesn't make any sense to me, but it makes it work.
 
     HAL_GPIO_TogglePin(LEDB_G_GPIO_Port, LEDB_G_Pin);
+    __disable_irq();
     if (huart->Instance == net_stream.rx.uart->Instance)
     {
         Receive(&net_stream, rx_idx);
-        return;
     }
-
-    if (huart->Instance == ui_stream.rx.uart->Instance)
+    else if (huart->Instance == ui_stream.rx.uart->Instance)
     {
         Receive(&ui_stream, rx_idx);
-        return;
     }
-
-    if (huart->Instance == usb_stream.rx.uart->Instance)
+    else if (huart->Instance == usb_stream.rx.uart->Instance)
     {
         timeout_tick = HAL_GetTick();
         Receive(&usb_stream, rx_idx);
-        return;
     }
+    __enable_irq();
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
@@ -178,371 +170,167 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     // then when this is called during either ui upload or net upload
     // then they both need to be notified that the usb is free. :shrug:
     HAL_GPIO_TogglePin(LEDB_B_GPIO_Port, LEDB_B_Pin);
-    if (huart->Instance == net_stream.tx.uart->Instance)
+    __disable_irq();
+    if (!net_stream.tx.free && huart->Instance == net_stream.tx.uart->Instance)
     {
-        Transmit(&net_stream, &state);
+        TxISR(&net_stream, &state);
     }
-
-    if (huart->Instance == ui_stream.tx.uart->Instance)
+    else if (!ui_stream.tx.free && huart->Instance == ui_stream.tx.uart->Instance)
     {
-        Transmit(&ui_stream, &state);
+        TxISR(&ui_stream, &state);
     }
-
-    if (huart->Instance == usb_stream.tx.uart->Instance)
+    else if (!usb_stream.tx.free && huart->Instance == usb_stream.tx.uart->Instance)
     {
-        Transmit(&usb_stream, &state);
+        TxISR(&usb_stream, &state);
     }
+    __enable_irq();
 }
 
 void CancelAllUart()
 {
-    CancelUart(&ui_stream);
-    CancelUart(&net_stream);
-    CancelUart(&usb_stream);
-}
-
-void NetUpload()
-{
-    TurnOffLEDs();
-
-    NetHoldInReset();
-    UIHoldInReset();
-
-    CancelAllUart();
-
-    // Deinit usb
-    HAL_UART_DeInit(usb_stream.rx.uart);
-
-    // Init huart3
-    Usart1_Net_Upload_Runnning_Debug_Reset();
-
-    usb_stream.tx.uart = &huart3;
-
-    InitUartStreamParameters(&usb_stream);
-    InitUartStreamParameters(&net_stream);
-
-    StartUartReceive(&usb_stream);
-    StartUartReceive(&net_stream);
-
-    // Put net into bootloader mode
-    UIHoldInReset();
-    NetBootloaderMode();
-
-    // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
-
-    state = Net_Upload;
-
-    HAL_Delay(500);
-
-    usb_stream.mode = Passthrough;
-    net_stream.mode = Passthrough;
-
-    // Send a ready message
-    HAL_UART_Transmit(usb_stream.rx.uart, READY, 1, HAL_MAX_DELAY);
-
-    timeout_tick = HAL_GetTick();
-    while (state == Net_Upload)
-    {
-        HandleTx(&usb_stream, &state);
-        HandleTx(&net_stream, &state);
-        CheckTimeout();
-    }
-}
-
-void UIUpload()
-{
-    TurnOffLEDs();
-
-    CancelAllUart();
-
-    // Init uart3 for UI upload
-    HAL_UART_DeInit(usb_stream.rx.uart);
-
-    // Init huart3
-    Usart1_UI_Upload_Init();
-
-    usb_stream.tx.uart = &huart2;
-
-    InitUartStreamParameters(&usb_stream);
-    InitUartStreamParameters(&ui_stream);
-
-    StartUartReceive(&usb_stream);
-    StartUartReceive(&ui_stream);
-
-    NetHoldInReset();
-    UIBootloaderMode();
-
-    // Set LEDS for ui
-    LEDB(HIGH, LOW, HIGH);
-
-    // Set LEDS for net
-    LEDA(HIGH, HIGH, HIGH);
-
-    state = UI_Upload;
-
-    usb_stream.mode = Passthrough;
-    ui_stream.mode = Passthrough;
-
-    HAL_Delay(500);
-
-    // Send a ready message
-    HAL_UART_Transmit(usb_stream.rx.uart, READY, 1, HAL_MAX_DELAY);
-
-    timeout_tick = HAL_GetTick();
-    while (state == UI_Upload)
-    {
-        HandleTx(&usb_stream, &state);
-        HandleTx(&ui_stream, &state);
-        CheckTimeout();
-    }
-}
-
-void RunningMode()
-{
-    TurnOffLEDs();
-
-    CancelAllUart();
-
-    // De-init usb from uart for running mode
-    HAL_UART_DeInit(usb_stream.rx.uart);
-
-    // Init huart3
-    Usart1_Net_Upload_Runnning_Debug_Reset();
-
-    usb_stream.tx.uart = &huart1;
-
-    InitUartStreamParameters(&usb_stream);
-    StartUartReceive(&usb_stream);
-
-    NormalStart();
-
-    // Set LEDS for ui
-    LEDB(LOW, HIGH, HIGH);
-    // Set LEDS for net
-    LEDA(HIGH, HIGH, HIGH);
-
-    state = Running;
-    WaitForNetReady(&state);
-    while (state == Running)
-    {
-        HandleCommands(&usb_stream, &cmd_ring, &state);
-    }
-}
-
-void DebugMode()
-{
-    TurnOffLEDs();
-
-    CancelAllUart();
-
-    // Init uart1 to write to monitor
-    HAL_UART_DeInit(usb_stream.rx.uart);
-
-    // Init huart3
-    Usart1_Net_Upload_Runnning_Debug_Reset();
-
-    usb_stream.tx.uart = &huart1;
-
-    InitUartStreamParameters(&usb_stream);
-    InitUartStreamParameters(&ui_stream);
-    InitUartStreamParameters(&net_stream);
-    StartUartReceive(&usb_stream);
-    StartUartReceive(&ui_stream);
-    StartUartReceive(&net_stream);
-
-    usb_stream.mode = Passthrough;
-    ui_stream.mode = Passthrough;
-    net_stream.mode = Passthrough;
-
-    HAL_Delay(100);
-
-    NormalStart();
-
-    // Set LEDS for ui
-    LEDB(HIGH, LOW, HIGH);
-    // Set LEDS for net
-    LEDA(LOW, LOW, LOW);
-
-    state = Debug_Running;
-    WaitForNetReady(&state);
-    while (state == Debug_Running)
-    {
-        HandleCommands(&usb_stream, &cmd_ring, &state);
-        HandleTx(&ui_stream, &state);
-        HandleTx(&net_stream, &state);
-    }
-}
-void UIDebugMode()
-{
-    TurnOffLEDs();
-
-    CancelAllUart();
-
-    // Init uart3 for UI upload
-    HAL_UART_DeInit(usb_stream.rx.uart);
-
-    // Init huart3
-    Usart1_Net_Upload_Runnning_Debug_Reset();
-
-    usb_stream.tx.uart = &huart1;
-
-    InitUartStreamParameters(&usb_stream);
-    InitUartStreamParameters(&ui_stream);
-    StartUartReceive(&usb_stream);
-    StartUartReceive(&ui_stream);
-
-    HAL_Delay(100);
-    NormalStart();
-
-    // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
-    // Set LEDS for net
-    LEDA(HIGH, LOW, HIGH);
-
-    state = Debug_Running;
-    WaitForNetReady(&state);
-    while (state == Debug_Running)
-    {
-        HandleCommands(&usb_stream, &cmd_ring, &state);
-        HandleTx(&ui_stream, &state);
-    }
-}
-
-void NetDebugMode()
-{
-    TurnOffLEDs();
-
-    CancelAllUart();
-
-    // Init uart3 for UI upload
-    HAL_UART_DeInit(usb_stream.rx.uart);
-
-    // Init huart3
-    Usart1_Net_Upload_Runnning_Debug_Reset();
-
-    usb_stream.tx.uart = &huart1;
-
-    InitUartStreamParameters(&usb_stream);
-    InitUartStreamParameters(&net_stream);
-    StartUartReceive(&usb_stream);
-    StartUartReceive(&net_stream);
-
-    HAL_Delay(100);
-
-    NormalStart();
-
-    // Set LEDS for ui
-    LEDB(HIGH, HIGH, HIGH);
-
-    // Set LEDS for net
-    LEDA(HIGH, HIGH, LOW);
-
-    state = Debug_Running;
-    WaitForNetReady(&state);
-    while (state == Debug_Running)
-    {
-        HandleCommands(&usb_stream, &cmd_ring, &state);
-        HandleTx(&net_stream, &state);
-    }
-}
-
-void LoopbackMode()
-{
-    TurnOffLEDs();
-
-    CancelAllUart();
-
-    // Init uart3 for UI upload
-    HAL_UART_DeInit(usb_stream.rx.uart);
-
-    // Init huart3
-    Usart1_Net_Upload_Runnning_Debug_Reset();
-
-    usb_stream.tx.uart = &huart1;
-
-    InitUartStreamParameters(&usb_stream);
-
-    StartUartReceive(&usb_stream);
-
-    NetHoldInReset();
-    UIHoldInReset();
-
-    // Set LEDS for ui
-    LEDB(LOW, HIGH, HIGH);
-
-    // Set LEDS for net
-    LEDA(HIGH, HIGH, HIGH);
-
-    usb_stream.mode = Passthrough;
-
-
-    uint32_t blink = 0;
-    while (state == 6)
-    {
-        if (HAL_GetTick() > blink)
-        {
-            HAL_GPIO_TogglePin(LEDA_R_GPIO_Port, LEDA_R_Pin);
-            blink = HAL_GetTick() + 1000;
-        }
-        HandleTx(&usb_stream, &state);
-        CheckTimeout();
-    }
+    HAL_UART_Abort(usb_stream.rx.uart);
+    HAL_UART_Abort(ui_stream.rx.uart);
+    HAL_UART_Abort(net_stream.rx.uart);
 }
 
 int app_main(void)
 {
-    TurnOffLEDs();
+    state = default_state;
 
-    InitUartStreamParameters(&usb_stream);
-    InitUartStreamParameters(&net_stream);
-    InitUartStreamParameters(&ui_stream);
-
-    state = Debug_Reset;
     while (1)
     {
-        if (state == Reset)
+        uploader = 0;
+        TurnOffLEDs();
+        CancelAllUart();
+
+        NormalAndNetUploadUartInit(&usb_stream, &huart1);
+
+        switch (state)
         {
-            RunningMode();
+        case Error:
+        {
+            Error_Handler();
+            break;
         }
-        else if (state == Debug_Reset)
+        case Running:
         {
-            DebugMode();
+            // If we get here its an error
+            // because there should never be anyway it gets out of the main loop with this state
+            Error_Handler();
+            break;
         }
-        else if (state == UI_Debug_Reset)
+        case UI_Upload:
         {
-            UIDebugMode();
+            NetHoldInReset();
+
+            UIUploadStreamInit(&usb_stream, &huart2);
+            SetStreamModes(Passthrough, Passthrough, Ignore);
+            UIBootloaderMode();
+            uploader = 1;
+            LEDA(HIGH, HIGH, LOW);
+
+            break;
         }
-        else if (state == Net_Debug_Reset)
+        case Net_Upload:
         {
-            NetDebugMode();
+            UIHoldInReset();
+            NormalAndNetUploadUartInit(&usb_stream, &huart3);
+            SetStreamModes(Passthrough, Ignore, Passthrough);
+            NetBootloaderMode();
+            uploader = 1;
+            LEDA(HIGH, LOW, HIGH);
+            break;
         }
-        else if (state == UI_Upload_Reset)
+        case Normal:
         {
-            UIUpload();
+            SetStreamModes(Command, Ignore, Ignore);
+            NormalBoot();
+            LEDA(HIGH, LOW, LOW);
+            break;
         }
-        else if (state == Net_Upload_Reset)
+        case Debug:
         {
-            NetUpload();
+            SetStreamModes(Command, Passthrough, Passthrough);
+            NormalBoot();
+            LEDA(LOW, HIGH, HIGH);
+            break;
         }
-        else if (state == 6)
+        case UI_Debug:
         {
-            LoopbackMode();
+            SetStreamModes(Command, Passthrough, Ignore);
+            NormalBoot();
+            LEDA(LOW, HIGH, LOW);
+            break;
+        }
+        case Net_Debug:
+        {
+            SetStreamModes(Command, Ignore, Passthrough);
+            NormalBoot();
+            LEDA(LOW, LOW, HIGH);
+            break;
+        }
+        case Loopback:
+        {
+            SetStreamModes(Passthrough, Ignore, Ignore);
+            NormalBoot();
+            LEDA(LOW, LOW, LOW);
+            break;
+        }
+        default:
+        {
+            Error_Handler();
+        }
+        }
+
+        state = Running;
+        while (state == Running)
+        {
+            HandleTx(&ui_stream, &state);
+            HandleTx(&net_stream, &state);
+            HandleTx(&usb_stream, &state);
+            CheckTimeout();
         }
     }
     return 0;
 }
 
+void NormalBoot()
+{
+    UINormalMode();
+    NetNormalMode();
+}
+
 void CheckTimeout()
 {
-    if (HAL_GetTick() - timeout_tick >= TRANSMISSION_TIMEOUT &&
-        state != Debug_Running &&
-        state != Reset &&
-        state != Running)
+    if (uploader && HAL_GetTick() - timeout_tick >= TRANSMISSION_TIMEOUT)
     {
         // Clean up and return to reset mode
-        state = Reset;
+        state = default_state;
         return;
+    }
+}
+
+void SetStreamModes(const StreamMode usb_mode, const StreamMode ui_mode, const StreamMode net_mode)
+{
+    usb_stream.mode = usb_mode;
+    if (usb_stream.mode != Ignore)
+    {
+        InitUartStream(&usb_stream);
+        StartUartReceive(&usb_stream);
+    }
+
+    ui_stream.mode = ui_mode;
+    if (ui_stream.mode != Ignore)
+    {
+        InitUartStream(&ui_stream);
+        StartUartReceive(&ui_stream);
+    }
+
+    net_stream.mode = net_mode;
+    if (net_stream.mode != Ignore)
+    {
+        InitUartStream(&net_stream);
+        StartUartReceive(&net_stream);
     }
 }
 

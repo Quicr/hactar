@@ -162,24 +162,13 @@ class stm32_flasher:
 
         self.CheckSync()
 
-        reply = uart_utils.WriteByteWaitForACK(
-            self.uart, self.Commands.get_id, 1)
+        res = uart_utils.WriteByteWaitForACK(
+            self.uart, self.Commands.get_id, 5)
 
-        self.HandleReply(reply, "Command GetID", "Failed to GetID", False)
+        self.HandleReply(res, "Get ID command", "ACK was not received")
 
-        # Read the next byte which should be the num of bytes - 1
+        # Get the number of incoming bytes
         num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
-
-        # NOTE there is a bug in the bootloader for stm, or there is a
-        # inaccuracy in the an3155 datasheet that says that a single ACK
-        # is sent after receiving the get_id command.
-        # But in reality 90% of the time two ACK bytes are sent
-        if (num_bytes == self.ACK):
-            num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
-        else:
-            self.HandleReply(num_bytes, "GetID num bytes to receive",
-                "Failed to get the number of bytes to receive for the chip's uid")
-
 
         # Get the pid which should be N+1 bytes
         pid_bytes = uart_utils.WaitForBytesExcept(self.uart, num_bytes+1)
@@ -302,6 +291,7 @@ class stm32_flasher:
             reply = uart_utils.WriteByteWaitForACK(
                 self.uart, self.Commands.extended_erase, 1)
 
+
             self.HandleReply(reply, "\nExtended Erase", "Extended erase failed")
 
             # Number of sectors starts at 0x00 0x00. So 0x00 0x00 means
@@ -323,7 +313,6 @@ class stm32_flasher:
 
             print(f"\rErased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}", end="")
 
-            # TODO send 1 erase at a time
             # Give more time to reply with the deleted sectors
             self.uart.timeout = 5
             reply = uart_utils.WriteBytesWaitForACK(self.uart, data, 1)
@@ -406,7 +395,6 @@ class stm32_flasher:
 
             # Get the next address to verify
             addr = self.chip_config["sectors"][sector]["addr"]
-
             # Verify the flash at that memory location
             if not (self.FlashCompare(expected_mem, addr)):
                 print(f"Verifying: {BR}Failed to verify sector "

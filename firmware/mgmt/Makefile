@@ -24,14 +24,18 @@ FIRMWARE = ${TARGET}.elf
 # building variables
 ######################################
 # debug build?
-DEBUG = 1
+DEBUG = 0
 # optimization
+
 OPT = -Os
+ifeq ($(DEBUG), 1)
+	OPT = -Og
+endif
 
 #######################################
 # programming
 #######################################
-PORT = /dev/ttyUSB0
+PORT =
 BAUD = 115000
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
@@ -212,7 +216,7 @@ $(BUILD_DIR):
 	mkdir $@
 
 upload: compile
-	python3 ../flasher/flasher.py --baud=${BAUD} --chip="mgmt" \
+	python3 ../flasher/flasher.py --baud=${BAUD} --chip="mgmt" --port=${PORT} \
 								 -bin=${BUILD_DIR}/${TARGET}.bin
 
 upload_stflash: compile

@@ -13,7 +13,7 @@ typedef enum _
     Ignore,
     Passthrough,
     Command
-} Stream_Mode;
+} StreamMode;
 
 typedef struct
 {
@@ -31,6 +31,7 @@ typedef struct
     uint16_t read;
     uint16_t write;
     uint16_t unsent;
+    uint16_t num_sending;
     uint8_t free;
 } transmit_t;
 
@@ -38,16 +39,8 @@ typedef struct
 {
     receive_t rx;
     transmit_t tx;
-    Stream_Mode mode;
+    StreamMode mode;
 } uart_stream_t;
-
-typedef struct
-{
-    uint8_t* buff;
-    const uint16_t sz;
-    uint16_t idx;
-    uint32_t last_update;
-} cmd_ring_buff_t;
 
 // Commands
 static const uint8_t ui_upload_cmd [] = "ui_upload";
@@ -65,11 +58,12 @@ static const uint8_t HELLO [] = "WHO ARE YOU?";
 static const uint8_t HELLO_RES [] = "HELLO, I AM A HACTAR DEVICE";
 
 void Receive(uart_stream_t* stream, uint16_t num_received);
-void HandleCommands(uart_stream_t* stream, cmd_ring_buff_t* cmd_ring, enum State* state);
+void HandleCommands(uart_stream_t* stream, enum State* state);
+void TxISR(uart_stream_t* stream, enum State* state);
 void HandleTx(uart_stream_t* stream, enum State* state);
 void Transmit(uart_stream_t* stream, enum State* state);
-void InitUartStreamParameters(uart_stream_t* stream);
-void CancelUart(uart_stream_t* stream);
+void InitUartStream(uart_stream_t* stream);
 void StartUartReceive(uart_stream_t* stream);
+void SetStreamModes(const StreamMode usb_mode, const StreamMode ui_mode, const StreamMode net_mode);
 
 #endif

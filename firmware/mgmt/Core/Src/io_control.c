@@ -49,8 +49,11 @@ void ChangeToOutput(GPIO_TypeDef* port, uint16_t pin)
  * @brief TODO
  *
  */
-void Usart1_Net_Upload_Runnning_Debug_Reset(void)
+void NormalAndNetUploadUartInit(uart_stream_t* usb_stream, UART_HandleTypeDef* tx_uart)
 {
+    // Init uart1 for UI upload
+    HAL_UART_DeInit(&huart1);
+
     huart1.Instance = USART1;
     huart1.Init.BaudRate = BAUD;
     huart1.Init.WordLength = UART_WORDLENGTH_8B;
@@ -65,14 +68,22 @@ void Usart1_Net_Upload_Runnning_Debug_Reset(void)
     {
         Error_Handler();
     }
+
+    usb_stream->tx.uart = tx_uart;
 }
 
 /**
  * @brief TODO
  *
  */
-void Usart1_UI_Upload_Init(void)
+void UIUploadStreamInit(uart_stream_t* usb_stream, UART_HandleTypeDef* tx_uart)
 {
+    // Init uart1 for UI upload
+    if (HAL_UART_DeInit(&huart1) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
     huart1.Instance = USART1;
     huart1.Init.BaudRate = BAUD;
     huart1.Init.WordLength = UART_WORDLENGTH_9B;
@@ -87,4 +98,6 @@ void Usart1_UI_Upload_Init(void)
     {
         Error_Handler();
     }
+
+    usb_stream->tx.uart = tx_uart;
 }

@@ -33,10 +33,10 @@ extern "C" {
 #include "main.h"
 #include "stm32f0xx_hal.h"
 #include "state.h"
+#include "uart_stream.h"
 
 int app_main(void);
 
-void CancelAllUart();
 void NetBootloaderMode();
 void NetNormalMode();
 void NetHoldInReset();
@@ -48,7 +48,7 @@ void NetUpload();
 void UIUpload();
 void RunningMode();
 void DebugMode();
-void LoopbackMode();
+void NormalBoot();
 
 void CheckTimeout();
 void WaitForNetReady(const enum State* state);
