@@ -8,7 +8,7 @@ import uart_utils
 import stm32
 import hactar_stm32
 import esp32
-from ansi_colours import BB, BG, BR, BW, NW
+from ansi_colours import BB, BG, BR, BW, BY, NW
 
 HELLO = bytes("WHO ARE YOU?\0", "utf-8")
 HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE\0", "utf-8")
@@ -27,12 +27,14 @@ def SerialPorts(uart_config):
         ports = glob.glob('/dev/cu.usbserial*')
     else:
         raise EnvironmentError("Unsupported platform")
+    ports.sort()
 
     print(f"Ports available: {len(ports)} [{ports}]")
     result = []
     for port in ports:
         try:
             s = serial.Serial(**uart_config, port=port)
+            s.timeout = 0.5
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
             # append it.
@@ -43,7 +45,10 @@ def SerialPorts(uart_config):
             s.close()
 
             if (resp == HELLO_RES):
+                print(f"Device on port {BY}{port}{NW} {BG}is{NW} a Hactar!")
                 result.append(port)
+            else:
+                print(f"Device on port {BY}{port}{NW} {BR}not{NW} a Hactar!")
         except (OSError, serial.SerialException):
             pass
     return result
@@ -89,7 +94,6 @@ def main():
             # Try to find a hactar
             print("Searching for Hactar devices")
             ports = SerialPorts(uart_config)
-            time.sleep(2)
         else:
             ports.append(args.port)
 
@@ -109,7 +113,7 @@ def main():
                     )
 
                     print(f"Opened port: {BB}{port}{NW} "
-                            f"baudrate: {BG}{args.baud}{NW}")
+                          f"baudrate: {BG}{args.baud}{NW}")
 
                     # TODO use oop inheritance
                     if ("mgmt" in args.chip):

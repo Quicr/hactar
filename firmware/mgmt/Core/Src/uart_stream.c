@@ -204,7 +204,7 @@ void InitUartStream(uart_stream_t* stream)
     stream->tx.read = 0;
     stream->tx.write = 0;
     stream->tx.unsent = 0;
-    // stream->tx.free = 1;
+    stream->tx.free = 1;
 }
 
 void StartUartReceive(uart_stream_t* stream)
