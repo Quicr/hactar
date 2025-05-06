@@ -67,6 +67,7 @@
         "hole_near_hole|122270000|135930000|558d7f57-86de-4f34-be90-7329512ffca0|bf596985-8edd-4435-a369-a8af84a1501d",
         "hole_near_hole|122270000|135930000|558d7f57-86de-4f34-be90-7329512ffca0|e2d539a4-5e97-4449-8c35-d98d8bf0f99b",
         "hole_near_hole|122770000|136430000|d70e95fc-3be6-47fa-941d-a142b66a1fc3|558d7f57-86de-4f34-be90-7329512ffca0",
+        "lib_footprint_mismatch|138216401|142413763|3b78ba3e-20f9-4bd1-bff6-59af4f43c560|00000000-0000-0000-0000-000000000000",
         "silk_edge_clearance|114000000|60420000|f3237842-6194-4680-a3f5-3890d43fb27e|4319b654-2bc7-42aa-8987-220507e33da5",
         "silk_edge_clearance|114000000|62870000|f3237842-6194-4680-a3f5-3890d43fb27e|5f4d50ef-1247-428e-9193-4226cb8cd62e",
         "silk_edge_clearance|142300000|145300000|b9935939-8402-4c03-8a36-3c6ab32367fa|f8236bb9-a2bc-45e1-a075-c4dc8c76a4bd",
@@ -111,7 +112,7 @@
         "padstack": "error",
         "pth_inside_courtyard": "error",
         "shorting_items": "error",
-        "silk_edge_clearance": "ignore",
+        "silk_edge_clearance": "warning",
         "silk_over_copper": "warning",
         "silk_overlap": "warning",
         "skew_out_of_range": "error",
@@ -541,7 +542,7 @@
           "group_by": false,
           "label": "Value",
           "name": "Value",
-          "show": true
+          "show": false
         },
         {
           "group_by": false,
@@ -553,7 +554,7 @@
           "group_by": false,
           "label": "Footprint",
           "name": "Footprint",
-          "show": true
+          "show": false
         },
         {
           "group_by": false,
@@ -583,7 +584,7 @@
           "group_by": false,
           "label": "JLCPCB Part #",
           "name": "JLCPCB Part #",
-          "show": true
+          "show": false
         },
         {
           "group_by": false,
@@ -653,28 +654,22 @@
         },
         {
           "group_by": false,
-          "label": "JLCPCB Rotation Offset",
+          "label": "FT Rotation Offset",
           "name": "JLCPCB Rotation Offset",
-          "show": false
+          "show": true
         },
         {
           "group_by": false,
-          "label": "MPN",
-          "name": "MPN",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "JLCPCB#",
-          "name": "JLCPCB#",
+          "label": "FT Rotation Offset",
+          "name": "FT Rotation Offset",
           "show": false
         }
       ],
       "filter_string": "",
       "group_symbols": true,
       "name": "",
-      "sort_asc": false,
-      "sort_field": "JLCPCB Part #"
+      "sort_asc": true,
+      "sort_field": "Value"
     },
     "connection_grid_size": 50.0,
     "drawing": {

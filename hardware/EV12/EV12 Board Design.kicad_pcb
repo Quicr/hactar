@@ -7695,19 +7695,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Position Offset" "0,-0.1270"
-			(at 0 0 -90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "788b8ee0-e7e8-4b74-a467-2428933045ae")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 -90)
 			(unlocked yes)
@@ -7831,6 +7818,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "ce00692f-a735-4471-8153-6dfd52b40bcc")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Position Offset" "0,-0.1270"
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0a069212-4a2a-424f-9cd3-597ca7d7edcc")
 			(effects
 				(font
 					(size 1 1)
@@ -8220,19 +8220,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Position Offset" "2.9800,1.2065"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "d4f97339-042b-4712-b424-b3c266869169")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 90)
 			(unlocked yes)
@@ -8356,6 +8343,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "1870a82a-e9c1-4561-abbd-c461bebfeb77")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Position Offset" "2.9800,1.2065"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fb86a9a3-0972-41ce-ace9-54e5a107a660")
 			(effects
 				(font
 					(size 1 1)
@@ -11314,19 +11314,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "180"
-			(at 0 0 -90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "e8a23a59-ca81-4f16-acd2-1e7379070728")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 -90)
 			(unlocked yes)
@@ -11450,6 +11437,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "14d9ef16-009e-4baa-9297-ecc026618f18")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "180"
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "70daa75b-8b8f-4a2a-8224-962e7020dd93")
 			(effects
 				(font
 					(size 1 1)
@@ -12826,19 +12826,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "180"
-			(at 0 0 -90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "71960a99-2d3a-4519-990f-17cff994de0c")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 -90)
 			(unlocked yes)
@@ -12962,6 +12949,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "2effa735-79b1-481a-b98d-79cac784a301")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "180"
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "df6a073b-817f-4ad3-a5e9-99f4977b6f1c")
 			(effects
 				(font
 					(size 1 1)
@@ -31310,19 +31310,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "-90"
-			(at 0 0 180)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "3d6a9fd7-2c06-4d39-84e8-71c9df2903fd")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 180)
 			(unlocked yes)
@@ -31446,6 +31433,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "869fc7f6-fc61-413d-80ad-bd4d61b37215")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "-90"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "04da94e0-39cd-4fe9-bd3c-54030a187c12")
 			(effects
 				(font
 					(size 1 1)
@@ -36712,19 +36712,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "180"
-			(at 0 0 -90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "0e61c7a5-8d54-4838-b1bc-561529b440f1")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 -90)
 			(unlocked yes)
@@ -36848,6 +36835,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "5f24f740-c2aa-4c6f-a705-e80a96db6e0c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "180"
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "cd7186ba-6f7c-4b6d-abc2-eee2a7bd93e4")
 			(effects
 				(font
 					(size 1 1)
@@ -37789,19 +37789,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Position Offset" "0,-3.556"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "3438e322-652e-430c-8292-f482ff162599")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 90)
 			(unlocked yes)
@@ -37925,6 +37912,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "84feb9d0-9b7b-4f78-900c-7a9339d7e85b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Position Offset" "0,0"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "bada761f-9c1a-4e36-8f44-92f93843fdf4")
 			(effects
 				(font
 					(size 1 1)
@@ -38442,19 +38442,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "180"
-			(at 0 0 -90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "1d9f893b-42d5-4262-bf31-d5a34023f47b")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 -90)
 			(unlocked yes)
@@ -38578,6 +38565,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "d1b78130-272b-46d5-8c92-3b2132472548")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "180"
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9653978e-c05b-4910-b8db-9620ebb7eb91")
 			(effects
 				(font
 					(size 1 1)
@@ -39168,45 +39168,6 @@
 				)
 			)
 		)
-		(property "MPN" "PJ-320D"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "9e8012f6-1170-4665-a202-4ac6f5fd8012")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "JLCPCB Rotation Offset" "90"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "6559dccd-40e3-409b-bc90-0f90d2c32851")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" "0.889,0"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "41023f8c-17a3-43a3-b918-864254337b34")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 90)
 			(unlocked yes)
@@ -39330,6 +39291,32 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "54c518e8-3e85-472f-a5f4-15e789b6845a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a47279d5-935a-49ce-87b7-6101d9091ed0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Position Offset" "0.889,0"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3be63a04-00fc-47be-aaaa-543c92dfea9d")
 			(effects
 				(font
 					(size 1 1)
@@ -43750,19 +43737,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Position Offset" "0,-0.508"
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "1697ec74-bb75-4a8e-b94a-3d05e9abbc38")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 0)
 			(unlocked yes)
@@ -43886,6 +43860,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "7bfb4103-e658-4c02-90c5-93b730f2ecf1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Position Offset" "0,-0.508"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b5638e71-0461-4339-b16c-80c18e2167c7")
 			(effects
 				(font
 					(size 1 1)
@@ -48789,19 +48776,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Position Offset" "0,1.397"
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "aaa07571-5342-4a03-be2c-554ae3ab1c69")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 0)
 			(unlocked yes)
@@ -48925,6 +48899,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "4257352d-bbdd-4aa3-a155-8b3009ca0a3d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Position Offset" "0,1.397"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "11fdd63d-6050-4807-8a92-9d3e7da9cda1")
 			(effects
 				(font
 					(size 1 1)
@@ -50857,19 +50844,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "270"
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "234fce4d-60c6-4cfb-b727-4082ef6a149f")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 0)
 			(unlocked yes)
@@ -50993,6 +50967,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "ec967a09-3184-4ce7-95b9-2315575c0a83")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "270"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0f3e2d42-a0d2-4282-b0b1-c5bd45b95d46")
 			(effects
 				(font
 					(size 1 1)
@@ -52013,19 +52000,6 @@
 				)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "270"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "ece5f3ea-2b9a-4e23-8427-df7edab47f55")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Availability" ""
 			(at 0 0 90)
 			(unlocked yes)
@@ -52149,6 +52123,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "3ee21b20-b015-4297-b0e4-7d9c0301fa2d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "270"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b16e7a53-6373-4d7e-b129-e0f1ba38e6b3")
 			(effects
 				(font
 					(size 1 1)
@@ -79182,7 +79169,7 @@
 				(xy 155.446384 126.039996) (xy 152.76 126.039996) (xy 152.76 124.609731) (xy 162.320785 124.609731)
 				(xy 162.6475 124.936446) (xy 162.647501 124.936446) (xy 162.974214 124.609731) (xy 163.320785 124.609731)
 				(xy 163.6475 124.936446) (xy 163.647501 124.936446) (xy 163.974214 124.609731) (xy 164.320785 124.609731)
-				(xy 164.6475 124.936446) (xy 164.647501 124.936446) (xy 164.974214 124.609731) (xy 164.815444 124.554176)
+				(xy 164.6475 124.936446) (xy 164.647501 124.936446) (xy 164.974213 124.609731) (xy 164.815444 124.554176)
 				(xy 164.647504 124.535254) (xy 164.647496 124.535254) (xy 164.479555 124.554176) (xy 164.320785 124.609731)
 				(xy 163.974214 124.609731) (xy 163.815444 124.554176) (xy 163.647504 124.535254) (xy 163.647496 124.535254)
 				(xy 163.479555 124.554176) (xy 163.320785 124.609731) (xy 162.974214 124.609731) (xy 162.815444 124.554176)
@@ -84927,7 +84914,7 @@
 				(xy 152.763115 126.039996) (xy 152.763115 124.609731) (xy 162.320785 124.609731) (xy 162.6475 124.936446)
 				(xy 162.647501 124.936446) (xy 162.974214 124.609731) (xy 163.320785 124.609731) (xy 163.6475 124.936446)
 				(xy 163.647501 124.936446) (xy 163.974214 124.609731) (xy 164.320785 124.609731) (xy 164.6475 124.936446)
-				(xy 164.647501 124.936446) (xy 164.974214 124.609731) (xy 164.815444 124.554176) (xy 164.647504 124.535254)
+				(xy 164.647501 124.936446) (xy 164.974213 124.609731) (xy 164.815444 124.554176) (xy 164.647504 124.535254)
 				(xy 164.647496 124.535254) (xy 164.479555 124.554176) (xy 164.320785 124.609731) (xy 163.974214 124.609731)
 				(xy 163.815444 124.554176) (xy 163.647504 124.535254) (xy 163.647496 124.535254) (xy 163.479555 124.554176)
 				(xy 163.320785 124.609731) (xy 162.974214 124.609731) (xy 162.815444 124.554176) (xy 162.647504 124.535254)
@@ -85183,7 +85170,7 @@
 				(xy 155.684662 59.439298) (xy 155.684667 59.439308) (xy 155.693338 59.453108) (xy 156.056446 59.090001)
 				(xy 156.056446 59.089999) (xy 156.036556 59.070109) (xy 156.31 59.070109) (xy 156.31 59.109891)
 				(xy 156.325224 59.146645) (xy 156.353355 59.174776) (xy 156.390109 59.19) (xy 156.429891 59.19)
-				(xy 156.466645 59.174776) (xy 156.494776 59.146645) (xy 156.51 59.109891) (xy 156.51 59.09) (xy 156.763553 59.09)
+				(xy 156.466645 59.174776) (xy 156.494776 59.146645) (xy 156.51 59.109891) (xy 156.51 59.09) (xy 156.763552 59.09)
 				(xy 157.11 59.436446) (xy 157.110001 59.436446) (xy 157.456446 59.090001) (xy 157.456446 59.089999)
 				(xy 157.436556 59.070109) (xy 157.71 59.070109) (xy 157.71 59.109891) (xy 157.725224 59.146645)
 				(xy 157.753355 59.174776) (xy 157.790109 59.19) (xy 157.829891 59.19) (xy 157.866645 59.174776)
@@ -85195,7 +85182,7 @@
 				(xy 158.51 58.743553) (xy 158.163553 59.09) (xy 157.91 59.09) (xy 157.91 59.070109) (xy 157.894776 59.033355)
 				(xy 157.866645 59.005224) (xy 157.829891 58.99) (xy 157.790109 58.99) (xy 157.753355 59.005224)
 				(xy 157.725224 59.033355) (xy 157.71 59.070109) (xy 157.436556 59.070109) (xy 157.11 58.743553)
-				(xy 156.763553 59.09) (xy 156.51 59.09) (xy 156.51 59.070109) (xy 156.494776 59.033355) (xy 156.466645 59.005224)
+				(xy 156.763552 59.09) (xy 156.51 59.09) (xy 156.51 59.070109) (xy 156.494776 59.033355) (xy 156.466645 59.005224)
 				(xy 156.429891 58.99) (xy 156.390109 58.99) (xy 156.353355 59.005224) (xy 156.325224 59.033355)
 				(xy 156.31 59.070109) (xy 156.036556 59.070109) (xy 155.87967 58.913223) (xy 155.710001 58.743553)
 				(xy 155.71 58.743553) (xy 155.346891 59.10666) (xy 147.907148 59.10666) (xy 147.907148 58.389997)
