@@ -18,9 +18,7 @@
 #include <stm32f4xx_hal.h>
 #endif
 
-#include <string.h>
 #include <random>
-#include <span>
 
 // Forward declare
 inline void CheckPTT();
