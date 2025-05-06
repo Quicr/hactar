@@ -349,6 +349,10 @@ docker-build:
 		docker build -t ${DOCKER_IMAGE} .; \
 	fi
 
+format:
+	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
+	find src -iname "*.c" -or -iname "*.cc" | xargs clang-format -i
+
 #######################################
 # clean up
 #######################################

@@ -1,15 +1,13 @@
 #include "moq_session.hh"
-
 #include "logger.hh"
-
-#include "utils.hh"
 #include "task_helpers.hh"
+#include "utils.hh"
 
 using namespace moq;
 
 extern uint64_t device_id;
 
-Session::Session(const quicr::ClientConfig& cfg):
+Session::Session(const quicr::ClientConfig& cfg) :
     Client(cfg)
 {
     StartTasks();
@@ -17,27 +15,29 @@ Session::Session(const quicr::ClientConfig& cfg):
 
 void Session::StartTasks() noexcept
 {
-    task_helpers::Start_PSRAM_Task(PublishTrackTask, this, "Publish Tracks task", writers_task_handle,
-        writers_task_buffer, &writers_task_stack, 8192, 10);
-    task_helpers::Start_PSRAM_Task(SubscribeTrackTask, this, "Subscribe Tracks task", readers_task_handle,
-        readers_task_buffer, &readers_task_stack, 8192, 10);
+    task_helpers::Start_PSRAM_Task(PublishTrackTask, this, "Publish Tracks task",
+                                   writers_task_handle, writers_task_buffer, &writers_task_stack,
+                                   8192, 10);
+    task_helpers::Start_PSRAM_Task(SubscribeTrackTask, this, "Subscribe Tracks task",
+                                   readers_task_handle, readers_task_buffer, &readers_task_stack,
+                                   8192, 10);
 }
 
 void Session::StatusChanged(Status status)
 {
     switch (status)
     {
-        case Status::kReady:
-            Logger::Log(Logger::Level::Info, "MOQ Connection ready");
-            break;
-        case Status::kConnecting:
-            break;
-        case Status::kPendingSeverSetup:
-            Logger::Log(Logger::Level::Info, "MOQ Connection connected and now pending server setup");
-            break;
-        default:
-            Logger::Log(Logger::Level::Error, "MOQ Connection failed: %i", static_cast<int>(status));
-            break;
+    case Status::kReady:
+        Logger::Log(Logger::Level::Info, "MOQ Connection ready");
+        break;
+    case Status::kConnecting:
+        break;
+    case Status::kPendingSeverSetup:
+        Logger::Log(Logger::Level::Info, "MOQ Connection connected and now pending server setup");
+        break;
+    default:
+        Logger::Log(Logger::Level::Error, "MOQ Connection failed: %i", static_cast<int>(status));
+        break;
     }
 }
 
@@ -63,7 +63,8 @@ void Session::StartReadTrack(const json& subscription, Serial& serial)
         // TODO transmit to the ui chip probably
         // std::string lang = subscription.at("language").get<std::string>();
 
-        std::vector<std::string> track_namespace = subscription.at("tracknamespace").get<std::vector<std::string>>();
+        std::vector<std::string> track_namespace =
+            subscription.at("tracknamespace").get<std::vector<std::string>>();
         std::string trackname = subscription.at("trackname").get<std::string>();
 
         if (trackname == "")
@@ -72,8 +73,7 @@ void Session::StartReadTrack(const json& subscription, Serial& serial)
         }
 
         std::shared_ptr<moq::TrackReader> reader = std::make_shared<moq::TrackReader>(
-            moq::MakeFullTrackName(track_namespace, trackname),serial
-        );
+            moq::MakeFullTrackName(track_namespace, trackname), serial);
 
         std::lock_guard<std::mutex> _(readers_mux);
         readers.push_back(reader);
@@ -99,13 +99,13 @@ void Session::StartWriteTrack(const json& publication)
         // TODO transmit to the ui chip probably
         // std::string lang = publication.at("language").get<std::string>();
 
-        std::vector<std::string> track_namespace = publication.at("tracknamespace").get<std::vector<std::string>>();
+        std::vector<std::string> track_namespace =
+            publication.at("tracknamespace").get<std::vector<std::string>>();
         std::string trackname = publication.at("trackname").get<std::string>();
 
-        std::shared_ptr<moq::TrackWriter> writer = std::make_shared<moq::TrackWriter>(
-            moq::MakeFullTrackName(track_namespace, trackname),
-            quicr::TrackMode::kDatagram, 2, 100
-        );
+        std::shared_ptr<moq::TrackWriter> writer =
+            std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName(track_namespace, trackname),
+                                               quicr::TrackMode::kDatagram, 2, 100);
 
         std::lock_guard<std::mutex> _(writers_mux);
         writers.push_back(writer);

@@ -41,4 +41,4 @@ struct AIResponseChunk
     std::uint32_t chunk_length;
     quicr::Bytes chunk_data;
 };
-}
+} // namespace moq

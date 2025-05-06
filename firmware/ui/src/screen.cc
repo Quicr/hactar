@@ -1,18 +1,16 @@
 #include "screen.hh"
 #include <math.h>
 
-Screen::Screen(
-    SPI_HandleTypeDef& hspi,
-    GPIO_TypeDef* cs_port,
-    const uint16_t cs_pin,
-    GPIO_TypeDef* dc_port,
-    const uint16_t dc_pin,
-    GPIO_TypeDef* rst_port,
-    const uint16_t rst_pin,
-    GPIO_TypeDef* bl_port,
-    const uint16_t bl_pin,
-    Orientation orientation
-):
+Screen::Screen(SPI_HandleTypeDef& hspi,
+               GPIO_TypeDef* cs_port,
+               const uint16_t cs_pin,
+               GPIO_TypeDef* dc_port,
+               const uint16_t dc_pin,
+               GPIO_TypeDef* rst_port,
+               const uint16_t rst_pin,
+               GPIO_TypeDef* bl_port,
+               const uint16_t bl_pin,
+               Orientation orientation) :
     spi(&hspi),
     cs_port(cs_port),
     cs_pin(cs_pin),
@@ -25,7 +23,7 @@ Screen::Screen(
     orientation(orientation),
     view_height(HEIGHT),
     view_width(WIDTH),
-    memories{ 0 },
+    memories{0},
     memory_read_idx(0),
     memories_in_use(0),
     memory_write_idx(0),
@@ -35,17 +33,15 @@ Screen::Screen(
     row_end_update(0),
     updating(false),
     restart_update(false),
-    scan_window{ 0 },
-    title_buffer{ 0 },
+    scan_window{0},
+    title_buffer{0},
     text_idx(0),
     texts_in_use(0),
     scroll_offset(0),
-    text_buffer{ 0 },
-    usr_buffer{ 0 }
+    text_buffer{0},
+    usr_buffer{0}
 {
-
 }
-
 
 // NOTE, we never deselect the screen because its the only
 // thing on our spi bus.
@@ -59,27 +55,27 @@ void Screen::Init()
 
     // Set power control A
     WriteCommand(PWRC_A);
-    uint8_t power_a_data[5] = { 0x39, 0x2C, 0x00, 0x34, 0x02 };
+    uint8_t power_a_data[5] = {0x39, 0x2C, 0x00, 0x34, 0x02};
     WriteDataWithSet(power_a_data, 5);
 
     // Set power control B
     WriteCommand(PWRC_B);
-    uint8_t power_b_data[3] = { 0x00, 0xC1, 0x30 };
+    uint8_t power_b_data[3] = {0x00, 0xC1, 0x30};
     WriteDataWithSet(power_b_data, 3);
 
     // Driver timing control A
     WriteCommand(TIMC_A);
-    uint8_t timer_a_data[3] = { 0x85, 0x00, 0x78 };
+    uint8_t timer_a_data[3] = {0x85, 0x00, 0x78};
     WriteDataWithSet(timer_a_data, 3);
 
     // Driver timing control B
     WriteCommand(TIMC_B);
-    uint8_t timer_b_data[2] = { 0x00, 0x00 };
+    uint8_t timer_b_data[2] = {0x00, 0x00};
     WriteDataWithSet(timer_b_data, 2);
 
     // Power on sequence control
     WriteCommand(PWR_ON);
-    uint8_t power_data[4] = { 0x64, 0x03, 0x12, 0x81 };
+    uint8_t power_data[4] = {0x64, 0x03, 0x12, 0x81};
     WriteDataWithSet(power_data, 4);
 
     // Pump ratio control
@@ -96,7 +92,7 @@ void Screen::Init()
 
     // VCM Control 1
     WriteCommand(VCM_C1);
-    uint8_t vcm_control[2] = { 0x3E, 0x28 };
+    uint8_t vcm_control[2] = {0x3E, 0x28};
     WriteDataWithSet(vcm_control, 2);
 
     // VCM Control 2
@@ -113,12 +109,12 @@ void Screen::Init()
 
     // Frame ratio control. RGB Color
     WriteCommand(FR_CTL); // 0xB1
-    uint8_t fr_control_data[2] = { 0x00, 0x18 };
+    uint8_t fr_control_data[2] = {0x00, 0x18};
     WriteDataWithSet(fr_control_data, 2);
 
     // Display function control
     WriteCommand(DIS_CT); // 0xB6
-    uint8_t df_control_data[3] = { 0x08, 0x82, 0x27 };
+    uint8_t df_control_data[3] = {0x08, 0x82, 0x27};
     WriteDataWithSet(df_control_data, 3);
 
     // 3Gamma function
@@ -131,14 +127,14 @@ void Screen::Init()
 
     // Positive Gamma correction
     WriteCommand(GAM_PC); // 0xE0
-    uint8_t positive_gamma_correction_data[15] = { 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1,
-                              0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00 };
+    uint8_t positive_gamma_correction_data[15] = {0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1,
+                                                  0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00};
     WriteDataWithSet(positive_gamma_correction_data, 15);
 
     // Negative gamma correction
     WriteCommand(GAM_NC);
-    uint8_t negative_gamma_correction_data[15] = { 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1,
-                              0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F };
+    uint8_t negative_gamma_correction_data[15] = {0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1,
+                                                  0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F};
     WriteDataWithSet(negative_gamma_correction_data, 15);
 
     WriteCommand(NORON); // 0x13
@@ -190,46 +186,45 @@ void Screen::Draw(uint32_t timeout)
 
         switch (memory.status)
         {
-            case MemoryStatus::Free:
+        case MemoryStatus::Free:
+        {
+            continue;
+            break;
+        }
+        case MemoryStatus::In_Progress:
+        {
+            ++memories_read;
+            if (memory.callback(memory, matrix, y1, y2))
             {
-                continue;
-                break;
-            }
-            case MemoryStatus::In_Progress:
-            {
-                ++memories_read;
-                if (memory.callback(memory, matrix, y1, y2))
+                if (memory.x1 < x1)
                 {
-                    if (memory.x1 < x1)
-                    {
-                        x1 = memory.x1;
-                    }
-
-                    if (memory.x2 > x2)
-                    {
-                        x2 = memory.x2;
-                    }
-
-                    buff_updated = true;
+                    x1 = memory.x1;
                 }
 
-                if (y2 >= memory.y2)
+                if (memory.x2 > x2)
                 {
-                    memory.status = MemoryStatus::Free;
-                    memory.read_idx = 0;
-                    memory.write_idx = 0;
-                    --memories_in_use;
+                    x2 = memory.x2;
                 }
 
+                buff_updated = true;
+            }
 
-                break;
-            }
-            default:
+            if (y2 >= memory.y2)
             {
-                // Should never be able to get here.
-                Error("Screen Draw", "Should be impossible to get here!");
-                break;
+                memory.status = MemoryStatus::Free;
+                memory.read_idx = 0;
+                memory.write_idx = 0;
+                --memories_in_use;
             }
+
+            break;
+        }
+        default:
+        {
+            // Should never be able to get here.
+            Error("Screen Draw", "Should be impossible to get here!");
+            break;
+        }
         }
     }
 
@@ -316,17 +311,23 @@ void Screen::DisableBacklight()
     HAL_GPIO_WritePin(bl_port, bl_pin, GPIO_PIN_RESET);
 }
 
-void Screen::SetWriteablePixels(const int16_t x1, const int16_t x2,
-    const int16_t y1, const int16_t y2)
+void Screen::SetWriteablePixels(const int16_t x1,
+                                const int16_t x2,
+                                const int16_t y1,
+                                const int16_t y2)
 {
-    uint8_t col_data [] = {
-        static_cast<uint8_t>(x1 >> 8), static_cast<uint8_t>(x1),
-        static_cast<uint8_t>(x2 >> 8), static_cast<uint8_t>(x2),
+    uint8_t col_data[] = {
+        static_cast<uint8_t>(x1 >> 8),
+        static_cast<uint8_t>(x1),
+        static_cast<uint8_t>(x2 >> 8),
+        static_cast<uint8_t>(x2),
     };
 
-    uint8_t scan_window [] = {
-        static_cast<uint8_t>(y1 >> 8), static_cast<uint8_t>(y1),
-        static_cast<uint8_t>(y2 >> 8), static_cast<uint8_t>(y2),
+    uint8_t scan_window[] = {
+        static_cast<uint8_t>(y1 >> 8),
+        static_cast<uint8_t>(y1),
+        static_cast<uint8_t>(y2 >> 8),
+        static_cast<uint8_t>(y2),
     };
 
     WriteCommand(CA_SET);
@@ -345,49 +346,46 @@ void Screen::SetOrientation(const Screen::Orientation orientation)
     // TODO add scroll area math
     switch (orientation)
     {
-        case Orientation::portrait:
-            view_width = WIDTH;
-            view_height = HEIGHT;
+    case Orientation::portrait:
+        view_width = WIDTH;
+        view_height = HEIGHT;
 
-            WriteCommand(MAD_CT);
-            WriteDataWithSet(PORTRAIT_DATA);
-            break;
-        case Orientation::flipped_portrait:
-            view_width = WIDTH;
-            view_height = HEIGHT;
+        WriteCommand(MAD_CT);
+        WriteDataWithSet(PORTRAIT_DATA);
+        break;
+    case Orientation::flipped_portrait:
+        view_width = WIDTH;
+        view_height = HEIGHT;
 
-            WriteCommand(MAD_CT);
-            WriteDataWithSet(FLIPPED_PORTRAIT_DATA);
-            break;
-        case Orientation::left_landscape:
-            view_width = HEIGHT;
-            view_height = WIDTH;
+        WriteCommand(MAD_CT);
+        WriteDataWithSet(FLIPPED_PORTRAIT_DATA);
+        break;
+    case Orientation::left_landscape:
+        view_width = HEIGHT;
+        view_height = WIDTH;
 
-            WriteCommand(MAD_CT);
-            WriteDataWithSet(LEFT_LANDSCAPE_DATA);
-            break;
-        case Orientation::right_landscape:
-            view_width = HEIGHT;
-            view_height = WIDTH;
+        WriteCommand(MAD_CT);
+        WriteDataWithSet(LEFT_LANDSCAPE_DATA);
+        break;
+    case Orientation::right_landscape:
+        view_width = HEIGHT;
+        view_height = WIDTH;
 
-            WriteCommand(MAD_CT);
-            WriteDataWithSet(RIGHT_LANDSCAPE_DATA);
-            break;
-        default:
-            // Do nothing
-            break;
+        WriteCommand(MAD_CT);
+        WriteDataWithSet(RIGHT_LANDSCAPE_DATA);
+        break;
+    default:
+        // Do nothing
+        break;
     }
 
     row_bytes = view_width * 2;
     this->orientation = orientation;
 
     DefineScrollArea(Top_Fixed_Area, Scroll_Area_Height, Bottom_Fixed_Area);
-
 }
 
-
-void Screen::FillRectangle(uint16_t x1, uint16_t x2,
-    uint16_t y1, uint16_t y2, const Colour colour)
+void Screen::FillRectangle(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, const Colour colour)
 {
     HandleBounds(x1, x2, y1, y2);
 
@@ -399,9 +397,12 @@ void Screen::FillScreen(const Colour colour)
     FillRectangle(0, view_width, 0, view_height, colour);
 }
 
-void Screen::DrawRectangle(uint16_t x1, uint16_t x2,
-    uint16_t y1, uint16_t y2, const uint16_t thickness,
-    const Colour colour)
+void Screen::DrawRectangle(uint16_t x1,
+                           uint16_t x2,
+                           uint16_t y1,
+                           uint16_t y2,
+                           const uint16_t thickness,
+                           const Colour colour)
 {
     HandleBounds(x1, x2, y1, y2);
 
@@ -410,8 +411,8 @@ void Screen::DrawRectangle(uint16_t x1, uint16_t x2,
     PushMemoryParameter(memory, thickness, 2);
 }
 
-void Screen::DrawCharacter(uint16_t x, uint16_t y, const char ch,
-    const Font& font, const Colour fg, const Colour bg)
+void Screen::DrawCharacter(
+    uint16_t x, uint16_t y, const char ch, const Font& font, const Colour fg, const Colour bg)
 {
     const uint16_t x2 = x + font.width;
     const uint16_t y2 = y + font.height;
@@ -424,12 +425,17 @@ void Screen::DrawCharacter(uint16_t x, uint16_t y, const char ch,
     PushMemoryParameter(memory, ch_addr, 4);
 }
 
-void Screen::DrawString(uint16_t x, uint16_t y, const char* str,
-    const uint16_t length, const Font& font,
-    const Colour fg, const Colour bg)
+void Screen::DrawString(uint16_t x,
+                        uint16_t y,
+                        const char* str,
+                        const uint16_t length,
+                        const Font& font,
+                        const Colour fg,
+                        const Colour bg)
 {
     // Get the maximum num of characters for a single line
-    const uint16_t len = x + length * static_cast<uint16_t>(font.width) > WIDTH ? (WIDTH - x) / font.width : length;
+    const uint16_t len =
+        x + length * static_cast<uint16_t>(font.width) > WIDTH ? (WIDTH - x) / font.width : length;
     const uint16_t width = len * font.width;
 
     const uint16_t x2 = x + width;
@@ -445,41 +451,42 @@ void Screen::DrawString(uint16_t x, uint16_t y, const char* str,
 }
 
 void Screen::DefineScrollArea(const uint16_t tfa_idx,
-    const uint16_t vsa_idx, const uint16_t bfa_idx)
+                              const uint16_t vsa_idx,
+                              const uint16_t bfa_idx)
 {
     switch (orientation)
     {
-        // TODO note- I have no idea if flipped portrait is the same as portrait
-        case Orientation::portrait:
-        case Orientation::left_landscape:
-        {
-            uint8_t vert_scroll_def_data [] = {
-                static_cast<uint8_t>(tfa_idx >> 8), static_cast<uint8_t>(tfa_idx),
-                static_cast<uint8_t>(vsa_idx >> 8), static_cast<uint8_t>(vsa_idx),
-                static_cast<uint8_t>(bfa_idx >> 8), static_cast<uint8_t>(bfa_idx),
-            };
-            WriteCommand(VSCRDEF);
-            WriteDataWithSet(vert_scroll_def_data, 6);
+    // TODO note- I have no idea if flipped portrait is the same as portrait
+    case Orientation::portrait:
+    case Orientation::left_landscape:
+    {
+        uint8_t vert_scroll_def_data[] = {
+            static_cast<uint8_t>(tfa_idx >> 8), static_cast<uint8_t>(tfa_idx),
+            static_cast<uint8_t>(vsa_idx >> 8), static_cast<uint8_t>(vsa_idx),
+            static_cast<uint8_t>(bfa_idx >> 8), static_cast<uint8_t>(bfa_idx),
+        };
+        WriteCommand(VSCRDEF);
+        WriteDataWithSet(vert_scroll_def_data, 6);
 
-            break;
-        }
-        case Orientation::flipped_portrait:
-        case Orientation::right_landscape:
-        {
-            uint8_t vert_scroll_def_data [] = {
-                static_cast<uint8_t>(bfa_idx >> 8), static_cast<uint8_t>(bfa_idx),
-                static_cast<uint8_t>(vsa_idx >> 8), static_cast<uint8_t>(vsa_idx),
-                static_cast<uint8_t>(tfa_idx >> 8), static_cast<uint8_t>(tfa_idx),
-            };
-            WriteCommand(VSCRDEF);
-            WriteDataWithSet(vert_scroll_def_data, 6);
+        break;
+    }
+    case Orientation::flipped_portrait:
+    case Orientation::right_landscape:
+    {
+        uint8_t vert_scroll_def_data[] = {
+            static_cast<uint8_t>(bfa_idx >> 8), static_cast<uint8_t>(bfa_idx),
+            static_cast<uint8_t>(vsa_idx >> 8), static_cast<uint8_t>(vsa_idx),
+            static_cast<uint8_t>(tfa_idx >> 8), static_cast<uint8_t>(tfa_idx),
+        };
+        WriteCommand(VSCRDEF);
+        WriteDataWithSet(vert_scroll_def_data, 6);
 
-            break;
-        }
-        default:
-        {
-            return;
-        }
+        break;
+    }
+    default:
+    {
+        return;
+    }
     }
 }
 
@@ -489,42 +496,41 @@ void Screen::ScrollScreen(const uint16_t scroll_idx, bool up)
 
     switch (orientation)
     {
-        case Orientation::portrait:
-        case Orientation::left_landscape:
+    case Orientation::portrait:
+    case Orientation::left_landscape:
+    {
+        if (up)
         {
-            if (up)
-            {
-                scroll_d = scroll_idx;
-            }
-            else
-            {
-                scroll_d = view_height - scroll_idx;
-            }
-            break;
+            scroll_d = scroll_idx;
         }
-        case Orientation::flipped_portrait:
-        case Orientation::right_landscape:
+        else
         {
-            if (up)
-            {
-                scroll_d = view_height - scroll_idx;
-            }
-            else
-            {
-                scroll_d = scroll_idx;
-            }
-            break;
+            scroll_d = view_height - scroll_idx;
         }
-        default:
+        break;
+    }
+    case Orientation::flipped_portrait:
+    case Orientation::right_landscape:
+    {
+        if (up)
         {
-            scroll_d = 0;
-            return;
+            scroll_d = view_height - scroll_idx;
         }
+        else
+        {
+            scroll_d = scroll_idx;
+        }
+        break;
+    }
+    default:
+    {
+        scroll_d = 0;
+        return;
+    }
     }
 
-    uint8_t vert_scroll_idx_data [] = {
-        static_cast<uint8_t>(scroll_d >> 8), static_cast<uint8_t>(scroll_d)
-    };
+    uint8_t vert_scroll_idx_data[] = {static_cast<uint8_t>(scroll_d >> 8),
+                                      static_cast<uint8_t>(scroll_d)};
 
     WriteCommand(VSCRSADD);
     WriteDataWithSet(vert_scroll_idx_data, 2);
@@ -566,10 +572,9 @@ void Screen::CommitText()
     if (texts_in_use >= Max_Texts)
     {
 
-        FillRectangle(0, view_width, y, y+font5x8.height, Colour::Black);
-        DrawString(0, y,
-            text_buffer[text_idx], text_lens[text_idx],
-            font5x8, Colour::White, Colour::Black);
+        FillRectangle(0, view_width, y, y + font5x8.height, Colour::Black);
+        DrawString(0, y, text_buffer[text_idx], text_lens[text_idx], font5x8, Colour::White,
+                   Colour::Black);
 
         scroll_offset += font5x8.height;
         if (scroll_offset >= Scroll_Area_Height)
@@ -585,9 +590,8 @@ void Screen::CommitText()
     {
         ++texts_in_use;
         // Enqueue the string draw
-        DrawString(0, y,
-            text_buffer[text_idx], text_lens[text_idx],
-            font5x8, Colour::White, Colour::Black);
+        DrawString(0, y, text_buffer[text_idx], text_lens[text_idx], font5x8, Colour::White,
+                   Colour::Black);
     }
 
     if (++text_idx >= Max_Texts)
@@ -657,9 +661,12 @@ void Screen::WriteDataWithSet(uint8_t* data, const uint32_t data_size)
     HAL_SPI_Transmit_DMA(spi, data, data_size);
 }
 
-Screen::DrawMemory& Screen::AllocateMemory(const uint16_t x1, const uint16_t x2,
-    const uint16_t y1, const uint16_t y2, const Colour colour,
-    MemoryCallback callback)
+Screen::DrawMemory& Screen::AllocateMemory(const uint16_t x1,
+                                           const uint16_t x2,
+                                           const uint16_t y1,
+                                           const uint16_t y2,
+                                           const Colour colour,
+                                           MemoryCallback callback)
 {
     if (memories_in_use >= Num_Memories)
     {
@@ -702,8 +709,9 @@ void Screen::NormalMode()
 }
 
 bool Screen::FillRectangleProcedure(DrawMemory& memory,
-    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-    const int16_t y1, const int16_t y2)
+                                    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+                                    const int16_t y1,
+                                    const int16_t y2)
 {
     // See if rectangle is in the current scan line
     if (y1 >= memory.y2 || y2 <= memory.y1)
@@ -728,10 +736,10 @@ bool Screen::FillRectangleProcedure(DrawMemory& memory,
     return true;
 }
 
-
 bool Screen::DrawRectangleProcedure(DrawMemory& memory,
-    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-    const int16_t y1, const int16_t y2)
+                                    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+                                    const int16_t y1,
+                                    const int16_t y2)
 {
     // See if rectangle is in the current scan line
     if (y1 >= memory.y2 || y2 <= memory.y1)
@@ -795,8 +803,9 @@ bool Screen::DrawRectangleProcedure(DrawMemory& memory,
 }
 
 bool Screen::DrawCharacterProcedure(DrawMemory& memory,
-    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-    const int16_t y1, const int16_t y2)
+                                    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+                                    const int16_t y1,
+                                    const int16_t y2)
 {
     if (y1 >= memory.y2 || y2 <= memory.y1)
     {
@@ -851,8 +860,9 @@ bool Screen::DrawCharacterProcedure(DrawMemory& memory,
 }
 
 bool Screen::DrawStringProcedure(DrawMemory& memory,
-    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-    const int16_t y1, const int16_t y2)
+                                 uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
+                                 const int16_t y1,
+                                 const int16_t y2)
 {
     // TODO put into function
     if (y1 >= memory.y2 || y2 <= memory.y1)
@@ -897,8 +907,8 @@ bool Screen::DrawStringProcedure(DrawMemory& memory,
         x_char_iter = 0;
         w_off = 0;
         ch_idx = 0;
-        ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width,
-            font_height) + (y_char_iter * bytes_per_char);
+        ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width, font_height)
+               + (y_char_iter * bytes_per_char);
 
         for (uint16_t j = memory.x1; j < memory.x2; ++j)
         {
@@ -921,8 +931,8 @@ bool Screen::DrawStringProcedure(DrawMemory& memory,
 
                 // Get the character
                 ++ch_idx;
-                ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width,
-                    font_height) + (y_char_iter * bytes_per_char);
+                ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width, font_height)
+                       + (y_char_iter * bytes_per_char);
 
                 // Next character and reset w_off
                 w_off = 0;
@@ -976,17 +986,16 @@ void Screen::HandleBounds(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2
     }
 }
 
-inline uint8_t* Screen::GetCharAddr(
-    uint8_t* font_data,
-    const uint8_t ch,
-    const uint16_t font_width,
-    const uint16_t font_height)
+inline uint8_t* Screen::GetCharAddr(uint8_t* font_data,
+                                    const uint8_t ch,
+                                    const uint16_t font_width,
+                                    const uint16_t font_height)
 {
     return font_data + ((ch - 32) * font_height * (font_width / 8 + 1));
 }
 
-inline void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
-    const int16_t num_bytes)
+inline void
+Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val, const int16_t num_bytes)
 {
     const int16_t bytes = num_bytes < 4 ? num_bytes : 4;
 
@@ -999,11 +1008,12 @@ inline void Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val,
     }
 }
 
-
 // TODO colour HIGH and colour LOW to save calculating it everytime.
 inline void Screen::FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-    const uint16_t i, const uint16_t j,
-    const uint8_t colour_high, const uint8_t colour_low)
+                                    const uint16_t i,
+                                    const uint16_t j,
+                                    const uint8_t colour_high,
+                                    const uint8_t colour_low)
 {
     const uint16_t idx = j / 2;
     if (j & 0x0001)
@@ -1016,8 +1026,10 @@ inline void Screen::FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size
     }
 }
 
-inline Screen::YBound Screen::GetYBounds(const uint16_t y1, const uint16_t y2,
-    const uint16_t mem_y1, const uint16_t mem_y2)
+inline Screen::YBound Screen::GetYBounds(const uint16_t y1,
+                                         const uint16_t y2,
+                                         const uint16_t mem_y1,
+                                         const uint16_t mem_y2)
 {
     const uint16_t y_start = y1 > mem_y1 ? y1 : mem_y1;
     const uint16_t y_end = y2 < mem_y2 ? y2 : mem_y2;
@@ -1025,6 +1037,5 @@ inline Screen::YBound Screen::GetYBounds(const uint16_t y1, const uint16_t y2,
     // const uint16_t y_start = y1 > mem_y1 ? 0 : mem_y1 - y1;
     // const uint16_t y_end = y2 < mem_y2 ? y2 - y1 : mem_y2 - y1;
 
-    return { y_start, y_end };
+    return {y_start, y_end};
 }
-

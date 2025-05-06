@@ -1,25 +1,24 @@
 #include "keyboard.hh"
 
 Keyboard::Keyboard(GPIO_TypeDef* col_ports[Q10_COLS],
-    uint16_t col_pins[Q10_COLS],
-    GPIO_TypeDef* row_ports[Q10_ROWS],
-    uint16_t row_pins[Q10_ROWS],
-    RingBuffer<uint8_t>& ch_ring,
-    uint32_t debounce_duration,
-    uint32_t repeat_duration
-) : col_ports(col_ports),
-col_pins(col_pins),
-row_ports(row_ports),
-row_pins(row_pins),
-ch_ring(ch_ring),
-debounce_duration(debounce_duration),
-repeat_duration(repeat_duration),
-latches{0},
-debounce{0},
-flags(0)
+                   uint16_t col_pins[Q10_COLS],
+                   GPIO_TypeDef* row_ports[Q10_ROWS],
+                   uint16_t row_pins[Q10_ROWS],
+                   RingBuffer<uint8_t>& ch_ring,
+                   uint32_t debounce_duration,
+                   uint32_t repeat_duration) :
+    col_ports(col_ports),
+    col_pins(col_pins),
+    row_ports(row_ports),
+    row_pins(row_pins),
+    ch_ring(ch_ring),
+    debounce_duration(debounce_duration),
+    repeat_duration(repeat_duration),
+    latches{0},
+    debounce{0},
+    flags(0)
 {
 }
-
 
 void Keyboard::Scan(const uint32_t ticks)
 {
@@ -32,17 +31,13 @@ void Keyboard::Scan(const uint32_t ticks)
         // Raise the col high and poll the rows
         HAL_GPIO_WritePin(col_ports[col], col_pins[col], GPIO_PIN_SET);
 
-
         for (size_t row = 0; row < Q10_ROWS; ++row)
         {
             press = HAL_GPIO_ReadPin(row_ports[row], row_pins[row]);
             row_bit = 1 << row;
             latch = (latches[col] >> row) & 0x1;
 
-
-            if (press == GPIO_PIN_SET
-                && press != latch
-                && ticks >= debounce[col][row])
+            if (press == GPIO_PIN_SET && press != latch && ticks >= debounce[col][row])
             {
                 // Press
                 debounce[col][row] = ticks + debounce_duration;
@@ -54,9 +49,7 @@ void Keyboard::Scan(const uint32_t ticks)
                 debounce[col][row] = ticks + debounce_duration;
                 KeyRelease(col, row, row_bit);
             }
-            else if (press == GPIO_PIN_SET
-                && ticks >= debounce[col][row]
-                && latch)
+            else if (press == GPIO_PIN_SET && ticks >= debounce[col][row] && latch)
             {
                 // Repeat
                 debounce[col][row] = ticks + repeat_duration;

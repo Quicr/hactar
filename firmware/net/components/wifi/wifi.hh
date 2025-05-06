@@ -1,9 +1,8 @@
 #pragma once
 
-#include "nvs_flash.h"
-#include "esp_wifi.h"
 #include "esp_event.h"
-
+#include "esp_wifi.h"
+#include "nvs_flash.h"
 #include <cstring>
 #include <mutex>
 #include <string>
@@ -66,11 +65,8 @@ private:
     // Static functions
     // ESP events need to be static
     static void WifiTask(void* arg);
-    static void EventHandler(void* arg,
-        esp_event_base_t event_base,
-        int32_t event_id,
-        void* event_data);
-
+    static void
+    EventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
     // Private functions
     inline void WifiEvents(int32_t event_id, void* event_data);

@@ -2,26 +2,27 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include "moq_track_writer.hh"
-#include "utils.hh"
-#include "macros.hh"
 #include "chunk.hh"
+#include "macros.hh"
 #include "task_helpers.hh"
-
+#include "utils.hh"
 
 using namespace moq;
 
 extern uint64_t device_id;
 
 TrackWriter::TrackWriter(const quicr::FullTrackName& full_track_name,
-    quicr::TrackMode track_mode,
-    uint8_t default_priority,
-    uint32_t default_ttl)
-    : quicr::PublishTrackHandler(full_track_name, track_mode, default_priority, default_ttl),
-    track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end()) + std::string(full_track_name.name.begin(), full_track_name.name.end())),
+                         quicr::TrackMode track_mode,
+                         uint8_t default_priority,
+                         uint32_t default_ttl) :
+    quicr::PublishTrackHandler(full_track_name, track_mode, default_priority, default_ttl),
+    track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end())
+               + std::string(full_track_name.name.begin(), full_track_name.name.end())),
     moq_objs({0}),
     object_id(0)
 {
-    task_helpers::Start_PSRAM_Task(PublishTask, this, track_name, task_handle, task_buffer, &task_stack, 8192, 10);
+    task_helpers::Start_PSRAM_Task(PublishTask, this, track_name, task_handle, task_buffer,
+                                   &task_stack, 8192, 10);
 }
 
 TrackWriter::~TrackWriter()
@@ -35,40 +36,44 @@ void TrackWriter::StatusChanged(TrackWriter::Status status)
 {
     switch (status)
     {
-        case Status::kOk:
+    case Status::kOk:
+    {
+        if (auto track_alias = GetTrackAlias(); track_alias.has_value())
         {
-            if (auto track_alias = GetTrackAlias(); track_alias.has_value())
-            {
-                SPDLOG_INFO("Publish track alias: {0} is ready to send", track_alias.value());
-            }
-            break;
+            SPDLOG_INFO("Publish track alias: {0} is ready to send", track_alias.value());
         }
-        case Status::kNoSubscribers:
+        break;
+    }
+    case Status::kNoSubscribers:
+    {
+        if (auto track_alias = GetTrackAlias(); track_alias.has_value())
         {
-            if (auto track_alias = GetTrackAlias(); track_alias.has_value())
-            {
-                SPDLOG_INFO("Publish track alias: {0} has no subscribers", track_alias.value());
-            }
-            break;
+            SPDLOG_INFO("Publish track alias: {0} has no subscribers", track_alias.value());
         }
-        case Status::kSubscriptionUpdated:
+        break;
+    }
+    case Status::kSubscriptionUpdated:
+    {
+        if (auto track_alias = GetTrackAlias(); track_alias.has_value())
         {
-            if (auto track_alias = GetTrackAlias(); track_alias.has_value())
-            {
-                SPDLOG_INFO("Publish track alias: {0} has updated subscription", track_alias.value());
-            }
-            break;
+            SPDLOG_INFO("Publish track alias: {0} has updated subscription", track_alias.value());
         }
-        default:
-            if (auto track_alias = GetTrackAlias(); track_alias.has_value())
-            {
-                SPDLOG_INFO("Publish track alias: {0} status {1}", track_alias.value(), static_cast<int>(status));
-            }
-            break;
+        break;
+    }
+    default:
+        if (auto track_alias = GetTrackAlias(); track_alias.has_value())
+        {
+            SPDLOG_INFO("Publish track alias: {0} status {1}", track_alias.value(),
+                        static_cast<int>(status));
+        }
+        break;
     }
 }
 
-void TrackWriter::PushPttObject(const uint8_t* bytes, uint32_t len, const bool talk_stopped, const uint64_t timestamp)
+void TrackWriter::PushPttObject(const uint8_t* bytes,
+                                uint32_t len,
+                                const bool talk_stopped,
+                                const uint64_t timestamp)
 {
     auto time_bytes = quicr::AsBytes(timestamp);
 
@@ -81,7 +86,6 @@ void TrackWriter::PushPttObject(const uint8_t* bytes, uint32_t len, const bool t
     obj.headers.extensions = quicr::Extensions{};
     obj.headers.extensions.value()[2].assign(time_bytes.begin(), time_bytes.end());
 
-
     obj.data.resize(len + 6);
     obj.data[0] = (uint8_t)moq::MessageType::Media;
     obj.data[1] = talk_stopped;
@@ -89,8 +93,11 @@ void TrackWriter::PushPttObject(const uint8_t* bytes, uint32_t len, const bool t
     memcpy(obj.data.data() + 6, bytes, len);
 }
 
-void TrackWriter::PushPttAIObject(const uint8_t* bytes, uint32_t len, const bool talk_stopped,
-    const uint64_t timestamp, const uint32_t request_id)
+void TrackWriter::PushPttAIObject(const uint8_t* bytes,
+                                  uint32_t len,
+                                  const bool talk_stopped,
+                                  const uint64_t timestamp,
+                                  const uint32_t request_id)
 {
     auto time_bytes = quicr::AsBytes(timestamp);
     const size_t ext_bytes = 10;
@@ -104,7 +111,6 @@ void TrackWriter::PushPttAIObject(const uint8_t* bytes, uint32_t len, const bool
     obj.headers.payload_length = len + ext_bytes;
     obj.headers.extensions = quicr::Extensions{};
     obj.headers.extensions.value()[2].assign(time_bytes.begin(), time_bytes.end());
-
 
     obj.data.resize(len + ext_bytes);
     obj.data[offset] = (uint8_t)moq::MessageType::AIRequest;
@@ -136,7 +142,8 @@ void TrackWriter::PublishTask(void* params)
             {
                 if (esp_timer_get_time_ms() > next_print)
                 {
-                    NET_LOG_WARN("Publisher on track %s waiting to for pub ok", writer->track_name.c_str());
+                    NET_LOG_WARN("Publisher on track %s waiting to for pub ok",
+                                 writer->track_name.c_str());
                     next_print = esp_timer_get_time_ms() + 2000;
                 }
                 vTaskDelay(300 / portTICK_PERIOD_MS);
