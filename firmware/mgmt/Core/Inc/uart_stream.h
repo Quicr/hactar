@@ -37,7 +37,7 @@ typedef struct
     uint16_t read;
     uint16_t write;
     uint16_t unsent;
-    uint16_t sending;
+    uint16_t num_sending;
     uint8_t free;
 } transmit_t;
 

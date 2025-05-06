@@ -71,7 +71,7 @@ uart_stream_t ui_stream = {
         .read = 0,
         .write = 0,
         .unsent = 0,
-        .sending = 0,
+        .num_sending = 0,
         .free = 1
     },
     .mode = Ignore,
@@ -91,7 +91,7 @@ uart_stream_t net_stream = {
         .read = 0,
         .write = 0,
         .unsent = 0,
-        .sending = 0,
+        .num_sending = 0,
         .free = 1
     },
     .mode = Ignore,
@@ -111,7 +111,7 @@ uart_stream_t usb_stream = {
         .read = 0,
         .write = 0,
         .unsent = 0,
-        .sending = 0,
+        .num_sending = 0,
         .free = 1
     },
     .mode = Ignore,

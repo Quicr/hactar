@@ -80,8 +80,8 @@ void HandleTx(uart_stream_t* stream, enum State* state)
 
 void TxISR(uart_stream_t* stream, enum State* state)
 {
-    stream->tx.unsent -= stream->tx.sending;
-    stream->tx.read += stream->tx.sending;
+    stream->tx.unsent -= stream->tx.num_sending;
+    stream->tx.read += stream->tx.num_sending;
     if (stream->tx.read >= stream->tx.size)
     {
         stream->tx.read = 0;
@@ -100,15 +100,15 @@ void Transmit(uart_stream_t* stream, enum State* state)
     }
     stream->tx.free = 0;
 
-    stream->tx.sending = stream->tx.unsent;
-    if (stream->tx.read + stream->tx.sending >= stream->tx.size)
+    stream->tx.num_sending = stream->tx.unsent;
+    if (stream->tx.read + stream->tx.num_sending >= stream->tx.size)
     {
-        stream->tx.sending = stream->tx.size - stream->tx.read;
+        stream->tx.num_sending = stream->tx.size - stream->tx.read;
     }
 
     // Transmit
     HAL_UART_Transmit_DMA(stream->tx.uart,
-        stream->tx.buff + stream->tx.read, stream->tx.sending);
+        stream->tx.buff + stream->tx.read, stream->tx.num_sending);
 }
 
 void HandleCommands(uart_stream_t* stream,
