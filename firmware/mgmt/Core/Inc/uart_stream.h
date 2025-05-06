@@ -26,12 +26,6 @@ typedef struct
 typedef struct
 {
     UART_HandleTypeDef* uart;
-    uint8_t free;
-} uart_tx_wrapper;
-
-typedef struct
-{
-    UART_HandleTypeDef* uart;
     uint8_t* buff;
     const uint16_t size;
     uint16_t read;
