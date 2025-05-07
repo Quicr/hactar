@@ -2,6 +2,6 @@
 
 namespace Slip
 {
-    void Encode();
-    void Decode();
-};
+void Encode();
+void Decode();
+}; // namespace Slip

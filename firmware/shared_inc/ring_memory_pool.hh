@@ -5,11 +5,11 @@
 class RingMemoryPool
 {
 public:
-    RingMemoryPool(const uint32_t num_blocks, const uint32_t block_size):
+    RingMemoryPool(const uint32_t num_blocks, const uint32_t block_size) :
         num_blocks(num_blocks),
         block_size(block_size),
-        buff(new uint8_t[num_blocks * block_size]{ 0 }),
-        is_busy(new bool[num_blocks] { 0 }),
+        buff(new uint8_t[num_blocks * block_size]{0}),
+        is_busy(new bool[num_blocks]{0}),
         next_block_idx(0),
         blocks_available(num_blocks)
     {
@@ -18,8 +18,8 @@ public:
     ~RingMemoryPool()
     {
 
-        delete [] buff;
-        delete [] is_busy;
+        delete[] buff;
+        delete[] is_busy;
     }
 
     bool ReserveBlock(uint8_t** out_buff, uint32_t& out_idx)

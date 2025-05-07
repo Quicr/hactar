@@ -352,6 +352,8 @@ docker-build:
 format:
 	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
 	find src -iname "*.c" -or -iname "*.cc" | xargs clang-format -i
+	find ../shared -iname "*.c" -or -iname "*.cc" | xargs clang-format -i
+	find ../shared_inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
 
 #######################################
 # clean up

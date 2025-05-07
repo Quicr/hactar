@@ -93,8 +93,8 @@ public:
     };
 
     SerialPacket(const unsigned int created_at = 0,
-        const unsigned int capacity = 1,
-        const bool dynamic = true):
+                 const unsigned int capacity = 1,
+                 const bool dynamic = true) :
         created_at(created_at),
         capacity(capacity),
         dynamic(dynamic),
@@ -117,7 +117,6 @@ public:
         {
             data[i] = other.data[i];
         }
-
     }
 
     // Move
@@ -139,14 +138,14 @@ public:
 
     ~SerialPacket()
     {
-        delete [] data;
+        delete[] data;
     }
 
     SerialPacket& operator=(const SerialPacket& other)
     {
         if (data)
         {
-            delete [] data;
+            delete[] data;
         }
         created_at = other.created_at;
         capacity = other.capacity;
@@ -170,7 +169,7 @@ public:
         // Move operator
         if (data)
         {
-            delete [] data;
+            delete[] data;
         }
 
         created_at = other.created_at;
@@ -195,26 +194,21 @@ public:
     //     UpdateData(val, size, -1);
     // }
 
-    template<typename T, bool = std::is_arithmetic<T>::value>
-    inline void SetData(const T val,
-        unsigned int num_bytes)
+    template <typename T, bool = std::is_arithmetic<T>::value>
+    inline void SetData(const T val, unsigned int num_bytes)
     {
         UpdateData(val, size, num_bytes);
     }
 
-    template<typename T, bool = std::is_arithmetic<T>::value>
-    inline void SetData(const T val,
-        unsigned int offset,
-        const int num_bytes)
+    template <typename T, bool = std::is_arithmetic<T>::value>
+    inline void SetData(const T val, unsigned int offset, const int num_bytes)
     {
         UpdateData(val, offset, num_bytes);
     }
 
     template <typename T, typename K, bool = std::is_integral<K>::value>
     typename std::enable_if<!std::is_lvalue_reference<K>::value, void>::type
-        SetData(const T val,
-            K offset,
-            const int num_bytes)
+    SetData(const T val, K offset, const int num_bytes)
     {
         UpdateData(val, offset, num_bytes);
     }
@@ -223,11 +217,9 @@ public:
      * @brief Takes an array and saves the entire array to a byte array
      *  @note num_bytes is the number of bytes to be pushed in per element
      */
-    template<typename T>
-    void SetData(const T* val,
-        const unsigned int sz,
-        unsigned int& offset,
-        const unsigned int num_bytes)
+    template <typename T>
+    void
+    SetData(const T* val, const unsigned int sz, unsigned int& offset, const unsigned int num_bytes)
     {
         for (unsigned int i = 0; i < sz; ++i)
         {
@@ -235,7 +227,7 @@ public:
         }
     }
 
-    template <typename T, typename std::enable_if<std::is_fundamental<T>::value, T>::type=0>
+    template <typename T, typename std::enable_if<std::is_fundamental<T>::value, T>::type = 0>
     T GetData(const unsigned int offset, const int num_bytes) const
     {
         size_t byte_width = sizeof(T);
@@ -304,7 +296,7 @@ public:
             iter++;
         }
 
-        delete [] data;
+        delete[] data;
         data = new_data;
         capacity = new_capacity;
     }
@@ -345,11 +337,8 @@ public:
     }
 
 protected:
-
     template <typename T>
-    unsigned int inline UpdateData(const T val,
-        unsigned int offset,
-        const int num_bytes)
+    unsigned int inline UpdateData(const T val, unsigned int offset, const int num_bytes)
     {
         unsigned int in_sz = sizeof(T);
         if (num_bytes > 0)
@@ -360,7 +349,8 @@ protected:
         if (offset + in_sz > capacity)
         {
             // Resize
-            if (!dynamic) return 0;
+            if (!dynamic)
+                return 0;
             while (offset + in_sz >= capacity)
             {
                 // Double the size lazily

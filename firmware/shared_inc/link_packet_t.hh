@@ -2,7 +2,6 @@
 #define __PACKET_H__
 
 #include "constants.hh"
-
 #include <stddef.h>
 #include <stdint.h>
 
@@ -26,7 +25,7 @@ struct link_packet_t
             PACKET_LENGTH_TYPE length;
             uint8_t payload[Payload_Size];
         } __attribute((packed));
-        uint8_t data[Packet_Size] = { 0 };
+        uint8_t data[Packet_Size] = {0};
     };
     PACKET_READY_TYPE is_ready = false;
 };
