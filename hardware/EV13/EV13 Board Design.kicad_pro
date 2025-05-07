@@ -73,6 +73,22 @@
           ""
         ],
         [
+          "hole_to_hole|121770000|136430000|558d7f57-86de-4f34-be90-7329512ffca0|5eb74b0c-33e1-4c2c-b672-d35ab8443475",
+          ""
+        ],
+        [
+          "hole_to_hole|122270000|135930000|558d7f57-86de-4f34-be90-7329512ffca0|bf596985-8edd-4435-a369-a8af84a1501d",
+          ""
+        ],
+        [
+          "hole_to_hole|122270000|135930000|558d7f57-86de-4f34-be90-7329512ffca0|e2d539a4-5e97-4449-8c35-d98d8bf0f99b",
+          ""
+        ],
+        [
+          "hole_to_hole|122770000|136430000|558d7f57-86de-4f34-be90-7329512ffca0|d70e95fc-3be6-47fa-941d-a142b66a1fc3",
+          ""
+        ],
+        [
           "lib_footprint_mismatch|138216401|142413763|3b78ba3e-20f9-4bd1-bff6-59af4f43c560|00000000-0000-0000-0000-000000000000",
           ""
         ],
@@ -143,7 +159,7 @@
         "padstack": "error",
         "pth_inside_courtyard": "error",
         "shorting_items": "error",
-        "silk_edge_clearance": "warning",
+        "silk_edge_clearance": "ignore",
         "silk_over_copper": "warning",
         "silk_overlap": "warning",
         "skew_out_of_range": "error",
