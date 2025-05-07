@@ -13,6 +13,7 @@ Wifi::Wifi(const int64_t scan_timeout_ms) :
     ap_in_range(),
     scanned_aps(),
     ap_idx(0),
+    last_ssid_scan(-scan_timeout_ms), // This will let us immediately scan once we are initialized without adding another var
     wifi_init_cfg(WIFI_INIT_CONFIG_DEFAULT()),
     wifi_cfg({}),
     state(State::NotInitialized),
@@ -196,7 +197,7 @@ esp_err_t Wifi::Initialize()
 
     status = esp_wifi_init(&wifi_init_cfg);
     ESP_ERROR_CHECK(status);
-    NET_LOG_INFO("Init complete, status %d", (int)state);
+    NET_LOG_INFO("Init complete, status %d", (int)status);
 
     status = esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &EventHandler,
                                                  (void*)this, nullptr);
@@ -339,8 +340,9 @@ void Wifi::WifiTask(void* arg)
 
         // Note, if we have no scanned aps, then we want to scan a little more often
         if (wifi->state != State::NotInitialized && wifi->state != State::Error
-            && wifi->state != State::Connecting && wifi->state != State::WaitingForIP
-            && wifi->state != State::Scan && wifi->state != State::Scanning
+            && wifi->state != State::Connecting && wifi->state != State::Connected
+            && wifi->state != State::WaitingForIP && wifi->state != State::Scan
+            && wifi->state != State::Scanning
             && esp_timer_get_time_ms() - wifi->last_ssid_scan > wifi->scan_timeout_ms)
         {
             std::lock_guard<std::mutex> _(wifi->state_mux);
@@ -348,7 +350,6 @@ void Wifi::WifiTask(void* arg)
             wifi->state = State::Scan;
         }
 
-        // Delay for a second
         vTaskDelay(2500 / portTICK_PERIOD_MS);
     }
 }
