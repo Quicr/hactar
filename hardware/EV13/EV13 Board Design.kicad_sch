@@ -4235,7 +4235,7 @@
 					(hide yes)
 				)
 			)
-			(property "JLCPCB Position Offset" "2.2225,0.889"
+			(property "FT Position Offset" "2.2225,0.889"
 				(at 0 0 0)
 				(effects
 					(font
@@ -13375,12 +13375,6 @@
 		(uuid "d93f56c6-58ee-48b6-853e-ff0547e261db")
 	)
 	(junction
-		(at 325.12 121.92)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "d94675ef-f95c-4ae2-8ae5-241a3439a4a7")
-	)
-	(junction
 		(at 340.36 81.28)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -15112,7 +15106,7 @@
 	)
 	(wire
 		(pts
-			(xy 397.51 116.84) (xy 396.24 116.84)
+			(xy 396.24 116.84) (xy 416.56 116.84)
 		)
 		(stroke
 			(width 0)
@@ -15399,16 +15393,6 @@
 			(type default)
 		)
 		(uuid "33d4a7b5-e4e8-4027-abe6-5eb2905cc33a")
-	)
-	(wire
-		(pts
-			(xy 323.85 121.92) (xy 325.12 121.92)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "34501123-ebbd-481c-9acb-9d4d5bbc7a59")
 	)
 	(wire
 		(pts
@@ -20922,16 +20906,6 @@
 	)
 	(wire
 		(pts
-			(xy 416.56 116.84) (xy 405.13 116.84)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fa1d6ccf-469b-4650-9eff-3d800bd04979")
-	)
-	(wire
-		(pts
 			(xy 181.61 139.7) (xy 196.85 139.7)
 		)
 		(stroke
@@ -22521,7 +22495,7 @@
 		(uuid "a94f1d73-99a5-4d9b-a733-73c1f506a355")
 	)
 	(label "UI_RTS1_MGMT"
-		(at 323.85 121.92 0)
+		(at 325.12 121.92 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -23193,7 +23167,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C2962219"
+		(property "JLCPCB Part #" "C2962222"
 			(at 461.01 245.11 0)
 			(effects
 				(font
@@ -23202,13 +23176,12 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB#" "C2962219"
-			(at 461.01 260.35 0)
+		(property "Availability" ""
+			(at 461.01 245.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
 		(pin "7"
@@ -23311,6 +23284,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 60.96 322.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "d8bc0182-c7ce-4c26-9826-acf4abbff204")
 		)
@@ -23384,6 +23365,22 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 48.26 313.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB Part #" "C202311"
+			(at 48.26 313.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "6"
@@ -23474,6 +23471,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 200.66 326.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "fa85ee87-d635-4744-93d4-ecc7ad163795")
 		)
@@ -23557,6 +23562,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 473.71 266.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "0be48afa-f1bb-4dd8-96fb-bad4ddfb571e")
 		)
@@ -23633,6 +23646,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 266.7 205.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -23777,6 +23798,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 335.28 135.89 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "63a1df83-cc9e-42e6-95d2-c32212bfc962")
 		)
@@ -23853,6 +23882,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 262.89 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -23933,6 +23970,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 340.36 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "7b264fc6-f7bc-44a5-b0aa-3ebe7da03603")
 		)
@@ -24009,13 +24054,12 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB#" "C2874115"
-			(at 476.25 97.79 0)
+		(property "Availability" ""
+			(at 476.25 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
 		(pin "2"
@@ -24101,6 +24145,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 473.71 271.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "88ebecd0-5a94-49df-87fc-fe7e33402a90")
 		)
@@ -24175,6 +24227,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 90.17 311.15 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -24525,6 +24585,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 153.67 337.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "7e9a07a1-96ce-4511-a64f-67c3bbcca780")
 		)
@@ -24804,6 +24872,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 266.7 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "36827fd9-a811-40d5-ad15-46298d42937d")
 		)
@@ -24880,82 +24956,6 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR0123")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R_US")
-		(at 401.32 116.84 90)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "1deebd4a-770d-400e-a48a-0aa2f2bcf9bf")
-		(property "Reference" "R29"
-			(at 397.256 115.824 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1k0"
-			(at 398.018 118.11 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 401.32 118.618 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 401.32 116.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, US symbol"
-			(at 401.32 116.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C11702"
-			(at 401.32 116.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "0e8bf287-8a72-4c08-aa1f-efc1355dd159")
-		)
-		(pin "2"
-			(uuid "94769ac0-cf75-45be-ad1b-ad7f2029fd38")
-		)
-		(instances
-			(project "EV11 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "R29")
 					(unit 1)
 				)
 			)
@@ -25088,6 +25088,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 163.83 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "1657dbe3-3fb0-4a28-ba24-d9097290b267")
 		)
@@ -25164,6 +25172,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 147.32 135.89 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -25636,6 +25652,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 261.62 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "05be82ef-0f84-4f3f-b584-efa8a11b1be7")
 		)
@@ -25713,101 +25737,6 @@
 			(project ""
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#FLG05")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Switch:SW_Push")
-		(at 467.36 109.22 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "2cb8e511-6afe-4f63-8d07-305d7e20e487")
-		(property "Reference" "SW1"
-			(at 467.36 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "TS-1037-A11B3-D2"
-			(at 467.36 104.14 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Hactar_Footprints:KEY-SMD_2P-L7.1-W10.6-P4.00-LS9.0"
-			(at 467.36 104.14 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 467.36 104.14 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Push button switch, generic, two pins"
-			(at 467.36 109.22 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C499331"
-			(at 467.36 109.22 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Position Offset" "0,-0.635"
-			(at 467.36 109.22 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C499331"
-			(at 467.36 124.46 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "19876a03-306c-4d87-ab62-59c5d832a69e")
-		)
-		(pin "1"
-			(uuid "b5bd5551-5d2a-4a5f-ac97-85f7943234a8")
-		)
-		(instances
-			(project ""
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "SW1")
 					(unit 1)
 				)
 			)
@@ -26008,13 +25937,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Position Offset" "0,1.397"
+		(property "FT Position Offset" "0,1.397"
 			(at 41.91 234.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 41.91 234.95 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "A1"
@@ -26205,6 +26142,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 304.8 285.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "7"
 			(uuid "c727affd-b068-49da-b940-d197147a10fa")
 		)
@@ -26297,6 +26242,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 289.56 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -26443,6 +26396,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 43.18 111.76 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "4e879b0c-3d7d-4162-8b24-04ac7241870b")
 		)
@@ -26586,13 +26547,12 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB#" "C2874115"
-			(at 275.59 100.33 0)
+		(property "Availability" ""
+			(at 275.59 87.63 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
 		(pin "2"
@@ -26677,6 +26637,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 342.9 171.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "6c00e93a-d70b-4930-a7f3-9df7d5eda265")
 		)
@@ -26753,13 +26721,12 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB#" "C2874115"
-			(at 149.86 97.79 0)
+		(property "Availability" ""
+			(at 149.86 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
 		(pin "2"
@@ -26845,13 +26812,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "-90"
+		(property "FT Rotation Offset" "-90"
 			(at 231.14 248.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 231.14 248.92 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -27025,6 +27000,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 158.75 201.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "6ef56e52-cc04-46c7-81f3-221a3e4412fe")
 		)
@@ -27099,6 +27082,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 490.22 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -27177,6 +27168,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 462.28 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "693768be-d0ce-4d4f-97e0-d0557f52abe9")
 		)
@@ -27251,6 +27250,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 275.59 209.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -27330,6 +27337,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 313.69 125.73 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "336aee29-26a2-42fd-8684-c25bcf85d28f")
 		)
@@ -27398,6 +27413,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 105.41 204.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -27545,6 +27568,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 43.18 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "f39a5ca7-8ed1-45fb-914c-78581ca2558a")
 		)
@@ -27555,6 +27586,82 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "C4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Switch:SW_Push")
+		(at 467.36 147.32 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "3ac5ae3a-586d-4cee-a494-227f87a05a4e")
+		(property "Reference" "SW3"
+			(at 469.646 145.034 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "SW_Push"
+			(at 467.36 149.098 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Hactar_Footprints:SW-SMD_L7.5-W8.0-P4.50_TS-1045-A13B3-D2"
+			(at 467.36 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 467.36 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Push button switch, generic, two pins"
+			(at 467.36 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C557898"
+			(at 467.36 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "4fd05fee-fc5a-46d6-b93b-3bf2d95cc47b")
+		)
+		(pin "2"
+			(uuid "829c0c83-81e0-4488-afaf-d41180e95390")
+		)
+		(instances
+			(project ""
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "SW3")
 					(unit 1)
 				)
 			)
@@ -27622,6 +27729,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 194.31 181.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -27702,13 +27817,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Position Offset" "2.9800,1.2065"
+		(property "FT Position Offset" "2.9800,1.2065"
 			(at 351.79 300.99 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 351.79 300.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -27858,13 +27981,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C495959"
+		(property "JLCPCB Part #" "C85866"
 			(at 219.71 326.39 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 219.71 326.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -27952,6 +28083,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 55.88 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "0aa72439-8bef-4df6-93c2-bb099f013b7b")
 		)
@@ -28020,7 +28159,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C2962219"
+		(property "JLCPCB Part #" "C2962222"
 			(at 461.01 266.7 0)
 			(effects
 				(font
@@ -28029,13 +28168,12 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB#" "C2962219"
-			(at 461.01 281.94 0)
+		(property "Availability" ""
+			(at 461.01 266.7 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
 		(pin "7"
@@ -28130,7 +28268,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C2962219"
+		(property "JLCPCB Part #" "C2962222"
 			(at 461.01 222.25 0)
 			(effects
 				(font
@@ -28139,13 +28277,12 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB#" "C2962219"
-			(at 461.01 237.49 0)
+		(property "Availability" ""
+			(at 461.01 222.25 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
 		(pin "7"
@@ -28313,6 +28450,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 163.83 96.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "26557667-c436-4d71-bc09-47c8ab68c7c5")
 		)
@@ -28379,6 +28524,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 279.4 229.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "2"
@@ -28459,13 +28612,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "180"
+		(property "FT Rotation Offset" "180"
 			(at 424.18 259.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 424.18 259.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "3"
@@ -28554,6 +28715,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 116.84 322.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "2"
@@ -28831,6 +29000,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 408.94 161.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "94a318e3-4e77-46eb-b80e-f1e91fa7505a")
 		)
@@ -29037,13 +29214,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Position Offset" "0,-3.556"
+		(property "FT Position Offset" "0,-3.556"
 			(at 104.14 306.07 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 104.14 306.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "2"
@@ -29125,6 +29310,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 450.85 266.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e04eb292-5881-4dd8-b494-ff8e69fe661a")
 		)
@@ -29202,6 +29395,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 43.18 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -29348,6 +29549,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 74.93 316.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "27128300-9275-43d3-be06-47f61b84ebe6")
 		)
@@ -29422,6 +29631,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 474.98 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -29500,6 +29717,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 109.22 344.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "2f4d46ac-64b7-49ee-97ed-5e90123606e2")
 		)
@@ -29574,6 +29799,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 48.26 370.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -29653,6 +29886,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 88.9 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "40"
@@ -29935,6 +30176,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 490.22 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "33d30e1d-8429-46fe-9cab-899f16fc020f")
 		)
@@ -30012,7 +30261,7 @@
 				(hide yes)
 			)
 		)
-		(property "MPN" "PJ-320D"
+		(property "FT Rotation Offset" "90"
 			(at 359.41 222.25 0)
 			(effects
 				(font
@@ -30021,7 +30270,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "90"
+		(property "FT Position Offset" "0.889,0"
 			(at 359.41 222.25 0)
 			(effects
 				(font
@@ -30030,13 +30279,12 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Position Offset" "0.889,0"
+		(property "Availability" ""
 			(at 359.41 222.25 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
 		(pin "R1"
@@ -30121,6 +30369,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 35.56 322.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "0b5b939c-d505-4fc3-ac7a-6e83ec836c4f")
 		)
@@ -30203,6 +30459,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 236.22 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "1e3dcb75-be40-46cf-8430-a5c515b1036b")
 		)
@@ -30277,6 +30541,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 204.47 346.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -30420,13 +30692,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C495959"
+		(property "JLCPCB Part #" "C85866"
 			(at 127 326.39 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 127 326.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -30576,6 +30856,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 149.86 201.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -31050,6 +31338,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 234.95 337.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "93fe13c6-3b1d-4498-acb1-5ecae47bdc56")
 		)
@@ -31199,6 +31495,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 322.58 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "c83122be-f804-4b78-9d96-8350881b0cb2")
 		)
@@ -31273,6 +31577,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 450.85 269.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -31351,6 +31663,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 149.86 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -31496,6 +31816,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 331.47 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "8708b029-6557-40a7-98aa-8adcba79b2ba")
 		)
@@ -31572,6 +31900,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 55.88 374.65 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -31651,6 +31987,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 66.04 316.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -31869,6 +32213,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 250.19 337.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "effb16c1-b9b1-4a9b-ba0a-1221ea9cbf06")
 		)
@@ -31945,6 +32297,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 121.92 321.31 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "73bb558c-37ce-4518-9327-27825dd5f731")
 		)
@@ -32019,6 +32379,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 323.85 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "fdf064b2-7aed-4818-aa09-fb50702177cf")
 		)
@@ -32086,7 +32454,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C2962219"
+		(property "JLCPCB Part #" "C2962222"
 			(at 411.48 288.29 0)
 			(effects
 				(font
@@ -32095,13 +32463,12 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB#" "C2962219"
-			(at 411.48 303.53 0)
+		(property "Availability" ""
+			(at 411.48 288.29 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
 		(pin "7"
@@ -32327,6 +32694,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 46.99 381 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "4"
 			(uuid "4ee03943-16ab-4e96-9831-568ce297e6c7")
 		)
@@ -32409,6 +32784,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 450.85 271.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "0691fd1f-8b22-44ed-9816-08fcb6f2d92a")
 		)
@@ -32487,6 +32870,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 49.53 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "9c681b0b-876e-46f3-97f5-0817dc197ea3")
 		)
@@ -32563,6 +32954,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 474.98 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e0ec44bd-ef02-40d8-b759-98e6f197778d")
 		)
@@ -32637,6 +33036,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 137.16 163.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -32783,6 +33190,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 496.57 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "52d416ee-8221-426d-9f0e-0e346e571d0d")
 		)
@@ -32861,6 +33276,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 33.02 314.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "445eb3cc-65c4-4006-9cf9-b8e23c6f778b")
 		)
@@ -32937,6 +33360,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 495.3 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "d1fa23d7-6365-42b8-a61d-697848ff0965")
 		)
@@ -33011,6 +33442,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 109.22 331.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "2"
@@ -33093,13 +33532,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "180"
+		(property "FT Rotation Offset" "180"
 			(at 90.17 321.31 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 90.17 321.31 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -33184,6 +33631,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 273.05 223.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -33393,6 +33848,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 199.39 181.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -33606,6 +34069,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 257.81 331.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "76869652-3c49-49a8-838c-93d7dea92763")
 		)
@@ -33688,6 +34159,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 80.01 322.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -33905,6 +34384,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 134.62 336.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e5aabe7f-993a-4c1e-b436-80107731eb5f")
 		)
@@ -33987,6 +34474,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 483.87 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -34131,6 +34626,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 289.56 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "7b71fa86-8db4-4578-a8f5-23cf43773efb")
 		)
@@ -34273,6 +34776,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 419.1 146.05 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "af996140-910d-4b44-89f1-2a49ef266178")
 		)
@@ -34349,6 +34860,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 63.5 260.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -34492,6 +35011,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 91.44 203.2 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -34706,6 +35233,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 135.89 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "f483037d-93b5-417f-a2e0-7c0bba6f8b15")
 		)
@@ -34782,6 +35317,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 38.1 375.92 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -34927,6 +35470,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 71.12 248.92 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "bb71e757-0de3-4ac4-9008-e233487aaf47")
 		)
@@ -35001,6 +35552,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 163.83 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -35145,6 +35704,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 66.04 260.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -35348,13 +35915,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C495959"
+		(property "JLCPCB Part #" "C85866"
 			(at 189.23 346.71 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 189.23 346.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -35437,6 +36012,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 330.2 163.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -35585,6 +36168,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 184.15 181.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "f57fc0c5-f7be-471f-88dc-a56a38a0db1a")
 		)
@@ -35659,6 +36250,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 182.88 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -35805,6 +36404,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 242.57 344.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "df664d3f-b594-498f-b2be-65314d693812")
 		)
@@ -35889,13 +36496,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "180"
+		(property "FT Rotation Offset" "180"
 			(at 420.37 224.79 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 420.37 224.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "3"
@@ -35988,6 +36603,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 349.25 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "d4d6348e-082c-4de8-a177-e3912cf69799")
 		)
@@ -36064,6 +36687,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 483.87 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -36404,6 +37035,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 33.02 201.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "f963da10-4ee2-44f7-a6be-0028349f4019")
 		)
@@ -36486,6 +37125,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 142.24 345.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -36572,6 +37219,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 378.46 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -36776,101 +37431,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Switch:SW_Push")
-		(at 467.36 147.32 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "b3b36ac0-97b9-4ced-99fd-8306384ec5e9")
-		(property "Reference" "SW3"
-			(at 467.36 139.7 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "TS-1037-A11B3-D2"
-			(at 467.36 142.24 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Hactar_Footprints:KEY-SMD_2P-L7.1-W10.6-P4.00-LS9.0"
-			(at 467.36 142.24 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 467.36 142.24 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Push button switch, generic, two pins"
-			(at 467.36 147.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C499331"
-			(at 467.36 147.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Position Offset" "0,-0.635"
-			(at 467.36 147.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C499331"
-			(at 467.36 162.56 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "3aa348c0-4ef4-4982-ac47-51dc322a8547")
-		)
-		(pin "1"
-			(uuid "937ecb93-0f5d-4dc5-abd1-a0a7cc6fa0dd")
-		)
-		(instances
-			(project "EV11 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "SW3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Power_Protection:USBLC6-2P6")
 		(at 74.93 229.87 90)
 		(mirror x)
@@ -36932,13 +37492,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "270"
+		(property "FT Rotation Offset" "270"
 			(at 74.93 229.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 74.93 229.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -37029,13 +37597,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "270"
+		(property "FT Rotation Offset" "270"
 			(at 172.72 332.74 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 172.72 332.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -37150,13 +37726,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Position Offset" "0,-0.508"
+		(property "FT Position Offset" "0,-0.508"
 			(at 212.09 119.38 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 212.09 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -37354,13 +37938,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Position Offset" "0,-0.1270"
+		(property "FT Position Offset" "0,-0.1270"
 			(at 331.47 228.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 331.47 228.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -37456,6 +38048,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 147.32 130.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -37796,6 +38396,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 473.71 269.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e8b293d6-f9bc-48e3-8127-6ed95e17da3b")
 		)
@@ -38072,6 +38680,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 46.99 105.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "4903eaff-e979-46cd-b317-5f513c3dd7bc")
 		)
@@ -38155,6 +38771,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 36.83 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -38303,6 +38927,82 @@
 		)
 	)
 	(symbol
+		(lib_id "Switch:SW_Push")
+		(at 467.36 109.22 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "cb6f1c36-cd75-49d6-b02b-ebacf4a9ad4a")
+		(property "Reference" "SW1"
+			(at 469.9 106.934 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "SW_Push"
+			(at 467.36 110.49 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Hactar_Footprints:SW-SMD_L7.5-W8.0-P4.50_TS-1045-A13B3-D2"
+			(at 467.36 104.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 467.36 104.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Push button switch, generic, two pins"
+			(at 467.36 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C557898"
+			(at 462.788 106.934 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "6e77bc9e-514e-4b0f-b23b-f76bca6caa31")
+		)
+		(pin "2"
+			(uuid "13201772-9be9-4c04-b55f-8d54b5373b81")
+		)
+		(instances
+			(project "EV13 Board Design"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "SW1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 349.25 82.55 0)
 		(unit 1)
@@ -38429,6 +39129,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 71.12 251.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "94608d02-6b8a-4a66-976b-1a3c219d78ec")
 		)
@@ -38503,6 +39211,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 213.36 326.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -38585,6 +39301,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 494.03 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -38796,6 +39520,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 294.64 220.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "6b95e8b5-9221-4381-a741-267567d1c3a7")
 		)
@@ -38874,6 +39606,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 64.77 374.65 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "76f4388c-42cb-40b5-840f-ca745779ce3b")
 		)
@@ -38948,6 +39688,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 156.21 327.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -39035,6 +39783,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 204.47 181.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "91b2cb26-4e53-49e1-9915-964c9c281137")
 		)
@@ -39111,6 +39867,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 196.85 346.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -39197,6 +39961,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 265.43 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "75254d92-c12f-4cc6-bdc3-f87ec46e30ff")
 		)
@@ -39273,6 +40045,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 227.33 331.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -39359,13 +40139,21 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Rotation Offset" "180"
+		(property "FT Rotation Offset" "180"
 			(at 472.44 289.56 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 472.44 289.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "5"
@@ -39589,6 +40377,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 425.45 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "09e8c833-cf2d-41bd-bb5f-19043770fc88")
 		)
@@ -39797,6 +40593,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 280.67 209.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "a5780172-dcb0-4538-bee8-69070873d35e")
 		)
@@ -39874,6 +40678,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 105.41 223.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -40123,6 +40935,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 325.12 125.73 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -40464,6 +41284,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 313.69 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "5567f937-7757-42ce-8b5d-9b4beb780909")
 		)
@@ -40736,6 +41564,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 422.91 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "a7dda38c-0456-4c43-aa9d-c2d9b7f0e97b")
 		)
@@ -40810,6 +41646,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 163.83 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -40888,6 +41732,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 336.55 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "73153efe-e3e0-4897-8c01-e110255a3abc")
 		)
@@ -40956,6 +41808,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 111.76 321.31 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -41096,13 +41956,12 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB#" "C2874115"
-			(at 149.86 115.57 0)
+		(property "Availability" ""
+			(at 149.86 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
 		(pin "2"
@@ -41252,6 +42111,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 90.17 302.26 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "423346b9-2e75-4866-bdd9-9ea8226beff0")
 		)
@@ -41334,6 +42201,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 135.89 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "28dfc602-f3f9-4f76-b1da-05737ceadbea")
 		)
@@ -41408,6 +42283,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 154.94 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -41554,6 +42437,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 408.94 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "ebbc5104-2284-42c0-8ac3-a15f752b0f60")
 		)
@@ -41632,6 +42523,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 279.4 220.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "5100024e-278f-4d0b-8449-2a783c6442e0")
 		)
@@ -41708,6 +42607,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 265.43 326.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
@@ -42059,6 +42966,14 @@
 				(hide yes)
 			)
 		)
+		(property "Availability" ""
+			(at 189.23 181.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "7f11d848-8be7-4f26-914f-028aacbe2888")
 		)
@@ -42201,6 +43116,14 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 280.67 274.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "1"
