@@ -14,10 +14,8 @@ public:
     SwappingBuffer(const size_t num_buffs, const size_t buffer_size) :
         num_buffs(num_buffs),
         buffer_size(buffer_size),
-        dual_buffers{
-            swap_buffer_t{0, 0, new T[buffer_size]},
-            swap_buffer_t{0, 0, new T[buffer_size]}
-    },
+        dual_buffers{swap_buffer_t{0, 0, new T[buffer_size]},
+                     swap_buffer_t{0, 0, new T[buffer_size]}},
         back_buff(&dual_buffers[0]),
         front_buff(&dual_buffers[1])
     {

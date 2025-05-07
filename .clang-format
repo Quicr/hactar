@@ -1,15 +1,3 @@
-# This is a sample .clang-format file.
-# Place this file in your project's root directory or a parent directory.
-# clang-format will automatically find and use it.
-#
-# You can generate a base configuration file using:
-#   clang-format -style=llvm -dump-config > .clang-format
-#   (Replace 'llvm' with 'google', 'webkit', 'mozilla', 'chromium', 'microsoft', 'gnu' etc.)
-#
-# Full documentation of options: https://clang.llvm.org/docs/ClangFormatStyleOptions.html
-
-# Specify the language if needed (Cpp, Java, JavaScript, ObjC, Proto, TableGen, TextProto)
-# Often auto-detected, but can be explicit.
 Language: Cpp
 
 BasedOnStyle: LLVM
@@ -26,7 +14,6 @@ IndentExternBlock: NoIndent
 
 # --- ALIGNMENT ---
 AlignAfterOpenBracket: Align
-AlignArrayOfStructures: Left
 AlignConsecutiveAssignments: None
 AlignConsecutiveDeclarations: None
 AlignOperands: AlignAfterOperator

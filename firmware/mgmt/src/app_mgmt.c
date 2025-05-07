@@ -12,6 +12,7 @@
 #include "uart_stream.h"
 #include <stdlib.h>
 #include <string.h>
+
 /* USER CODE END Includes */
 
 extern TIM_HandleTypeDef htim3;
@@ -58,41 +59,68 @@ const enum State default_state = Debug;
 enum State state = default_state;
 
 uart_stream_t ui_stream = {
-    .rx = {.uart = &huart2, .buff = ui_rx_buff, .size = UART_BUFF_SZ, .idx = 0},
-    .tx = { .uart = &huart1,
-           .buff = ui_tx_buff,
-           .size = UART_BUFF_SZ,
-           .read = 0,
-           .write = 0,
-           .unsent = 0,
-           .num_sending = 0,
-           .free = 1},
+    .rx =
+        {
+            .uart = &huart2,
+            .buff = ui_rx_buff,
+            .size = UART_BUFF_SZ,
+            .idx = 0,
+        },
+    .tx =
+        {
+            .uart = &huart1,
+            .buff = ui_tx_buff,
+            .size = UART_BUFF_SZ,
+            .read = 0,
+            .write = 0,
+            .unsent = 0,
+            .num_sending = 0,
+            .free = 1,
+        },
     .mode = Ignore,
 };
 
 uart_stream_t net_stream = {
-    .rx = {.uart = &huart3, .buff = net_rx_buff, .size = UART_BUFF_SZ, .idx = 0},
-    .tx = { .uart = &huart1,
-           .buff = net_tx_buff,
-           .size = UART_BUFF_SZ,
-           .read = 0,
-           .write = 0,
-           .unsent = 0,
-           .num_sending = 0,
-           .free = 1},
+    .rx =
+        {
+            .uart = &huart3,
+            .buff = net_rx_buff,
+            .size = UART_BUFF_SZ,
+            .idx = 0,
+        },
+    .tx =
+        {
+            .uart = &huart1,
+            .buff = net_tx_buff,
+            .size = UART_BUFF_SZ,
+            .read = 0,
+            .write = 0,
+            .unsent = 0,
+            .num_sending = 0,
+            .free = 1,
+        },
     .mode = Ignore,
 };
 
 uart_stream_t usb_stream = {
-    .rx = {.uart = &huart1, .buff = usb_rx_buff, .size = UART_BUFF_SZ, .idx = 0},
-    .tx = { .uart = &huart1,
-           .buff = usb_tx_buff,
-           .size = UART_BUFF_SZ,
-           .read = 0,
-           .write = 0,
-           .unsent = 0,
-           .num_sending = 0,
-           .free = 1},
+    .rx =
+        {
+            .uart = &huart1,
+            .buff = usb_rx_buff,
+            .size = UART_BUFF_SZ,
+            .idx = 0,
+        },
+    .tx =
+        {
+            .uart = &huart1,
+            .buff = usb_tx_buff,
+            .size = UART_BUFF_SZ,
+            .read = 0,
+            .write = 0,
+            .unsent = 0,
+            .num_sending = 0,
+            .free = 1,
+        },
     .mode = Ignore,
 };
 
