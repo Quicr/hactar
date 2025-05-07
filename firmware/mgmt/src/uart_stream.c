@@ -1,5 +1,4 @@
 #include "uart_stream.h"
-
 #include "chip_control.h"
 #include "main.h"
 
@@ -18,9 +17,7 @@ void Receive(uart_stream_t* stream, uint16_t num_received)
 
         if (stream->mode != Ignore)
         {
-            memcpy(stream->tx.buff + stream->tx.write,
-                stream->rx.buff + stream->rx.idx,
-                bytes);
+            memcpy(stream->tx.buff + stream->tx.write, stream->rx.buff + stream->rx.idx, bytes);
             stream->tx.unsent += bytes;
         }
 
@@ -32,11 +29,9 @@ void Receive(uart_stream_t* stream, uint16_t num_received)
     if (stream->mode != Ignore)
     {
         // Copy bytes to tx buffer
-        memcpy(stream->tx.buff + stream->tx.write,
-            stream->rx.buff + stream->rx.idx,
-            num_bytes);
+        memcpy(stream->tx.buff + stream->tx.write, stream->rx.buff + stream->rx.idx, num_bytes);
         stream->tx.unsent += num_bytes;
-        }
+    }
 
     stream->rx.idx += num_bytes;
     stream->tx.write += num_bytes;
@@ -107,15 +102,14 @@ void Transmit(uart_stream_t* stream, enum State* state)
     }
 
     // Transmit
-    HAL_UART_Transmit_DMA(stream->tx.uart,
-        stream->tx.buff + stream->tx.read, stream->tx.num_sending);
+    HAL_UART_Transmit_DMA(stream->tx.uart, stream->tx.buff + stream->tx.read,
+                          stream->tx.num_sending);
 }
 
-void HandleCommands(uart_stream_t* stream,
-    enum State* state)
+void HandleCommands(uart_stream_t* stream, enum State* state)
 {
     static uint8_t ready = 0;
-    static uint8_t cmd_buff[COMMAND_BUFF_SZ] = { 0 };
+    static uint8_t cmd_buff[COMMAND_BUFF_SZ] = {0};
     static uint16_t idx = 0;
     static uint32_t last_update = 0;
 
@@ -210,8 +204,10 @@ void InitUartStream(uart_stream_t* stream)
 void StartUartReceive(uart_stream_t* stream)
 {
     uint8_t attempt = 0;
-    while (attempt++ != 10 &&
-        HAL_OK != HAL_UARTEx_ReceiveToIdle_DMA(stream->rx.uart, stream->rx.buff, stream->rx.size))
+    while (
+        attempt++ != 10
+        && HAL_OK
+               != HAL_UARTEx_ReceiveToIdle_DMA(stream->rx.uart, stream->rx.buff, stream->rx.size))
     {
         // Make sure the uart is cancelled, sometimes it doesn't want to cancel
         HAL_UART_Abort(stream->rx.uart);

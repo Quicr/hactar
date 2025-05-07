@@ -6,7 +6,6 @@
 
 #define BAUD 115200
 
-
 void PowerCycle(GPIO_TypeDef* port, uint16_t pin, uint32_t delay);
 void HoldInReset(GPIO_TypeDef* port, uint16_t pin);
 void ChangeToInput(GPIO_TypeDef* port, uint16_t pin);

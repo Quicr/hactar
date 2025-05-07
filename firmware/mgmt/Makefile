@@ -87,12 +87,12 @@ Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart.c \
 Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c \
 Core/Src/system_stm32f0xx.c \
 Core/Src/main.c \
-Core/Src/app_mgmt.c \
-Core/Src/uart_stream.c \
-Core/Src/io_control.c \
-Core/Src/chip_control.c \
-Core/Src/sysmem.c \
-Core/Src/syscalls.c
+src/app_mgmt.c \
+src/uart_stream.c \
+src/io_control.c \
+src/chip_control.c \
+src/sysmem.c \
+src/syscalls.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -153,7 +153,8 @@ C_INCLUDES =  \
 -IDrivers/STM32F0xx_HAL_Driver/Inc \
 -IDrivers/STM32F0xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32F0xx/Include \
--IDrivers/CMSIS/Include
+-IDrivers/CMSIS/Include \
+-Iinc
 
 
 # compile gcc flags
@@ -197,23 +198,30 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
-	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
+	@echo "[C]		$(notdir $<)"
+	@$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
-	$(AS) -c $(CFLAGS) $< -o $@
+	@echo "[S]		$(notdir $<)"
+	@$(AS) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-	$(SZ) $@
+	@echo "[LD]		${TARGET}.elf"
+	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	@$(SZ) $@
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(HEX) $< $@
+	@echo "[LD]		${TARGET}.hex"
+	@$(HEX) $< $@
 
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(BIN) $< $@
+	@echo "[LD]		${TARGET}.bin"
+	@$(BIN) $< $@
 
-$(BUILD_DIR):
-	mkdir $@
+dirs: ${BUILD_DIR}
+${BUILD_DIR}:
+	@echo "[MKDIR]	$@"
+	@mkdir -p $@
 
 upload: compile
 	python3 ../flasher/flasher.py --baud=${BAUD} --chip="mgmt" --port=${PORT} \
@@ -238,6 +246,10 @@ docker-build:
 	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
 		docker build -t ${DOCKER_IMAGE} .; \
 	fi
+
+format:
+	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
+	find src -iname "*.c" -or -iname "*.cc" | xargs clang-format -i
 
 #######################################
 # clean up

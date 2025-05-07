@@ -6,12 +6,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdlib.h>
-#include <string.h>
-#include "stm32f0xx_hal_def.h"
-#include "uart_stream.h"
 #include "chip_control.h"
 #include "io_control.h"
+#include "stm32f0xx_hal_def.h"
+#include "uart_stream.h"
+#include <stdlib.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 extern TIM_HandleTypeDef htim3;
@@ -42,14 +42,14 @@ extern DMA_HandleTypeDef hdma_usart3_tx;
 #define UART_BUFF_SZ 1024
 #define TRANSMISSION_TIMEOUT 10000
 
-uint8_t ui_rx_buff[UART_BUFF_SZ] = { 0 };
-uint8_t ui_tx_buff[UART_BUFF_SZ] = { 0 };
+uint8_t ui_rx_buff[UART_BUFF_SZ] = {0};
+uint8_t ui_tx_buff[UART_BUFF_SZ] = {0};
 
-uint8_t net_rx_buff[UART_BUFF_SZ] = { 0 };
-uint8_t net_tx_buff[UART_BUFF_SZ] = { 0 };
+uint8_t net_rx_buff[UART_BUFF_SZ] = {0};
+uint8_t net_tx_buff[UART_BUFF_SZ] = {0};
 
-uint8_t usb_rx_buff[UART_BUFF_SZ] = { 0 };
-uint8_t usb_tx_buff[UART_BUFF_SZ] = { 0 };
+uint8_t usb_rx_buff[UART_BUFF_SZ] = {0};
+uint8_t usb_tx_buff[UART_BUFF_SZ] = {0};
 
 static uint8_t uploader = 0;
 static uint32_t timeout_tick = 0;
@@ -58,62 +58,41 @@ const enum State default_state = Debug;
 enum State state = default_state;
 
 uart_stream_t ui_stream = {
-    .rx = {
-        .uart = &huart2,
-        .buff = ui_rx_buff,
-        .size = UART_BUFF_SZ,
-        .idx = 0
-    },
-    .tx = {
-        .uart = &huart1,
-        .buff = ui_tx_buff,
-        .size = UART_BUFF_SZ,
-        .read = 0,
-        .write = 0,
-        .unsent = 0,
-        .num_sending = 0,
-        .free = 1
-    },
+    .rx = {.uart = &huart2, .buff = ui_rx_buff, .size = UART_BUFF_SZ, .idx = 0},
+    .tx = { .uart = &huart1,
+           .buff = ui_tx_buff,
+           .size = UART_BUFF_SZ,
+           .read = 0,
+           .write = 0,
+           .unsent = 0,
+           .num_sending = 0,
+           .free = 1},
     .mode = Ignore,
 };
 
 uart_stream_t net_stream = {
-    .rx = {
-        .uart = &huart3,
-        .buff = net_rx_buff,
-        .size = UART_BUFF_SZ,
-        .idx = 0
-    },
-    .tx = {
-        .uart = &huart1,
-        .buff = net_tx_buff,
-        .size = UART_BUFF_SZ,
-        .read = 0,
-        .write = 0,
-        .unsent = 0,
-        .num_sending = 0,
-        .free = 1
-    },
+    .rx = {.uart = &huart3, .buff = net_rx_buff, .size = UART_BUFF_SZ, .idx = 0},
+    .tx = { .uart = &huart1,
+           .buff = net_tx_buff,
+           .size = UART_BUFF_SZ,
+           .read = 0,
+           .write = 0,
+           .unsent = 0,
+           .num_sending = 0,
+           .free = 1},
     .mode = Ignore,
 };
 
 uart_stream_t usb_stream = {
-    .rx = {
-        .uart = &huart1,
-        .buff = usb_rx_buff,
-        .size = UART_BUFF_SZ,
-        .idx = 0
-    },
-    .tx = {
-        .uart = &huart1,
-        .buff = usb_tx_buff,
-        .size = UART_BUFF_SZ,
-        .read = 0,
-        .write = 0,
-        .unsent = 0,
-        .num_sending = 0,
-        .free = 1
-    },
+    .rx = {.uart = &huart1, .buff = usb_rx_buff, .size = UART_BUFF_SZ, .idx = 0},
+    .tx = { .uart = &huart1,
+           .buff = usb_tx_buff,
+           .size = UART_BUFF_SZ,
+           .read = 0,
+           .write = 0,
+           .unsent = 0,
+           .num_sending = 0,
+           .free = 1},
     .mode = Ignore,
 };
 
@@ -132,7 +111,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin)
             HAL_GPIO_WritePin(NET_STAT_GPIO_Port, NET_STAT_Pin, GPIO_PIN_RESET);
         }
     }
-
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
@@ -364,14 +342,14 @@ void LEDB(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b)
     HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, b);
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t* file, uint32_t line)
 {
     /* USER CODE BEGIN 6 */
