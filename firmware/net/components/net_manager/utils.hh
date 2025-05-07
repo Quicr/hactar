@@ -32,11 +32,9 @@ static quicr::FullTrackName const MakeFullTrackName(const std::string& track_nam
         return tokens;
     };
 
-    quicr::FullTrackName full_track_name{
-        quicr::TrackNamespace{split(track_namespace, ",")            },
-        {track_name.begin(),    track_name.end()},
-        track_alias
-    };
+    quicr::FullTrackName full_track_name{quicr::TrackNamespace{split(track_namespace, ",")},
+                                         {track_name.begin(), track_name.end()},
+                                         track_alias};
     return full_track_name;
 }
 
@@ -87,11 +85,9 @@ static quicr::FullTrackName const MakeFullTrackName(const std::string& track_nam
         return tokens;
     };
 
-    quicr::FullTrackName full_track_name{
-        quicr::TrackNamespace{split(track_namespace, "/")            },
-        {track_name.begin(),    track_name.end()},
-        track_alias
-    };
+    quicr::FullTrackName full_track_name{quicr::TrackNamespace{split(track_namespace, "/")},
+                                         {track_name.begin(), track_name.end()},
+                                         track_alias};
     return full_track_name;
 }
 

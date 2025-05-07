@@ -1,10 +1,9 @@
 #pragma once
 
+#include "logger.hh"
+#include "ring_buffer.hh"
 #include "serial_interface.hh"
 #include "serial_packet.hh"
-#include "ring_buffer.hh"
-#include "logger.hh"
-
 #include <deque>
 #include <map>
 #include <memory>
@@ -33,7 +32,7 @@ public:
         TIMEOUT
     } SerialStatus;
 
-    SerialPacketManager(SerialInterface* uart):
+    SerialPacketManager(SerialInterface* uart) :
         uart(uart),
         rx_packets(),
         q_message_packets(),
@@ -117,49 +116,43 @@ public:
         rx_packets.push_back(std::move(packet));
     }
 
-    bool GetQMessagePackets(
-        RingBuffer<std::unique_ptr<SerialPacket>>** buff,
-        const SerialPacket::QMessages q_message_type) const
+    bool GetQMessagePackets(RingBuffer<std::unique_ptr<SerialPacket>>** buff,
+                            const SerialPacket::QMessages q_message_type) const
     {
-        if (q_message_packets.find(q_message_type) ==
-            q_message_packets.end())
+        if (q_message_packets.find(q_message_type) == q_message_packets.end())
         {
             return false;
         }
 
-        *buff = const_cast<RingBuffer<std::unique_ptr<SerialPacket>> *>(
+        *buff = const_cast<RingBuffer<std::unique_ptr<SerialPacket>>*>(
             &q_message_packets.at(q_message_type));
 
         return true;
     }
 
-    bool GetCommandPackets(
-        RingBuffer<std::unique_ptr<SerialPacket>>** buff,
-        const SerialPacket::Commands command_type) const
+    bool GetCommandPackets(RingBuffer<std::unique_ptr<SerialPacket>>** buff,
+                           const SerialPacket::Commands command_type) const
     {
-        if (command_packets.find(command_type) ==
-            command_packets.end())
+        if (command_packets.find(command_type) == command_packets.end())
         {
             return false;
         }
 
-        *buff = const_cast<RingBuffer<std::unique_ptr<SerialPacket>> *>(
+        *buff = const_cast<RingBuffer<std::unique_ptr<SerialPacket>>*>(
             &command_packets.at(command_type));
 
         return true;
     }
 
-    bool GetSettingsPackets(
-        RingBuffer<std::unique_ptr<SerialPacket>>** buff,
-        const SerialPacket::Settings setting_type) const
+    bool GetSettingsPackets(RingBuffer<std::unique_ptr<SerialPacket>>** buff,
+                            const SerialPacket::Settings setting_type) const
     {
-        if (setting_packets.find(setting_type) ==
-            setting_packets.end())
+        if (setting_packets.find(setting_type) == setting_packets.end())
         {
             return false;
         }
 
-        *buff = const_cast<RingBuffer<std::unique_ptr<SerialPacket>> *>(
+        *buff = const_cast<RingBuffer<std::unique_ptr<SerialPacket>>*>(
             &setting_packets.at(setting_type));
 
         return true;
@@ -207,10 +200,7 @@ private:
             rx_packet_timeout = current_time + 5000;
 
             // Found the start, so create a packet
-            rx_packet = std::make_unique<SerialPacket>(
-                current_time,
-                length + Start_Bytes
-            );
+            rx_packet = std::make_unique<SerialPacket>(current_time, length + Start_Bytes);
 
             rx_packet->SetData(type, 0, 1);
 
@@ -243,38 +233,38 @@ private:
                 continue;
             }
 
-            auto rx_type =
-                (SerialPacket::Types)rx_packet->GetData<byte_t>(0, 1);
+            auto rx_type = (SerialPacket::Types)rx_packet->GetData<byte_t>(0, 1);
 
             switch (rx_type)
             {
-                case SerialPacket::Types::LocalDebug:
-                {
-                    rx_packet.reset();
-                    status = SerialStatus::EMPTY;
-                    break;
-                }
-                case SerialPacket::Types::Command:
-                {
-                    auto command_type = static_cast<SerialPacket::Commands>(
-                        rx_packet->GetData<unsigned short>(5, 2));
+            case SerialPacket::Types::LocalDebug:
+            {
+                rx_packet.reset();
+                status = SerialStatus::EMPTY;
+                break;
+            }
+            case SerialPacket::Types::Command:
+            {
+                auto command_type =
+                    static_cast<SerialPacket::Commands>(rx_packet->GetData<unsigned short>(5, 2));
 
-                    Logger::Log(Logger::Level::Info, "Received command packet type =", (int)command_type);
+                Logger::Log(Logger::Level::Info,
+                            "Received command packet type =", (int)command_type);
 
-                    command_packets[command_type].Write(std::move(rx_packet));
-                    status = SerialStatus::OK;
-                    break;
-                }
-                // TODO messages
-                default:
-                {
-                    // All other packets can just be assumed to be normal
-                    // for now, debug messages should go elsewhere (eeprom?)
+                command_packets[command_type].Write(std::move(rx_packet));
+                status = SerialStatus::OK;
+                break;
+            }
+            // TODO messages
+            default:
+            {
+                // All other packets can just be assumed to be normal
+                // for now, debug messages should go elsewhere (eeprom?)
 
-                    rx_packets.push_back(std::move(rx_packet));
-                    status = SerialStatus::OK;
-                    break;
-                }
+                rx_packets.push_back(std::move(rx_packet));
+                status = SerialStatus::OK;
+                break;
+            }
             }
 
             Logger::Log(Logger::Level::Info, "Received serial packet");
@@ -309,8 +299,7 @@ private:
         tx_buffer = tx_packet->Data();
 
         // Get the size
-        uint16_t tx_buffer_sz =
-            tx_packet->GetData<unsigned short>(3, 2) + Start_Bytes;
+        uint16_t tx_buffer_sz = tx_packet->GetData<unsigned short>(3, 2) + Start_Bytes;
 
         uart->Transmit(tx_buffer, tx_buffer_sz);
         tx_packets.pop_front();
@@ -323,12 +312,9 @@ private:
     std::deque<std::unique_ptr<SerialPacket>> rx_packets;
 
     // TODO packet bucket class?
-    std::map<SerialPacket::QMessages,
-        RingBuffer<std::unique_ptr<SerialPacket>>> q_message_packets;
-    std::map<SerialPacket::Commands,
-        RingBuffer<std::unique_ptr<SerialPacket>>> command_packets;
-    std::map<SerialPacket::Settings,
-        RingBuffer<std::unique_ptr<SerialPacket>>> setting_packets;
+    std::map<SerialPacket::QMessages, RingBuffer<std::unique_ptr<SerialPacket>>> q_message_packets;
+    std::map<SerialPacket::Commands, RingBuffer<std::unique_ptr<SerialPacket>>> command_packets;
+    std::map<SerialPacket::Settings, RingBuffer<std::unique_ptr<SerialPacket>>> setting_packets;
 
     std::unique_ptr<SerialPacket> rx_packet;
     unsigned long rx_packet_timeout;
@@ -341,5 +327,4 @@ private:
     SerialStatus tx_status;
 
     uint16_t next_packet_id;
-
 };

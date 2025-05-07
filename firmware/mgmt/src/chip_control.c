@@ -1,7 +1,6 @@
 #include "chip_control.h"
-
-#include "io_control.h"
 #include "app_mgmt.h"
+#include "io_control.h"
 #include "main.h"
 
 void NetBootloaderMode()
@@ -80,8 +79,6 @@ void UIHoldInReset()
 
     HAL_GPIO_WritePin(UI_NRST_GPIO_Port, UI_NRST_Pin, GPIO_PIN_RESET);
 }
-
-
 
 /**
  * @brief Waits for the network chip to send a ready signal

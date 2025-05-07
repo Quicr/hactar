@@ -71,7 +71,9 @@ format:
 	find core -iname "*.cc" | xargs clang-format -i
 	find core -iname "*.hh" | xargs clang-format -i
 	find components -path components/quicr -prune -or -path components/nlohmann_json -prune -or -iname "*.cc" -print | xargs clang-format -i
-	find components -path components/quicr -prune -or -path components/nlohmann_json -prune -or -iname "*.hh" -print | xargs clang-format -i
+	find components -path components/quicr -prune -or -path components/nlohmann_json -prune -or -iname "*.h*" -print | xargs clang-format -i
+	find ../shared -iname "*.c" -or -iname "*.cc" | xargs clang-format -i
+	find ../shared_inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
 
 clean:
 	rm -rf ${BUILD_PATH}

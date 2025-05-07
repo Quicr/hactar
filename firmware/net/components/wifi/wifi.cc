@@ -13,7 +13,8 @@ Wifi::Wifi(const int64_t scan_timeout_ms) :
     ap_in_range(),
     scanned_aps(),
     ap_idx(0),
-    last_ssid_scan(-scan_timeout_ms), // This will let us immediately scan once we are initialized without adding another var
+    last_ssid_scan(-scan_timeout_ms), // This will let us immediately scan once we are initialized
+                                      // without adding another var
     wifi_init_cfg(WIFI_INIT_CONFIG_DEFAULT()),
     wifi_cfg({}),
     state(State::NotInitialized),

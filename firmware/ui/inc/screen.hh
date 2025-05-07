@@ -151,8 +151,10 @@ private:
         Colour colour = Colour::Black;
         uint8_t write_idx = 0;
         uint8_t read_idx = 0;
-        uint8_t parameters[Memory_Size]{0}; // A bunch of data params to run the next command
-    };                                      // 4+1+2+2+2+2+1+1+1+32 = 48 bytes
+        // A bunch of data params to run the next command
+        uint8_t parameters[Memory_Size]{0};
+        // 4+1+2+2+2+2+1+1+1+32 = 48 bytes
+    };
 
 public:
     enum Orientation

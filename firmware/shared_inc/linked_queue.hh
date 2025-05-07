@@ -4,19 +4,23 @@ template <typename T>
 struct LinkedQueueItem
 {
     T data;
-    LinkedQueueItem<T> *next = nullptr;
+    LinkedQueueItem<T>* next = nullptr;
 };
 
 template <typename T>
 class LinkedQueue
 {
 public:
-    LinkedQueue() : max_size(__UINT32_MAX__), size(0)
+    LinkedQueue() :
+        max_size(__UINT32_MAX__),
+        size(0)
     {
         InitQueue();
     }
 
-    LinkedQueue(unsigned int max_size) : max_size(max_size), size(0)
+    LinkedQueue(unsigned int max_size) :
+        max_size(max_size),
+        size(0)
     {
         InitQueue();
     }
@@ -61,7 +65,7 @@ public:
             return;
 
         // Get next pointer
-        LinkedQueueItem<T> *next = head->next;
+        LinkedQueueItem<T>* next = head->next;
 
         // Delete the memory at head
         delete head;
@@ -101,6 +105,6 @@ private:
     unsigned int max_size;
     unsigned int size;
 
-    LinkedQueueItem<T> *head;
-    LinkedQueueItem<T> *tail;
+    LinkedQueueItem<T>* head;
+    LinkedQueueItem<T>* tail;
 };

@@ -1,9 +1,8 @@
 #ifndef UART_STREAM_H
 #define UART_STREAM_H
 
-#include "stm32f0xx_hal.h"
-
 #include "state.h"
+#include "stm32f0xx_hal.h"
 #include <string.h>
 
 #define COMMAND_TIMEOUT 1000
@@ -43,19 +42,19 @@ typedef struct
 } uart_stream_t;
 
 // Commands
-static const uint8_t ui_upload_cmd [] = "ui_upload";
-static const uint8_t net_upload_cmd [] = "net_upload";
-static const uint8_t debug_cmd [] = "debug";
-static const uint8_t ui_debug_cmd [] = "ui_debug";
-static const uint8_t net_debug_cmd [] = "net_debug";
-static const uint8_t reset_cmd [] = "reset";
-static const uint8_t reset_net [] = "reset_net";
+static const uint8_t ui_upload_cmd[] = "ui_upload";
+static const uint8_t net_upload_cmd[] = "net_upload";
+static const uint8_t debug_cmd[] = "debug";
+static const uint8_t ui_debug_cmd[] = "ui_debug";
+static const uint8_t net_debug_cmd[] = "net_debug";
+static const uint8_t reset_cmd[] = "reset";
+static const uint8_t reset_net[] = "reset_net";
 
-static const uint8_t ACK [] = { 0x79 };
-static const uint8_t READY [] = { 0x80 };
-static const uint8_t NACK [] = { 0x1F };
-static const uint8_t HELLO [] = "WHO ARE YOU?";
-static const uint8_t HELLO_RES [] = "HELLO, I AM A HACTAR DEVICE";
+static const uint8_t ACK[] = {0x79};
+static const uint8_t READY[] = {0x80};
+static const uint8_t NACK[] = {0x1F};
+static const uint8_t HELLO[] = "WHO ARE YOU?";
+static const uint8_t HELLO_RES[] = "HELLO, I AM A HACTAR DEVICE";
 
 void Receive(uart_stream_t* stream, uint16_t num_received);
 void HandleCommands(uart_stream_t* stream, enum State* state);
