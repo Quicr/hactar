@@ -9,13 +9,27 @@
 #include "screen.hh"
 #include "serial.hh"
 #include "ui_net_link.hh"
-#include <string.h>
+
+#ifdef CRYPTO
+#include <cmox_crypto.h>
+#include <cmox_init.h>
+#include <cmox_low_level.h>
+#include <sframe/sframe.h>
+#include <stm32f4xx_hal.h>
+#endif
+
 #include <random>
 
 // Forward declare
 inline void CheckPTT();
 inline void CheckPTTAI();
 inline void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type);
+
+#ifdef CRYPTO
+constexpr const char* mls_key = "sixteen byte key";
+sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
+uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
+#endif
 
 #define HIGH GPIO_PIN_SET
 #define LOW GPIO_PIN_RESET
@@ -105,6 +119,25 @@ char* itoa(int value, char* str, int& len, int base)
 
     return str;
 }
+
+#ifdef CRYPTO
+cmox_init_retval_t cmox_ll_init(void* pArg)
+{
+    (void)pArg;
+    /* Ensure CRC is enabled for cryptographic processing */
+    __HAL_RCC_CRC_RELEASE_RESET();
+    __HAL_RCC_CRC_CLK_ENABLE();
+    return CMOX_INIT_SUCCESS;
+}
+
+cmox_init_retval_t cmox_ll_deInit(void* pArg)
+{
+    (void)pArg;
+    /* Do not turn off CRC to avoid side effect on other SW parts using it */
+    return CMOX_INIT_SUCCESS;
+}
+
+#endif
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -200,6 +233,15 @@ const uint8_t ptt_ai_channel = 1;
 int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
+
+#ifdef CRYPTO
+    if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
+    {
+        Error("main", "cmox failed to initialise");
+    }
+
+    mls_ctx.add_epoch(1, sframe::input_bytes{reinterpret_cast<const uint8_t*>(&mls_key[0]), 16});
+#endif
 
     Renderer renderer(screen, keyboard);
 
@@ -391,6 +433,13 @@ void HandleRecvLinkPackets()
             return;
         }
 
+#ifdef CRYPTO
+        auto payload = mls_ctx.unprotect(
+            sframe::output_bytes{link_packet->payload, link_packet_t::Payload_Size}.subspan(1),
+            sframe::input_bytes{link_packet->payload, link_packet->length}.subspan(1), {});
+        link_packet->length = payload.size() + 1;
+#endif
+
         ++num_packets_rx;
         switch ((ui_net_link::Packet_Type)link_packet->type)
         {
@@ -566,6 +615,16 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
 
     talk_frame.channel_id = channel_id;
     ui_net_link::Serialize(talk_frame, packet_type, talk_packet);
+
+#ifdef CRYPTO
+    uint8_t ct[link_packet_t::Payload_Size];
+    auto payload = mls_ctx.protect(
+        1, 1, ct, sframe::input_bytes{talk_packet.payload, talk_packet.length}.subspan(1), {});
+
+    std::memcpy(talk_packet.payload + 1, payload.data(), payload.size());
+    talk_packet.length = payload.size() + 1;
+#endif
+
     // LedRToggle();
     serial.Write(talk_packet);
     ++num_packets_tx;

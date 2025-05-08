@@ -33,6 +33,9 @@ OPT = -Os
 #######################################
 # Build path
 BUILD_DIR = ./build
+STM32_CRYPTO_DIR=
+STM32_CRYPTO_INCLUDE_DIR=${STM32_CRYPTO_DIR}/include
+STM32_CRYPTO_LIB_DIR=${STM32_CRYPTO_DIR}/lib
 
 #######################################
 # programming
@@ -100,6 +103,10 @@ INCS =  \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include
+
+ifdef STM32_CRYPTO_DIR
+INCS += -I${STM32_CRYPTO_INCLUDE_DIR}
+endif
 
 INCS += $(addprefix -I,$(shell find inc -type d))
 INCS += $(addprefix -I,$(shell find Core/Inc -type d))
@@ -201,6 +208,9 @@ CFLAGS += -g -gdwarf-2
 HAL_CFLAGS += -g -gdwarf-2
 endif
 
+ifdef STM32_CRYPTO_DIR
+CFLAGS += -DCRYPTO
+endif
 
 ifeq (${PROGRAMMER}, CUBE)
 	ifeq (${OS}, WINDOWS_NT)
@@ -232,6 +242,10 @@ LIBS = -lc -lm -lnosys
 LIBDIR = -Llib
 LDFLAGS = $(MCU) --specs=nosys.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/${TARGET}.map,--cref -Wl,--gc-sections
 
+ifdef STM32_CRYPTO_DIR
+LIBS += -lSTM32Cryptographic_CM4
+LIBDIR += -L$(STM32_CRYPTO_LIB_DIR)
+endif
 #######################################
 # build the application
 #######################################
