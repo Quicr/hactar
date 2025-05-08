@@ -21,7 +21,6 @@
 #include "ui_net_link.hh"
 #include "utils.hh"
 #include "wifi.hh"
-#include "wifi_connect.hh"
 #include <inttypes.h>
 #include <nlohmann/json.hpp>
 #include <quicr/client.h>
