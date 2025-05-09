@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "hactar_lib")(type "KiCad")(uri "${KIPRJMOD}/../kicad_libraries/Hactar_Footprints.pretty")(options "")(descr ""))
+)
