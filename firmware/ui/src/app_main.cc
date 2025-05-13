@@ -23,7 +23,8 @@
 // Forward declare
 inline void CheckPTT();
 inline void CheckPTTAI();
-inline void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type);
+inline void
+SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last);
 
 #ifdef CRYPTO
 constexpr const char* mls_key = "sixteen byte key";
@@ -240,7 +241,7 @@ int app_main()
         Error("main", "cmox failed to initialise");
     }
 
-    mls_ctx.add_epoch(1, sframe::input_bytes{reinterpret_cast<const uint8_t*>(&mls_key[0]), 16});
+    mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(&mls_key[0]), 16});
 #endif
 
     Renderer renderer(screen, keyboard);
@@ -567,13 +568,13 @@ void CheckPTT()
         ui_net_link::Serialize(talk_stop, talk_packet);
         serial.Write(talk_packet);
         ptt_down = false;
-        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject);
+        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject, true);
         LedGOff();
     }
 
     if (ptt_down)
     {
-        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject);
+        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject, false);
     }
 }
 
@@ -598,28 +599,28 @@ void CheckPTTAI()
         ui_net_link::Serialize(talk_stop, talk_packet);
         serial.Write(talk_packet);
         ptt_ai_down = false;
-        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject);
+        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject, true);
         LedBOff();
     }
 
     if (ptt_ai_down)
     {
-        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject);
+        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject, false);
     }
 }
 
-void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type)
+void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last)
 {
     AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, talk_frame.data,
                             constants::Audio_Phonic_Sz, true, constants::Stereo);
 
     talk_frame.channel_id = channel_id;
-    ui_net_link::Serialize(talk_frame, packet_type, talk_packet);
+    ui_net_link::Serialize(talk_frame, packet_type, last, talk_packet);
 
 #ifdef CRYPTO
     uint8_t ct[link_packet_t::Payload_Size];
     auto payload = mls_ctx.protect(
-        1, 1, ct, sframe::input_bytes{talk_packet.payload, talk_packet.length}.subspan(1), {});
+        0, 0, ct, sframe::input_bytes{talk_packet.payload, talk_packet.length}.subspan(1), {});
 
     std::memcpy(talk_packet.payload + 1, payload.data(), payload.size());
     talk_packet.length = payload.size() + 1;
@@ -740,7 +741,7 @@ void SlowSendTest(int delay, int num)
         talk_frame.data[i] = i;
     }
 
-    ui_net_link::Serialize(talk_frame, ui_net_link::Packet_Type::PttObject, packet);
+    ui_net_link::Serialize(talk_frame, ui_net_link::Packet_Type::PttObject, false, packet);
 
     int i = 0;
     while (i++ != num)

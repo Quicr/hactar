@@ -14,9 +14,10 @@ namespace moq
 
 // extern uint64_t device_id;
 
-static quicr::FullTrackName const MakeFullTrackName(const std::string& track_namespace,
-                                                    const std::string& track_name,
-                                                    uint64_t track_alias) noexcept
+[[maybe_unused]] static quicr::FullTrackName const
+MakeFullTrackName(const std::string& track_namespace,
+                  const std::string& track_name,
+                  uint64_t track_alias) noexcept
 {
     const auto split = [](std::string str, const std::string& delimiter) {
         std::vector<std::string> tokens;
@@ -38,7 +39,7 @@ static quicr::FullTrackName const MakeFullTrackName(const std::string& track_nam
     return full_track_name;
 }
 
-static std::string Stringify(const quicr::FullTrackName& ftn)
+[[maybe_unused]] static std::string Stringify(const quicr::FullTrackName& ftn)
 {
     std::stringstream ss;
     ss << "[FTN=";
@@ -57,7 +58,7 @@ static std::string Stringify(const quicr::FullTrackName& ftn)
     return ss.str();
 }
 
-static std::string to_hex(const std::vector<uint8_t>& data)
+[[maybe_unused]] static std::string to_hex(const std::vector<uint8_t>& data)
 {
     std::stringstream hex(std::ios_base::out);
     hex.flags(std::ios::hex);
@@ -68,9 +69,10 @@ static std::string to_hex(const std::vector<uint8_t>& data)
     return hex.str();
 }
 
-static quicr::FullTrackName const MakeFullTrackName(const std::string& track_namespace,
-                                                    const std::string& track_name,
-                                                    const std::optional<uint64_t> track_alias)
+[[maybe_unused]] static quicr::FullTrackName const
+MakeFullTrackName(const std::string& track_namespace,
+                  const std::string& track_name,
+                  const std::optional<uint64_t> track_alias)
 {
     const auto split = [](std::string str, const std::string& delimiter) {
         std::vector<std::string> tokens;
@@ -92,8 +94,8 @@ static quicr::FullTrackName const MakeFullTrackName(const std::string& track_nam
 }
 
 // Taken from Tomas, thanks Tomas!
-static quicr::FullTrackName MakeFullTrackName(const std::vector<std::string>& entries,
-                                              const std::string& name)
+[[maybe_unused]] static quicr::FullTrackName
+MakeFullTrackName(const std::vector<std::string>& entries, const std::string& name)
 {
     quicr::FullTrackName ftn;
     ftn.name_space = quicr::TrackNamespace{entries};

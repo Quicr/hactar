@@ -82,15 +82,11 @@ void TrackWriter::PushPttObject(const uint8_t* bytes,
     auto& obj = moq_objs.emplace_back();
     obj.headers.group_id = device_id;
     obj.headers.object_id = object_id++;
-    obj.headers.payload_length = len + 6;
+    obj.headers.payload_length = len;
     obj.headers.extensions = quicr::Extensions{};
     obj.headers.extensions.value()[2].assign(time_bytes.begin(), time_bytes.end());
 
-    obj.data.resize(len + 6);
-    obj.data[0] = (uint8_t)moq::MessageType::Media;
-    obj.data[1] = talk_stopped;
-    memcpy(obj.data.data() + 2, &len, sizeof(len));
-    memcpy(obj.data.data() + 6, bytes, len);
+    obj.data.assign(bytes, bytes + len);
 }
 
 void TrackWriter::PushPttAIObject(const uint8_t* bytes,
@@ -101,31 +97,17 @@ void TrackWriter::PushPttAIObject(const uint8_t* bytes,
 {
     auto time_bytes = quicr::AsBytes(timestamp);
     const size_t ext_bytes = 10;
-    size_t offset = 0;
 
     std::lock_guard<std::mutex> _(obj_mux);
 
     auto& obj = moq_objs.emplace_back();
     obj.headers.group_id = device_id;
     obj.headers.object_id = object_id++;
-    obj.headers.payload_length = len + ext_bytes;
+    obj.headers.payload_length = len;
     obj.headers.extensions = quicr::Extensions{};
     obj.headers.extensions.value()[2].assign(time_bytes.begin(), time_bytes.end());
 
-    obj.data.resize(len + ext_bytes);
-    obj.data[offset] = (uint8_t)moq::MessageType::AIRequest;
-    offset += sizeof(moq::MessageType);
-
-    memcpy(obj.data.data() + offset, &request_id, sizeof(request_id));
-    offset += sizeof(request_id);
-
-    obj.data[offset] = talk_stopped;
-    offset += sizeof(talk_stopped);
-
-    memcpy(obj.data.data() + offset, &len, sizeof(len));
-    offset += sizeof(len);
-
-    memcpy(obj.data.data() + offset, bytes, len);
+    obj.data.assign(bytes, bytes + len);
 }
 
 void TrackWriter::PublishTask(void* params)
