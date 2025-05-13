@@ -37,17 +37,16 @@ Hardware design for test device
 - productions - files used for manufacturing that are generated from the
 stuff in hardware
 
-<h2 id="hardware">Hardware</h2>
+## <h2 id="hardware">Hardware</h2>
 
-<h3 id="technologies">Technologies</h3>
+### <h3 id="technologies">Technologies</h3>
 
 <!-- TODO links -->
-- KiCAD
-- FreeCAD
-- arm-none-eabi
-- esp-idf
-- STM32 HAL
-- STM32 CubeMX
+- [KiCAD9](https://www.kicad.org/)
+- [FreeCAD](https://www.freecad.org/)
+- [arm-none-eabi](https://developer.arm.com/downloads/-/gnu-rm)
+- [ESP-IDF](https://idf.espressif.com/)
+- [STM32 CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html)
 
 <h2 id="firmware">Firmware</h2>
 
@@ -56,26 +55,26 @@ The Firmware is split into 3 categories. Management, User Interface, and Network
 - User Interface - STM32F405
 - Network - ESP32S3
 
-<h3 id="management"><b>Management</b></h3>
+### <h3 id="management"><b>Management</b></h3>
 
 The management chip is responsible for uploading firmware to the stm32 - main chip and the esp32 network chip using a ch340 usb chip.
 
-The management chip receives commands from the usb communication that informs it what chip we are currently uploading.
+The management chip receives commands from the usb communication that informs it what chip we are currently uploading. As well as debugging. It is able to receive log messages from the ui and net chips and push them out to the usb interface.
 
-<h4 id="managmenet_flashing">Flashing</h4>
+#### <h4 id="managmenet_flashing">Flashing</h4>
 On the first flash you'll need to figure out what device port your hactar is on. You can do this in several ways depending on which operating system you are on. Start by viewing your devices, and then plug in your hactar, and then view your devices again and see what was added to your device list.
 
 
 <h5>To view your device list:</h5>
 
 - <h5>Linux/MacOS</h5>
-    
+
     `ls /dev/ttyUSB*`
 
 - <h5>Windows</h5>
 
     `Open printers and devices`
-    
+
     `Find serial com ports`
 
 To flash the management chip you'll need to press the boot and reset buttons on the board in the following manner:
@@ -90,11 +89,11 @@ To flash the management chip you'll need to press the boot and reset buttons on 
 
 - In hactar/firmware/mgmt, enter make upload PORT=/where/my/device/is
 
-<h5>After flashing:</h5>
+##### <h5>After flashing:</h5>
 
 After flashing the management chip you can run `make upload` without specifying the port, and it will be automatically found by the flasher and an attempt to upload will occur, when you see the attempt return to [Button press order](#button_press_order)
 
-<h4 id="management_commands">Commands</h4>
+#### <h4 id="management_commands">Commands</h4>
 
 - **reset** - Resets `ui` chip and then `net` chip. Accepts commands.
 - **ui_upload** - Puts the management chip into `ui` chip upload mode. (STM32f05)
@@ -105,20 +104,20 @@ After flashing the management chip you can run `make upload` without specifying 
 
 <h4>Target Overview</h4>
 
-- `all` - Builds the target bin, elf, and binary files and uploads the code to the Management chip. Output firmware/build/ui
+- `all` - Builds the target bin, elf, and binary files
 
-- `compile` - Builds the target bin, elf, and binary. Output firmware/build/ui
+- `compile` - Builds the target bin, elf, and binary. Output firmware/build/mgmt
 
 - `upload` - Uploads the build target to the Management chip using the our custom flasher tool with serial usb-c uploading. See [Python Flasher](#py_flasher)
 
 - `upload-stflash` - Uploads the build target to the Management chip using the st-flash tools. Please see
-[st-flash installation](#stflash_installation) for instructions on sintalling.
+[st-flash installation](#stflash_installation) for instructions on installing.
 
 - `upload_cube_serial` - Uploads the build target to the Management chip using the STM32_Programmer_CLI with serial usb-c uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
 
 - `upload_cube_swd` - Uploads the build target to the Management chip using the STM32_Programmer_CLI with st-link using SWD uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
 
-- `docker` - Uses docker to compile, flash, and monitor the ui chip. By default it will compile the code. To change the functionality, pass a target of the Makefile into the parameter `mft` when being invoked.
+- `docker` - Uses docker to compile, flash, and monitor the mgmt chip. By default it will compile the code. To change the functionality, pass a target of the Makefile into the parameter `mft` when being invoked.
     - Ex. make docker mft=upload
     - Ex. make docker mft=monitor
 
@@ -128,8 +127,11 @@ After flashing the management chip you can run `make upload` without specifying 
 
 - `info` - Displays the build path, include files, object files, dependencies and vpaths used by the compiler.
 
+<b>Source code</b>
 
-<h3 id="ui"><b>User Interface</b></h3>
+All source code for the Management Chip can be found in firmware/mgmt. Adding C/C++ files in firmware/mgmt/src and firmware/mgmt/inc **does** require any changes in the makefile.
+
+### <h3 id="ui"><b>User Interface</b></h3>
 
 The User Interface chip is where most of the processing takes place. It utilizes a STM32F405 chip empowered by the STM HAL Library. To generate the baseline HAL Library code and Makefile, ST's CubeMX was used.
 
@@ -170,9 +172,9 @@ All source code for the User Interface can be found in firmware/ui, firmware/sha
 
 Making a shared header between chips should be added into firmware/shared_inc.
 
-<h3 id="network"><b>Network</b></h3>
+### <h3 id="network"><b>Network</b></h3>
 
-The network chip is responsible for all communications between servers and the entire board. The network chip communicates with the UI chip via UART serial communication.
+The network chip is a MOQ client. The network chip communicates with the UI chip via UART serial communication.
 
 We are leveraging the **esp-idf** framework.
 
@@ -206,13 +208,13 @@ We are leveraging the **esp-idf** framework.
 
 All source code for the network chip can be found in `firmware/net`, `firmware/shared`, and `firmware/shared_inc`.
 
-<h2 id="tools">Tools</h2>
+## <h2 id="tools">Tools</h2>
 
-<h3 id="py_flasher"><b>Python Flasher</b></h3>
+### <h3 id="py_flasher"><b>Python Flasher</b></h3>
 A firmware flashing tool designed to work with Hactar by collating STM32 and
 ESP32 flashing specifications.
 
-<h4>Requirements</h4>
+#### <h4>Requirements</h4>
 
 - pyserial - ```pip install pyserial```
 
@@ -222,7 +224,7 @@ Generally the flasher is used automatically in the Makefile. However, you can fl
 ex.
 
 ```sh
-python3 flasher.py --port=/dev/ttyUSB0 --baud=115200 --chip="generic_stm" -bin="./build/app.bin"
+python3 flasher.py --port=/dev/ttyUSB0 --baud=115200 --chip="chip" -bin="./build/app.bin"
 ```
 
 You can omit passing a port and the flasher will attempt to find a Hactar board by searching your active usb serial ports.
@@ -231,12 +233,9 @@ You can omit passing a port and the flasher will attempt to find a Hactar board 
 python3 flasher.py --baud=115200 --chip="ui" -bin="./build/ui.bin"
 ```
 
-<h3 id="echo_server"><b>Echo Server</b></h3>
-Very basic server that echo's the message it receives.
+### <h3 id="serial_monitor"><b>Python Serial Monitor</b></h3>
 
-<h3 id="serial_monitor"><b>Python Serial Monitor</b></h3>
-
-Located in firmware/tools
+The serial monitor is a very simple serial monitor that allows a user to send commands to the mgmt chip as well as read serial logs. Located in firmware/tools
 
 Requirements
 - pyserial - ```pip install pyserial```
@@ -248,12 +247,12 @@ ex.
 
 `python monitor.py /dev/ttyUSB0 115200`
 
-<h2 id="stm_installation">Installation - STM32 Toolchain</h2>
+## <h2 id="stm_installation">Installation - STM32 Toolchain</h2>
 
 The following tools are used for Management and User Interface.
-- [Make](ui_make) \[required]
-- [ARM GNU Toolchain](arm-gnu) \[required]
-- [Python3] \[optional]
+- [Make](#ui_make) \[required]
+- [ARM GNU Toolchain](#arm-gnu) \[required]
+- [Python3](https://www.python.org/downloads/) \[optional]
 - [ST-Flash](#stflash) \[optional]
 - [STM32_Programmer_CLI](stm_prog_cli) \[optional]
 - [OpenOCD](openocd) \[optional]
@@ -272,7 +271,7 @@ sudo apt install make
 
 - Download make.exe from [Source Forge](https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81.exe/download?use_mirror=phoenixnap&download=)
 
-- Save it to C:/bin or where-ever you want it. Then add the location to the your path.
+- Save it to C:/bin or where ever you want it. Then add the location to the your path.
 
 - Open the start search, and type `env`. Select `"Edit the system environment variables"`
 
@@ -310,6 +309,25 @@ brew install --cask gcc-arm-embedded
 ```
 
 <br/>
+
+<b id="stflash">ST Flash</b>
+
+<i>Debian</i>
+
+```bash
+sudo apt install stlink-tools
+```
+
+<i>Windows</i>
+
+Download the and install the archive and put the binaries on your path.
+https://github.com/stlink-org/stlink/releases
+
+<i>MacOS</i>
+
+```bash
+brew install stm32flash
+```
 
 <b id="stm_prog_cli">STM32 Programmer CLI \[Optional]</b>
 
@@ -414,13 +432,13 @@ brew update
 ```brew
 brew install open-ocd --HEAD
 ```
-<h2 id="esp_installation">Installation - ESP32 Toolchain</h2>
+## <h2 id="esp_installation">Installation - ESP32 Toolchain</h2>
 
 This project leverages the usage of the Arduino Library for the network chip.
 
 The following tools are used for the Network.
-- [Make](net_make) \[required]
-- [esp-idf](esp_idf) \[required]
+- [Make](#net_make) \[required]
+- [esp-idf](#esp_idf) \[required]
 
 <b id="net_make">Make \[required]</b>
 
@@ -556,7 +574,7 @@ brew install make
 - The first and third LED from the left will turn blue indicating debug mode and your console will receive serial debug messages from the UI and Net chips.
 - Enter `exit` to leave the monitor
 
-<h2 id="hactar_upload">Fully Assembled Hactar Setup</h2>
+<!-- <h2 id="hactar_upload">Fully Assembled Hactar Setup</h2>
 
 <i>Silly pre-requisites:</i>
 - verify that your hactar folder and esp-if folders are peers
@@ -606,4 +624,4 @@ Hactar:
 - make compile
 - make upload
 
-If it works (watch for the % progress, it retries if it fails so be patient), you're done!
+If it works (watch for the % progress, it retries if it fails so be patient), you're done! -->
