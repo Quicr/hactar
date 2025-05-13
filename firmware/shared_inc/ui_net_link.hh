@@ -198,7 +198,7 @@ static_assert(sizeof(AIResponseChunk) == 171);
         offset += sizeof(uint32_t);
     }
 
-    packet.length = offset - 1 + constants::Audio_Phonic_Sz;
+    packet.length = offset + constants::Audio_Phonic_Sz;
 
     memcpy(packet.payload + offset, talk_frame.data, constants::Audio_Phonic_Sz);
 
