@@ -59,6 +59,50 @@ struct AudioObject
     uint8_t data[constants::Audio_Phonic_Sz];
 };
 
+enum class MessageType : uint8_t
+{
+    Media = 1,
+    AIRequest,
+    AIResponse
+};
+
+enum class ContentType : uint8_t
+{
+    Audio = 0,
+    Json,
+};
+
+struct __attribute__((packed)) Chunk
+{
+    const MessageType type = MessageType::Media;
+    bool last_chunk;
+    std::uint32_t chunk_length;
+    std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
+};
+
+struct __attribute__((packed)) AIRequestChunk
+{
+    const MessageType type = MessageType::AIRequest;
+    std::uint32_t request_id;
+    bool last_chunk;
+    std::uint32_t chunk_length;
+    std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
+};
+
+struct __attribute__((packed)) AIResponseChunk
+{
+    const MessageType type = MessageType::AIResponse;
+    std::uint32_t request_id;
+    ContentType content_type;
+    bool last_chunk;
+    std::uint32_t chunk_length;
+    std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
+};
+
+static_assert(sizeof(Chunk) == 166);
+static_assert(sizeof(AIRequestChunk) == 170);
+static_assert(sizeof(AIResponseChunk) == 171);
+
 [[maybe_unused]] static void BuildGetLinkPacket(uint8_t* buff)
 {
     buff[0] = (uint8_t)Packet_Type::GetAudioLinkPacket;
@@ -110,22 +154,53 @@ struct AudioObject
     packet.is_ready = true;
 }
 
-[[maybe_unused]] static void
-Serialize(const AudioObject& talk_frame, Packet_Type packet_type, link_packet_t& packet)
+[[maybe_unused]] static void Serialize(const AudioObject& talk_frame,
+                                       Packet_Type packet_type,
+                                       bool is_last,
+                                       link_packet_t& packet)
 {
     if (packet_type != Packet_Type::PttObject && packet_type != Packet_Type::PttAIObject)
     {
         packet_type = Packet_Type::PttObject;
     }
 
-    const uint16_t num_extra_bytes = 1;
-
     packet.type = (uint8_t)packet_type;
-    packet.length = num_extra_bytes + constants::Audio_Phonic_Sz;
     packet.payload[0] = talk_frame.channel_id;
 
-    constexpr uint32_t payload_offset = num_extra_bytes;
-    memcpy(packet.payload + payload_offset, talk_frame.data, constants::Audio_Phonic_Sz);
+    uint32_t offset = 1;
+
+    static constexpr std::uint32_t audio_size = constants::Audio_Phonic_Sz;
+    if (packet_type == Packet_Type::PttObject)
+    {
+        packet.payload[offset] = static_cast<uint8_t>(MessageType::Media);
+        offset += sizeof(Chunk::type);
+
+        packet.payload[offset] = static_cast<uint8_t>(is_last);
+        offset += sizeof(bool);
+
+        memcpy(packet.payload + offset, &audio_size, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+    else if (packet_type == Packet_Type::PttAIObject)
+    {
+        packet.payload[offset] = static_cast<uint8_t>(MessageType::AIRequest);
+        offset += sizeof(Chunk::type);
+
+        // TODO: We don't use this now but in future we should have this provided from somewhere.
+        uint32_t request_id = 0;
+        memcpy(packet.payload + offset, &request_id, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+
+        packet.payload[offset] = static_cast<uint8_t>(is_last);
+        offset += sizeof(bool);
+
+        memcpy(packet.payload + offset, &audio_size, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+
+    packet.length = offset + constants::Audio_Phonic_Sz;
+
+    memcpy(packet.payload + offset, talk_frame.data, constants::Audio_Phonic_Sz);
 
     packet.is_ready = true;
 }
@@ -178,7 +253,12 @@ Serialize(const AudioObject& talk_frame, Packet_Type packet_type, link_packet_t&
 {
     audio_object.channel_id = packet.payload[0];
 
-    constexpr uint32_t payload_offset = 1;
+    uint32_t payload_offset = 1 + sizeof(Chunk) - constants::Audio_Phonic_Sz;
+    if (static_cast<MessageType>(packet.payload[1]) == MessageType::AIResponse)
+    {
+        payload_offset = 1 + sizeof(AIResponseChunk) - constants::Audio_Phonic_Sz;
+    }
+
     memcpy(audio_object.data, packet.payload + payload_offset, constants::Audio_Phonic_Sz);
 }
 

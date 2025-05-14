@@ -42,64 +42,15 @@ void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::Byt
     {
         num_recv += num_print;
         num_print = 0;
-        SPDLOG_INFO("Recieved {}", num_recv);
+        SPDLOG_INFO("Received {}", num_recv);
     }
-    // SPDLOG_INFO("group id {} device id {}", headers.group_id, device_id);
+
     if (!loopback && headers.group_id == device_id)
     {
         return;
     }
 
-    // SPDLOG_INFO("Object Received ({}): {}", headers.object_id, to_hex({ data.begin(), data.end()
-    // }));
-
-    // Parse the data
-    size_t offset = 1;
-    switch ((MessageType)data[0])
-    {
-    case MessageType::Media:
-    {
-        // Since the content type for media is ALWAYS audio then
-        // we assume it is audio and skip the first byte which is the
-        // chunk type.
-        // Let the task that sends out the audio data handle
-        // the rest of the parsing
-        // Skip the first byte
-        audio_buffer.emplace(data.begin() + offset, data.end());
-        break;
-    }
-    case MessageType::AIResponse:
-    {
-        uint32_t request_id = 0;
-        std::memcpy(&request_id, data.data() + offset, sizeof(request_id));
-        offset += sizeof(request_id);
-
-        switch ((Content_Type)data[offset])
-        {
-        case Content_Type::Audio:
-        {
-            offset += 1;
-            audio_buffer.emplace(data.begin() + offset, data.end());
-            break;
-        }
-        case Content_Type::Json:
-        {
-            // TODO
-            break;
-        }
-        default:
-        {
-            break;
-        }
-        }
-        break;
-    }
-    default:
-    {
-
-        break;
-    }
-    }
+    audio_buffer.emplace(data.begin(), data.end());
 }
 
 void TrackReader::StatusChanged(TrackReader::Status status)
@@ -230,23 +181,13 @@ void TrackReader::SubscribeTask(void* param)
                 }
                 offset += 1;
 
-                link_packet_t link_packet;
+                link_packet_t link_packet = {0};
                 // TODO need to get the type from the link_obj type
                 link_packet.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
-
-                // Get the length of the audio packet
-                uint32_t audio_length = 0;
-                memcpy(&audio_length, data->data() + offset, sizeof(audio_length));
-                offset += sizeof(audio_length);
-
-                // Channel id
-                // TODO get channel id, for now use 0
-                // I think the channel id can just be a hash if need
-                // be, but that seems odd to use.
                 link_packet.payload[0] = 0;
-                link_packet.length = audio_length + 1;
+                link_packet.length = data->size() + 1;
 
-                memcpy(link_packet.payload + 1, data->data() + offset, audio_length);
+                memcpy(link_packet.payload + 1, data->data(), data->size());
 
                 // NET_LOG_INFO("packet length %d", link_packet.length);
 
