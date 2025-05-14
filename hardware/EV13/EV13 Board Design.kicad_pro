@@ -61,7 +61,11 @@
       ],
       "drc_exclusions": [
         [
-          "clearance|140930000|120487924|9c2275f3-f448-4b9a-8224-f9402af05a1e|4bf0d87e-230b-4048-9b99-588443bfbcdb",
+          "clearance|145020000|120717924|9c2275f3-f448-4b9a-8224-f9402af05a1e|4bf0d87e-230b-4048-9b99-588443bfbcdb",
+          ""
+        ],
+        [
+          "clearance|146900000|120520000|8c8232e4-f2c2-43c1-85bd-9a36cd3d0050|d71f3665-cafb-43d8-9ea9-dfacfd453c93",
           ""
         ],
         [
@@ -69,19 +73,7 @@
           ""
         ],
         [
-          "hole_to_hole|121770000|136430000|558d7f57-86de-4f34-be90-7329512ffca0|5eb74b0c-33e1-4c2c-b672-d35ab8443475",
-          ""
-        ],
-        [
-          "hole_to_hole|122270000|135930000|558d7f57-86de-4f34-be90-7329512ffca0|bf596985-8edd-4435-a369-a8af84a1501d",
-          ""
-        ],
-        [
-          "hole_to_hole|122270000|135930000|558d7f57-86de-4f34-be90-7329512ffca0|e2d539a4-5e97-4449-8c35-d98d8bf0f99b",
-          ""
-        ],
-        [
-          "hole_to_hole|122770000|136430000|558d7f57-86de-4f34-be90-7329512ffca0|d70e95fc-3be6-47fa-941d-a142b66a1fc3",
+          "hole_to_hole|122270000|135930000|c7532134-ec34-42f2-bc37-ea894f3de60d|c7532134-ec34-42f2-bc37-ea894f3de60d",
           ""
         ]
       ],
@@ -219,7 +211,7 @@
         0.0,
         0.01,
         0.127,
-        0.2,
+        0.19,
         0.254,
         0.381,
         0.5
@@ -631,6 +623,18 @@
           "label": "JLCPCB Part #",
           "name": "JLCPCB Part #",
           "show": true
+        },
+        {
+          "group_by": false,
+          "label": "JLCPCB Position Offset",
+          "name": "JLCPCB Position Offset",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Sim.Pins",
+          "name": "Sim.Pins",
+          "show": false
         }
       ],
       "filter_string": "",
