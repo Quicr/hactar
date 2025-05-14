@@ -209,7 +209,7 @@ HAL_CFLAGS += -g -gdwarf-2
 endif
 
 ifdef STM32_CRYPTO_DIR
-CFLAGS += -DCRYPTO
+CFLAGS += -DCRYPTO -DNO_ALLOC
 endif
 
 ifeq (${PROGRAMMER}, CUBE)
