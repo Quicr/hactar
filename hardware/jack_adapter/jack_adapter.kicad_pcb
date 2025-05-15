@@ -90,7 +90,7 @@
 	(footprint "Connector_Audio:Jack_3.5mm_PJ320D_Horizontal"
 		(layer "F.Cu")
 		(uuid "02e606db-0785-48a7-8edc-95319c5a81c6")
-		(at 23.775 30)
+		(at 23.775 29.95942)
 		(descr "Headphones with microphone connector, 3.5mm, 4 pins (http://www.qingpu-electronics.com/en/products/WQP-PJ320D-72.html)")
 		(tags "3.5mm jack mic microphone phones headphones 4pins audio plug")
 		(property "Reference" "J3"
@@ -1715,11 +1715,11 @@
 	(footprint "hactar_lib:AUDIO-SMD_PJ-242D-SMT"
 		(layer "F.Cu")
 		(uuid "f0379bd0-83bc-49ff-8974-18df18da5e76")
-		(at 22.2 20)
+		(at 22.1 20)
 		(property "Reference" "J1"
 			(at 0 0 0)
 			(layer "F.SilkS")
-			(uuid "5280e14c-0287-4c70-9b1d-264e66277e6f")
+			(uuid "3468bff0-412a-4980-b08b-cfb1a3e195c5")
 			(effects
 				(font
 					(size 1 1)
@@ -1730,7 +1730,7 @@
 		(property "Value" "2.5mm Mic"
 			(at 0 6.75 0)
 			(layer "F.Fab")
-			(uuid "5cf62e02-ce70-44b0-bc87-837fc99ce7f1")
+			(uuid "95fb9bb1-85c3-4c3e-ac51-dee6e212348c")
 			(effects
 				(font
 					(size 1 1)
@@ -1742,7 +1742,7 @@
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "14c66421-6d6a-4dae-8ffc-8b91d8a812c0")
+			(uuid "fb3d2951-e941-4684-a61b-975562f1b324")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1754,7 +1754,7 @@
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "e4e1bfff-fb80-416d-aaa4-cf98f491dd0d")
+			(uuid "1a64f1b2-f7c9-497a-bca8-918539138c07")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1762,7 +1762,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" "C431535"
+		(property "JLCPCB Part #" "C431536"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -2144,22 +2144,6 @@
 		)
 	)
 	(segment
-		(start 30.5 35)
-		(end 30.5 26.06)
-		(width 0.127)
-		(layer "F.Cu")
-		(net 1)
-		(uuid "0fbd7e10-a338-4db4-bb39-e5c91fa6c455")
-	)
-	(segment
-		(start 30 35.5)
-		(end 30.5 35)
-		(width 0.127)
-		(layer "F.Cu")
-		(net 1)
-		(uuid "10d2f9d6-5d2f-4983-99d9-55ce0994f1b1")
-	)
-	(segment
 		(start 31.03 25.53)
 		(end 37.525 25.53)
 		(width 0.127)
@@ -2176,12 +2160,20 @@
 		(uuid "3cfaceb7-5439-435b-b539-c8f0c3ebfda9")
 	)
 	(segment
-		(start 30.5 26.06)
-		(end 31.03 25.53)
+		(start 28.7 35.2)
+		(end 29 35.5)
 		(width 0.127)
 		(layer "F.Cu")
 		(net 1)
-		(uuid "55d7ddfa-98ce-4c88-9ada-8e01fc37e9d9")
+		(uuid "4278bbba-2f11-404e-8ab1-4b6666bdbe6d")
+	)
+	(segment
+		(start 29 35.5)
+		(end 30 35.5)
+		(width 0.127)
+		(layer "F.Cu")
+		(net 1)
+		(uuid "5d2e7ed7-64b1-4478-a1bb-514255b6c251")
 	)
 	(segment
 		(start 18.5 22.75)
@@ -2190,6 +2182,22 @@
 		(layer "F.Cu")
 		(net 1)
 		(uuid "638c1fa3-c82c-4565-b888-d6cbbe0639fb")
+	)
+	(segment
+		(start 30.5 26.06)
+		(end 31.03 25.53)
+		(width 0.127)
+		(layer "F.Cu")
+		(net 1)
+		(uuid "83c1fb9b-5770-4034-9278-06ddc8edf674")
+	)
+	(segment
+		(start 30.5 35)
+		(end 30.5 26.06)
+		(width 0.127)
+		(layer "F.Cu")
+		(net 1)
+		(uuid "9e57b0bd-4eff-4e98-8b16-1480ad4f7422")
 	)
 	(segment
 		(start 18.4855 17.2645)
@@ -2208,14 +2216,6 @@
 		(uuid "bdb55e26-e5c8-4684-8e66-f022ab904f4d")
 	)
 	(segment
-		(start 28.7 33.25)
-		(end 28.7 35.2)
-		(width 0.127)
-		(layer "F.Cu")
-		(net 1)
-		(uuid "c1439d29-1d28-41e1-aa7b-6d95b5e014e5")
-	)
-	(segment
 		(start 29.5 24)
 		(end 31.03 25.53)
 		(width 0.127)
@@ -2224,20 +2224,20 @@
 		(uuid "c7ea4921-1793-4181-81e1-f95c04ec4362")
 	)
 	(segment
-		(start 28.7 35.2)
-		(end 29 35.5)
+		(start 28.7 33.25)
+		(end 28.7 35.2)
 		(width 0.127)
 		(layer "F.Cu")
 		(net 1)
-		(uuid "d1d2f2a5-7181-4098-96d7-d0f2b85a5e6f")
+		(uuid "e1dc7a38-7277-480c-be44-6ec0539d2b28")
 	)
 	(segment
-		(start 29 35.5)
-		(end 30 35.5)
+		(start 30 35.5)
+		(end 30.5 35)
 		(width 0.127)
 		(layer "F.Cu")
 		(net 1)
-		(uuid "f9fa5ae5-3dcd-42f6-abfb-1245f4d19198")
+		(uuid "efac8912-8e7c-49c5-b5ea-5619d7424547")
 	)
 	(segment
 		(start 18.5 24)
@@ -2253,7 +2253,7 @@
 		(width 0.127)
 		(layer "F.Cu")
 		(net 2)
-		(uuid "3e6d630b-cfc3-4f3f-9acc-e682f197fc37")
+		(uuid "351c95a2-16dd-487a-948a-e11533c5339d")
 	)
 	(segment
 		(start 27.5 24.5635)
@@ -2261,7 +2261,7 @@
 		(width 0.127)
 		(layer "F.Cu")
 		(net 2)
-		(uuid "8a3380bf-ae8f-4cca-bb9e-89056ddcdc47")
+		(uuid "442837dc-811e-44f5-9c6f-e097b2e4df4e")
 	)
 	(segment
 		(start 35 20.5)
