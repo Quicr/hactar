@@ -558,7 +558,7 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Connector_Generic:Conn_01x04"
+		(symbol "Connector_Generic:Conn_01x05"
 			(pin_names
 				(offset 1.016)
 				(hide yes)
@@ -567,14 +567,14 @@
 			(in_bom yes)
 			(on_board yes)
 			(property "Reference" "J"
-				(at 0 5.08 0)
+				(at 0 7.62 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
 			)
-			(property "Value" "Conn_01x04"
+			(property "Value" "Conn_01x05"
 				(at 0 -7.62 0)
 				(effects
 					(font
@@ -600,7 +600,7 @@
 					(hide yes)
 				)
 			)
-			(property "Description" "Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(property "Description" "Generic connector, single row, 01x05, script generated (kicad-library-utils/schlib/autogen/connector/)"
 				(at 0 0 0)
 				(effects
 					(font
@@ -627,9 +627,9 @@
 					(hide yes)
 				)
 			)
-			(symbol "Conn_01x04_1_1"
+			(symbol "Conn_01x05_1_1"
 				(rectangle
-					(start -1.27 3.81)
+					(start -1.27 6.35)
 					(end 1.27 -6.35)
 					(stroke
 						(width 0.254)
@@ -637,6 +637,17 @@
 					)
 					(fill
 						(type background)
+					)
+				)
+				(rectangle
+					(start -1.27 5.207)
+					(end 0 4.953)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
 					)
 				)
 				(rectangle
@@ -684,7 +695,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 2.54 0)
+					(at -5.08 5.08 0)
 					(length 3.81)
 					(name "Pin_1"
 						(effects
@@ -702,7 +713,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 0 0)
+					(at -5.08 2.54 0)
 					(length 3.81)
 					(name "Pin_2"
 						(effects
@@ -720,7 +731,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 -2.54 0)
+					(at -5.08 0 0)
 					(length 3.81)
 					(name "Pin_3"
 						(effects
@@ -738,7 +749,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 -5.08 0)
+					(at -5.08 -2.54 0)
 					(length 3.81)
 					(name "Pin_4"
 						(effects
@@ -748,6 +759,24 @@
 						)
 					)
 					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 -5.08 0)
+					(length 3.81)
+					(name "Pin_5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -881,6 +910,176 @@
 					(at 0 -2.54 90)
 					(length 2.032)
 					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "Device:D_Small"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0.254)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "D"
+				(at -1.27 2.032 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Value" "D_Small"
+				(at -3.81 -2.032 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 90)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 90)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Diode, small symbol"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Sim.Device" "D"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Sim.Pins" "1=K 2=A"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "diode"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "TO-???* *_Diode_* *SingleDiode* D_*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "D_Small_0_1"
+				(polyline
+					(pts
+						(xy -0.762 0) (xy 0.762 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -0.762 -1.016) (xy -0.762 1.016)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0.762 -1.016) (xy -0.762 0) (xy 0.762 1.016) (xy 0.762 -1.016)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "D_Small_1_1"
+				(pin passive line
+					(at -2.54 0 0)
+					(length 1.778)
+					(name "K"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 2.54 0 180)
+					(length 1.778)
+					(name "A"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1594,6 +1793,16 @@
 		)
 		(uuid "908406ca-6610-406a-a4fc-a6eba9d56f2b")
 	)
+	(text "D_GND"
+		(exclude_from_sim no)
+		(at 110.998 88.646 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "d0f24d87-bb1f-4e56-8f02-4712cc415453")
+	)
 	(text "Adapter"
 		(exclude_from_sim no)
 		(at 22.098 59.436 0)
@@ -1635,6 +1844,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "047c9418-2cc8-42eb-8cc4-98e1648a9256")
+	)
+	(junction
+		(at 86.36 83.82)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "513ed87e-005b-4340-8e5b-ec2fff88912b")
 	)
 	(junction
 		(at 63.5 46.99)
@@ -1682,7 +1897,7 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 81.28) (xy 73.66 81.28)
+			(xy 68.58 81.28) (xy 95.25 81.28)
 		)
 		(stroke
 			(width 0)
@@ -1732,6 +1947,16 @@
 	)
 	(wire
 		(pts
+			(xy 86.36 83.82) (xy 95.25 83.82)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1603f26e-59d3-4c37-bf18-f0351f786986")
+	)
+	(wire
+		(pts
 			(xy 63.5 43.18) (xy 63.5 46.99)
 		)
 		(stroke
@@ -1742,7 +1967,7 @@
 	)
 	(wire
 		(pts
-			(xy 66.04 78.74) (xy 73.66 78.74)
+			(xy 66.04 78.74) (xy 95.25 78.74)
 		)
 		(stroke
 			(width 0)
@@ -1762,6 +1987,26 @@
 	)
 	(wire
 		(pts
+			(xy 93.98 91.44) (xy 93.98 86.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "271e8493-3c2a-4890-87e5-fcd38a729000")
+	)
+	(wire
+		(pts
+			(xy 87.63 91.44) (xy 86.36 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2c7024b4-3e0a-4760-a0c0-773a6a4f3df1")
+	)
+	(wire
+		(pts
 			(xy 73.66 34.29) (xy 63.5 34.29)
 		)
 		(stroke
@@ -1772,7 +2017,17 @@
 	)
 	(wire
 		(pts
-			(xy 66.04 76.2) (xy 73.66 76.2)
+			(xy 93.98 86.36) (xy 95.25 86.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "38f7856c-de25-43bb-8362-ed766224e4cd")
+	)
+	(wire
+		(pts
+			(xy 66.04 76.2) (xy 95.25 76.2)
 		)
 		(stroke
 			(width 0)
@@ -1789,6 +2044,26 @@
 			(type default)
 		)
 		(uuid "4319b854-a74c-464a-82b3-6f4a2dc725ba")
+	)
+	(wire
+		(pts
+			(xy 85.09 83.82) (xy 86.36 83.82)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "48555735-1ae8-422f-ac94-c55964d6ca0c")
+	)
+	(wire
+		(pts
+			(xy 93.98 91.44) (xy 92.71 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4b52fe45-b2de-4cca-8d88-34192707d338")
 	)
 	(wire
 		(pts
@@ -1852,6 +2127,16 @@
 	)
 	(wire
 		(pts
+			(xy 86.36 85.09) (xy 86.36 83.82)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "78948b0b-9b44-43ab-b84d-488f8bd1b6c6")
+	)
+	(wire
+		(pts
 			(xy 63.5 31.75) (xy 63.5 34.29)
 		)
 		(stroke
@@ -1862,7 +2147,7 @@
 	)
 	(wire
 		(pts
-			(xy 73.66 83.82) (xy 72.39 83.82)
+			(xy 72.39 83.82) (xy 73.66 83.82)
 		)
 		(stroke
 			(width 0)
@@ -2012,6 +2297,16 @@
 	)
 	(wire
 		(pts
+			(xy 80.01 83.82) (xy 78.74 83.82)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c52f4739-d5a3-4ca9-a2e2-c52a6f95088c")
+	)
+	(wire
+		(pts
 			(xy 72.39 83.82) (xy 72.39 88.9)
 		)
 		(stroke
@@ -2052,6 +2347,16 @@
 	)
 	(wire
 		(pts
+			(xy 86.36 91.44) (xy 86.36 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ea3c32db-6f64-4400-9a11-6ed954bcd5ee")
+	)
+	(wire
+		(pts
 			(xy 73.66 45.72) (xy 73.66 46.99)
 		)
 		(stroke
@@ -2069,6 +2374,84 @@
 			(type default)
 		)
 		(uuid "fcafa16e-91f3-4ab2-84e2-37a28945cc2b")
+	)
+	(symbol
+		(lib_id "Device:R_Small_US")
+		(at 90.17 91.44 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "2486c8d9-b1a7-4bf2-ac1e-3808d2b66054")
+		(property "Reference" "R4"
+			(at 91.44 92.964 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10k"
+			(at 90.678 94.742 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 90.17 91.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 90.17 91.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small US symbol"
+			(at 90.17 91.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C25744"
+			(at 90.17 91.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "6842f00e-bce0-404e-8cf2-f99eaa8e270b")
+		)
+		(pin "2"
+			(uuid "5932063d-bed3-46c2-9652-f95bc6760bdc")
+		)
+		(instances
+			(project "jack_adapter"
+				(path "/871e475f-d89e-49cb-a593-7cb4e2486ef3"
+					(reference "R4")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C_Small")
@@ -2346,8 +2729,8 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector_Generic:Conn_01x04")
-		(at 78.74 78.74 0)
+		(lib_id "Connector_Generic:Conn_01x05")
+		(at 100.33 81.28 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -2356,7 +2739,7 @@
 		(fields_autoplaced yes)
 		(uuid "67e3f818-e9b0-4a09-bf5d-899fe6d7d1bb")
 		(property "Reference" "J4"
-			(at 81.28 78.7399 0)
+			(at 102.87 80.0099 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2364,8 +2747,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Conn_01x03"
-			(at 81.28 81.2799 0)
+		(property "Value" "Header"
+			(at 102.87 82.5499 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2373,8 +2756,8 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical"
-			(at 78.74 78.74 0)
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x05_P2.54mm_Vertical"
+			(at 100.33 81.28 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2383,7 +2766,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 78.74 78.74 0)
+			(at 100.33 81.28 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2391,8 +2774,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 78.74 78.74 0)
+		(property "Description" "Generic connector, single row, 01x05, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 100.33 81.28 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2401,7 +2784,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C2718488"
-			(at 78.74 78.74 0)
+			(at 100.33 81.28 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2420,6 +2803,9 @@
 		)
 		(pin "4"
 			(uuid "8e4148fe-4baa-4a2c-887b-c85f959339f4")
+		)
+		(pin "5"
+			(uuid "095565d9-c729-4a6e-83b5-700a60b799fd")
 		)
 		(instances
 			(project "jack_adapter"
@@ -2644,6 +3030,239 @@
 			(project "jack_adapter"
 				(path "/871e475f-d89e-49cb-a593-7cb4e2486ef3"
 					(reference "R1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:D_Small")
+		(at 76.2 83.82 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "9022e137-6904-4878-9c48-2c191a1e47f4")
+		(property "Reference" "D1"
+			(at 73.406 82.804 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "1N4148WT"
+			(at 69.596 85.344 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "Diode_SMD:D_SOD-523"
+			(at 76.2 83.82 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 76.2 83.82 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Diode, small symbol"
+			(at 76.2 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C7420320"
+			(at 76.2 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7581f920-7fa1-44d4-9f7d-41ca3a42c482")
+		)
+		(pin "2"
+			(uuid "b3d06884-cce3-4d90-85a3-b381d3de2376")
+		)
+		(instances
+			(project ""
+				(path "/871e475f-d89e-49cb-a593-7cb4e2486ef3"
+					(reference "D1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small_US")
+		(at 82.55 83.82 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "b95e13ea-5a61-40f1-a1ee-34ff3f92417b")
+		(property "Reference" "R2"
+			(at 78.232 82.804 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "50k"
+			(at 84.074 82.804 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 82.55 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 82.55 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small US symbol"
+			(at 82.55 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C25794"
+			(at 82.55 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "20f25515-3f88-4117-8c2f-af7842937033")
+		)
+		(pin "2"
+			(uuid "f2f7f176-abdf-4688-ad53-3ebc0c750560")
+		)
+		(instances
+			(project "jack_adapter"
+				(path "/871e475f-d89e-49cb-a593-7cb4e2486ef3"
+					(reference "R2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small_US")
+		(at 86.36 87.63 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c22e2bce-3302-45ae-9705-41bbccbe92a2")
+		(property "Reference" "R3"
+			(at 82.042 88.138 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100k"
+			(at 80.264 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 86.36 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 86.36 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, small US symbol"
+			(at 86.36 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C25741"
+			(at 86.36 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "8ac3ec36-1ffa-4081-920b-e78d41471abc")
+		)
+		(pin "2"
+			(uuid "d41aa575-4f03-4688-a94f-3d1a23950678")
+		)
+		(instances
+			(project "jack_adapter"
+				(path "/871e475f-d89e-49cb-a593-7cb4e2486ef3"
+					(reference "R3")
 					(unit 1)
 				)
 			)
