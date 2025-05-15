@@ -2402,7 +2402,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric"
 			(at 90.17 91.44 0)
 			(effects
 				(font
@@ -2429,7 +2429,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C25744"
+		(property "JLCPCB Part #" "C17414"
 			(at 90.17 91.44 0)
 			(effects
 				(font
@@ -2783,7 +2783,16 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C2718488"
+		(property "JLCPCB Part #" "C5116488"
+			(at 100.33 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "FT Rotation Offset" "90"
 			(at 100.33 81.28 0)
 			(effects
 				(font
@@ -2948,6 +2957,15 @@
 				(hide yes)
 			)
 		)
+		(property "FT Rotation Offset" "90"
+			(at 49.53 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "T"
 			(uuid "1a80012a-355f-4c3b-847e-718b3ed8bfa4")
 		)
@@ -3097,6 +3115,15 @@
 				(hide yes)
 			)
 		)
+		(property "FT Rotation Offset" "180"
+			(at 76.2 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "7581f920-7fa1-44d4-9f7d-41ca3a42c482")
 		)
@@ -3130,7 +3157,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "50k"
+		(property "Value" "51k"
 			(at 84.074 82.804 90)
 			(effects
 				(font
@@ -3139,7 +3166,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric"
 			(at 82.55 83.82 0)
 			(effects
 				(font
@@ -3166,7 +3193,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C25794"
+		(property "JLCPCB Part #" "C17737"
 			(at 82.55 83.82 0)
 			(effects
 				(font
@@ -3217,7 +3244,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric"
 			(at 86.36 87.63 0)
 			(effects
 				(font
@@ -3244,7 +3271,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C25741"
+		(property "JLCPCB Part #" "C149504"
 			(at 86.36 87.63 0)
 			(effects
 				(font
@@ -3322,6 +3349,24 @@
 			)
 		)
 		(property "JLCPCB Part #" "C431535"
+			(at 46.99 69.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "FT Rotation Offset" "90"
+			(at 46.99 69.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "FT Position Offset" "0.889,0"
 			(at 46.99 69.85 0)
 			(effects
 				(font
