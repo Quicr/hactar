@@ -3321,7 +3321,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_Audio:Jack_3.5mm_PJ320D_Horizontal"
+		(property "Footprint" "hactar_lib:Jack_3.5mm_PJ320D_Horizontal"
 			(at 46.99 69.85 0)
 			(effects
 				(font
@@ -3366,7 +3366,7 @@
 				(hide yes)
 			)
 		)
-		(property "FT Position Offset" "0.889,0"
+		(property "FT Position Offset" "1.016,0"
 			(at 46.99 69.85 0)
 			(effects
 				(font
