@@ -10,14 +10,12 @@ Hardware design for test device
     2. [User Interface](#ui)
     3. [Network](#network)
     4. [Security](#security_layer)
+    5. [STM32 Toolchain](#stm_installation)
+    6. [ESP32 Toolchain](#esp_installation)
 4. [Tools](#tools)
     1. [Python Flasher](#py_flasher)
     2. [Python Serial Monitor](#serial_monitor)
-5. [STM32 Toolchain](#stm_installation)
-6. [ESP32 Toolchain](#esp_installation)
-7. [Hactar Setup](#hactar_setup)
-8. [Additional Notes](#additional_notes)
-8. [Quick start](#quick_start)
+5. [Hactar Setup](#hactar_setup)
 
 
 <h2 id="where">Where To Find Things</h2>
@@ -60,7 +58,7 @@ The management chip is responsible for uploading firmware to the stm32 - main ch
 
 The management chip receives commands from the usb communication that informs it what chip we are currently uploading. As well as debugging. It is able to receive log messages from the ui and net chips and push them out to the usb interface.
 
-#### <h4 id="managment_flashing">Flashing</h4>
+#### <h4 id="management_flashing">Flashing</h4>
 On the first flash you'll need to figure out what device port your hactar is on. You can do this in several ways depending on which operating system you are on. Start by viewing your devices, and then plug in your hactar, and then view your devices again and see what was added to your device list.
 
 
@@ -205,45 +203,6 @@ We are leveraging the **esp-idf** framework.
 <b>Source code</b>
 
 All source code for the network chip can be found in `firmware/net`, `firmware/shared`, and `firmware/shared_inc`.
-
-## <h2 id="tools">Tools</h2>
-
-### <h3 id="py_flasher"><b>Python Flasher</b></h3>
-A firmware flashing tool designed to work with Hactar by collating STM32 and
-ESP32 flashing specifications.
-
-#### Requirements
-
-- pyserial - ```pip install pyserial```
-
-<h4>How to use</h4>
-Generally the flasher is used automatically in the Makefile. However, you can flash whatever binary you want onto a chip that the flasher is designed for by running it as python script in the firmware/flasher folder.
-
-ex.
-
-```sh
-python3 flasher.py --port=/dev/ttyUSB0 --baud=115200 --chip="<chip>" -bin="./build/app.bin"
-```
-
-You can omit passing a port and the flasher will attempt to find a Hactar board by searching your active usb serial ports.
-
-```sh
-python3 flasher.py --baud=115200 --chip="ui" -bin="./build/ui.bin"
-```
-
-### <h3 id="serial_monitor"><b>Python Serial Monitor</b></h3>
-
-The serial monitor is a very simple serial monitor that allows a user to send commands to the mgmt chip as well as read serial logs. Located in firmware/tools
-
-Requirements
-- pyserial - ```pip install pyserial```
-
-This monitor can be used by the following command:
-`python monitor.py \[port] \[baudrate]`
-
-ex.
-
-`python monitor.py /dev/ttyUSB0 115200`
 
 ## <h2 id="stm_installation">Installation - STM32 Toolchain</h2>
 
@@ -495,8 +454,46 @@ brew install make
 - At any point if you're including or using any additional STM32 HAL library files such as `stm32f4xx_hal_sd.h` then you must add the respective source file `stm32f4xx_hal_sd.c` to C sources in the appropriate makefile.
 - New Assembly source files need to be added to the ASM sources line in the approriate makefile.
 
+## <h2 id="tools">Tools</h2>
 
-<h2 id="hactar_setup">Hactar Setup</h2>
+### <h3 id="py_flasher"><b>Python Flasher</b></h3>
+A firmware flashing tool designed to work with Hactar by collating STM32 and
+ESP32 flashing specifications.
+
+#### Requirements
+
+- pyserial - ```pip install pyserial```
+
+<h4>How to use</h4>
+Generally the flasher is used automatically in the Makefile. However, you can flash whatever binary you want onto a chip that the flasher is designed for by running it as python script in the firmware/flasher folder.
+
+ex.
+
+```sh
+python3 flasher.py --port=/dev/ttyUSB0 --baud=115200 --chip="<chip>" -bin="./build/app.bin"
+```
+
+You can omit passing a port and the flasher will attempt to find a Hactar board by searching your active usb serial ports.
+
+```sh
+python3 flasher.py --baud=115200 --chip="ui" -bin="./build/ui.bin"
+```
+
+### <h3 id="serial_monitor"><b>Python Serial Monitor</b></h3>
+
+The serial monitor is a very simple serial monitor that allows a user to send commands to the mgmt chip as well as read serial logs. Located in firmware/tools
+
+Requirements
+- pyserial - ```pip install pyserial```
+
+This monitor can be used by the following command:
+`python monitor.py \[port] \[baudrate]`
+
+ex.
+
+`python monitor.py /dev/ttyUSB0 115200`
+
+### <h2 id="hactar_setup">Hactar Setup</h2>
 <i>Display connector</i>
 
 - Required hardware
@@ -517,12 +514,12 @@ brew install make
 - Prerequisites
     - USB-C Cable
     - Python3
-        - PySerial
+        - PySerial - download using `pip3 install pyserial`
     - arm-none-eabi-g++
     - make
 - Build the mgmt code by navigating to `hactar/firmware/mgmt` and entering `make compile`
 - Plug in a USB-C
-- Press and hold the BOOT button Press and release the RESET button. Release the BOOT button.
+- Press and hold the BOOT button, press and release the RESET button, finally release the BOOT button.
 - Upload the mgmt code by entering `make upload`
 - After this you should see a couple of LED's light up
 
@@ -532,12 +529,12 @@ brew install make
     - A programmed `management chip`
     - USB-C Cable
     - Python3
-        - PySerial
+        - PySerial - download using `pip3 install pyserial`
     - arm-none-eabi-g++
     - make
 - Plug in the USB-C cable to the Hactar board.
 - Build the ui code by navigating to the `hactar/firmware/ui` folder and entering `make compile`
-- Upload the ui code by entering `make upload`
+- Upload the ui code by entering `make upload_py`
     - The python script "flasher.py" is called to upload to the main chip.
     - NOTE - For some reason the Main STM32 chip doesn't like being put into bootloader mode this way. Fixing it is a WIP. You just need to keep trying... sorry.
 - After finishing uploading the firmware to the main chip, the management chip will return to running mode.
@@ -551,7 +548,7 @@ brew install make
     - make
 - Plug in the USB-C cable to the Hactar board.
 - Build the net code by navigating to the `hactar/firmware/net` folder and entering `make compile`
-- Upload the net code by entering `make upload`
+- Upload the net code by entering `make upload_py`
     - The python script "flasher.py" is called to upload to the net chip
     - NOTE - The size is quite large, takes about 4 minutes to upload.
 - After finishing uploading the firmware to the net chip, the management chip will return to running mode.
