@@ -110,6 +110,7 @@ public:
     static constexpr uint32_t Max_Characters = 48;
     static constexpr uint16_t Top_Fixed_Area = 20;
     static constexpr uint16_t Bottom_Fixed_Area = 20;
+    static constexpr uint16_t User_Text_Height_Offset = HEIGHT - Bottom_Fixed_Area;
     static constexpr uint16_t Scroll_Area_Height = HEIGHT - (Top_Fixed_Area + Bottom_Fixed_Area);
     static constexpr uint16_t Scroll_Area_Top = Top_Fixed_Area;
     static constexpr uint16_t Scroll_Area_Bottom = HEIGHT - Bottom_Fixed_Area;
@@ -216,6 +217,11 @@ public:
 
     void AppendUserText(const char* text, const uint32_t len);
     void AppendUserText(const char ch);
+
+    void BackspaceUserText();
+    void ClearUserText();
+
+    const char* GetUserText() const noexcept;
 
 private:
     inline void WaitForSPIComplete();
@@ -349,6 +355,7 @@ private:
 
     // Window: 308-320px
     char usr_buffer[Max_Characters];
+    char usr_buffer_idx;
 };
 
 // 44226 bytes approximately.

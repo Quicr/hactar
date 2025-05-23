@@ -39,7 +39,8 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     texts_in_use(0),
     scroll_offset(0),
     text_buffer{0},
-    usr_buffer{0}
+    usr_buffer{0},
+    usr_buffer_idx(0)
 {
 }
 
@@ -605,6 +606,41 @@ void Screen::CommitText(const char* text, const uint32_t len)
 {
     AppendText(text, len);
     CommitText();
+}
+
+void Screen::AppendUserText(const char* text, const uint32_t len)
+{
+    if (usr_buffer_idx >= Max_Characters)
+    {
+        return;
+    }
+
+    const uint32_t num_char =
+        len < Max_Characters - usr_buffer_idx ? len : Max_Characters - usr_buffer_idx;
+    for (uint32_t i = 0; i < num_char; ++i)
+    {
+        usr_buffer[usr_buffer_idx + i] = text[i];
+    }
+
+    // TODO this will always draw over the previous text.
+    DrawString(0, User_Text_Height_Offset, usr_buffer + usr_buffer_idx, usr_buffer_idx + num_char,
+               font7x12, Colour::White, Colour::Black);
+
+    usr_buffer_idx += num_char;
+}
+
+void Screen::AppendUserText(const char ch)
+{
+    if (usr_buffer_idx >= Max_Characters)
+    {
+        return;
+    }
+
+    usr_buffer[usr_buffer_idx + 1] = ch;
+
+    // TODO this will always draw over the previous text.
+    DrawString(0, User_Text_Height_Offset, usr_buffer + usr_buffer_idx, usr_buffer_idx + num_char,
+               font7x12, Colour::White, Colour::Black);
 }
 
 // Private functions

@@ -3,6 +3,7 @@
 #include "ring_buffer.hh"
 #include "stm32.h"
 
+// TODO constexpr
 #define Q10_COLS 5
 #define Q10_ROWS 7
 

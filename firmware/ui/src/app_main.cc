@@ -8,6 +8,7 @@
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
+#include "tools.hh"
 #include "ui_net_link.hh"
 
 #ifdef CRYPTO
@@ -189,7 +190,6 @@ constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1;
 uint32_t flags = Expected_Flags;
 
 uint32_t est_time_ms = 0;
-uint32_t num_loops = 0;
 uint32_t ticks_ms = 0;
 uint32_t num_audio_req_packets = 0;
 
@@ -254,31 +254,33 @@ int app_main()
     LEDS(HIGH, HIGH, HIGH);
 
     uint32_t redraw = uwTick;
-    Colour next = Colour::Green;
-    Colour curr = Colour::Blue;
-    const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
 
     uint32_t blinky = 0;
     uint32_t next_print = 0;
 
-    uint32_t count_loops_timeout = HAL_GetTick() + 1000;
-    bool done_counting_loops = false;
+    // A test I run every start up in case the audio chip settings change
+    // and something is suspicious
+    CountNumAudioInterrupts(audio_chip, sleeping);
 
+    // TODO remove
+    const uint32_t loading_done_timeout = HAL_GetTick();
+    bool done_booting = false;
+
+    UI_LOG_INFO("Starting main loop");
     while (1)
     {
-        if (HAL_GetTick() >= count_loops_timeout && !done_counting_loops)
-        {
-            UI_LOG_ERROR("num_loops %d", num_loops);
-            done_counting_loops = true;
-        }
-
         // if (HAL_GetTick() > blinky)
         // {
         //     HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
         //     blinky = HAL_GetTick() + 2000;
         // }
 
-        num_loops++;
+        if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
+        {
+            renderer.ChangeView(Renderer::View::MainMenu);
+            done_booting = true;
+        }
+
         if (HAL_GetTick() > next_print)
         {
             // UI_LOG_ERROR("rx %lu, tx %lu", num_packets_rx, num_packets_tx);
@@ -441,9 +443,16 @@ void HandleRecvLinkPackets()
         link_packet->length = payload.size() + 1;
 #endif
 
+        UI_LOG_INFO("Got a packet, type %d, first byte %d", (int)link_packet->type,
+                    (int)link_packet->payload[0]);
         ++num_packets_rx;
         switch ((ui_net_link::Packet_Type)link_packet->type)
         {
+        case ui_net_link::Packet_Type::PowerOnReady:
+        {
+            // Stop loading screen?
+            break;
+        }
         case ui_net_link::Packet_Type::TalkStart:
         case ui_net_link::Packet_Type::TalkStop:
         case ui_net_link::Packet_Type::GetAudioLinkPacket:
@@ -476,6 +485,8 @@ void HandleRecvLinkPackets()
         }
         case ui_net_link::Packet_Type::WifiStatus:
         {
+            UI_LOG_INFO("got a wifi packet, status %d", (int)link_packet->payload[0]);
+
             break;
         }
         default:
