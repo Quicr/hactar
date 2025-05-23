@@ -10,13 +10,12 @@ Hardware design for test device
     2. [User Interface](#ui)
     3. [Network](#network)
     4. [Security](#security_layer)
+    5. [STM32 Toolchain](#stm_installation)
+    6. [ESP32 Toolchain](#esp_installation)
 4. [Tools](#tools)
-    1. [Echo Server](#echo_server)
+    1. [Python Flasher](#py_flasher)
     2. [Python Serial Monitor](#serial_monitor)
-5. [STM32 Toolchain](#stm_installation)
-6. [ESP32 Toolchain](#esp_installation)
-7. [Hactar Setup](#hactar_setup)
-8. [Fully Assembled Hactar Setup - cliff notes](#hactar_upload)
+5. [Hactar Setup](#hactar_setup)
 
 
 <h2 id="where">Where To Find Things</h2>
@@ -36,38 +35,99 @@ Hardware design for test device
 - productions - files used for manufacturing that are generated from the
 stuff in hardware
 
-<h2 id="hardware">Hardware</h2>
+## <h2 id="hardware">Hardware</h2>
 
-<h3 id="hw_technologies">Technologies</h3>
+### <h3 id="technologies">Technologies</h3>
 
-- KiCAD
+- [KiCAD9](https://www.kicad.org/)
+- [FreeCAD](https://www.freecad.org/)
+- [arm-none-eabi](https://developer.arm.com/downloads/-/gnu-rm)
+- [ESP-IDF](https://idf.espressif.com/)
+- [STM32 CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html)
 
 <h2 id="firmware">Firmware</h2>
 
-The Firmware is split into 4 categories. Management, User Interface, Security, and Network.
+The Firmware is split into 3 categories. Management, User Interface, and Network.
 - Management - STM32F072
 - User Interface - STM32F405
 - Network - ESP32S3
 
-<h3 id="management"><b>Management</b></h3>
+### <h3 id="management"><b>Management</b></h3>
 
 The management chip is responsible for uploading firmware to the stm32 - main chip and the esp32 network chip using a ch340 usb chip.
 
-The management chip receives commands from the usb communication that informs it what chip we are currently uploading.
+The management chip receives commands from the usb communication that informs it what chip we are currently uploading. As well as debugging. It is able to receive log messages from the ui and net chips and push them out to the usb interface.
 
-<h4 id="management_commands">Commands</h4>
+#### <h4 id="management_flashing">Flashing</h4>
+On the first flash you'll need to figure out what device port your hactar is on. You can do this in several ways depending on which operating system you are on. Start by viewing your devices, and then plug in your hactar, and then view your devices again and see what was added to your device list.
+
+
+<h5>To view your device list:</h5>
+
+- <h5>Linux/MacOS</h5>
+
+    `ls /dev/ttyUSB*`
+
+- <h5>Windows</h5>
+
+    `Open printers and devices`
+
+    `Find serial com ports`
+
+To flash the management chip you'll need to press the boot and reset buttons on the board in the following manner:
+
+<i id="button_press_order">Button press order</i>
+- Press and hold boot button (left).
+- Press and release reset button (right).
+- Release boot button.
+
+<i>First flash</i>
+
+- In hactar/firmware/mgmt, enter make upload PORT=\<path/to/device\>
+
+##### <h5>After flashing:</h5>
+
+After flashing the management chip you can run `make upload` without specifying the port, and it will be automatically found by the flasher and an attempt to upload will occur, when you see the attempt return to [Button press order](#button_press_order)
+
+#### <h4 id="management_commands">Commands</h4>
 
 - **reset** - Resets `ui` chip and then `net` chip. Accepts commands.
 - **ui_upload** - Puts the management chip into `ui` chip upload mode. (STM32f05)
 - **net_upload** - Puts the management chip into `net` chip upload mode. (ESP32S3)
-- **debug** - Puts the management chip into debugging mode where serial messages from both `ui` and network chips are transmitted back to the usb interface. This is uni-directional from the management chip to the computer. However, all commands work during this mode. In the future sending messages to the `ui` and `net` chip will be supported
-- **debug_ui** (future feature) - Only reads serial messages from the `ui` chip.
-- **debug_net** (future feature) - Only reads serial messages from the `net` chip.
-- **debug_ui_only** (future feature) - Puts the `ui` chip into normal mode, holds the `net` chip in reset mode, and allows for serial communication to the `ui` chip.
-- **debug_net_only** (future feature) - Puts the `net` chip into normal mode, holds the `ui` chip in reset mode, and allows for serial communication to the `net` chip.
+- **debug** - Puts the management chip into debugging mode where serial messages from both `ui` and network chips are transmitted back to the usb interface. This is uni-directional from the management chip to the computer. However, all commands work during this mode.
+- **debug_ui** - Only reads serial messages from the `ui` chip.
+- **debug_net** - Only reads serial messages from the `net` chip.
 
+<h4>Target Overview</h4>
 
-<h3 id="ui"><b>User Interface</b></h3>
+- `all` - Builds the target bin, elf, and binary files
+
+- `compile` - Builds the target bin, elf, and binary. Output firmware/build/mgmt
+
+- `upload` - Uploads the build target to the Management chip using the our custom flasher tool with serial usb-c uploading. See [Python Flasher](#py_flasher)
+
+- `upload-stflash` - Uploads the build target to the Management chip using the st-flash tools. Please see
+[st-flash installation](#stflash_installation) for instructions on installing.
+
+- `upload_cube_serial` - Uploads the build target to the Management chip using the STM32_Programmer_CLI with serial usb-c uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
+
+- `upload_cube_swd` - Uploads the build target to the Management chip using the STM32_Programmer_CLI with st-link using SWD uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
+
+- `docker` - Uses docker to compile, flash, and monitor the mgmt chip. By default it will compile the code. To change the functionality, pass a target of the Makefile into the parameter `mft` when being invoked.
+    - Ex. `make docker mft=upload`
+    - Ex. `make docker mft=monitor`
+
+- `docker-clean` - Removes dockere image that was generated when running docker target.
+
+- `clean` - Deletes the firmware/build/ui directory.
+
+- `info` - Displays the build path, include files, object files, dependencies and vpaths used by the compiler.
+
+<b>Source code</b>
+
+All source code for the Management Chip can be found in firmware/mgmt. Adding C/C++ files in firmware/mgmt/src and firmware/mgmt/inc **does** require any changes in the makefile.
+
+### <h3 id="ui"><b>User Interface</b></h3>
 
 The User Interface chip is where most of the processing takes place. It utilizes a STM32F405 chip empowered by the STM HAL Library. To generate the baseline HAL Library code and Makefile, ST's CubeMX was used.
 
@@ -77,37 +137,40 @@ The User Interface chip is where most of the processing takes place. It utilizes
 
 - `compile` - Builds the target bin, elf, and binary. Output firmware/build/ui
 
-- `upload` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI with serial usb-c uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
+- `upload` - Uploads the build target to the User Interface chip using the st-flash tools. Please see
+[st-flash installation](#stflash_installation) for instructions on installing.
 
-- `upload_swd` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI with swd uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
+- `upload_py` - Uploads the build target to the User Interface chip using the our custom flasher tool with serial usb-c uploading. See [Python Flasher](#py_flasher)
 
-- `program` - Runs the compile target, then the upload target.
+- `upload_cube_serial` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI with serial usb-c uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
 
-- `monitor` - Opens a serial communication line with the management chip in debug mode using screen.
+- `upload_cube_swd` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI with st-link using SWD uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
 
-- `py_monitor` - Opens a serial communication line with the management chip with a python script that allows for sending of commands.
+- `docker` - Uses docker to compile, flash, and monitor the ui chip. By default it will compile the code. To change the functionality, pass a target of the Makefile into the parameter `mft` when being invoked.
+    - Ex. `make docker mft=upload`
+    - Ex. `make docker mft=monitor`
+
+- `monitor` - Opens a serial communication line with the management chip with a python script that allows for sending of commands.
 
 - `openocd` - Opens a openocd debugging instance. See [Installation](#stm_installation) for instructions on installing openocd.
 
-- `info` - Displays the build path, include files, object files, dependencies and vpaths used by the compiler.
-
 - `dirs` - Makes all directories required for by the Makefile to compile and upload.
+
+- `docker-clean` - Removes dockere image that was generated when running docker target.
 
 - `clean` - Deletes the firmware/build/ui directory.
 
+- `info` - Displays the build path, include files, object files, dependencies and vpaths used by the compiler.
+
 <b>Source code</b>
 
-All source code for the User Interface can be found in firmware/ui and firmware/shared_inc. Adding C/C++ files in firmware/ui/src and firmware/ui/inc does not require any changes in the makefile.
+All source code for the User Interface can be found in firmware/ui, firmware/shared, and firmware/shared_inc. Adding C/C++ files in firmware/ui/src and firmware/ui/inc does not require any changes in the makefile.
 
 Making a shared header between chips should be added into firmware/shared_inc.
 
-At any point if you're including or using any additional STM32 HAL library files such as `stm32f4xx_hal_sd.h` then you must add the respective source file `stm32f4xx_hal_sd.c` to HAL C Sources line ~50 in firmware/ui/Makefile.
+### <h3 id="network"><b>Network</b></h3>
 
-Additionally, any new Assembly source files need to be added to the ASM sources line ~77 in firmware/ui/Makefile.
-
-<h3 id="network"><b>Network</b></h3>
-
-The network chip is responsible for all communications between servers and the entire board. The network chip communicates with the UI chip via UART serial communication.
+The network chip is a MOQ client using [quicr](https://github.com/Quicr/libquicr). The network chip communicates with the UI chip via UART serial communication.
 
 We are leveraging the **esp-idf** framework.
 
@@ -117,9 +180,15 @@ We are leveraging the **esp-idf** framework.
 
 - `compile` - Compiles the net code using the command `idf.py compile`
 
-- `upload` - Uploads the net code by first sending a command to the mgmt chip to put the board into **net upload** mode. Then uses `esptool.py upload`
+- `upload` - Uploads the net code using openocd
 
-- `program` - Runs the compile target, then the upload target.
+- `upload_py` - Uploads the build target to the Network chip using the our custom flasher tool with serial usb-c uploading. See [Python Flasher](#py_flasher)
+
+- `upload_esptool` - Uploads the network chip code by first sending a command to the mgmt chip to put the board into **net upload** mode. Then uses `esptool.py upload`
+
+- `docker` - Uses docker to compile, flash, and monitor the ui chip. By default it will compile the code. To change the functionality, pass a target of the Makefile into the parameter `mft` when being invoked.
+    - Ex. `make docker mft=upload`
+    - Ex. `make docker mft=monitor`
 
 - `monitor` - Opens a serial communication line with the management chip in debug mode using screen.
 
@@ -127,62 +196,21 @@ We are leveraging the **esp-idf** framework.
 
 - `clean` - Deletes the firmware/net/build directory.
 
+- `fullclean` - Invokes idf.py fullclean.
+
+- `docker-clean` - Removes dockere image that was generated when running docker target.
+
 <b>Source code</b>
 
-All source code for the network chip can be found in `firmware/net` and `firmware/shared_inc`.
+All source code for the network chip can be found in `firmware/net`, `firmware/shared`, and `firmware/shared_inc`.
 
-<h3 id="security"><b>Security</b></h3>
-
-WIP
-
-
-<h2 id="tools">Tools</h2>
-
-<h3 id="flasher"><b>Python Flasher</b></h3>
-A firmware flashing tool designed to work with Hactar by collating STM32 and
-ESP32 flashing specifications.
-
-<h4>Requirements</h4>
-
-- pyserial
-
-<h4>How to use</h4>
-Generally the flasher is used automatically in the Makefile. However, you can flash whatever binary you want onto a chip that the flasher is designed for by running it as python script in the firmware/flasher folder.
-
-ex.
-
-```sh
-python3 flasher.py --port=/dev/ttyUSB0 --baud=115200 --chip="generic_stm" -bin="./build/app.bin"
-```
-
-You can omit passing a port and the flasher will attempt to find a Hactar board by searching your active usb serial ports.
-
-```sh
-python3 flasher.py --baud=115200 --chip="ui" -bin="./build/ui.bin"
-```
-
-<h3 id="echo_server"><b>Echo Server</b></h3>
-Very basic server that echo's the message it receives.
-
-<h3 id="serial_monitor"><b>Python Serial Monitor</b></h3>
-
-Located in firmware/tools
-
-Requirements
-- pyserial - ```pip install pyserial```
-
-This monitor can be used by the following command:
-`python monitor.py \[port] \[baudrate]`
-
-ex.
-
-`python monitor.py /dev/ttyUSB0 115200`
-
-<h2 id="stm_installation">Installation - STM32 Toolchain</h2>
+## <h2 id="stm_installation">Installation - STM32 Toolchain</h2>
 
 The following tools are used for Management and User Interface.
-- [Make](ui_make) \[required]
-- [ARM GNU Toolchain](arm-gnu) \[required]
+- [Make](#ui_make) \[required]
+- [ARM GNU Toolchain](#arm-gnu) \[required]
+- [Python3](https://www.python.org/downloads/) \[optional]
+- [ST-Flash](#stflash) \[optional]
 - [STM32_Programmer_CLI](stm_prog_cli) \[optional]
 - [OpenOCD](openocd) \[optional]
 
@@ -200,7 +228,7 @@ sudo apt install make
 
 - Download make.exe from [Source Forge](https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81.exe/download?use_mirror=phoenixnap&download=)
 
-- Save it to C:/bin or where-ever you want it. Then add the location to the your path.
+- Save it to C:/bin or where ever you want it. Then add the location to the your path.
 
 - Open the start search, and type `env`. Select `"Edit the system environment variables"`
 
@@ -238,6 +266,25 @@ brew install --cask gcc-arm-embedded
 ```
 
 <br/>
+
+<b id="stflash">ST Flash</b>
+
+<i>Debian</i>
+
+```bash
+sudo apt install stlink-tools
+```
+
+<i>Windows</i>
+
+Download the and install the archive and put the binaries on your path.
+https://github.com/stlink-org/stlink/releases
+
+<i>MacOS</i>
+
+```bash
+brew install stm32flash
+```
 
 <b id="stm_prog_cli">STM32 Programmer CLI \[Optional]</b>
 
@@ -342,13 +389,13 @@ brew update
 ```brew
 brew install open-ocd --HEAD
 ```
-<h2 id="esp_installation">Installation - ESP32 Toolchain</h2>
+## <h2 id="esp_installation">Installation - ESP32 Toolchain</h2>
 
 This project leverages the usage of the Arduino Library for the network chip.
 
 The following tools are used for the Network.
-- [Make](net_make) \[required]
-- [esp-idf](esp_idf) \[required]
+- [Make](#net_make) \[required]
+- [esp-idf](#esp_idf) \[required]
 
 <b id="net_make">Make \[required]</b>
 
@@ -364,7 +411,7 @@ sudo apt install make
 
 - Download make.exe from [Source Forge](https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81.exe/download?use_mirror=phoenixnap&download=)
 
-- Save it to C:/bin or where-ever you want it. Then add the location to the your path.
+- Save it to OS bin directory or wherever you want it. Then add the location to the your path.
 
 - Open the start search, and type `env`. Select `"Edit the system environment variables"`
 
@@ -399,7 +446,54 @@ brew install make
 - https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html
 
 
-<h2 id="hactar_setup">Hactar Setup</h2>
+<h2 id="additional_notes">Additional Notes</h2>
+<i>Linux</i>
+
+- You will need to be in the dialout group
+- You will need to be in the docker group if you want to use the docker targets.
+- At any point if you're including or using any additional STM32 HAL library files such as `stm32f4xx_hal_sd.h` then you must add the respective source file `stm32f4xx_hal_sd.c` to C sources in the appropriate makefile.
+- New Assembly source files need to be added to the ASM sources line in the approriate makefile.
+
+## <h2 id="tools">Tools</h2>
+
+### <h3 id="py_flasher"><b>Python Flasher</b></h3>
+A firmware flashing tool designed to work with Hactar by collating STM32 and
+ESP32 flashing specifications.
+
+#### Requirements
+
+- pyserial - ```pip install pyserial```
+
+<h4>How to use</h4>
+Generally the flasher is used automatically in the Makefile. However, you can flash whatever binary you want onto a chip that the flasher is designed for by running it as python script in the firmware/flasher folder.
+
+ex.
+
+```sh
+python3 flasher.py --port=/dev/ttyUSB0 --baud=115200 --chip="<chip>" -bin="./build/app.bin"
+```
+
+You can omit passing a port and the flasher will attempt to find a Hactar board by searching your active usb serial ports.
+
+```sh
+python3 flasher.py --baud=115200 --chip="ui" -bin="./build/ui.bin"
+```
+
+### <h3 id="serial_monitor"><b>Python Serial Monitor</b></h3>
+
+The serial monitor is a very simple serial monitor that allows a user to send commands to the mgmt chip as well as read serial logs. Located in firmware/tools
+
+Requirements
+- pyserial - ```pip install pyserial```
+
+This monitor can be used by the following command:
+`python monitor.py \[port] \[baudrate]`
+
+ex.
+
+`python monitor.py /dev/ttyUSB0 115200`
+
+### <h2 id="hactar_setup">Hactar Setup</h2>
 <i>Display connector</i>
 
 - Required hardware
@@ -420,12 +514,12 @@ brew install make
 - Prerequisites
     - USB-C Cable
     - Python3
-        - PySerial
+        - PySerial - download using `pip3 install pyserial`
     - arm-none-eabi-g++
     - make
 - Build the mgmt code by navigating to `hactar/firmware/mgmt` and entering `make compile`
 - Plug in a USB-C
-- Press and hold the BOOT button Press and release the RESET button. Release the BOOT button.
+- Press and hold the BOOT button, press and release the RESET button, finally release the BOOT button.
 - Upload the mgmt code by entering `make upload`
 - After this you should see a couple of LED's light up
 
@@ -435,12 +529,12 @@ brew install make
     - A programmed `management chip`
     - USB-C Cable
     - Python3
-        - PySerial
+        - PySerial - download using `pip3 install pyserial`
     - arm-none-eabi-g++
     - make
 - Plug in the USB-C cable to the Hactar board.
 - Build the ui code by navigating to the `hactar/firmware/ui` folder and entering `make compile`
-- Upload the ui code by entering `make upload`
+- Upload the ui code by entering `make upload_py`
     - The python script "flasher.py" is called to upload to the main chip.
     - NOTE - For some reason the Main STM32 chip doesn't like being put into bootloader mode this way. Fixing it is a WIP. You just need to keep trying... sorry.
 - After finishing uploading the firmware to the main chip, the management chip will return to running mode.
@@ -454,7 +548,7 @@ brew install make
     - make
 - Plug in the USB-C cable to the Hactar board.
 - Build the net code by navigating to the `hactar/firmware/net` folder and entering `make compile`
-- Upload the net code by entering `make upload`
+- Upload the net code by entering `make upload_py`
     - The python script "flasher.py" is called to upload to the net chip
     - NOTE - The size is quite large, takes about 4 minutes to upload.
 - After finishing uploading the firmware to the net chip, the management chip will return to running mode.
@@ -474,55 +568,3 @@ brew install make
     - See [Management Commands](#management_commands) for more commands that can be sent to the hactar board.
 - The first and third LED from the left will turn blue indicating debug mode and your console will receive serial debug messages from the UI and Net chips.
 - Enter `exit` to leave the monitor
-
-<h2 id="hactar_upload">Fully Assembled Hactar Setup</h2>
-
-<i>Silly pre-requisites:</i>
-- verify that your hactar folder and esp-if folders are peers
-- not within each other (usually hactar within esp-if)
-
-ARM:
-- brew install --cask gcc-arm-embedded
-
-Esp-idf:
-- brew install cmake ninja dfu-util
-- mkdir -p esp
-- cd esp
-- git clone -b v5.2 --recursive https://github.com/espressif/esp-idf.git --depth 1
-- cd esp-idf
-- ./install.sh esp32s3
-
-Add esp-idf to your path in ~/.zshrc    /* or equivalent */
-- alias get_idf='. $HOME/esp/esp-idf/export.sh'
-- (not the path of the export.sh is likely different for you)
-- source ~/.zshrc
-
-Flasher:
-- pip3 install pyserial
-
-Hactar:
-- git clone git@github.com/quicr/hactar
-- git submodule update --init --recursive
-- cd hactar
-- git checkout ev10
-
-<i>Mgmt:</i>
-- cd hactar/firmware/mgmt
-- conenct the hactar via USB
-- you might need to edit the Makefile to ensure that PORT is pointing to the correct USB (where the hactar is connected)
-- make compile
-- make upload
-
-
-<i>ui:</i>
-- cd hactar/firmware/ui
-- make compile
-- make upload
-
-<i>net:</i>
-- Ensure your esp-idf is on your path   /* which we set above */
-- cd hactar/firmware/net
-- make compile
-- make upload
-
-If it works (watch for the % progress, it retries if it fails so be patient), you're done!

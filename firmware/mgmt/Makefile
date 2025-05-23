@@ -236,16 +236,17 @@ upload_cube_uart: compile
 upload_cube_swd: compile
 	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_SWD_ARGS}
 
-docker: docker-build
+docker:
+	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
+		docker build -t ${DOCKER_IMAGE} .; \
+	else
+		echo "Docker image already built - skipping"
+	fi
+
 	@docker run --rm -e target=${mft} --privileged \
 		-v ${PWD}/..:/project \
 		-v /dev:/dev \
 		-it ${DOCKER_IMAGE}
-
-docker-build:
-	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
-		docker build -t ${DOCKER_IMAGE} .; \
-	fi
 
 format:
 	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
