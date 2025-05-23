@@ -43,6 +43,8 @@ upload_esptool:
 docker: docker-build
 	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
 		docker build -t ${DOCKER_IMAGE} .; \
+	else
+		echo "Docker image already built - skipping"
 	fi
 
 	@docker run --rm -e target=${mft} --privileged \

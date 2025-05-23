@@ -17,7 +17,7 @@ Hardware design for test device
 6. [ESP32 Toolchain](#esp_installation)
 7. [Hactar Setup](#hactar_setup)
 8. [Additional Notes](#additional_notes)
-8. [Fully Assembled Hactar Setup - cliff notes](#hactar_upload)
+8. [Quick start](#quick_start)
 
 
 <h2 id="where">Where To Find Things</h2>
@@ -41,7 +41,6 @@ stuff in hardware
 
 ### <h3 id="technologies">Technologies</h3>
 
-<!-- TODO links -->
 - [KiCAD9](https://www.kicad.org/)
 - [FreeCAD](https://www.freecad.org/)
 - [arm-none-eabi](https://developer.arm.com/downloads/-/gnu-rm)
@@ -61,7 +60,7 @@ The management chip is responsible for uploading firmware to the stm32 - main ch
 
 The management chip receives commands from the usb communication that informs it what chip we are currently uploading. As well as debugging. It is able to receive log messages from the ui and net chips and push them out to the usb interface.
 
-#### <h4 id="managmenet_flashing">Flashing</h4>
+#### <h4 id="managment_flashing">Flashing</h4>
 On the first flash you'll need to figure out what device port your hactar is on. You can do this in several ways depending on which operating system you are on. Start by viewing your devices, and then plug in your hactar, and then view your devices again and see what was added to your device list.
 
 
@@ -80,14 +79,13 @@ On the first flash you'll need to figure out what device port your hactar is on.
 To flash the management chip you'll need to press the boot and reset buttons on the board in the following manner:
 
 <i id="button_press_order">Button press order</i>
-<!-- TODO pictures -->
-- Press and hold boot button.
-- Press and release reset button.
+- Press and hold boot button (left).
+- Press and release reset button (right).
 - Release boot button.
 
 <i>First flash</i>
 
-- In hactar/firmware/mgmt, enter make upload PORT=/where/my/device/is
+- In hactar/firmware/mgmt, enter make upload PORT=\<path/to/device\>
 
 ##### <h5>After flashing:</h5>
 
@@ -99,8 +97,8 @@ After flashing the management chip you can run `make upload` without specifying 
 - **ui_upload** - Puts the management chip into `ui` chip upload mode. (STM32f05)
 - **net_upload** - Puts the management chip into `net` chip upload mode. (ESP32S3)
 - **debug** - Puts the management chip into debugging mode where serial messages from both `ui` and network chips are transmitted back to the usb interface. This is uni-directional from the management chip to the computer. However, all commands work during this mode.
-- **debug_ui** (future feature) - Only reads serial messages from the `ui` chip.
-- **debug_net** (future feature) - Only reads serial messages from the `net` chip.
+- **debug_ui** - Only reads serial messages from the `ui` chip.
+- **debug_net** - Only reads serial messages from the `net` chip.
 
 <h4>Target Overview</h4>
 
@@ -118,8 +116,8 @@ After flashing the management chip you can run `make upload` without specifying 
 - `upload_cube_swd` - Uploads the build target to the Management chip using the STM32_Programmer_CLI with st-link using SWD uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
 
 - `docker` - Uses docker to compile, flash, and monitor the mgmt chip. By default it will compile the code. To change the functionality, pass a target of the Makefile into the parameter `mft` when being invoked.
-    - Ex. make docker mft=upload
-    - Ex. make docker mft=monitor
+    - Ex. `make docker mft=upload`
+    - Ex. `make docker mft=monitor`
 
 - `docker-clean` - Removes dockere image that was generated when running docker target.
 
@@ -151,8 +149,8 @@ The User Interface chip is where most of the processing takes place. It utilizes
 - `upload_cube_swd` - Uploads the build target to the User Interface chip using the STM32_Programmer_CLI with st-link using SWD uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
 
 - `docker` - Uses docker to compile, flash, and monitor the ui chip. By default it will compile the code. To change the functionality, pass a target of the Makefile into the parameter `mft` when being invoked.
-    - Ex. make docker mft=upload
-    - Ex. make docker mft=monitor
+    - Ex. `make docker mft=upload`
+    - Ex. `make docker mft=monitor`
 
 - `monitor` - Opens a serial communication line with the management chip with a python script that allows for sending of commands.
 
@@ -174,7 +172,7 @@ Making a shared header between chips should be added into firmware/shared_inc.
 
 ### <h3 id="network"><b>Network</b></h3>
 
-The network chip is a MOQ client. The network chip communicates with the UI chip via UART serial communication.
+The network chip is a MOQ client using [quicr](https://github.com/Quicr/libquicr). The network chip communicates with the UI chip via UART serial communication.
 
 We are leveraging the **esp-idf** framework.
 
@@ -188,11 +186,11 @@ We are leveraging the **esp-idf** framework.
 
 - `upload_py` - Uploads the build target to the Network chip using the our custom flasher tool with serial usb-c uploading. See [Python Flasher](#py_flasher)
 
-- `upload_esptool` - Uploads the netowrk chip code by first sending a command to the mgmt chip to put the board into **net upload** mode. Then uses `esptool.py upload`
+- `upload_esptool` - Uploads the network chip code by first sending a command to the mgmt chip to put the board into **net upload** mode. Then uses `esptool.py upload`
 
 - `docker` - Uses docker to compile, flash, and monitor the ui chip. By default it will compile the code. To change the functionality, pass a target of the Makefile into the parameter `mft` when being invoked.
-    - Ex. make docker mft=upload
-    - Ex. make docker mft=monitor
+    - Ex. `make docker mft=upload`
+    - Ex. `make docker mft=monitor`
 
 - `monitor` - Opens a serial communication line with the management chip in debug mode using screen.
 
@@ -214,7 +212,7 @@ All source code for the network chip can be found in `firmware/net`, `firmware/s
 A firmware flashing tool designed to work with Hactar by collating STM32 and
 ESP32 flashing specifications.
 
-#### <h4>Requirements</h4>
+#### Requirements
 
 - pyserial - ```pip install pyserial```
 
@@ -224,7 +222,7 @@ Generally the flasher is used automatically in the Makefile. However, you can fl
 ex.
 
 ```sh
-python3 flasher.py --port=/dev/ttyUSB0 --baud=115200 --chip="chip" -bin="./build/app.bin"
+python3 flasher.py --port=/dev/ttyUSB0 --baud=115200 --chip="<chip>" -bin="./build/app.bin"
 ```
 
 You can omit passing a port and the flasher will attempt to find a Hactar board by searching your active usb serial ports.
@@ -454,7 +452,7 @@ sudo apt install make
 
 - Download make.exe from [Source Forge](https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81.exe/download?use_mirror=phoenixnap&download=)
 
-- Save it to C:/bin or where-ever you want it. Then add the location to the your path.
+- Save it to OS bin directory or wherever you want it. Then add the location to the your path.
 
 - Open the start search, and type `env`. Select `"Edit the system environment variables"`
 
@@ -573,55 +571,3 @@ brew install make
     - See [Management Commands](#management_commands) for more commands that can be sent to the hactar board.
 - The first and third LED from the left will turn blue indicating debug mode and your console will receive serial debug messages from the UI and Net chips.
 - Enter `exit` to leave the monitor
-
-<!-- <h2 id="hactar_upload">Fully Assembled Hactar Setup</h2>
-
-<i>Silly pre-requisites:</i>
-- verify that your hactar folder and esp-if folders are peers
-- not within each other (usually hactar within esp-if)
-
-ARM:
-- brew install --cask gcc-arm-embedded
-
-Esp-idf:
-- brew install cmake ninja dfu-util
-- mkdir -p esp
-- cd esp
-- git clone -b v5.2 --recursive https://github.com/espressif/esp-idf.git --depth 1
-- cd esp-idf
-- ./install.sh esp32s3
-
-Add esp-idf to your path in ~/.zshrc    /* or equivalent */
-- alias get_idf='. $HOME/esp/esp-idf/export.sh'
-- (not the path of the export.sh is likely different for you)
-- source ~/.zshrc
-
-Flasher:
-- pip3 install pyserial
-
-Hactar:
-- git clone git@github.com/quicr/hactar
-- git submodule update --init --recursive
-- cd hactar
-- git checkout ev10
-
-<i>Mgmt:</i>
-- cd hactar/firmware/mgmt
-- conenct the hactar via USB
-- you might need to edit the Makefile to ensure that PORT is pointing to the correct USB (where the hactar is connected)
-- make compile
-- make upload
-
-
-<i>ui:</i>
-- cd hactar/firmware/ui
-- make compile
-- make upload
-
-<i>net:</i>
-- Ensure your esp-idf is on your path   /* which we set above */
-- cd hactar/firmware/net
-- make compile
-- make upload
-
-If it works (watch for the % progress, it retries if it fails so be patient), you're done! -->
