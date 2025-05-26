@@ -308,55 +308,55 @@ int app_main()
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
 
-        if (keyboard.NumAvailable() > 0)
-        {
-            uint8_t ch = keyboard.Read();
-            static char vol_str[10];
-            static char mic_str[10];
-            int len = 0;
-            if (ch == 'i')
-            {
-                audio_chip.VolumeAdjust(6);
-                UI_LOG_INFO("volume %d", audio_chip.Volume());
-            }
-            if (ch == 'k')
-            {
-                audio_chip.VolumeAdjust(-6);
-                UI_LOG_INFO("volume %d", audio_chip.Volume());
-            }
-            if (ch == 'm')
-            {
-                audio_chip.VolumeReset();
-                UI_LOG_INFO("volume %d", audio_chip.Volume());
-            }
+        // if (keyboard.NumAvailable() > 0)
+        // {
 
-            if (ch == 'w')
-            {
-                audio_chip.MicVolumeAdjust(8);
-                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
-            }
-            if (ch == 's')
-            {
-                audio_chip.MicVolumeAdjust(-8);
-                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
-            }
-            if (ch == 'z')
-            {
-                audio_chip.MicVolumeReset();
-                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
-            }
+        // static char vol_str[10];
+        // static char mic_str[10];
+        // int len = 0;
+        // if (ch == 'i')
+        // {
+        //     audio_chip.VolumeAdjust(6);
+        //     UI_LOG_INFO("volume %d", audio_chip.Volume());
+        // }
+        // if (ch == 'k')
+        // {
+        //     audio_chip.VolumeAdjust(-6);
+        //     UI_LOG_INFO("volume %d", audio_chip.Volume());
+        // }
+        // if (ch == 'm')
+        // {
+        //     audio_chip.VolumeReset();
+        //     UI_LOG_INFO("volume %d", audio_chip.Volume());
+        // }
 
-            itoa(audio_chip.Volume(), vol_str, len, 10);
-            screen.FillRectangle(0, 240, 30, 48, Colour::Black);
-            screen.DrawString(0, 30, "Volume ", 7, font5x8, Colour::White, Colour::Black);
-            screen.DrawString(7 * font5x8.width, 30, vol_str, len, font5x8, Colour::White,
-                              Colour::Black);
+        // if (ch == 'w')
+        // {
+        //     audio_chip.MicVolumeAdjust(8);
+        //     UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
+        // }
+        // if (ch == 's')
+        // {
+        //     audio_chip.MicVolumeAdjust(-8);
+        //     UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
+        // }
+        // if (ch == 'z')
+        // {
+        //     audio_chip.MicVolumeReset();
+        //     UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
+        // }
 
-            itoa(audio_chip.MicVolume(), mic_str, len, 10);
-            screen.DrawString(0, 40, "Mic Vol ", 8, font5x8, Colour::White, Colour::Black);
-            screen.DrawString(8 * font5x8.width, 40, mic_str, len, font5x8, Colour::White,
-                              Colour::Black);
-        }
+        // itoa(audio_chip.Volume(), vol_str, len, 10);
+        // screen.FillRectangle(0, 240, 30, 48, Colour::Black);
+        // screen.DrawString(0, 30, "Volume ", 7, font5x8, Colour::White, Colour::Black);
+        // screen.DrawString(7 * font5x8.width, 30, vol_str, len, font5x8, Colour::White,
+        //                   Colour::Black);
+
+        // itoa(audio_chip.MicVolume(), mic_str, len, 10);
+        // screen.DrawString(0, 40, "Mic Vol ", 8, font5x8, Colour::White, Colour::Black);
+        // screen.DrawString(8 * font5x8.width, 40, mic_str, len, font5x8, Colour::White,
+        //                   Colour::Black);
+        // }
 
         sleeping = true;
     }
@@ -553,7 +553,7 @@ inline void AudioCallback()
     WakeUp();
 
     HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, HIGH);
-    HAL_TIM_Base_Start_IT(&htim3);
+    // HAL_TIM_Base_Start_IT(&htim3);
 
     ++num_audio_req_packets;
     RaiseFlag(Audio_Interrupt);
@@ -699,7 +699,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        keyboard.Scan(HAL_GetTick());
+        // keyboard.Scan(HAL_GetTick());
     }
     else if (htim->Instance == TIM3)
     {

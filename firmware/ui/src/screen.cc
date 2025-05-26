@@ -622,9 +622,8 @@ void Screen::AppendUserText(const char* text, const uint32_t len)
         usr_buffer[usr_buffer_idx + i] = text[i];
     }
 
-    // TODO this will always draw over the previous text.
-    DrawString(0, User_Text_Height_Offset, usr_buffer + usr_buffer_idx, usr_buffer_idx + num_char,
-               font7x12, Colour::White, Colour::Black);
+    DrawString(usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
+               usr_buffer + usr_buffer_idx, num_char, font7x12, Colour::White, Colour::Black);
 
     usr_buffer_idx += num_char;
 }
@@ -636,11 +635,34 @@ void Screen::AppendUserText(const char ch)
         return;
     }
 
-    usr_buffer[usr_buffer_idx + 1] = ch;
+    usr_buffer[usr_buffer_idx] = ch;
 
-    // TODO this will always draw over the previous text.
-    DrawString(0, User_Text_Height_Offset, usr_buffer + usr_buffer_idx, usr_buffer_idx + num_char,
-               font7x12, Colour::White, Colour::Black);
+    DrawString(usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
+               usr_buffer + usr_buffer_idx, 1, font7x12, Colour::White, Colour::Black);
+
+    ++usr_buffer_idx;
+}
+
+void Screen::BackspaceUserText()
+{
+    if (usr_buffer_idx == 0)
+    {
+        return;
+    }
+
+    --usr_buffer_idx;
+
+    FillRectangle(usr_buffer_idx * font7x12.width, (usr_buffer_idx + 1) * font7x12.width,
+                  User_Text_Height_Offset, User_Text_Height_Offset + font7x12.height,
+                  Colour::Black);
+}
+
+void Screen::ClearUserText()
+{
+    FillRectangle(0, usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
+                  User_Text_Height_Offset + font7x12.height, Colour::Black);
+
+    usr_buffer_idx = 0;
 }
 
 // Private functions

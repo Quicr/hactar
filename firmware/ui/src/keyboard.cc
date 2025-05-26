@@ -73,7 +73,8 @@ uint8_t Keyboard::Read()
 
 uint8_t Keyboard::ReadFlags(uint32_t flags)
 {
-    return this->flags & flags;
+    volatile uint8_t test = this->flags & flags;
+    return test;
 }
 
 void Keyboard::RaiseFlags(uint32_t flags)
@@ -92,30 +93,29 @@ int8_t Keyboard::FlagPress(const int16_t col, const int16_t row)
 
     if (SYM_Col == col && SYM_Row == row)
     {
-        Keyboard::RaiseFlags(Sym_Flag);
+        RaiseFlags(Sym_Flag);
         return 1;
     }
     if (ALT_Col == col && ALT_Row == row)
     {
-        Keyboard::RaiseFlags(Alt_Flag);
+        RaiseFlags(Alt_Flag);
         return 1;
     }
-
     if (LSH_Col == col && LSH_Row == row)
     {
-        Keyboard::RaiseFlags(Left_Shift_Flag);
+        RaiseFlags(Left_Shift_Flag);
         return 1;
     }
     if (RSH_Col == col && RSH_Row == row)
     {
-        Keyboard::RaiseFlags(Right_Shift_Flag);
+        RaiseFlags(Right_Shift_Flag);
         return 1;
     }
 
     // Mic is unique. Sym flag should be read before the mic flag
-    if (!Keyboard::ReadFlags(Sym_Flag) && MIC_Col == col && MIC_Row == row)
+    if (!ReadFlags(Sym_Flag) && MIC_Col == col && MIC_Row == row)
     {
-        Keyboard::RaiseFlags(Mic_Flag);
+        RaiseFlags(Mic_Flag);
         return 1;
     }
 
@@ -134,7 +134,6 @@ void Keyboard::FlagRelease(const int16_t col, const int16_t row)
         LowerFlags(Alt_Flag);
         return;
     }
-
     if (LSH_Col == col && LSH_Row == row)
     {
         LowerFlags(Left_Shift_Flag);
@@ -162,12 +161,21 @@ void Keyboard::KeyPress(const int16_t col, const int16_t row, const uint8_t latc
         return;
     }
 
-    if (ReadFlags(Sym_Flag | Sym_Lock_Flag))
+    if (ENT_Col == col && ENT_Row == row)
+    {
+        ch_ring.Write(Base_Char_Map[col][row]);
+    }
+    else if (BAK_Col == col && BAK_Row == row)
+    {
+        ch_ring.Write(Base_Char_Map[col][row]);
+    }
+    else if (ReadFlags(Sym_Flag | Sym_Lock_Flag))
     {
         // Symbol
         ch_ring.Write(Symb_Char_Map[col][row]);
     }
-    else if (ReadFlags(Left_Shift_Flag | Right_Shift_Flag | Caps_Lock_Flag))
+    else if (ReadFlags(Left_Shift_Flag | Right_Shift_Flag | Caps_Lock_Flag | Enter_Flag
+                       | Back_Flag))
     {
         // Uppercase
         ch_ring.Write(Base_Char_Map[col][row]);

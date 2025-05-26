@@ -43,16 +43,33 @@ void Renderer::Render(const uint32_t ticks) noexcept
     }
     }
 
+    keyboard.Scan(HAL_GetTick());
+
     while (keyboard.NumAvailable() > 0)
     {
-        char ch = keyboard.Read();
-        if (ch == ENT)
+        const uint8_t ch = keyboard.Read();
+
+        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
+
+        switch (ch)
         {
-            user_input_idx = 0;
+        case ENT:
+        {
+            // TODO send text.
+
+            screen.ClearUserText();
+            break;
         }
-        else if (user_input_idx < User_Input_Buff_Size)
+        case BAK:
         {
-            user_input[user_input_idx++] = ch;
+            screen.BackspaceUserText();
+            break;
+        }
+        default:
+        {
+            screen.AppendUserText(ch);
+            break;
+        }
         }
     }
 

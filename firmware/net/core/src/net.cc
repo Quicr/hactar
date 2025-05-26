@@ -303,6 +303,11 @@ extern "C" void app_main(void)
         {
             prev_wifi_state = wifi_state;
             gpio_set_level(NET_LED_G, 1);
+
+            link_packet_t packet;
+
+            ui_layer.Write(packet);
+
             switch (wifi_state)
             {
             case Wifi::State::Disconnected:
@@ -320,8 +325,6 @@ extern "C" void app_main(void)
             }
             case Wifi::State::Connected:
             {
-                // TODO send a serial message saying we are
-                // connected to wifi
                 gpio_set_level(NET_LED_G, 0);
                 break;
             }

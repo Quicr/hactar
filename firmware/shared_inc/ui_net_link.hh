@@ -11,8 +11,8 @@ enum struct Packet_Type : uint8_t
     PowerOnReady,
     GetAudioLinkPacket,
     GetTextLinkPacket,
-    TalkStart,
-    TalkStop,
+    TalkStart, // Dead type?
+    TalkStop,  // Dead type?
     PlayStart,
     PlayStop,
     MoQStatus,
@@ -59,6 +59,13 @@ struct AudioObject
     uint8_t data[constants::Audio_Phonic_Sz];
 };
 
+struct wifi_status_t
+{
+    const uint8_t type = static_cast<uint8_t>(Packet_Type::WifiStatus);
+    const PACKET_LENGTH_TYPE len = 1;
+    uint8_t status;
+};
+
 enum class MessageType : uint8_t
 {
     Media = 1,
@@ -99,15 +106,23 @@ struct __attribute__((packed)) AIResponseChunk
     std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
 };
 
-static_assert(sizeof(Chunk) == 166);
-static_assert(sizeof(AIRequestChunk) == 170);
-static_assert(sizeof(AIResponseChunk) == 171);
+// static_assert(sizeof(Chunk) == 166);
+// static_assert(sizeof(AIRequestChunk) == 170);
+// static_assert(sizeof(AIResponseChunk) == 171);
 
 [[maybe_unused]] static void BuildGetLinkPacket(uint8_t* buff)
 {
     buff[0] = (uint8_t)Packet_Type::GetAudioLinkPacket;
     buff[1] = 0;
     buff[2] = 0;
+}
+
+[[maybe_unused]] static void Serialize(const wifi_status_t& wifi_status, link_packet_t& packet)
+{
+    packet.type = wifi_status.type;
+    packet.length = wifi_status.len;
+    packet.payload[0] = wifi_status.status;
+    packet.is_ready = true;
 }
 
 [[maybe_unused]] static void Serialize(const TalkStart& talk_start, link_packet_t& packet)

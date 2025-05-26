@@ -72,7 +72,9 @@ private:
         Right_Shift_Flag = 1 << 3,
         Caps_Lock_Flag = 1 << 4,
         Sym_Lock_Flag = 1 << 5,
-        Mic_Flag = 1 << 6
+        Mic_Flag = 1 << 6,
+        Enter_Flag = 1 << 7,
+        Back_Flag = 1 << 8
     } Flags;
 
     const uint8_t Base_Char_Map[Q10_COLS][Q10_ROWS] = {
