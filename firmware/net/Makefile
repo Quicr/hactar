@@ -20,30 +20,12 @@ ESP_TOOL_ARGS 		= --trace --no-stub --port=${PORT} --baud=${BAUD} write_flash --
 
 all: compile
 
-debug:
-	id
-	groups
-	docker info
-
 compile:
 	idf.py -B $(BUILD_PATH) build
 
-docker: docker-build
-	@docker run --rm -e target=${mft} --privileged \
-		-v ${PWD}/..:/project \
-		-v /dev:/dev \
-		-it ${DOCKER_IMAGE}
-
-docker-build:
-	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
-		docker build -t ${DOCKER_IMAGE} .; \
-	fi
-
-init_upload: compile
+upload: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/bootloader/bootloader.bin ${BOOTLOADER_ADDR} verify exit"
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/partition_table/partition-table.bin ${PARITIONS_ADDR} verify exit"
-
-upload: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ./build/net.bin 0x10000 verify exit"
 	python3 ../tools/command_sender.py ${CONSOLE_PORT} 115200 debug
 
@@ -58,7 +40,17 @@ upload_esptool:
 		esptool.py ${ESP_TOOL_ARGS} ; \
 	fi \
 
-program: compile upload
+docker: docker-build
+	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
+		docker build -t ${DOCKER_IMAGE} .; \
+	else
+		echo "Docker image already built - skipping"
+	fi
+
+	@docker run --rm -e target=${mft} --privileged \
+		-v ${PWD}/..:/project \
+		-v /dev:/dev \
+		-it ${DOCKER_IMAGE}
 
 monitor:
 	python3 ../tools/command_sender.py ${PORT} ${BAUD} net_debug

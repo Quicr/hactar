@@ -15,7 +15,10 @@ struct link_packet_t
     static constexpr size_t Type_Size = sizeof(PACKET_TYPE_TYPE);
     static constexpr size_t Length_Size = sizeof(PACKET_LENGTH_TYPE);
     static constexpr size_t Header_Size = Length_Size + Type_Size;
-    static constexpr size_t Payload_Size = constants::Audio_Phonic_Sz + 33 + 32;
+    static constexpr size_t CryptoOverhead = 33;
+    static constexpr size_t ExtraPadding = 32;
+    static constexpr size_t Payload_Size =
+        constants::Audio_Phonic_Sz + CryptoOverhead + ExtraPadding;
     static constexpr size_t Packet_Size = Header_Size + Payload_Size;
     union
     {

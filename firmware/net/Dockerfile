@@ -7,4 +7,4 @@ WORKDIR /project/net
 
 ENV target=compile
 
-CMD make $target
+CMD ["sh", "-c", "make -j $target"]

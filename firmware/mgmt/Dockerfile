@@ -18,4 +18,4 @@ WORKDIR /project/mgmt
 
 ENV target=compile
 
-CMD make -j $target
+CMD ["sh", "-c", "make -j $target"]

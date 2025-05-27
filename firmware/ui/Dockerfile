@@ -18,4 +18,4 @@ WORKDIR /src/ui
 
 ENV target=compile
 
-CMD make -j $target
+CMD ["sh", "-c", "make -j $target"]
