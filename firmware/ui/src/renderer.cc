@@ -43,36 +43,6 @@ void Renderer::Render(const uint32_t ticks) noexcept
     }
     }
 
-    keyboard.Scan(HAL_GetTick());
-
-    while (keyboard.NumAvailable() > 0)
-    {
-        const uint8_t ch = keyboard.Read();
-
-        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
-
-        switch (ch)
-        {
-        case ENT:
-        {
-            // TODO send text.
-
-            screen.ClearUserText();
-            break;
-        }
-        case BAK:
-        {
-            screen.BackspaceUserText();
-            break;
-        }
-        default:
-        {
-            screen.AppendUserText(ch);
-            break;
-        }
-        }
-    }
-
     // Do other stuff.
     screen.Draw(ticks);
 }

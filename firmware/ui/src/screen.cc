@@ -665,6 +665,16 @@ void Screen::ClearUserText()
     usr_buffer_idx = 0;
 }
 
+const char* Screen::UserText() const noexcept
+{
+    return usr_buffer;
+}
+
+uint16_t Screen::UserTextLength() const noexcept
+{
+    return usr_buffer_idx;
+}
+
 // Private functions
 
 inline void Screen::WaitForSPIComplete()
@@ -792,6 +802,15 @@ bool Screen::FillRectangleProcedure(DrawMemory& memory,
     }
 
     return true;
+}
+
+void Screen::DrawRectangleProcedure(const int16_t x1,
+                                    const int16_t x2,
+                                    const int16_t y1,
+                                    const int16_t y2,
+                                    const uint16_t thickness,
+                                    const Colour colour)
+{
 }
 
 bool Screen::DrawRectangleProcedure(DrawMemory& memory,
@@ -1067,6 +1086,8 @@ Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val, const int16_
 }
 
 // TODO colour HIGH and colour LOW to save calculating it everytime.
+// Each byte stores two pixels of colour.
+// The first half is the "even" pixel and the second half is the "odd" pixel
 inline void Screen::FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
                                     const uint16_t i,
                                     const uint16_t j,

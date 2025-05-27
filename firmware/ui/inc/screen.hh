@@ -221,7 +221,8 @@ public:
     void BackspaceUserText();
     void ClearUserText();
 
-    const char* GetUserText() const noexcept;
+    const char* UserText() const noexcept;
+    uint16_t UserTextLength() const noexcept;
 
 private:
     inline void WaitForSPIComplete();
@@ -247,6 +248,13 @@ private:
                                        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
                                        const int16_t y1,
                                        const int16_t y2);
+    void DrawRectangleProcedure(const int16_t x1,
+                                const int16_t x2,
+                                const int16_t y1,
+                                const int16_t y2,
+                                const uint16_t thickness,
+                                const Colour colour);
+
     static bool FillRectangleProcedure(DrawMemory& memory,
                                        uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
                                        const int16_t y1,

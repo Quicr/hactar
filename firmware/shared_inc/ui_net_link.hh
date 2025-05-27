@@ -20,6 +20,7 @@ enum struct Packet_Type : uint8_t
     PttObject,
     PttMultiObject,
     PttAIObject,
+    TextMessage,
     SSIDRequest,
     WifiConnect,
     WifiStatus
@@ -57,6 +58,13 @@ struct AudioObject
 {
     uint8_t channel_id;
     uint8_t data[constants::Audio_Phonic_Sz];
+};
+
+struct TextObject
+{
+    uint8_t channel_id;
+    uint16_t length;
+    uint8_t data[48]; // TODO get from screen? Or constants fil
 };
 
 struct wifi_status_t
@@ -217,6 +225,18 @@ struct __attribute__((packed)) AIResponseChunk
 
     memcpy(packet.payload + offset, talk_frame.data, constants::Audio_Phonic_Sz);
 
+    packet.is_ready = true;
+}
+
+[[maybe_unused]] static void
+Serialize(const uint8_t channel_id, const char* text, const uint16_t len, link_packet_t& packet)
+{
+    packet.type = (uint8_t)Packet_Type::TextMessage;
+    packet.payload[0] = channel_id;
+
+    memcpy(packet.payload + 1, text, len);
+
+    packet.length = 1 + len;
     packet.is_ready = true;
 }
 

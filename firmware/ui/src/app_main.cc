@@ -26,6 +26,7 @@ inline void CheckPTT();
 inline void CheckPTTAI();
 inline void
 SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last);
+inline void HandleKeypress();
 
 #ifdef CRYPTO
 constexpr const char* mls_key = "sixteen byte key";
@@ -179,8 +180,7 @@ Screen screen(hspi1,
               DISP_BL_Pin,
               Screen::Orientation::flipped_portrait);
 
-link_packet_t talk_packet;
-link_packet_t play_buffer;
+link_packet_t message_packet;
 link_packet_t* link_packet = nullptr;
 
 volatile bool sleeping = true;
@@ -230,6 +230,8 @@ const uint8_t ptt_channel = 0;
 
 bool ptt_ai_down = false;
 const uint8_t ptt_ai_channel = 1;
+
+const uint8_t text_channel = 2;
 
 int app_main()
 {
@@ -300,6 +302,8 @@ int app_main()
         CheckPTT();
         CheckPTTAI();
 
+        HandleKeypress();
+
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
@@ -307,56 +311,6 @@ int app_main()
 
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
-
-        // if (keyboard.NumAvailable() > 0)
-        // {
-
-        // static char vol_str[10];
-        // static char mic_str[10];
-        // int len = 0;
-        // if (ch == 'i')
-        // {
-        //     audio_chip.VolumeAdjust(6);
-        //     UI_LOG_INFO("volume %d", audio_chip.Volume());
-        // }
-        // if (ch == 'k')
-        // {
-        //     audio_chip.VolumeAdjust(-6);
-        //     UI_LOG_INFO("volume %d", audio_chip.Volume());
-        // }
-        // if (ch == 'm')
-        // {
-        //     audio_chip.VolumeReset();
-        //     UI_LOG_INFO("volume %d", audio_chip.Volume());
-        // }
-
-        // if (ch == 'w')
-        // {
-        //     audio_chip.MicVolumeAdjust(8);
-        //     UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
-        // }
-        // if (ch == 's')
-        // {
-        //     audio_chip.MicVolumeAdjust(-8);
-        //     UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
-        // }
-        // if (ch == 'z')
-        // {
-        //     audio_chip.MicVolumeReset();
-        //     UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
-        // }
-
-        // itoa(audio_chip.Volume(), vol_str, len, 10);
-        // screen.FillRectangle(0, 240, 30, 48, Colour::Black);
-        // screen.DrawString(0, 30, "Volume ", 7, font5x8, Colour::White, Colour::Black);
-        // screen.DrawString(7 * font5x8.width, 30, vol_str, len, font5x8, Colour::White,
-        //                   Colour::Black);
-
-        // itoa(audio_chip.MicVolume(), mic_str, len, 10);
-        // screen.DrawString(0, 40, "Mic Vol ", 8, font5x8, Colour::White, Colour::Black);
-        // screen.DrawString(8 * font5x8.width, 40, mic_str, len, font5x8, Colour::White,
-        //                   Colour::Black);
-        // }
 
         sleeping = true;
     }
@@ -567,8 +521,8 @@ void CheckPTT()
         // TODO channel id
         ui_net_link::TalkStart talk_start = {0};
         talk_start.channel_id = ptt_channel;
-        ui_net_link::Serialize(talk_start, talk_packet);
-        serial.Write(talk_packet);
+        ui_net_link::Serialize(talk_start, message_packet);
+        serial.Write(message_packet);
         ptt_down = true;
         LedGOn();
     }
@@ -576,8 +530,8 @@ void CheckPTT()
     {
         ui_net_link::TalkStop talk_stop = {0};
         talk_stop.channel_id = ptt_channel;
-        ui_net_link::Serialize(talk_stop, talk_packet);
-        serial.Write(talk_packet);
+        ui_net_link::Serialize(talk_stop, message_packet);
+        serial.Write(message_packet);
         ptt_down = false;
         SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject, true);
         LedGOff();
@@ -598,8 +552,8 @@ void CheckPTTAI()
         // TODO channel id
         ui_net_link::TalkStart talk_start = {0};
         talk_start.channel_id = ptt_ai_channel;
-        ui_net_link::Serialize(talk_start, talk_packet);
-        serial.Write(talk_packet);
+        ui_net_link::Serialize(talk_start, message_packet);
+        serial.Write(message_packet);
         ptt_ai_down = true;
         LedBOn();
     }
@@ -607,8 +561,8 @@ void CheckPTTAI()
     {
         ui_net_link::TalkStop talk_stop = {0};
         talk_stop.channel_id = ptt_ai_channel;
-        ui_net_link::Serialize(talk_stop, talk_packet);
-        serial.Write(talk_packet);
+        ui_net_link::Serialize(talk_stop, message_packet);
+        serial.Write(message_packet);
         ptt_ai_down = false;
         SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject, true);
         LedBOff();
@@ -626,20 +580,58 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
                             constants::Audio_Phonic_Sz, true, constants::Stereo);
 
     talk_frame.channel_id = channel_id;
-    ui_net_link::Serialize(talk_frame, packet_type, last, talk_packet);
+    ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
 
 #ifdef CRYPTO
     uint8_t ct[link_packet_t::Payload_Size];
     auto payload = mls_ctx.protect(
-        0, 0, ct, sframe::input_bytes{talk_packet.payload, talk_packet.length}.subspan(1), {});
+        0, 0, ct, sframe::input_bytes{message_packet.payload, message_packet.length}.subspan(1),
+        {});
 
-    std::memcpy(talk_packet.payload + 1, payload.data(), payload.size());
-    talk_packet.length = payload.size() + 1;
+    std::memcpy(message_packet.payload + 1, payload.data(), payload.size());
+    message_packet.length = payload.size() + 1;
 #endif
 
     // LedRToggle();
-    serial.Write(talk_packet);
+    serial.Write(message_packet);
     ++num_packets_tx;
+}
+
+void HandleKeypress()
+{
+    keyboard.Scan(HAL_GetTick());
+
+    while (keyboard.NumAvailable() > 0)
+    {
+        const uint8_t ch = keyboard.Read();
+
+        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
+
+        switch (ch)
+        {
+        case ENT:
+        {
+            ui_net_link::Serialize(text_channel, screen.UserText(), screen.UserTextLength(),
+                                   message_packet);
+
+            // TODO encryption
+            serial.Write(message_packet);
+            ++num_packets_tx;
+            screen.ClearUserText();
+            break;
+        }
+        case BAK:
+        {
+            screen.BackspaceUserText();
+            break;
+        }
+        default:
+        {
+            screen.AppendUserText(ch);
+            break;
+        }
+        }
+    }
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
