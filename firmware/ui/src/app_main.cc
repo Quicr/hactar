@@ -10,15 +10,11 @@
 #include "serial.hh"
 #include "tools.hh"
 #include "ui_net_link.hh"
-
-#ifdef CRYPTO
 #include <cmox_crypto.h>
 #include <cmox_init.h>
 #include <cmox_low_level.h>
 #include <sframe/sframe.h>
 #include <stm32f4xx_hal.h>
-#endif
-
 #include <random>
 
 // Forward declare
@@ -28,11 +24,9 @@ inline void
 SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last);
 inline void HandleKeypress();
 
-#ifdef CRYPTO
 constexpr const char* mls_key = "sixteen byte key";
 sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
 uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
-#endif
 
 #define HIGH GPIO_PIN_SET
 #define LOW GPIO_PIN_RESET
@@ -123,7 +117,6 @@ char* itoa(int value, char* str, int& len, int base)
     return str;
 }
 
-#ifdef CRYPTO
 cmox_init_retval_t cmox_ll_init(void* pArg)
 {
     (void)pArg;
@@ -139,8 +132,6 @@ cmox_init_retval_t cmox_ll_deInit(void* pArg)
     /* Do not turn off CRC to avoid side effect on other SW parts using it */
     return CMOX_INIT_SUCCESS;
 }
-
-#endif
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -237,14 +228,12 @@ int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
 
-#ifdef CRYPTO
     if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
     {
         Error("main", "cmox failed to initialise");
     }
 
     mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(&mls_key[0]), 16});
-#endif
 
     Renderer renderer(screen, keyboard);
 
@@ -390,13 +379,6 @@ void HandleRecvLinkPackets()
             return;
         }
 
-#ifdef CRYPTO
-        auto payload = mls_ctx.unprotect(
-            sframe::output_bytes{link_packet->payload, link_packet_t::Payload_Size}.subspan(1),
-            sframe::input_bytes{link_packet->payload, link_packet->length}.subspan(1), {});
-        link_packet->length = payload.size() + 1;
-#endif
-
         UI_LOG_INFO("Got a packet, type %d, first byte %d", (int)link_packet->type,
                     (int)link_packet->payload[0]);
         ++num_packets_rx;
@@ -413,6 +395,11 @@ void HandleRecvLinkPackets()
         {
             break;
         }
+        case ui_net_link::Packet_Type::TextMessage:
+        {
+            UI_LOG_INFO("Got text from esp");
+            break;
+        }
         case ui_net_link::Packet_Type::PttAIObject:
         {
             // TODO something but do let fallthrough
@@ -420,6 +407,12 @@ void HandleRecvLinkPackets()
         case ui_net_link::Packet_Type::PttMultiObject:
         case ui_net_link::Packet_Type::PttObject:
         {
+
+            auto payload = mls_ctx.unprotect(
+                sframe::output_bytes{link_packet->payload, link_packet_t::Payload_Size}.subspan(1),
+                sframe::input_bytes{link_packet->payload, link_packet->length}.subspan(1), {});
+            link_packet->length = payload.size() + 1;
+
             // TODO we need to know if it is mono or stereo data
             // that we have received
             // For now assume we receive mono
@@ -582,7 +575,6 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
     talk_frame.channel_id = channel_id;
     ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
 
-#ifdef CRYPTO
     uint8_t ct[link_packet_t::Payload_Size];
     auto payload = mls_ctx.protect(
         0, 0, ct, sframe::input_bytes{message_packet.payload, message_packet.length}.subspan(1),
@@ -590,7 +582,6 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
 
     std::memcpy(message_packet.payload + 1, payload.data(), payload.size());
     message_packet.length = payload.size() + 1;
-#endif
 
     // LedRToggle();
     serial.Write(message_packet);
@@ -614,7 +605,15 @@ void HandleKeypress()
             ui_net_link::Serialize(text_channel, screen.UserText(), screen.UserTextLength(),
                                    message_packet);
 
-            // TODO encryption
+            uint8_t ct[link_packet_t::Payload_Size];
+            auto payload = mls_ctx.protect(
+                0, 0, ct,
+                sframe::input_bytes{message_packet.payload, message_packet.length}.subspan(1), {});
+
+            std::memcpy(message_packet.payload + 1, payload.data(), payload.size());
+            message_packet.length = payload.size() + 1;
+
+            UI_LOG_INFO("Transmit text message");
             serial.Write(message_packet);
             ++num_packets_tx;
             screen.ClearUserText();

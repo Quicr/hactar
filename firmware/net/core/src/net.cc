@@ -34,14 +34,14 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = false;
+bool loopback = true;
 
 std::shared_ptr<moq::Session> moq_session;
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 
 /** END EXTERNAL VARIABLES */
 
-constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
+constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33437";
 // constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
@@ -141,38 +141,20 @@ static void LinkPacketTask(void* args)
             case ui_net_link::Packet_Type::TalkStop:
                 talk_stopped = true;
                 break;
+            case ui_net_link::Packet_Type::TextMessage:
+                NET_LOG_INFO("Got text message");
+                [[fallthrough]];
             case ui_net_link::Packet_Type::PttAIObject:
-            {
-                // Channel id
-                uint32_t ext_bytes = 1;
-                uint32_t length = packet->length;
-
-                uint8_t channel_id = packet->payload[0];
-
-                // Remove the bytes already read from the payload length
-                length -= ext_bytes;
-
-                // NET_LOG_INFO("ptt ai chid %d", (int)channel_id);
-                // If the publisher is not ready just ignore the link packet
-                std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
-                writer->PushPttAIObject(packet->payload + 1, length, talk_stopped,
-                                        curr_audio_isr_time, request_id);
-                talk_stopped = false;
-
-                break;
-            }
+                [[fallthrough]];
             case ui_net_link::Packet_Type::PttMultiObject:
                 [[fallthrough]];
             case ui_net_link::Packet_Type::PttObject:
             {
-                // In the future I would want to use the audio object to transmit
-                // that to the relay? and do less copying but thats asking a lot.
-                // NET_LOG_INFO("serial recv audio");
-
                 // Channel id
                 uint32_t ext_bytes = 1;
                 uint32_t length = packet->length;
 
+                // oof lol.
                 uint8_t channel_id = packet->payload[0];
 
                 // Remove the bytes already read from the payload length
@@ -181,9 +163,7 @@ static void LinkPacketTask(void* args)
                 // NET_LOG_INFO("chid %d", (int)channel_id);
                 // If the publisher is not ready just ignore the link packet
                 std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
-                writer->PushPttObject(packet->payload + 1, length, talk_stopped,
-                                      curr_audio_isr_time);
-                talk_stopped = false;
+                writer->PushObject(packet->payload + 1, length, curr_audio_isr_time);
 
                 // TODO use notifies, currently it doesn't notify fast enough?
                 // xTaskNotifyGive(rtos_pub_handle);
@@ -274,7 +254,7 @@ extern "C" void app_main(void)
     NET_LOG_INFO("Components ready");
 
     json subscriptions = default_channel_json.at("subscriptions");
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < subscriptions.size(); ++i)
     {
         // NOTE- I am not doing all of the subs because I don't want text rn
         moq_session->StartReadTrack(subscriptions[i], ui_layer);

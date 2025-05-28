@@ -72,16 +72,17 @@ void Session::StartReadTrack(const json& subscription, Serial& serial)
             trackname = std::to_string(device_id);
         }
 
+        // TODO something with this?
+        std::string codec = subscription.at("codec").get<std::string>();
+        ESP_LOGE("sub", "%s", codec.c_str());
+        // uint64_t sample_rate = subscription.at("sample_rate").get<uint64_t>();
+        // std::string channel_config = subscription.at("channelConfig").get<std::string>();
+
         std::shared_ptr<moq::TrackReader> reader = std::make_shared<moq::TrackReader>(
-            moq::MakeFullTrackName(track_namespace, trackname), serial);
+            moq::MakeFullTrackName(track_namespace, trackname), serial, codec);
 
         std::lock_guard<std::mutex> _(readers_mux);
         readers.push_back(reader);
-
-        // TODO something with this?
-        // std::string codec = subscription.at("codec").get<std::string>();
-        // uint64_t sample_rate = subscription.at("sample_rate").get<uint64_t>();
-        // std::string channel_config = subscription.at("channelConfig").get<std::string>();
     }
     catch (const std::exception& ex)
     {
@@ -103,17 +104,18 @@ void Session::StartWriteTrack(const json& publication)
             publication.at("tracknamespace").get<std::vector<std::string>>();
         std::string trackname = publication.at("trackname").get<std::string>();
 
+        // TODO something with this?
+        // std::string codec = publication.at("codec").get<std::string>();
+
+        // uint64_t sample_rate = publication.at("sample_rate").get<uint64_t>();
+        // std::string channel_config = publication.at("channelConfig").get<std::string>();
+
         std::shared_ptr<moq::TrackWriter> writer =
             std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName(track_namespace, trackname),
                                                quicr::TrackMode::kDatagram, 2, 100);
 
         std::lock_guard<std::mutex> _(writers_mux);
         writers.push_back(writer);
-
-        // TODO something with this?
-        // std::string codec = publication.at("codec").get<std::string>();
-        // uint64_t sample_rate = publication.at("sample_rate").get<uint64_t>();
-        // std::string channel_config = publication.at("channelConfig").get<std::string>();
     }
     catch (const std::exception& ex)
     {
