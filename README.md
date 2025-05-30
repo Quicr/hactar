@@ -3,9 +3,10 @@
 Hardware design for test device
 
 ## Table of contents:
-1. [Where To Find Things](#where)
-2. [Hardware](#hardware)
-3. [Firmware](#firmware)
+1. [License](#License)
+2. [Where To Find Things](#where)
+3. [Hardware](#hardware)
+4. [Firmware](#firmware)
     1. [Management](#management)
     2. [User Interface](#ui)
     3. [Network](#network)
@@ -17,6 +18,9 @@ Hardware design for test device
     2. [Python Serial Monitor](#serial_monitor)
 5. [Hactar Setup](#hactar_setup)
 
+## License
+
+The license for information in this repository is in [LICENSE].  This license covers everything in the repository except for the `cmox` directory, which is covered by the license in [firmware/ui/dependencies/cmox/LICENSE].
 
 <h2 id="where">Where To Find Things</h2>
 

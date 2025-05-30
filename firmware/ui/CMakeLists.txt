@@ -30,6 +30,7 @@ set(CMAKE_PROJECT_NAME ui)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 # Find dependencies
+set(STM32Cryptographic_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cmox)
 find_package(STM32Cryptographic COMPONENTS CM4 REQUIRED)
 add_library(STM32Cryptographic ALIAS STM32Cryptographic::CM4)
 

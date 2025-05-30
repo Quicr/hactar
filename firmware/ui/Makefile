@@ -56,7 +56,7 @@ OCDFLAGS   = -f interface/stlink.cfg -f target/stm32f4x.cfg
 all: info compile
 
 compile: CMakeLists.txt
-	cmake -B $(BUILD_DIR) -DSTM32Cryptographic_ROOT_DIR=${STM32_CRYPTO_DIR}
+	cmake -B $(BUILD_DIR)
 	cmake --build $(BUILD_DIR) -j
 
 upload: compile
