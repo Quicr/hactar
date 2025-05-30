@@ -19,7 +19,7 @@ void Renderer::Render(const uint32_t ticks) noexcept
     }
     case View::Chat:
     {
-        RoomsView(ticks);
+        ChatView(ticks);
         break;
     }
     case View::MainMenu:
@@ -65,6 +65,13 @@ void Renderer::StartupView(const uint32_t ticks) noexcept
 
 void Renderer::ChatView(const uint32_t ticks) noexcept
 {
+    if (change_view)
+    {
+        screen.FillScreen(Colour::Black);
+        screen.UpdateTitle("Chat room", 9);
+
+        change_view = false;
+    }
 }
 
 void Renderer::MainMenuView(const uint32_t ticks) noexcept

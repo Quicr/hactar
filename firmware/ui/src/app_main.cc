@@ -23,6 +23,8 @@ inline void CheckPTTAI();
 inline void
 SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last);
 inline void HandleKeypress();
+inline bool Protect(link_packet_t* link_packet);
+inline bool Unprotect(link_packet_t* link_packet);
 
 constexpr const char* mls_key = "sixteen byte key";
 sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
@@ -268,7 +270,7 @@ int app_main()
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
-            renderer.ChangeView(Renderer::View::MainMenu);
+            renderer.ChangeView(Renderer::View::Chat);
             done_booting = true;
         }
 
@@ -379,8 +381,8 @@ void HandleRecvLinkPackets()
             return;
         }
 
-        UI_LOG_INFO("Got a packet, type %d, first byte %d", (int)link_packet->type,
-                    (int)link_packet->payload[0]);
+        // UI_LOG_INFO("Got a packet, type %d, first byte %d", (int)link_packet->type,
+        //             (int)link_packet->payload[0]);
         ++num_packets_rx;
         switch ((ui_net_link::Packet_Type)link_packet->type)
         {
@@ -398,6 +400,14 @@ void HandleRecvLinkPackets()
         case ui_net_link::Packet_Type::TextMessage:
         {
             UI_LOG_INFO("Got text from esp");
+
+            // Need to decrypt?
+            Unprotect(link_packet);
+
+            // Ignore the first byte
+            char* text = (char*)(link_packet->payload + 1);
+
+            screen.CommitText(text, link_packet->length - 1);
             break;
         }
         case ui_net_link::Packet_Type::PttAIObject:
@@ -407,11 +417,7 @@ void HandleRecvLinkPackets()
         case ui_net_link::Packet_Type::PttMultiObject:
         case ui_net_link::Packet_Type::PttObject:
         {
-
-            auto payload = mls_ctx.unprotect(
-                sframe::output_bytes{link_packet->payload, link_packet_t::Payload_Size}.subspan(1),
-                sframe::input_bytes{link_packet->payload, link_packet->length}.subspan(1), {});
-            link_packet->length = payload.size() + 1;
+            Unprotect(link_packet);
 
             // TODO we need to know if it is mono or stereo data
             // that we have received
@@ -483,14 +489,6 @@ void InitScreen()
     screen.EnableBacklight();
 }
 
-void WaitForNetReady()
-{
-    // while (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_RESET)
-    // {
-    //     HAL_Delay(10);
-    // }
-}
-
 inline void AudioCallback()
 {
     audio_chip.ISRCallback();
@@ -500,7 +498,7 @@ inline void AudioCallback()
     WakeUp();
 
     HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, HIGH);
-    // HAL_TIM_Base_Start_IT(&htim3);
+    HAL_TIM_Base_Start_IT(&htim3);
 
     ++num_audio_req_packets;
     RaiseFlag(Audio_Interrupt);
@@ -575,13 +573,7 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
     talk_frame.channel_id = channel_id;
     ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
 
-    uint8_t ct[link_packet_t::Payload_Size];
-    auto payload = mls_ctx.protect(
-        0, 0, ct, sframe::input_bytes{message_packet.payload, message_packet.length}.subspan(1),
-        {});
-
-    std::memcpy(message_packet.payload + 1, payload.data(), payload.size());
-    message_packet.length = payload.size() + 1;
+    Protect(&message_packet);
 
     // LedRToggle();
     serial.Write(message_packet);
@@ -605,13 +597,7 @@ void HandleKeypress()
             ui_net_link::Serialize(text_channel, screen.UserText(), screen.UserTextLength(),
                                    message_packet);
 
-            uint8_t ct[link_packet_t::Payload_Size];
-            auto payload = mls_ctx.protect(
-                0, 0, ct,
-                sframe::input_bytes{message_packet.payload, message_packet.length}.subspan(1), {});
-
-            std::memcpy(message_packet.payload + 1, payload.data(), payload.size());
-            message_packet.length = payload.size() + 1;
+            Protect(&message_packet);
 
             UI_LOG_INFO("Transmit text message");
             serial.Write(message_packet);
@@ -630,6 +616,40 @@ void HandleKeypress()
             break;
         }
         }
+    }
+}
+
+bool Protect(link_packet_t* packet)
+{
+    try
+    {
+        uint8_t ct[link_packet_t::Payload_Size];
+        auto payload = mls_ctx.protect(
+            0, 0, ct, sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
+
+        std::memcpy(packet->payload + 1, payload.data(), payload.size());
+        packet->length = payload.size() + 1;
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        return false;
+    }
+}
+
+bool Unprotect(link_packet_t* packet)
+{
+    try
+    {
+        auto payload = mls_ctx.unprotect(
+            sframe::output_bytes{packet->payload, link_packet_t::Payload_Size}.subspan(1),
+            sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
+        packet->length = payload.size() + 1;
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        return false;
     }
 }
 
