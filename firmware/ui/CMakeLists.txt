@@ -33,12 +33,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 find_package(STM32Cryptographic COMPONENTS CM4 REQUIRED)
 add_library(STM32Cryptographic ALIAS STM32Cryptographic::CM4)
 
-set(CRYPTO "STM32" CACHE STRING "")
-set(NO_ALLOC ON CACHE BOOL "")
+set(CRYPTO "STM32" CACHE STRING "" FORCE)
+set(NO_ALLOC ON CACHE BOOL "" FORCE)
+add_compile_definitions(NO_ALLOC)
 add_subdirectory(dependencies/sframe)
 
 # Core project settings
-project(${CMAKE_PROJECT_NAME} CXX)
+project(${CMAKE_PROJECT_NAME} C CXX ASM)
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Enable CMake support for ASM and C languages
