@@ -12,159 +12,6 @@
 		(comment 1 "Brett Regnier")
 	)
 	(lib_symbols
-		(symbol "Connector_Audio:AudioJack2"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "J"
-				(at 0 8.89 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "AudioJack2"
-				(at 0 6.35 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Audio Jack, 2 Poles (Mono / TS)"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "audio jack receptacle mono phone headphone TS connector"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "Jack*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "AudioJack2_0_1"
-				(rectangle
-					(start -3.81 0)
-					(end -2.54 -2.54)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start -2.54 3.81)
-					(end 2.54 -2.54)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 0) (xy 0.635 -0.635) (xy 1.27 0) (xy 2.54 0)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 2.54 2.54) (xy -0.635 2.54) (xy -0.635 0) (xy -1.27 -0.635) (xy -1.905 0)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "AudioJack2_1_1"
-				(pin passive line
-					(at 5.08 2.54 180)
-					(length 2.54)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "S"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 5.08 0 180)
-					(length 2.54)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "T"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "Connector_Audio:AudioJack4"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -1731,7 +1578,7 @@
 	)
 	(rectangle
 		(start 16.51 57.15)
-		(end 124.46 97.79)
+		(end 124.46 106.68)
 		(stroke
 			(width 0)
 			(type default)
@@ -1775,7 +1622,7 @@
 	)
 	(text "HP_L"
 		(exclude_from_sim no)
-		(at 54.61 69.088 0)
+		(at 58.166 75.438 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1785,7 +1632,7 @@
 	)
 	(text "MIC_P"
 		(exclude_from_sim no)
-		(at 57.658 90.932 0)
+		(at 58.674 93.218 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1795,7 +1642,7 @@
 	)
 	(text "MIC_N"
 		(exclude_from_sim no)
-		(at 57.658 83.058 0)
+		(at 58.674 85.598 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1805,7 +1652,7 @@
 	)
 	(text "GND"
 		(exclude_from_sim no)
-		(at 54.102 66.548 0)
+		(at 57.912 67.818 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1918,7 +1765,7 @@
 		(uuid "cefe92f5-cb38-4839-839a-08931fbbfb9b")
 	)
 	(no_connect
-		(at 54.61 86.36)
+		(at 54.61 88.9)
 		(uuid "0af45fea-0da3-4e4c-8084-711c24a7d591")
 	)
 	(no_connect
@@ -1926,8 +1773,16 @@
 		(uuid "2231ab62-1b46-44ca-a1a8-46646194c340")
 	)
 	(no_connect
-		(at 54.61 88.9)
+		(at 54.61 73.66)
+		(uuid "cb3a17ce-6b3d-4721-afaf-02f13d177cb2")
+	)
+	(no_connect
+		(at 54.61 91.44)
 		(uuid "d9d3a66f-6e19-4dc6-91b7-6f901b8c3545")
+	)
+	(no_connect
+		(at 54.61 71.12)
+		(uuid "fdfa9533-2168-42b2-9187-35b75acbb4fa")
 	)
 	(wire
 		(pts
@@ -1941,7 +1796,7 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 81.28) (xy 68.58 83.82)
+			(xy 68.58 81.28) (xy 68.58 86.36)
 		)
 		(stroke
 			(width 0)
@@ -2041,7 +1896,7 @@
 	)
 	(wire
 		(pts
-			(xy 66.04 91.44) (xy 54.61 91.44)
+			(xy 66.04 93.98) (xy 54.61 93.98)
 		)
 		(stroke
 			(width 0)
@@ -2071,17 +1926,7 @@
 	)
 	(wire
 		(pts
-			(xy 66.04 76.2) (xy 95.25 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3ee6e908-32ef-4405-b4fb-801da3c3ce79")
-	)
-	(wire
-		(pts
-			(xy 68.58 67.31) (xy 68.58 81.28)
+			(xy 68.58 68.58) (xy 68.58 81.28)
 		)
 		(stroke
 			(width 0)
@@ -2161,7 +2006,7 @@
 	)
 	(wire
 		(pts
-			(xy 52.07 67.31) (xy 68.58 67.31)
+			(xy 54.61 68.58) (xy 68.58 68.58)
 		)
 		(stroke
 			(width 0)
@@ -2211,7 +2056,7 @@
 	)
 	(wire
 		(pts
-			(xy 54.61 83.82) (xy 68.58 83.82)
+			(xy 54.61 86.36) (xy 68.58 86.36)
 		)
 		(stroke
 			(width 0)
@@ -2231,13 +2076,13 @@
 	)
 	(wire
 		(pts
-			(xy 52.07 69.85) (xy 66.04 69.85)
+			(xy 66.04 93.98) (xy 66.04 91.44)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "8baa35d8-528c-44b0-ab83-7c00d30e6ed6")
+		(uuid "8df8e7cc-cace-4a71-adc8-8a018f0ea60b")
 	)
 	(wire
 		(pts
@@ -2268,16 +2113,6 @@
 			(type default)
 		)
 		(uuid "9ef3f333-6559-4982-b8c5-fc524dbbff3b")
-	)
-	(wire
-		(pts
-			(xy 66.04 69.85) (xy 66.04 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a2a71f73-d87a-415e-93c7-299d87327019")
 	)
 	(wire
 		(pts
@@ -2388,6 +2223,16 @@
 			(type default)
 		)
 		(uuid "ea3c32db-6f64-4400-9a11-6ed954bcd5ee")
+	)
+	(wire
+		(pts
+			(xy 54.61 76.2) (xy 95.25 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f08736e7-9fae-4b5f-a6f2-2b068cd34359")
 	)
 	(wire
 		(pts
@@ -2931,7 +2776,7 @@
 	)
 	(symbol
 		(lib_id "Connector_Audio:AudioJack4")
-		(at 49.53 86.36 0)
+		(at 49.53 88.9 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -2940,14 +2785,6 @@
 		(fields_autoplaced yes)
 		(uuid "74ca7fca-0439-4221-a117-88f65db3a200")
 		(property "Reference" "J1"
-			(at 46.99 77.47 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "2.5mm Mic"
 			(at 46.99 80.01 0)
 			(effects
 				(font
@@ -2955,8 +2792,16 @@
 				)
 			)
 		)
+		(property "Value" "2.5mm Mic"
+			(at 46.99 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Footprint" "hactar_lib:AUDIO-SMD_PJ-242D-SMT"
-			(at 49.53 86.36 0)
+			(at 49.53 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2965,7 +2810,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 49.53 86.36 0)
+			(at 49.53 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2974,7 +2819,7 @@
 			)
 		)
 		(property "Description" "Audio Jack, 4 Poles (TRRS)"
-			(at 49.53 86.36 0)
+			(at 49.53 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2983,7 +2828,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C431536"
-			(at 49.53 86.36 0)
+			(at 49.53 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2992,7 +2837,7 @@
 			)
 		)
 		(property "FT Rotation Offset" "90"
-			(at 49.53 86.36 0)
+			(at 49.53 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3333,8 +3178,8 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector_Audio:AudioJack2")
-		(at 46.99 69.85 0)
+		(lib_id "Connector_Audio:AudioJack4")
+		(at 49.53 71.12 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -3343,7 +3188,7 @@
 		(fields_autoplaced yes)
 		(uuid "e69d085a-4f6b-43e8-ab3d-ca55651608d8")
 		(property "Reference" "J3"
-			(at 46.355 60.96 0)
+			(at 46.99 62.23 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3351,7 +3196,7 @@
 			)
 		)
 		(property "Value" "3.5mm Headphones"
-			(at 46.355 63.5 0)
+			(at 46.99 64.77 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3359,7 +3204,7 @@
 			)
 		)
 		(property "Footprint" "hactar_lib:Jack_3.5mm_PJ320D_Horizontal"
-			(at 46.99 69.85 0)
+			(at 49.53 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3368,7 +3213,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 46.99 69.85 0)
+			(at 49.53 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3376,8 +3221,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Audio Jack, 2 Poles (Mono / TS)"
-			(at 46.99 69.85 0)
+		(property "Description" "Audio Jack, 4 Poles (TRRS)"
+			(at 49.53 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3386,7 +3231,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C431535"
-			(at 46.99 69.85 0)
+			(at 49.53 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3395,7 +3240,7 @@
 			)
 		)
 		(property "FT Rotation Offset" "90"
-			(at 46.99 69.85 0)
+			(at 49.53 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3404,7 +3249,7 @@
 			)
 		)
 		(property "FT Position Offset" "1.016,0"
-			(at 46.99 69.85 0)
+			(at 49.53 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3417,6 +3262,12 @@
 		)
 		(pin "T"
 			(uuid "d3688dd3-41dd-40fe-b5a4-2b14f0dbb648")
+		)
+		(pin "R2"
+			(uuid "e7f4ce86-8c4c-4a63-a286-58826a6af107")
+		)
+		(pin "R1"
+			(uuid "f3691450-c0f5-4dba-8b21-1fd70ecf9b65")
 		)
 		(instances
 			(project ""
