@@ -1,10 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
-set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gcc-arm-none-eabi.cmake")
 
-add_compile_options(
-  -mthumb
-  -fexceptions
-)
+set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gcc-arm-none-eabi.cmake")
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 #
 # This file is generated only once,
@@ -14,17 +11,12 @@ add_compile_options(
 #
 
 # Setup compiler settings
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
-
-set(CRYPTO "STM32_CM4" CACHE STRING "")
-set(NO_ALLOC ON CACHE BOOL "")
-add_subdirectory(dependencies/sframe)
-
 
 # Define the build type
 if(NOT CMAKE_BUILD_TYPE)
@@ -34,18 +26,23 @@ endif()
 # Set the project name
 set(CMAKE_PROJECT_NAME ui)
 
-# Include toolchain file
-include("cmake/gcc-arm-none-eabi.cmake")
-
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
+# Find dependencies
+find_package(STM32Cryptographic COMPONENTS CM4 REQUIRED)
+add_library(STM32Cryptographic ALIAS STM32Cryptographic::CM4)
+
+set(CRYPTO "STM32" CACHE STRING "")
+set(NO_ALLOC ON CACHE BOOL "")
+add_subdirectory(dependencies/sframe)
+
 # Core project settings
-project(${CMAKE_PROJECT_NAME})
+project(${CMAKE_PROJECT_NAME} CXX)
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Enable CMake support for ASM and C languages
-enable_language(C ASM)
+enable_language(C CXX ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
@@ -60,6 +57,8 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 file(GLOB_RECURSE CXX_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc")
 file(GLOB_RECURSE SHARED_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../shared/*.cc")
+message(STATUS ${CXX_SOURCES}
+    ${SHARED_SOURCES})
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CXX_SOURCES}
     ${SHARED_SOURCES}
@@ -85,12 +84,9 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     sframe
 )
 
-set(BIN_FILE "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.bin")
-set(HEX_FILE "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.hex")
-
 add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_OBJCOPY} -O binary ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.elf ${BIN_FILE}
-    COMMAND ${CMAKE_OBJCOPY} -O ihex ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.elf ${HEX_FILE}
+    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${CMAKE_PROJECT_NAME}> ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.bin
+    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${CMAKE_PROJECT_NAME}> ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.hex
     COMMENT "Generating .bin and .hex files"
 )
