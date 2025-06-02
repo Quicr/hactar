@@ -89,8 +89,7 @@ enum class ContentType : uint8_t
 
 struct __attribute__((packed)) Chunk
 {
-    // const MessageType type = MessageType::Media;
-    const uint8_t type = (uint8_t)MessageType::Media;
+    const MessageType type = MessageType::Media;
     uint8_t last_chunk;
     std::uint32_t chunk_length;
     std::uint8_t chunk_data[constants::Audio_Phonic_Sz];

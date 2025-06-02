@@ -261,7 +261,7 @@ int app_main()
     UI_LOG_INFO("Starting main loop");
     while (1)
     {
-        AlivePulse(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+        Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
