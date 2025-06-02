@@ -615,8 +615,7 @@ void Screen::AppendUserText(const char* text, const uint32_t len)
         return;
     }
 
-    const uint32_t num_char =
-        len < Max_Characters - usr_buffer_idx ? len : Max_Characters - usr_buffer_idx;
+    const uint32_t num_char = std::min(len, Max_Characters - usr_buffer_idx);
     for (uint32_t i = 0; i < num_char; ++i)
     {
         usr_buffer[usr_buffer_idx + i] = text[i];
