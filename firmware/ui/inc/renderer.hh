@@ -52,6 +52,4 @@ private:
 
     char user_input[User_Input_Buff_Size] = {0};
     uint32_t user_input_idx = 0;
-
-    // DrawRoutine Draw = &Renderer::DefaultDraw;
 };

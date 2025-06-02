@@ -162,15 +162,12 @@ void TrackReader::SubscribeTask(void* param)
 
 void TrackReader::TransmitAudio()
 {
-    NET_LOG_INFO("Audio reader");
-    // TODO changing sub
+    NET_LOG_INFO("Track reader - audio mode");
     while (GetStatus() == TrackReader::Status::kOk)
     {
         // TODO use notifies and then drain the entire moq objs
         vTaskDelay(2 / portTICK_PERIOD_MS);
 
-        // TODO move into one function
-        // TODO all of these continues could probably be condensed
         AudioPlay();
         if (AudioNumAvailable() == 0)
         {
@@ -194,23 +191,12 @@ void TrackReader::TransmitAudio()
             continue;
         }
 
-        uint32_t offset = 0;
-
-        if (data->at(offset))
-        {
-            // last chunk
-        }
-        offset += 1;
-
         link_packet_t link_packet = {0};
-        // TODO need to get the type from the link_obj type
         link_packet.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
         link_packet.payload[0] = 0;
         link_packet.length = data->size() + 1;
 
         memcpy(link_packet.payload + 1, data->data(), data->size());
-
-        // NET_LOG_INFO("packet length %d", link_packet.length);
 
         serial.Write(link_packet);
     }
@@ -218,8 +204,8 @@ void TrackReader::TransmitAudio()
 
 void TrackReader::TransmitText()
 {
-    NET_LOG_INFO("Text reader");
-    // TODO changing sub
+    NET_LOG_INFO("Track reader - text mode");
+
     while (GetStatus() == TrackReader::Status::kOk)
     {
         // TODO use notifies and then drain the entire moq objs
@@ -239,8 +225,6 @@ void TrackReader::TransmitText()
         link_packet.length = data->size() + 1;
 
         memcpy(link_packet.payload + 1, data->data(), data->size());
-
-        // NET_LOG_INFO("packet length %d", link_packet.length);
 
         serial.Write(link_packet);
     }

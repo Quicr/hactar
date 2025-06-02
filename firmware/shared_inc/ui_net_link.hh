@@ -67,7 +67,7 @@ struct TextObject
     uint8_t data[48]; // TODO get from screen? Or constants fil
 };
 
-struct wifi_status_t
+struct WifiStatus
 {
     const uint8_t type = static_cast<uint8_t>(Packet_Type::WifiStatus);
     const PACKET_LENGTH_TYPE len = 1;
@@ -89,8 +89,9 @@ enum class ContentType : uint8_t
 
 struct __attribute__((packed)) Chunk
 {
-    const MessageType type = MessageType::Media;
-    bool last_chunk;
+    // const MessageType type = MessageType::Media;
+    const uint8_t type = (uint8_t)MessageType::Media;
+    uint8_t last_chunk;
     std::uint32_t chunk_length;
     std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
 };
@@ -114,9 +115,9 @@ struct __attribute__((packed)) AIResponseChunk
     std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
 };
 
-// static_assert(sizeof(Chunk) == 166);
-// static_assert(sizeof(AIRequestChunk) == 170);
-// static_assert(sizeof(AIResponseChunk) == 171);
+static_assert(sizeof(Chunk) == 166);
+static_assert(sizeof(AIRequestChunk) == 170);
+static_assert(sizeof(AIResponseChunk) == 171);
 
 [[maybe_unused]] static void BuildGetLinkPacket(uint8_t* buff)
 {
@@ -125,7 +126,7 @@ struct __attribute__((packed)) AIResponseChunk
     buff[2] = 0;
 }
 
-[[maybe_unused]] static void Serialize(const wifi_status_t& wifi_status, link_packet_t& packet)
+[[maybe_unused]] static void Serialize(const WifiStatus& wifi_status, link_packet_t& packet)
 {
     packet.type = wifi_status.type;
     packet.length = wifi_status.len;

@@ -57,3 +57,13 @@ static uint32_t CountNumAudioInterrupts(const AudioChip& audio, volatile bool& s
 
     return actual_interrupt_count;
 }
+
+static void AlivePulse(GPIO_TypeDef* port, const uint16_t pin)
+{
+    static uint32_t blinky = 0;
+    if (HAL_GetTick() > blinky)
+    {
+        HAL_GPIO_TogglePin(port, pin);
+        blinky = HAL_GetTick() + 2000;
+    }
+}

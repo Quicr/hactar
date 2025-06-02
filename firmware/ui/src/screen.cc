@@ -811,6 +811,7 @@ void Screen::DrawRectangleProcedure(const int16_t x1,
                                     const uint16_t thickness,
                                     const Colour colour)
 {
+    // TODO flash fill of matrix
 }
 
 bool Screen::DrawRectangleProcedure(DrawMemory& memory,

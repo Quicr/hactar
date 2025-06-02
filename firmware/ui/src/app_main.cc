@@ -23,8 +23,8 @@ inline void CheckPTTAI();
 inline void
 SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last);
 inline void HandleKeypress();
-inline bool Protect(link_packet_t* link_packet);
-inline bool Unprotect(link_packet_t* link_packet);
+inline bool TryProtect(link_packet_t* link_packet);
+inline bool TryUnprotect(link_packet_t* link_packet);
 
 constexpr const char* mls_key = "sixteen byte key";
 sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
@@ -194,20 +194,20 @@ uint32_t num_packets_tx = 0;
 
 ui_net_link::AudioObject talk_frame = {0, 0};
 
-GPIO_TypeDef* col_ports[Q10_COLS] = {
+GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
 };
 
-uint16_t col_pins[Q10_COLS] = {
+uint16_t col_pins[Keyboard::Q10_Cols] = {
     KB_COL1_Pin, KB_COL2_Pin, KB_COL3_Pin, KB_COL4_Pin, KB_COL5_Pin,
 };
 
-GPIO_TypeDef* row_ports[Q10_ROWS] = {
+GPIO_TypeDef* row_ports[Keyboard::Q10_Rows] = {
     KB_ROW1_GPIO_Port, KB_ROW2_GPIO_Port, KB_ROW3_GPIO_Port, KB_ROW4_GPIO_Port,
     KB_ROW5_GPIO_Port, KB_ROW6_GPIO_Port, KB_ROW7_GPIO_Port,
 };
 
-uint16_t row_pins[Q10_ROWS] = {
+uint16_t row_pins[Keyboard::Q10_Rows] = {
     KB_ROW1_Pin, KB_ROW2_Pin, KB_ROW3_Pin, KB_ROW4_Pin, KB_ROW5_Pin, KB_ROW6_Pin, KB_ROW7_Pin,
 };
 
@@ -251,22 +251,17 @@ int app_main()
     uint32_t blinky = 0;
     uint32_t next_print = 0;
 
-    // A test I run every start up in case the audio chip settings change
-    // and something is suspicious
+    // Test in case the audio chip settings change and something looks suspicious
     CountNumAudioInterrupts(audio_chip, sleeping);
 
-    // TODO remove
+    // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
     bool done_booting = false;
 
     UI_LOG_INFO("Starting main loop");
     while (1)
     {
-        // if (HAL_GetTick() > blinky)
-        // {
-        //     HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-        //     blinky = HAL_GetTick() + 2000;
-        // }
+        AlivePulse(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
@@ -388,7 +383,7 @@ void HandleRecvLinkPackets()
         {
         case ui_net_link::Packet_Type::PowerOnReady:
         {
-            // Stop loading screen?
+            // TODO: Stop loading screen?
             break;
         }
         case ui_net_link::Packet_Type::TalkStart:
@@ -399,15 +394,19 @@ void HandleRecvLinkPackets()
         }
         case ui_net_link::Packet_Type::TextMessage:
         {
-            UI_LOG_INFO("Got text from esp");
+            UI_LOG_INFO("Got text message");
 
-            // Need to decrypt?
-            Unprotect(link_packet);
+            if (!TryUnprotect(link_packet))
+            {
+                UI_LOG_ERROR("Failed to decrypt text message");
+                continue;
+            }
 
             // Ignore the first byte
-            char* text = (char*)(link_packet->payload + 1);
+            constexpr uint8_t payload_offset = 1;
+            char* text = (char*)(link_packet->payload + payload_offset);
 
-            screen.CommitText(text, link_packet->length - 1);
+            screen.CommitText(text, link_packet->length - payload_offset);
             break;
         }
         case ui_net_link::Packet_Type::PttAIObject:
@@ -417,7 +416,12 @@ void HandleRecvLinkPackets()
         case ui_net_link::Packet_Type::PttMultiObject:
         case ui_net_link::Packet_Type::PttObject:
         {
-            Unprotect(link_packet);
+
+            if (!TryUnprotect(link_packet))
+            {
+                UI_LOG_ERROR("Failed to decrypt ptt object");
+                continue;
+            }
 
             // TODO we need to know if it is mono or stereo data
             // that we have received
@@ -573,7 +577,11 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
     talk_frame.channel_id = channel_id;
     ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
 
-    Protect(&message_packet);
+    if (!TryProtect(&message_packet))
+    {
+        UI_LOG_ERROR("Failed to encrypt audio packet");
+        return;
+    }
 
     // LedRToggle();
     serial.Write(message_packet);
@@ -582,8 +590,6 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
 
 void HandleKeypress()
 {
-    keyboard.Scan(HAL_GetTick());
-
     while (keyboard.NumAvailable() > 0)
     {
         const uint8_t ch = keyboard.Read();
@@ -592,12 +598,16 @@ void HandleKeypress()
 
         switch (ch)
         {
-        case ENT:
+        case Keyboard::Ent:
         {
             ui_net_link::Serialize(text_channel, screen.UserText(), screen.UserTextLength(),
                                    message_packet);
 
-            Protect(&message_packet);
+            if (!TryProtect(&message_packet))
+            {
+                UI_LOG_ERROR("Failed to encrypt text packet");
+                return;
+            }
 
             UI_LOG_INFO("Transmit text message");
             serial.Write(message_packet);
@@ -605,7 +615,7 @@ void HandleKeypress()
             screen.ClearUserText();
             break;
         }
-        case BAK:
+        case Keyboard::Bak:
         {
             screen.BackspaceUserText();
             break;
@@ -619,38 +629,34 @@ void HandleKeypress()
     }
 }
 
-bool Protect(link_packet_t* packet)
+bool TryProtect(link_packet_t* packet)
+try
 {
-    try
-    {
-        uint8_t ct[link_packet_t::Payload_Size];
-        auto payload = mls_ctx.protect(
-            0, 0, ct, sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
+    uint8_t ct[link_packet_t::Payload_Size];
+    auto payload = mls_ctx.protect(
+        0, 0, ct, sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
 
-        std::memcpy(packet->payload + 1, payload.data(), payload.size());
-        packet->length = payload.size() + 1;
-        return true;
-    }
-    catch (const std::exception& e)
-    {
-        return false;
-    }
+    std::memcpy(packet->payload + 1, payload.data(), payload.size());
+    packet->length = payload.size() + 1;
+    return true;
+}
+catch (const std::exception& e)
+{
+    return false;
 }
 
-bool Unprotect(link_packet_t* packet)
+bool TryUnprotect(link_packet_t* packet)
+try
 {
-    try
-    {
-        auto payload = mls_ctx.unprotect(
-            sframe::output_bytes{packet->payload, link_packet_t::Payload_Size}.subspan(1),
-            sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
-        packet->length = payload.size() + 1;
-        return true;
-    }
-    catch (const std::exception& e)
-    {
-        return false;
-    }
+    auto payload = mls_ctx.unprotect(
+        sframe::output_bytes{packet->payload, link_packet_t::Payload_Size}.subspan(1),
+        sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
+    packet->length = payload.size() + 1;
+    return true;
+}
+catch (const std::exception& e)
+{
+    return false;
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
@@ -710,7 +716,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        // keyboard.Scan(HAL_GetTick());
+        keyboard.Scan(HAL_GetTick());
     }
     else if (htim->Instance == TIM3)
     {

@@ -285,7 +285,8 @@ extern "C" void app_main(void)
             gpio_set_level(NET_LED_G, 1);
 
             link_packet_t packet;
-
+            packet.type = (uint8_t)ui_net_link::Packet_Type::WifiStatus;
+            packet.payload[0] = (uint8_t)wifi_state;
             ui_layer.Write(packet);
 
             switch (wifi_state)

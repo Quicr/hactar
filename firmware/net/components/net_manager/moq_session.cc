@@ -72,11 +72,8 @@ void Session::StartReadTrack(const json& subscription, Serial& serial)
             trackname = std::to_string(device_id);
         }
 
-        // TODO something with this?
         std::string codec = subscription.at("codec").get<std::string>();
         ESP_LOGE("sub", "%s", codec.c_str());
-        // uint64_t sample_rate = subscription.at("sample_rate").get<uint64_t>();
-        // std::string channel_config = subscription.at("channelConfig").get<std::string>();
 
         std::shared_ptr<moq::TrackReader> reader = std::make_shared<moq::TrackReader>(
             moq::MakeFullTrackName(track_namespace, trackname), serial, codec);

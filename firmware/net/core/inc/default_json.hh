@@ -34,7 +34,7 @@ json default_channel_json = json::parse(R"(
         {
             "channel_name": "text",
             "tracknamespace": ["moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "text_en"],
-            "trackname": "text_en",
+            "trackname": "chat",
             "codec": "text"
         }
     ],
@@ -66,7 +66,7 @@ json default_channel_json = json::parse(R"(
         {
             "channel_name": "text",
             "tracknamespace": ["moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "text_en"],
-            "trackname": "text_en",
+            "trackname": "chat",
             "codec": "text"
         }
     ]
