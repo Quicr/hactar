@@ -20,7 +20,7 @@ Hardware design for test device
 
 ## License
 
-The license for information in this repository is in [LICENSE].  This license covers everything in the repository except for the `cmox` directory, which is covered by the license in [firmware/ui/dependencies/cmox/LICENSE].
+The license for information in this repository is in [LICENSE].  This license covers everything in the repository except for the directory `firmware/ui/dependencies/cmox`, which is covered by the license in [firmware/ui/dependencies/cmox/LICENSE].
 
 <h2 id="where">Where To Find Things</h2>
 
