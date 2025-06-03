@@ -33,9 +33,6 @@ OPT = -Os
 #######################################
 # Build path
 BUILD_DIR = ./build
-STM32_CRYPTO_DIR=
-STM32_CRYPTO_INCLUDE_DIR=${STM32_CRYPTO_DIR}/include
-STM32_CRYPTO_LIB_DIR=${STM32_CRYPTO_DIR}/lib
 
 #######################################
 # programming
@@ -50,263 +47,17 @@ CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${
 DOCKER_IMAGE = build-hactar-ui
 mft=compile
 
-######################################
-# source
-######################################
-# HAL C sources
-SRCS_C =  \
-main.c \
-stm32f4xx_hal_msp.c \
-stm32f4xx_it.c \
-system_stm32f4xx.c \
-stm32f4xx_hal.c \
-stm32f4xx_hal_adc.c \
-stm32f4xx_hal_cortex.c \
-stm32f4xx_hal_dma.c \
-stm32f4xx_hal_dma_ex.c \
-stm32f4xx_hal_exti.c \
-stm32f4xx_hal_flash.c \
-stm32f4xx_hal_flash_ex.c \
-stm32f4xx_hal_flash_ramfunc.c \
-stm32f4xx_hal_gpio.c \
-stm32f4xx_hal_i2c.c \
-stm32f4xx_hal_i2s.c \
-stm32f4xx_hal_i2s_ex.c \
-stm32f4xx_hal_pwr.c \
-stm32f4xx_hal_pwr_ex.c \
-stm32f4xx_hal_spi.c \
-stm32f4xx_hal_tim.c \
-stm32f4xx_hal_tim_ex.c \
-stm32f4xx_hal_rcc.c \
-stm32f4xx_hal_rcc_ex.c \
-stm32f4xx_hal_uart.c \
-stm32f4xx_hal_rng.c \
-stm32f4xx_hal_crc.c \
-sysmem.c \
-syscalls.c
-
-# User C/C++ sources
-SRCS_CC	   = $(shell find src -name '*.cc' -exec basename {} \;)
-SRCS_CC += serial_handler.cc
-
-SRCS_C    += $(shell find src -name '*.c' -exec basename {} \;)
-
-SRCS = ${SRCS_CC} ${SRCS_C}
-
-# ASM sources
-ASM_SOURCES =  \
-startup_stm32f405xx.s
-
-# C includes
-INCS =  \
--IDrivers/STM32F4xx_HAL_Driver/Inc \
--IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
--IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
--IDrivers/CMSIS/Include
-
-ifdef STM32_CRYPTO_DIR
-INCS += -I${STM32_CRYPTO_INCLUDE_DIR}
-endif
-
-INCS += $(addprefix -I,$(shell find inc -type d))
-INCS += $(addprefix -I,$(shell find Core/Inc -type d))
-INCS += -I../shared_inc
-INCS += -I../shared
-
-#######################################
-# vpaths
-#######################################
-VPATH =  $(shell find src -type d)
-VPATH +=  $(shell find Core/Src -type d)
-VPATH += Drivers/STM32F4xx_HAL_Driver/Src
-VPATH +=  $(shell find ../shared -type d)
-# VPATH     += $(BSP_SRC_DIR)
-# VPATH     += $(CMSIS_CORE_SRC_DIR)
-# VPATH     += $(CMSIS_DEVICE_SRC_DIR)
-# VPATH     += $(HAL_SRC_DIR)
-
-#######################################
-# openocd
-#######################################
-# TODO
-
-
-#######################################
-# binaries
-#######################################
-PREFIX = arm-none-eabi-
-# The gcc compiler bin path can be either defined in make command via GCC_PATH variable (> make GCC_PATH=xxx)
-# either it can be added to the PATH environment variable.
-ifdef GCC_PATH
-CC = $(GCC_PATH)/$(PREFIX)g++
-AS = $(GCC_PATH)/$(PREFIX)g++ -x assembler-with-cpp
-CP = $(GCC_PATH)/$(PREFIX)objcopy
-DP = $(GCC_PATH)/$(PREFIX)objdump
-SZ = $(GCC_PATH)/$(PREFIX)size
-else
-CC = $(PREFIX)g++
-AS = $(PREFIX)g++ -x assembler-with-cpp
-CP = $(PREFIX)objcopy
-DP = $(PREFIX)objdump
-SZ = $(PREFIX)size
-endif
-HEX = $(CP) -O ihex
-BIN = $(CP) -O binary -S
-
-#######################################
-# CFLAGS
-#######################################
-# cpu
-CPU = -mcpu=cortex-m4
-
-# fpu
-FPU = -mfpu=fpv4-sp-d16
-
-# float-abi
-FLOAT-ABI = -mfloat-abi=hard
-
-# mcu
-MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
-
-# macros for gcc
-# AS defines
-AS_DEFS =
-
-# C defines
-C_DEFS =  \
--DUSE_HAL_DRIVER \
--DSTM32F405xx
-
-
-# AS includes
-AS_INCLUDES =
-
-
-# compile gcc flags
-ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
-
-CFLAGS 		+= $(MCU) $(C_DEFS) $(INCS) $(OPT) -std=c++17 \
-						 -Wall -Wextra \
-						 -fdata-sections -ffunction-sections -fexceptions
-        # -Wshadow \
-        # -Wnon-virtual-dtor \
-        # -Wcast-align \
-        # -Wunused \
-        # -Woverloaded-virtual \
-        # -Wpedantic \
-        # -Wconversion \
-        # -Wsign-conversion \
-        # -Wnull-dereference \
-        # -Wdouble-promotion \
-        # -Wformat=2 \
-        # -Wimplicit-fallthrough
-
-HAL_CFLAGS 	+= $(MCU) $(C_DEFS) $(INCS) -Os -Wall -fdata-sections -ffunction-sections
-
-ifeq ($(DEBUG), 1)
-CFLAGS += -g -gdwarf-2
-HAL_CFLAGS += -g -gdwarf-2
-endif
-
-ifdef STM32_CRYPTO_DIR
-CFLAGS += -DCRYPTO -DNO_ALLOC
-endif
-
-ifeq (${PROGRAMMER}, CUBE)
-	ifeq (${OS}, WINDOWS_NT)
-		EXT = .exe
-	else
-		EXT =
-	endif
-endif
-
 OCD_DIR    = /usr/share/openocd/scripts
 OCDFLAGS   = -f interface/stlink.cfg -f target/stm32f4x.cfg
-
-
-# Generate dependency informationINCS	  = $(addprefix -I,$(shell find inc -type d))INCS	  = $(addprefix -I,$(shell find inc -type d))INCS	  = $(addprefix -I,$(shell find inc -type d))
-CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
-HAL_CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
-
-
-#######################################
-# LDFLAGS
-#######################################
-# link script
-LDSCRIPT = stm32f405rgtx_flash.ld
-
-# libraries
-# LIBS = -lc -lm -lnosys -lrdimon -lSTM32Cryptographic_CM4
-LIBS = -lc -lm -lnosys
-LIBDIR = -Llib
-LDFLAGS = $(MCU) --specs=nosys.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/${TARGET}.map,--cref -Wl,--gc-sections
-
-ifdef STM32_CRYPTO_DIR
-LIBS += -lSTM32Cryptographic_CM4
-LIBDIR += -L$(STM32_CRYPTO_LIB_DIR)
-endif
-#######################################
-# build the application
-#######################################
-# list of objects
-OBJECTS_C = $(addprefix $(BUILD_DIR)/,$(SRCS_C:.c=.o))
-# vpath %.c $(sort $(dir $(SRCS_C)))
-OBJECTS_CC = $(addprefix $(BUILD_DIR)/,$(SRCS_CC:.cc=.o))
-# vpath %.cc $(sort $(dir $(SRCS_CC)))
-# list of ASM program objects
-OBJECTS_S = $(addprefix $(BUILD_DIR)/,$(ASM_SOURCES:.s=.o))
-# vpath %.s $(sort $(dir $(ASM_SOURCES)))
-
-OBJECTS = ${OBJECTS_C} ${OBJECTS_CC} ${OBJECTS_S}
-
-# Deps
-DEPS_C     = $(addprefix ${BUILD_DIR}/,$(SRCS_C:.c=.d))
-DEPS_CC    = $(addprefix ${BUILD_DIR}/,$(SRCS_CC:.cc=.d))
-DEPS       = ${DEPS_C} ${DEPS_CC}
 
 .PHONY: all
 
 # default action: build all
 all: info compile
 
--include $(DEPS)
-
-# So I can silence the warning from the HAL lib
-${BUILD_DIR}/stm32f4%.o : stm32f4%.c | ${BUILD_DIR}
-	@echo "[C]			$(notdir $<)"
-	@$(CC) $(HAL_CFLAGS) -c -o $@ $< -MMD -MF ${BUILD_DIR}/$(*F).d
-${BUILD_DIR}/main.o : main.c | ${BUILD_DIR}
-	@echo "[C]			$(notdir $<)"
-	@$(CC) $(HAL_CFLAGS) -c -o $@ $< -MMD -MF ${BUILD_DIR}/$(*F).d
-
-${BUILD_DIR}/%.o : %.c | ${BUILD_DIR}
-	@echo "[C]			$(notdir $<)"
-	@$(CC) $(CFLAGS) -c -o $@ $< -MMD -MF ${BUILD_DIR}/$(*F).d
-
-${BUILD_DIR}/%.o : %.cc | ${BUILD_DIR}
-	@echo "[CC]			$(notdir $<)"
-	@$(CC) $(CFLAGS) -c -o $@ $< -MMD -MF ${BUILD_DIR}/$(*F).d
-
-$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
-	@echo "[S]			$(notdir $<)"
-	@$(AS) -c $(CFLAGS) $< -o $@
-
-$(BUILD_DIR)/${TARGET}.elf: ${OBJECTS} | ${BUILD_DIR}
-	@echo "[LD]			${TARGET}.elf"
-	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-	@$(DP) -St $@ >$(BUILD_DIR)/${TARGET}.lst
-	$(SZ) $@
-
-$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	@echo "[LD]			${TARGET}.hex"
-	@$(HEX) $< $@
-	$(SZ) $@
-
-$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	@echo "[LD]			${TARGET}.bin"
-	@$(BIN) $< $@
-
-compile: $(BUILD_DIR)/${TARGET}.bin $(BUILD_DIR)/${TARGET}.hex
+compile: CMakeLists.txt
+	cmake -B $(BUILD_DIR)
+	cmake --build $(BUILD_DIR) -j
 
 upload: compile
 	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
@@ -325,7 +76,6 @@ upload_cube_swd: compile
 	if [ ${PROGRAMMER} = CUBE ] ; then \
 		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS_SWD} ; \
 	fi \
-
 
 # NOTE - mft is the makefile target if you want to use something other than compile
 docker:
@@ -350,7 +100,6 @@ openocd:
 
 monitor:
 	python3 ../tools/monitor.py ${PORT} ${BAUD}
-
 
 format:
 	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
