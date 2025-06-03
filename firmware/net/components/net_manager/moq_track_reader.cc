@@ -150,9 +150,22 @@ void TrackReader::SubscribeTask(void* param)
         {
             reader->TransmitAudio();
         }
-        else
+        else if (reader->codec == "ascii")
         {
             reader->TransmitText();
+        }
+        else if (reader->codec == "ai_cmd_response:json")
+        {
+            NET_LOG_INFO("Track reader - ai response json");
+            while (true)
+            {
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
+                // todo
+            }
+        }
+        else
+        {
+            NET_LOG_ERROR("Unknown codec, %s", reader->codec.c_str());
         }
     }
 
