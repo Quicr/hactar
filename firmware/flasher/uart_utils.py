@@ -21,14 +21,9 @@ def FlashSelection(uart: serial.Serial, chip: str):
         send_data = [ch for ch in bytes("ui_upload", "UTF-8")]
         uart.write(send_data)
 
-        time.sleep(2)
-
         print(f"Update uart to parity: {BB}EVEN{NW}")
-        uart.close()
-        uart.parity = serial.PARITY_EVEN
-        uart.open()
 
-        time.sleep(3)
+        time.sleep(2)
 
         print(f"Activating UI Upload Mode: {BG}SUCCESS{NW}")
 

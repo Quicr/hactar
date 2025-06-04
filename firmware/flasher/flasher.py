@@ -125,6 +125,14 @@ def main():
 
                     if ("ui" in args.chip):
                         print(f"{BW}Starting UI Upload{NW}")
+
+                        uart_utils.FlashSelection(uart, args.chip)
+                        uart.close()
+                        uart_config["parity"] = serial.PARITY_EVEN
+                        uart = serial.Serial(
+                            port=port,
+                            **uart_config
+                        )
                         stm32_flasher = stm32.stm32_flasher(uart)
                         programmed = ProgramHactarSTM(stm32_flasher, args.chip,
                                                         args.binary_path, True)
@@ -193,7 +201,6 @@ def RecoverableFlashMemory(flasher, firmware, chip, recover):
 
 
 def ProgramHactarSTM(flasher, chip, binary_path, recover):
-    uart_utils.FlashSelection(flasher.uart, chip)
 
     # Get the firmware
     firmware = open(binary_path, "rb").read()
