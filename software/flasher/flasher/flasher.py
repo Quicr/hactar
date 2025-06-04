@@ -1,65 +1,24 @@
 import argparse
 import sys
+import os
 import glob
 import time
-import serial
-import serial.tools.list_ports
-import uart_utils
-import stm32
-import hactar_stm32
-import esp32
 from ansi_colours import BB, BG, BR, BW, BY, NW
 
-HELLO = bytes("WHO ARE YOU?\0", "utf-8")
-HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE\0", "utf-8")
-
-
-def SerialPorts(uart_config):
-    # Get all ports
-    ports = []
-    if sys.platform.startswith("win"):
-        coms = list(serial.tools.list_ports.comports())
-        ports = [port for (port, _, _) in coms]
-    elif (sys.platform.startswith('linux') or
-          sys.platform.startswith('cygwin')):
-        ports = glob.glob('/dev/ttyUSB[0-9]*')
-    elif sys.platform.startswith('darwin'):
-        ports = glob.glob('/dev/cu.usbserial*')
-    else:
-        raise EnvironmentError("Unsupported platform")
-    ports.sort()
-
-    print(f"Ports available: {len(ports)} [{ports}]")
-    result = []
-    for port in ports:
-        try:
-            s = serial.Serial(**uart_config, port=port)
-            s.timeout = 0.5
-            # Send a message to the serial port
-            # If it responds with I AM A HACTAR DEVICE
-            # append it.
-            s.write(HELLO)
-
-            resp = s.read(len(HELLO_RES))
-
-            s.close()
-
-            if (resp == HELLO_RES):
-                print(f"Device on port {BY}{port}{NW} {BG}is{NW} a Hactar!")
-                result.append(port)
-            else:
-                print(f"Device on port {BY}{port}{NW} {BR}not{NW} a Hactar!")
-        except (OSError, serial.SerialException):
-            pass
-    return result
-
+# Get pyserial from our local copy
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "vendor"))
+import uart_utils
+import stm32
+import esp32
+import serial
+import serial.tools.list_ports
 
 def main():
     try:
         parser = argparse.ArgumentParser()
 
         parser.add_argument("-p", "--port",
-                            help="COM/Serial Port that Hactar is on",
+                            help="COM/Serial port that Hactar is on, leave blank to search for Hactars",
                             default="",
                             required=False)
         parser.add_argument("-b", "--baud", help="Baudrate to communicate at",
@@ -119,7 +78,7 @@ def main():
                     if ("mgmt" in args.chip):
                         print(f"{BW}Starting MGMT Upload{NW}")
                         stm32_flasher = stm32.stm32_flasher(uart)
-                        programmed = ProgramHactarSTM(stm32_flasher,
+                        programmed = FlashHactarSTM32Chip(stm32_flasher,
                                                         args.chip,
                                                         args.binary_path, False)
 
@@ -134,13 +93,13 @@ def main():
                             **uart_config
                         )
                         stm32_flasher = stm32.stm32_flasher(uart)
-                        programmed = ProgramHactarSTM(stm32_flasher, args.chip,
+                        programmed = FlashHactarSTM32Chip(stm32_flasher, args.chip,
                                                         args.binary_path, True)
 
                     if ("net" in args.chip):
                         print(f"{BW}Starting Net Upload{NW}")
                         esp32_flasher = esp32.esp32_flasher(uart)
-                        programmed = esp32_flasher.ProgramESP(
+                        programmed = esp32_flasher.FlashESP32S3Chip(
                             args.binary_path)
 
                     print(f"Done Flashing {BR}GOODBYE{NW}")
@@ -152,6 +111,49 @@ def main():
             # End while
     except Exception as ex:
         print(f"{BR}[Error]{NW} {ex}")
+
+
+def SerialPorts(uart_config):
+    HELLO = bytes("WHO ARE YOU?\0", "utf-8")
+    HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE\0", "utf-8")
+
+    # Get all ports
+    ports = []
+    if sys.platform.startswith("win"):
+        coms = list(serial.tools.list_ports.comports())
+        ports = [port for (port, _, _) in coms]
+    elif (sys.platform.startswith('linux') or
+          sys.platform.startswith('cygwin')):
+        ports = glob.glob('/dev/ttyUSB[0-9]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/cu.usbserial*')
+    else:
+        raise EnvironmentError("Unsupported platform")
+    ports.sort()
+
+    print(f"Ports available: {len(ports)} [{ports}]")
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(**uart_config, port=port)
+            s.timeout = 0.5
+            # Send a message to the serial port
+            # If it responds with I AM A HACTAR DEVICE
+            # append it.
+            s.write(HELLO)
+
+            resp = s.read(len(HELLO_RES))
+
+            s.close()
+
+            if (resp == HELLO_RES):
+                print(f"Device on port {BY}{port}{NW} {BG}is{NW} a Hactar!")
+                result.append(port)
+            else:
+                print(f"Device on port {BY}{port}{NW} {BR}not{NW} a Hactar!")
+        except (OSError, serial.SerialException):
+            pass
+    return result
 
 
 def RecoverFlashSelection(flasher, chip, recover):
@@ -200,7 +202,7 @@ def RecoverableFlashMemory(flasher, firmware, chip, recover):
             RecoverFlashSelection(flasher, chip, recover)
 
 
-def ProgramHactarSTM(flasher, chip, binary_path, recover):
+def FlashHactarSTM32Chip(flasher, chip, binary_path, recover):
 
     # Get the firmware
     firmware = open(binary_path, "rb").read()
@@ -216,6 +218,3 @@ def ProgramHactarSTM(flasher, chip, binary_path, recover):
         flasher.SendGo(flasher.chip_config["usr_start_addr"])
 
     return True
-
-
-main()

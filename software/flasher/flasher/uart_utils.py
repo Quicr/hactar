@@ -23,7 +23,7 @@ def FlashSelection(uart: serial.Serial, chip: str):
 
         print(f"Update uart to parity: {BB}EVEN{NW}")
 
-        time.sleep(2)
+        time.sleep(3)
 
         print(f"Activating UI Upload Mode: {BG}SUCCESS{NW}")
 

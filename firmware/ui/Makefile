@@ -17,7 +17,6 @@ SHELL := /bin/bash
 # target
 ######################################
 TARGET = ui
-FIRMWARE = ${TARGET}.hex
 
 ######################################
 # building variables
@@ -41,8 +40,8 @@ WRITE_START = 0x08000000
 PROGRAMMER = CUBE
 PORT =
 BAUD = 115200
-CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
-CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.hex ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
 
 DOCKER_IMAGE = build-hactar-ui
 mft=compile
@@ -64,7 +63,7 @@ upload: compile
 
 upload_py: compile
 	python3 ../flasher/flasher.py --baud=${BAUD} --chip="ui" --port=${PORT} \
-								 -bin=${BUILD_DIR}/${FIRMWARE}
+								 -bin=${BUILD_DIR}/${TARGET}.bin
 
 upload_cube_serial: compile
 	python3 ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
