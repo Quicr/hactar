@@ -224,7 +224,7 @@ ${BUILD_DIR}:
 	@mkdir -p $@
 
 upload: compile
-	python3 ../flasher/flasher.py --baud=${BAUD} --chip="mgmt" --port=${PORT} \
+	python3 ../../software//flasher/main.py --baud=${BAUD} --chip="mgmt" --port=${PORT} \
 								 -bin=${BUILD_DIR}/${TARGET}.bin
 
 upload_stflash: compile

@@ -34,14 +34,12 @@ extern DMA_HandleTypeDef hdma_usart3_tx;
 
 // TODO add messages that to the monitor
 
-// TODO make a proper ring buffer for writing into the
-// different rings that will then be self managed instead of
-// each one trying to fight to write to dma
-
 #define CPU_FREQ 48'000'000
 
 #define UART_BUFF_SZ 1024
 #define TRANSMISSION_TIMEOUT 10000
+
+uint8_t Ready_Byte[] = {0x80};
 
 uint8_t ui_rx_buff[UART_BUFF_SZ] = {0};
 uint8_t ui_tx_buff[UART_BUFF_SZ] = {0};
@@ -192,13 +190,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     __enable_irq();
 }
 
-void CancelAllUart()
-{
-    HAL_UART_Abort(usb_stream.rx.uart);
-    HAL_UART_Abort(ui_stream.rx.uart);
-    HAL_UART_Abort(net_stream.rx.uart);
-}
-
 int app_main(void)
 {
     state = default_state;
@@ -235,6 +226,8 @@ int app_main(void)
             uploader = 1;
             LEDA(HIGH, HIGH, LOW);
 
+            SendUploadReady();
+
             break;
         }
         case Net_Upload:
@@ -245,6 +238,9 @@ int app_main(void)
             NetBootloaderMode();
             uploader = 1;
             LEDA(HIGH, LOW, HIGH);
+
+            SendUploadReady();
+
             break;
         }
         case Normal:
@@ -314,6 +310,32 @@ void CheckTimeout()
         state = default_state;
         return;
     }
+}
+
+void SendUploadReady()
+{
+    static uint8_t Ready_Rx_Byte[1] = {0};
+    Ready_Rx_Byte[0] = 0;
+    for (int i = 0; i < 5; i++)
+    {
+        HAL_UART_Transmit(usb_stream.rx.uart, Ready_Byte, 1, HAL_MAX_DELAY);
+        HAL_UART_Receive(usb_stream.rx.uart, Ready_Rx_Byte, 1, 1000);
+
+        if (Ready_Rx_Byte[0] == Ready_Byte[0])
+        {
+            return;
+        }
+    }
+
+    // TODO
+    // If we got here then the flasher never responded so put the state back to normal
+}
+
+void CancelAllUart()
+{
+    HAL_UART_Abort(usb_stream.rx.uart);
+    HAL_UART_Abort(ui_stream.rx.uart);
+    HAL_UART_Abort(net_stream.rx.uart);
 }
 
 void SetStreamModes(const StreamMode usb_mode, const StreamMode ui_mode, const StreamMode net_mode)

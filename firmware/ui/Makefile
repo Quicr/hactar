@@ -62,7 +62,7 @@ upload: compile
 	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
 
 upload_py: compile
-	python3 ../flasher/flasher.py --baud=${BAUD} --chip="ui" --port=${PORT} \
+	python3 ../../software/flasher/main.py --baud=${BAUD} --chip="ui" --port=${PORT} \
 								 -bin=${BUILD_DIR}/${TARGET}.bin
 
 upload_cube_serial: compile
@@ -98,7 +98,7 @@ openocd:
 	openocd $(OCDFLAGS)
 
 monitor:
-	python3 ../tools/monitor.py ${PORT} ${BAUD}
+	python3 ../../software/tools/monitor.py ${PORT} ${BAUD}
 
 format:
 	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
