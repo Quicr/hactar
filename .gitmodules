@@ -5,3 +5,6 @@
 [submodule "firmware/net/components/nlohmann_json/lib"]
 	path = firmware/net/components/nlohmann_json/lib
 	url = git@github.com:nlohmann/json.git
+[submodule "firmware/ui/dependencies/sframe"]
+	path = firmware/ui/dependencies/sframe
+	url = https://github.com/GhostofCookie/sframe.git
