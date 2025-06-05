@@ -585,7 +585,7 @@ inline void AudioChip::LowerFlag(AudioFlag flag)
     flags &= ~(1 << flag);
 }
 
-inline bool AudioChip::ReadFlag(AudioFlag flag)
+bool AudioChip::ReadFlag(AudioFlag flag) const
 {
     return (flags >> flag) & 0x01;
 }

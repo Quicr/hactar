@@ -17,9 +17,14 @@ void Renderer::Render(const uint32_t ticks) noexcept
         StartupView(ticks);
         break;
     }
-    case View::Wifi:
+    case View::Chat:
     {
-        WifiView(ticks);
+        ChatView(ticks);
+        break;
+    }
+    case View::MainMenu:
+    {
+        MainMenuView(ticks);
         break;
     }
     case View::Rooms:
@@ -27,9 +32,9 @@ void Renderer::Render(const uint32_t ticks) noexcept
         RoomsView(ticks);
         break;
     }
-    case View::Chat:
+    case View::Wifi:
     {
-        RoomsView(ticks);
+        WifiView(ticks);
         break;
     }
     default:
@@ -37,6 +42,15 @@ void Renderer::Render(const uint32_t ticks) noexcept
         Error("Renderer render", "Given view is not handled");
     }
     }
+
+    // Do other stuff.
+    screen.Draw(ticks);
+}
+
+void Renderer::ChangeView(const View view) noexcept
+{
+    this->view = view;
+    change_view = true;
 }
 
 void Renderer::StartupView(const uint32_t ticks) noexcept
@@ -44,22 +58,40 @@ void Renderer::StartupView(const uint32_t ticks) noexcept
     if (change_view)
     {
         screen.FillScreen(Colour::Black);
-        screen.UpdateTitle("Welcome to Hactar!", 18);
+        screen.UpdateTitle("Loading", 7);
         change_view = false;
     }
-
-    // Do other stuff.
-    screen.Draw(ticks);
 }
 
-void Renderer::WifiView(const uint32_t ticks) noexcept
+void Renderer::ChatView(const uint32_t ticks) noexcept
 {
+    if (change_view)
+    {
+        screen.FillScreen(Colour::Black);
+        screen.UpdateTitle("Chat room", 9);
+
+        change_view = false;
+    }
+}
+
+void Renderer::MainMenuView(const uint32_t ticks) noexcept
+{
+    if (change_view)
+    {
+        screen.FillScreen(Colour::Black);
+        screen.UpdateTitle("Main menu", 9);
+
+        screen.CommitText("1. Chat", 7);
+        screen.CommitText("2. Wifi", 7);
+
+        change_view = false;
+    }
 }
 
 void Renderer::RoomsView(const uint32_t ticks) noexcept
 {
 }
 
-void Renderer::ChatView(const uint32_t ticks) noexcept
+void Renderer::WifiView(const uint32_t ticks) noexcept
 {
 }

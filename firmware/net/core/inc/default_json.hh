@@ -30,6 +30,13 @@ json default_channel_json = json::parse(R"(
             "codec": "pcm",
             "samplerate":8000,
             "channelConfig":"1"
+        },
+        {
+            "channel_name": "gardening",
+            "language": "en-US",
+            "tracknamespace": ["moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "channel/gardening", "ptt"],
+            "trackname": "chat_en",
+            "codec": "ascii"
         }
     ],
     "subscriptions": [
@@ -56,6 +63,13 @@ json default_channel_json = json::parse(R"(
             "tracknamespace": ["moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "ai/text"],
             "trackname": "",
             "codec": "ai_cmd_response:json"
+        },
+        {
+            "channel_name": "gardening",
+            "language": "en-US",
+            "tracknamespace": ["moq://moq.ptt.arpa/v1", "org/acme", "store/1234", "channel/gardening", "ptt"],
+            "trackname": "chat_en",
+            "codec": "ascii"
         }
     ]
 }

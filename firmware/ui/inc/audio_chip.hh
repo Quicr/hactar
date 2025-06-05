@@ -72,7 +72,6 @@ public:
     uint16_t* TxBuffer();
     const uint16_t* RxBuffer();
 
-private:
     // TODO use.
     enum AudioFlag
     {
@@ -82,7 +81,9 @@ private:
         Stereo,
         Mic_Mute
     };
+    bool ReadFlag(AudioFlag flag) const;
 
+private:
     HAL_StatusTypeDef WriteRegister(uint8_t address);
     bool SetRegister(uint8_t address, uint16_t data);
     bool OrRegister(uint8_t address, uint16_t data);
@@ -92,7 +93,6 @@ private:
 
     void RaiseFlag(AudioFlag flag);
     void LowerFlag(AudioFlag flag);
-    bool ReadFlag(AudioFlag flag);
     bool ReadAndLowerFlag(AudioFlag flag);
 
     static constexpr uint16_t Write_Condition = 0x34;

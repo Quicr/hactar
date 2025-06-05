@@ -39,7 +39,8 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
     texts_in_use(0),
     scroll_offset(0),
     text_buffer{0},
-    usr_buffer{0}
+    usr_buffer{0},
+    usr_buffer_idx(0)
 {
 }
 
@@ -607,6 +608,72 @@ void Screen::CommitText(const char* text, const uint32_t len)
     CommitText();
 }
 
+void Screen::AppendUserText(const char* text, const uint32_t len)
+{
+    if (usr_buffer_idx >= Max_Characters)
+    {
+        return;
+    }
+
+    const uint32_t num_char = std::min(len, Max_Characters - usr_buffer_idx);
+    for (uint32_t i = 0; i < num_char; ++i)
+    {
+        usr_buffer[usr_buffer_idx + i] = text[i];
+    }
+
+    DrawString(usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
+               usr_buffer + usr_buffer_idx, num_char, font7x12, Colour::White, Colour::Black);
+
+    usr_buffer_idx += num_char;
+}
+
+void Screen::AppendUserText(const char ch)
+{
+    if (usr_buffer_idx >= Max_Characters)
+    {
+        return;
+    }
+
+    usr_buffer[usr_buffer_idx] = ch;
+
+    DrawString(usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
+               usr_buffer + usr_buffer_idx, 1, font7x12, Colour::White, Colour::Black);
+
+    ++usr_buffer_idx;
+}
+
+void Screen::BackspaceUserText()
+{
+    if (usr_buffer_idx == 0)
+    {
+        return;
+    }
+
+    --usr_buffer_idx;
+
+    FillRectangle(usr_buffer_idx * font7x12.width, (usr_buffer_idx + 1) * font7x12.width,
+                  User_Text_Height_Offset, User_Text_Height_Offset + font7x12.height,
+                  Colour::Black);
+}
+
+void Screen::ClearUserText()
+{
+    FillRectangle(0, usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
+                  User_Text_Height_Offset + font7x12.height, Colour::Black);
+
+    usr_buffer_idx = 0;
+}
+
+const char* Screen::UserText() const noexcept
+{
+    return usr_buffer;
+}
+
+uint16_t Screen::UserTextLength() const noexcept
+{
+    return usr_buffer_idx;
+}
+
 // Private functions
 
 inline void Screen::WaitForSPIComplete()
@@ -734,6 +801,16 @@ bool Screen::FillRectangleProcedure(DrawMemory& memory,
     }
 
     return true;
+}
+
+void Screen::DrawRectangleProcedure(const int16_t x1,
+                                    const int16_t x2,
+                                    const int16_t y1,
+                                    const int16_t y2,
+                                    const uint16_t thickness,
+                                    const Colour colour)
+{
+    // TODO flash fill of matrix
 }
 
 bool Screen::DrawRectangleProcedure(DrawMemory& memory,
@@ -1009,6 +1086,8 @@ Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val, const int16_
 }
 
 // TODO colour HIGH and colour LOW to save calculating it everytime.
+// Each byte stores two pixels of colour.
+// The first half is the "even" pixel and the second half is the "odd" pixel
 inline void Screen::FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
                                     const uint16_t i,
                                     const uint16_t j,

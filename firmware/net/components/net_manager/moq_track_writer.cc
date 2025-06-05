@@ -70,33 +70,9 @@ void TrackWriter::StatusChanged(TrackWriter::Status status)
     }
 }
 
-void TrackWriter::PushPttObject(const uint8_t* bytes,
-                                uint32_t len,
-                                const bool talk_stopped,
-                                const uint64_t timestamp)
+void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uint64_t timestamp)
 {
     auto time_bytes = quicr::AsBytes(timestamp);
-
-    std::lock_guard<std::mutex> _(obj_mux);
-
-    auto& obj = moq_objs.emplace_back();
-    obj.headers.group_id = device_id;
-    obj.headers.object_id = object_id++;
-    obj.headers.payload_length = len;
-    obj.headers.extensions = quicr::Extensions{};
-    obj.headers.extensions.value()[2].assign(time_bytes.begin(), time_bytes.end());
-
-    obj.data.assign(bytes, bytes + len);
-}
-
-void TrackWriter::PushPttAIObject(const uint8_t* bytes,
-                                  uint32_t len,
-                                  const bool talk_stopped,
-                                  const uint64_t timestamp,
-                                  const uint32_t request_id)
-{
-    auto time_bytes = quicr::AsBytes(timestamp);
-    const size_t ext_bytes = 10;
 
     std::lock_guard<std::mutex> _(obj_mux);
 
@@ -116,42 +92,39 @@ void TrackWriter::PublishTask(void* params)
 
     while (true)
     {
-        // Scope to reclaim variables
+        uint32_t next_print = 0;
+        // TODO add in changing pub
+        while (writer->GetStatus() != moq::TrackWriter::Status::kOk)
         {
-            uint32_t next_print = 0;
-            // TODO add in changing pub
-            while (writer->GetStatus() != moq::TrackWriter::Status::kOk)
+            if (esp_timer_get_time_ms() > next_print)
             {
-                if (esp_timer_get_time_ms() > next_print)
-                {
-                    NET_LOG_WARN("Publisher on track %s waiting to for pub ok",
-                                 writer->track_name.c_str());
-                    next_print = esp_timer_get_time_ms() + 2000;
-                }
-                vTaskDelay(300 / portTICK_PERIOD_MS);
+                NET_LOG_WARN("Publisher on track %s waiting to for pub ok",
+                             writer->track_name.c_str());
+                next_print = esp_timer_get_time_ms() + 2000;
             }
-
-            NET_LOG_INFO("Publishing to track %s", writer->track_name.c_str());
-
-            // TODO changing pub
-            while (writer->GetStatus() == TrackWriter::Status::kOk)
-            {
-                // TODO use notifies and then drain the entire moq objs
-                vTaskDelay(2 / portTICK_PERIOD_MS);
-
-                if (writer->moq_objs.size() == 0)
-                {
-                    continue;
-                }
-
-                std::lock_guard<std::mutex> _(writer->obj_mux);
-                const link_data_obj& obj = writer->moq_objs.front();
-                writer->PublishObject(obj.headers, obj.data);
-                writer->moq_objs.pop_front();
-            }
+            vTaskDelay(300 / portTICK_PERIOD_MS);
         }
-    }
 
-    NET_LOG_ERROR("Publish task for %s has exited", writer->track_name.c_str());
-    vTaskDelete(nullptr);
+        NET_LOG_INFO("Publishing to track %s", writer->track_name.c_str());
+
+        // TODO changing pub
+        while (writer->GetStatus() == TrackWriter::Status::kOk)
+        {
+            // TODO use notifies and then drain the entire moq objs
+            vTaskDelay(2 / portTICK_PERIOD_MS);
+
+            if (writer->moq_objs.size() == 0)
+            {
+                continue;
+            }
+
+            std::lock_guard<std::mutex> _(writer->obj_mux);
+            const link_data_obj& obj = writer->moq_objs.front();
+            writer->PublishObject(obj.headers, obj.data);
+            writer->moq_objs.pop_front();
+        }
+
+        NET_LOG_ERROR("Publish task for %s has exited", writer->track_name.c_str());
+        vTaskDelete(nullptr);
+    }
 }

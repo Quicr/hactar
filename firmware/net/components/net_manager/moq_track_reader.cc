@@ -17,15 +17,18 @@ extern uint64_t device_id;
 extern bool loopback;
 extern SemaphoreHandle_t audio_req_smpr;
 
-TrackReader::TrackReader(const quicr::FullTrackName& full_track_name, Serial& serial) :
+TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
+                         Serial& serial,
+                         const std::string& codec) :
     SubscribeTrackHandler(full_track_name,
                           3,
                           quicr::messages::GroupOrder::kAscending,
                           quicr::messages::FilterType::kLatestObject),
     serial(serial),
+    codec(codec),
     track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end())
                + std::string(full_track_name.name.begin(), full_track_name.name.end())),
-    audio_buffer(),
+    byte_buffer(),
     audio_playing(false),
     audio_min_depth(5),
     audio_max_depth(std::numeric_limits<size_t>::max())
@@ -50,7 +53,7 @@ void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::Byt
         return;
     }
 
-    audio_buffer.emplace(data.begin(), data.end());
+    byte_buffer.emplace(data.begin(), data.end());
 }
 
 void TrackReader::StatusChanged(TrackReader::Status status)
@@ -74,7 +77,7 @@ void TrackReader::StatusChanged(TrackReader::Status status)
 void TrackReader::AudioPlay()
 {
     audio_playing =
-        audio_playing || (!audio_buffer.empty() && audio_buffer.size() >= audio_min_depth);
+        audio_playing || (!byte_buffer.empty() && byte_buffer.size() >= audio_min_depth);
 }
 
 void TrackReader::AudioPause()
@@ -89,34 +92,34 @@ bool TrackReader::AudioPlaying() const noexcept
 
 quicr::BytesSpan TrackReader::AudioFront() noexcept
 {
-    if (!audio_playing || audio_buffer.empty())
+    if (!audio_playing || byte_buffer.empty())
     {
         return quicr::BytesSpan();
     }
 
-    return audio_buffer.front();
+    return byte_buffer.front();
 }
 
 void TrackReader::AudioPop() noexcept
 {
-    audio_buffer.pop();
+    byte_buffer.pop();
 }
 
 std::optional<std::vector<uint8_t>> TrackReader::AudioPopFront() noexcept
 {
-    if (!audio_playing || audio_buffer.empty())
+    if (!audio_playing || byte_buffer.empty())
     {
         return std::optional<std::vector<uint8_t>>();
     }
 
-    std::optional<std::vector<uint8_t>> value = std::move(audio_buffer.front());
-    audio_buffer.pop();
+    std::optional<std::vector<uint8_t>> value = std::move(byte_buffer.front());
+    byte_buffer.pop();
     return value;
 }
 
 size_t TrackReader::AudioNumAvailable() noexcept
 {
-    return audio_buffer.size();
+    return byte_buffer.size();
 }
 
 void TrackReader::SubscribeTask(void* param)
@@ -141,61 +144,101 @@ void TrackReader::SubscribeTask(void* param)
             }
 
             NET_LOG_INFO("Subscribe to track %s", reader->track_name.c_str());
+        }
 
-            // TODO changing sub
-            while (reader->GetStatus() == TrackReader::Status::kOk)
+        if (reader->codec == "pcm")
+        {
+            reader->TransmitAudio();
+        }
+        else if (reader->codec == "ascii")
+        {
+            reader->TransmitText();
+        }
+        else if (reader->codec == "ai_cmd_response:json")
+        {
+            NET_LOG_INFO("Track reader - ai response json");
+            while (true)
             {
-                // TODO use notifies and then drain the entire moq objs
-                vTaskDelay(2 / portTICK_PERIOD_MS);
-
-                // TODO move into one function
-                // TODO all of these continues could probably be condensed
-                reader->AudioPlay();
-                if (reader->AudioNumAvailable() == 0)
-                {
-                    reader->AudioPause();
-                    continue;
-                }
-
-                if (!reader->AudioPlaying())
-                {
-                    continue;
-                }
-
-                if (!xSemaphoreTake(audio_req_smpr, 0))
-                {
-                    continue;
-                }
-
-                auto data = reader->AudioPopFront();
-                if (!data.has_value())
-                {
-                    continue;
-                }
-
-                uint32_t offset = 0;
-
-                if (data->at(offset))
-                {
-                    // last chunk
-                }
-                offset += 1;
-
-                link_packet_t link_packet = {0};
-                // TODO need to get the type from the link_obj type
-                link_packet.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
-                link_packet.payload[0] = 0;
-                link_packet.length = data->size() + 1;
-
-                memcpy(link_packet.payload + 1, data->data(), data->size());
-
-                // NET_LOG_INFO("packet length %d", link_packet.length);
-
-                reader->serial.Write(link_packet);
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
+                // todo
             }
+        }
+        else
+        {
+            NET_LOG_ERROR("Unknown codec, %s", reader->codec.c_str());
         }
     }
 
     NET_LOG_ERROR("Publish task for %s has exited", reader->track_name.c_str());
     vTaskDelete(nullptr);
+}
+
+void TrackReader::TransmitAudio()
+{
+    NET_LOG_INFO("Track reader - audio mode");
+    while (GetStatus() == TrackReader::Status::kOk)
+    {
+        // TODO use notifies and then drain the entire moq objs
+        vTaskDelay(2 / portTICK_PERIOD_MS);
+
+        AudioPlay();
+        if (AudioNumAvailable() == 0)
+        {
+            AudioPause();
+            continue;
+        }
+
+        if (!AudioPlaying())
+        {
+            continue;
+        }
+
+        if (!xSemaphoreTake(audio_req_smpr, 0))
+        {
+            continue;
+        }
+
+        auto data = AudioPopFront();
+        if (!data.has_value())
+        {
+            continue;
+        }
+
+        link_packet_t link_packet = {0};
+        link_packet.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
+        link_packet.payload[0] = 0;
+        link_packet.length = data->size() + 1;
+
+        memcpy(link_packet.payload + 1, data->data(), data->size());
+
+        serial.Write(link_packet);
+    }
+}
+
+void TrackReader::TransmitText()
+{
+    NET_LOG_INFO("Track reader - text mode");
+
+    while (GetStatus() == TrackReader::Status::kOk)
+    {
+        // TODO use notifies and then drain the entire moq objs
+        vTaskDelay(2 / portTICK_PERIOD_MS);
+
+        if (byte_buffer.empty())
+        {
+            continue;
+        }
+
+        std::optional<std::vector<uint8_t>> data = std::move(byte_buffer.front());
+        byte_buffer.pop();
+
+        link_packet_t link_packet = {0};
+        link_packet.type = (uint8_t)ui_net_link::Packet_Type::TextMessage;
+        link_packet.payload[0] = 0; // TODO channel id
+        link_packet.length = data->size() + 1;
+
+        memcpy(link_packet.payload + 1, data->data(), data->size());
+
+        serial.Write(link_packet);
+    }
 }
