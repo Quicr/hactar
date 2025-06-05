@@ -53,7 +53,7 @@ void NormalBoot();
 void CheckTimeout();
 void WaitForNetReady(const enum State* state);
 void CancelAllUart();
-void SendUploadReady();
+void SendUploadOk();
 void LEDA(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
 void LEDB(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
 void TurnOffLEDs();

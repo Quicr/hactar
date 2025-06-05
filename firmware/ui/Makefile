@@ -37,7 +37,6 @@ BUILD_DIR = ./build
 # programming
 #######################################
 WRITE_START = 0x08000000
-PROGRAMMER = CUBE
 PORT =
 BAUD = 115200
 CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.hex ${WRITE_START} -v -g
@@ -62,19 +61,15 @@ upload: compile
 	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
 
 upload_py: compile
-	python3 ../../software/flasher/main.py --baud=${BAUD} --chip="ui" --port=${PORT} \
+	python3 ../../software/flasher/main.py --port=${PORT} --baud=${BAUD} --chip="ui" \
 								 -bin=${BUILD_DIR}/${TARGET}.bin
 
 upload_cube_serial: compile
-	python3 ../tools/command_sender.py ${PORT} ${BAUD} ui_upload
-	if [ ${PROGRAMMER} = CUBE ] ; then \
-		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS} ; \
-	fi \
+	python3 ../../software/flasher/main.py --port=${PORT} --baud=${BAUD} --chip="ui" --use_external_flasher=true
+	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS}
 
 upload_cube_swd: compile
-	if [ ${PROGRAMMER} = CUBE ] ; then \
-		STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS_SWD} ; \
-	fi \
+	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS_SWD}
 
 # NOTE - mft is the makefile target if you want to use something other than compile
 docker:

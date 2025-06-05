@@ -16,8 +16,8 @@ class esp32_flasher:
     FLASH_BEGIN = 0x02
     FLASH_DATA = 0x03
     FLASH_END = 0x04
-    SPI_SET_PARAMS = 0x0b
-    SPI_ATTACH = 0x0d
+    SPI_SET_PARAMS = 0x0B
+    SPI_ATTACH = 0x0D
     SPI_FLASH_MD5 = 0x13
 
     READY = 0x80
@@ -29,17 +29,20 @@ class esp32_flasher:
     def __init__(self, uart: serial.Serial):
         self.uart = uart
 
-    def WritePacketWaitForResponsePacket(self, packet: ESP32SlipPacket,
-                                         packet_type: int = -1,
-                                         checksum: bool = False,
-                                         retry_num: int = 5):
-        while (retry_num > 0):
+    def WritePacketWaitForResponsePacket(
+        self,
+        packet: ESP32SlipPacket,
+        packet_type: int = -1,
+        checksum: bool = False,
+        retry_num: int = 5,
+    ):
+        while retry_num > 0:
             retry_num -= 1
             self.WritePacket(packet, checksum)
 
             reply = self.WaitForResponsePacket(packet_type)
 
-            if (reply == -1):
+            if reply == -1:
                 continue
 
             return reply
@@ -63,7 +66,7 @@ class esp32_flasher:
             # Wait for start byte
             while rx_byte[0] != ESP32SlipPacket.END:
                 rx_byte = self.uart.read(1)
-                if (len(rx_byte) < 1):
+                if len(rx_byte) < 1:
                     if len(packets) > 0:
                         return packets
                     else:
@@ -76,7 +79,7 @@ class esp32_flasher:
             rx_byte = bytes(1)
             while rx_byte[0] != ESP32SlipPacket.END:
                 rx_byte = self.uart.read(1)
-                if (len(rx_byte) < 1):
+                if len(rx_byte) < 1:
                     if len(packets) > 0:
                         return packets
                     else:
@@ -84,9 +87,9 @@ class esp32_flasher:
                 in_bytes.append(rx_byte)
 
             packet.FromBytes(in_bytes)
-            if (packet.Get(1, 1) == packet_type):
+            if packet.Get(1, 1) == packet_type:
                 break
-            elif (packet_type == -1):
+            elif packet_type == -1:
                 packets.append(packet)
 
         return packet
@@ -95,14 +98,14 @@ class esp32_flasher:
         flasher_args = json.load(open(f"{build_path}/flasher_args.json"))
 
         binaries = []
-        if ("bootloader" in flasher_args):
-            flasher_args["bootloader"]['name'] = "bootloader"
+        if "bootloader" in flasher_args:
+            flasher_args["bootloader"]["name"] = "bootloader"
             binaries.append(flasher_args["bootloader"])
-        if ("partition-table" in flasher_args):
-            flasher_args["partition-table"]['name'] = "partition-table"
+        if "partition-table" in flasher_args:
+            flasher_args["partition-table"]["name"] = "partition-table"
             binaries.append(flasher_args["partition-table"])
-        if ("app" in flasher_args):
-            flasher_args["app"]['name'] = "app"
+        if "app" in flasher_args:
+            flasher_args["app"]["name"] = "app"
             binaries.append(flasher_args["app"])
 
         for binary in binaries:
@@ -111,11 +114,13 @@ class esp32_flasher:
             offset = int(binary["offset"], 16)
             num_blocks = (size + self.Block_Size - 1) // self.Block_Size
 
-            print(f"Flashing: {BY}{binary['name']}{NW}, size: {hex(size)}, "
-                  f"start_addr: {hex(offset)}")
+            print(
+                f"Flashing: {BY}{binary['name']}{NW}, size: {hex(size)}, "
+                f"start_addr: {hex(offset)}"
+            )
 
             self.StartFlash(size, num_blocks, offset)
-            self.WriteFlash(binary['file'], data, num_blocks)
+            self.WriteFlash(binary["file"], data, num_blocks)
             self.FlashMD5(data, offset, size)
 
         self.EndFlash()
@@ -141,7 +146,7 @@ class esp32_flasher:
         reply = self.WritePacketWaitForResponsePacket(packet, self.FLASH_BEGIN)
 
         # Check for error
-        if (reply.data[-1] == 1):
+        if reply.data[-1] == 1:
             print(reply)
             raise Exception("Error occurred when starting flashing")
 
@@ -152,7 +157,7 @@ class esp32_flasher:
 
         print(f"Flashing: {BG}00.00{NW}%", end="\r")
 
-        while (data_ptr < size):
+        while data_ptr < size:
             bin_packet = ESP32SlipPacket(0, self.FLASH_DATA)
 
             # Push on the data size which will be the block size
@@ -164,25 +169,23 @@ class esp32_flasher:
             bin_packet.PushData(0, 4)
             bin_packet.PushData(0, 4)
 
-            data_bytes = data[data_ptr:data_ptr+self.Block_Size]
+            data_bytes = data[data_ptr : data_ptr + self.Block_Size]
 
-            if (len(data_bytes) < self.Block_Size):
+            if len(data_bytes) < self.Block_Size:
                 # Pad the data to fit the block size
-                data_bytes += bytes([0xFF] *
-                                    (self.Block_Size - len(data_bytes)))
+                data_bytes += bytes([0xFF] * (self.Block_Size - len(data_bytes)))
 
             # Push it all into the packet
             bin_packet.PushDataArray(data_bytes, "big")
 
             # Write the packet and wait for a reply
-            reply = self.WritePacketWaitForResponsePacket(bin_packet,
-                                                          self.FLASH_DATA,
-                                                          checksum=True)
+            reply = self.WritePacketWaitForResponsePacket(
+                bin_packet, self.FLASH_DATA, checksum=True
+            )
 
-            if (reply.GetCommand() != self.FLASH_DATA):
+            if reply.GetCommand() != self.FLASH_DATA:
                 print(reply)
-                print(f"Error occurred when writing address {data_ptr}"
-                      f" of {file}")
+                print(f"Error occurred when writing address {data_ptr}" f" of {file}")
                 raise Exception("Error. Failed to write")
 
             print(f"Flashing: {BG}{(data_ptr/size) * 100:2.2f}{NW}%", end="\r")
@@ -202,7 +205,7 @@ class esp32_flasher:
 
         reply = self.WritePacketWaitForResponsePacket(packet, self.FLASH_END)
 
-        if (reply == self.NO_REPLY or reply.GetCommand() != self.FLASH_END):
+        if reply == self.NO_REPLY or reply.GetCommand() != self.FLASH_END:
             print("Failed to restart board")
 
         print(f"Flashing: {BG}COMPLETE{NW}")
@@ -214,10 +217,9 @@ class esp32_flasher:
         packet.PushData(0, 4)
         packet.PushData(0, 4)
 
-        reply = self.WritePacketWaitForResponsePacket(
-            packet, self.SPI_FLASH_MD5)
+        reply = self.WritePacketWaitForResponsePacket(packet, self.SPI_FLASH_MD5)
 
-        if (reply.data[-1] == 1):
+        if reply.data[-1] == 1:
             print(f"Error occurred during flash. Reply dump: {reply}")
             raise Exception("Error")
 
@@ -235,20 +237,21 @@ class esp32_flasher:
             loc_md5.append(ord(h))
 
         for i in range(len(loc_md5)):
-            if (res_md5[i] != loc_md5[i]):
-                raise Exception("MD5 hashes did not match."
-                                f"\n\rReceived: {res_md5}"
-                                f"\n\rCalculated: {loc_md5}")
+            if res_md5[i] != loc_md5[i]:
+                raise Exception(
+                    "MD5 hashes did not match."
+                    f"\n\rReceived: {res_md5}"
+                    f"\n\rCalculated: {loc_md5}"
+                )
 
     def AttachSPI(self):
         packet = ESP32SlipPacket(0, self.SPI_ATTACH)
-        packet.PushDataArray([0]*8)
+        packet.PushDataArray([0] * 8)
 
         reply = self.WritePacketWaitForResponsePacket(packet, self.SPI_ATTACH)
 
-        if (reply.data[-1] == 1):
-            raise Exception(
-                f"Error occurred in attach spi. Reply dump: {reply}")
+        if reply.data[-1] == 1:
+            raise Exception(f"Error occurred in attach spi. Reply dump: {reply}")
 
     def SetSPIParameters(self):
         # This is all hardcoded...
@@ -259,18 +262,17 @@ class esp32_flasher:
         # total size (4MB)
         packet.PushData(0x400000, 4)
         # esp32s3 block size
-        packet.PushData(64*1024, 4)
+        packet.PushData(64 * 1024, 4)
         # esp32s3 sector size
-        packet.PushData(4*1024, 4)
+        packet.PushData(4 * 1024, 4)
         # esp32s3 Page size
         packet.PushData(256, 4)
         # status mask
-        packet.PushData(0xffff, 4)
+        packet.PushData(0xFFFF, 4)
 
-        reply = self.WritePacketWaitForResponsePacket(
-            packet, self.SPI_SET_PARAMS)
+        reply = self.WritePacketWaitForResponsePacket(packet, self.SPI_SET_PARAMS)
 
-        if (reply.data[-1] == 1):
+        if reply.data[-1] == 1:
             print(f"Error occurred in spi set params. Reply dump: {reply}")
 
     def Sync(self):
@@ -279,18 +281,17 @@ class esp32_flasher:
         packet.PushDataArray([0x07, 0x07, 0x012, 0x20], "big")
         packet.PushDataArray([0x55] * 32, "big")
 
-        reply = self.WritePacketWaitForResponsePacket(
-            packet, self.SYNC, retry_num=5)
+        reply = self.WritePacketWaitForResponsePacket(packet, self.SYNC, retry_num=5)
 
         # We got a packet, so we are pleased with that
-        if (reply == -1):
+        if reply == -1:
             print(f"Activating device: {BY}NO REPLY{NW}")
             raise Exception("Failed to Activate device")
 
         print(f"Activating device: {BG}SUCCESS{NW}")
 
     def FlashESP32S3Chip(self, build_path: str):
-        uart_utils.FlashSelection(self.uart, "net")
+        # uart_utils.FlashSelection(self.uart, "net")
 
         self.Sync()
 

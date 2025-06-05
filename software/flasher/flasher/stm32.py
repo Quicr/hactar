@@ -129,6 +129,7 @@ class stm32_flasher:
             self.uart, self.Commands.sync, retry_num, False
         )
 
+        print("sync reply", reply)
         self.synced = self.HandleReply(reply, "Sync", "Failed to activate device", True)
 
         return self.synced
@@ -169,13 +170,13 @@ class stm32_flasher:
         self.HandleReply(res, "Get ID command", "ACK was not received")
 
         # Get the number of incoming bytes
-        num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
+        num_bytes = uart_utils.TryGetBytes(self.uart, 1)
 
         # Get the pid which should be N+1 bytes
-        pid_bytes = uart_utils.WaitForBytesExcept(self.uart, num_bytes + 1)
+        pid_bytes = uart_utils.TryGetBytes(self.uart, num_bytes + 1)
 
         # Wait for an ack
-        res = uart_utils.WaitForBytesExcept(self.uart, 1)
+        res = uart_utils.TryGetBytes(self.uart, 1)
         self.HandleReply(res, "GetID PID ACK", "Failed to get PID", False)
 
         self.uid = int.from_bytes(bytes(pid_bytes), "big")
@@ -204,15 +205,15 @@ class stm32_flasher:
         )
         # Read the next byte which should be the num of bytes - 1
         #  for some reason they minus off one even tho 2 bytes come in
-        num_bytes = uart_utils.WaitForBytesExcept(self.uart, 1)
+        num_bytes = uart_utils.TryGetBytes(self.uart, 1)
 
-        bootloader_verison = uart_utils.WaitForBytesExcept(self.uart, 1)
+        bootloader_verison = uart_utils.TryGetBytes(self.uart, 1)
 
         # Get all of the available commands
-        recv_commands = uart_utils.WaitForBytesExcept(self.uart, num_bytes)
+        recv_commands = uart_utils.TryGetBytes(self.uart, num_bytes)
 
         # Wait for an ack
-        reply = uart_utils.WaitForBytesExcept(self.uart, 1)
+        reply = uart_utils.TryGetBytes(self.uart, 1)
 
         # Parse the commands
         available_commands = []
@@ -274,7 +275,7 @@ class stm32_flasher:
             False,
         )
 
-        recv_data = uart_utils.WaitForBytesExcept(self.uart, num_bytes)
+        recv_data = uart_utils.TryGetBytes(self.uart, num_bytes)
         if type(recv_data) is int:
             recv_data = [recv_data]
 

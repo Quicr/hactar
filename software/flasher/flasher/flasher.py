@@ -47,10 +47,22 @@ def main():
             "--binary_path",
             help="Path to the binary",
             default="",
-            required=True,
+            required=False,
+        )
+        parser.add_argument(
+            "-e",
+            "--use_external_flasher",
+            help="Gets hactar into flashing mode and then exits so a 3rd party flasher can be used",
+            default=False,
+            required=False,
         )
 
         args = parser.parse_args()
+
+        if not args.use_external_flasher and args.bin == "":
+            parser.error(
+                "A binary path must be provided if the flasher is not being used to get hactar chips into bootloder modes."
+            )
 
         uart = None
 
@@ -86,10 +98,11 @@ def main():
                         f"Opened port: {BB}{port}{NW} " f"baudrate: {BG}{args.baud}{NW}"
                     )
 
-                    # TODO use oop inheritance
                     if "mgmt" in args.chip:
                         print(f"{BW}Starting MGMT Upload{NW}")
-                        uart = FlashSelection(uart, args.chip, port, args.baud)
+                        uart = FlashSelection(
+                            uart, args.chip, port, args.baud, args.use_external_flasher
+                        )
                         stm32_flasher = stm32.stm32_flasher(uart)
                         flashed = FlashHactarSTM32Chip(
                             stm32_flasher, args.chip, args.binary_path, False
@@ -97,8 +110,9 @@ def main():
 
                     if "ui" in args.chip:
                         print(f"{BW}Starting UI Upload{NW}")
-
-                        FlashSelection(uart, args.chip, port, args.baud)
+                        uart = FlashSelection(
+                            uart, args.chip, port, args.baud, args.use_external_flasher
+                        )
                         stm32_flasher = stm32.stm32_flasher(uart)
                         flashed = FlashHactarSTM32Chip(
                             stm32_flasher, args.chip, args.binary_path, True
@@ -106,6 +120,9 @@ def main():
 
                     if "net" in args.chip:
                         print(f"{BW}Starting Net Upload{NW}")
+                        uart = FlashSelection(
+                            uart, args.chip, port, args.baud, args.use_external_flasher
+                        )
                         esp32_flasher = esp32.esp32_flasher(uart)
                         flashed = esp32_flasher.FlashESP32S3Chip(args.binary_path)
 
@@ -163,17 +180,18 @@ def SerialPorts(uart_config):
 
 
 def FlashSelection(
-    uart: serial.Serial, chip: str, port: str, baud: int
+    uart: serial.Serial, chip: str, port: str, baud: int, use_external_flasher: bool
 ) -> serial.Serial:
     if chip.lower() == "mgmt":
         uart.parity = serial.PARITY_EVEN
         print(f"Updated uart to parity: {BB}EVEN{NW}")
         print(f"User, put Hactar into bootloader mode!!")
-        input("Enter anything once it is done!")
+        input("Press enter once it is done...")
+        uart.reset_input_buffer()
     elif chip.lower() == "ui":
-
         send_data = [ch for ch in bytes("ui_upload", "UTF-8")]
         uart.write(send_data)
+        uart.flush()
 
         uart.close()
         print(f"Update uart to parity: {BB}EVEN{NW}")
@@ -186,16 +204,44 @@ def FlashSelection(
             "timeout": 2,
         }
 
-        time.sleep(0.3)
+        time.sleep(1)
         uart = serial.Serial(port=port, **uart_config)
+        uart.reset_input_buffer()
 
-        for i in range(5):
-            # TODO when we get a ready, send back a ready byte
-            rx = uart_utils.WaitForBytes(uart, 1)
-            print(rx)
-        exit()
+        uart_utils.TryHandshake(uart, uart_utils.OK, 1, 10)
+        uart_utils.TryPattern(uart, uart_utils.READY, 1, 10)
 
+        uart.reset_input_buffer()
         print(f"Activating UI Upload Mode: {BG}SUCCESS{NW}")
+    elif chip.lower() == "net":
+        send_data = [ch for ch in bytes("net_upload", "UTF-8")]
+        uart.write(send_data)
+        uart.flush()
+
+        uart.close()
+        print(f"Update uart to parity: {BB}NONE{NW}")
+
+        uart_config = {
+            "baudrate": baud,
+            "bytesize": serial.EIGHTBITS,
+            "parity": serial.PARITY_NONE,
+            "stopbits": serial.STOPBITS_ONE,
+            "timeout": 2,
+        }
+
+        time.sleep(1)
+        uart = serial.Serial(port=port, **uart_config)
+        uart.reset_input_buffer()
+
+        uart_utils.TryHandshake(uart, uart_utils.OK, 1, 10)
+        uart_utils.TryPattern(uart, uart_utils.READY, 1, 10)
+
+        uart.reset_input_buffer()
+        print(f"Activating NET Upload Mode: {BG}SUCCESS{NW}")
+
+    if use_external_flasher:
+        print(f"Flasher has gotten {chip} on hactar into upload mode.")
+        exit(0)
 
     return uart
 
@@ -229,6 +275,7 @@ def RecoverableEraseMemory(flasher, sectors, chip, recover):
                 raise ex
             print(ex)
             print(f"Erase: {BB}Recovery mode{NW}")
+            time.sleep(3)
             RecoverFlashSelection(flasher, chip, recover)
 
 
@@ -245,6 +292,7 @@ def RecoverableFlashMemory(flasher, firmware, chip, recover):
                 raise ex
             print(ex)
             print(f"Flashing: {BB}Recovery mode{NW}")
+            time.sleep(3)
             RecoverFlashSelection(flasher, chip, recover)
 
 
