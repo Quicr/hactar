@@ -34,22 +34,30 @@ def WriteByteWaitForACK(
 ):
     data = [_bytes]
     if compliment:
-        data.append(_bytes ^ 0xFF)
+        data.insert(0, _bytes ^ 0xFF)
 
+    print("Write:", data)
+    print("parity:", uart.parity)
+    reply = 0
     while retry_num > 0:
         retry_num -= 1
 
         uart.write(bytes(data))
 
         reply = GetBytes(uart, 1)
-
+        print("reply", reply)
         if reply == -1:
+            uart.flush()
+            uart.close()
+            time.sleep(0.5)
+            uart.open()
+            time.sleep(0.5)
             continue
 
         if reply == ACK:
             return reply
 
-    return -1
+    return reply
 
 
 def WriteBytesWaitForACK(uart: serial.Serial, _bytes: bytes, retry_num: int = 5):
@@ -57,12 +65,17 @@ def WriteBytesWaitForACK(uart: serial.Serial, _bytes: bytes, retry_num: int = 5)
 
     while retry_num > 0:
         retry_num -= 1
-
+        print("Write:", _bytes)
         uart.write(_bytes)
 
         reply = GetBytes(uart, 1)
 
+        print("reply", reply)
         if reply == -1:
+            uart.close()
+            time.sleep(0.5)
+            uart.open()
+            time.sleep(0.5)
             continue
 
         return reply
@@ -78,6 +91,7 @@ def GetBytes(uart: serial.Serial, num_bytes: int):
         - Passing num_bytes >  1 returns an int array
     """
     rx_byte = uart.read(num_bytes)
+    print("Get bytes:", rx_byte, len(rx_byte))
     if len(rx_byte) < 1:
         return -1
 

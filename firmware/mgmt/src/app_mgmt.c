@@ -152,7 +152,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
     // Need to have as separate if statements so we can loop back properly
     // Which doesn't make any sense to me, but it makes it work.
 
-    // HAL_GPIO_TogglePin(LEDB_G_GPIO_Port, LEDB_G_Pin);
     __disable_irq();
     if (huart->Instance == net_stream.rx.uart->Instance)
     {
@@ -160,6 +159,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
     }
     else if (huart->Instance == ui_stream.rx.uart->Instance)
     {
+        HAL_GPIO_TogglePin(LEDB_G_GPIO_Port, LEDB_G_Pin);
         Receive(&ui_stream, rx_idx);
     }
     else if (huart->Instance == usb_stream.rx.uart->Instance)
@@ -175,7 +175,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     // Since net_stream.tx.uart is usb AND ui_stream.tx.uart is usb
     // then when this is called during either ui upload or net upload
     // then they both need to be notified that the usb is free. :shrug:
-    // HAL_GPIO_TogglePin(LEDB_B_GPIO_Port, LEDB_B_Pin);
     __disable_irq();
     if (!net_stream.tx.free && huart->Instance == net_stream.tx.uart->Instance)
     {
@@ -187,6 +186,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     }
     else if (!usb_stream.tx.free && huart->Instance == usb_stream.tx.uart->Instance)
     {
+        HAL_GPIO_TogglePin(LEDB_B_GPIO_Port, LEDB_B_Pin);
         TxISR(&usb_stream, &state);
     }
     __enable_irq();
@@ -226,11 +226,13 @@ int app_main(void)
             UIUploadStreamInit(&usb_stream, &huart2);
             SendUploadOk();
 
+            UIBootloaderMode();
+            HAL_Delay(1000);
             SetStreamModes(Passthrough, Passthrough, Ignore);
 
-            UIBootloaderMode();
             uploader = 1;
             HAL_UART_Transmit(usb_stream.rx.uart, Ready_Byte, 1, HAL_MAX_DELAY);
+            // HAL_Delay(1000);
 
             LEDA(HIGH, HIGH, LOW);
 
@@ -301,6 +303,7 @@ int app_main(void)
             HandleTx(&net_stream, &next_state);
             HandleTx(&usb_stream, &next_state);
             CheckTimeout();
+            HAL_Delay(200);
 
             if (state != next_state)
             {

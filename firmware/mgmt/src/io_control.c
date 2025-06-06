@@ -54,7 +54,7 @@ void NormalAndNetUploadUartInit(uart_stream_t* usb_stream, UART_HandleTypeDef* t
     HAL_UART_DeInit(&huart1);
 
     huart1.Instance = USART1;
-    huart1.Init.BaudRate = BAUD;
+    huart1.Init.BaudRate = 115200 / 2;
     huart1.Init.WordLength = UART_WORDLENGTH_8B;
     huart1.Init.StopBits = UART_STOPBITS_1;
     huart1.Init.Parity = UART_PARITY_NONE;
@@ -84,7 +84,7 @@ void UIUploadStreamInit(uart_stream_t* usb_stream, UART_HandleTypeDef* tx_uart)
     }
 
     huart1.Instance = USART1;
-    huart1.Init.BaudRate = BAUD;
+    huart1.Init.BaudRate = 115200 / 2;
     huart1.Init.WordLength = UART_WORDLENGTH_9B;
     huart1.Init.StopBits = UART_STOPBITS_1;
     huart1.Init.Parity = UART_PARITY_EVEN;

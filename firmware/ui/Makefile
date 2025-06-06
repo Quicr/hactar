@@ -38,7 +38,7 @@ BUILD_DIR = ./build
 #######################################
 WRITE_START = 0x08000000
 PORT =
-BAUD = 115200
+BAUD = 57600
 CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.hex ${WRITE_START} -v -g
 CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
 

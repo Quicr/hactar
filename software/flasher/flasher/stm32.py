@@ -131,7 +131,7 @@ class stm32_flasher:
 
         print("sync reply", reply)
         self.synced = self.HandleReply(reply, "Sync", "Failed to activate device", True)
-
+        time.sleep(1)
         return self.synced
 
     def CheckSync(self):
@@ -165,6 +165,9 @@ class stm32_flasher:
 
         self.CheckSync()
 
+        # get_id = bytes([self.Commands.get_id ^ 0xFF, self.Commands.get_id])
+        # print(get_id)
+        # _bytes ^ 0xFF
         res = uart_utils.WriteByteWaitForACK(self.uart, self.Commands.get_id, 5)
 
         self.HandleReply(res, "Get ID command", "ACK was not received")
@@ -307,7 +310,7 @@ class stm32_flasher:
         print(f"Erased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}", end="")
         while self.sectors_to_delete:
             reply = uart_utils.WriteByteWaitForACK(
-                self.uart, self.Commands.extended_erase, 1
+                self.uart, self.Commands.extended_erase, 5
             )
 
             self.HandleReply(reply, "\nExtended Erase", "Extended erase failed")
@@ -333,7 +336,8 @@ class stm32_flasher:
 
             # Give more time to reply with the deleted sectors
             self.uart.timeout = 5
-            reply = uart_utils.WriteBytesWaitForACK(self.uart, data, 1)
+            reply = uart_utils.WriteBytesWaitForACK(self.uart, data, 5)
+
             # Revert the change back to two seconds
             self.uart.timeout = 2
             self.HandleReply(reply, "\nErase memory", "Failed to Erase", False)
