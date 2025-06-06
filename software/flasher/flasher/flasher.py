@@ -59,7 +59,7 @@ def main():
 
         args = parser.parse_args()
 
-        if not args.use_external_flasher and args.bin == "":
+        if not args.use_external_flasher and args.binary_path == "":
             parser.error(
                 "A binary path must be provided if the flasher is not being used to get hactar chips into bootloder modes."
             )
