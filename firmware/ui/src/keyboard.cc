@@ -1,9 +1,9 @@
 #include "keyboard.hh"
 
-Keyboard::Keyboard(GPIO_TypeDef* col_ports[Q10_COLS],
-                   uint16_t col_pins[Q10_COLS],
-                   GPIO_TypeDef* row_ports[Q10_ROWS],
-                   uint16_t row_pins[Q10_ROWS],
+Keyboard::Keyboard(GPIO_TypeDef* col_ports[Q10_Cols],
+                   uint16_t col_pins[Q10_Cols],
+                   GPIO_TypeDef* row_ports[Q10_Rows],
+                   uint16_t row_pins[Q10_Rows],
                    RingBuffer<uint8_t>& ch_ring,
                    uint32_t debounce_duration,
                    uint32_t repeat_duration) :
@@ -26,12 +26,12 @@ void Keyboard::Scan(const uint32_t ticks)
     uint8_t latch = 0;
     uint8_t row_bit = 0;
 
-    for (size_t col = 0; col < Q10_COLS; ++col)
+    for (size_t col = 0; col < Q10_Cols; ++col)
     {
         // Raise the col high and poll the rows
         HAL_GPIO_WritePin(col_ports[col], col_pins[col], GPIO_PIN_SET);
 
-        for (size_t row = 0; row < Q10_ROWS; ++row)
+        for (size_t row = 0; row < Q10_Rows; ++row)
         {
             press = HAL_GPIO_ReadPin(row_ports[row], row_pins[row]);
             row_bit = 1 << row;
@@ -73,7 +73,8 @@ uint8_t Keyboard::Read()
 
 uint8_t Keyboard::ReadFlags(uint32_t flags)
 {
-    return this->flags & flags;
+    volatile uint8_t test = this->flags & flags;
+    return test;
 }
 
 void Keyboard::RaiseFlags(uint32_t flags)
@@ -90,32 +91,31 @@ int8_t Keyboard::FlagPress(const int16_t col, const int16_t row)
 {
     // TODO locks
 
-    if (SYM_Col == col && SYM_Row == row)
+    if (Sym_Col == col && Sym_Row == row)
     {
-        Keyboard::RaiseFlags(Sym_Flag);
+        RaiseFlags(Sym_Flag);
         return 1;
     }
-    if (ALT_Col == col && ALT_Row == row)
+    if (Alt_Col == col && Alt_Row == row)
     {
-        Keyboard::RaiseFlags(Alt_Flag);
+        RaiseFlags(Alt_Flag);
         return 1;
     }
-
-    if (LSH_Col == col && LSH_Row == row)
+    if (Lsh_Col == col && Lsh_Row == row)
     {
-        Keyboard::RaiseFlags(Left_Shift_Flag);
+        RaiseFlags(Left_Shift_Flag);
         return 1;
     }
-    if (RSH_Col == col && RSH_Row == row)
+    if (Rsh_Col == col && Rsh_Row == row)
     {
-        Keyboard::RaiseFlags(Right_Shift_Flag);
+        RaiseFlags(Right_Shift_Flag);
         return 1;
     }
 
     // Mic is unique. Sym flag should be read before the mic flag
-    if (!Keyboard::ReadFlags(Sym_Flag) && MIC_Col == col && MIC_Row == row)
+    if (!ReadFlags(Sym_Flag) && Mic_Col == col && Mic_Row == row)
     {
-        Keyboard::RaiseFlags(Mic_Flag);
+        RaiseFlags(Mic_Flag);
         return 1;
     }
 
@@ -124,28 +124,27 @@ int8_t Keyboard::FlagPress(const int16_t col, const int16_t row)
 
 void Keyboard::FlagRelease(const int16_t col, const int16_t row)
 {
-    if (SYM_Col == col && SYM_Row == row)
+    if (Sym_Col == col && Sym_Row == row)
     {
         LowerFlags(Sym_Flag);
         return;
     }
-    if (ALT_Col == col && ALT_Row == row)
+    if (Alt_Col == col && Alt_Row == row)
     {
         LowerFlags(Alt_Flag);
         return;
     }
-
-    if (LSH_Col == col && LSH_Row == row)
+    if (Lsh_Col == col && Lsh_Row == row)
     {
         LowerFlags(Left_Shift_Flag);
         return;
     }
-    if (RSH_Col == col && RSH_Row == row)
+    if (Rsh_Col == col && Rsh_Row == row)
     {
         LowerFlags(Right_Shift_Flag);
         return;
     }
-    if (MIC_Col == col && MIC_Row == row)
+    if (Mic_Col == col && Mic_Row == row)
     {
         LowerFlags(Mic_Flag);
         return;
@@ -167,9 +166,10 @@ void Keyboard::KeyPress(const int16_t col, const int16_t row, const uint8_t latc
         // Symbol
         ch_ring.Write(Symb_Char_Map[col][row]);
     }
-    else if (ReadFlags(Left_Shift_Flag | Right_Shift_Flag | Caps_Lock_Flag))
+    else if (ReadFlags(Left_Shift_Flag | Right_Shift_Flag | Caps_Lock_Flag | Enter_Flag | Back_Flag)
+             || (Bak_Col == col && Bak_Row == row) || (Ent_Col == col && Ent_Row == row))
     {
-        // Uppercase
+        // Uppercase & certain base characters
         ch_ring.Write(Base_Char_Map[col][row]);
     }
     else

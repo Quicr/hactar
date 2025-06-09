@@ -8,16 +8,13 @@
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
+#include "tools.hh"
 #include "ui_net_link.hh"
-
-#ifdef CRYPTO
 #include <cmox_crypto.h>
 #include <cmox_init.h>
 #include <cmox_low_level.h>
 #include <sframe/sframe.h>
 #include <stm32f4xx_hal.h>
-#endif
-
 #include <random>
 
 // Forward declare
@@ -25,12 +22,13 @@ inline void CheckPTT();
 inline void CheckPTTAI();
 inline void
 SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last);
+inline void HandleKeypress();
+inline bool TryProtect(link_packet_t* link_packet);
+inline bool TryUnprotect(link_packet_t* link_packet);
 
-#ifdef CRYPTO
 constexpr const char* mls_key = "sixteen byte key";
 sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
 uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
-#endif
 
 #define HIGH GPIO_PIN_SET
 #define LOW GPIO_PIN_RESET
@@ -121,7 +119,6 @@ char* itoa(int value, char* str, int& len, int base)
     return str;
 }
 
-#ifdef CRYPTO
 cmox_init_retval_t cmox_ll_init(void* pArg)
 {
     (void)pArg;
@@ -137,8 +134,6 @@ cmox_init_retval_t cmox_ll_deInit(void* pArg)
     /* Do not turn off CRC to avoid side effect on other SW parts using it */
     return CMOX_INIT_SUCCESS;
 }
-
-#endif
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -178,8 +173,7 @@ Screen screen(hspi1,
               DISP_BL_Pin,
               Screen::Orientation::flipped_portrait);
 
-link_packet_t talk_packet;
-link_packet_t play_buffer;
+link_packet_t message_packet;
 link_packet_t* link_packet = nullptr;
 
 volatile bool sleeping = true;
@@ -189,7 +183,6 @@ constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1;
 uint32_t flags = Expected_Flags;
 
 uint32_t est_time_ms = 0;
-uint32_t num_loops = 0;
 uint32_t ticks_ms = 0;
 uint32_t num_audio_req_packets = 0;
 
@@ -201,20 +194,20 @@ uint32_t num_packets_tx = 0;
 
 ui_net_link::AudioObject talk_frame = {0, 0};
 
-GPIO_TypeDef* col_ports[Q10_COLS] = {
+GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
 };
 
-uint16_t col_pins[Q10_COLS] = {
+uint16_t col_pins[Keyboard::Q10_Cols] = {
     KB_COL1_Pin, KB_COL2_Pin, KB_COL3_Pin, KB_COL4_Pin, KB_COL5_Pin,
 };
 
-GPIO_TypeDef* row_ports[Q10_ROWS] = {
+GPIO_TypeDef* row_ports[Keyboard::Q10_Rows] = {
     KB_ROW1_GPIO_Port, KB_ROW2_GPIO_Port, KB_ROW3_GPIO_Port, KB_ROW4_GPIO_Port,
     KB_ROW5_GPIO_Port, KB_ROW6_GPIO_Port, KB_ROW7_GPIO_Port,
 };
 
-uint16_t row_pins[Q10_ROWS] = {
+uint16_t row_pins[Keyboard::Q10_Rows] = {
     KB_ROW1_Pin, KB_ROW2_Pin, KB_ROW3_Pin, KB_ROW4_Pin, KB_ROW5_Pin, KB_ROW6_Pin, KB_ROW7_Pin,
 };
 
@@ -231,18 +224,18 @@ const uint8_t ptt_channel = 0;
 bool ptt_ai_down = false;
 const uint8_t ptt_ai_channel = 1;
 
+const uint8_t text_channel = 2;
+
 int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
 
-#ifdef CRYPTO
     if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
     {
         Error("main", "cmox failed to initialise");
     }
 
     mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(&mls_key[0]), 16});
-#endif
 
     Renderer renderer(screen, keyboard);
 
@@ -254,31 +247,28 @@ int app_main()
     LEDS(HIGH, HIGH, HIGH);
 
     uint32_t redraw = uwTick;
-    Colour next = Colour::Green;
-    Colour curr = Colour::Blue;
-    const char* hello = "Hello1 Hello2 Hello3 Hello4 Hello5 Hello6 Hello7";
 
     uint32_t blinky = 0;
     uint32_t next_print = 0;
 
-    uint32_t count_loops_timeout = HAL_GetTick() + 1000;
-    bool done_counting_loops = false;
+    // Test in case the audio chip settings change and something looks suspicious
+    CountNumAudioInterrupts(audio_chip, sleeping);
 
+    // TODO remove once we have a proper loading screen/view implementation
+    const uint32_t loading_done_timeout = HAL_GetTick();
+    bool done_booting = false;
+
+    UI_LOG_INFO("Starting main loop");
     while (1)
     {
-        if (HAL_GetTick() >= count_loops_timeout && !done_counting_loops)
+        Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+
+        if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
-            UI_LOG_ERROR("num_loops %d", num_loops);
-            done_counting_loops = true;
+            renderer.ChangeView(Renderer::View::Chat);
+            done_booting = true;
         }
 
-        // if (HAL_GetTick() > blinky)
-        // {
-        //     HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-        //     blinky = HAL_GetTick() + 2000;
-        // }
-
-        num_loops++;
         if (HAL_GetTick() > next_print)
         {
             // UI_LOG_ERROR("rx %lu, tx %lu", num_packets_rx, num_packets_tx);
@@ -298,6 +288,8 @@ int app_main()
         CheckPTT();
         CheckPTTAI();
 
+        HandleKeypress();
+
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
@@ -305,56 +297,6 @@ int app_main()
 
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
-
-        if (keyboard.NumAvailable() > 0)
-        {
-            uint8_t ch = keyboard.Read();
-            static char vol_str[10];
-            static char mic_str[10];
-            int len = 0;
-            if (ch == 'i')
-            {
-                audio_chip.VolumeAdjust(6);
-                UI_LOG_INFO("volume %d", audio_chip.Volume());
-            }
-            if (ch == 'k')
-            {
-                audio_chip.VolumeAdjust(-6);
-                UI_LOG_INFO("volume %d", audio_chip.Volume());
-            }
-            if (ch == 'm')
-            {
-                audio_chip.VolumeReset();
-                UI_LOG_INFO("volume %d", audio_chip.Volume());
-            }
-
-            if (ch == 'w')
-            {
-                audio_chip.MicVolumeAdjust(8);
-                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
-            }
-            if (ch == 's')
-            {
-                audio_chip.MicVolumeAdjust(-8);
-                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
-            }
-            if (ch == 'z')
-            {
-                audio_chip.MicVolumeReset();
-                UI_LOG_INFO("mic volume %d", audio_chip.MicVolume());
-            }
-
-            itoa(audio_chip.Volume(), vol_str, len, 10);
-            screen.FillRectangle(0, 240, 30, 48, Colour::Black);
-            screen.DrawString(0, 30, "Volume ", 7, font5x8, Colour::White, Colour::Black);
-            screen.DrawString(7 * font5x8.width, 30, vol_str, len, font5x8, Colour::White,
-                              Colour::Black);
-
-            itoa(audio_chip.MicVolume(), mic_str, len, 10);
-            screen.DrawString(0, 40, "Mic Vol ", 8, font5x8, Colour::White, Colour::Black);
-            screen.DrawString(8 * font5x8.width, 40, mic_str, len, font5x8, Colour::White,
-                              Colour::Black);
-        }
 
         sleeping = true;
     }
@@ -434,20 +376,37 @@ void HandleRecvLinkPackets()
             return;
         }
 
-#ifdef CRYPTO
-        auto payload = mls_ctx.unprotect(
-            sframe::output_bytes{link_packet->payload, link_packet_t::Payload_Size}.subspan(1),
-            sframe::input_bytes{link_packet->payload, link_packet->length}.subspan(1), {});
-        link_packet->length = payload.size() + 1;
-#endif
-
+        // UI_LOG_INFO("Got a packet, type %d, first byte %d", (int)link_packet->type,
+        //             (int)link_packet->payload[0]);
         ++num_packets_rx;
         switch ((ui_net_link::Packet_Type)link_packet->type)
         {
+        case ui_net_link::Packet_Type::PowerOnReady:
+        {
+            // TODO: Stop loading screen?
+            break;
+        }
         case ui_net_link::Packet_Type::TalkStart:
         case ui_net_link::Packet_Type::TalkStop:
         case ui_net_link::Packet_Type::GetAudioLinkPacket:
         {
+            break;
+        }
+        case ui_net_link::Packet_Type::TextMessage:
+        {
+            UI_LOG_INFO("Got text message");
+
+            if (!TryUnprotect(link_packet))
+            {
+                UI_LOG_ERROR("Failed to decrypt text message");
+                continue;
+            }
+
+            // Ignore the first byte
+            constexpr uint8_t payload_offset = 1;
+            char* text = (char*)(link_packet->payload + payload_offset);
+
+            screen.CommitText(text, link_packet->length - payload_offset);
             break;
         }
         case ui_net_link::Packet_Type::PttAIObject:
@@ -457,6 +416,13 @@ void HandleRecvLinkPackets()
         case ui_net_link::Packet_Type::PttMultiObject:
         case ui_net_link::Packet_Type::PttObject:
         {
+
+            if (!TryUnprotect(link_packet))
+            {
+                UI_LOG_ERROR("Failed to decrypt ptt object");
+                continue;
+            }
+
             // TODO we need to know if it is mono or stereo data
             // that we have received
             // For now assume we receive mono
@@ -476,6 +442,8 @@ void HandleRecvLinkPackets()
         }
         case ui_net_link::Packet_Type::WifiStatus:
         {
+            UI_LOG_INFO("got a wifi packet, status %d", (int)link_packet->payload[0]);
+
             break;
         }
         default:
@@ -525,14 +493,6 @@ void InitScreen()
     screen.EnableBacklight();
 }
 
-void WaitForNetReady()
-{
-    // while (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_RESET)
-    // {
-    //     HAL_Delay(10);
-    // }
-}
-
 inline void AudioCallback()
 {
     audio_chip.ISRCallback();
@@ -556,8 +516,8 @@ void CheckPTT()
         // TODO channel id
         ui_net_link::TalkStart talk_start = {0};
         talk_start.channel_id = ptt_channel;
-        ui_net_link::Serialize(talk_start, talk_packet);
-        serial.Write(talk_packet);
+        ui_net_link::Serialize(talk_start, message_packet);
+        serial.Write(message_packet);
         ptt_down = true;
         LedGOn();
     }
@@ -565,8 +525,8 @@ void CheckPTT()
     {
         ui_net_link::TalkStop talk_stop = {0};
         talk_stop.channel_id = ptt_channel;
-        ui_net_link::Serialize(talk_stop, talk_packet);
-        serial.Write(talk_packet);
+        ui_net_link::Serialize(talk_stop, message_packet);
+        serial.Write(message_packet);
         ptt_down = false;
         SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject, true);
         LedGOff();
@@ -587,8 +547,8 @@ void CheckPTTAI()
         // TODO channel id
         ui_net_link::TalkStart talk_start = {0};
         talk_start.channel_id = ptt_ai_channel;
-        ui_net_link::Serialize(talk_start, talk_packet);
-        serial.Write(talk_packet);
+        ui_net_link::Serialize(talk_start, message_packet);
+        serial.Write(message_packet);
         ptt_ai_down = true;
         LedBOn();
     }
@@ -596,8 +556,8 @@ void CheckPTTAI()
     {
         ui_net_link::TalkStop talk_stop = {0};
         talk_stop.channel_id = ptt_ai_channel;
-        ui_net_link::Serialize(talk_stop, talk_packet);
-        serial.Write(talk_packet);
+        ui_net_link::Serialize(talk_stop, message_packet);
+        serial.Write(message_packet);
         ptt_ai_down = false;
         SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject, true);
         LedBOff();
@@ -615,20 +575,88 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
                             constants::Audio_Phonic_Sz, true, constants::Stereo);
 
     talk_frame.channel_id = channel_id;
-    ui_net_link::Serialize(talk_frame, packet_type, last, talk_packet);
+    ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
 
-#ifdef CRYPTO
-    uint8_t ct[link_packet_t::Payload_Size];
-    auto payload = mls_ctx.protect(
-        0, 0, ct, sframe::input_bytes{talk_packet.payload, talk_packet.length}.subspan(1), {});
-
-    std::memcpy(talk_packet.payload + 1, payload.data(), payload.size());
-    talk_packet.length = payload.size() + 1;
-#endif
+    if (!TryProtect(&message_packet))
+    {
+        UI_LOG_ERROR("Failed to encrypt audio packet");
+        return;
+    }
 
     // LedRToggle();
-    serial.Write(talk_packet);
+    serial.Write(message_packet);
     ++num_packets_tx;
+}
+
+void HandleKeypress()
+{
+    while (keyboard.NumAvailable() > 0)
+    {
+        const uint8_t ch = keyboard.Read();
+
+        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
+
+        switch (ch)
+        {
+        case Keyboard::Ent:
+        {
+            ui_net_link::Serialize(text_channel, screen.UserText(), screen.UserTextLength(),
+                                   message_packet);
+
+            if (!TryProtect(&message_packet))
+            {
+                UI_LOG_ERROR("Failed to encrypt text packet");
+                return;
+            }
+
+            UI_LOG_INFO("Transmit text message");
+            serial.Write(message_packet);
+            ++num_packets_tx;
+            screen.ClearUserText();
+            break;
+        }
+        case Keyboard::Bak:
+        {
+            screen.BackspaceUserText();
+            break;
+        }
+        default:
+        {
+            screen.AppendUserText(ch);
+            break;
+        }
+        }
+    }
+}
+
+bool TryProtect(link_packet_t* packet)
+try
+{
+    uint8_t ct[link_packet_t::Payload_Size];
+    auto payload = mls_ctx.protect(
+        0, 0, ct, sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
+
+    std::memcpy(packet->payload + 1, payload.data(), payload.size());
+    packet->length = payload.size() + 1;
+    return true;
+}
+catch (const std::exception& e)
+{
+    return false;
+}
+
+bool TryUnprotect(link_packet_t* packet)
+try
+{
+    auto payload = mls_ctx.unprotect(
+        sframe::output_bytes{packet->payload, link_packet_t::Payload_Size}.subspan(1),
+        sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
+    packet->length = payload.size() + 1;
+    return true;
+}
+catch (const std::exception& e)
+{
+    return false;
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
