@@ -5,8 +5,8 @@
 
 void NetBootloaderMode()
 {
-    ChangeToOutput(NET_BOOT_GPIO_Port, NET_BOOT_Pin);
-    ChangeToOutput(NET_NRST_GPIO_Port, NET_NRST_Pin);
+    // ChangeToOutput(NET_BOOT_GPIO_Port, NET_BOOT_Pin);
+    // ChangeToOutput(NET_NRST_GPIO_Port, NET_NRST_Pin);
 
     // Bring the boot low for esp, bootloader mode (0)
     HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_RESET);
@@ -17,8 +17,8 @@ void NetBootloaderMode()
 
 void NetNormalMode()
 {
-    ChangeToOutput(NET_BOOT_GPIO_Port, NET_BOOT_Pin);
-    ChangeToOutput(NET_NRST_GPIO_Port, NET_NRST_Pin);
+    // ChangeToOutput(NET_BOOT_GPIO_Port, NET_BOOT_Pin);
+    // ChangeToOutput(NET_NRST_GPIO_Port, NET_NRST_Pin);
 
     HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
 
@@ -38,8 +38,8 @@ void NetHoldInReset()
 
 void UIBootloaderMode()
 {
-    ChangeToOutput(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin);
-    ChangeToOutput(UI_NRST_GPIO_Port, UI_NRST_Pin);
+    // ChangeToOutput(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin);
+    // ChangeToOutput(UI_NRST_GPIO_Port, UI_NRST_Pin);
 
     // Normal boot mode (boot0 = 1 and boot1 = 0)
     HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_SET);
@@ -51,8 +51,8 @@ void UIBootloaderMode()
 
 void UINormalMode()
 {
-    ChangeToOutput(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin);
-    ChangeToOutput(UI_NRST_GPIO_Port, UI_NRST_Pin);
+    // ChangeToOutput(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin);
+    // ChangeToOutput(UI_NRST_GPIO_Port, UI_NRST_Pin);
 
     // Normal boot mode (boot0 = 0 and boot1 = 1)
     HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_RESET);
@@ -61,8 +61,8 @@ void UINormalMode()
     // Power cycle
     PowerCycle(UI_NRST_GPIO_Port, UI_NRST_Pin, 10);
 
-    ChangeToInput(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin);
-    ChangeToInput(UI_NRST_GPIO_Port, UI_NRST_Pin);
+    // ChangeToInput(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin);
+    // ChangeToInput(UI_NRST_GPIO_Port, UI_NRST_Pin);
 }
 
 void NormalStart()
@@ -75,7 +75,7 @@ void NormalStart()
 
 void UIHoldInReset()
 {
-    ChangeToOutput(UI_NRST_GPIO_Port, UI_NRST_Pin);
+    // ChangeToOutput(UI_NRST_GPIO_Port, UI_NRST_Pin);
 
     HAL_GPIO_WritePin(UI_NRST_GPIO_Port, UI_NRST_Pin, GPIO_PIN_RESET);
 }
