@@ -13,7 +13,7 @@ PROG_ADDR			= 0x10000
 DOCKER_IMAGE 		= build-hactar-net
 mft					= compile
 
-ESP_TOOL_ARGS 		= --trace --no-stub --port=${PORT} --baud=${BAUD} write_flash --no-compress \
+ESP_TOOL_ARGS 		= --no-stub --port=${PORT} --baud=${BAUD} write_flash --no-compress \
 	${BOOTLOADER_ADDR} ${BUILD_PATH}/bootloader/bootloader.bin \
 	${PARITIONS_ADDR} ${BUILD_PATH}/partition_table/partition-table.bin \
 	${PROG_ADDR} ${BUILD_PATH}/${TARGET}.bin
@@ -30,10 +30,10 @@ upload: compile
 	python3 ../tools/command_sender.py ${CONSOLE_PORT} 115200 debug
 
 upload_py: compile
-	python3 ../flasher/flasher.py  --baud=${BAUD} --chip="net" -bin=${BUILD_PATH}
+	python3 ../../software/flasher/main.py  --baud=${BAUD} --chip="net" -bin=${BUILD_PATH}
 
 upload_esptool:
-	python3 ../tools/command_sender.py ${PORT} ${BAUD} net_upload
+	python3 ../../software/flasher/main.py --port=${PORT} --baud=${BAUD} --chip="net" --use_external_flasher=true
 	if [ ${OS} == Windows_NT ] ; then \
 		python3 -m esptool ${ESP_TOOL_ARGS} ; \
 	else \
@@ -52,12 +52,13 @@ docker: docker-build
 		-v /dev:/dev \
 		-it ${DOCKER_IMAGE}
 
-monitor:
-	python3 ../tools/command_sender.py ${PORT} ${BAUD} net_debug
-	idf.py monitor
 
-py_monitor:
-	python3 ../tools/monitor.py ${PORT} ${BAUD}
+monitor:
+	python3 ../..//software/tools/monitor.py ${PORT} ${BAUD}
+
+idf_monitor:
+	python3 ../../softare/tools/command_sender.py ${PORT} ${BAUD} net_debug
+	idf.py monitor
 
 format:
 	find core -iname "*.cc" | xargs clang-format -i

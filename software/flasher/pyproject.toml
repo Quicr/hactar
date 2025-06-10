@@ -1,0 +1,15 @@
+[project]
+name = "Hactar Flasher"
+version = "0.1.0"
+description = "A simple flasher for stm32 and esp32 chips used on Hactar"
+authors = [
+    { name = "Brett Regnier", email = "brregnie@cisco.com" }
+]
+dependencies = ["pyserial"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["flasher"]

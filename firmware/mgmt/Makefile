@@ -24,7 +24,7 @@ FIRMWARE = ${TARGET}.elf
 # building variables
 ######################################
 # debug build?
-DEBUG = 0
+DEBUG = 1
 # optimization
 
 OPT = -Os
@@ -224,7 +224,7 @@ ${BUILD_DIR}:
 	@mkdir -p $@
 
 upload: compile
-	python3 ../flasher/flasher.py --baud=${BAUD} --chip="mgmt" --port=${PORT} \
+	python3 ../../software//flasher/main.py --baud=${BAUD} --chip="mgmt" --port=${PORT} \
 								 -bin=${BUILD_DIR}/${TARGET}.bin
 
 upload_stflash: compile
