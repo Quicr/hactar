@@ -1,29 +1,28 @@
 #include "wifi.hh"
-
-#include <mutex>
-#include <iostream>
-#include <bit>
-#include <algorithm>
-#include "logger.hh"
-
-#include "esp_log.h"
-
 #include "../../core/inc/macros.hh"
+#include "esp_log.h"
+#include "logger.hh"
+#include <algorithm>
+#include <bit>
+#include <iostream>
+#include <mutex>
 
-
-Wifi::Wifi(const int64_t scan_timeout_ms):
+Wifi::Wifi(const int64_t scan_timeout_ms) :
     scan_timeout_ms(scan_timeout_ms),
     credentials(),
     ap_in_range(),
     scanned_aps(),
     ap_idx(0),
+    last_ssid_scan(-scan_timeout_ms), // This will let us immediately scan once we are initialized
+                                      // without adding another var
     wifi_init_cfg(WIFI_INIT_CONFIG_DEFAULT()),
     wifi_cfg({}),
     state(State::NotInitialized),
     is_initialized(false),
     connect_task(),
     state_mux()
-{}
+{
+}
 
 Wifi::~Wifi()
 {
@@ -33,12 +32,7 @@ Wifi::~Wifi()
 
 void Wifi::Begin()
 {
-    xTaskCreate(WifiTask,
-        "wifi_connect_task",
-        4096,
-        (void*)this,
-        12,
-        &connect_task);
+    xTaskCreate(WifiTask, "wifi_connect_task", 4096, (void*)this, 12, &connect_task);
 }
 
 const std::vector<std::string>& Wifi::GetNetworksInRange() const
@@ -84,7 +78,8 @@ esp_err_t Wifi::ScanNetworks()
     state = State::Scanning;
 
     esp_err_t res = esp_wifi_scan_start(NULL, true);
-    if (res != ESP_OK) return res;
+    if (res != ESP_OK)
+        return res;
 
     wifi_ap_record_t wifi_records[MAX_AP];
     uint16_t num_aps = MAX_AP;
@@ -149,13 +144,9 @@ void Wifi::Connect()
         memset(wifi_cfg.sta.ssid, 0, sizeof(wifi_cfg.sta.ssid));
         memset(wifi_cfg.sta.password, 0, sizeof(wifi_cfg.sta.password));
 
-        memcpy(wifi_cfg.sta.ssid,
-            creds.ssid.c_str(),
-            creds.ssid.length());
+        memcpy(wifi_cfg.sta.ssid, creds.ssid.c_str(), creds.ssid.length());
 
-        memcpy(wifi_cfg.sta.password,
-            creds.pwd.c_str(),
-            creds.pwd.length());
+        memcpy(wifi_cfg.sta.password, creds.pwd.c_str(), creds.pwd.length());
     }
 
     NET_LOG_ERROR("Ap Info: ssid: %s password: %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
@@ -177,7 +168,8 @@ esp_err_t Wifi::Initialize()
 
     if (state != State::NotInitialized)
     {
-        NET_LOG_ERROR("Failed to initialized, not in state NotInitialized but in state: %d", (int)state);
+        NET_LOG_ERROR("Failed to initialized, not in state NotInitialized but in state: %d",
+                      (int)state);
         return ESP_ERR_INVALID_STATE;
     }
 
@@ -198,30 +190,22 @@ esp_err_t Wifi::Initialize()
     status = esp_netif_init();
     ESP_ERROR_CHECK(status);
 
-
     if (!esp_netif_create_default_wifi_sta())
     {
         status = ESP_FAIL;
     }
     ESP_ERROR_CHECK(status);
 
-
     status = esp_wifi_init(&wifi_init_cfg);
     ESP_ERROR_CHECK(status);
-    NET_LOG_INFO("Init complete, status %d", (int)state);
+    NET_LOG_INFO("Init complete, status %d", (int)status);
 
-    status = esp_event_handler_instance_register(WIFI_EVENT,
-        ESP_EVENT_ANY_ID,
-        &EventHandler,
-        (void*)this,
-        nullptr);
+    status = esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &EventHandler,
+                                                 (void*)this, nullptr);
     ESP_ERROR_CHECK(status);
 
-    status = esp_event_handler_instance_register(IP_EVENT,
-        IP_EVENT_STA_GOT_IP,
-        &EventHandler,
-        (void*)this,
-        nullptr);
+    status = esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &EventHandler,
+                                                 (void*)this, nullptr);
     ESP_ERROR_CHECK(status);
 
     status = esp_wifi_set_mode(WIFI_MODE_STA);
@@ -271,96 +255,94 @@ void Wifi::WifiTask(void* arg)
     {
         switch (wifi->state)
         {
-            case State::NotInitialized:
+        case State::NotInitialized:
+        {
+            ESP_ERROR_CHECK(wifi->Initialize());
+            break;
+        }
+        case State::Initialized:
+        {
+            // Begin trying to connect
+            wifi->Connect();
+            break;
+        }
+        case State::ReadyToConnect:
+        {
+            wifi->Connect();
+            break;
+        }
+        case State::Connecting:
+        {
+            break;
+        }
+        case State::WaitingForIP:
+        {
+            break;
+        }
+        case State::Connected:
+        {
+            break;
+        }
+        case State::InvalidCredentials:
+        {
+            if (++wifi->ap_idx >= wifi->ap_in_range.size())
             {
-                ESP_ERROR_CHECK(wifi->Initialize());
-                break;
-            }
-            case State::Initialized:
-            {
-                // Begin trying to connect
-                wifi->Connect();
-                break;
-            }
-            case State::ReadyToConnect:
-            {
-                wifi->Connect();
-                break;
-            }
-            case State::Connecting:
-            {
-                break;
-            }
-            case State::WaitingForIP:
-            {
-                break;
-            }
-            case State::Connected:
-            {
-                break;
-            }
-            case State::InvalidCredentials:
-            {
-                if (++wifi->ap_idx >= wifi->ap_in_range.size())
-                {
-                    NET_LOG_INFO("All ssids have been tried");
+                NET_LOG_INFO("All ssids have been tried");
 
-                    wifi->state = State::UnableToConnect;
-                    wifi->ap_idx = 0;
-                    wifi->retry_timeout = esp_timer_get_time_ms();
-                }
-                else
-                {
-                    wifi->Connect();
-                }
+                wifi->state = State::UnableToConnect;
+                wifi->ap_idx = 0;
+                wifi->retry_timeout = esp_timer_get_time_ms();
+            }
+            else
+            {
+                wifi->Connect();
+            }
+            break;
+        }
+        case State::Disconnected:
+        {
+            // User decided to disconnect from wifi, so we don't
+            // want to do anything until explicit connecting
+            break;
+        }
+        case State::Error:
+        {
+            // TODO print some error state, send error to ui
+            break;
+        }
+        case State::UnableToConnect:
+        {
+            // We'll stay in the state, and try again later.
+            if (esp_timer_get_time_ms() - wifi->retry_timeout < 10000)
+            {
                 break;
             }
-            case State::Disconnected:
-            {
-                // User decided to disconnect from wifi, so we don't
-                // want to do anything until explicit connecting
-                break;
-            }
-            case State::Error:
-            {
-                // TODO print some error state, send error to ui
-                break;
-            }
-            case State::UnableToConnect:
-            {
-                // We'll stay in the state, and try again later.
-                if (esp_timer_get_time_ms() - wifi->retry_timeout < 10000)
-                {
-                    break;
-                }
 
-                wifi->state = State::ReadyToConnect;
-                break;
-            }
-            case State::Scan:
-            {
-                ESP_ERROR_CHECK(wifi->ScanNetworks());
-                break;
-            }
-            case State::Scanning:
-            {
-                break;
-            }
-            default:
-            {
-                // Error
-                NET_LOG_ERROR("Connect state got into an unknown state, will abort in 1 second");
-                vTaskDelay(1000 / portTICK_PERIOD_MS);
-                abort();
-            }
+            wifi->state = State::ReadyToConnect;
+            break;
+        }
+        case State::Scan:
+        {
+            ESP_ERROR_CHECK(wifi->ScanNetworks());
+            break;
+        }
+        case State::Scanning:
+        {
+            break;
+        }
+        default:
+        {
+            // Error
+            NET_LOG_ERROR("Connect state got into an unknown state, will abort in 1 second");
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            abort();
+        }
         }
 
         // Note, if we have no scanned aps, then we want to scan a little more often
-        if (wifi->state != State::NotInitialized
-            && wifi->state != State::Error
-            && wifi->state != State::Connecting
-            && wifi->state != State::WaitingForIP
-            && wifi->state != State::Scan
+        if (wifi->state != State::NotInitialized && wifi->state != State::Error
+            && wifi->state != State::Connecting && wifi->state != State::Connected
+            && wifi->state != State::WaitingForIP && wifi->state != State::Scan
             && wifi->state != State::Scanning
             && esp_timer_get_time_ms() - wifi->last_ssid_scan > wifi->scan_timeout_ms)
         {
@@ -369,13 +351,11 @@ void Wifi::WifiTask(void* arg)
             wifi->state = State::Scan;
         }
 
-        // Delay for a second
         vTaskDelay(2500 / portTICK_PERIOD_MS);
     }
 }
 
-void Wifi::EventHandler(void* arg, esp_event_base_t event_base,
-    int32_t event_id, void* event_data)
+void Wifi::EventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
     Wifi* wifi = static_cast<Wifi*>(arg);
 
@@ -391,76 +371,76 @@ void Wifi::EventHandler(void* arg, esp_event_base_t event_base,
 
 inline void Wifi::WifiEvents(int32_t event_id, void* event_data)
 {
-    const wifi_event_t event_type{ static_cast<wifi_event_t>(event_id) };
+    const wifi_event_t event_type{static_cast<wifi_event_t>(event_id)};
     NET_LOG_INFO("Wifi Event -- event %d", (int)event_id);
 
     std::lock_guard<std::mutex> _(state_mux);
 
     switch (event_type)
     {
-        case WIFI_EVENT_SCAN_DONE:
-        {
-            state = prev_state;
-            last_ssid_scan = esp_timer_get_time_ms();
+    case WIFI_EVENT_SCAN_DONE:
+    {
+        state = prev_state;
+        last_ssid_scan = esp_timer_get_time_ms();
 
-            NET_LOG_INFO("Wifi Event- done scanning!");
-            break;
-        }
-        case WIFI_EVENT_STA_START:
+        NET_LOG_INFO("Wifi Event- done scanning!");
+        break;
+    }
+    case WIFI_EVENT_STA_START:
+    {
+        state = State::Initialized;
+        is_initialized = true;
+        NET_LOG_INFO("Wifi Event - Initialized");
+        break;
+    }
+    case WIFI_EVENT_STA_CONNECTED:
+    {
+        state = State::WaitingForIP;
+        // SendWifiConnectedPacket();
+        NET_LOG_INFO("Wifi Event - Waiting for IP");
+        break;
+    }
+    case WIFI_EVENT_STA_DISCONNECTED:
+    {
+        NET_LOG_INFO("Wifi Event - Disconnected");
+        // Every time the wifi fails to connect to a network
+        // a disconnected event is called
+        if (state == State::Connecting)
         {
-            state = State::Initialized;
-            is_initialized = true;
-            NET_LOG_INFO("Wifi Event - Initialized");
-            break;
-        }
-        case WIFI_EVENT_STA_CONNECTED:
-        {
-            state = State::WaitingForIP;
-            // SendWifiConnectedPacket();
-            NET_LOG_INFO("Wifi Event - Waiting for IP");
-            break;
-        }
-        case WIFI_EVENT_STA_DISCONNECTED:
-        {
-            NET_LOG_INFO("Wifi Event - Disconnected");
-            // Every time the wifi fails to connect to a network
-            // a disconnected event is called
-            if (state == State::Connecting)
+            if (ap_in_range[ap_idx].attempts++ >= MAX_ATTEMPTS)
             {
-                if (ap_in_range[ap_idx].attempts++ >= MAX_ATTEMPTS)
-                {
-                    // Reset to ready to connect
-                    state = State::InvalidCredentials;
-                    ap_in_range[ap_idx].attempts = 0;
-                    NET_LOG_ERROR("Max failed attempts, invalid credentials");
-                }
-                else
-                {
-                    state = State::ReadyToConnect;
-                }
+                // Reset to ready to connect
+                state = State::InvalidCredentials;
+                ap_in_range[ap_idx].attempts = 0;
+                NET_LOG_ERROR("Max failed attempts, invalid credentials");
             }
             else
             {
-                NET_LOG_INFO("Fully disconnected, won't try to reconnect");
-                // If we just decide to disconnect the wifi
-                state = State::Disconnected;
+                state = State::ReadyToConnect;
             }
-
-            break;
         }
-        case WIFI_EVENT_STA_STOP:
+        else
         {
-            state = State::NotInitialized;
-            is_initialized = false;
+            NET_LOG_INFO("Fully disconnected, won't try to reconnect");
+            // If we just decide to disconnect the wifi
+            state = State::Disconnected;
+        }
 
-            // This is assuming this is how it works.
-            break;
-        }
-        default:
-        {
-            NET_LOG_INFO("Unhandled wifi event");
-            break;
-        }
+        break;
+    }
+    case WIFI_EVENT_STA_STOP:
+    {
+        state = State::NotInitialized;
+        is_initialized = false;
+
+        // This is assuming this is how it works.
+        break;
+    }
+    default:
+    {
+        NET_LOG_INFO("Unhandled wifi event");
+        break;
+    }
     }
 }
 
@@ -472,25 +452,25 @@ inline void Wifi::IpEvents(int32_t event_id)
 
     switch (event_id)
     {
-        case IP_EVENT_STA_GOT_IP:
+    case IP_EVENT_STA_GOT_IP:
+    {
+        NET_LOG_INFO("IP Event - Got IP");
+        ap_in_range[ap_idx].attempts = 0;
+        state = State::Connected;
+        break;
+    }
+    case IP_EVENT_STA_LOST_IP:
+    {
+        if (state != State::Disconnected)
         {
-            NET_LOG_INFO("IP Event - Got IP");
-            ap_in_range[ap_idx].attempts = 0;
-            state = State::Connected;
-            break;
+            state = State::WaitingForIP;
         }
-        case IP_EVENT_STA_LOST_IP:
-        {
-            if (state != State::Disconnected)
-            {
-                state = State::WaitingForIP;
-            }
-            NET_LOG_INFO("IP Event - Lost IP");
-            break;
-        }
-        default:
-        {
-            break;
-        }
+        NET_LOG_INFO("IP Event - Lost IP");
+        break;
+    }
+    default:
+    {
+        break;
+    }
     }
 }

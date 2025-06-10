@@ -1,26 +1,23 @@
 #include "audio_chip.hh"
-#include "audio_codec.hh"
-
-#include "main.h"
 #include "app_main.hh"
-
+#include "audio_codec.hh"
 #include "logger.hh"
+#include "main.h"
 
 extern UART_HandleTypeDef huart1;
 
-AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c):
+AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     i2s(&hi2s),
     i2c(&hi2c),
-    tx_buffer{ 0 },
-    tx_ptr{ tx_buffer },
-    rx_buffer{ 0 },
-    rx_ptr{ rx_buffer },
+    tx_buffer{0},
+    tx_ptr{tx_buffer},
+    rx_buffer{0},
+    rx_ptr{rx_buffer},
     buff_mod(0),
     flags(0),
     volume(Default_Volume),
     mic_volume(Default_Mic_Volume)
 {
-
 }
 
 AudioChip::~AudioChip()
@@ -36,7 +33,6 @@ void AudioChip::Init()
 
     // Set the power
     SetRegister(0x19, 0b0'1111'1110);
-
 
     // Enable outputs
     SetRegister(0x1A, 0b1'1110'0001);
@@ -71,7 +67,6 @@ void AudioChip::Init()
     // Enable DAC softmute
     SetBit(0x06, 3, 1);
 
-
     // Noise gate threshold
     // SetRegister(0x14, 0b0'1111'1001);
 
@@ -86,8 +81,8 @@ void AudioChip::Init()
 
     // SetRegister(0x1D, 0b0'0100'0000);
 
-            // Set the Master mode (1), I2S to 16 bit words
-            // Set audio data format to i2s mode
+    // Set the Master mode (1), I2S to 16 bit words
+    // Set audio data format to i2s mode
     SetRegister(0x07, 0b0'0100'0010);
 
     UnmuteMic();
@@ -106,107 +101,106 @@ void AudioChip::SetClocks()
 {
     switch (constants::Sample_Rate)
     {
-        case constants::SampleRates::_8khz:
-        {
-            // Enable PLL integer mode.
-            /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
-            *   5 < PLLN < 13
-            *   int R = f2 / 12
-            *   PLLN = int R.
-            *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
-            *   R = 98.304 / 12 = 8.192
-            *   int R = 0x8
-            *   K = int(2^24 * (R - PLLN))
-            *     = int(2^24 * (8.192 - 8))
-            *     = 3221225
-            *     = 0x3126E9 -> but the table says 0x3126E8
-            *                                       = 0b0011'0001'0010'0110'1110'1001
-            **/
-            SetRegister(0x34, 0b0'0001'1000);
+    case constants::SampleRates::_8khz:
+    {
+        // Enable PLL integer mode.
+        /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
+         *   5 < PLLN < 13
+         *   int R = f2 / 12
+         *   PLLN = int R.
+         *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
+         *   R = 98.304 / 12 = 8.192
+         *   int R = 0x8
+         *   K = int(2^24 * (R - PLLN))
+         *     = int(2^24 * (8.192 - 8))
+         *     = 3221225
+         *     = 0x3126E9 -> but the table says 0x3126E8
+         *                                       = 0b0011'0001'0010'0110'1110'1001
+         **/
+        SetRegister(0x34, 0b0'0001'1000);
 
-            // Pg 85 version
-            SetRegister(0x35, 0b0'0011'0001);
-            SetRegister(0x36, 0b0'0010'0110);
-            SetRegister(0x37, 0b0'1110'1001);
+        // Pg 85 version
+        SetRegister(0x35, 0b0'0011'0001);
+        SetRegister(0x36, 0b0'0010'0110);
+        SetRegister(0x37, 0b0'1110'1001);
 
-            // Set ADCDIV to get 8kHz from SYSCLK
-            // Set DACDIV to get 8kHz from SYSCLK
-            // Post scale the PLL to be divided by 2
-            // Set the clock (Select the PLL) (0x01)
-            SetRegister(0x04, 0b1'1011'0101);
+        // Set ADCDIV to get 8kHz from SYSCLK
+        // Set DACDIV to get 8kHz from SYSCLK
+        // Post scale the PLL to be divided by 2
+        // Set the clock (Select the PLL) (0x01)
+        SetRegister(0x04, 0b1'1011'0101);
 
-            // Set the clock division
-            // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
-            // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
-            // Expected BCLK = constants::sample_rate * channels * frame bits per sample
-            // Note- we need to do 32 bit frames because there is not an option to do a
-            // BCLK of 256KHz
-            // 8000Hz * 2 * 32 = 512KHz
-            SetRegister(0x08, 0b1'1100'1100);
+        // Set the clock division
+        // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
+        // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
+        // Expected BCLK = constants::sample_rate * channels * frame bits per sample
+        // Note- we need to do 32 bit frames because there is not an option to do a
+        // BCLK of 256KHz
+        // 8000Hz * 2 * 32 = 512KHz
+        SetRegister(0x08, 0b1'1100'1100);
 
-            // Change the ALC sample rate -> 8kHz
-            SetRegister(0x1B, 0b0'0000'0101);
+        // Change the ALC sample rate -> 8kHz
+        SetRegister(0x1B, 0b0'0000'0101);
 
-            // Change the I2S setting accordingly
-            i2s->Init.AudioFreq = I2S_AUDIOFREQ_8K;
-            HAL_I2S_Init(i2s);
+        // Change the I2S setting accordingly
+        i2s->Init.AudioFreq = I2S_AUDIOFREQ_8K;
+        HAL_I2S_Init(i2s);
 
-            break;
-        }
-        case constants::SampleRates::_16khz:
-        {
+        break;
+    }
+    case constants::SampleRates::_16khz:
+    {
 
-            /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
-            *   5 < PLLN < 13
-            *   int R = f2 / 12
-            *   PLLN = int R.
-            *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
-            *   R = 98.304 / 12 = 8.192
-            *   int R = 0x8
-            *   K = int(2^24 * (R - PLLN))
-            *     = int(2^24 * (8.192 - 8))
-            *     = 3221225
-            *     = 0x3126E9 -> but the table says 0x3126E8
-            *                                       = 0b0011'0001'0010'0110'1110'1001
-            **/
-            // Enable PLL integer mode.
-            SetRegister(0x34, 0b0'0001'1000);
+        /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
+         *   5 < PLLN < 13
+         *   int R = f2 / 12
+         *   PLLN = int R.
+         *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
+         *   R = 98.304 / 12 = 8.192
+         *   int R = 0x8
+         *   K = int(2^24 * (R - PLLN))
+         *     = int(2^24 * (8.192 - 8))
+         *     = 3221225
+         *     = 0x3126E9 -> but the table says 0x3126E8
+         *                                       = 0b0011'0001'0010'0110'1110'1001
+         **/
+        // Enable PLL integer mode.
+        SetRegister(0x34, 0b0'0001'1000);
 
-            // Pg 85 version
-            SetRegister(0x35, 0b0'0011'0001);
-            SetRegister(0x36, 0b0'0010'0110);
-            SetRegister(0x37, 0b0'1110'1001);
+        // Pg 85 version
+        SetRegister(0x35, 0b0'0011'0001);
+        SetRegister(0x36, 0b0'0010'0110);
+        SetRegister(0x37, 0b0'1110'1001);
 
-            // Set ADCDIV to get 16kHz from SYSCLK
-            // Set DACDIV to get 16kHz from SYSCLK
-            // Post scale the PLL to be divided by 2
-            // Set the clock (Select the PLL) (0x01)
-            // Set to 16Khz
-            SetRegister(0x04, 0b0'1101'1101);
+        // Set ADCDIV to get 16kHz from SYSCLK
+        // Set DACDIV to get 16kHz from SYSCLK
+        // Post scale the PLL to be divided by 2
+        // Set the clock (Select the PLL) (0x01)
+        // Set to 16Khz
+        SetRegister(0x04, 0b0'1101'1101);
 
-            // Set the clock division
-            // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
-            // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
-            // Expected BCLK = constants::sample_rate * channels * frame bits per sample, so 16khz * 2 * 16 = 512Khz
-            // 16000Hz * 2 * 32 = 1.024MHz
-            SetRegister(0x08, 0b1'1100'1001);
+        // Set the clock division
+        // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
+        // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
+        // Expected BCLK = constants::sample_rate * channels * frame bits per sample, so 16khz * 2 *
+        // 16 = 512Khz 16000Hz * 2 * 32 = 1.024MHz
+        SetRegister(0x08, 0b1'1100'1001);
 
-            // Change the ALC sample rate -> 8kHz
-            SetRegister(0x1B, 0b0'0000'0011);
+        // Change the ALC sample rate -> 8kHz
+        SetRegister(0x1B, 0b0'0000'0011);
 
-            // Change the I2S setting accordingly
-            i2s->Init.AudioFreq = I2S_AUDIOFREQ_16K;
-            HAL_I2S_Init(i2s);
-            break;
-        }
-        default:
-        {
-            Error("Audio chip set frequencies", "Frequency set that doesn't exist");
-            break;
-        }
+        // Change the I2S setting accordingly
+        i2s->Init.AudioFreq = I2S_AUDIOFREQ_16K;
+        HAL_I2S_Init(i2s);
+        break;
+    }
+    default:
+    {
+        Error("Audio chip set frequencies", "Frequency set that doesn't exist");
+        break;
+    }
     }
 }
-
 
 // NOTE- These are hard coded values in the constants.hh file
 // for this function
@@ -322,8 +316,8 @@ HAL_StatusTypeDef AudioChip::WriteRegister(uint8_t address)
 {
     // PrintRegisterData(address);
 
-    HAL_StatusTypeDef result = HAL_I2C_Master_Transmit(i2c,
-        Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
+    HAL_StatusTypeDef result =
+        HAL_I2C_Master_Transmit(i2c, Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
 
     return result;
 }
@@ -530,7 +524,8 @@ void AudioChip::StartI2S()
 {
     // NOTE- Do not remove delay the audio chip needs time to stabilize
     HAL_Delay(20);
-    auto output = HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Total_Audio_Buffer_Sz);
+    auto output =
+        HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Total_Audio_Buffer_Sz);
 
     if (output == HAL_OK)
     {
@@ -590,7 +585,7 @@ inline void AudioChip::LowerFlag(AudioFlag flag)
     flags &= ~(1 << flag);
 }
 
-inline bool AudioChip::ReadFlag(AudioFlag flag)
+bool AudioChip::ReadFlag(AudioFlag flag) const
 {
     return (flags >> flag) & 0x01;
 }

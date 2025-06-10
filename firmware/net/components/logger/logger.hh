@@ -1,7 +1,6 @@
 #pragma once
 
 #include "esp_log.h"
-
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -17,7 +16,7 @@
 #define NET_LOGGING_INFO 3
 #define NET_LOGGING_DEBUG 4
 
-#define NET_LOG(level, format, ...) Logger::Log(level, format __VA_OPT__(,) __VA_ARGS__)
+#define NET_LOG(level, format, ...) Logger::Log(level, format __VA_OPT__(, ) __VA_ARGS__)
 #if NET_LOGGER_ACTIVE_LEVEL >= NET_LOGGING_ERROR
 #define NET_LOG_ERROR(format, ...) NET_LOG(Logger::Level::Error, format, __VA_ARGS__)
 #else
@@ -46,7 +45,7 @@ constexpr int MAX_LOG_LENGTH = 128;
 
 class Logger
 {
-static constexpr const char* TAG = "[NET]";
+    static constexpr const char* TAG = "[NET]";
 
 public:
     enum class Level
@@ -66,18 +65,18 @@ public:
 
         switch (level)
         {
-            case Level::Error:
-                ESP_LOGE(TAG, "%s", line);
-                break;
-            case Level::Warn:
-                ESP_LOGW(TAG, "%s", line);
-                break;
-            case Level::Info:
-                ESP_LOGI(TAG, "%s", line);
-                break;
-            case Level::Debug:
-                ESP_LOGD(TAG, "%s", line);
-                break;
+        case Level::Error:
+            ESP_LOGE(TAG, "%s", line);
+            break;
+        case Level::Warn:
+            ESP_LOGW(TAG, "%s", line);
+            break;
+        case Level::Info:
+            ESP_LOGI(TAG, "%s", line);
+            break;
+        case Level::Debug:
+            ESP_LOGD(TAG, "%s", line);
+            break;
         }
     }
     catch (const std::exception& e)

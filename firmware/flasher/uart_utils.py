@@ -5,7 +5,7 @@ from ansi_colours import BG, NW, BR, BB
 
 ACK = 0x79
 READY = 0x80
-
+MAX_WAIT = 15
 
 def FlashSelection(uart: serial.Serial, chip: str):
     if (chip == "mgmt" or chip == "generic_stm32"):
@@ -19,47 +19,41 @@ def FlashSelection(uart: serial.Serial, chip: str):
         print(f"Activating MGMT Upload Mode: {BG}SUCCESS{NW}")
     elif (chip == "ui"):
         send_data = [ch for ch in bytes("ui_upload", "UTF-8")]
-        res = WriteBytesWaitForACK(uart, bytes(send_data))
+        uart.write(send_data)
 
-        if res != ACK:
-            raise Exception("Failed to move device into upload mode")
+        time.sleep(2)
 
-        # Change to parity even
         print(f"Update uart to parity: {BB}EVEN{NW}")
         uart.close()
         uart.parity = serial.PARITY_EVEN
         uart.open()
 
-        # Wait for a response
-        res = WaitForBytes(uart, 1)
-        if (res != READY):
-            raise Exception("NO REPLY received after activating ui upload")
+        time.sleep(3)
 
         print(f"Activating UI Upload Mode: {BG}SUCCESS{NW}")
+
     elif (chip == "net"):
         send_data = [ch for ch in bytes("net_upload", "UTF-8")]
-        res = WriteBytesWaitForACK(uart, bytes(send_data))
+        uart.write(send_data)
 
-        if res != ACK:
-            raise Exception("Failed to move device into upload mode")
+        time.sleep(2)
 
-        # Change to parity none
         print(f"Update uart to parity: {BR}NONE{NW}")
+        uart.close()
         uart.parity = serial.PARITY_NONE
+        uart.open()
 
-        # Wait for a response
-        res = WaitForBytes(uart, 1)
-        if (res != READY):
-            raise Exception("NO REPLY received after activating net upload")
+        time.sleep(3)
 
         print(f"Activating NET Upload Mode: {BG}SUCCESS{NW}")
 
+# TODO I don't remember why I made this function...?
+# Especially with the changes to commands, although it might be useful in the future
+# Having an ack when a command comes in?
 
 def SendUploadSelectionCommand(uart: serial.Serial, command: str):
     send_data = [ch for ch in bytes(command, "UTF-8")]
     res = WriteBytesWaitForACK(uart, bytes(send_data))
-    if res != ACK:
-        raise Exception("Failed to move device into upload mode")
 
     if (command == "ui_upload"):
         # Change to parity even
@@ -78,11 +72,6 @@ def SendUploadSelectionCommand(uart: serial.Serial, command: str):
         # Change to parity none
         print(f"Update uart to parity: {BR}NONE{NW}")
         uart.parity = serial.PARITY_NONE
-
-        # Wait for a response
-        res = WaitForBytes(uart, 1)
-        if (res != READY):
-            raise Exception("NO REPLY received after activating net upload")
 
         print(f"Activating NET Upload Mode: {BG}SUCCESS{NW}")
 

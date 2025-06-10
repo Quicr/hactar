@@ -1,14 +1,14 @@
 #include "serial_handler.hh"
-
 #include "logger.hh"
-
 #include <memory.h>
 
 SerialHandler::SerialHandler(const uint16_t num_rx_packets,
-    uint8_t& tx_buff, const uint32_t tx_buff_sz,
-    uint8_t& rx_buff, const uint32_t rx_buff_sz,
-    void (*Transmit)(void* arg),
-    void* transmit_arg):
+                             uint8_t& tx_buff,
+                             const uint32_t tx_buff_sz,
+                             uint8_t& rx_buff,
+                             const uint32_t rx_buff_sz,
+                             void (*Transmit)(void* arg),
+                             void* transmit_arg) :
     rx_packets(num_rx_packets),
     tx_buff(&tx_buff),
     tx_buff_sz(tx_buff_sz),
@@ -29,7 +29,6 @@ SerialHandler::SerialHandler(const uint16_t num_rx_packets,
     bytes_read(0),
     escaped(false)
 {
-
 }
 
 SerialHandler::~SerialHandler()
@@ -39,7 +38,6 @@ SerialHandler::~SerialHandler()
 }
 
 // TODO optimize our buffers
-
 
 link_packet_t* SerialHandler::Read()
 {
@@ -56,7 +54,8 @@ link_packet_t* SerialHandler::Read()
         ++total_bytes_read;
 
         // Note if we don't cast everything, esp32 freaks out
-        if (byte == END && uint16_t(bytes_read) == uint16_t(packet->length + link_packet_t::Header_Size))
+        if (byte == END
+            && uint16_t(bytes_read) == uint16_t(packet->length + link_packet_t::Header_Size))
         {
             packet->is_ready = true;
 
@@ -136,11 +135,11 @@ void SerialHandler::Write(const link_packet_t& packet, const bool end_frame)
 
 void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool end_frame)
 {
-    #ifdef PLATFORM_ESP
+#ifdef PLATFORM_ESP
     std::lock_guard<std::mutex> _(write_mux);
-    #endif
+#endif
 
-    for (uint16_t i = 0 ; i < size; ++i)
+    for (uint16_t i = 0; i < size; ++i)
     {
         if (data[i] == END)
         {
@@ -159,7 +158,6 @@ void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool e
             WriteToTxBuff(data[i]);
         }
     }
-
 
     unsent += size;
     // End frame

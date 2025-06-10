@@ -1,19 +1,18 @@
 #include "serial.hh"
-
-#include <memory.h>
-
 #include "logger.hh"
-
+#include <memory.h>
 
 // TODO unify into ui and net
 
-Serial::Serial(UART_HandleTypeDef* uart, const uint16_t num_rx_packets,
-    uint8_t& tx_buff, const uint32_t tx_buff_sz,
-    uint8_t& rx_buff, const uint32_t rx_buff_sz):
+Serial::Serial(UART_HandleTypeDef* uart,
+               const uint16_t num_rx_packets,
+               uint8_t& tx_buff,
+               const uint32_t tx_buff_sz,
+               uint8_t& rx_buff,
+               const uint32_t rx_buff_sz) :
     SerialHandler(num_rx_packets, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this),
     uart(uart)
 {
-
 }
 
 Serial::~Serial()
@@ -37,7 +36,7 @@ void Serial::Reset()
     rx_read_idx = 0;
 
     link_packet_t* packets = rx_packets.Buffer();
-    for (int i = 0 ; i < rx_packets.Size(); ++i)
+    for (int i = 0; i < rx_packets.Size(); ++i)
     {
         packets[i].is_ready = false;
     }

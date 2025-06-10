@@ -4,18 +4,19 @@
 #ifndef __MOQ_TRACK_READER__
 #define __MOQ_TRACK_READER__
 
-#include <deque>
-
-#include <quicr/client.h>
 #include "serial.hh"
+#include <quicr/client.h>
+#include <deque>
 
 namespace moq
 {
 
-class TrackReader: public quicr::SubscribeTrackHandler
+class TrackReader : public quicr::SubscribeTrackHandler
 {
 public:
-    TrackReader(const quicr::FullTrackName& full_track_name, Serial& serial);
+    TrackReader(const quicr::FullTrackName& full_track_name,
+                Serial& serial,
+                const std::string& codec);
     virtual ~TrackReader() = default;
 
     //
@@ -38,12 +39,16 @@ public:
 private:
     static void SubscribeTask(void* param);
 
+    void TransmitAudio();
+    void TransmitText();
+
     // Audio variables
     // TODO move into an audio object?
     Serial& serial;
+    const std::string codec;
     std::string track_name;
     // TODO rename to link_packet_buffer
-    std::queue<std::vector<uint8_t>> audio_buffer;
+    std::queue<std::vector<uint8_t>> byte_buffer;
 
     bool audio_playing;
     size_t audio_min_depth;
@@ -58,6 +63,6 @@ private:
     uint64_t num_recv = 0;
 };
 
-}
+} // namespace moq
 
 #endif

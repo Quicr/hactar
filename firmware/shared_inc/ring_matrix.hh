@@ -1,16 +1,14 @@
 #pragma once
 
-#include <stdint.h>
-
 #include "array"
 #include "ring_buffer.hh"
-
+#include <stdint.h>
 
 template <typename T>
 class RingMatrix
 {
 public:
-    RingMatrix(const uint16_t num_rings, const  uint16_t buffer_sz):
+    RingMatrix(const uint16_t num_rings, const uint16_t buffer_sz) :
         num_rings(num_rings),
         buffer_sz(buffer_sz),
         write(0),
@@ -31,7 +29,7 @@ public:
             delete matrix[i];
         }
 
-        delete [] matrix;
+        delete[] matrix;
     }
 
     RingBuffer<T>* Current()

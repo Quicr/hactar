@@ -10,8 +10,8 @@ template <typename T>
 class RingBuffer
 {
 public:
-// TODO constructor that takes a bucket space of type T
-    RingBuffer(const uint16_t size = DEFAULT_BUFFER_SIZE):
+    // TODO constructor that takes a bucket space of type T
+    RingBuffer(const uint16_t size = DEFAULT_BUFFER_SIZE) :
         size(size),
         read_idx(0),
         write_idx(0),
@@ -29,7 +29,7 @@ public:
 
     ~RingBuffer()
     {
-        delete [] buffer;
+        delete[] buffer;
     }
 
     T& Write() noexcept
@@ -174,7 +174,6 @@ private:
         {
             while (true)
             {
-
             }
         }
         busy = true;
@@ -186,7 +185,7 @@ private:
     }
 
     uint16_t size;
-    uint16_t read_idx; // start
+    uint16_t read_idx;  // start
     uint16_t write_idx; // end
     T* buffer;
     bool busy;

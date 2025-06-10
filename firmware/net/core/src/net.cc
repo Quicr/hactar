@@ -1,42 +1,33 @@
 #include "net.hh"
-
-#include "sdkconfig.h"
-
-#include <quicr/client.h>
-
-#include "esp_log.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
+#include "chunk.hh"
+#include "default_json.hh"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "driver/uart.h"
-#include "nvs_flash.h"
-#include "esp_heap_caps.h"
 #include "esp_event.h"
+#include "esp_heap_caps.h"
+#include "esp_log.h"
 #include "esp_mac.h"
-
-#include "ui_net_link.hh"
-#include "peripherals.hh"
-#include "serial.hh"
-#include "wifi.hh"
-#include "logger.hh"
-#include "utils.hh"
-#include "chunk.hh"
 #include "esp_pthread.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
+#include "logger.hh"
 #include "macros.hh"
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include "nvs_flash.h"
+#include "peripherals.hh"
+#include "sdkconfig.h"
+#include "serial.hh"
+#include "ui_net_link.hh"
+#include "utils.hh"
+#include "wifi.hh"
 #include <inttypes.h>
-#include <memory>
-
-#include "wifi_connect.hh"
-#include "default_json.hh"
-
-
 #include <nlohmann/json.hpp>
+#include <quicr/client.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <memory>
 
 using json = nlohmann::json;
 
@@ -50,7 +41,7 @@ SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 
 /** END EXTERNAL VARIABLES */
 
-constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
+constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33437";
 // constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
@@ -58,8 +49,8 @@ TaskHandle_t serial_read_handle;
 StaticTask_t serial_read_buffer;
 StackType_t* serial_read_stack = nullptr;
 
-uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = { 0 };
-uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = { 0 };
+uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = {0};
+uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = {0};
 
 uart_config_t net_ui_uart_config = {
     .baud_rate = 460800,
@@ -71,14 +62,20 @@ uart_config_t net_ui_uart_config = {
     .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
 };
 
-Serial ui_layer(NET_UI_UART_PORT, NET_UI_UART_DEV,
-    serial_read_handle, ETS_UART1_INTR_SOURCE,
-    net_ui_uart_config,
-    NET_UI_UART_TX_PIN, NET_UI_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
-    *net_ui_uart_tx_buff, NET_UI_UART_TX_BUFF_SIZE,
-    *net_ui_uart_rx_buff, NET_UI_UART_RX_BUFF_SIZE,
-    NET_UI_UART_RING_RX_NUM
-);
+Serial ui_layer(NET_UI_UART_PORT,
+                NET_UI_UART_DEV,
+                serial_read_handle,
+                ETS_UART1_INTR_SOURCE,
+                net_ui_uart_config,
+                NET_UI_UART_TX_PIN,
+                NET_UI_UART_RX_PIN,
+                UART_PIN_NO_CHANGE,
+                UART_PIN_NO_CHANGE,
+                *net_ui_uart_tx_buff,
+                NET_UI_UART_TX_BUFF_SIZE,
+                *net_ui_uart_rx_buff,
+                NET_UI_UART_RX_BUFF_SIZE,
+                NET_UI_UART_RING_RX_NUM);
 
 Wifi wifi;
 
@@ -87,13 +84,13 @@ uint64_t last_audio_isr_time = esp_timer_get_time();
 
 // TODO remove me some day
 #ifdef __has_include
-#   if __has_include("wifi_creds.hh")
-#       include "wifi_creds.hh"
-#   else
-#       warning "wifi_creds.hh not found!!
-#   endif
+#if __has_include("wifi_creds.hh")
+#include "wifi_creds.hh"
 #else
-#   include "wifi_creds.hh"
+#warning "wifi_creds.hh not found!!
+#endif
+#else
+#include "wifi_creds.hh"
 #endif
 
 static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
@@ -122,86 +119,67 @@ static void LinkPacketTask(void* args)
         {
             switch ((ui_net_link::Packet_Type)packet->type)
             {
-                case ui_net_link::Packet_Type::GetAudioLinkPacket:
-                {
-                    // TODO NOTE might be a dead type
-                    break;
-                }
-                case ui_net_link::Packet_Type::MoQChangeNamespace:
-                {
-                    // TODO check if the channel is the same and if it is don't change it.
-                    // NET_LOG_INFO("got change packet");
-                    // ui_net_link::ChangeNamespace change_namespace;
-                    // ui_net_link::Deserialize(*packet, change_namespace);
-                    // track_location = std::string(change_namespace.trackname, change_namespace.trackname_len);
+            case ui_net_link::Packet_Type::GetAudioLinkPacket:
+            {
+                // TODO NOTE might be a dead type
+                break;
+            }
+            case ui_net_link::Packet_Type::MoQChangeNamespace:
+            {
+                // TODO check if the channel is the same and if it is don't change it.
+                // NET_LOG_INFO("got change packet");
+                // ui_net_link::ChangeNamespace change_namespace;
+                // ui_net_link::Deserialize(*packet, change_namespace);
+                // track_location = std::string(change_namespace.trackname,
+                // change_namespace.trackname_len);
 
-                    // xSemaphoreGive(pub_change_smpr);
-                    // xSemaphoreGive(sub_change_smpr);
-                }
-                case ui_net_link::Packet_Type::TalkStart:
-                    break;
-                case ui_net_link::Packet_Type::TalkStop:
-                    talk_stopped = true;
-                    break;
-                case ui_net_link::Packet_Type::PttAIObject:
-                {
-                    // Channel id
-                    uint32_t ext_bytes = 1;
-                    uint32_t length = packet->length;
+                // xSemaphoreGive(pub_change_smpr);
+                // xSemaphoreGive(sub_change_smpr);
+            }
+            case ui_net_link::Packet_Type::TalkStart:
+                break;
+            case ui_net_link::Packet_Type::TalkStop:
+                talk_stopped = true;
+                break;
+            case ui_net_link::Packet_Type::TextMessage:
+                NET_LOG_INFO("Got text message");
+                [[fallthrough]];
+            case ui_net_link::Packet_Type::PttAIObject:
+                [[fallthrough]];
+            case ui_net_link::Packet_Type::PttMultiObject:
+                [[fallthrough]];
+            case ui_net_link::Packet_Type::PttObject:
+            {
+                // Channel id
+                uint32_t ext_bytes = 1;
+                uint32_t length = packet->length;
 
-                    uint8_t channel_id = packet->payload[0];
+                // oof lol.
+                uint8_t channel_id = packet->payload[0];
 
-                    // Remove the bytes already read from the payload length
-                    length -= ext_bytes;
+                // Remove the bytes already read from the payload length
+                length -= ext_bytes;
 
-                    // NET_LOG_INFO("ptt ai chid %d", (int)channel_id);
-                    // If the publisher is not ready just ignore the link packet
-                    std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
-                    writer->PushPttAIObject(packet->payload + 1, length, talk_stopped,
-                        curr_audio_isr_time, request_id);
-                    talk_stopped = false;
+                // NET_LOG_INFO("chid %d", (int)channel_id);
+                // If the publisher is not ready just ignore the link packet
+                std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
+                writer->PushObject(packet->payload + 1, length, curr_audio_isr_time);
 
-                    break;
-                }
-                case ui_net_link::Packet_Type::PttMultiObject:
-                    [[fallthrough]];
-                case ui_net_link::Packet_Type::PttObject:
-                {
-                    // In the future I would want to use the audio object to transmit
-                    // that to the relay? and do less copying but thats asking a lot.
-                    // NET_LOG_INFO("serial recv audio");
+                // TODO use notifies, currently it doesn't notify fast enough?
+                // xTaskNotifyGive(rtos_pub_handle);
 
-                    // Channel id
-                    uint32_t ext_bytes = 1;
-                    uint32_t length = packet->length;
+                break;
+            }
+            default:
+                NET_LOG_ERROR("Got a packet without a handler %d", (int)packet->type);
 
-                    uint8_t channel_id = packet->payload[0];
+                // for (int i = 0 ; i < NET_UI_UART_RX_BUFF_SIZE; ++i)
+                // {
+                //     NET_LOG_INFO("idx %d: %d", i, (int)net_ui_uart_rx_buff[i]);
+                // }
+                // abort();
 
-                    // Remove the bytes already read from the payload length
-                    length -= ext_bytes;
-
-
-                    // NET_LOG_INFO("chid %d", (int)channel_id);
-                    // If the publisher is not ready just ignore the link packet
-                    std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
-                    writer->PushPttObject(packet->payload + 1, length, talk_stopped, curr_audio_isr_time);
-                    talk_stopped = false;
-
-                    // TODO use notifies, currently it doesn't notify fast enough?
-                    // xTaskNotifyGive(rtos_pub_handle);
-
-                    break;
-                }
-                default:
-                    NET_LOG_ERROR("Got a packet without a handler %d", (int)packet->type);
-
-                    // for (int i = 0 ; i < NET_UI_UART_RX_BUFF_SIZE; ++i)
-                    // {
-                    //     NET_LOG_INFO("idx %d: %d", i, (int)net_ui_uart_rx_buff[i]);
-                    // }
-                    // abort();
-
-                    break;
+                break;
             }
         }
     }
@@ -209,7 +187,8 @@ static void LinkPacketTask(void* args)
 
 void PrintRAM()
 {
-    NET_LOG_ERROR("Internal SRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+    NET_LOG_ERROR("Internal SRAM available: %d bytes",
+                  heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     NET_LOG_ERROR("PSRAM available: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 }
 
@@ -228,13 +207,11 @@ extern "C" void app_main(void)
 
     NET_LOG_INFO("Starting Net Main");
 
-    gpio_config_t io_conf = {
-        .pin_bit_mask = NET_STAT_MASK,
-        .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_POSEDGE
-    };
+    gpio_config_t io_conf = {.pin_bit_mask = NET_STAT_MASK,
+                             .mode = GPIO_MODE_INPUT,
+                             .pull_up_en = GPIO_PULLUP_DISABLE,
+                             .pull_down_en = GPIO_PULLDOWN_DISABLE,
+                             .intr_type = GPIO_INTR_POSEDGE};
     gpio_config(&io_conf);
     gpio_install_isr_service(0);
     gpio_isr_handler_add(NET_STAT, GpioIsrRisingHandler, (void*)NET_STAT);
@@ -246,9 +223,9 @@ extern "C" void app_main(void)
 
     wifi.Connect("m10x-interference", "goodlife");
 
-    #if defined(my_ssid) && defined(my_ssid_pwd)
+#if defined(my_ssid) && defined(my_ssid_pwd)
     wifi.Connect(my_ssid, my_ssid_pwd);
-    #endif
+#endif
 
     // setup moq transport
     quicr::ClientConfig config;
@@ -277,7 +254,7 @@ extern "C" void app_main(void)
     NET_LOG_INFO("Components ready");
 
     json subscriptions = default_channel_json.at("subscriptions");
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < subscriptions.size(); ++i)
     {
         // NOTE- I am not doing all of the subs because I don't want text rn
         moq_session->StartReadTrack(subscriptions[i], ui_layer);
@@ -306,33 +283,37 @@ extern "C" void app_main(void)
         {
             prev_wifi_state = wifi_state;
             gpio_set_level(NET_LED_G, 1);
+
+            link_packet_t packet;
+            packet.type = (uint8_t)ui_net_link::Packet_Type::WifiStatus;
+            packet.payload[0] = (uint8_t)wifi_state;
+            ui_layer.Write(packet);
+
             switch (wifi_state)
             {
-                case Wifi::State::Disconnected:
+            case Wifi::State::Disconnected:
+            {
+                if (status == moq::Session::Status::kConnecting
+                    || status == moq::Session::Status::kPendingSeverSetup
+                    || status == moq::Session::Status::kReady)
                 {
-                    if (status == moq::Session::Status::kConnecting ||
-                        status == moq::Session::Status::kPendingSeverSetup ||
-                        status == moq::Session::Status::kReady)
-                    {
-                        moq_session->Disconnect();
-                    }
+                    moq_session->Disconnect();
                 }
-                case Wifi::State::Initialized:
-                {
-                    break;
-                }
-                case Wifi::State::Connected:
-                {
-                    // TODO send a serial message saying we are
-                    // connected to wifi
-                    gpio_set_level(NET_LED_G, 0);
-                    break;
-                }
-                default:
-                {
-                    // Do nothing.
-                    break;
-                }
+            }
+            case Wifi::State::Initialized:
+            {
+                break;
+            }
+            case Wifi::State::Connected:
+            {
+                gpio_set_level(NET_LED_G, 0);
+                break;
+            }
+            default:
+            {
+                // Do nothing.
+                break;
+            }
             }
         }
 
@@ -341,32 +322,32 @@ extern "C" void app_main(void)
         {
             switch (status)
             {
-                case moq::Session::Status::kReady:
-                {
-                    // TODO
-                    // Tell ui chip we are ready
-                    gpio_set_level(NET_LED_B, 0);
-                    break;
-                }
-                case moq::Session::Status::kNotReady:
-                case moq::Session::Status::kNotConnected:
-                case moq::Session::Status::kFailedToConnect:
-                {
-                    NET_LOG_INFO("MOQ Transport Calling Connect");
+            case moq::Session::Status::kReady:
+            {
+                // TODO
+                // Tell ui chip we are ready
+                gpio_set_level(NET_LED_B, 0);
+                break;
+            }
+            case moq::Session::Status::kNotReady:
+            case moq::Session::Status::kNotConnected:
+            case moq::Session::Status::kFailedToConnect:
+            {
+                NET_LOG_INFO("MOQ Transport Calling Connect");
 
-                    if (moq_session->Connect() != quicr::Transport::Status::kConnecting)
-                    {
-                        NET_LOG_ERROR("MOQ Transport Session Connection Failure");
-                    }
-                    gpio_set_level(NET_LED_B, 1);
-
-                    break;
-                }
-                default:
+                if (moq_session->Connect() != quicr::Transport::Status::kConnecting)
                 {
-                    // TODO the rest
-                    break;
+                    NET_LOG_ERROR("MOQ Transport Session Connection Failure");
                 }
+                gpio_set_level(NET_LED_B, 1);
+
+                break;
+            }
+            default:
+            {
+                // TODO the rest
+                break;
+            }
             }
             prev_status = status;
         }
@@ -384,19 +365,23 @@ extern "C" void app_main(void)
 }
 
 void SetupComponents(const DeviceSetupConfig& config)
-{}
+{
+}
 
 bool CreateLinkPacketTask()
 {
     constexpr size_t stack_size = 4096;
-    serial_read_stack = (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
+    serial_read_stack =
+        (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
     if (serial_read_stack == NULL)
     {
         NET_LOG_INFO("Failed to allocate stack for link packet handler");
         return false;
     }
-    serial_read_handle = xTaskCreateStatic(LinkPacketTask, "link packet handler", stack_size, NULL, 10, serial_read_stack, &serial_read_buffer);
+    serial_read_handle = xTaskCreateStatic(LinkPacketTask, "link packet handler", stack_size, NULL,
+                                           10, serial_read_stack, &serial_read_buffer);
 
-    NET_LOG_INFO("Created link packet handler PSRAM left %ld", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    NET_LOG_INFO("Created link packet handler PSRAM left %ld",
+                 heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     return true;
 }

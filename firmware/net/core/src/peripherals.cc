@@ -1,6 +1,4 @@
 #include "peripherals.hh"
-
-
 #include "net.hh"
 
 extern QueueHandle_t uart_queue;
@@ -44,25 +42,21 @@ void IntitializePWM()
     constexpr int ledc_freq = 8000;
 
     // Prepare and then apply the LEDC PWM timer configuration
-    ledc_timer_config_t ledc_timer_c = {
-        .speed_mode = ledc_mode,
-        .duty_resolution = ledc_duty_res,
-        .timer_num = ledc_timer,
-        .freq_hz = ledc_freq,  // Set output frequency at 4 kHz
-        .clk_cfg = LEDC_AUTO_CLK
-    };
+    ledc_timer_config_t ledc_timer_c = {.speed_mode = ledc_mode,
+                                        .duty_resolution = ledc_duty_res,
+                                        .timer_num = ledc_timer,
+                                        .freq_hz = ledc_freq, // Set output frequency at 4 kHz
+                                        .clk_cfg = LEDC_AUTO_CLK};
     ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer_c));
 
     // Prepare and then apply the LEDC PWM channel configuration
-    ledc_channel_config_t ledc_channel_c = {
-        .gpio_num = ledc_io,
-        .speed_mode = ledc_mode,
-        .channel = ledc_channel,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = ledc_timer,
-        .duty = 0, // Set duty to 0%
-        .hpoint = 0
-    };
+    ledc_channel_config_t ledc_channel_c = {.gpio_num = ledc_io,
+                                            .speed_mode = ledc_mode,
+                                            .channel = ledc_channel,
+                                            .intr_type = LEDC_INTR_DISABLE,
+                                            .timer_sel = ledc_timer,
+                                            .duty = 0, // Set duty to 0%
+                                            .hpoint = 0};
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_c));
     // Set duty to 50%
     ESP_ERROR_CHECK(ledc_set_duty(ledc_mode, ledc_channel, ledc_duty));

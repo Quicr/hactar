@@ -8,7 +8,7 @@ import uart_utils
 import stm32
 import hactar_stm32
 import esp32
-from ansi_colours import BB, BG, BR, BW, NW
+from ansi_colours import BB, BG, BR, BW, BY, NW
 
 HELLO = bytes("WHO ARE YOU?\0", "utf-8")
 HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE\0", "utf-8")
@@ -27,12 +27,14 @@ def SerialPorts(uart_config):
         ports = glob.glob('/dev/cu.usbserial*')
     else:
         raise EnvironmentError("Unsupported platform")
+    ports.sort()
 
     print(f"Ports available: {len(ports)} [{ports}]")
     result = []
     for port in ports:
         try:
             s = serial.Serial(**uart_config, port=port)
+            s.timeout = 0.5
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
             # append it.
@@ -43,7 +45,10 @@ def SerialPorts(uart_config):
             s.close()
 
             if (resp == HELLO_RES):
+                print(f"Device on port {BY}{port}{NW} {BG}is{NW} a Hactar!")
                 result.append(port)
+            else:
+                print(f"Device on port {BY}{port}{NW} {BR}not{NW} a Hactar!")
         except (OSError, serial.SerialException):
             pass
     return result
@@ -89,16 +94,18 @@ def main():
             # Try to find a hactar
             print("Searching for Hactar devices")
             ports = SerialPorts(uart_config)
-            time.sleep(2)
         else:
             ports.append(args.port)
 
         print(f"Uploading to {len(ports)} Hactar devices on ports: {ports}")
 
+        num_attempts = 5
+        i = 0
         for port in ports:
             programmed = False
-            while not programmed:
+            while not programmed and i < num_attempts:
                 # programmed = True
+                i += 1
                 try:
                     uart = serial.Serial(
                         port=port,
@@ -113,14 +120,14 @@ def main():
                         print(f"{BW}Starting MGMT Upload{NW}")
                         stm32_flasher = stm32.stm32_flasher(uart)
                         programmed = ProgramHactarSTM(stm32_flasher,
-                                                      args.chip,
-                                                      args.binary_path, False)
+                                                        args.chip,
+                                                        args.binary_path, False)
 
                     if ("ui" in args.chip):
                         print(f"{BW}Starting UI Upload{NW}")
                         stm32_flasher = stm32.stm32_flasher(uart)
                         programmed = ProgramHactarSTM(stm32_flasher, args.chip,
-                                                      args.binary_path, True)
+                                                        args.binary_path, True)
 
                     if ("net" in args.chip):
                         print(f"{BW}Starting Net Upload{NW}")
@@ -131,8 +138,9 @@ def main():
                     print(f"Done Flashing {BR}GOODBYE{NW}")
                     uart.close()
                 except Exception as ex:
-                    print(f"{BR}[Error]{NW} {ex}")
+                    print(f"{BR}[Error]{NW} {ex}, will try again")
                     uart.close()
+                    time.sleep(3)
             # End while
     except Exception as ex:
         print(f"{BR}[Error]{NW} {ex}")
