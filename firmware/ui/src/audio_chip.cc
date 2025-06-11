@@ -104,12 +104,13 @@ void AudioChip::SetClocks()
     case constants::SampleRates::_8khz:
     {
         // Enable PLL integer mode.
-        /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
+        /** MCLK = 6MHz, ReqCLK = 12.288MHz
          *   5 < PLLN < 13
-         *   int R = f2 / 12
+         *   int R = f2 / MCLK
          *   PLLN = int R.
-         *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
-         *   R = 98.304 / 12 = 8.192
+         *   f2 = 4 * PREDIV * ReqCLK
+         *   f2 = 4 * 1 * 12.288MHz = 49.152MHz
+         *   R = 49.152MHz / MCLK = 8.192MHz
          *   int R = 0x8
          *   K = int(2^24 * (R - PLLN))
          *     = int(2^24 * (8.192 - 8))
@@ -117,9 +118,8 @@ void AudioChip::SetClocks()
          *     = 0x3126E9 -> but the table says 0x3126E8
          *                                       = 0b0011'0001'0010'0110'1110'1001
          **/
-        SetRegister(0x34, 0b0'0001'1000);
+        SetRegister(0x34, 0b0'0000'1000);
 
-        // Pg 85 version
         SetRegister(0x35, 0b0'0011'0001);
         SetRegister(0x36, 0b0'0010'0110);
         SetRegister(0x37, 0b0'1110'1001);
@@ -128,7 +128,7 @@ void AudioChip::SetClocks()
         // Set DACDIV to get 8kHz from SYSCLK
         // Post scale the PLL to be divided by 2
         // Set the clock (Select the PLL) (0x01)
-        SetRegister(0x04, 0b1'1011'0101);
+        SetRegister(0x04, 0b1'1011'0001);
 
         // Set the clock division
         // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
@@ -150,13 +150,14 @@ void AudioChip::SetClocks()
     }
     case constants::SampleRates::_16khz:
     {
-
-        /** MCLK = 24MHz / 12, ReqCLK = 12.288MHz
+        // Enable PLL integer mode.
+        /** MCLK = 6MHz, ReqCLK = 12.288MHz
          *   5 < PLLN < 13
-         *   int R = f2 / 12
+         *   int R = f2 / MCLK
          *   PLLN = int R.
-         *   f2 = 2 * 2 * ReqCLK = 98.304Mhz
-         *   R = 98.304 / 12 = 8.192
+         *   f2 = 4 * PREDIV * ReqCLK
+         *   f2 = 4 * 1 * 12.288MHz = 49.152MHz
+         *   R = 49.152MHz / MCLK = 8.192MHz
          *   int R = 0x8
          *   K = int(2^24 * (R - PLLN))
          *     = int(2^24 * (8.192 - 8))
@@ -165,9 +166,8 @@ void AudioChip::SetClocks()
          *                                       = 0b0011'0001'0010'0110'1110'1001
          **/
         // Enable PLL integer mode.
-        SetRegister(0x34, 0b0'0001'1000);
+        SetRegister(0x34, 0b0'0000'1000);
 
-        // Pg 85 version
         SetRegister(0x35, 0b0'0011'0001);
         SetRegister(0x36, 0b0'0010'0110);
         SetRegister(0x37, 0b0'1110'1001);
@@ -177,7 +177,7 @@ void AudioChip::SetClocks()
         // Post scale the PLL to be divided by 2
         // Set the clock (Select the PLL) (0x01)
         // Set to 16Khz
-        SetRegister(0x04, 0b0'1101'1101);
+        SetRegister(0x04, 0b0'1101'1001);
 
         // Set the clock division
         // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
