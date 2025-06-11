@@ -29,7 +29,6 @@ void NetHoldInReset()
 
     // Reset
     HAL_GPIO_WritePin(NET_NRST_GPIO_Port, NET_NRST_Pin, GPIO_PIN_RESET);
-    // HAL_Delay(100);
 }
 
 void UIBootloaderMode()
@@ -59,7 +58,6 @@ void UIHoldInReset()
     HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_SET);
 
     HAL_GPIO_WritePin(UI_NRST_GPIO_Port, UI_NRST_Pin, GPIO_PIN_RESET);
-    // HAL_Delay(100);
 }
 
 void NormalStart()
