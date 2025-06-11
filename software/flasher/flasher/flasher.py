@@ -169,6 +169,7 @@ def UploaderFactory(uart: serial.Serial, chip: str):
     elif chip == "net":
         return esp32s3_uploader.ESP32S3Uploader(uart, chip)
     else:
+        print(f"Unsupported option for chip: {chip}")
         exit()
 
 
