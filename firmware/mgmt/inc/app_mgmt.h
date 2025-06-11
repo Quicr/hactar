@@ -48,7 +48,7 @@ void NetUpload();
 void UIUpload();
 void RunningMode();
 void DebugMode();
-void NormalBoot();
+void NormalInit();
 
 void CheckTimeout();
 void WaitForNetReady(const enum State* state);

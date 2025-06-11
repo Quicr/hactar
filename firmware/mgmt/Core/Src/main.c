@@ -357,7 +357,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, NET_STAT_Pin|LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, NET_STAT_Pin|LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin
+                          |UI_BOOT0_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_NRST_Pin
@@ -376,8 +377,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(NET_STAT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDA_R_Pin LEDA_G_Pin LEDA_B_Pin */
-  GPIO_InitStruct.Pin = LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin;
+  /*Configure GPIO pins : LEDA_R_Pin LEDA_G_Pin LEDA_B_Pin UI_BOOT0_Pin */
+  GPIO_InitStruct.Pin = LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin|UI_BOOT0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -405,12 +406,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
   HAL_GPIO_Init(MCLK_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : UI_BOOT0_Pin */
-  GPIO_InitStruct.Pin = UI_BOOT0_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(UI_BOOT0_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
