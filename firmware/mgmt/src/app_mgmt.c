@@ -31,9 +31,6 @@ extern DMA_HandleTypeDef hdma_usart3_tx;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-// TODO add messages that to the monitor
-
 #define CPU_FREQ 48'000'000
 
 #define UART_BUFF_SZ 1024
@@ -130,12 +127,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin)
     {
         if (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_SET)
         {
-            // HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
             HAL_GPIO_WritePin(NET_STAT_GPIO_Port, NET_STAT_Pin, GPIO_PIN_SET);
         }
         else if (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_RESET)
         {
-            // HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
             HAL_GPIO_WritePin(NET_STAT_GPIO_Port, NET_STAT_Pin, GPIO_PIN_RESET);
         }
     }
@@ -151,8 +148,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
 
     // Need to have as separate if statements so we can loop back properly
     // Which doesn't make any sense to me, but it makes it work.
-
-    // HAL_GPIO_TogglePin(LEDB_G_GPIO_Port, LEDB_G_Pin);
+    HAL_GPIO_TogglePin(LEDB_G_GPIO_Port, LEDB_G_Pin);
     __disable_irq();
     if (huart->Instance == net_stream.rx.uart->Instance)
     {
@@ -175,8 +171,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     // Since net_stream.tx.uart is usb AND ui_stream.tx.uart is usb
     // then when this is called during either ui upload or net upload
     // then they both need to be notified that the usb is free. :shrug:
-    // HAL_GPIO_TogglePin(LEDB_B_GPIO_Port, LEDB_B_Pin);
     __disable_irq();
+    HAL_GPIO_TogglePin(LEDB_B_GPIO_Port, LEDB_B_Pin);
     if (!net_stream.tx.free && huart->Instance == net_stream.tx.uart->Instance)
     {
         TxISR(&net_stream, &state);
@@ -196,14 +192,15 @@ int app_main(void)
 {
     state = default_state;
 
+    NetHoldInReset();
+    UIHoldInReset();
+
     while (1)
     {
         uploader = 0;
         next_state = Running;
         TurnOffLEDs();
         CancelAllUart();
-
-        NormalAndNetUploadUartInit(&usb_stream, &huart1);
 
         switch (state)
         {
@@ -255,36 +252,36 @@ int app_main(void)
         }
         case Normal:
         {
+            NormalInit();
             SetStreamModes(Command, Ignore, Ignore);
-            NormalBoot();
             LEDA(HIGH, LOW, LOW);
             break;
         }
         case Debug:
         {
+            NormalInit();
             SetStreamModes(Command, Passthrough, Passthrough);
-            NormalBoot();
             LEDA(LOW, HIGH, HIGH);
             break;
         }
         case UI_Debug:
         {
+            NormalInit();
             SetStreamModes(Command, Passthrough, Ignore);
-            NormalBoot();
             LEDA(LOW, HIGH, LOW);
             break;
         }
         case Net_Debug:
         {
+            NormalInit();
             SetStreamModes(Command, Ignore, Passthrough);
-            NormalBoot();
             LEDA(LOW, LOW, HIGH);
             break;
         }
         case Loopback:
         {
+            NormalInit();
             SetStreamModes(Passthrough, Ignore, Ignore);
-            NormalBoot();
             LEDA(LOW, LOW, LOW);
             break;
         }
@@ -311,10 +308,11 @@ int app_main(void)
     return 0;
 }
 
-void NormalBoot()
+void NormalInit()
 {
-    UINormalMode();
     NetNormalMode();
+    UINormalMode();
+    NormalAndNetUploadUartInit(&usb_stream, &huart1);
 }
 
 void CheckTimeout()

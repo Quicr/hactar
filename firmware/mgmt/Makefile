@@ -36,7 +36,7 @@ endif
 # programming
 #######################################
 PORT =
-BAUD = 115000
+BAUD = 115200
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
 CUBE_PROGRAMMER_SWD_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
