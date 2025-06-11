@@ -1,15 +1,17 @@
 import serial
 import json
 import hashlib
+import time
 
 from esp32_slip_packet import ESP32SlipPacket
 import uart_utils
-from ansi_colours import NW, BG, BY
+from ansi_colours import NW, BG, BY, BW, BB
 
 # https://docs.espressif.com/projects/esptool/en/latest/esp32s3/advanced-topics/serial-protocol.html
+from uploader import Uploader
 
 
-class esp32_flasher:
+class ESP32S3Uploader(Uploader):
 
     # TODO move into slip packet
     SYNC = 0x08
@@ -26,8 +28,39 @@ class esp32_flasher:
     # Block size (1k)
     Block_Size = 0x400
 
-    def __init__(self, uart: serial.Serial):
-        self.uart = uart
+    def __init__(self, uart: serial.Serial, chip: str):
+        super().__init__(uart, chip)
+
+    def FlashSelect(self):
+        send_data = [ch for ch in bytes("net_upload", "UTF-8")]
+        self.uart.write(send_data)
+        self.uart.flush()
+
+        print(f"Update uart to parity: {BB}NONE{NW}")
+
+        time.sleep(2)
+        self.uart.parity = serial.PARITY_NONE
+        self.uart.reset_input_buffer()
+
+        self.TryHandshake(uart_utils.OK, 1, 10)
+        self.TryPattern(uart_utils.READY, 1, 10)
+
+        self.uart.reset_input_buffer()
+        print(f"Activating NET Upload Mode: {BG}SUCCESS{NW}")
+
+    def FlashFirmware(self, binary_path: str) -> bool:
+        print(f"{BW}Starting Net Upload{NW}")
+
+        self.FlashSelect()
+
+        self.Sync()
+
+        self.AttachSPI()
+        self.SetSPIParameters()
+
+        self.Flash(binary_path)
+
+        return True
 
     def WritePacketWaitForResponsePacket(
         self,
@@ -289,15 +322,3 @@ class esp32_flasher:
             raise Exception("Failed to Activate device")
 
         print(f"Activating device: {BG}SUCCESS{NW}")
-
-    def FlashESP32S3Chip(self, build_path: str):
-        # uart_utils.FlashSelection(self.uart, "net")
-
-        self.Sync()
-
-        self.AttachSPI()
-        self.SetSPIParameters()
-
-        self.Flash(build_path)
-
-        return True

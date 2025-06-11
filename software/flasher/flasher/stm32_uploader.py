@@ -12,9 +12,10 @@ from ansi_colours import BW, BC, BG, BR, BB, BY, BM, NW, NY
 
 # TODO Put the sector verify code somewhere
 # TODO clean up full verify and write flash
+from uploader import Uploader
 
 
-class stm32_flasher:
+class STM32Uploader(Uploader):
     ACK = 0x79
     READY = 0x80
     NACK = 0x1F
@@ -41,8 +42,9 @@ class stm32_flasher:
     config_file: dict = None
     chip_config: dict = None
 
-    def __init__(self, uart: serial.Serial):
-        self.uart = uart
+    def __init__(self, uart, chip):
+        super().__init__(uart, chip)
+
         self.upload_enabled = False
         self.synced = False
         self.uid = None
@@ -71,6 +73,45 @@ class stm32_flasher:
             )
 
         self.configs_file = json.load(open(f"{config_path}"))
+
+    def FlashSelect(self):
+        if self.chip == "mgmt":
+            self.uart.parity = serial.PARITY_EVEN
+            print(f"Updated uart to parity: {BB}EVEN{NW}")
+            print(f"User, put Hactar into bootloader mode!!")
+            input("Press enter once it is done...")
+            self.uart.reset_input_buffer()
+        elif self.chip == "ui":
+            send_data = [ch for ch in bytes("ui_upload", "UTF-8")]
+            self.uart.write(send_data)
+            self.uart.flush()
+
+            print(f"Update uart to parity: {BB}EVEN{NW}")
+            self.uart.parity = serial.PARITY_EVEN
+            time.sleep(1)
+
+            self.uart.reset_input_buffer()
+            self.TryHandshake(uart_utils.OK, 1, 10)
+            self.TryPattern(uart_utils.READY, 1, 10)
+            self.uart.reset_input_buffer()
+
+            print(f"Activating UI Upload Mode: {BG}SUCCESS{NW}")
+
+    def FlashFirmware(self, binary_path: str) -> bool:
+        self.FlashSelect()
+
+        binary = open(binary_path, "rb").read()
+
+        sectors = self.GetSectorsForFirmware(len(binary))
+
+        self.SendExtendedEraseMemory(sectors, False, True, True)
+
+        self.SendWriteMemory(binary, self.chip_config["usr_start_addr"], True)
+
+        if self.chip == "mgmt":
+            self.SendGo(self.chip_config["usr_start_addr"])
+
+        return True
 
     def SetChipConfig(self, pid: int):
         print(f"Retrieving configurations for chip ID: {BC}{hex(pid)}{NW}")
@@ -129,7 +170,6 @@ class stm32_flasher:
             self.uart, self.Commands.sync, retry_num, False
         )
 
-        print("sync reply", reply)
         self.synced = self.HandleReply(reply, "Sync", "Failed to activate device", True)
 
         return self.synced
