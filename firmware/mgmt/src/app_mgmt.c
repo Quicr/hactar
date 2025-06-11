@@ -196,7 +196,7 @@ int app_main(void)
     state = default_state;
 
     NetHoldInReset();
-    UIHoldInReset();
+    // UIHoldInReset();
 
     while (1)
     {
