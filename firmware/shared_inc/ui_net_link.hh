@@ -11,8 +11,8 @@ enum struct Packet_Type : uint8_t
     PowerOnReady,
     GetAudioLinkPacket,
     GetTextLinkPacket,
-    TalkStart,
-    TalkStop,
+    TalkStart, // Dead type?
+    TalkStop,  // Dead type?
     PlayStart,
     PlayStop,
     MoQStatus,
@@ -20,6 +20,7 @@ enum struct Packet_Type : uint8_t
     PttObject,
     PttMultiObject,
     PttAIObject,
+    TextMessage,
     SSIDRequest,
     WifiConnect,
     WifiStatus
@@ -59,6 +60,20 @@ struct AudioObject
     uint8_t data[constants::Audio_Phonic_Sz];
 };
 
+struct TextObject
+{
+    uint8_t channel_id;
+    uint16_t length;
+    uint8_t data[48]; // TODO get from screen? Or constants fil
+};
+
+struct WifiStatus
+{
+    const uint8_t type = static_cast<uint8_t>(Packet_Type::WifiStatus);
+    const PACKET_LENGTH_TYPE len = 1;
+    uint8_t status;
+};
+
 enum class MessageType : uint8_t
 {
     Media = 1,
@@ -75,7 +90,7 @@ enum class ContentType : uint8_t
 struct __attribute__((packed)) Chunk
 {
     const MessageType type = MessageType::Media;
-    bool last_chunk;
+    uint8_t last_chunk;
     std::uint32_t chunk_length;
     std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
 };
@@ -108,6 +123,14 @@ static_assert(sizeof(AIResponseChunk) == 171);
     buff[0] = (uint8_t)Packet_Type::GetAudioLinkPacket;
     buff[1] = 0;
     buff[2] = 0;
+}
+
+[[maybe_unused]] static void Serialize(const WifiStatus& wifi_status, link_packet_t& packet)
+{
+    packet.type = wifi_status.type;
+    packet.length = wifi_status.len;
+    packet.payload[0] = wifi_status.status;
+    packet.is_ready = true;
 }
 
 [[maybe_unused]] static void Serialize(const TalkStart& talk_start, link_packet_t& packet)
@@ -202,6 +225,18 @@ static_assert(sizeof(AIResponseChunk) == 171);
 
     memcpy(packet.payload + offset, talk_frame.data, constants::Audio_Phonic_Sz);
 
+    packet.is_ready = true;
+}
+
+[[maybe_unused]] static void
+Serialize(const uint8_t channel_id, const char* text, const uint16_t len, link_packet_t& packet)
+{
+    packet.type = (uint8_t)Packet_Type::TextMessage;
+    packet.payload[0] = channel_id;
+
+    memcpy(packet.payload + 1, text, len);
+
+    packet.length = 1 + len;
     packet.is_ready = true;
 }
 

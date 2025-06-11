@@ -1,11 +1,19 @@
 %TF.GenerationSoftware,KiCad,Pcbnew,8.0.9*%
+<<<<<<< HEAD
+%TF.CreationDate,2025-05-06T07:17:22-07:00*%
+=======
 %TF.CreationDate,2025-05-02T13:50:10-07:00*%
+>>>>>>> main
 %TF.ProjectId,EV12 Board Design,45563132-2042-46f6-9172-642044657369,EV12*%
 %TF.SameCoordinates,Original*%
 %TF.FileFunction,Profile,NP*%
 %FSLAX46Y46*%
 G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
+<<<<<<< HEAD
+G04 Created by KiCad (PCBNEW 8.0.9) date 2025-05-06 07:17:22*
+=======
 G04 Created by KiCad (PCBNEW 8.0.9) date 2025-05-02 13:50:10*
+>>>>>>> main
 %MOMM*%
 %LPD*%
 G01*

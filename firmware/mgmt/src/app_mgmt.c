@@ -31,6 +31,9 @@ extern DMA_HandleTypeDef hdma_usart3_tx;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+// TODO add messages that to the monitor
+
 #define CPU_FREQ 48'000'000
 
 #define UART_BUFF_SZ 1024
@@ -127,12 +130,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin)
     {
         if (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_SET)
         {
-            HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+            // HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
             HAL_GPIO_WritePin(NET_STAT_GPIO_Port, NET_STAT_Pin, GPIO_PIN_SET);
         }
         else if (HAL_GPIO_ReadPin(UI_STAT_GPIO_Port, UI_STAT_Pin) == GPIO_PIN_RESET)
         {
-            HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
+            // HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_RESET);
             HAL_GPIO_WritePin(NET_STAT_GPIO_Port, NET_STAT_Pin, GPIO_PIN_RESET);
         }
     }

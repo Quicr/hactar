@@ -20,15 +20,7 @@ public:
                 uint32_t default_ttl);
     virtual ~TrackWriter();
     void StatusChanged(Status status) override;
-    void PushPttObject(const uint8_t* bytes,
-                       uint32_t len,
-                       const bool talk_stopped,
-                       const uint64_t timestamp);
-    void PushPttAIObject(const uint8_t* bytes,
-                         uint32_t len,
-                         const bool talk_stopped,
-                         const uint64_t timestamp,
-                         const uint32_t request_id);
+    void PushObject(const uint8_t* bytes, const uint32_t len, const uint64_t timestamp);
 
     struct link_data_obj
     {
