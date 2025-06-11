@@ -2,7 +2,7 @@ SHELL := /bin/bash
 .ONESHELL:
 
 BAUD 				= 115200
-PORT 				= /dev/ttyUSB0
+PORT 				=
 BUILD_PATH			= ./build
 TARGET				= net
 
@@ -52,9 +52,12 @@ docker: docker-build
 		-v /dev:/dev \
 		-it ${DOCKER_IMAGE}
 
+burn_jtag_efuse:
+	python3 ../../software/flasher/main.py --port=${PORT} --baud=${BAUD} --chip="net" --use_external_flasher=true
+	idf.py efuse-burn DIS_USB_JTAG
 
 monitor:
-	python3 ../..//software/tools/monitor.py ${PORT} ${BAUD}
+	python3 ../../software/tools/monitor.py ${PORT} ${BAUD}
 
 idf_monitor:
 	python3 ../../softare/tools/command_sender.py ${PORT} ${BAUD} net_debug
