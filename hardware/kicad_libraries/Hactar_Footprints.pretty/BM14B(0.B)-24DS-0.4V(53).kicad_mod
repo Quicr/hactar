@@ -271,4 +271,15 @@
 		(uuid "54186cd6-b477-49b8-9cc5-d60ded1c769b")
 	)
 	(embedded_fonts no)
+	(model "C:/Users/finberg/Code/hactar/hardware/kicad_libraries/hactar_footprints.3dshapes/CONN-SMD_BM14B-0.8-24DS-0.4V.step"
+		(offset
+			(xyz 2.97 1.2 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz -0 -0 -0)
+		)
+	)
 )
