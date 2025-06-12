@@ -12,8 +12,8 @@ on:
 
 jobs:
   upload:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on:  ubuntu-latest
+    needs: [build-mgmt, build-ui, build-net]
     steps:
     - name: Release
       uses: softprops/action-gh-release@v2
