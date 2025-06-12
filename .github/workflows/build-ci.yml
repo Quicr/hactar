@@ -35,6 +35,17 @@ jobs:
           firmware/mgmt/build/mgmt.elf
           firmware/mgmt/build/mgmt.hex
 
+    - name: Upload mgmt binary
+      uses: ncipollo/release-action@v1
+      with:
+        tag: nightly
+        name: "Nightly Build"
+        allowUpdates: true
+        replacesArtifacts: true
+        artifacts: firmware/mgmt/build/mgmt.bin
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-net:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -67,6 +78,21 @@ jobs:
           firmware/net/build/net.bin
           firmware/net/build/net.elf
 
+    - name: Upload net binary
+      uses: ncipollo/release-action@v1
+      with:
+        tag: nightly
+        name: "Nightly Build"
+        allowUpdates: true
+        replacesArtifacts: true
+        artifacts: |
+          firmware/net/build/bootloader/bootloader.bin
+          firmware/net/build/partition_table/partition-table.bin
+          firmware/net/build/net.bin
+          firmware/net/build/net.elf
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-ui:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -95,7 +121,7 @@ jobs:
           firmware/ui/build/ui.elf
           firmware/ui/build/ui.hex
 
-    - name: Upload relase
+    - name: Upload ui binary
       uses: ncipollo/release-action@v1
       with:
         tag: nightly
