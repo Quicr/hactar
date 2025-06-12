@@ -94,3 +94,19 @@ jobs:
           firmware/ui/build/ui.bin
           firmware/ui/build/ui.elf
           firmware/ui/build/ui.hex
+
+  upload-assets:
+    runs-on:  ubuntu-latest
+    if: github.ref_name == "github_assets"
+    needs: [build-mgmt, build-ui, build-net]
+    steps:
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+          files: |
+            firmware/mgmt/build/mgmt.bin
+            firmware/net/build/bootloader/bootloader.bin
+            firmware/net/build/partition_table/partition-table.bin
+            firmware/net/build/net.bin
+            firmware/net/build/net.elf
+            firmware/ui/build/ui.bin
