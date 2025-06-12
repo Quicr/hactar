@@ -102,6 +102,8 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
+          prelease: false
+          make_latest: true
           files: |
             firmware/mgmt/build/mgmt.bin
             firmware/net/build/bootloader/bootloader.bin
