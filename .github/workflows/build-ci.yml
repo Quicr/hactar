@@ -36,7 +36,7 @@ jobs:
           firmware/mgmt/build/mgmt.hex
 
     - name: Upload mgmt binary
-      if: github.ref == 'refs/heads/github_assets'
+      if: github.ref_name 'main'
       uses: ncipollo/release-action@v1
       with:
         tag: nightly
