@@ -80,6 +80,7 @@ jobs:
           firmware/net/build/net.elf
 
     - name: Upload net binary
+      if: github.ref_name == 'main'
       uses: ncipollo/release-action@v1
       with:
         tag: nightly
@@ -123,6 +124,7 @@ jobs:
           firmware/ui/build/ui.hex
 
     - name: Upload ui binary
+      if: github.ref_name == 'main'
       uses: ncipollo/release-action@v1
       with:
         tag: nightly
