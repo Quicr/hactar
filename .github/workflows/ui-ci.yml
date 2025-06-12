@@ -34,3 +34,14 @@ jobs:
           firmware/ui/build/ui.bin
           firmware/ui/build/ui.elf
           firmware/ui/build/ui.hex
+
+    - name: UI release asset
+      run: |
+        echo "UI upload done!"
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: false
+          files: |
+            firmware/ui/build/ui.bin
