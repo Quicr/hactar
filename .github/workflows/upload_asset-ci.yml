@@ -1,6 +1,10 @@
 name: Upload Firmware Assets CI
 
 on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_run:
     workflows: [ "Build Firmware CI" ]
     types:
