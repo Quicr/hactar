@@ -105,7 +105,7 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: false
-          title: "Main Build"
+          title: "Release"
           files: |
             firmware/mgmt/build/mgmt.bin
             firmware/net/build/bootloader/bootloader.bin
