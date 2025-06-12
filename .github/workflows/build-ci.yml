@@ -100,10 +100,12 @@ jobs:
     needs: [build-mgmt, build-ui, build-net]
     steps:
     - name: Release
-      uses: softprops/action-gh-release@v2
+      uses: "marvinpinto/action-automatic-releases@latest"
       with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
           prerelease: false
-          make_latest: true
+          title: "Main Build"
           files: |
             firmware/mgmt/build/mgmt.bin
             firmware/net/build/bootloader/bootloader.bin
