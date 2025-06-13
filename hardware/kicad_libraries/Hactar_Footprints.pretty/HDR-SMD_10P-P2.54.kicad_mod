@@ -463,7 +463,7 @@
 		(uuid "3f954205-2f17-4a3d-9355-c30a7bbbd9a5")
 	)
 	(embedded_fonts no)
-	(model "C:/Users/finberg/Code/hactar/hardware/kicad_libraries/hactar_footprints.3dshapes/HDR-SMD_10P-P2.54-V-F-R2-C5-LS7.1-1.step"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/HDR-SMD_10P-P2.54-V-F-R2-C5-LS7.1-1.step"
 		(offset
 			(xyz 0 0 0.5)
 		)

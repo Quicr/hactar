@@ -431,19 +431,7 @@
 		(uuid "85ca915b-bf80-4b59-a50b-02602e74e1a1")
 	)
 	(embedded_fonts no)
-	(model "Code/hactar/hardware/kicad_libraries/hactar_footprints.3dshapes/SW-TH_SS-12D11G5R.wrl"
-		(hide yes)
-		(offset
-			(xyz 0 3 0)
-		)
-		(scale
-			(xyz 1 1 1)
-		)
-		(rotate
-			(xyz 0 0 0)
-		)
-	)
-	(model "C:/Users/finberg/Code/hactar/hardware/kicad_libraries/hactar_footprints.3dshapes/SW-TH_SS-12D11G5R.step"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/SW-TH_SS-12D11G5R.step"
 		(offset
 			(xyz 0 3 3.3)
 		)

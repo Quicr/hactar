@@ -327,7 +327,7 @@
 		(uuid "00c7bf1b-1a83-483e-bf55-fe44b10ca432")
 	)
 	(embedded_fonts no)
-	(model "C:/Users/finberg/Code/hactar/hardware/kicad_libraries/hactar_footprints.3dshapes/USB-C_SMD-TYPE-C-31-M-12.step"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/USB-C_SMD-TYPE-C-31-M-12.step"
 		(offset
 			(xyz 0 -2.4 0)
 		)

@@ -332,7 +332,7 @@
 		(uuid "2997a430-27f2-454e-81b8-9a2e862eba0f")
 	)
 	(embedded_fonts no)
-	(model "C:/Users/finberg/Code/hactar/hardware/kicad_libraries/hactar_footprints.3dshapes/CONN-SMD_P2.00_S2B-PH-SM4-TB-LF-SN.step"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/CONN-SMD_P2.00_S2B-PH-SM4-TB-LF-SN.step"
 		(offset
 			(xyz 1 -2.8 0)
 		)

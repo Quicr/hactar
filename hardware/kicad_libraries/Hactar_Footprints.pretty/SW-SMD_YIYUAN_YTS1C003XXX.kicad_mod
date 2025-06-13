@@ -329,7 +329,7 @@
 		(uuid "ac88f8a2-de98-4319-84bf-0d773c75639c")
 	)
 	(embedded_fonts no)
-	(model "C:/Users/finberg/Code/hactar/hardware/kicad_libraries/hactar_footprints.3dshapes/SW-SMD_YIYUAN_YTS1C003XXX.step"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/SW-SMD_YIYUAN_YTS1C003XXX.step"
 		(offset
 			(xyz 0 -1.5 1.76)
 		)

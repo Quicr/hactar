@@ -274,18 +274,7 @@
 		(uuid "b048914d-02f8-43b3-9759-80b2b0d10153")
 	)
 	(embedded_fonts no)
-	(model "Code/hactar/hardware/kicad_libraries/hactar_footprints.3dshapes/CONN-SMD_PH2.00-WS-8P.wrl"
-		(offset
-			(xyz -0 -0.06 -0)
-		)
-		(scale
-			(xyz 1 1 1)
-		)
-		(rotate
-			(xyz 0 0 0)
-		)
-	)
-	(model "C:/Users/finberg/Code/hactar/hardware/kicad_libraries/Hactar_Footprints.pretty/CONN-SMD_PH2.00-WS-8P.3dshapes/CONN-SMD_PH2.00-WS-8P.step"
+	(model "${KIPRJMOD}/../kicad_libraries/Hactar_Footprints.pretty/CONN-SMD_PH2.00-WS-8P.3dshapes/CONN-SMD_PH2.00-WS-8P.step"
 		(offset
 			(xyz 0 -3 0)
 		)

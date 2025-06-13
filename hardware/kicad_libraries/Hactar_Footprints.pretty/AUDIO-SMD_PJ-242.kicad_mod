@@ -286,7 +286,7 @@
 		(uuid "82aebd70-6461-46d3-9499-bdd27c65f7fa")
 	)
 	(embedded_fonts no)
-	(model "C:/Users/finberg/Code/hactar/hardware/kicad_libraries/hactar_footprints.3dshapes/AUDIO-SMD_L10.5-W5.0-H3.2.step"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/AUDIO-SMD_L10.5-W5.0-H3.2.step"
 		(offset
 			(xyz 0 3 0)
 		)
