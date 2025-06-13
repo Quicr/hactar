@@ -357,21 +357,35 @@ void SetStreamModes(const StreamMode usb_mode, const StreamMode ui_mode, const S
     if (usb_stream.mode != Ignore)
     {
         InitUartStream(&usb_stream);
-        StartUartReceive(&usb_stream);
+        HAL_UARTEx_ReceiveToIdle_DMA(usb_stream.rx.uart, usb_stream.rx.buff, usb_stream.rx.size);
     }
 
     ui_stream.mode = ui_mode;
     if (ui_stream.mode != Ignore)
     {
         InitUartStream(&ui_stream);
-        StartUartReceive(&ui_stream);
+        HAL_UARTEx_ReceiveToIdle_DMA(ui_stream.rx.uart, ui_stream.rx.buff, ui_stream.rx.size);
     }
 
     net_stream.mode = net_mode;
     if (net_stream.mode != Ignore)
     {
         InitUartStream(&net_stream);
-        StartUartReceive(&net_stream);
+
+        uint8_t attempt = 0;
+        while (attempt++ != 10
+               && HAL_OK
+                      != HAL_UARTEx_ReceiveToIdle_DMA(net_stream.rx.uart, net_stream.rx.buff,
+                                                      net_stream.rx.size))
+        {
+            // Make sure the uart is cancelled, sometimes it doesn't want to cancel
+            HAL_UART_Abort(net_stream.rx.uart);
+        }
+
+        if (attempt >= 10)
+        {
+            Error_Handler();
+        }
     }
 }
 
