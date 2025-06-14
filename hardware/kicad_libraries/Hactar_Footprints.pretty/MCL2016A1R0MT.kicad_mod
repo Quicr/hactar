@@ -1,7 +1,7 @@
 (footprint "MCL2016A1R0MT"
-	(version 20240108)
+	(version 20241229)
 	(generator "pcbnew")
-	(generator_version "8.0")
+	(generator_version "9.0")
 	(layer "F.Cu")
 	(property "Reference" "L1"
 		(at -2.789312 -0.065327 90)
@@ -21,18 +21,6 @@
 		(effects
 			(font
 				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "Footprint" "MCL2016A1R0MT:L0806"
-		(at 0 0 0)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "20e97a77-7e05-4758-a673-83e349acc276")
-		(effects
-			(font
-				(size 1.27 1.27)
 				(thickness 0.15)
 			)
 		)
@@ -222,7 +210,7 @@
 			(width 0.05)
 			(type default)
 		)
-		(fill none)
+		(fill no)
 		(layer "F.CrtYd")
 		(uuid "2a3b602e-6e01-4364-9599-4c12601a0b98")
 	)
@@ -233,7 +221,7 @@
 			(width 0.06)
 			(type solid)
 		)
-		(fill none)
+		(fill no)
 		(layer "F.Fab")
 		(uuid "5a1fe8ab-85d5-4241-a481-764619c2236b")
 	)
@@ -251,24 +239,25 @@
 	(pad "1" smd rect
 		(at -1 0)
 		(size 1.2 1.8)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "2a297319-ef22-4b47-9ea8-cabb9d079654")
 	)
 	(pad "2" smd rect
 		(at 1 0)
 		(size 1.2 1.8)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "8adecfb9-26e7-4195-a6f7-5843891fcf8d")
 	)
-	(model "/home/brett/cisco/code/hactar/hardware/kicad_libraries/MCL2016A1R0MT/MCL2016A1R0MT.3dshapes/L0806_L2.0-W1.6-H1.0.wrl"
+	(embedded_fonts no)
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/L0806_L2.0-W1.6-H1.0.step"
 		(offset
-			(xyz 0 -0 -0)
+			(xyz 0 -0 0.5)
 		)
 		(scale
 			(xyz 1 1 1)
 		)
 		(rotate
-			(xyz 0 0 0)
+			(xyz -0 -0 -0)
 		)
 	)
 )
