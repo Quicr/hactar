@@ -48,28 +48,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Copy nightly mgmt binary to github pages
-      # if: github.ref_name == 'main'
-      runs:
-        using: "composite"
-        steps:
-        - name: Checkout gh-pages branch
-          uses: actions/checkout@v4
-          with:
-            ref: gh-pages
-            persist-credentials: false
-        - name: Download mgmt bin
-          run: |
-            mkdir -p build/mgmt
-            gh release download nightly -p 'mgmt.bin' -D build/mgmt
-          env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        - name: Commit and push mgmt binary
-          run: |
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add build
-            git commit -m "Update mgmt binary from Nightly build" || echo "No changes to commit"
-            git push origin gh-pages
+      uses: ./.github/actions/copy_mgmt_binary
+
 
   build-net:
     runs-on: ubuntu-latest
