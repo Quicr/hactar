@@ -16,7 +16,7 @@ class HactarFlasher {
     }
 
     async GetBinary(firmware) {
-        const res = await fetch(`https://quicr.github.io/hactar/build/ui.bin`);
+        const res = await fetch(`https://quicr.github.io/hactar/build/ui/ui.bin`);
         return res.data;
     }
 
