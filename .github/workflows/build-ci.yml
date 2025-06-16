@@ -49,8 +49,7 @@ jobs:
 
     - name: Copy nightly mgmt binary to github pages
       # if: github.ref_name == 'main'
-      run: echo "test"
-      steps:
+      runs:
         - name: Checkout gh-pages branch
           uses: actions/checkout@v4
           with:
