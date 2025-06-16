@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" class="no-transition" data-theme="light">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Device Updater</title>
+    <link rel="stylesheet" href="styles/style.css" />
+</head>
+
+<body>
+    <main class="container">
+        <div class="header">
+            <h1>Device Updater</h1>
+            <div class="theme-switch-wrapper">
+                <span>☀️</span>
+                <label class="theme-switch">
+                    <input type="checkbox" id="themeToggle" />
+                    <span class="slider"></span>
+                </label>
+                <span>🌙</span>
+            </div>
+
+        </div>
+
+        <p>Connect your device and click the button below to begin the update process.</p>
+
+        <button id="updateButton">🔄 Update Device</button>
+
+        <div class="advanced-toggle">
+            <label>
+                <input type="checkbox" id="advancedToggle" />
+                Show Advanced Options
+            </label>
+        </div>
+
+        <section id="advancedSection" class="hidden">
+            <h2>Debug Console</h2>
+            <div id="console" class="console"></div>
+
+            <div class="debug-input">
+                <input type="text" id="debugInput" placeholder="Enter debug command..." />
+                <button id="sendButton">📤 Send</button>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="scripts/script.js"></script>
+</body>
+
+</html>
