@@ -19,6 +19,7 @@ runs:
     env:
       GITHUB_TOKEN: ${{ inputs.github_token }}
   - name: Commit and push mgmt binary
+    shell: bash
     run: |
       git config user.name "github-actions[bot]"
       git config user.email "github-actions[bot]@users.noreply.github.com"
