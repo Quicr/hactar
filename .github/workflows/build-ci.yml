@@ -48,9 +48,10 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Copy nightly mgmt binary to github pages
+      if: github.ref_name == 'main'
       uses: ./.github/actions/copy_mgmt_binary
-
-
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
 
   build-net:
     runs-on: ubuntu-latest

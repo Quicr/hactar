@@ -1,7 +1,10 @@
 
 
 name: Copy nightly mgmt binary to github pages
-  # if: github.ref_name == 'main'
+inputs:
+  github_token:
+    required: true
+    default: ''
 runs:
   using: "composite"
   steps:
@@ -14,7 +17,7 @@ runs:
       mkdir -p build/mgmt
       gh release download nightly -p 'mgmt.bin' -D build/mgmt
     env:
-      GITHUB_TOKEN: ${{ input.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ inputs.github_token }}
   - name: Commit and push mgmt binary
     run: |
       git config user.name "github-actions[bot]"
