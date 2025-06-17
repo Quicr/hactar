@@ -3,6 +3,7 @@ on:
   workflow_run:
     workflows: [Build Firmware CI]
     types: [completed]
+    branches: [main, copy_binaries]
 
 jobs:
   on-success:
