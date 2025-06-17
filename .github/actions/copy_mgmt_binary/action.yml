@@ -13,6 +13,7 @@ runs:
     with:
       ref: gh-pages
   - name: Download mgmt bin
+    shell: bash
     run: |
       mkdir -p build/mgmt
       gh release download nightly -p 'mgmt.bin' -D build/mgmt
