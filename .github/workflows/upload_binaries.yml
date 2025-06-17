@@ -1,0 +1,32 @@
+name: Upload binaries to gh pages
+on:
+  workflow_run:
+    workflows: ["Build Firmware CI"]
+    # branches: [main]
+    types:
+      - completed
+jobs:
+  on-success:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclussion == 'success' }}
+    # if: github.ref_name == 'main'
+    steps:
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+      - name: Download mgmt bin
+        shell: bash
+        run: |
+          mkdir -p build/mgmt
+          gh release download nightly -p 'mgmt.bin' -D build/mgmt --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit and push mgmt binary
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add build
+          git commit -m "Update mgmt binary from Nightly build" || echo "No changes to commit"
+          git push origin gh-pages
