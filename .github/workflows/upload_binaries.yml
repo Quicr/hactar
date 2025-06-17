@@ -2,14 +2,12 @@ name: Upload Binaries
 on:
   workflow_run:
     workflows: [Build Firmware CI]
-    types:
-      - completed
+    types: [completed]
 
 jobs:
   on-success:
     runs-on: ubuntu-latest
-    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    # if: github.ref_name == 'main'
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout gh-pages branch
         uses: actions/checkout@v4
