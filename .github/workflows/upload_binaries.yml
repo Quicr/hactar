@@ -1,5 +1,7 @@
 name: Upload binaries to gh pages
 on:
+  pull_request:
+    branches: [ "main" ]
   workflow_run:
     workflows: ["Build Firmware CI"]
     # branches: [main]
