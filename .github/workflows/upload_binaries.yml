@@ -14,18 +14,24 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: gh-pages
-      - name: Download mgmt bin
+      - name: Download hactar binaries
         shell: bash
         run: |
           mkdir -p build/mgmt
+          mkdir -p build/net
+          mkdir -p build/ui
           gh release download nightly -p 'mgmt.bin' -D build/mgmt --clobber
+          gh release download nightly -p 'net.bin' -D build/net --clobber
+          gh release download nightly -p 'bootloader.bin' -D build/net --clobber
+          gh release download nightly -p 'partition-table.bin' -D build/net --clobber
+          gh release download nightly -p 'ui.bin' -D build/ui --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Commit and push mgmt binary
+      - name: Commit and push binaries
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add build
-          git commit -m "Update mgmt binary from Nightly build" || echo "No changes to commit"
+          git commit -m "Update binaries from Nightly build" || echo "No changes to commit"
           git push origin gh-pages
