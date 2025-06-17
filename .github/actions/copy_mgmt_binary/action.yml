@@ -16,7 +16,7 @@ runs:
     shell: bash
     run: |
       mkdir -p build/mgmt
-      gh release download nightly -p 'mgmt.bin' -D build/mgmt
+      gh release download nightly -p 'mgmt.bin' -D build/mgmt --clobber
     env:
       GITHUB_TOKEN: ${{ inputs.github_token }}
   - name: Commit and push mgmt binary
