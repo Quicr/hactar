@@ -1,7 +1,7 @@
 name: Upload Binaries
 on:
   workflow_run:
-    workflows: ["Build Firmware CI"]
+    workflows: [Build Firmware CI]
     types:
       - completed
 
