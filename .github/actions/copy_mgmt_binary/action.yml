@@ -14,7 +14,7 @@ runs:
       mkdir -p build/mgmt
       gh release download nightly -p 'mgmt.bin' -D build/mgmt
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ input.GITHUB_TOKEN }}
   - name: Commit and push mgmt binary
     run: |
       git config user.name "github-actions[bot]"
