@@ -1,12 +1,10 @@
-name: Upload binaries to gh pages
+name: Upload Binaries
 on:
-  pull_request:
-    branches: [ "main" ]
   workflow_run:
     workflows: ["Build Firmware CI"]
-    branches: [copy_binaries]
     types:
       - completed
+
 jobs:
   on-success:
     runs-on: ubuntu-latest
