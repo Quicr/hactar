@@ -35,7 +35,7 @@ jobs:
           firmware/mgmt/build/mgmt.elf
           firmware/mgmt/build/mgmt.hex
 
-    - name: Upload mgmt binary
+    - name: Nightly mgmt release
       if: github.ref_name == 'main'
       uses: ncipollo/release-action@v1
       with:
@@ -95,6 +95,30 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    # - name: Copy nightly net binaries to github pages
+    #   # if: github.ref_name == 'main'
+    #   steps:
+    #     - name: Checkout gh-pages branch
+    #       uses: actions/checkout@v4
+    #       with:
+    #         ref: gh-pages
+    #         persist-credentials: false
+    #     - name: Download net binaries
+    #       run: |
+    #         mkdir -p build/net
+    #         gh release download nightly -p 'net.bin' -D build/net
+    #         gh release download nightly -p 'partition-table.bin' -D build/net
+    #         gh release download nightly -p 'bootloader.bin' -D build/net
+    #       env:
+    #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     - name: Commit and push net binaries
+    #       run: |
+    #         git config user.name "github-actions[bot]"
+    #         git config user.email "github-actions[bot]@users.noreply.github.com"
+    #         git add build
+    #         git commit -m "Update net binaries from Nightly build" || echo "No changes to commit"
+    #         git push origin gh-pages
+
   build-ui:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -134,3 +158,25 @@ jobs:
         artifacts: firmware/ui/build/ui.bin
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # - name: Copy nightly ui binary to github pages
+    #   # if: github.ref_name == 'main'
+    #   steps:
+    #     - name: Checkout gh-pages branch
+    #       uses: actions/checkout@v4
+    #       with:
+    #         ref: gh-pages
+    #         persist-credentials: false
+    #     - name: Download ui bin
+    #       run: |
+    #         mkdir -p build/ui
+    #         gh release download nightly -p 'ui.bin' -D build/ui
+    #       env:
+    #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     - name: Commit and push ui binary
+    #       run: |
+    #         git config user.name "github-actions[bot]"
+    #         git config user.email "github-actions[bot]@users.noreply.github.com"
+    #         git add build
+    #         git commit -m "Update ui binary from Nightly build" || echo "No changes to commit"
+    #         git push origin gh-pages
