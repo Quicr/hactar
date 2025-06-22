@@ -78,7 +78,8 @@ enum class MessageType : uint8_t
 {
     Media = 1,
     AIRequest,
-    AIResponse
+    AIResponse,
+    Chat,
 };
 
 enum class ContentType : uint8_t
@@ -229,14 +230,21 @@ static_assert(sizeof(AIResponseChunk) == 171);
 }
 
 [[maybe_unused]] static void
-Serialize(const uint8_t channel_id, const char* text, const uint16_t len, link_packet_t& packet)
+Serialize(const uint8_t channel_id, const char* text, const uint32_t len, link_packet_t& packet)
 {
     packet.type = (uint8_t)Packet_Type::TextMessage;
     packet.payload[0] = channel_id;
 
-    memcpy(packet.payload + 1, text, len);
+    uint32_t offset = 1;
+    packet.payload[offset] = static_cast<uint8_t>(MessageType::Chat);
+    offset += sizeof(MessageType);
 
-    packet.length = 1 + len;
+    memcpy(packet.payload + offset, &len, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+
+    memcpy(packet.payload + offset, text, len);
+
+    packet.length = offset + len;
     packet.is_ready = true;
 }
 
