@@ -4,25 +4,34 @@ Hardware design for test device
 
 ## Table of contents:
 1. [License](#License)
-2. [Where To Find Things](#where)
-3. [Hardware](#hardware)
-4. [Firmware](#firmware)
+2. [Quick-Start](#quick_start)
+3. [Where To Find Things](#where)
+4. [Hardware](#hardware)
+5. [Prerequisites](#prereq)
+    1. [Linux](#linux-prereq)
+    2. [MacOS](#macos-prereq)
+    3. [Windows](#windows-prereq)
+6. [Firmware](#firmware)
     1. [Management](#management)
     2. [User Interface](#ui)
     3. [Network](#network)
     4. [Security](#security_layer)
     5. [STM32 Toolchain](#stm_installation)
     6. [ESP32 Toolchain](#esp_installation)
-4. [Tools](#tools)
+7. [Tools](#tools)
     1. [Python Flasher](#py_flasher)
     2. [Python Serial Monitor](#serial_monitor)
-5. [Hactar Setup](#hactar_setup)
+8. [Hactar Setup](#hactar_setup)
+9. [Troubleshooting]
 
 ## License
 
 The license for information in this repository is in [LICENSE].  This license covers everything in the repository except for the directory `firmware/ui/dependencies/cmox`, which is covered by the license in [firmware/ui/dependencies/cmox/LICENSE].
 
-<h2 id="where">Where To Find Things</h2>
+## <h2 id="quick-start">Quick Start</h2>
+For new developers looking to start developing on Hactar quickly there are quick start python scripts located in etc/quick-setup, that will automatically download and setup your dev environment.
+
+## <h2 id="where">Where To Find Things</h2>
 
 - datasheets - all the datasheets for parts used
 
@@ -48,6 +57,18 @@ stuff in hardware
 - [arm-none-eabi](https://developer.arm.com/downloads/-/gnu-rm)
 - [ESP-IDF](https://idf.espressif.com/)
 - [STM32 CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html)
+
+
+## <h2 id="prereq">Pre-
+
+### <h3 id="linux-prereq">Prerequistites</h3>
+
+#### Groups
+``` usermod $USER -aG dialout -aG plugdev ```
+
+#### Rules.d
+
+``` cp etc/rules.d/* /etc/udev/rules.d/ ```
 
 <h2 id="firmware">Firmware</h2>
 
@@ -309,23 +330,6 @@ https://www.st.com/en/development-tools/stm32cubeprog.html
     export PATH="$PATH:/path/to/stm_cube_programmer/bin"
     ```
 
-- NOTE - If you are getting an error saying that libusb needs permission to write usb, then you'll need to do an additional step.
-    - Navigate to
-        ```bash
-        /path/to/stm_cube_programmer/Drivers/rules
-        ```
-    - Edit 49-stlinkv2.rules
-        - Add the following to the bottom of the file
-            ```
-            SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", SYSFS{idVendor}=="3748", \
-                MODE="0666", \
-                GROUP="plugdev"
-            ```
-    - Copy all of the rules to /etc/udev/rules.d/
-        - `cp /path/to/stm_cube_programmer/Drivers/rules/*.* /etc/udev/rules.d/`
-    - Unplug then plug in your device and STMCubeProgrammerCLI should work.
-
-
 <i>Windows</i>
 
 - Open the start search, and type `env`. Select `"Edit the system environment variables"`
@@ -572,3 +576,10 @@ ex.
     - See [Management Commands](#management_commands) for more commands that can be sent to the hactar board.
 - The first and third LED from the left will turn blue indicating debug mode and your console will receive serial debug messages from the UI and Net chips.
 - Enter `exit` to leave the monitor
+
+## <h2 id="troubleshooting">Troubleshooting</h2>
+
+### USB device disconnects shortly after connecting randomly
+
+- CH340 chips are shared with a program called brltty which is for braille devices. Linux automatically will try to connect it to brltty and therefore is in use, you can unplug and replug until it doesn't take control of the device or you can uninstall brltty if you don't need braille device.
+    - ``` sudo apt remove brltty ```
