@@ -581,5 +581,5 @@ ex.
 
 ### USB device disconnects shortly after connecting randomly
 
-- CH340 chips are shared with a program called brltty which is for braille devices. Linux automatically will try to connect it to brltty and there for is in use, you can unplug and replug until it doesn't take control of the device or you can uninstall brltty if you don't need braille device.
+- CH340 chips are shared with a program called brltty which is for braille devices. Linux automatically will try to connect it to brltty and therefore is in use, you can unplug and replug until it doesn't take control of the device or you can uninstall brltty if you don't need braille device.
     - ``` sudo apt remove brltty ```
