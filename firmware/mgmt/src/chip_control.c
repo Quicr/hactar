@@ -15,8 +15,6 @@ void NetBootloaderMode()
 
 void NetNormalMode()
 {
-    PowerCycle(NET_NRST_GPIO_Port, NET_NRST_Pin, 10);
-
     HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, GPIO_PIN_SET);
 
     // Power cycle
@@ -29,7 +27,7 @@ void NetHoldInReset()
 
     // Reset
     HAL_GPIO_WritePin(NET_NRST_GPIO_Port, NET_NRST_Pin, GPIO_PIN_RESET);
-    // HAL_Delay(100);
+    HAL_Delay(10);
 }
 
 void UIBootloaderMode()

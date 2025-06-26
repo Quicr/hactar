@@ -16,7 +16,10 @@ void PowerCycle(GPIO_TypeDef* port, uint16_t pin, uint32_t delay)
 void NormalAndNetUploadUartInit(uart_stream_t* usb_stream, UART_HandleTypeDef* tx_uart)
 {
     // Init uart1 for UI upload
-    HAL_UART_DeInit(&huart1);
+    if (HAL_UART_DeInit(&huart1) != HAL_OK)
+    {
+        Error_Handler();
+    }
 
     huart1.Instance = USART1;
     huart1.Init.BaudRate = BAUD;
