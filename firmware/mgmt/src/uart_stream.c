@@ -201,9 +201,20 @@ void InitUartStream(uart_stream_t* stream)
     stream->tx.free = 1;
 }
 
-void StartUartReceive(uart_stream_t* stream)
+void StartUartReceive(uart_stream_t* uart_stream)
 {
-    HAL_UARTEx_ReceiveToIdle_DMA(stream->rx.uart, stream->rx.buff, stream->rx.size);
+    uint8_t attempt = 0;
+    while (attempt++ != 10 &&
+        HAL_OK != HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->rx.uart, uart_stream->rx.buff, uart_stream->rx.size))
+    {
+        // Make sure the uart is cancelled, sometimes it doesn't want to cancel
+        HAL_UART_Abort(uart_stream->rx.uart);
+    }
+
+    if (attempt >= 10)
+    {
+        Error_Handler();
+    }
 }
 
 // TODO function that will read from tx and do all of the processing from there?
