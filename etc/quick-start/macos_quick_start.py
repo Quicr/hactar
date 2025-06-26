@@ -19,13 +19,6 @@ def green_print(str):
     print(f"{GB}{str}{ENDC}")
 
 
-def RunAsUser(command):
-    try:
-        subprocess.check_call(command, shell=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Command failed: {e}")
-
-
 def BaseProgramsInstall(args):
     green_print("Install base programs")
     subprocess.check_call(f"brew install make openocd libusb", shell=True)
@@ -89,7 +82,7 @@ def ESPProgramsInstall(args):
         )
 
     green_print("Install ESP32 environment")
-    RunAsUser(f"{esp_path}/install.sh all")
+    subprocess.check_call(f"{esp_path}/install.sh all", shell=True)
 
     green_print("Adding alias 'idf-get' to .zprofile")
     with open(f"{user_home}/.zprofile", "a") as file:
