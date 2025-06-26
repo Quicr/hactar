@@ -22,7 +22,7 @@ Hardware design for test device
     1. [Python Flasher](#py_flasher)
     2. [Python Serial Monitor](#serial_monitor)
 8. [Hactar Setup](#hactar_setup)
-9. [Troubleshooting]
+9. [Troubleshooting](#troubleshooting)
 
 ## License
 

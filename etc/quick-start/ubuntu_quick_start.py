@@ -67,7 +67,7 @@ def STMProgramsInstall(args):
 def ESPProgramsInstall(args):
     green_print("Installing required software for ESP32 chips")
     subprocess.check_call(
-        f"apt-get install {all_yes} git wget flex bison gperf python3 python3-pip python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0",
+        f"apt install {all_yes} git wget flex bison gperf python3 python3-pip python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0",
         shell=True,
     )
 
@@ -115,7 +115,7 @@ def ESPProgramsInstall(args):
         )
 
     green_print("Install ESP32 environment")
-    RunAsUser(user, f"{esp_path}/install.sh")
+    RunAsUser(user, f"{esp_path}/install.sh all")
 
     green_print("Adding alias 'idf-get' to .bashrc")
     with open(f"{user_home}/.bashrc", "a") as file:
