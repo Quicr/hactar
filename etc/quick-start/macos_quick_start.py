@@ -10,7 +10,7 @@ RB = "\033[31;1m"
 ENDC = "\033[m"
 
 expected_tag = "5.4.2"
-user = os.environ.get("SUDO_USER")
+user = os.environ.get("USER")
 
 user_home = f"/Users/{user}"
 
@@ -19,24 +19,11 @@ def green_print(str):
     print(f"{GB}{str}{ENDC}")
 
 
-def RunAsUser(username, command):
+def RunAsUser(command):
     try:
-        subprocess.check_call(f"sudo -u {user} {command}", shell=True)
+        subprocess.check_call(command, shell=True)
     except subprocess.CalledProcessError as e:
         print(f"Command failed: {e}")
-
-
-def ElevatePrivileges():
-    if os.geteuid() != 0:
-        print(f"{RB}Not running as root. Re-running with sudo!{ENDC}")
-        try:
-            subprocess.check_call(["sudo", sys.executable] + sys.argv)
-        except subprocess.CalledProcessError as e:
-            print(f"{RB}Failed to gain elevated privileges{ENDC}")
-            sys.exit(1)
-        sys.exit(0)
-    else:
-        green_print("Already have elevated privileges")
 
 
 def BaseProgramsInstall(args):
@@ -102,7 +89,7 @@ def ESPProgramsInstall(args):
         )
 
     green_print("Install ESP32 environment")
-    RunAsUser(user, f"{esp_path}/install.sh all")
+    RunAsUser(f"{esp_path}/install.sh all")
 
     green_print("Adding alias 'idf-get' to .zprofile")
     with open(f"{user_home}/.zprofile", "a") as file:
@@ -133,5 +120,4 @@ def main():
 
 
 if __name__ == "__main__":
-    ElevatePrivileges()
     main()
