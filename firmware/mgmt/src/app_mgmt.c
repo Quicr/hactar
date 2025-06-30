@@ -152,6 +152,8 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
     // Need to have as separate if statements so we can loop back properly
     // Which doesn't make any sense to me, but it makes it work.
     HAL_GPIO_TogglePin(LEDB_G_GPIO_Port, LEDB_G_Pin);
+    timeout_tick = HAL_GetTick();
+
     if (huart->Instance == net_stream.rx.uart->Instance)
     {
         Receive(&net_stream, rx_idx);
@@ -162,7 +164,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
     }
     else if (huart->Instance == usb_stream.rx.uart->Instance)
     {
-        timeout_tick = HAL_GetTick();
         Receive(&usb_stream, rx_idx);
     }
 }
