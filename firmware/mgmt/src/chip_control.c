@@ -19,6 +19,7 @@ void NetNormalMode()
 
     // Power cycle
     PowerCycle(NET_NRST_GPIO_Port, NET_NRST_Pin, 10);
+    // HAL_Delay(10);
 }
 
 void NetHoldInReset()

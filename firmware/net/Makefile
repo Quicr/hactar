@@ -30,7 +30,7 @@ upload: compile
 	python3 ../tools/command_sender.py ${CONSOLE_PORT} 115200 debug
 
 upload_py: compile
-	python3 ../../software/flasher/main.py  --baud=${BAUD} --chip="net" -bin=${BUILD_PATH}
+	python3 ../../software/flasher/main.py  --baud=${BAUD} --port=${PORT} --chip="net" -bin=${BUILD_PATH}
 
 upload_esptool:
 	python3 ../../software/flasher/main.py --port=${PORT} --baud=${BAUD} --chip="net" --use_external_flasher=true
