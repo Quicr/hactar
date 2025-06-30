@@ -4,6 +4,8 @@
 
 #define COMMAND_BUFF_SZ 32
 
+static uint8_t quiet = 0;
+
 void Receive(uart_stream_t* stream, uint16_t num_received)
 {
     // Calculate the number of bytes have occurred since the last event
@@ -88,7 +90,7 @@ void TxISR(uart_stream_t* stream, enum State* state)
 // Both a callback and a normal function
 void Transmit(uart_stream_t* stream, enum State* state)
 {
-    if (stream->tx.unsent == 0)
+    if (stream->tx.unsent == 0 || quiet)
     {
         stream->tx.free = 1;
         return;
@@ -177,7 +179,13 @@ void HandleCommands(uart_stream_t* stream, enum State* state)
         }
         else if (strcmp((const char*)cmd_buff, (const char*)HELLO) == 0)
         {
+            quiet = 1;
+            while (!stream->tx.free)
+            {
+                __NOP();
+            }
             HAL_UART_Transmit(stream->rx.uart, HELLO_RES, 28, HAL_MAX_DELAY);
+            quiet = 0;
         }
 
         // Clear the ring
@@ -204,8 +212,10 @@ void InitUartStream(uart_stream_t* stream)
 void StartUartReceive(uart_stream_t* uart_stream)
 {
     uint8_t attempt = 0;
-    while (attempt++ != 10 &&
-        HAL_OK != HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->rx.uart, uart_stream->rx.buff, uart_stream->rx.size))
+    while (attempt++ != 10
+           && HAL_OK
+                  != HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->rx.uart, uart_stream->rx.buff,
+                                                  uart_stream->rx.size))
     {
         // Make sure the uart is cancelled, sometimes it doesn't want to cancel
         HAL_UART_Abort(uart_stream->rx.uart);
@@ -215,6 +225,12 @@ void StartUartReceive(uart_stream_t* uart_stream)
     {
         Error_Handler();
     }
+}
+
+void RestartUartStream(uart_stream_t* stream)
+{
+    InitUartStream(stream);
+    StartUartReceive(stream);
 }
 
 // TODO function that will read from tx and do all of the processing from there?

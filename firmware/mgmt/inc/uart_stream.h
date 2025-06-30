@@ -64,5 +64,6 @@ void Transmit(uart_stream_t* stream, enum State* state);
 void InitUartStream(uart_stream_t* stream);
 void StartUartReceive(uart_stream_t* stream);
 void SetStreamModes(const StreamMode usb_mode, const StreamMode ui_mode, const StreamMode net_mode);
+void RestartUartStream(uart_stream_t* stream);
 
 #endif
