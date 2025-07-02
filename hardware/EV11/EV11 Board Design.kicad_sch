@@ -22089,7 +22089,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "R12")
 					(unit 1)
@@ -22319,7 +22319,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "R3")
 					(unit 1)
@@ -23022,7 +23022,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "D5")
 					(unit 1)
@@ -23240,7 +23240,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "L1")
 					(unit 1)
@@ -25972,7 +25972,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C5")
 					(unit 1)
@@ -28161,7 +28161,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "R13")
 					(unit 1)
@@ -28319,7 +28319,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "R5")
 					(unit 1)
@@ -28469,7 +28469,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C4")
 					(unit 1)
@@ -29025,7 +29025,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C7")
 					(unit 1)
@@ -29628,7 +29628,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "D4")
 					(unit 1)
@@ -29844,7 +29844,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C9")
 					(unit 1)
@@ -30625,7 +30625,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "J3")
 					(unit 1)
@@ -31129,7 +31129,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C10")
 					(unit 1)
@@ -31213,7 +31213,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C16")
 					(unit 1)
@@ -31494,7 +31494,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C3")
 					(unit 1)
@@ -31993,7 +31993,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "#PWR011")
 					(unit 1)
@@ -32726,7 +32726,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C1")
 					(unit 1)
@@ -33098,7 +33098,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C8")
 					(unit 1)
@@ -33554,7 +33554,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C15")
 					(unit 1)
@@ -33638,7 +33638,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C2")
 					(unit 1)
@@ -34215,7 +34215,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "U1")
 					(unit 1)
@@ -35655,7 +35655,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "R2")
 					(unit 1)
@@ -36024,7 +36024,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "R1")
 					(unit 1)
@@ -36187,7 +36187,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C12")
 					(unit 1)
@@ -36349,7 +36349,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C6")
 					(unit 1)
@@ -37815,7 +37815,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "D6")
 					(unit 1)
@@ -38208,7 +38208,7 @@
 					(unit 1)
 				)
 			)
-			(project "Buckboost converter"
+			(project "buckboost_converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C11")
 					(unit 1)
