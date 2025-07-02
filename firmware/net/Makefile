@@ -21,7 +21,7 @@ ESP_TOOL_ARGS 		= --no-stub --port=${PORT} --baud=${BAUD} write_flash --no-compr
 all: compile
 
 compile:
-	idf.py -B $(BUILD_PATH) build
+	idf.py -B $(BUILD_PATH) build -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 upload: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/bootloader/bootloader.bin ${BOOTLOADER_ADDR} verify exit"
