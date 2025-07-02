@@ -11,6 +11,7 @@ import argparse
 
 running = False
 uart = None
+rx_thread = None
 
 
 def FindHactar(uart_config):
@@ -107,6 +108,7 @@ def SignalHandler(sig, frame):
 
 def main():
     try:
+        global rx_thread
         global running
         global uart
 
@@ -141,12 +143,27 @@ def main():
 
         port = args.port
         if port == "":
-            port = FindHactar(uart_args)
+            ports = FindHactar(uart_args)
 
-            if len(port) == 0:
+            if len(ports) == 0:
                 raise Exception("No hactars found")
 
-            port = port[0]
+            idx = -1
+            while idx < 0 or idx >= len(ports):
+                try:
+                    print(f"Hactars found: {len(ports)}")
+                    print(f"Select a port [0-{len(ports)-1}]")
+                    for i, p in enumerate(ports):
+                        print(f"{i}. {p}")
+                    idx = int(input("> "))
+
+                    if idx < 0 or idx >= len(ports):
+                        print("Invalid selection, try again")
+
+                except:
+                    print("Invalid selection, try again")
+
+            port = ports[idx]
 
         uart = serial.Serial(port=port, **uart_args)
 

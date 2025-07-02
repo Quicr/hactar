@@ -57,7 +57,7 @@ burn_jtag_efuse:
 	idf.py efuse-burn DIS_USB_JTAG
 
 monitor:
-	python3 ../../software/tools/monitor.py ${PORT} ${BAUD}
+	python3 ../../software/tools/monitor.py --port=${PORT} --baud=${BAUD}
 
 idf_monitor:
 	python3 ../../softare/tools/command_sender.py ${PORT} ${BAUD} net_debug
