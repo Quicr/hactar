@@ -8,7 +8,7 @@ Hardware design for test device
 3. [Where To Find Things](#where)
 4. [Hardware](#hardware)
 5. [Prerequisites](#prereq)
-    1. [Linux](#linux-prereq)
+    1. [Debian](#linux-prereq)
     2. [MacOS](#macos-prereq)
     3. [Windows](#windows-prereq)
 6. [Firmware](#firmware)
@@ -26,42 +26,44 @@ Hardware design for test device
 
 ## License
 
-The license for information in this repository is in [LICENSE].  This license covers everything in the repository except for the directory `firmware/ui/dependencies/cmox`, which is covered by the license in [firmware/ui/dependencies/cmox/LICENSE].
+The license for information in this repository is in [LICENSE](https://github.com/Quicr/hactar/blob/main/LICENSE).  This license covers everything in the repository except for the directory `firmware/ui/dependencies/cmox`, which is covered by the license in [firmware/ui/dependencies/cmox/LICENSE].
 
-## <h2 id="quick-start">Quick Start</h2>
-For new developers looking to start developing on Hactar quickly there are quick start python scripts located in etc/quick-setup, that will automatically download and setup your dev environment.
+## <h2 id="quick_start">Quick Start</h2>
+For new developers looking to start developing on Hactar quickly there are quick start python scripts located in etc/quick-start, that will automatically download and setup your dev environment.
 
 ## <h2 id="where">Where To Find Things</h2>
 
-- datasheets - all the datasheets for parts used
+- docs - Documents about this project
 
-- docs - documents about this project
+- docs/datasheets - Datasheets for the major components used
 
-- firmware - the code for testing and supporting the hardware
+- etc - Extra files
 
-- hardware - the schematics and PCB designs
+- firmware - Code for UI, Net, and Mgmt chips
 
-- models - Contains 3D models for project
+- hardware - Schematics and PCB designs
 
-- photos - image from the project as it progresses
+- models - 3D models for project
 
-- productions - files used for manufacturing that are generated from the
+- photos - Image from the project as it progresses
+
+- productions - Files used for manufacturing that are generated from the
 stuff in hardware
 
 ## <h2 id="hardware">Hardware</h2>
 
 ### <h3 id="technologies">Technologies</h3>
 
-- [KiCAD9](https://www.kicad.org/)
-- [FreeCAD](https://www.freecad.org/)
-- [arm-none-eabi](https://developer.arm.com/downloads/-/gnu-rm)
-- [ESP-IDF](https://idf.espressif.com/)
+- [KiCad 9](https://www.kicad.org/)
+- [FreeCAD v1.0](https://www.freecad.org/)
+- [GNU arm-none-eabi](https://developer.arm.com/downloads/-/gnu-rm)
+- [ESP-IDF v5.4.2](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32/get-started/index.html)
 - [STM32 CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html)
 
 
-## <h2 id="prereq">Pre-
+## <h2 id="prereq">Prerequistites</h2>
 
-### <h3 id="linux-prereq">Prerequistites</h3>
+### <h3 id="linux-prereq">Debian Prerequistites</h3>
 
 #### Groups
 ``` usermod $USER -aG dialout -aG plugdev ```
@@ -70,6 +72,17 @@ stuff in hardware
 
 ``` cp etc/rules.d/* /etc/udev/rules.d/ ```
 
+### <h3 id="macos-prereq">MacOS Prerequistites</h3>
+
+[Homebrew](https://brew.sh/) is the recommended for installing everything in this project.
+
+
+### <h3 id="windows-prereq">Windows Prerequistites</h3>
+
+We only support using [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) for development, you are free to use native windows, but it is untested on actually getting everything in this codebase running.
+
+Any and all instructions for Debian will work on WSL and is recommended you follow those.
+
 <h2 id="firmware">Firmware</h2>
 
 The Firmware is split into 3 categories. Management, User Interface, and Network.
@@ -77,7 +90,7 @@ The Firmware is split into 3 categories. Management, User Interface, and Network
 - User Interface - STM32F405
 - Network - ESP32S3
 
-### <h3 id="management"><b>Management</b></h3>
+### <u><h3 id="management"><b>Management</b></h3></u>
 
 The management chip is responsible for uploading firmware to the stm32 - main chip and the esp32 network chip using a ch340 usb chip.
 
@@ -89,7 +102,7 @@ On the first flash you'll need to figure out what device port your hactar is on.
 
 <h5>To view your device list:</h5>
 
-- <h5>Linux/MacOS</h5>
+- <h5>Debian/MacOS</h5>
 
     `ls /dev/ttyUSB*`
 
@@ -98,6 +111,10 @@ On the first flash you'll need to figure out what device port your hactar is on.
     `Open printers and devices`
 
     `Find serial com ports`
+
+    [Attach to WSL](https://learn.microsoft.com/en-us/windows/wsl/connect-usb)
+
+    `In WSL check dmesg to find which serial port your device binded to`
 
 To flash the management chip you'll need to press the boot and reset buttons on the board in the following manner:
 
@@ -152,7 +169,7 @@ After flashing the management chip you can run `make upload` without specifying 
 
 All source code for the Management Chip can be found in firmware/mgmt. Adding C/C++ files in firmware/mgmt/src and firmware/mgmt/inc **does** require any changes in the makefile.
 
-### <h3 id="ui"><b>User Interface</b></h3>
+### <u><h3 id="ui"><b>User Interface</b></h3></u>
 
 The User Interface chip is where most of the processing takes place. It utilizes a STM32F405 chip empowered by the STM HAL Library. To generate the baseline HAL Library code and Makefile, ST's CubeMX was used.
 
@@ -193,7 +210,7 @@ All source code for the User Interface can be found in firmware/ui, firmware/sha
 
 Making a shared header between chips should be added into firmware/shared_inc.
 
-### <h3 id="network"><b>Network</b></h3>
+### <u><h3 id="network"><b>Network</b></h3></u>
 
 The network chip is a MOQ client using [quicr](https://github.com/Quicr/libquicr). The network chip communicates with the UI chip via UART serial communication.
 
@@ -248,24 +265,6 @@ Make is used for compiling and uploading automation for each chip firmware.
 ```bash
 sudo apt install make
 ```
-
-<i>Windows</i>
-
-- Download make.exe from [Source Forge](https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81.exe/download?use_mirror=phoenixnap&download=)
-
-- Save it to C:/bin or where ever you want it. Then add the location to the your path.
-
-- Open the start search, and type `env`. Select `"Edit the system environment variables"`
-
-- Click `"Environmental Variables..."`
-
-- Under `"System Variables"` find the `"Path"` entry, click `"Edit..."` button.
-
-- Click the `"New"` button and enter `DRIVE:\path\to\make_location`
-    - Note. Replace <i>DRIVE</i> with your appropriate drive letter, C, D, E... etc
-
-- You may need to restart your system after changing your system path.
-
 <i>MacOS</i>
 
 ```brew
@@ -279,10 +278,6 @@ brew install make
 ```bash
 sudo apt install gcc-arm-none-eabi binutils-arm-none-eabi
 ```
-
-<i>Windows</i>
-
-- Download the appropriate ARM GNU Toolchain for your system https://developer.arm.com/downloads/-/gnu-rm
 
 <i>MacOS</i>
 
@@ -299,11 +294,6 @@ brew install --cask gcc-arm-embedded
 ```bash
 sudo apt install stlink-tools
 ```
-
-<i>Windows</i>
-
-Download the and install the archive and put the binaries on your path.
-https://github.com/stlink-org/stlink/releases
 
 <i>MacOS</i>
 
@@ -329,19 +319,6 @@ https://www.st.com/en/development-tools/stm32cubeprog.html
     ```bash
     export PATH="$PATH:/path/to/stm_cube_programmer/bin"
     ```
-
-<i>Windows</i>
-
-- Open the start search, and type `env`. Select `"Edit the system environment variables"`
-
-- Click `"Environmental Variables..."`
-
-- Under `"System Variables"` find the `"Path"` entry, click `"Edit..."` button.
-
-- Click the `"New"` button and enter `DRIVE:\path\to\stm_cube_programmer\bin`
-    - Note. Replace <i>DRIVE</i> with your appropriate drive letter, C, D, E... etc
-
-- You may need to restart your system after changing your system path.
 
 <i>MacOS</i>
 
@@ -371,21 +348,6 @@ apt update
 sudo apt install python3.8
 ```
 
-<i>Windows</i>
-
-- Download the appropriate zip for your system https://openocd.org/pages/getting-openocd.html
-
-- Open the start search, and type `env`. Select `"Edit the system environment variables"`
-
-- Click `"Environmental Variables..."`
-
-- Under `"System Variables"` find the `"Path"` entry, click `"Edit..."` button.
-
-- Click the `"New"` button and enter `DRIVE:\path\to\openocd\bin`
-    - Note. Replace <i>DRIVE</i> with your appropriate drive letter, C, D, E... etc
-
-- You may need to restart your system after changing your system path.
-
 <i>MacOS</i>
 
 Run the following commands in a terminal to install `openocd`
@@ -403,7 +365,7 @@ This project leverages the usage of the Arduino Library for the network chip.
 
 The following tools are used for the Network.
 - [Make](#net_make) \[required]
-- [esp-idf](#esp_idf) \[required]
+- [esp-idf v5.4.2](#esp_idf) \[required]
 
 <b id="net_make">Make \[required]</b>
 
@@ -415,64 +377,26 @@ Make is used for compiling and uploading automation for each chip firmware.
 sudo apt install make
 ```
 
-<i>Windows</i>
-
-- Download make.exe from [Source Forge](https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81.exe/download?use_mirror=phoenixnap&download=)
-
-- Save it to OS bin directory or wherever you want it. Then add the location to the your path.
-
-- Open the start search, and type `env`. Select `"Edit the system environment variables"`
-
-- Click `"Environmental Variables..."`
-
-- Under `"System Variables"` find the `"Path"` entry, click `"Edit..."` button.
-
-- Click the `"New"` button and enter `DRIVE:\path\to\make_location`
-    - Note. Replace <i>DRIVE</i> with your appropriate drive letter, C, D, E... etc
-
-- You may need to restart your system after changing your system path.
-
 <i>MacOS</i>
 
 ```brew
 brew install make
 ```
 
-<b id="esp_idf">esp-idf \[required]</b>
+<b id="esp_idf">esp-idf v5.4.2 \[required]</b>
 
-<i>Debian</i>
-
-- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html
-
-<i>Windows</i>
-
-- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html
-
-
-<i>MacOS</i>
-
-- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html
-
-
-<h2 id="additional_notes">Additional Notes</h2>
-<i>Linux</i>
-
-- You will need to be in the dialout group
-- You will need to be in the docker group if you want to use the docker targets.
-- At any point if you're including or using any additional STM32 HAL library files such as `stm32f4xx_hal_sd.h` then you must add the respective source file `stm32f4xx_hal_sd.c` to C sources in the appropriate makefile.
-- New Assembly source files need to be added to the ASM sources line in the approriate makefile.
+- [Debian](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32/get-started/linux-macos-setup.html)
+- [MacOS](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32/get-started/linux-macos-setup.html)
 
 ## <h2 id="tools">Tools</h2>
 
 ### <h3 id="py_flasher"><b>Python Flasher</b></h3>
+
 A firmware flashing tool designed to work with Hactar by collating STM32 and
 ESP32 flashing specifications.
 
-#### Requirements
+#### How to use
 
-- pyserial - ```pip install pyserial```
-
-<h4>How to use</h4>
 Generally the flasher is used automatically in the Makefile. However, you can flash whatever binary you want onto a chip that the flasher is designed for by running it as python script in the firmware/flasher folder.
 
 ex.
@@ -489,7 +413,7 @@ python3 flasher.py --baud=115200 --chip="ui" -bin="./build/ui.bin"
 
 ### <h3 id="serial_monitor"><b>Python Serial Monitor</b></h3>
 
-The serial monitor is a very simple serial monitor that allows a user to send commands to the mgmt chip as well as read serial logs. Located in firmware/tools
+The serial monitor is a very simple serial monitor that allows a user to send commands to the mgmt chip as well as read serial logs. Located in software/tools
 
 Requirements
 - pyserial - ```pip install pyserial```
@@ -581,5 +505,5 @@ ex.
 
 ### USB device disconnects shortly after connecting randomly
 
-- CH340 chips are shared with a program called brltty which is for braille devices. Linux automatically will try to connect it to brltty and therefore is in use, you can unplug and replug until it doesn't take control of the device or you can uninstall brltty if you don't need braille device.
+- CH340 chips are shared with a program called brltty which is for braille devices. Debian automatically will try to connect it to brltty and therefore is in use, you can unplug and replug until it doesn't take control of the device or you can uninstall brltty if you don't need braille device.
     - ``` sudo apt remove brltty ```
