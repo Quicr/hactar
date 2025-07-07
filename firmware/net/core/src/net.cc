@@ -97,7 +97,7 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
     int gpio_num = (int)arg;
 
-    if (gpio_num == NET_STAT)
+    if (gpio_num == UI_READY)
     {
         last_audio_isr_time = curr_audio_isr_time;
         curr_audio_isr_time = esp_timer_get_time();
@@ -207,17 +207,13 @@ extern "C" void app_main(void)
 
     NET_LOG_INFO("Starting Net Main");
 
-    gpio_config_t io_conf = {.pin_bit_mask = NET_STAT_MASK,
-                             .mode = GPIO_MODE_INPUT,
-                             .pull_up_en = GPIO_PULLUP_DISABLE,
-                             .pull_down_en = GPIO_PULLDOWN_DISABLE,
-                             .intr_type = GPIO_INTR_POSEDGE};
-    gpio_config(&io_conf);
-    gpio_install_isr_service(0);
-    gpio_isr_handler_add(NET_STAT, GpioIsrRisingHandler, (void*)NET_STAT);
+    InitializeUIReadyISR(GpioIsrRisingHandler);
 
     InitializeGPIO();
     IntitializeLEDs();
+    CreateLinkPacketTask();
+
+    ui_layer.Begin();
 
     wifi.Begin();
 
@@ -266,8 +262,6 @@ extern "C" void app_main(void)
     {
         moq_session->StartWriteTrack(publications[i]);
     }
-
-    CreateLinkPacketTask();
 
     int next = 0;
     int64_t heartbeat = 0;

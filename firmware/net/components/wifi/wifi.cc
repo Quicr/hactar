@@ -103,7 +103,7 @@ esp_err_t Wifi::ScanNetworks()
         }
     }
 
-    NET_LOG_INFO("Num of aps in range %d", ap_in_range.size());
+    NET_LOG_INFO("aps in range %d, known aps in range %d", scanned_aps.size(), ap_in_range.size());
 
     ap_idx = 0;
     return res;

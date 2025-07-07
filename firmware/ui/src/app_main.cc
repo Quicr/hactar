@@ -501,7 +501,7 @@ inline void AudioCallback()
     CheckFlags();
     WakeUp();
 
-    HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, HIGH);
+    HAL_GPIO_WritePin(UI_READY_GPIO_Port, UI_READY_Pin, HIGH);
     HAL_TIM_Base_Start_IT(&htim3);
 
     ++num_audio_req_packets;
@@ -511,7 +511,7 @@ inline void AudioCallback()
 void CheckPTT()
 {
     // Send talk start and sot packets
-    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
+    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && !ptt_down)
     {
         // TODO channel id
         ui_net_link::TalkStart talk_start = {0};
@@ -521,7 +521,7 @@ void CheckPTT()
         ptt_down = true;
         LedGOn();
     }
-    else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
+    else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && ptt_down)
     {
         ui_net_link::TalkStop talk_stop = {0};
         talk_stop.channel_id = ptt_channel;
@@ -542,7 +542,7 @@ void CheckPTTAI()
 {
 
     // Send talk start and sot packets
-    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET && !ptt_ai_down)
+    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET && !ptt_ai_down)
     {
         // TODO channel id
         ui_net_link::TalkStart talk_start = {0};
@@ -552,7 +552,8 @@ void CheckPTTAI()
         ptt_ai_down = true;
         LedBOn();
     }
-    else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET && ptt_ai_down)
+    else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET
+             && ptt_ai_down)
     {
         ui_net_link::TalkStop talk_stop = {0};
         talk_stop.channel_id = ptt_ai_channel;
@@ -721,7 +722,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     else if (htim->Instance == TIM3)
     {
         // LedBToggle();
-        HAL_GPIO_WritePin(UI_STAT_GPIO_Port, UI_STAT_Pin, LOW);
+        HAL_GPIO_WritePin(UI_READY_GPIO_Port, UI_READY_Pin, LOW);
         HAL_TIM_Base_Stop_IT(&htim3);
     }
 }
