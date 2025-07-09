@@ -6,6 +6,7 @@
 
 #include "serial.hh"
 #include <quicr/client.h>
+#include <cwchar>
 #include <deque>
 
 namespace moq
@@ -41,7 +42,7 @@ private:
 
     void TransmitAudio();
     void TransmitText();
-
+    void TransmitAiResponse();
     // Audio variables
     // TODO move into an audio object?
     Serial& serial;

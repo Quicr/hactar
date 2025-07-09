@@ -22,6 +22,7 @@ inline void CheckPTT();
 inline void CheckPTTAI();
 inline void
 SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last);
+inline void HandleAiResponse(link_packet_t* packet);
 inline void HandleKeypress();
 inline bool TryProtect(link_packet_t* link_packet);
 inline bool TryUnprotect(link_packet_t* link_packet);
@@ -409,9 +410,12 @@ void HandleRecvLinkPackets()
             screen.CommitText(text, link_packet->length - payload_offset);
             break;
         }
-        case ui_net_link::Packet_Type::PttAIObject:
+        case ui_net_link::Packet_Type::AiResponse:
         {
-            // TODO something but do let fallthrough
+            UI_LOG_INFO("Got an ai response");
+
+            HandleAiResponse(link_packet);
+            break;
         }
         case ui_net_link::Packet_Type::PttMultiObject:
         case ui_net_link::Packet_Type::PttObject:
@@ -560,13 +564,13 @@ void CheckPTTAI()
         ui_net_link::Serialize(talk_stop, message_packet);
         serial.Write(message_packet);
         ptt_ai_down = false;
-        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject, true);
+        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::AiResponse, true);
         LedBOff();
     }
 
     if (ptt_ai_down)
     {
-        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject, false);
+        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::AiResponse, false);
     }
 }
 
@@ -587,6 +591,36 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
     // LedRToggle();
     serial.Write(message_packet);
     ++num_packets_tx;
+}
+
+void HandleAiResponse(link_packet_t* packet)
+{
+    UI_LOG_INFO("ai response len %d", packet->length);
+    if (!TryUnprotect(packet))
+    {
+        UI_LOG_ERROR("Failed to decrypt ai response packet");
+        return;
+    }
+
+    // TODO this is bad.
+    auto* response =
+        static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
+
+    UI_LOG_INFO("type %d", (int)response->type);
+    UI_LOG_INFO("request id %lu", response->request_id);
+    UI_LOG_INFO("content type %d", (int)response->content_type);
+    UI_LOG_INFO("last chunk %d", (int)response->last_chunk);
+    UI_LOG_INFO("content length %lu", response->chunk_length);
+
+    if (response->chunk_data[0] == '{' && response->chunk_data[response->chunk_length - 1] == '}')
+    {
+        UI_LOG_INFO("IS JSON");
+        serial.Write(*packet);
+    }
+    else
+    {
+        UI_LOG_INFO("[AI] %s", response->chunk_data);
+    }
 }
 
 void HandleKeypress()
@@ -657,6 +691,7 @@ try
 }
 catch (const std::exception& e)
 {
+    UI_LOG_ERROR("%s", e.what());
     return false;
 }
 

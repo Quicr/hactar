@@ -37,11 +37,12 @@ TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
                                    &task_stack, 8192, 10);
 }
 
+// TODO use a notifier?
 void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data)
 {
     ++num_print;
 
-    if (num_print >= 20)
+    if ((codec == "pcm" && num_print >= 20) || codec == "ascii" || codec == "ai_cmd_response:json")
     {
         num_recv += num_print;
         num_print = 0;
@@ -156,12 +157,7 @@ void TrackReader::SubscribeTask(void* param)
         }
         else if (reader->codec == "ai_cmd_response:json")
         {
-            NET_LOG_INFO("Track reader - ai response json");
-            while (true)
-            {
-                vTaskDelay(1000 / portTICK_PERIOD_MS);
-                // todo
-            }
+            reader->TransmitAiResponse();
         }
         else
         {
@@ -236,6 +232,36 @@ void TrackReader::TransmitText()
         link_packet.type = (uint8_t)ui_net_link::Packet_Type::TextMessage;
         link_packet.payload[0] = 0; // TODO channel id
         link_packet.length = data->size() + 1;
+
+        memcpy(link_packet.payload + 1, data->data(), data->size());
+
+        serial.Write(link_packet);
+    }
+}
+
+void TrackReader::TransmitAiResponse()
+{
+    NET_LOG_INFO("Track reader - ai response mode");
+
+    while (GetStatus() == TrackReader::Status::kOk)
+    {
+        vTaskDelay(2 / portTICK_PERIOD_MS);
+
+        if (byte_buffer.empty())
+        {
+            continue;
+        }
+
+        std::optional<std::vector<uint8_t>> data = std::move(byte_buffer.front());
+        byte_buffer.pop();
+
+        link_packet_t link_packet = {0};
+        link_packet.type = (uint8_t)ui_net_link::Packet_Type::AiResponse;
+        link_packet.payload[0] = 0; // TODO channel id
+        link_packet.length = data->size() + 1;
+
+        // TODO split into smaller chunks
+        NET_LOG_INFO("got a change channel len %d", data->size());
 
         memcpy(link_packet.payload + 1, data->data(), data->size());
 

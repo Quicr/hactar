@@ -19,7 +19,7 @@ enum struct Packet_Type : uint8_t
     MoQChangeNamespace,
     PttObject,
     PttMultiObject,
-    PttAIObject,
+    AiResponse,
     TextMessage,
     SSIDRequest,
     WifiConnect,
@@ -105,19 +105,22 @@ struct __attribute__((packed)) AIRequestChunk
     std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
 };
 
-struct __attribute__((packed)) AIResponseChunk
+union AIResponseChunk
 {
-    const MessageType type = MessageType::AIResponse;
-    std::uint32_t request_id;
-    ContentType content_type;
-    bool last_chunk;
-    std::uint32_t chunk_length;
-    std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
+    struct __attribute__((packed))
+    {
+        const MessageType type = MessageType::AIResponse;
+        std::uint32_t request_id;
+        ContentType content_type;
+        bool last_chunk;
+        std::uint32_t chunk_length;
+        std::uint8_t* chunk_data;
+    };
+    std::uint8_t raw[link_packet_t::Payload_Size - 1];
 };
-
-static_assert(sizeof(Chunk) == 166);
-static_assert(sizeof(AIRequestChunk) == 170);
-static_assert(sizeof(AIResponseChunk) == 171);
+// example
+// auto* response =
+// static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
 
 [[maybe_unused]] static void BuildGetLinkPacket(uint8_t* buff)
 {
@@ -183,7 +186,7 @@ static_assert(sizeof(AIResponseChunk) == 171);
                                        bool is_last,
                                        link_packet_t& packet)
 {
-    if (packet_type != Packet_Type::PttObject && packet_type != Packet_Type::PttAIObject)
+    if (packet_type != Packet_Type::PttObject && packet_type != Packet_Type::AiResponse)
     {
         packet_type = Packet_Type::PttObject;
     }
@@ -205,7 +208,7 @@ static_assert(sizeof(AIResponseChunk) == 171);
         memcpy(packet.payload + offset, &audio_size, sizeof(uint32_t));
         offset += sizeof(uint32_t);
     }
-    else if (packet_type == Packet_Type::PttAIObject)
+    else if (packet_type == Packet_Type::AiResponse)
     {
         packet.payload[offset] = static_cast<uint8_t>(MessageType::AIRequest);
         offset += sizeof(Chunk::type);

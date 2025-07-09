@@ -34,7 +34,7 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = false;
+bool loopback = true;
 
 std::shared_ptr<moq::Session> moq_session;
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
@@ -144,8 +144,12 @@ static void LinkPacketTask(void* args)
             case ui_net_link::Packet_Type::TextMessage:
                 NET_LOG_INFO("Got text message");
                 [[fallthrough]];
-            case ui_net_link::Packet_Type::PttAIObject:
-                [[fallthrough]];
+            case ui_net_link::Packet_Type::AiResponse:
+            {
+                // TODO
+
+                break;
+            }
             case ui_net_link::Packet_Type::PttMultiObject:
                 [[fallthrough]];
             case ui_net_link::Packet_Type::PttObject:
@@ -253,7 +257,6 @@ extern "C" void app_main(void)
     json subscriptions = default_channel_json.at("subscriptions");
     for (int i = 0; i < subscriptions.size(); ++i)
     {
-        // NOTE- I am not doing all of the subs because I don't want text rn
         moq_session->StartReadTrack(subscriptions[i], ui_layer);
     }
 
