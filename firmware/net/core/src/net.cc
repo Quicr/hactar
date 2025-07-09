@@ -141,15 +141,16 @@ static void LinkPacketTask(void* args)
             case ui_net_link::Packet_Type::TalkStop:
                 talk_stopped = true;
                 break;
+            case ui_net_link::Packet_Type::AiResponse:
+            {
+                NET_LOG_INFO("got ai response from ui");
+                break;
+            }
             case ui_net_link::Packet_Type::TextMessage:
                 NET_LOG_INFO("Got text message");
                 [[fallthrough]];
-            case ui_net_link::Packet_Type::AiResponse:
-            {
-                // TODO
-
-                break;
-            }
+            case ui_net_link::Packet_Type::PttAiObject:
+                [[fallthrough]];
             case ui_net_link::Packet_Type::PttMultiObject:
                 [[fallthrough]];
             case ui_net_link::Packet_Type::PttObject:

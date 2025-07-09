@@ -19,6 +19,7 @@ enum struct Packet_Type : uint8_t
     MoQChangeNamespace,
     PttObject,
     PttMultiObject,
+    PttAiObject,
     AiResponse,
     TextMessage,
     SSIDRequest,
@@ -186,8 +187,11 @@ union AIResponseChunk
                                        bool is_last,
                                        link_packet_t& packet)
 {
-    if (packet_type != Packet_Type::PttObject && packet_type != Packet_Type::AiResponse)
+    if (packet_type != Packet_Type::PttObject && packet_type != Packet_Type::PttAiObject)
     {
+        // This should maybe be an error instead?
+        Logger::Log(Logger::Level::Error, "audio object packet type is a wrong type %d",
+                    (int)packet_type);
         packet_type = Packet_Type::PttObject;
     }
 
@@ -208,7 +212,7 @@ union AIResponseChunk
         memcpy(packet.payload + offset, &audio_size, sizeof(uint32_t));
         offset += sizeof(uint32_t);
     }
-    else if (packet_type == Packet_Type::AiResponse)
+    else if (packet_type == Packet_Type::PttAiObject)
     {
         packet.payload[offset] = static_cast<uint8_t>(MessageType::AIRequest);
         offset += sizeof(Chunk::type);

@@ -564,13 +564,13 @@ void CheckPTTAI()
         ui_net_link::Serialize(talk_stop, message_packet);
         serial.Write(message_packet);
         ptt_ai_down = false;
-        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::AiResponse, true);
+        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAiObject, true);
         LedBOff();
     }
 
     if (ptt_ai_down)
     {
-        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::AiResponse, false);
+        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAiObject, false);
     }
 }
 
