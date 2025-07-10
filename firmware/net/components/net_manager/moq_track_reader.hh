@@ -37,6 +37,9 @@ public:
     std::optional<std::vector<uint8_t>> AudioPopFront() noexcept;
     size_t AudioNumAvailable() noexcept;
 
+    void Stop() noexcept;
+    bool TaskHasStopped() const noexcept;
+
 private:
     static void SubscribeTask(void* param);
 
@@ -59,9 +62,9 @@ private:
     StaticTask_t task_buffer;
     StackType_t* task_stack;
 
-    uint32_t ai_request_id = 0;
-    uint64_t num_print = 0;
-    uint64_t num_recv = 0;
+    uint64_t num_print;
+    uint64_t num_recv;
+    bool is_running;
 };
 
 } // namespace moq

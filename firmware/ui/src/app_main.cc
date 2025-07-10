@@ -566,6 +566,8 @@ void CheckPTTAI()
         ptt_ai_down = false;
         SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAiObject, true);
         LedBOff();
+
+        // FakeChangeChannelPacket();
     }
 
     if (ptt_ai_down)
@@ -602,15 +604,16 @@ void HandleAiResponse(link_packet_t* packet)
         return;
     }
 
-    // TODO this is bad.
     auto* response =
         static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
 
-    UI_LOG_INFO("type %d", (int)response->type);
-    UI_LOG_INFO("request id %lu", response->request_id);
-    UI_LOG_INFO("content type %d", (int)response->content_type);
-    UI_LOG_INFO("last chunk %d", (int)response->last_chunk);
-    UI_LOG_INFO("content length %lu", response->chunk_length);
+    // UI_LOG_INFO("type %d", (int)response->type);
+    // UI_LOG_INFO("request id %lu", response->request_id);
+    // UI_LOG_INFO("content type %d", (int)response->content_type);
+    // UI_LOG_INFO("last chunk %d", (int)response->last_chunk);
+    // UI_LOG_INFO("content length %lu", response->chunk_length);
+    // UI_LOG_INFO("start %d end %d", (int)response->chunk_data[0],
+    //             (int)response->chunk_data[response->chunk_length - 1]);
 
     if (response->chunk_data[0] == '{' && response->chunk_data[response->chunk_length - 1] == '}')
     {
@@ -619,6 +622,7 @@ void HandleAiResponse(link_packet_t* packet)
     }
     else
     {
+        response->chunk_data[response->chunk_length] = 0;
         UI_LOG_INFO("[AI] %s", response->chunk_data);
     }
 }
@@ -989,6 +993,34 @@ void DumpRxBuff()
         HAL_Delay(2);
     }
     Error("Main loop", "rx stopped receiving data, dumping");
+}
+
+void FakeChangeChannelPacket()
+{
+    link_packet_t packet;
+    packet.type = (uint8_t)ui_net_link::Packet_Type::AiResponse;
+    packet.length = 237;
+    uint8_t fake_data[] = {
+        0,   3,   0,   0,   0,   0,   1,   1,   225, 0,   0,   0,   123, 34,  99,  104, 97,
+        110, 110, 101, 108, 67,  111, 110, 102, 105, 103, 34,  58,  34,  49,  34,  44,  34,
+        99,  104, 97,  110, 110, 101, 108, 95,  110, 97,  109, 101, 34,  58,  34,  112, 108,
+        117, 109, 98,  105, 110, 103, 34,  44,  34,  99,  111, 100, 101, 99,  34,  58,  34,
+        112, 99,  109, 34,  44,  34,  108, 97,  110, 103, 117, 97,  103, 101, 34,  58,  34,
+        101, 110, 45,  85,  83,  34,  44,  34,  115, 97,  109, 112, 108, 101, 114, 97,  116,
+        101, 34,  58,  56,  48,  48,  48,  44,  34,  116, 114, 97,  99,  107, 110, 97,  109,
+        101, 34,  58,  34,  112, 99,  109, 95,  101, 110, 95,  56,  107, 104, 122, 95,  109,
+        111, 110, 111, 95,  105, 49,  54,  34,  44,  34,  116, 114, 97,  99,  107, 110, 97,
+        109, 101, 115, 112, 97,  99,  101, 34,  58,  91,  34,  109, 111, 113, 58,  47,  47,
+        109, 111, 113, 46,  112, 116, 116, 46,  97,  114, 112, 97,  47,  118, 49,  34,  44,
+        34,  111, 114, 103, 47,  97,  99,  109, 101, 34,  44,  34,  115, 116, 111, 114, 101,
+        47,  49,  50,  51,  52,  34,  44,  34,  99,  104, 97,  110, 110, 101, 108, 47,  112,
+        108, 117, 109, 98,  105, 110, 103, 34,  44,  34,  112, 116, 116, 34,  93,  125};
+    for (int i = 0; i < packet.length; ++i)
+    {
+        packet.payload[i] = fake_data[i];
+    }
+
+    serial.Write(packet);
 }
 
 void LedROn()

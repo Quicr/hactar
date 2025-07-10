@@ -165,6 +165,8 @@ void Session::SubscribeTrackTask(void* params)
 {
     // TODO use a mutex to try and subscribe/publish
     // as I could remove them from the list or update them.
+
+    // TODO notifier that awakes the thread when a new sub or pub is available
     Session* session = static_cast<Session*>(params);
 
     while (true)

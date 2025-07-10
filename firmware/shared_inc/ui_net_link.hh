@@ -106,19 +106,30 @@ struct __attribute__((packed)) AIRequestChunk
     std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
 };
 
-union AIResponseChunk
+struct __attribute__((packed)) AIResponseChunk
 {
-    struct __attribute__((packed))
-    {
-        const MessageType type = MessageType::AIResponse;
-        std::uint32_t request_id;
-        ContentType content_type;
-        bool last_chunk;
-        std::uint32_t chunk_length;
-        std::uint8_t* chunk_data;
-    };
-    std::uint8_t raw[link_packet_t::Payload_Size - 1];
+    const MessageType type = MessageType::AIResponse;
+    std::uint32_t request_id;
+    ContentType content_type;
+    bool last_chunk;
+    std::uint32_t chunk_length;
+
+    static constexpr uint32_t Type_Size = sizeof(type);
+    static constexpr uint32_t Response_Id_Size = sizeof(request_id);
+    static constexpr uint32_t Content_Type_Size = sizeof(content_type);
+    static constexpr uint32_t Last_Chunk_Size = sizeof(last_chunk);
+    static constexpr uint32_t Chunk_Length_Size = sizeof(chunk_length);
+
+    // Ext bytes that are always in packet
+    static constexpr uint32_t Channel_Id_Size = 1;
+
+    static constexpr uint32_t Chunk_Size =
+        link_packet_t::Payload_Size
+        - (Type_Size + Response_Id_Size + Content_Type_Size + Last_Chunk_Size + Chunk_Length_Size
+           + Channel_Id_Size);
+    std::uint8_t chunk_data[Chunk_Size];
 };
+
 // example
 // auto* response =
 // static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));

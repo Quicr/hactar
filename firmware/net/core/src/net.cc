@@ -144,6 +144,20 @@ static void LinkPacketTask(void* args)
             case ui_net_link::Packet_Type::AiResponse:
             {
                 NET_LOG_INFO("got ai response from ui");
+                // Check if json for sure
+                try
+                {
+                    uint8_t channel_id = packet->payload[0];
+
+                    auto* response = static_cast<ui_net_link::AIResponseChunk*>(
+                        static_cast<void*>(packet->payload + 1));
+
+                    json change_channel = json::parse(response->chunk_data);
+                }
+                catch (std::exception& ex)
+                {
+                    NET_LOG_ERROR("%s", ex.what());
+                }
                 break;
             }
             case ui_net_link::Packet_Type::TextMessage:
@@ -155,12 +169,10 @@ static void LinkPacketTask(void* args)
                 [[fallthrough]];
             case ui_net_link::Packet_Type::PttObject:
             {
-                // Channel id
+                // Channel id is always zero, so, gotta fix that.
+                uint8_t channel_id = packet->payload[0];
                 uint32_t ext_bytes = 1;
                 uint32_t length = packet->length;
-
-                // oof lol.
-                uint8_t channel_id = packet->payload[0];
 
                 // Remove the bytes already read from the payload length
                 length -= ext_bytes;
@@ -369,7 +381,7 @@ void SetupComponents(const DeviceSetupConfig& config)
 
 bool CreateLinkPacketTask()
 {
-    constexpr size_t stack_size = 4096;
+    constexpr size_t stack_size = 8092;
     serial_read_stack =
         (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
     if (serial_read_stack == NULL)
