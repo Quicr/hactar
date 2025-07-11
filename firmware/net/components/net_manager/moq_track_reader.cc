@@ -129,7 +129,7 @@ size_t TrackReader::AudioNumAvailable() noexcept
     return byte_buffer.size();
 }
 
-void TrackReader::Stop()
+void TrackReader::Stop() noexcept
 {
     is_running = false;
 }
@@ -149,7 +149,7 @@ void TrackReader::SubscribeTask(void* param)
         {
             uint32_t next_print = 0;
             // TODO add in changing sub
-            while (reader->GetStatus() != moq::TrackReader::Status::kOk)
+            while (reader->GetStatus() != moq::TrackReader::Status::kOk && reader->is_running)
             {
                 if (esp_timer_get_time_ms() > next_print)
                 {
@@ -181,14 +181,14 @@ void TrackReader::SubscribeTask(void* param)
         }
     }
 
-    NET_LOG_ERROR("Publish task for %s has exited", reader->track_name.c_str());
+    NET_LOG_ERROR("Sub task for %s has exited", reader->track_name.c_str());
     vTaskDelete(nullptr);
 }
 
 void TrackReader::TransmitAudio()
 {
     NET_LOG_INFO("Track reader - audio mode");
-    while (GetStatus() == TrackReader::Status::kOk)
+    while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
         // TODO use notifies and then drain the entire moq objs
         vTaskDelay(2 / portTICK_PERIOD_MS);
@@ -231,7 +231,7 @@ void TrackReader::TransmitText()
 {
     NET_LOG_INFO("Track reader - text mode");
 
-    while (GetStatus() == TrackReader::Status::kOk)
+    while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
         // TODO use notifies and then drain the entire moq objs
         vTaskDelay(2 / portTICK_PERIOD_MS);
@@ -259,7 +259,7 @@ void TrackReader::TransmitAiResponse()
 {
     NET_LOG_INFO("Track reader - ai response mode");
 
-    while (GetStatus() == TrackReader::Status::kOk)
+    while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
         vTaskDelay(2 / portTICK_PERIOD_MS);
 

@@ -567,7 +567,7 @@ void CheckPTTAI()
         SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAiObject, true);
         LedBOff();
 
-        // FakeChangeChannelPacket();
+        FakeChangeChannelPacket();
     }
 
     if (ptt_ai_down)

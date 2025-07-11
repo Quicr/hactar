@@ -22,6 +22,9 @@ public:
     void StatusChanged(Status status) override;
     void PushObject(const uint8_t* bytes, const uint32_t len, const uint64_t timestamp);
 
+    void Stop() noexcept;
+    bool TaskHasStopped() const noexcept;
+
     struct link_data_obj
     {
         quicr::ObjectHeaders headers = {
@@ -45,11 +48,11 @@ private:
     std::deque<moq::TrackWriter::link_data_obj> moq_objs;
     uint64_t object_id;
 
+    bool is_running;
+    std::mutex obj_mux;
     TaskHandle_t task_handle;
     StaticTask_t task_buffer;
     StackType_t* task_stack;
-
-    std::mutex obj_mux;
 };
 } // namespace moq
 

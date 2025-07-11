@@ -43,13 +43,22 @@ void Session::StatusChanged(Status status)
 
 std::shared_ptr<TrackWriter> Session::Writer(const size_t id) noexcept
 {
-    if (id > writers.size())
+    // ptt
+    if (id == 0)
     {
-        NET_LOG_ERROR("ERROR, writer with id %ld does not exist", id);
-        return nullptr;
+        return audio_writer;
+    }
+    else if (id == 1)
+    {
+        return ai_writer;
+    }
+    else if (id == 2)
+    {
+        return text_writer;
     }
 
-    return writers[id];
+    NET_LOG_ERROR("ERROR, writer with id %ld does not exist", id);
+    return nullptr;
 }
 
 void Session::StartReadTrack(const json& subscription, Serial& serial)
@@ -72,11 +81,32 @@ void Session::StartReadTrack(const json& subscription, Serial& serial)
             trackname = std::to_string(device_id);
         }
 
+        std::string channel_name = subscription.at("channel_name").get<std::string>();
         std::string codec = subscription.at("codec").get<std::string>();
-        ESP_LOGE("sub", "%s", codec.c_str());
+        ESP_LOGE("sub", "%s %s", channel_name.c_str(), codec.c_str());
 
         std::shared_ptr<moq::TrackReader> reader = std::make_shared<moq::TrackReader>(
             moq::MakeFullTrackName(track_namespace, trackname), serial, codec);
+
+        if (channel_name != "ai_audio")
+        {
+            if (codec == "pcm")
+            {
+                if (audio_reader)
+                {
+                    audio_reader->Stop();
+                }
+                audio_reader = reader;
+            }
+            else if (codec == "ascii")
+            {
+                if (text_reader)
+                {
+                    text_reader->Stop();
+                }
+                text_reader = reader;
+            }
+        }
 
         std::lock_guard<std::mutex> _(readers_mux);
         readers.push_back(reader);
@@ -101,8 +131,7 @@ void Session::StartWriteTrack(const json& publication)
             publication.at("tracknamespace").get<std::vector<std::string>>();
         std::string trackname = publication.at("trackname").get<std::string>();
 
-        // TODO something with this?
-        // std::string codec = publication.at("codec").get<std::string>();
+        std::string channel_name = publication.at("channel_name").get<std::string>();
 
         // uint64_t sample_rate = publication.at("sample_rate").get<uint64_t>();
         // std::string channel_config = publication.at("channelConfig").get<std::string>();
@@ -110,6 +139,35 @@ void Session::StartWriteTrack(const json& publication)
         std::shared_ptr<moq::TrackWriter> writer =
             std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName(track_namespace, trackname),
                                                quicr::TrackMode::kDatagram, 2, 100);
+
+        if (channel_name != "ai_audio")
+        {
+            std::string codec = publication.at("codec").get<std::string>();
+            if (codec == "pcm")
+            {
+                if (audio_writer)
+                {
+                    audio_writer->Stop();
+                }
+                audio_writer = writer;
+            }
+            else if (codec == "ascii")
+            {
+                if (text_writer)
+                {
+                    text_writer->Stop();
+                }
+                text_writer = writer;
+            }
+        }
+        else
+        {
+            if (ai_writer)
+            {
+                ai_writer->Stop();
+            }
+            ai_writer = writer;
+        }
 
         std::lock_guard<std::mutex> _(writers_mux);
         writers.push_back(writer);
@@ -126,6 +184,8 @@ void Session::PublishTrackTask(void* params)
     // as I could remove them from the list or update them.
     Session* session = static_cast<Session*>(params);
 
+    std::unique_lock<std::mutex> lock(session->writers_mux);
+
     while (true)
     {
         while (session->GetStatus() != moq::Session::Status::kReady)
@@ -134,7 +194,7 @@ void Session::PublishTrackTask(void* params)
             continue;
         }
 
-        std::lock_guard<std::mutex> _(session->writers_mux);
+        lock.lock();
 
         for (int i = 0; i < session->writers.size(); ++i)
         {
@@ -143,6 +203,11 @@ void Session::PublishTrackTask(void* params)
             // Writer is publishing
             if (writer->GetStatus() == moq::TrackWriter::Status::kOk)
             {
+                if (writer->TaskHasStopped())
+                {
+                    session->UnpublishTrack(writer);
+                    session->writers.erase(session->writers.begin() + i);
+                }
                 continue;
             }
 
@@ -154,6 +219,8 @@ void Session::PublishTrackTask(void* params)
                 vTaskDelay(300 / portTICK_PERIOD_MS);
             }
         }
+
+        lock.unlock();
 
         vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
@@ -186,6 +253,11 @@ void Session::SubscribeTrackTask(void* params)
             // Writer is publishing
             if (reader->GetStatus() == moq::TrackReader::Status::kOk)
             {
+                if (reader->TaskHasStopped())
+                {
+                    session->UnsubscribeTrack(reader);
+                    session->readers.erase(session->readers.begin() + i);
+                }
                 continue;
             }
 

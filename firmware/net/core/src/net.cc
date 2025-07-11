@@ -87,7 +87,7 @@ uint64_t last_audio_isr_time = esp_timer_get_time();
 #if __has_include("wifi_creds.hh")
 #include "wifi_creds.hh"
 #else
-#warning "wifi_creds.hh not found!!
+#warning "wifi_creds.hh not found!!"
 #endif
 #else
 #include "wifi_creds.hh"
@@ -153,6 +153,11 @@ static void LinkPacketTask(void* args)
                         static_cast<void*>(packet->payload + 1));
 
                     json change_channel = json::parse(response->chunk_data);
+                    NET_LOG_INFO("start track read for new channel");
+                    moq_session->StartReadTrack(change_channel, ui_layer);
+
+                    NET_LOG_INFO("start track write for new channel");
+                    moq_session->StartWriteTrack(change_channel);
                 }
                 catch (std::exception& ex)
                 {
@@ -180,7 +185,11 @@ static void LinkPacketTask(void* args)
                 // NET_LOG_INFO("chid %d", (int)channel_id);
                 // If the publisher is not ready just ignore the link packet
                 std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
-                writer->PushObject(packet->payload + 1, length, curr_audio_isr_time);
+
+                if (writer)
+                {
+                    writer->PushObject(packet->payload + 1, length, curr_audio_isr_time);
+                }
 
                 // TODO use notifies, currently it doesn't notify fast enough?
                 // xTaskNotifyGive(rtos_pub_handle);

@@ -30,17 +30,18 @@ public:
 
     void StatusChanged(Status status) override;
 
-    // public API - send subscribe, setup queue for incoming objects
     void StartReadTrack(const json& subscription, Serial& serial);
-    void Read();
     void StopReadTrack(const std::string& track_name);
 
     void StartWriteTrack(const json& publication);
-    void Write();
     void StopWriteTrack(const std::string& track_name);
 
     std::shared_ptr<TrackReader> Reader(const size_t id) noexcept;
     std::shared_ptr<TrackWriter> Writer(const size_t id) noexcept;
+
+    void StopAudioReader();
+    void StopTextReader();
+    void StopAudioWriter();
 
 private:
     Session() = delete;
@@ -55,12 +56,17 @@ private:
     void StartTasks() noexcept;
 
     std::vector<std::shared_ptr<TrackReader>> readers;
+    std::shared_ptr<TrackReader> audio_reader;
+    std::shared_ptr<TrackReader> text_reader;
     std::mutex readers_mux;
     TaskHandle_t readers_task_handle;
     StaticTask_t readers_task_buffer;
     StackType_t* readers_task_stack;
 
     std::vector<std::shared_ptr<TrackWriter>> writers;
+    std::shared_ptr<TrackWriter> ai_writer;
+    std::shared_ptr<TrackWriter> audio_writer;
+    std::shared_ptr<TrackWriter> text_writer;
     std::mutex writers_mux;
     TaskHandle_t writers_task_handle;
     StaticTask_t writers_task_buffer;

@@ -19,7 +19,12 @@ TrackWriter::TrackWriter(const quicr::FullTrackName& full_track_name,
     track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end())
                + std::string(full_track_name.name.begin(), full_track_name.name.end())),
     moq_objs({0}),
-    object_id(0)
+    object_id(0),
+    is_running(true),
+    obj_mux(),
+    task_handle(nullptr),
+    task_buffer(nullptr),
+    task_stack(nullptr)
 {
     task_helpers::Start_PSRAM_Task(PublishTask, this, track_name, task_handle, task_buffer,
                                    &task_stack, 8192, 10);
@@ -86,6 +91,16 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
     obj.data.assign(bytes, bytes + len);
 }
 
+void TrackWriter::Stop() noexcept
+{
+    is_running = false;
+}
+
+bool TrackWriter::TaskHasStopped() const noexcept
+{
+    return task_handle == nullptr;
+}
+
 void TrackWriter::PublishTask(void* params)
 {
     TrackWriter* writer = static_cast<TrackWriter*>(params);
@@ -94,7 +109,7 @@ void TrackWriter::PublishTask(void* params)
     {
         uint32_t next_print = 0;
         // TODO add in changing pub
-        while (writer->GetStatus() != moq::TrackWriter::Status::kOk)
+        while (writer->GetStatus() != moq::TrackWriter::Status::kOk && writer->is_running)
         {
             if (esp_timer_get_time_ms() > next_print)
             {
@@ -108,7 +123,7 @@ void TrackWriter::PublishTask(void* params)
         NET_LOG_INFO("Publishing to track %s", writer->track_name.c_str());
 
         // TODO changing pub
-        while (writer->GetStatus() == TrackWriter::Status::kOk)
+        while (writer->GetStatus() == TrackWriter::Status::kOk && writer->is_running)
         {
             // TODO use notifies and then drain the entire moq objs
             vTaskDelay(2 / portTICK_PERIOD_MS);
