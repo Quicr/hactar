@@ -34,7 +34,7 @@
 	(pad 2 smd rect (at -2.54 2.95 0.00) (size 0.80 2.00) (layers F.Cu F.Paste F.Mask))
 	(pad 1 smd rect (at -5.08 2.95 0.00) (size 0.80 2.00) (layers F.Cu F.Paste F.Mask))
 	(fp_circle (center -6.55 3.55) (end -6.52 3.55) (layer F.Fab) (width 0.06))
-	(model "Code/hactar/hardware/kicad_libraries/hactar_footprints.3dshapes/HDR-SMD_10P-P2.54-V-F-R2-C5-LS7.1-1.wrl"
+	(model "/hactar_footprints.3dshapes/HDR-SMD_10P-P2.54-V-F-R2-C5-LS7.1-1.wrl"
 		(offset (xyz 0.000 -0.000 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))
