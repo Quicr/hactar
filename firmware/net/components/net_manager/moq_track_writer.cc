@@ -26,15 +26,30 @@ TrackWriter::TrackWriter(const quicr::FullTrackName& full_track_name,
     task_buffer(nullptr),
     task_stack(nullptr)
 {
-    task_helpers::Start_PSRAM_Task(PublishTask, this, track_name, task_handle, task_buffer,
-                                   &task_stack, 8192, 10);
 }
 
 TrackWriter::~TrackWriter()
 {
-    // Kill the free rtos task, I don;t know if I need to wait for it to die or not,
-    // later problem though
-    vTaskDelete(task_handle);
+    Stop();
+}
+
+void TrackWriter::Start()
+{
+    if (task_handle)
+    {
+        return;
+    }
+
+    task_helpers::Start_PSRAM_Task(PublishTask, this, track_name, task_handle, task_buffer,
+                                   &task_stack, 8192, 10);
+}
+
+void TrackWriter::Stop()
+{
+    if (task_handle)
+    {
+        vTaskDelete(task_handle);
+    }
 }
 
 void TrackWriter::StatusChanged(TrackWriter::Status status)
@@ -89,16 +104,6 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
     obj.headers.extensions.value()[2].assign(time_bytes.begin(), time_bytes.end());
 
     obj.data.assign(bytes, bytes + len);
-}
-
-void TrackWriter::Stop() noexcept
-{
-    is_running = false;
-}
-
-bool TrackWriter::TaskHasStopped() const noexcept
-{
-    return task_handle == nullptr;
 }
 
 void TrackWriter::PublishTask(void* params)

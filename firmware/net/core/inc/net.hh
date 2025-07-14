@@ -33,5 +33,5 @@ struct DeviceSetupConfig
     std::string moq_endpoint_id{"hactar-12-suhas"};
 };
 
-static void SetupComponents(const DeviceSetupConfig& config);
-static bool CreateLinkPacketTask();
+void SetupComponents(const DeviceSetupConfig& config);
+bool CreateLinkPacketTask();

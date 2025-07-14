@@ -18,7 +18,12 @@ public:
     TrackReader(const quicr::FullTrackName& full_track_name,
                 Serial& serial,
                 const std::string& codec);
-    virtual ~TrackReader() = default;
+
+    virtual ~TrackReader();
+
+    void Start();
+
+    void Stop();
 
     //
     // overrides from SubscribeTrackHandler
@@ -36,9 +41,6 @@ public:
     void AudioPop() noexcept;
     std::optional<std::vector<uint8_t>> AudioPopFront() noexcept;
     size_t AudioNumAvailable() noexcept;
-
-    void Stop() noexcept;
-    bool TaskHasStopped() const noexcept;
 
 private:
     static void SubscribeTask(void* param);

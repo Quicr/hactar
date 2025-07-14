@@ -36,12 +36,14 @@ using json = nlohmann::json;
 uint64_t device_id = 0;
 bool loopback = true;
 
+std::vector<std::shared_ptr<moq::TrackReader>> readers;
+std::vector<std::shared_ptr<moq::TrackWriter>> writers;
 std::shared_ptr<moq::Session> moq_session;
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 
 /** END EXTERNAL VARIABLES */
 
-constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
+constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33437";
 // constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
@@ -154,10 +156,10 @@ static void LinkPacketTask(void* args)
 
                     json change_channel = json::parse(response->chunk_data);
                     NET_LOG_INFO("start track read for new channel");
-                    moq_session->StartReadTrack(change_channel, ui_layer);
+                    // moq_session->StartReadTrack(change_channel, ui_layer);
 
                     NET_LOG_INFO("start track write for new channel");
-                    moq_session->StartWriteTrack(change_channel);
+                    // moq_session->StartWriteTrack(change_channel);
                 }
                 catch (std::exception& ex)
                 {
@@ -184,11 +186,15 @@ static void LinkPacketTask(void* args)
 
                 // NET_LOG_INFO("chid %d", (int)channel_id);
                 // If the publisher is not ready just ignore the link packet
-                std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
 
-                if (writer)
+                if (moq_session)
                 {
-                    writer->PushObject(packet->payload + 1, length, curr_audio_isr_time);
+                    std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
+
+                    if (writer)
+                    {
+                        writer->PushObject(packet->payload + 1, length, curr_audio_isr_time);
+                    }
                 }
 
                 // TODO use notifies, currently it doesn't notify fast enough?
@@ -209,6 +215,63 @@ static void LinkPacketTask(void* args)
             }
         }
     }
+}
+
+std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial)
+try
+{
+    // TODO something with channel name, like transmitting it to ui
+    // std::string channel_name = subscription.at("channel_name").get<std::string>();
+
+    // TODO transmit to the ui chip probably
+    // std::string lang = subscription.at("language").get<std::string>();
+
+    std::vector<std::string> track_namespace =
+        subscription.at("tracknamespace").get<std::vector<std::string>>();
+    std::string trackname = subscription.at("trackname").get<std::string>();
+
+    if (trackname == "")
+    {
+        trackname = std::to_string(device_id);
+    }
+
+    std::string codec = subscription.at("codec").get<std::string>();
+    ESP_LOGE("sub", "%s", codec.c_str());
+
+    return std::make_shared<moq::TrackReader>(moq::MakeFullTrackName(track_namespace, trackname),
+                                              serial, codec);
+}
+catch (const std::exception& ex)
+{
+    ESP_LOGE("sub", "Exception in sub %s", ex.what());
+    return nullptr;
+}
+std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& publication)
+try
+{
+    // TODO something with channel name, like transmitting it to ui
+    // std::string channel_name = publication.at("channel_name").get<std::string>();
+
+    // TODO transmit to the ui chip probably
+    // std::string lang = publication.at("language").get<std::string>();
+
+    std::vector<std::string> track_namespace =
+        publication.at("tracknamespace").get<std::vector<std::string>>();
+    std::string trackname = publication.at("trackname").get<std::string>();
+
+    // TODO something with this?
+    // std::string codec = publication.at("codec").get<std::string>();
+
+    // uint64_t sample_rate = publication.at("sample_rate").get<uint64_t>();
+    // std::string channel_config = publication.at("channelConfig").get<std::string>();
+
+    return std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName(track_namespace, trackname),
+                                              quicr::TrackMode::kDatagram, 2, 100);
+}
+catch (const std::exception& ex)
+{
+    ESP_LOGE("pub", "Exception in pub %s", ex.what());
+    return nullptr;
 }
 
 void PrintRAM()
@@ -279,13 +342,14 @@ extern "C" void app_main(void)
     json subscriptions = default_channel_json.at("subscriptions");
     for (int i = 0; i < subscriptions.size(); ++i)
     {
-        moq_session->StartReadTrack(subscriptions[i], ui_layer);
+        // NOTE- I am not doing all of the subs because I don't want text rn
+        readers.emplace_back(CreateReadTrack(subscriptions[i], ui_layer));
     }
 
     json publications = default_channel_json.at("publications");
     for (int i = 0; i < publications.size(); ++i)
     {
-        moq_session->StartWriteTrack(publications[i]);
+        writers.emplace_back(CreateWriteTrack(publications[i]));
     }
 
     int next = 0;
@@ -296,6 +360,8 @@ extern "C" void app_main(void)
     while (true)
     {
         moq::Session::Status status = moq_session->GetStatus();
+        NET_LOG_INFO("New moq state %d", (int)status);
+
         Wifi::State wifi_state = wifi.GetState();
 
         // TODO cleanup
@@ -318,6 +384,19 @@ extern "C" void app_main(void)
                     || status == moq::Session::Status::kReady)
                 {
                     moq_session->Disconnect();
+
+                    for (const auto& reader : readers)
+                    {
+                        reader->Stop();
+                    }
+
+                    for (const auto& writer : writers)
+                    {
+                        writer->Stop();
+                    }
+
+                    moq_session.reset(new moq::Session(config));
+                    status = moq_session->GetStatus();
                 }
             }
             case Wifi::State::Initialized:
@@ -340,19 +419,46 @@ extern "C" void app_main(void)
         // TODO move into a different task?
         if (prev_status != status && wifi.IsConnected())
         {
+            NET_LOG_INFO("New moq state %d", (int)status);
             switch (status)
             {
             case moq::Session::Status::kReady:
             {
+                for (const auto& reader : readers)
+                {
+                    reader->Start();
+                }
+
+                for (const auto& writer : writers)
+                {
+                    writer->Start();
+                }
+
                 // TODO
                 // Tell ui chip we are ready
                 gpio_set_level(NET_LED_B, 0);
                 break;
             }
-            case moq::Session::Status::kNotReady:
             case moq::Session::Status::kNotConnected:
+                [[fallthrough]];
             case moq::Session::Status::kFailedToConnect:
+                for (const auto& reader : readers)
+                {
+                    reader->Stop();
+                }
+
+                for (const auto& writer : writers)
+                {
+                    writer->Stop();
+                }
+
+                moq_session.reset(new moq::Session(config));
+                [[fallthrough]];
+            case moq::Session::Status::kNotReady:
             {
+                moq_session->SetReaders(readers);
+                moq_session->SetWriters(writers);
+
                 NET_LOG_INFO("MOQ Transport Calling Connect");
 
                 if (moq_session->Connect() != quicr::Transport::Status::kConnecting)
@@ -366,6 +472,7 @@ extern "C" void app_main(void)
             default:
             {
                 // TODO the rest
+                NET_LOG_INFO("No handler for this moq state");
                 break;
             }
             }

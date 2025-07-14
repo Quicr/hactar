@@ -18,12 +18,15 @@ public:
                 quicr::TrackMode track_mode,
                 uint8_t default_priority,
                 uint32_t default_ttl);
+
     virtual ~TrackWriter();
+
+    void Start();
+
+    void Stop();
+
     void StatusChanged(Status status) override;
     void PushObject(const uint8_t* bytes, const uint32_t len, const uint64_t timestamp);
-
-    void Stop() noexcept;
-    bool TaskHasStopped() const noexcept;
 
     struct link_data_obj
     {

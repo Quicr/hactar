@@ -43,139 +43,25 @@ void Session::StatusChanged(Status status)
 
 std::shared_ptr<TrackWriter> Session::Writer(const size_t id) noexcept
 {
-    // ptt
-    if (id == 0)
+    if (id > writers.size())
     {
-        return audio_writer;
-    }
-    else if (id == 1)
-    {
-        return ai_writer;
-    }
-    else if (id == 2)
-    {
-        return text_writer;
+        NET_LOG_ERROR("ERROR, writer with id %ld does not exist", id);
+        return nullptr;
     }
 
-    NET_LOG_ERROR("ERROR, writer with id %ld does not exist", id);
-    return nullptr;
+    return writers[id];
 }
 
-void Session::StartReadTrack(const json& subscription, Serial& serial)
+void Session::SetReaders(const std::vector<std::shared_ptr<TrackReader>>& rdrs)
 {
-    try
-    {
-
-        // TODO something with channel name, like transmitting it to ui
-        // std::string channel_name = subscription.at("channel_name").get<std::string>();
-
-        // TODO transmit to the ui chip probably
-        // std::string lang = subscription.at("language").get<std::string>();
-
-        std::vector<std::string> track_namespace =
-            subscription.at("tracknamespace").get<std::vector<std::string>>();
-        std::string trackname = subscription.at("trackname").get<std::string>();
-
-        if (trackname == "")
-        {
-            trackname = std::to_string(device_id);
-        }
-
-        std::string channel_name = subscription.at("channel_name").get<std::string>();
-        std::string codec = subscription.at("codec").get<std::string>();
-        ESP_LOGE("sub", "%s %s", channel_name.c_str(), codec.c_str());
-
-        std::shared_ptr<moq::TrackReader> reader = std::make_shared<moq::TrackReader>(
-            moq::MakeFullTrackName(track_namespace, trackname), serial, codec);
-
-        if (channel_name != "ai_audio")
-        {
-            if (codec == "pcm")
-            {
-                if (audio_reader)
-                {
-                    audio_reader->Stop();
-                }
-                audio_reader = reader;
-            }
-            else if (codec == "ascii")
-            {
-                if (text_reader)
-                {
-                    text_reader->Stop();
-                }
-                text_reader = reader;
-            }
-        }
-
-        std::lock_guard<std::mutex> _(readers_mux);
-        readers.push_back(reader);
-    }
-    catch (const std::exception& ex)
-    {
-        ESP_LOGE("sub", "Exception in sub %s", ex.what());
-    }
+    std::lock_guard<std::mutex> _(readers_mux);
+    readers = rdrs;
 }
 
-void Session::StartWriteTrack(const json& publication)
+void Session::SetWriters(const std::vector<std::shared_ptr<TrackWriter>>& wrtrs)
 {
-    try
-    {
-        // TODO something with channel name, like transmitting it to ui
-        // std::string channel_name = publication.at("channel_name").get<std::string>();
-
-        // TODO transmit to the ui chip probably
-        // std::string lang = publication.at("language").get<std::string>();
-
-        std::vector<std::string> track_namespace =
-            publication.at("tracknamespace").get<std::vector<std::string>>();
-        std::string trackname = publication.at("trackname").get<std::string>();
-
-        std::string channel_name = publication.at("channel_name").get<std::string>();
-
-        // uint64_t sample_rate = publication.at("sample_rate").get<uint64_t>();
-        // std::string channel_config = publication.at("channelConfig").get<std::string>();
-
-        std::shared_ptr<moq::TrackWriter> writer =
-            std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName(track_namespace, trackname),
-                                               quicr::TrackMode::kDatagram, 2, 100);
-
-        if (channel_name != "ai_audio")
-        {
-            std::string codec = publication.at("codec").get<std::string>();
-            if (codec == "pcm")
-            {
-                if (audio_writer)
-                {
-                    audio_writer->Stop();
-                }
-                audio_writer = writer;
-            }
-            else if (codec == "ascii")
-            {
-                if (text_writer)
-                {
-                    text_writer->Stop();
-                }
-                text_writer = writer;
-            }
-        }
-        else
-        {
-            if (ai_writer)
-            {
-                ai_writer->Stop();
-            }
-            ai_writer = writer;
-        }
-
-        std::lock_guard<std::mutex> _(writers_mux);
-        writers.push_back(writer);
-    }
-    catch (const std::exception& ex)
-    {
-        ESP_LOGE("pub", "Exception in pub %s", ex.what());
-    }
+    std::lock_guard<std::mutex> _(writers_mux);
+    writers = wrtrs;
 }
 
 void Session::PublishTrackTask(void* params)
@@ -203,11 +89,11 @@ void Session::PublishTrackTask(void* params)
             // Writer is publishing
             if (writer->GetStatus() == moq::TrackWriter::Status::kOk)
             {
-                if (writer->TaskHasStopped())
-                {
-                    session->UnpublishTrack(writer);
-                    session->writers.erase(session->writers.begin() + i);
-                }
+                // if (writer->TaskHasStopped())
+                // {
+                //     session->UnpublishTrack(writer);
+                //     session->writers.erase(session->writers.begin() + i);
+                // }
                 continue;
             }
 
@@ -253,12 +139,12 @@ void Session::SubscribeTrackTask(void* params)
             // Writer is publishing
             if (reader->GetStatus() == moq::TrackReader::Status::kOk)
             {
-                if (reader->TaskHasStopped())
-                {
-                    session->UnsubscribeTrack(reader);
-                    session->readers.erase(session->readers.begin() + i);
-                }
-                continue;
+                // if (reader->TaskHasStopped())
+                // {
+                //     session->UnsubscribeTrack(reader);
+                //     session->readers.erase(session->readers.begin() + i);
+                // }
+                // continue;
             }
 
             // TODO switch on all statuses

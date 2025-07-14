@@ -31,19 +31,34 @@ TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
     byte_buffer(),
     audio_playing(false),
     audio_min_depth(5),
-    audio_max_depth(std::numeric_limits<size_t>::max()),
-    task_handle(nullptr),
-    task_buffer(nullptr),
-    task_stack(nullptr),
-    num_print(0),
-    num_recv(0),
-    is_running(true)
+    audio_max_depth(std::numeric_limits<size_t>::max())
 {
+}
+
+TrackReader::~TrackReader()
+{
+    Stop();
+}
+
+void TrackReader::Start()
+{
+    if (task_handle)
+    {
+        return;
+    }
+
     task_helpers::Start_PSRAM_Task(SubscribeTask, this, track_name, task_handle, task_buffer,
                                    &task_stack, 8192, 10);
 }
 
-// TODO use a notifier?
+void TrackReader::Stop()
+{
+    if (task_handle)
+    {
+        vTaskDelete(task_handle);
+    }
+}
+
 void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data)
 {
     ++num_print;
@@ -129,16 +144,6 @@ size_t TrackReader::AudioNumAvailable() noexcept
     return byte_buffer.size();
 }
 
-void TrackReader::Stop() noexcept
-{
-    is_running = false;
-}
-
-bool TrackReader::TaskHasStopped() const noexcept
-{
-    return task_handle == nullptr;
-}
-
 void TrackReader::SubscribeTask(void* param)
 {
     TrackReader* reader = static_cast<TrackReader*>(param);
@@ -216,7 +221,7 @@ void TrackReader::TransmitAudio()
             continue;
         }
 
-        link_packet_t link_packet = {0};
+        link_packet_t link_packet;
         link_packet.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
         link_packet.payload[0] = 0;
         link_packet.length = data->size() + 1;
