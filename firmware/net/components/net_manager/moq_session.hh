@@ -31,13 +31,11 @@ public:
     void StatusChanged(Status status) override;
 
     // public API - send subscribe, setup queue for incoming objects
-    void StartReadTrack(const json& subscription, Serial& serial);
+    void SetReaders(const std::vector<std::shared_ptr<TrackReader>>& readers);
     void Read();
-    void StopReadTrack(const std::string& track_name);
 
-    void StartWriteTrack(const json& publication);
+    void SetWriters(const std::vector<std::shared_ptr<TrackWriter>>& writer);
     void Write();
-    void StopWriteTrack(const std::string& track_name);
 
     std::shared_ptr<TrackReader> Reader(const size_t id) noexcept;
     std::shared_ptr<TrackWriter> Writer(const size_t id) noexcept;
