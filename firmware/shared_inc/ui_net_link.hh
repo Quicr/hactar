@@ -27,43 +27,52 @@ enum struct Packet_Type : uint8_t
     WifiStatus
 };
 
+enum class Channel_Id : uint8_t
+{
+    Ptt,
+    Ptt_Ai,
+    Chat,
+    Chat_Ai,
+    Count
+};
+
 struct ChangeNamespace
 {
 
-    uint8_t channel_id;
+    Channel_Id channel_id;
     uint16_t trackname_len;
     char trackname[128]; // Todo get actual max size of a trackname
 };
 
 struct TalkStart
 {
-    uint8_t channel_id;
+    Channel_Id channel_id;
 };
 
 struct TalkStop
 {
-    uint8_t channel_id;
+    Channel_Id channel_id;
 };
 
 struct PlayStart
 {
-    uint8_t channel_id;
+    Channel_Id channel_id;
 };
 
 struct PlayStop
 {
-    uint8_t channel_id;
+    Channel_Id channel_id;
 };
 
 struct AudioObject
 {
-    uint8_t channel_id;
+    Channel_Id channel_id;
     uint8_t data[constants::Audio_Phonic_Sz];
 };
 
 struct TextObject
 {
-    uint8_t channel_id;
+    Channel_Id channel_id;
     uint16_t length;
     uint8_t data[48]; // TODO get from screen? Or constants fil
 };
@@ -145,7 +154,7 @@ struct __attribute__((packed)) AIResponseChunk
 {
     packet.type = wifi_status.type;
     packet.length = wifi_status.len;
-    packet.payload[0] = wifi_status.status;
+    packet.payload[0] = (uint8_t)wifi_status.status;
     packet.is_ready = true;
 }
 
@@ -155,7 +164,7 @@ struct __attribute__((packed)) AIResponseChunk
     packet.length = 1;
 
     // Channel id
-    packet.payload[0] = talk_start.channel_id;
+    packet.payload[0] = (uint8_t)talk_start.channel_id;
 
     packet.is_ready = true;
 }
@@ -166,7 +175,7 @@ struct __attribute__((packed)) AIResponseChunk
     packet.length = 1;
 
     // Channel id
-    packet.payload[0] = talk_stop.channel_id;
+    packet.payload[0] = (uint8_t)talk_stop.channel_id;
 
     packet.is_ready = true;
 }
@@ -177,7 +186,7 @@ struct __attribute__((packed)) AIResponseChunk
     packet.length = 1;
 
     // Channel id
-    packet.payload[0] = play_start.channel_id;
+    packet.payload[0] = (uint8_t)play_start.channel_id;
 
     packet.is_ready = true;
 }
@@ -188,7 +197,7 @@ struct __attribute__((packed)) AIResponseChunk
     packet.length = 1;
 
     // Channel id
-    packet.payload[0] = play_stop.channel_id;
+    packet.payload[0] = (uint8_t)play_stop.channel_id;
 
     packet.is_ready = true;
 }
@@ -207,7 +216,7 @@ struct __attribute__((packed)) AIResponseChunk
     }
 
     packet.type = (uint8_t)packet_type;
-    packet.payload[0] = talk_frame.channel_id;
+    packet.payload[0] = (uint8_t)talk_frame.channel_id;
 
     uint32_t offset = 1;
 
@@ -248,10 +257,10 @@ struct __attribute__((packed)) AIResponseChunk
 }
 
 [[maybe_unused]] static void
-Serialize(const uint8_t channel_id, const char* text, const uint32_t len, link_packet_t& packet)
+Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, link_packet_t& packet)
 {
     packet.type = (uint8_t)Packet_Type::TextMessage;
-    packet.payload[0] = channel_id;
+    packet.payload[0] = (uint8_t)channel_id;
 
     uint32_t offset = 1;
     packet.payload[offset] = static_cast<uint8_t>(MessageType::Chat);
@@ -292,27 +301,27 @@ Serialize(const uint8_t channel_id, const char* text, const uint32_t len, link_p
 
 [[maybe_unused]] static void Deserialize(const link_packet_t& packet, TalkStart& talk_start)
 {
-    talk_start.channel_id = packet.payload[0];
+    talk_start.channel_id = (Channel_Id)packet.payload[0];
 }
 
 [[maybe_unused]] static void Deserialize(const link_packet_t& packet, TalkStop& talk_stop)
 {
-    talk_stop.channel_id = packet.payload[0];
+    talk_stop.channel_id = (Channel_Id)packet.payload[0];
 }
 
 [[maybe_unused]] static void Deserialize(const link_packet_t& packet, PlayStart& play_start)
 {
-    play_start.channel_id = packet.payload[0];
+    play_start.channel_id = (Channel_Id)packet.payload[0];
 }
 
 [[maybe_unused]] static void Deserialize(const link_packet_t& packet, PlayStop& play_stop)
 {
-    play_stop.channel_id = packet.payload[0];
+    play_stop.channel_id = (Channel_Id)packet.payload[0];
 }
 
 [[maybe_unused]] static void Deserialize(const link_packet_t& packet, AudioObject& audio_object)
 {
-    audio_object.channel_id = packet.payload[0];
+    audio_object.channel_id = (Channel_Id)packet.payload[0];
 
     uint32_t payload_offset = 1 + sizeof(Chunk) - constants::Audio_Phonic_Sz;
     if (static_cast<MessageType>(packet.payload[1]) == MessageType::AIResponse)

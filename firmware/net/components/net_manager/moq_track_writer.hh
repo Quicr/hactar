@@ -44,6 +44,8 @@ public:
         std::vector<uint8_t> data;
     };
 
+    const std::string& GetTrackName() const noexcept;
+
 private:
     static void PublishTask(void* params);
 
@@ -52,6 +54,7 @@ private:
     uint64_t object_id;
 
     bool is_running;
+    std::mutex task_mutex;
     std::mutex obj_mux;
     TaskHandle_t task_handle;
     StaticTask_t task_buffer;

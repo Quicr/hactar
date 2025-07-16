@@ -20,8 +20,9 @@
 // Forward declare
 inline void CheckPTT();
 inline void CheckPTTAI();
-inline void
-SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last);
+inline void SendAudio(const ui_net_link::Channel_Id channel_id,
+                      const ui_net_link::Packet_Type packet_type,
+                      bool last);
 inline void HandleAiResponse(link_packet_t* packet);
 inline void HandleKeypress();
 inline bool TryProtect(link_packet_t* link_packet);
@@ -193,7 +194,7 @@ uint32_t num_req_sent = 0;
 uint32_t num_packets_rx = 0;
 uint32_t num_packets_tx = 0;
 
-ui_net_link::AudioObject talk_frame = {0, 0};
+ui_net_link::AudioObject talk_frame = {.channel_id = ui_net_link::Channel_Id::Ptt, .data = {0}};
 
 GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
@@ -220,12 +221,7 @@ Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
 uint32_t timeout = 0;
 
 bool ptt_down = false;
-const uint8_t ptt_channel = 0;
-
 bool ptt_ai_down = false;
-const uint8_t ptt_ai_channel = 1;
-
-const uint8_t text_channel = 2;
 
 int app_main()
 {
@@ -518,8 +514,7 @@ void CheckPTT()
     if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && !ptt_down)
     {
         // TODO channel id
-        ui_net_link::TalkStart talk_start = {0};
-        talk_start.channel_id = ptt_channel;
+        ui_net_link::TalkStart talk_start = {.channel_id = ui_net_link::Channel_Id::Ptt};
         ui_net_link::Serialize(talk_start, message_packet);
         serial.Write(message_packet);
         ptt_down = true;
@@ -527,18 +522,17 @@ void CheckPTT()
     }
     else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && ptt_down)
     {
-        ui_net_link::TalkStop talk_stop = {0};
-        talk_stop.channel_id = ptt_channel;
+        ui_net_link::TalkStop talk_stop = {.channel_id = ui_net_link::Channel_Id::Ptt};
         ui_net_link::Serialize(talk_stop, message_packet);
         serial.Write(message_packet);
         ptt_down = false;
-        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject, true);
+        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::PttObject, true);
         LedGOff();
     }
 
     if (ptt_down)
     {
-        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject, false);
+        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::PttObject, false);
     }
 }
 
@@ -549,8 +543,7 @@ void CheckPTTAI()
     if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET && !ptt_ai_down)
     {
         // TODO channel id
-        ui_net_link::TalkStart talk_start = {0};
-        talk_start.channel_id = ptt_ai_channel;
+        ui_net_link::TalkStart talk_start = {.channel_id = ui_net_link::Channel_Id::Ptt_Ai};
         ui_net_link::Serialize(talk_start, message_packet);
         serial.Write(message_packet);
         ptt_ai_down = true;
@@ -559,24 +552,23 @@ void CheckPTTAI()
     else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET
              && ptt_ai_down)
     {
-        ui_net_link::TalkStop talk_stop = {0};
-        talk_stop.channel_id = ptt_ai_channel;
+        ui_net_link::TalkStart talk_stop = {.channel_id = ui_net_link::Channel_Id::Ptt_Ai};
         ui_net_link::Serialize(talk_stop, message_packet);
         serial.Write(message_packet);
         ptt_ai_down = false;
-        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAiObject, true);
+        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::PttAiObject, true);
         LedBOff();
-
-        FakeChangeChannelPacket();
     }
 
     if (ptt_ai_down)
     {
-        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAiObject, false);
+        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::PttAiObject, false);
     }
 }
 
-void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last)
+void SendAudio(const ui_net_link::Channel_Id channel_id,
+               const ui_net_link::Packet_Type packet_type,
+               bool last)
 {
     AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, talk_frame.data,
                             constants::Audio_Phonic_Sz, true, constants::Stereo);
@@ -639,8 +631,8 @@ void HandleKeypress()
         {
         case Keyboard::Ent:
         {
-            ui_net_link::Serialize(text_channel, screen.UserText(), screen.UserTextLength(),
-                                   message_packet);
+            ui_net_link::Serialize(ui_net_link::Channel_Id::Chat, screen.UserText(),
+                                   screen.UserTextLength(), message_packet);
 
             if (!TryProtect(&message_packet))
             {
@@ -802,7 +794,7 @@ inline void Error(const char* who, const char* why)
 void SlowSendTest(int delay, int num)
 {
     link_packet_t packet;
-    ui_net_link::AudioObject talk_frame = {0, 0};
+    ui_net_link::AudioObject talk_frame = {.channel_id = ui_net_link::Channel_Id::Ptt, 0};
     // Fill the tmp audio buffer with random
     for (int i = 0; i < constants::Audio_Buffer_Sz; ++i)
     {

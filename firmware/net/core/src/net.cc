@@ -38,12 +38,13 @@ bool loopback = true;
 
 std::vector<std::shared_ptr<moq::TrackReader>> readers;
 std::vector<std::shared_ptr<moq::TrackWriter>> writers;
+
 std::shared_ptr<moq::Session> moq_session;
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 
 /** END EXTERNAL VARIABLES */
 
-constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33437";
+constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
@@ -155,11 +156,17 @@ static void LinkPacketTask(void* args)
                         static_cast<void*>(packet->payload + 1));
 
                     json change_channel = json::parse(response->chunk_data);
-                    NET_LOG_INFO("start track read for new channel");
-                    // moq_session->StartReadTrack(change_channel, ui_layer);
-
                     NET_LOG_INFO("start track write for new channel");
-                    // moq_session->StartWriteTrack(change_channel);
+                    if (auto writer = CreateWriteTrack(change_channel))
+                    {
+                        writer->Start();
+                    }
+
+                    NET_LOG_INFO("start track read for new channel");
+                    if (auto reader = CreateReadTrack(change_channel, ui_layer))
+                    {
+                        reader->Start();
+                    }
                 }
                 catch (std::exception& ex)
                 {
@@ -184,16 +191,12 @@ static void LinkPacketTask(void* args)
                 // Remove the bytes already read from the payload length
                 length -= ext_bytes;
 
-                // NET_LOG_INFO("chid %d", (int)channel_id);
-                // If the publisher is not ready just ignore the link packet
-
-                if (moq_session)
+                if (channel_id < (uint8_t)ui_net_link::Channel_Id::Count - 1)
                 {
-                    std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
-
-                    if (writer)
+                    if (auto& writer = writers[channel_id])
                     {
-                        writer->PushObject(packet->payload + 1, length, curr_audio_isr_time);
+                        writers[channel_id]->PushObject(packet->payload + 1, length,
+                                                        curr_audio_isr_time);
                     }
                 }
 
@@ -220,53 +223,106 @@ static void LinkPacketTask(void* args)
 std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial)
 try
 {
-    // TODO something with channel name, like transmitting it to ui
-    // std::string channel_name = subscription.at("channel_name").get<std::string>();
-
-    // TODO transmit to the ui chip probably
-    // std::string lang = subscription.at("language").get<std::string>();
-
     std::vector<std::string> track_namespace =
         subscription.at("tracknamespace").get<std::vector<std::string>>();
     std::string trackname = subscription.at("trackname").get<std::string>();
 
-    if (trackname == "")
+    std::string codec = subscription.at("codec").get<std::string>();
+    std::string channel_name = subscription.at("channel_name").get<std::string>();
+
+    uint32_t offset = 0;
+    if (codec == "pcm")
     {
-        trackname = std::to_string(device_id);
+        if (channel_name == "self_ai_audio")
+        {
+            offset = (uint32_t)ui_net_link::Channel_Id::Ptt_Ai;
+        }
+        else
+        {
+            offset = (uint32_t)ui_net_link::Channel_Id::Ptt;
+        }
+    }
+    else if (codec == "ascii")
+    {
+        offset = (uint32_t)ui_net_link::Channel_Id::Chat;
+    }
+    else if (codec == "ai_cmd_response:json")
+    {
+        offset = (uint32_t)ui_net_link::Channel_Id::Chat_Ai;
+    }
+    else
+    {
+        // do nothing with the reader if we don't know it.
+        NET_LOG_ERROR("Unknown reader channel %s", codec.c_str());
+        return nullptr;
     }
 
-    std::string codec = subscription.at("codec").get<std::string>();
-    ESP_LOGE("sub", "%s", codec.c_str());
+    std::lock_guard<std::mutex> _(moq_session->readers_mux);
+    if (readers[offset] != nullptr)
+    {
+        NET_LOG_WARN("Reader on %d already exists", offset);
+        readers[offset]->Stop();
+        moq_session->UnsubscribeTrack(readers[offset]);
+    }
 
-    return std::make_shared<moq::TrackReader>(moq::MakeFullTrackName(track_namespace, trackname),
-                                              serial, codec);
+    NET_LOG_WARN("Create reader %s:%s idx %d", channel_name.c_str(), codec.c_str(), offset);
+    readers[offset].reset(
+        new moq::TrackReader(moq::MakeFullTrackName(track_namespace, trackname), serial, codec));
+
+    return readers[offset];
 }
 catch (const std::exception& ex)
 {
     ESP_LOGE("sub", "Exception in sub %s", ex.what());
     return nullptr;
 }
+
 std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& publication)
 try
 {
-    // TODO something with channel name, like transmitting it to ui
-    // std::string channel_name = publication.at("channel_name").get<std::string>();
-
-    // TODO transmit to the ui chip probably
-    // std::string lang = publication.at("language").get<std::string>();
-
     std::vector<std::string> track_namespace =
         publication.at("tracknamespace").get<std::vector<std::string>>();
     std::string trackname = publication.at("trackname").get<std::string>();
 
-    // TODO something with this?
-    // std::string codec = publication.at("codec").get<std::string>();
+    std::string codec = publication.at("codec").get<std::string>();
+    std::string channel_name = publication.at("channel_name").get<std::string>();
 
-    // uint64_t sample_rate = publication.at("sample_rate").get<uint64_t>();
-    // std::string channel_config = publication.at("channelConfig").get<std::string>();
+    uint32_t offset = 0;
+    if (codec == "pcm")
+    {
+        if (channel_name == "ai_audio")
+        {
+            offset = (uint32_t)ui_net_link::Channel_Id::Ptt_Ai;
+        }
+        else
+        {
+            offset = (uint32_t)ui_net_link::Channel_Id::Ptt;
+        }
+    }
+    else if (codec == "ascii")
+    {
+        offset = (uint32_t)ui_net_link::Channel_Id::Chat;
+    }
+    else
+    {
+        // do nothing with the writer if we don't know it.
+        NET_LOG_ERROR("Unknown writer channel");
+        return nullptr;
+    }
 
-    return std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName(track_namespace, trackname),
-                                              quicr::TrackMode::kDatagram, 2, 100);
+    std::lock_guard<std::mutex> _(moq_session->writers_mux);
+    if (writers[offset] != nullptr)
+    {
+        NET_LOG_WARN("Writer on %d already exists", offset);
+        writers[offset]->Stop();
+        moq_session->UnpublishTrack(writers[offset]);
+    }
+
+    NET_LOG_WARN("Create writer %s:%s idx %d", channel_name.c_str(), codec.c_str(), offset);
+    writers[offset].reset(new moq::TrackWriter(moq::MakeFullTrackName(track_namespace, trackname),
+                                               quicr::TrackMode::kDatagram, 2, 100));
+
+    return writers[offset];
 }
 catch (const std::exception& ex)
 {
@@ -333,23 +389,28 @@ extern "C" void app_main(void)
 
     NET_LOG_ERROR("mac addr %llu", mac);
 
-    moq_session.reset(new moq::Session(config));
+    moq_session.reset(new moq::Session(config, readers, writers));
 
     PrintRAM();
 
     NET_LOG_INFO("Components ready");
 
     json subscriptions = default_channel_json.at("subscriptions");
+    readers.resize((uint32_t)ui_net_link::Channel_Id::Count);
+    NET_LOG_ERROR("Readers size %d", readers.size());
     for (int i = 0; i < subscriptions.size(); ++i)
     {
-        // NOTE- I am not doing all of the subs because I don't want text rn
-        readers.emplace_back(CreateReadTrack(subscriptions[i], ui_layer));
+        CreateReadTrack(subscriptions[i], ui_layer);
     }
+    NET_LOG_ERROR("Readers size %d", readers.size());
 
     json publications = default_channel_json.at("publications");
+    // Kinda odd, but we only have 3 writers.
+    writers.resize((uint32_t)ui_net_link::Channel_Id::Count - 1);
+    NET_LOG_ERROR("Writers size %d", writers.size());
     for (int i = 0; i < publications.size(); ++i)
     {
-        writers.emplace_back(CreateWriteTrack(publications[i]));
+        CreateWriteTrack(publications[i]);
     }
 
     int next = 0;
@@ -360,7 +421,6 @@ extern "C" void app_main(void)
     while (true)
     {
         moq::Session::Status status = moq_session->GetStatus();
-        NET_LOG_INFO("New moq state %d", (int)status);
 
         Wifi::State wifi_state = wifi.GetState();
 
@@ -387,15 +447,21 @@ extern "C" void app_main(void)
 
                     for (const auto& reader : readers)
                     {
-                        reader->Stop();
+                        if (reader)
+                        {
+                            reader->Stop();
+                        }
                     }
 
                     for (const auto& writer : writers)
                     {
-                        writer->Stop();
+                        if (writer)
+                        {
+                            writer->Stop();
+                        }
                     }
 
-                    moq_session.reset(new moq::Session(config));
+                    moq_session.reset(new moq::Session(config, readers, writers));
                     status = moq_session->GetStatus();
                 }
             }
@@ -426,12 +492,19 @@ extern "C" void app_main(void)
             {
                 for (const auto& reader : readers)
                 {
-                    reader->Start();
+                    NET_LOG_INFO("Starting reader");
+                    if (reader)
+                    {
+                        reader->Start();
+                    }
                 }
 
                 for (const auto& writer : writers)
                 {
-                    writer->Start();
+                    if (writer)
+                    {
+                        writer->Start();
+                    }
                 }
 
                 // TODO
@@ -444,20 +517,24 @@ extern "C" void app_main(void)
             case moq::Session::Status::kFailedToConnect:
                 for (const auto& reader : readers)
                 {
-                    reader->Stop();
+                    if (reader)
+                    {
+                        reader->Stop();
+                    }
                 }
 
                 for (const auto& writer : writers)
                 {
-                    writer->Stop();
+                    if (writer)
+                    {
+                        writer->Stop();
+                    }
                 }
 
-                moq_session.reset(new moq::Session(config));
+                moq_session.reset(new moq::Session(config, readers, writers));
                 [[fallthrough]];
             case moq::Session::Status::kNotReady:
             {
-                moq_session->SetReaders(readers);
-                moq_session->SetWriters(writers);
 
                 NET_LOG_INFO("MOQ Transport Calling Connect");
 
@@ -497,7 +574,7 @@ void SetupComponents(const DeviceSetupConfig& config)
 
 bool CreateLinkPacketTask()
 {
-    constexpr size_t stack_size = 8092;
+    constexpr size_t stack_size = 8092 * 2;
     serial_read_stack =
         (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
     if (serial_read_stack == NULL)

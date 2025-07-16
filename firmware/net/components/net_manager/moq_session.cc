@@ -7,8 +7,20 @@ using namespace moq;
 
 extern uint64_t device_id;
 
-Session::Session(const quicr::ClientConfig& cfg) :
-    Client(cfg)
+Session::Session(const quicr::ClientConfig& cfg,
+                 std::vector<std::shared_ptr<TrackReader>>& readers,
+                 std::vector<std::shared_ptr<TrackWriter>>& writers) :
+    Client(cfg),
+    readers_mux(),
+    writers_mux(),
+    readers(readers),
+    readers_task_handle(nullptr),
+    readers_task_buffer({0}),
+    readers_task_stack(nullptr),
+    writers(writers),
+    writers_task_handle(nullptr),
+    writers_task_buffer({0}),
+    writers_task_stack(nullptr)
 {
     StartTasks();
 }
@@ -52,25 +64,11 @@ std::shared_ptr<TrackWriter> Session::Writer(const size_t id) noexcept
     return writers[id];
 }
 
-void Session::SetReaders(const std::vector<std::shared_ptr<TrackReader>>& rdrs)
-{
-    std::lock_guard<std::mutex> _(readers_mux);
-    readers = rdrs;
-}
-
-void Session::SetWriters(const std::vector<std::shared_ptr<TrackWriter>>& wrtrs)
-{
-    std::lock_guard<std::mutex> _(writers_mux);
-    writers = wrtrs;
-}
-
 void Session::PublishTrackTask(void* params)
 {
     // TODO use a mutex to try and subscribe/publish
     // as I could remove them from the list or update them.
     Session* session = static_cast<Session*>(params);
-
-    std::unique_lock<std::mutex> lock(session->writers_mux);
 
     while (true)
     {
@@ -80,33 +78,35 @@ void Session::PublishTrackTask(void* params)
             continue;
         }
 
-        lock.lock();
-
-        for (int i = 0; i < session->writers.size(); ++i)
         {
-            auto& writer = session->writers[i];
+            std::lock_guard<std::mutex> _(session->writers_mux);
+            NET_LOG_INFO("num writers %d", session->writers.size());
 
-            // Writer is publishing
-            if (writer->GetStatus() == moq::TrackWriter::Status::kOk)
+            for (int i = 0; i < session->writers.size(); ++i)
             {
-                // if (writer->TaskHasStopped())
-                // {
-                //     session->UnpublishTrack(writer);
-                //     session->writers.erase(session->writers.begin() + i);
-                // }
-                continue;
-            }
+                auto& writer = session->writers[i];
 
-            // TODO switch on all statuses
-            session->PublishTrack(writer);
+                if (!writer)
+                {
+                    continue;
+                }
 
-            while (writer->GetStatus() != moq::TrackWriter::Status::kOk)
-            {
-                vTaskDelay(300 / portTICK_PERIOD_MS);
+                // Writer is publishing
+                if (writer->GetStatus() == moq::TrackWriter::Status::kOk)
+                {
+                    continue;
+                }
+
+                session->PublishTrack(writer);
+
+                while (writer->GetStatus() != moq::TrackWriter::Status::kOk)
+                {
+                    NET_LOG_INFO("writer %s status %d", writer->GetTrackName().c_str(),
+                                 writer->GetStatus());
+                    vTaskDelay(300 / portTICK_PERIOD_MS);
+                }
             }
         }
-
-        lock.unlock();
 
         vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
@@ -130,29 +130,33 @@ void Session::SubscribeTrackTask(void* params)
             continue;
         }
 
-        std::lock_guard<std::mutex> _(session->readers_mux);
-
-        for (int i = 0; i < session->readers.size(); ++i)
         {
-            auto& reader = session->readers[i];
+            std::lock_guard<std::mutex> _(session->readers_mux);
+            NET_LOG_INFO("num readers %d", session->readers.size());
 
-            // Writer is publishing
-            if (reader->GetStatus() == moq::TrackReader::Status::kOk)
+            for (int i = 0; i < session->readers.size(); ++i)
             {
-                // if (reader->TaskHasStopped())
-                // {
-                //     session->UnsubscribeTrack(reader);
-                //     session->readers.erase(session->readers.begin() + i);
-                // }
-                // continue;
-            }
+                auto& reader = session->readers[i];
 
-            // TODO switch on all statuses
-            session->SubscribeTrack(reader);
+                if (!reader)
+                {
+                    continue;
+                }
 
-            while (reader->GetStatus() != moq::TrackReader::Status::kOk)
-            {
-                vTaskDelay(300 / portTICK_PERIOD_MS);
+                // Reader is subscribed
+                if (reader->GetStatus() == moq::TrackReader::Status::kOk)
+                {
+                    continue;
+                }
+
+                session->SubscribeTrack(reader);
+
+                while (reader->GetStatus() != moq::TrackReader::Status::kOk)
+                {
+                    NET_LOG_ERROR("Reader %s status %d", reader->GetTrackName().c_str(),
+                                  (int)reader->GetStatus());
+                    vTaskDelay(300 / portTICK_PERIOD_MS);
+                }
             }
         }
 

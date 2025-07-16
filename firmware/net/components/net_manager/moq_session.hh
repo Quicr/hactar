@@ -24,17 +24,17 @@ class Session : public quicr::Client
 public:
     using quicr::Client::Client;
 
-    Session(const quicr::ClientConfig& cfg);
+    Session(const quicr::ClientConfig& cfg,
+            std::vector<std::shared_ptr<TrackReader>>& readers,
+            std::vector<std::shared_ptr<TrackWriter>>& writers);
 
     virtual ~Session() = default;
 
     void StatusChanged(Status status) override;
 
     // public API - send subscribe, setup queue for incoming objects
-    void SetReaders(const std::vector<std::shared_ptr<TrackReader>>& readers);
     void Read();
 
-    void SetWriters(const std::vector<std::shared_ptr<TrackWriter>>& writer);
     void Write();
 
     std::shared_ptr<TrackReader> Reader(const size_t id) noexcept;
@@ -43,6 +43,9 @@ public:
     void StopAudioReader();
     void StopTextReader();
     void StopAudioWriter();
+
+    std::mutex readers_mux;
+    std::mutex writers_mux;
 
 private:
     Session() = delete;
@@ -56,19 +59,12 @@ private:
 
     void StartTasks() noexcept;
 
-    std::vector<std::shared_ptr<TrackReader>> readers;
-    std::shared_ptr<TrackReader> audio_reader;
-    std::shared_ptr<TrackReader> text_reader;
-    std::mutex readers_mux;
+    std::vector<std::shared_ptr<TrackReader>>& readers;
     TaskHandle_t readers_task_handle;
     StaticTask_t readers_task_buffer;
     StackType_t* readers_task_stack;
 
-    std::vector<std::shared_ptr<TrackWriter>> writers;
-    std::shared_ptr<TrackWriter> ai_writer;
-    std::shared_ptr<TrackWriter> audio_writer;
-    std::shared_ptr<TrackWriter> text_writer;
-    std::mutex writers_mux;
+    std::vector<std::shared_ptr<TrackWriter>>& writers;
     TaskHandle_t writers_task_handle;
     StaticTask_t writers_task_buffer;
     StackType_t* writers_task_stack;

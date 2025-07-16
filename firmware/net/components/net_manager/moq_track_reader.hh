@@ -42,6 +42,8 @@ public:
     std::optional<std::vector<uint8_t>> AudioPopFront() noexcept;
     size_t AudioNumAvailable() noexcept;
 
+    const std::string& GetTrackName() const noexcept;
+
 private:
     static void SubscribeTask(void* param);
 
@@ -56,6 +58,8 @@ private:
     // TODO rename to link_packet_buffer
     std::queue<std::vector<uint8_t>> byte_buffer;
 
+    std::mutex task_mutex;
+
     bool audio_playing;
     size_t audio_min_depth;
     size_t audio_max_depth;
@@ -64,8 +68,10 @@ private:
     StaticTask_t task_buffer;
     StackType_t* task_stack;
 
+    uint32_t ai_request_id;
     uint64_t num_print;
     uint64_t num_recv;
+
     bool is_running;
 };
 

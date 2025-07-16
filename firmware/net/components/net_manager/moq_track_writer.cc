@@ -20,16 +20,22 @@ TrackWriter::TrackWriter(const quicr::FullTrackName& full_track_name,
                + std::string(full_track_name.name.begin(), full_track_name.name.end())),
     moq_objs({0}),
     object_id(0),
-    is_running(true),
+    is_running(false),
+    task_mutex(),
     obj_mux(),
     task_handle(nullptr),
-    task_buffer(nullptr),
+    task_buffer(),
     task_stack(nullptr)
 {
 }
 
 TrackWriter::~TrackWriter()
 {
+    if (!is_running)
+    {
+        return;
+    }
+
     Stop();
 }
 
@@ -37,19 +43,33 @@ void TrackWriter::Start()
 {
     if (task_handle)
     {
+        NET_LOG_INFO("Moq writer has already started");
         return;
     }
 
     task_helpers::Start_PSRAM_Task(PublishTask, this, track_name, task_handle, task_buffer,
-                                   &task_stack, 8192, 10);
+                                   &task_stack, 8192 * 2, 10);
 }
 
 void TrackWriter::Stop()
 {
+    NET_LOG_WARN("Stopping writer");
+    is_running = false;
+
+    std::lock_guard<std::mutex> _(task_mutex);
+
     if (task_handle)
     {
-        vTaskDelete(task_handle);
+        task_handle = nullptr;
     }
+
+    if (task_stack)
+    {
+        heap_caps_free(task_stack);
+        task_stack = nullptr;
+    }
+
+    NET_LOG_WARN("Stopped writer");
 }
 
 void TrackWriter::StatusChanged(TrackWriter::Status status)
@@ -106,11 +126,18 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
     obj.data.assign(bytes, bytes + len);
 }
 
+const std::string& TrackWriter::GetTrackName() const noexcept
+{
+    return track_name;
+}
+
 void TrackWriter::PublishTask(void* params)
 {
     TrackWriter* writer = static_cast<TrackWriter*>(params);
+    std::lock_guard<std::mutex> _(writer->task_mutex);
+    writer->is_running = true;
 
-    while (true)
+    while (writer->is_running)
     {
         uint32_t next_print = 0;
         // TODO add in changing pub
@@ -143,8 +170,10 @@ void TrackWriter::PublishTask(void* params)
             writer->PublishObject(obj.headers, obj.data);
             writer->moq_objs.pop_front();
         }
-
-        NET_LOG_ERROR("Publish task for %s has exited", writer->track_name.c_str());
-        vTaskDelete(nullptr);
     }
+
+    NET_LOG_ERROR("Publish task for %s has exited", writer->track_name.c_str());
+
+    writer->task_mutex.unlock();
+    vTaskDelete(nullptr);
 }
