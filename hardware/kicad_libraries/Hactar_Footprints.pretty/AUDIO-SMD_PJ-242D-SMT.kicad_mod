@@ -49,6 +49,18 @@
 			)
 		)
 	)
+	(property "JLCPCB Part #" "C431536"
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "434d32ab-a4e5-4c92-b494-e2ac15cf6fb6")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
 	(attr smd)
 	(fp_line
 		(start -6.9 -2.5)
