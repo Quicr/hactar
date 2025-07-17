@@ -163,6 +163,19 @@
 				)
 			)
 		)
+		(property "FT Rotation Offset" "90"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "371f7c70-e7a3-481f-a83f-6297e52d9886")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(path "/42e77fc9-31ed-4763-86f4-3316a58a0a0c")
 		(sheetname "/")
 		(sheetfile "jack_breakout.kicad_sch")
@@ -803,6 +816,32 @@
 				)
 			)
 		)
+		(property "JLCPCB Part #" "C18078127"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "acf82143-b489-437d-bb89-ae4f511eb2b8")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c61ce09a-98a6-4b35-b383-353b5f744d82")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/b0cbfc6b-c97c-451b-b87c-427719c4489b")
 		(sheetname "/")
@@ -1074,6 +1113,32 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB Part #" "C2832269"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b72dbdd5-4145-4b7f-a240-8f8d0edff7ee")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9bdf2e76-a14c-4e5f-a4d0-a4e270935aa2")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)

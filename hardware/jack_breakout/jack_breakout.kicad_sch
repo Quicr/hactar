@@ -1367,6 +1367,15 @@
 				(hide yes)
 			)
 		)
+		(property "JLCPCB Part #" "C2832269"
+			(at 50.8 27.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "4"
 			(uuid "c3b946a7-406c-4b5d-ad85-3ddf192a1d8f")
 		)
@@ -1530,6 +1539,15 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x04, script generated"
+			(at 50.8 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C18078127"
 			(at 50.8 46.99 0)
 			(effects
 				(font
