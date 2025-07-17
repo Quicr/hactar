@@ -1140,7 +1140,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 46.99) (xy 68.58 46.99)
+			(xy 45.72 46.99) (xy 38.1 46.99)
 		)
 		(stroke
 			(width 0)
@@ -1150,7 +1150,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 64.77) (xy 71.12 64.77)
+			(xy 45.72 22.86) (xy 40.64 22.86)
 		)
 		(stroke
 			(width 0)
@@ -1160,7 +1160,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 72.39) (xy 71.12 72.39)
+			(xy 45.72 30.48) (xy 40.64 30.48)
 		)
 		(stroke
 			(width 0)
@@ -1170,7 +1170,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 77.47) (xy 71.12 77.47)
+			(xy 45.72 35.56) (xy 40.64 35.56)
 		)
 		(stroke
 			(width 0)
@@ -1180,7 +1180,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 49.53) (xy 68.58 49.53)
+			(xy 45.72 49.53) (xy 38.1 49.53)
 		)
 		(stroke
 			(width 0)
@@ -1190,7 +1190,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 67.31) (xy 71.12 67.31)
+			(xy 45.72 25.4) (xy 40.64 25.4)
 		)
 		(stroke
 			(width 0)
@@ -1200,7 +1200,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 69.85) (xy 71.12 69.85)
+			(xy 45.72 27.94) (xy 40.64 27.94)
 		)
 		(stroke
 			(width 0)
@@ -1210,7 +1210,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 52.07) (xy 68.58 52.07)
+			(xy 45.72 52.07) (xy 38.1 52.07)
 		)
 		(stroke
 			(width 0)
@@ -1220,7 +1220,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 44.45) (xy 68.58 44.45)
+			(xy 45.72 44.45) (xy 38.1 44.45)
 		)
 		(stroke
 			(width 0)
@@ -1230,7 +1230,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 74.93) (xy 71.12 74.93)
+			(xy 45.72 33.02) (xy 40.64 33.02)
 		)
 		(stroke
 			(width 0)
@@ -1240,7 +1240,7 @@
 	)
 	(symbol
 		(lib_id "Connector_Audio:AudioJack4")
-		(at 63.5 46.99 0)
+		(at 33.02 46.99 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -1249,7 +1249,7 @@
 		(fields_autoplaced yes)
 		(uuid "015da3bd-5cb2-4e5b-87a4-d69d897fb5e5")
 		(property "Reference" "J1"
-			(at 60.96 38.1 0)
+			(at 30.48 38.1 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1257,7 +1257,7 @@
 			)
 		)
 		(property "Value" "3.5mm"
-			(at 60.96 40.64 0)
+			(at 30.48 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1265,7 +1265,7 @@
 			)
 		)
 		(property "Footprint" "Hactar_Footprints:AUDIO-SMD_PJ-320D"
-			(at 63.5 46.99 0)
+			(at 33.02 46.99 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1274,7 +1274,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 63.5 46.99 0)
+			(at 33.02 46.99 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1283,7 +1283,7 @@
 			)
 		)
 		(property "Description" "Audio Jack, 4 Poles (TRRS)"
-			(at 63.5 46.99 0)
+			(at 33.02 46.99 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1314,7 +1314,7 @@
 	)
 	(symbol
 		(lib_id "Connector:Conn_01x06_Socket")
-		(at 81.28 69.85 0)
+		(at 50.8 27.94 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -1323,7 +1323,7 @@
 		(fields_autoplaced yes)
 		(uuid "2f673b23-6f63-4594-a0a9-b4ca39a86e56")
 		(property "Reference" "J2"
-			(at 82.55 69.8499 0)
+			(at 52.07 27.9399 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1332,7 +1332,7 @@
 			)
 		)
 		(property "Value" "Conn_01x06_Socket"
-			(at 82.55 72.3899 0)
+			(at 52.07 30.4799 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1341,7 +1341,7 @@
 			)
 		)
 		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical"
-			(at 81.28 69.85 0)
+			(at 50.8 27.94 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1350,7 +1350,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 81.28 69.85 0)
+			(at 50.8 27.94 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1359,7 +1359,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x06, script generated"
-			(at 81.28 69.85 0)
+			(at 50.8 27.94 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1396,7 +1396,7 @@
 	)
 	(symbol
 		(lib_id "Hactar_Symbols:PJ-242")
-		(at 68.58 72.39 0)
+		(at 38.1 30.48 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -1405,7 +1405,7 @@
 		(fields_autoplaced yes)
 		(uuid "42e77fc9-31ed-4763-86f4-3316a58a0a0c")
 		(property "Reference" "CN1"
-			(at 60.96 59.69 0)
+			(at 30.48 17.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1413,7 +1413,7 @@
 			)
 		)
 		(property "Value" "PJ-242"
-			(at 60.96 62.23 0)
+			(at 30.48 20.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1421,7 +1421,7 @@
 			)
 		)
 		(property "Footprint" "Hactar_Footprints:AUDIO-SMD_PJ-242D-SMT"
-			(at 68.58 85.09 0)
+			(at 38.1 43.18 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1430,7 +1430,7 @@
 			)
 		)
 		(property "Datasheet" "https://lcsc.com/product-detail/Audio-Video-Connectors_SHOU-HAN-PJ-242_C431536.html"
-			(at 68.58 87.63 0)
+			(at 38.1 45.72 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1439,7 +1439,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 68.58 72.39 0)
+			(at 38.1 30.48 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1448,7 +1448,7 @@
 			)
 		)
 		(property "LCSC Part" "C431536"
-			(at 68.58 90.17 0)
+			(at 38.1 48.26 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1485,7 +1485,7 @@
 	)
 	(symbol
 		(lib_id "Connector:Conn_01x04_Socket")
-		(at 81.28 46.99 0)
+		(at 50.8 46.99 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -1494,7 +1494,7 @@
 		(fields_autoplaced yes)
 		(uuid "b0cbfc6b-c97c-451b-b87c-427719c4489b")
 		(property "Reference" "J3"
-			(at 82.55 46.9899 0)
+			(at 52.07 46.9899 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1503,7 +1503,7 @@
 			)
 		)
 		(property "Value" "Conn_01x04_Socket"
-			(at 82.55 49.5299 0)
+			(at 52.07 49.5299 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1512,7 +1512,7 @@
 			)
 		)
 		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
-			(at 81.28 46.99 0)
+			(at 50.8 46.99 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1521,7 +1521,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 81.28 46.99 0)
+			(at 50.8 46.99 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1530,7 +1530,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x04, script generated"
-			(at 81.28 46.99 0)
+			(at 50.8 46.99 0)
 			(effects
 				(font
 					(size 1.27 1.27)
