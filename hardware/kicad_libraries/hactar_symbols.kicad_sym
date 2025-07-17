@@ -2992,6 +2992,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part" "C431536"
+			(at 0 -17.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(symbol "PJ-242_0_1"
 			(rectangle
 				(start -12.7 1.02)
