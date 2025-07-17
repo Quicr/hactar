@@ -59,7 +59,7 @@
     "ssh_key": ""
   },
   "meta": {
-    "filename": "ev14_board_design.kicad_prl",
+    "filename": "ev14.kicad_prl",
     "version": 5
   },
   "net_inspector_panel": {

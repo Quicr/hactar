@@ -482,7 +482,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "ev14_board_design.kicad_pro",
+    "filename": "ev14.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -515,15 +515,15 @@
   },
   "pcbnew": {
     "last_paths": {
-      "gencad": "ev14_board_design.cad",
+      "gencad": "ev14.cad",
       "idf": "",
       "netlist": "./",
       "plot": "~/cisco/ev12.pdf",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "ev14_board_design.step",
+      "step": "ev14.step",
       "svg": "~/cisco/ev12.svg",
-      "vrml": "ev14_board_design.wrl"
+      "vrml": "ev14.wrl"
     },
     "page_layout_descr_file": ""
   },

@@ -475,7 +475,7 @@
 		(property ki_fp_filters "SOIC*3.9x4.9mm*P1.27mm*")
 		(path "/2f33c967-5ce2-49f2-93ef-43c55e8d9282")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0 -2.56)
@@ -790,7 +790,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/f9907ac0-80c2-46af-a09b-eb677e56f530")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 0.735)
@@ -1030,7 +1030,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/43342a8a-da7f-4284-991c-b950aba12a96")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.237258 0.5225)
@@ -1259,7 +1259,7 @@
 		(property ki_fp_filters "Net*Tie*")
 		(path "/710520f2-d8a8-4d33-a06e-fe5394dea839")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr exclude_from_pos_files exclude_from_bom allow_missing_courtyard)
 		(net_tie_pad_groups "1, 2, 3, 4")
 		(fp_poly
@@ -1408,7 +1408,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/d9347787-e844-48d9-a5bd-e40b6cc683b4")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -1638,7 +1638,7 @@
 		(property ki_fp_filters "ESP32?S3?WROOM?1*")
 		(path "/0ca8feaa-f79c-4396-92e4-fa409e9a822c")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -9.2 12.95)
@@ -2616,7 +2616,7 @@
 		)
 		(path "/47e290ed-f87d-4050-a08a-9c919c0464a2")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start -2.58 -12.8)
@@ -3125,7 +3125,7 @@
 		(property ki_fp_filters "USB*C*Receptacle*")
 		(path "/2e1086e2-7c46-4d35-9a14-e332cd8301d5")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -4.47 1.38)
@@ -3558,7 +3558,7 @@
 		(property ki_fp_filters "LQFP*7x7mm*P0.5mm*")
 		(path "/4d4b328a-a463-44b2-a1f1-98af82d7f3a6")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 3.61 -3.61)
@@ -4542,7 +4542,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/335bb7d9-5557-4737-b227-4b84b95e42da")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -4769,7 +4769,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/95832514-1e0d-4c16-971d-070d34db70f9")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -5009,7 +5009,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/e5dedaee-146c-47fe-b82d-1fc9ded369cc")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -5249,7 +5249,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/88d9069e-8152-46f5-af3e-206ab6bf4dac")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -5488,7 +5488,7 @@
 		(property ki_fp_filters "SOT?23*")
 		(path "/02620cad-0526-4c43-8673-40801a69ce9a")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0 -1.56)
@@ -5783,7 +5783,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/72f42151-c097-417a-a3b8-f926abee4cba")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -6037,7 +6037,7 @@
 		(property ki_fp_filters "Texas*S*PWSON*N10*")
 		(path "/b6dc865c-7d1e-4c22-a3ab-aba32b5f979b")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.985 -1.65)
@@ -6792,7 +6792,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/eb5e6a72-ebcf-47cd-92fa-ac2422507320")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -7032,7 +7032,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/7a97a0d1-acc4-48ad-9bdf-1dd89dee346d")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -7272,7 +7272,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/dafb7d47-510a-4543-9911-657fd78c243d")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -7512,7 +7512,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/48b48339-d5e1-41d5-84f5-fe1a649d0702")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -7752,7 +7752,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/ef577550-6776-4f1a-8ce6-033a8fdf3a09")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -7992,7 +7992,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/61a7dc30-d4b6-433e-ad24-c48192717f69")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -8232,7 +8232,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/852148c3-4cfc-48f2-9988-4754a8ef2d5d")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -8457,7 +8457,7 @@
 		(property ki_fp_filters "Jack*")
 		(path "/95186cf9-f776-4294-b63a-1c76d535581b")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -3.05 -5.4)
@@ -8772,7 +8772,7 @@
 		(property ki_fp_filters "MountingHole*")
 		(path "/a46485b1-3e6b-41cb-bd6a-bb5ab8b79d92")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr exclude_from_pos_files exclude_from_bom)
 		(fp_circle
 			(center 0 0)
@@ -8912,7 +8912,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/b14a3e3b-7ec4-4c4e-b26b-b3c9b8376e99")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -9152,7 +9152,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/8667f957-7786-4ddd-996f-d071aa8b3453")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 -0.735)
@@ -9392,7 +9392,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/63c48607-e041-414f-ae62-9ecff7b85805")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -9632,7 +9632,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/86c8d8af-02b8-4d73-97a7-344afc45cdd1")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -9872,7 +9872,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/981fa879-4159-435c-86b4-28b4f53903fa")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -10112,7 +10112,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/352fac7c-3540-4736-8e49-151150c9ca7d")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -10341,7 +10341,7 @@
 		(property ki_fp_filters "Pin* Test*")
 		(path "/efab1816-3907-4c88-bf26-d86aad4cc5df")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr exclude_from_pos_files exclude_from_bom)
 		(fp_circle
 			(center 0 0)
@@ -10472,7 +10472,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/d2a597ec-ae0e-4e12-ad27-0052e4ca05ef")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -10712,7 +10712,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/9ce8114f-6f88-42c1-af97-ec149f31fb0b")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -10952,7 +10952,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/d9062ebd-16a2-4ccc-97c2-17d81a11d95d")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -11153,7 +11153,7 @@
 		(property ki_fp_filters "MountingHole*")
 		(path "/1faa1ad2-9199-4a33-a12f-540953da495c")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr exclude_from_pos_files exclude_from_bom)
 		(fp_circle
 			(center 0 0)
@@ -11293,7 +11293,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/7aeab31f-fad8-4b88-b401-0d6712d4e3ff")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -11494,7 +11494,7 @@
 		(property ki_fp_filters "MountingHole*")
 		(path "/ae65f4e3-64f9-48cd-b023-132bb9cfcd27")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr exclude_from_pos_files exclude_from_bom)
 		(fp_circle
 			(center 0 0)
@@ -11621,7 +11621,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/fce5081a-6308-4282-9bbf-c73401578320")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -11861,7 +11861,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/2fdb8da2-3af5-45b0-af9e-8a5fde148566")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -12090,7 +12090,7 @@
 		(property ki_fp_filters "Pin* Test*")
 		(path "/f69d6c79-a634-47b8-ba57-7870ccfce43b")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr exclude_from_pos_files exclude_from_bom)
 		(fp_circle
 			(center 0 0)
@@ -12234,7 +12234,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/cc13deb6-9d29-4ac0-8420-856a23ba6b31")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -12474,7 +12474,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/6b89546c-7800-4f02-8f65-3d2b4e4b0e02")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 0.735)
@@ -12701,7 +12701,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/b1164c5c-b70e-4f18-ba43-43cfe1e83d9a")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -12941,7 +12941,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/0ff08bfc-3a1f-437b-95e1-c9bc319b08e2")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -13191,7 +13191,7 @@
 		)
 		(path "/ebff2748-6b41-4bec-ab8e-09fe3497c6a2")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.73 -1.53)
@@ -13423,7 +13423,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/cdd1e5a7-c48e-47c2-87ea-180a14f7378f")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -13663,7 +13663,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/51bd70bf-8bbe-4f08-a8fc-91baa726f6cd")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -13903,7 +13903,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/0e24be1a-16d6-4533-8293-3e87dcb40ea8")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -14143,7 +14143,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/abd605d7-390d-4407-9d83-8a174c74afe6")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -14383,7 +14383,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/1fb316e3-91bd-40f3-a844-0047f4d2be1d")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -14625,7 +14625,7 @@
 		(property ki_fp_filters "TO-???* *_Diode_* *SingleDiode* D_*")
 		(path "/f478e98f-4d09-4874-8681-bd7cc9dbfa1c")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -1.61 -0.85)
@@ -14937,7 +14937,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/5d06bc47-138d-478a-9fd1-13424801e630")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -15164,7 +15164,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/de47b905-8428-4ee3-ab21-e7840ad1499f")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -15404,7 +15404,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/f8ec66da-0764-4739-87e7-a67a0029f233")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -15631,7 +15631,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/eb920714-710c-4b6f-9365-6af7ea65d2eb")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -15853,7 +15853,7 @@
 		)
 		(path "/2c6d03f5-4f3e-4b43-814a-b01cbcdbf454")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -1.5 2.8)
@@ -16248,7 +16248,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/8409ce56-7d36-41d4-99f3-6fe3be4f9794")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 0.735)
@@ -16490,7 +16490,7 @@
 		(property ki_fp_filters "TO-???* *_Diode_* *SingleDiode* D_*")
 		(path "/6ca20fae-276a-4e3a-b380-627ff8e7c3e0")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.7 0.6)
@@ -16802,7 +16802,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/7f66bc9a-4723-4007-ba0d-e4e40d3dda0a")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -17042,7 +17042,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/87805624-c98e-44ad-83c2-143aaa3cfcd7")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -17282,7 +17282,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/3da3c7fe-b295-4fff-8935-5c160bbb6aaf")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -17506,7 +17506,7 @@
 		)
 		(path "/09cf7f1c-c43a-4117-8e20-cd510f18e6e0")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -3.33 -3.08)
@@ -17728,7 +17728,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/cc367d5c-010c-4013-916a-8131141f9fba")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -17970,7 +17970,7 @@
 		(property ki_fp_filters "TO-???* *_Diode_* *SingleDiode* D_*")
 		(path "/11bc42c2-fce4-4225-84cd-f017af1825ee")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -1.61 -0.85)
@@ -18282,7 +18282,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/c5663570-da16-4015-996d-402e44731c22")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -18522,7 +18522,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/88d34b99-229d-476e-ac5c-00a7a86eeabe")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -18745,7 +18745,7 @@
 		(property ki_fp_filters "Jack*")
 		(path "/3b576b1b-0b2e-4de9-bbde-96f04b0f3f74")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -3.12 -9.37)
@@ -19067,7 +19067,7 @@
 		(property ki_fp_filters "SOIC*3.9x9.9mm*P1.27mm*")
 		(path "/e26928c3-f13a-49e4-b6d6-86fdea3bec79")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0 -5.06)
@@ -19462,7 +19462,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/4717f9e3-e0d3-4469-8766-7ca44800390f")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -19702,7 +19702,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/93ca411d-86c8-4f01-ad5b-de7ccb3e691c")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -19955,7 +19955,7 @@
 		(property ki_fp_filters "LED* LED_SMD:* LED_THT:*")
 		(path "/65d7f79f-3a01-4e7c-aef5-8854213e1fe4")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 1 -0.96)
@@ -20217,7 +20217,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/dcd5ad38-d295-46f0-acb6-94bf71b361be")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 -0.735)
@@ -20457,7 +20457,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/beac598a-ed41-459a-9c0d-8e9bb99f4ba0")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -20697,7 +20697,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/3034fc7d-fb9a-48de-9589-60d290d8caed")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 -0.735)
@@ -20948,7 +20948,7 @@
 		)
 		(path "/33c256e0-48fe-44e0-8a8e-c3b6cd0d86a1")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -2.61 2.61)
@@ -21680,7 +21680,7 @@
 		)
 		(path "/e6cc39ec-0184-4a0c-a49c-f3c9db375ee8")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -1.5 2.8)
@@ -22075,7 +22075,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/3b83124c-8f92-4acd-8802-220ff157e1dc")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -22312,7 +22312,7 @@
 		)
 		(path "/1065947f-3214-4626-bfad-0980cafb4521")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(clearance 0.1)
 		(attr smd)
 		(fp_line
@@ -22554,7 +22554,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/62712054-c7fb-4f19-a05f-58914569c644")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -22794,7 +22794,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/5492c3d0-6f3e-4fac-9fa8-7e6bdcad6c1a")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 0.735)
@@ -23005,7 +23005,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/4c2d63ec-1cb5-4696-b518-1c0587c7c8e1")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -6.35 -1.63)
@@ -23568,7 +23568,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/9eeea672-cce4-440a-aede-9ece9bdbd500")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 -0.735)
@@ -23805,7 +23805,7 @@
 		)
 		(path "/33bd41fb-0745-4e9b-a564-ef70b34327c9")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(clearance 0.1)
 		(attr smd)
 		(fp_line
@@ -24047,7 +24047,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/f951cd5e-af94-457c-84df-8e9111b55753")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -24287,7 +24287,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/1c223d5b-e965-479a-8e79-cd6e4c4b7da1")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -24527,7 +24527,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/8d82f254-76b8-4603-83c9-d6deff2257f1")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -24767,7 +24767,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/516f255b-ef4f-4a36-abea-05082fd6bbe3")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -25007,7 +25007,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/edb99080-a49f-45c1-a621-e1edbe584450")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -25234,7 +25234,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/eee8f186-0ae1-4824-a792-36d4f60b5831")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -25474,7 +25474,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/e7b9cf75-5ac5-4981-9959-55a2377903e7")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -25675,7 +25675,7 @@
 		(property ki_fp_filters "MountingHole*")
 		(path "/90bdcad2-9ca2-4aa0-a1e0-2a79652e00cc")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr exclude_from_pos_files exclude_from_bom)
 		(fp_circle
 			(center 0 0)
@@ -25815,7 +25815,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/edd508bd-e9c6-4972-98f9-3bc85bd52af9")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -26055,7 +26055,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/3a5e1802-7ffa-402b-85fa-8777c5c59b8d")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 0.735)
@@ -26269,7 +26269,7 @@
 		(property ki_fp_filters "SOT?23*")
 		(path "/ae5a3c71-1e74-48c9-a5e2-56b1969a5088")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0 1.56)
@@ -26530,7 +26530,7 @@
 		(property ki_fp_filters "Connector*:*_2x??_*")
 		(path "/6e866e8c-fb0e-45e0-919c-1344704b37ac")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(clearance 0.1)
 		(attr smd)
 		(fp_line
@@ -27044,7 +27044,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/020edbdd-4746-4eec-ae68-6dd469b55d18")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -27284,7 +27284,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/e4084f54-9a64-4b73-af5b-08238979aa09")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -27524,7 +27524,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/f7641b12-a47b-4564-b320-c25cb021bf13")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -27764,7 +27764,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/4964f984-4fce-4287-b8c9-38010f3cd062")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -28004,7 +28004,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/94f7259b-8b28-4b5a-91cb-b917386e48fe")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -28244,7 +28244,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/2aaf1acf-dd17-412f-97ec-ab8f4baf96d7")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -28484,7 +28484,7 @@
 		(property ki_fp_filters "Inductor_* L_* *Ferrite*")
 		(path "/4c084400-bcdc-47b6-b590-a3391cf78367")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.162779 -0.51)
@@ -28724,7 +28724,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/c6437dfe-3e36-4ad5-9a6a-b58df420bfd6")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.711252 -0.91)
@@ -28960,7 +28960,7 @@
 		(property ki_fp_filters "Choke_* *Coil* Inductor_* L_*")
 		(path "/18e4998f-a3e2-4648-b3ac-f065bccc7e8a")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 1.7 -1.2)
@@ -29249,7 +29249,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/e07f4acf-9486-4309-b893-2408f6c315c0")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -29489,7 +29489,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/ffcb874b-9581-4cbd-a1a7-7b5eb714321d")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -29729,7 +29729,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/f645fafb-1e2c-4fb5-aa83-c8d70c2830b2")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -29969,7 +29969,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/4661abc3-a174-4626-8deb-17494eb01b50")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -30222,7 +30222,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/7d970dc8-9a04-4ef2-ad86-289124075273")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -2.34 4.51)
@@ -30618,7 +30618,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/5633cd73-11f2-405b-b021-ef749434023e")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -30855,7 +30855,7 @@
 		)
 		(path "/f24ca57b-adbe-4ef5-aaf5-f552a60a9df0")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(clearance 0.1)
 		(attr smd)
 		(fp_line
@@ -31097,7 +31097,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/f1aaa0ca-2213-4a91-9329-e977a3ddf161")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -31337,7 +31337,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/4ea326d8-76e7-4be0-91f2-66525100746a")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -31548,7 +31548,7 @@
 		(property ki_fp_filters "Connector*:*_2x??_*")
 		(path "/7611c86f-def9-419c-b00a-62dc6fdccc85")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 6.61 -2.54)
@@ -31922,7 +31922,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/d1c22444-67c4-49e5-9f03-c2cdd727c73e")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -32160,7 +32160,7 @@
 		(property ki_fp_filters "LQFP*10x10mm*P0.5mm*")
 		(path "/b398e3b1-d6de-4843-9872-d2e80b1e197a")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -5.11 -5.11)
@@ -33304,7 +33304,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/d4beb254-4c93-4776-aaa5-64ccbdf71423")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -33515,7 +33515,7 @@
 		)
 		(path "/9c34ea4c-2911-401b-a170-f32b8934d2a3")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 1.05 -0.66)
@@ -33795,7 +33795,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/dacf34e5-88cf-42b7-8507-e723ac745449")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -34035,7 +34035,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/99e65bf7-cbbf-48eb-b24e-5a79e213b56c")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -34290,7 +34290,7 @@
 		(property ki_fp_filters "SOT?666*")
 		(path "/b5b0a2ef-e678-4338-9311-dcc2dcbecbbc")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.65 -0.99)
@@ -34588,7 +34588,7 @@
 		)
 		(path "/cd71eb46-98d4-4850-abbd-40639c43df6f")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -3.33 -3.08)
@@ -34810,7 +34810,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/359566ba-f0df-45ec-a62a-f45cbbea27ae")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -35050,7 +35050,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/fbc9fc37-acb4-4eee-9b57-6fb0eca47068")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -35290,7 +35290,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/a5bf3262-2402-4f61-835f-a7c642ae2795")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -35530,7 +35530,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/2021655a-04e6-4a72-a537-525c54912a8e")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -35770,7 +35770,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/3c159f89-15fb-4d5c-88c8-1f87371f2a7b")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 -0.735)
@@ -36010,7 +36010,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/40887ae9-4671-4059-8478-2feebb91a102")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -36250,7 +36250,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/3480b285-1c05-4ce6-9786-09887fe9c123")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -36461,7 +36461,7 @@
 		(property ki_fp_filters "Connector*:*_2x??_*")
 		(path "/838e2a22-8e8e-414e-830a-9c084da07b2b")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 6.61 -2.54)
@@ -36822,7 +36822,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/6cf211ee-6b52-49e4-8fa6-a4f3a6e1c588")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -37062,7 +37062,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/81d45728-37fd-469e-b9b1-39fc1bed0c54")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 0.36)
@@ -37302,7 +37302,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/28fc53f5-c30e-4b72-85c6-f5e72d3e0d19")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -37529,7 +37529,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/05cfe5c8-2b2a-47f3-af0c-c04aec53814d")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -37769,7 +37769,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/5e41c0a7-ff70-4383-9bf2-248894d6625f")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 -0.735)
@@ -38009,7 +38009,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/b389af0e-bc38-4db0-83e5-85be4e63d41e")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 -0.735)
@@ -38249,7 +38249,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/51c1842a-57db-48dc-9649-8cef5167eb38")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -38489,7 +38489,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/3832021d-7625-4adc-828c-b4a415c9b90e")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -38729,7 +38729,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/179734c9-ce25-4a74-8328-a2a680aad637")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -38969,7 +38969,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/d8fb1496-bd02-4610-acd7-3f5c9504b364")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -39196,7 +39196,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/0d7cc97a-d909-43c6-9ee3-9f6d40080fd3")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -39423,7 +39423,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/361c80bc-f8cd-4574-8d7d-51f21dc56dca")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -39663,7 +39663,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/f332e6ad-f6ac-4324-8403-dc5bb935e36a")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -39892,7 +39892,7 @@
 		(property ki_fp_filters "SolderJumper*Bridged*")
 		(path "/41bfafde-f8d5-4891-9a33-8a29400c034c")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr exclude_from_pos_files exclude_from_bom allow_missing_courtyard)
 		(net_tie_pad_groups "1, 2")
 		(fp_poly
@@ -40023,7 +40023,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/735aa6f9-cdbb-4684-a1d6-5b1297599b2a")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -40263,7 +40263,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/95940fc3-f0e7-4b18-b755-5e18b25b90af")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -40475,7 +40475,7 @@
 		(property ki_fp_filters "Connector*:*_2x??_*")
 		(path "/9f0c31b6-ab76-4626-b23f-dae1dd62dd24")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 3.8 -2.5)
@@ -40773,7 +40773,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/576d6cf0-504a-423f-9fc1-b3448403f9ee")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -41013,7 +41013,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/a568f842-39d1-4d40-9ad1-3815328ecce7")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -41253,7 +41253,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/97759758-5096-448b-b9e7-fb74a391203c")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 -0.735)
@@ -41464,7 +41464,7 @@
 		(property ki_fp_filters "Connector*:*_2x??_*")
 		(path "/a23973be-8206-4c91-b362-8d67dfe02f90")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 6.61 -2.54)
@@ -41838,7 +41838,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/f629641a-7247-439d-ad71-bf6f3ddeede6")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -42078,7 +42078,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/02b6d851-3826-4ce4-9706-28527fbf0a97")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -42318,7 +42318,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/6440a064-ba36-4620-80eb-a9243710641c")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -42560,7 +42560,7 @@
 		(property ki_fp_filters "Crystal*")
 		(path "/c4dbf4d6-2a4d-451f-acf6-6f7d18f542f4")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -2 -1.65)
@@ -42817,7 +42817,7 @@
 		(property ki_fp_filters "Pin* Test*")
 		(path "/cddafbf2-3a16-4c3c-9c3f-21a1eafa247c")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr exclude_from_pos_files exclude_from_bom)
 		(fp_circle
 			(center 0 0)
@@ -42958,7 +42958,7 @@
 		)
 		(path "/32029204-56c7-4ada-9f2d-636c5976dec7")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(clearance 0.1)
 		(attr smd)
 		(fp_line
@@ -43200,7 +43200,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/8fe1706d-9572-4ea0-b030-46853c925feb")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -43429,7 +43429,7 @@
 		(property ki_fp_filters "Pin* Test*")
 		(path "/1d746dc6-a952-4d6e-86ff-47cf548372ea")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr exclude_from_pos_files exclude_from_bom)
 		(fp_circle
 			(center 0 0)
@@ -43573,7 +43573,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/0c02dcaf-99ac-41ae-9d63-8970c1bc292f")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -43813,7 +43813,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/d9397494-f8a5-40c5-b101-7b1d40c910d0")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 -0.735)
@@ -44053,7 +44053,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/483cf60c-00f6-45fd-9d4c-0f8c8cacb3df")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -44293,7 +44293,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/84ba6b64-0c83-4f42-bde3-9a80fd5fb2b9")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -44558,7 +44558,7 @@
 		)
 		(path "/3bca1226-3f9f-4530-ae1b-483e8e7708e0")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_rect
 			(start 0.001432 -2.402653)
@@ -44915,7 +44915,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/bbb5fd16-351e-4426-a205-9039cbdc0068")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -45126,7 +45126,7 @@
 		(property ki_fp_filters "Connector*:*_2x??_*")
 		(path "/ec24554d-ccdd-4b48-bfde-c4eed0cbc6c8")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 6.61 -2.54)
@@ -45500,7 +45500,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/d8693f83-1584-489b-a3c6-166eb92fe425")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -45729,7 +45729,7 @@
 		(property ki_fp_filters "SolderJumper*Bridged*")
 		(path "/38ee8997-f0a9-4695-9de1-683c9bc45726")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(zone_connect 1)
 		(attr exclude_from_pos_files exclude_from_bom allow_soldermask_bridges)
 		(net_tie_pad_groups "1, 2")
@@ -46050,7 +46050,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/1cfde450-1390-41f3-a960-8ef9ad4eb813")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.711252 -0.91)
@@ -46290,7 +46290,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/410a4282-c285-4091-a641-ed530f23018d")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 0.38)
@@ -46530,7 +46530,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/91db2e1c-2c64-449c-beb3-884ce9a6fed0")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.107836 -0.36)
@@ -46770,7 +46770,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/b236ab28-2c8e-4ef3-8843-2cdbb80c6220")
 		(sheetname "/")
-		(sheetfile "ev14_board_design.kicad_sch")
+		(sheetfile "ev14.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.153641 -0.38)

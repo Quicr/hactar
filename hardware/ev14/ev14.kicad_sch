@@ -28154,7 +28154,7 @@
 			(uuid "ebeded7d-97aa-4d71-be61-853b47014a38")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "SW5")
 					(unit 1)
@@ -29143,7 +29143,7 @@
 			(uuid "819ae77c-423d-4d7a-8b41-7bf129583456")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R63")
 					(unit 1)
@@ -29535,7 +29535,7 @@
 			(uuid "0adde5ca-d33e-440f-979d-13874deea462")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR048")
 					(unit 1)
@@ -30385,7 +30385,7 @@
 			(uuid "d284122e-409a-4505-b58c-3159c2b8eace")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R64")
 					(unit 1)
@@ -30610,7 +30610,7 @@
 			(uuid "32f76a84-46fa-400c-b8eb-01d98c17a3c1")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR083")
 					(unit 1)
@@ -33774,7 +33774,7 @@
 			(uuid "60f8e7e0-fa93-489f-a2b1-51c9eaf08d9f")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R70")
 					(unit 1)
@@ -34512,7 +34512,7 @@
 			(uuid "ac305d03-229d-4e7d-b79e-ab13bf48e3cb")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR082")
 					(unit 1)
@@ -35917,7 +35917,7 @@
 			(uuid "4a401f2c-0ca9-4608-8d17-35247221517c")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R72")
 					(unit 1)
@@ -36140,7 +36140,7 @@
 			(uuid "b98e2634-0899-4eaa-b968-12c38c84746f")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R66")
 					(unit 1)
@@ -37825,7 +37825,7 @@
 			(uuid "ffa9c54c-c68b-40bd-930d-a69915b7a119")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "J10")
 					(unit 1)
@@ -38608,7 +38608,7 @@
 			(uuid "be9f2b1a-1785-4d80-bfcd-e474674a4775")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "J8")
 					(unit 1)
@@ -40312,7 +40312,7 @@
 			(uuid "70aa4b2e-203e-4fc4-9d2e-c92af78d66a5")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR081")
 					(unit 1)
@@ -42489,7 +42489,7 @@
 			(uuid "fbb9fdb0-8bd4-4679-b1cf-ad8924205811")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R67")
 					(unit 1)
@@ -43046,7 +43046,7 @@
 			(uuid "096af948-0be9-4559-941d-8c42d91d3047")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R69")
 					(unit 1)
@@ -43964,7 +43964,7 @@
 			(uuid "8d75f124-5ce2-4532-ad7a-2753e3e37a0f")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R68")
 					(unit 1)
@@ -44608,7 +44608,7 @@
 			(uuid "52ddf024-838b-44dc-ab7a-51af6a0ea8b4")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "C48")
 					(unit 1)
@@ -45078,7 +45078,7 @@
 			(uuid "6ea617b1-52b5-4bb3-932b-964cc1dc4a3d")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "SW4")
 					(unit 1)
@@ -45410,7 +45410,7 @@
 			(uuid "51ef00b3-62f5-43c4-99c5-cd7e04dbfda3")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR085")
 					(unit 1)
@@ -45748,7 +45748,7 @@
 			(uuid "9bb245d5-50e4-43ec-a09b-e3a3f8fb45e9")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R74")
 					(unit 1)
@@ -47375,7 +47375,7 @@
 			(uuid "7d8f6139-c412-42d7-a768-325f9419b334")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R65")
 					(unit 1)
@@ -47617,7 +47617,7 @@
 			(uuid "449a41d3-892a-4e09-92d7-151421fc2d10")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR084")
 					(unit 1)
@@ -48266,7 +48266,7 @@
 			(uuid "9673f179-2553-4b88-b52c-2d00b020e441")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "J9")
 					(unit 1)
@@ -48871,7 +48871,7 @@
 			(uuid "9a47405c-6766-4f5e-9ab8-8a30a4aa1fb4")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R73")
 					(unit 1)
@@ -49714,7 +49714,7 @@
 			(uuid "775e2994-7965-4702-b7ea-e61ed92bc23e")
 		)
 		(instances
-			(project "ev14_board_design"
+			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R71")
 					(unit 1)
