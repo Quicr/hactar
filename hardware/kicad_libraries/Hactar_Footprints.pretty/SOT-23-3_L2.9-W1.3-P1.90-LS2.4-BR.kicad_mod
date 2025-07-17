@@ -1,27 +1,177 @@
-(module easyeda2kicad:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR (layer F.Cu) (tedit 5DC5F6A4)
+(footprint "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 0 -4.95 0)
+		(layer "F.SilkS")
+		(uuid "93b8741c-b9fd-4001-8121-5b7faa54e9e2")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR"
+		(at 0 4.95 0)
+		(layer "F.Fab")
+		(uuid "16d2e626-86a3-404a-b52a-99fa07a8f676")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "6a209ca7-204d-443f-bb37-9acb0e18d7b2")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "43bac9c2-a60a-4981-b4e5-5677f2a33930")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
 	(attr smd)
-	(fp_text reference REF** (at 0 -4.95) (layer F.SilkS)
-		(effects (font (size 1 1) (thickness 0.15)))
+	(fp_line
+		(start -0.73 -1.53)
+		(end -0.73 -0.49)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "0dc27a27-094e-404f-b797-15f5a0eb4ccb")
 	)
-	(fp_text value SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR (at 0 4.95) (layer F.Fab)
-		(effects (font (size 1 1) (thickness 0.15)))
+	(fp_line
+		(start -0.73 1.53)
+		(end -0.73 0.49)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "8ff65fae-5b1b-4c06-83b4-442e5fa28f35")
 	)
-	(fp_text user %R (at 0 0) (layer F.Fab)
-		(effects (font (size 1 1) (thickness 0.15)))
+	(fp_line
+		(start 0.73 -1.53)
+		(end -0.73 -1.53)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "4d2967f2-f0bb-4de2-8662-79050495372f")
 	)
-	(fp_line (start 0.73 -1.53) (end -0.73 -1.53) (layer F.SilkS) (width 0.15))
-	(fp_line (start -0.73 -1.53) (end -0.73 -0.49) (layer F.SilkS) (width 0.15))
-	(fp_line (start 0.73 1.53) (end -0.73 1.53) (layer F.SilkS) (width 0.15))
-	(fp_line (start -0.73 1.53) (end -0.73 0.49) (layer F.SilkS) (width 0.15))
-	(fp_line (start 0.73 -0.46) (end 0.73 0.46) (layer F.SilkS) (width 0.15))
-	(pad 1 smd rect (at 1.00 0.95 0.00) (size 1.25 0.70) (layers F.Cu F.Paste F.Mask))
-	(pad 2 smd rect (at 1.00 -0.95 0.00) (size 1.25 0.70) (layers F.Cu F.Paste F.Mask))
-	(pad 3 smd rect (at -1.00 0.00 0.00) (size 1.25 0.70) (layers F.Cu F.Paste F.Mask))
-	(fp_circle (center 1.20 1.45) (end 1.23 1.45) (layer F.Fab) (width 0.06))
-	(fp_circle (center 1.46 1.10) (end 1.56 1.10) (layer Cmts.User) (width 0.20))
+	(fp_line
+		(start 0.73 -0.46)
+		(end 0.73 0.46)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "8b360cc0-cc1e-4032-be9d-184f6c4046ce")
+	)
+	(fp_line
+		(start 0.73 1.53)
+		(end -0.73 1.53)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "614d4da6-49eb-4f56-9aa3-3c4b5888a665")
+	)
+	(fp_circle
+		(center 1.46 1.1)
+		(end 1.56 1.1)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(fill no)
+		(layer "Cmts.User")
+		(uuid "90a99bc2-47d3-4634-a266-289d548cd524")
+	)
+	(fp_rect
+		(start -0.8 -1.6)
+		(end 0.8 1.6)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "d1d99287-adb3-4d5b-941d-7010ccd52753")
+	)
+	(fp_circle
+		(center 1.2 1.45)
+		(end 1.23 1.45)
+		(stroke
+			(width 0.06)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "4dca4077-0c81-43e6-9365-3642eacb894d")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "1dcc4778-7fa9-43f5-94d9-899ef944eafb")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd rect
+		(at 1 0.95)
+		(size 1.25 0.7)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "69e9f83a-3bcf-473a-809e-d1b5926a8008")
+	)
+	(pad "2" smd rect
+		(at 1 -0.95)
+		(size 1.25 0.7)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "3fd954f9-6019-4da0-9d43-20c0ab286da4")
+	)
+	(pad "3" smd rect
+		(at -1 0)
+		(size 1.25 0.7)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "0e819bc1-5ba6-46d4-a716-ad9cebea8781")
+	)
+	(embedded_fonts no)
 	(model "/hactar_footprints.3dshapes/SOT-23-3P_L2.9-W1.3-H1.0-LS2.4-P0.95.wrl"
-		(offset (xyz -861.570 843.280 -0.000))
-		(scale (xyz 1 1 1))
-		(rotate (xyz 0 0 180))
+		(offset
+			(xyz -861.57 843.28 -0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 180)
+		)
 	)
 )
