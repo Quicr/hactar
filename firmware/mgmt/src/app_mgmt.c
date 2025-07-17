@@ -124,6 +124,28 @@ uart_stream_t usb_stream = {
     .mode = Ignore,
 };
 
+void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
+{
+    __disable_irq();
+    if (huart->Instance == huart1.Instance)
+    {
+        if (usb_stream.mode != Ignore)
+        {
+            InitUartStream(&usb_stream);
+            StartUartReceive(&usb_stream);
+        }
+    }
+    else if (huart->Instance == huart2.Instance)
+    {
+        if (ui_stream.mode != Ignore)
+        {
+            InitUartStream(&ui_stream);
+            StartUartReceive(&ui_stream);
+        }
+    }
+    __enable_irq();
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t pin)
 {
     if (pin == UI_STAT_Pin)
