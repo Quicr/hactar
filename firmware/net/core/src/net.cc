@@ -36,12 +36,14 @@ using json = nlohmann::json;
 uint64_t device_id = 0;
 bool loopback = false;
 
+std::vector<std::shared_ptr<moq::TrackReader>> readers;
+std::vector<std::shared_ptr<moq::TrackWriter>> writers;
 std::shared_ptr<moq::Session> moq_session;
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 
 /** END EXTERNAL VARIABLES */
 
-constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33437";
+constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
@@ -185,6 +187,63 @@ static void LinkPacketTask(void* args)
     }
 }
 
+std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial)
+try
+{
+    // TODO something with channel name, like transmitting it to ui
+    // std::string channel_name = subscription.at("channel_name").get<std::string>();
+
+    // TODO transmit to the ui chip probably
+    // std::string lang = subscription.at("language").get<std::string>();
+
+    std::vector<std::string> track_namespace =
+        subscription.at("tracknamespace").get<std::vector<std::string>>();
+    std::string trackname = subscription.at("trackname").get<std::string>();
+
+    if (trackname == "")
+    {
+        trackname = std::to_string(device_id);
+    }
+
+    std::string codec = subscription.at("codec").get<std::string>();
+    ESP_LOGE("sub", "%s", codec.c_str());
+
+    return std::make_shared<moq::TrackReader>(moq::MakeFullTrackName(track_namespace, trackname),
+                                              serial, codec);
+}
+catch (const std::exception& ex)
+{
+    ESP_LOGE("sub", "Exception in sub %s", ex.what());
+    return nullptr;
+}
+std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& publication)
+try
+{
+    // TODO something with channel name, like transmitting it to ui
+    // std::string channel_name = publication.at("channel_name").get<std::string>();
+
+    // TODO transmit to the ui chip probably
+    // std::string lang = publication.at("language").get<std::string>();
+
+    std::vector<std::string> track_namespace =
+        publication.at("tracknamespace").get<std::vector<std::string>>();
+    std::string trackname = publication.at("trackname").get<std::string>();
+
+    // TODO something with this?
+    // std::string codec = publication.at("codec").get<std::string>();
+
+    // uint64_t sample_rate = publication.at("sample_rate").get<uint64_t>();
+    // std::string channel_config = publication.at("channelConfig").get<std::string>();
+
+    return std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName(track_namespace, trackname),
+                                              quicr::TrackMode::kDatagram, 2, 100);
+}
+catch (const std::exception& ex)
+{
+    ESP_LOGE("pub", "Exception in pub %s", ex.what());
+    return nullptr;
+}
+
 void PrintRAM()
 {
     NET_LOG_ERROR("Internal SRAM available: %d bytes",
@@ -258,13 +317,13 @@ extern "C" void app_main(void)
     for (int i = 0; i < subscriptions.size(); ++i)
     {
         // NOTE- I am not doing all of the subs because I don't want text rn
-        moq_session->StartReadTrack(subscriptions[i], ui_layer);
+        readers.emplace_back(CreateReadTrack(subscriptions[i], ui_layer));
     }
 
     json publications = default_channel_json.at("publications");
     for (int i = 0; i < publications.size(); ++i)
     {
-        moq_session->StartWriteTrack(publications[i]);
+        writers.emplace_back(CreateWriteTrack(publications[i]));
     }
 
     CreateLinkPacketTask();
@@ -299,6 +358,19 @@ extern "C" void app_main(void)
                     || status == moq::Session::Status::kReady)
                 {
                     moq_session->Disconnect();
+
+                    for (const auto& reader : readers)
+                    {
+                        reader->Stop();
+                    }
+
+                    for (const auto& writer : writers)
+                    {
+                        writer->Stop();
+                    }
+
+                    moq_session.reset(new moq::Session(config));
+                    status = moq_session->GetStatus();
                 }
             }
             case Wifi::State::Initialized:
@@ -325,15 +397,41 @@ extern "C" void app_main(void)
             {
             case moq::Session::Status::kReady:
             {
+                for (const auto& reader : readers)
+                {
+                    reader->Start();
+                }
+
+                for (const auto& writer : writers)
+                {
+                    writer->Start();
+                }
+
                 // TODO
                 // Tell ui chip we are ready
                 gpio_set_level(NET_LED_B, 0);
                 break;
             }
-            case moq::Session::Status::kNotReady:
             case moq::Session::Status::kNotConnected:
+                [[fallthrough]];
             case moq::Session::Status::kFailedToConnect:
+                for (const auto& reader : readers)
+                {
+                    reader->Stop();
+                }
+
+                for (const auto& writer : writers)
+                {
+                    writer->Stop();
+                }
+
+                moq_session.reset(new moq::Session(config));
+                [[fallthrough]];
+            case moq::Session::Status::kNotReady:
             {
+                moq_session->SetReaders(readers);
+                moq_session->SetWriters(writers);
+
                 NET_LOG_INFO("MOQ Transport Calling Connect");
 
                 if (moq_session->Connect() != quicr::Transport::Status::kConnecting)

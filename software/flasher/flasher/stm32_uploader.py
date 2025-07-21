@@ -84,15 +84,17 @@ class STM32Uploader(Uploader):
         elif self.chip == "ui":
             send_data = [ch for ch in bytes("ui_upload", "UTF-8")]
             self.uart.write(send_data)
+            time.sleep(1)
             self.uart.flush()
 
             print(f"Update uart to parity: {BB}EVEN{NW}")
             self.uart.parity = serial.PARITY_EVEN
-            time.sleep(1)
+            time.sleep(1.5)
 
             self.uart.reset_input_buffer()
             self.TryHandshake(uart_utils.OK, 1, 10)
             self.TryPattern(uart_utils.READY, 1, 10)
+            self.uart.flush()
             self.uart.reset_input_buffer()
 
             print(f"Activating UI Upload Mode: {BG}SUCCESS{NW}")

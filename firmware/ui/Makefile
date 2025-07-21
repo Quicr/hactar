@@ -93,7 +93,7 @@ openocd:
 	openocd $(OCDFLAGS)
 
 monitor:
-	python3 ../../software/tools/monitor.py ${PORT} ${BAUD}
+	python3 ../../software/tools/monitor.py --port=${PORT} --baud=${BAUD}
 
 format:
 	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i

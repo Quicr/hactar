@@ -403,7 +403,7 @@ void HandleRecvLinkPackets()
             }
 
             // Ignore the first byte
-            constexpr uint8_t payload_offset = 1;
+            constexpr uint8_t payload_offset = 6;
             char* text = (char*)(link_packet->payload + payload_offset);
 
             screen.CommitText(text, link_packet->length - payload_offset);

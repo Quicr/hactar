@@ -21,7 +21,7 @@ ESP_TOOL_ARGS 		= --no-stub --port=${PORT} --baud=${BAUD} write_flash --no-compr
 all: compile
 
 compile:
-	idf.py -B $(BUILD_PATH) build
+	idf.py -B $(BUILD_PATH) build -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 upload: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/bootloader/bootloader.bin ${BOOTLOADER_ADDR} verify exit"
@@ -30,7 +30,7 @@ upload: compile
 	python3 ../tools/command_sender.py ${CONSOLE_PORT} 115200 debug
 
 upload_py: compile
-	python3 ../../software/flasher/main.py  --baud=${BAUD} --chip="net" -bin=${BUILD_PATH}
+	python3 ../../software/flasher/main.py  --baud=${BAUD} --port=${PORT} --chip="net" -bin=${BUILD_PATH}
 
 upload_esptool:
 	python3 ../../software/flasher/main.py --port=${PORT} --baud=${BAUD} --chip="net" --use_external_flasher=true
@@ -57,7 +57,7 @@ burn_jtag_efuse:
 	idf.py efuse-burn DIS_USB_JTAG
 
 monitor:
-	python3 ../../software/tools/monitor.py ${PORT} ${BAUD}
+	python3 ../../software/tools/monitor.py --port=${PORT} --baud=${BAUD}
 
 idf_monitor:
 	python3 ../../softare/tools/command_sender.py ${PORT} ${BAUD} net_debug

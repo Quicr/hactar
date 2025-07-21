@@ -17,7 +17,12 @@ public:
     TrackReader(const quicr::FullTrackName& full_track_name,
                 Serial& serial,
                 const std::string& codec);
-    virtual ~TrackReader() = default;
+
+    virtual ~TrackReader();
+
+    void Start();
+
+    void Stop();
 
     //
     // overrides from SubscribeTrackHandler
