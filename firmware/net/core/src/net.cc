@@ -148,29 +148,27 @@ static void LinkPacketTask(void* args)
             {
                 NET_LOG_INFO("got ai response from ui");
                 // Check if json for sure
-                try
+                uint8_t channel_id = packet->payload[0];
+                auto* response = static_cast<ui_net_link::AIResponseChunk*>(
+                    static_cast<void*>(packet->payload + 1));
+
+                if (!json::accept(response->chunk_data))
                 {
-                    uint8_t channel_id = packet->payload[0];
-
-                    auto* response = static_cast<ui_net_link::AIResponseChunk*>(
-                        static_cast<void*>(packet->payload + 1));
-
-                    json change_channel = json::parse(response->chunk_data);
-                    NET_LOG_INFO("start track write for new channel");
-                    if (auto writer = CreateWriteTrack(change_channel))
-                    {
-                        writer->Start();
-                    }
-
-                    NET_LOG_INFO("start track read for new channel");
-                    if (auto reader = CreateReadTrack(change_channel, ui_layer))
-                    {
-                        reader->Start();
-                    }
+                    NET_LOG_ERROR("Received invalid json");
+                    break;
                 }
-                catch (std::exception& ex)
+
+                json change_channel = json::parse(response->chunk_data);
+                NET_LOG_INFO("start track write for new channel");
+                if (auto writer = CreateWriteTrack(change_channel))
                 {
-                    NET_LOG_ERROR("%s", ex.what());
+                    writer->Start();
+                }
+
+                NET_LOG_INFO("start track read for new channel");
+                if (auto reader = CreateReadTrack(change_channel, ui_layer))
+                {
+                    reader->Start();
                 }
                 break;
             }
@@ -257,7 +255,7 @@ try
         return nullptr;
     }
 
-    std::lock_guard<std::mutex> _(moq_session->readers_mux);
+    std::unique_lock<std::mutex> lock = moq_session->GetReaderLock();
     if (readers[offset] != nullptr)
     {
         NET_LOG_WARN("Reader on %d already exists", offset);
@@ -269,6 +267,7 @@ try
     readers[offset].reset(
         new moq::TrackReader(moq::MakeFullTrackName(track_namespace, trackname), serial, codec));
 
+    lock.unlock();
     return readers[offset];
 }
 catch (const std::exception& ex)
@@ -310,7 +309,7 @@ try
         return nullptr;
     }
 
-    std::lock_guard<std::mutex> _(moq_session->writers_mux);
+    std::unique_lock<std::mutex> lock = moq_session->GetWriterLock();
     if (writers[offset] != nullptr)
     {
         NET_LOG_WARN("Writer on %d already exists", offset);
@@ -322,6 +321,7 @@ try
     writers[offset].reset(new moq::TrackWriter(moq::MakeFullTrackName(track_namespace, trackname),
                                                quicr::TrackMode::kDatagram, 2, 100));
 
+    lock.unlock();
     return writers[offset];
 }
 catch (const std::exception& ex)

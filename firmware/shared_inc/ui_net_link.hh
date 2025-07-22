@@ -130,7 +130,7 @@ struct __attribute__((packed)) AIResponseChunk
     static constexpr uint32_t Chunk_Length_Size = sizeof(chunk_length);
 
     // Ext bytes that are always in packet
-    static constexpr uint32_t Channel_Id_Size = 1;
+    static constexpr uint32_t Channel_Id_Size = sizeof(Channel_Id);
 
     static constexpr uint32_t Chunk_Size =
         link_packet_t::Payload_Size
@@ -160,11 +160,11 @@ struct __attribute__((packed)) AIResponseChunk
 
 [[maybe_unused]] static void Serialize(const TalkStart& talk_start, link_packet_t& packet)
 {
-    packet.type = (uint8_t)Packet_Type::TalkStart;
+    packet.type = static_cast<uint8_t>(Packet_Type::TalkStart);
     packet.length = 1;
 
     // Channel id
-    packet.payload[0] = (uint8_t)talk_start.channel_id;
+    packet.payload[0] = static_cast<uint8_t>(talk_start.channel_id);
 
     packet.is_ready = true;
 }

@@ -44,8 +44,9 @@ public:
     void StopTextReader();
     void StopAudioWriter();
 
-    std::mutex readers_mux;
-    std::mutex writers_mux;
+    // TODO delete after moq session can be reused
+    std::unique_lock<std::mutex> GetReaderLock();
+    std::unique_lock<std::mutex> GetWriterLock();
 
 private:
     Session() = delete;
@@ -68,6 +69,9 @@ private:
     TaskHandle_t writers_task_handle;
     StaticTask_t writers_task_buffer;
     StackType_t* writers_task_stack;
+
+    std::mutex readers_mux;
+    std::mutex writers_mux;
 };
 
 } // namespace moq

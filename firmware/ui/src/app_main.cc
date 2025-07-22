@@ -599,14 +599,6 @@ void HandleAiResponse(link_packet_t* packet)
     auto* response =
         static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
 
-    // UI_LOG_INFO("type %d", (int)response->type);
-    // UI_LOG_INFO("request id %lu", response->request_id);
-    // UI_LOG_INFO("content type %d", (int)response->content_type);
-    // UI_LOG_INFO("last chunk %d", (int)response->last_chunk);
-    // UI_LOG_INFO("content length %lu", response->chunk_length);
-    // UI_LOG_INFO("start %d end %d", (int)response->chunk_data[0],
-    //             (int)response->chunk_data[response->chunk_length - 1]);
-
     if (response->chunk_data[0] == '{' && response->chunk_data[response->chunk_length - 1] == '}')
     {
         UI_LOG_INFO("IS JSON");

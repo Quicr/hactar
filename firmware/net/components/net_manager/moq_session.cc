@@ -11,8 +11,6 @@ Session::Session(const quicr::ClientConfig& cfg,
                  std::vector<std::shared_ptr<TrackReader>>& readers,
                  std::vector<std::shared_ptr<TrackWriter>>& writers) :
     Client(cfg),
-    readers_mux(),
-    writers_mux(),
     readers(readers),
     readers_task_handle(nullptr),
     readers_task_buffer({0}),
@@ -20,7 +18,9 @@ Session::Session(const quicr::ClientConfig& cfg,
     writers(writers),
     writers_task_handle(nullptr),
     writers_task_buffer({0}),
-    writers_task_stack(nullptr)
+    writers_task_stack(nullptr),
+    readers_mux(),
+    writers_mux()
 {
     StartTasks();
 }
@@ -82,10 +82,8 @@ void Session::PublishTrackTask(void* params)
             std::lock_guard<std::mutex> _(session->writers_mux);
             NET_LOG_INFO("num writers %d", session->writers.size());
 
-            for (int i = 0; i < session->writers.size(); ++i)
+            for (auto& writer : session->writers)
             {
-                auto& writer = session->writers[i];
-
                 if (!writer)
                 {
                     continue;
@@ -134,10 +132,8 @@ void Session::SubscribeTrackTask(void* params)
             std::lock_guard<std::mutex> _(session->readers_mux);
             NET_LOG_INFO("num readers %d", session->readers.size());
 
-            for (int i = 0; i < session->readers.size(); ++i)
+            for (auto& reader : session->readers)
             {
-                auto& reader = session->readers[i];
-
                 if (!reader)
                 {
                     continue;
@@ -164,4 +160,15 @@ void Session::SubscribeTrackTask(void* params)
     }
 
     vTaskDelete(nullptr);
+}
+
+// TODO delete when moq session can be reused instead of reinstantiated
+std::unique_lock<std::mutex> Session::GetReaderLock()
+{
+    return std::unique_lock<std::mutex>(readers_mux);
+}
+
+std::unique_lock<std::mutex> Session::GetWriterLock()
+{
+    return std::unique_lock<std::mutex>(writers_mux);
 }

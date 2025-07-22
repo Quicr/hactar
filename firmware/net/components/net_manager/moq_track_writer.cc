@@ -48,7 +48,7 @@ void TrackWriter::Start()
     }
 
     task_helpers::Start_PSRAM_Task(PublishTask, this, track_name, task_handle, task_buffer,
-                                   &task_stack, 8192 * 2, 10);
+                                   &task_stack, 16384, 10);
 }
 
 void TrackWriter::Stop()
