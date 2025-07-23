@@ -2,18 +2,17 @@
 
 #include "stm32.h"
 
+template <const size_t Size_In_Bytes>
 class M24C02_EEPROM
 {
 public:
     M24C02_EEPROM(I2C_HandleTypeDef& hi2c,
                   const uint16_t reserved_area_size,
-                  const uint16_t size_in_bytes,
-                  const uint8_t operation_delay = 5) :
+                  const uint8_t write_operation_timeout_ms = 5) :
         i2c(&hi2c),
         reserved_area_size(reserved_area_size),
-        size_in_bytes(size_in_bytes),
         next_address(reserved_area_size),
-        operation_delay(operation_delay)
+        write_operation_timeout_ms(write_operation_timeout_ms)
     {
     }
 
@@ -22,15 +21,12 @@ public:
         i2c = nullptr;
     }
 
-    // TODO we need to make sure that write doesn't take too large of a data
-    // size and overwrite some data
-
     /* M24C02_EEPROM::Write
      * Description - This function takes any data form and turns it into bytes
      * and writes it to the eeprom at the next available address
      */
     template <typename T>
-    int16_t Write(T* data, const int32_t sz)
+    int16_t Write(T* data, const uint32_t sz)
     {
         const uint8_t addr = next_address;
         const size_t data_size = sizeof(T) * sz;
@@ -47,7 +43,7 @@ public:
     }
 
     template <typename T>
-    int16_t Write(T data, const int32_t sz)
+    int16_t Write(T data, const uint32_t sz)
     {
         const uint16_t addr = next_address;
         const size_t data_size = sizeof(T) * sz;
@@ -64,7 +60,7 @@ public:
     }
 
     template <typename T>
-    HAL_StatusTypeDef Write(const uint8_t address, T& data, const int32_t sz)
+    HAL_StatusTypeDef Write(const uint8_t address, T& data, const uint32_t sz)
     {
         const size_t data_size = sizeof(T) * sz;
 
@@ -72,7 +68,7 @@ public:
     }
 
     template <typename T>
-    HAL_StatusTypeDef Write(const uint8_t address, T* data, const int32_t sz)
+    HAL_StatusTypeDef Write(const uint8_t address, T* data, const uint32_t sz)
     {
         const size_t data_size = sizeof(T) * sz;
 
@@ -85,7 +81,7 @@ public:
 
         HAL_StatusTypeDef write_byte_res =
             HAL_I2C_Master_Transmit(i2c, SLA_W, write_byte, sizeof(write_byte), HAL_MAX_DELAY);
-        HAL_Delay(operation_delay);
+        HAL_Delay(write_operation_timeout_ms);
 
         return write_byte_res;
     }
@@ -96,6 +92,11 @@ public:
     template <typename T>
     HAL_StatusTypeDef Read(const uint8_t address, T* data, const uint16_t sz = 1)
     {
+        if (address >= Size_In_Bytes)
+        {
+            return HAL_ERROR;
+        }
+
         // Set the address to read from
         HAL_StatusTypeDef address_res =
             HAL_I2C_Master_Transmit(i2c, SLA_W, (uint8_t*)&address, 1, HAL_MAX_DELAY);
@@ -105,21 +106,21 @@ public:
             return address_res;
         }
 
-        HAL_Delay(operation_delay);
-
         const uint16_t output_sz = sizeof(char) * sz;
 
-        // Create a new pointer to this data
         HAL_StatusTypeDef read_res =
             HAL_I2C_Master_Receive(i2c, SLA_R, (uint8_t*)data, output_sz, HAL_MAX_DELAY);
-
-        HAL_Delay(operation_delay);
 
         return read_res;
     }
 
     int16_t ReadByte(const uint8_t address)
     {
+        if (address >= Size_In_Bytes)
+        {
+            return -1;
+        }
+
         // Set the address in the eeprom we will be reading the data from
         if (HAL_OK != HAL_I2C_Master_Transmit(i2c, SLA_W, (uint8_t*)&address, 1, HAL_MAX_DELAY))
         {
@@ -130,9 +131,6 @@ public:
         uint8_t data;
         HAL_StatusTypeDef read_res = HAL_I2C_Master_Receive(i2c, SLA_R, &data, 1, HAL_MAX_DELAY);
 
-        // IS THIS NEEDED????
-        HAL_Delay(operation_delay);
-
         if (read_res != HAL_OK)
         {
             return -1;
@@ -141,24 +139,27 @@ public:
         return data;
     }
 
-    bool Clear()
+    bool Fill(uint8_t fill_value = 0xFF)
     {
         // Reset the write address to the start
         next_address = 0;
 
-        uint8_t clear_byte[2];
-        clear_byte[1] = 0xFF;
+        // Address to start writing is 0
+        uint8_t fill_byte[Size_In_Bytes + 1] = {0};
 
         // Write a bunch of 1s
         HAL_StatusTypeDef clear_res = HAL_ERROR;
-        for (int16_t i = 0; i < size_in_bytes; i++)
+        for (int16_t i = 0; i < Size_In_Bytes; i++)
         {
-            clear_byte[0] = next_address++;
-
-            clear_res = HAL_I2C_Master_Transmit(i2c, SLA_W, clear_byte, 2, HAL_MAX_DELAY);
-
-            HAL_Delay(operation_delay);
+            fill_byte[i + 1] = fill_value;
         }
+
+        // Write to the eeprom starting from address zero, and filling all bytes with the fill_value
+        clear_res =
+            HAL_I2C_Master_Transmit(i2c, SLA_W, fill_byte, Size_In_Bytes + 1, HAL_MAX_DELAY);
+
+        // Give the eeprom time to write
+        HAL_Delay(write_operation_timeout_ms * Size_In_Bytes);
 
         // Reset the next address back to the start after the reserved_area_size space
         next_address = reserved_area_size;
@@ -168,7 +169,7 @@ public:
 
     uint16_t Size() const
     {
-        return size_in_bytes;
+        return Size_In_Bytes;
     }
 
     uint16_t NextAddress() const
@@ -178,12 +179,17 @@ public:
 
     float Usage() const
     {
-        return next_address / size_in_bytes;
+        return next_address / Size_In_Bytes;
     }
 
 private:
     HAL_StatusTypeDef PerformWrite(uint8_t* data, const uint8_t address, const uint16_t data_size)
     {
+        if (data_size > Size_In_Bytes - reserved_area_size)
+        {
+            return HAL_ERROR;
+        }
+
         // Copy to_write to a new array
         uint8_t write_bytes[2];
 
@@ -192,7 +198,7 @@ private:
         write_bytes[1] = data_size;
         HAL_StatusTypeDef len_write_res =
             HAL_I2C_Master_Transmit(i2c, SLA_W, write_bytes, 2, HAL_MAX_DELAY);
-        HAL_Delay(operation_delay);
+        HAL_Delay(write_operation_timeout_ms);
 
         if (len_write_res != HAL_OK)
         {
@@ -213,7 +219,7 @@ private:
                 return write_res;
             }
 
-            HAL_Delay(operation_delay);
+            HAL_Delay(write_operation_timeout_ms);
         }
 
         return write_res;
@@ -224,7 +230,6 @@ private:
 
     I2C_HandleTypeDef* i2c;
     const uint16_t reserved_area_size;
-    const uint16_t size_in_bytes;
     int16_t next_address;
-    uint8_t operation_delay;
+    uint8_t write_operation_timeout_ms;
 };

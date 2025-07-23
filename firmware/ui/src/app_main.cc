@@ -1,6 +1,7 @@
 #include "app_main.hh"
 #include "audio_chip.hh"
 #include "audio_codec.hh"
+#include "config_storage.hh"
 #include "keyboard.hh"
 #include "link_packet_t.hh"
 #include "logger.hh"
@@ -237,7 +238,7 @@ int app_main()
     Renderer renderer(screen, keyboard);
 
     audio_chip.Init();
-    audio_chip.StartI2S();
+    // audio_chip.StartI2S();
     InitScreen();
     LEDS(LOW, LOW, LOW);
     serial.StartReceive();
@@ -249,13 +250,48 @@ int app_main()
     uint32_t next_print = 0;
 
     // Test in case the audio chip settings change and something looks suspicious
-    CountNumAudioInterrupts(audio_chip, sleeping);
+    // CountNumAudioInterrupts(audio_chip, sleeping);
 
     // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
     bool done_booting = false;
 
     UI_LOG_INFO("Starting main loop");
+
+    M24C02_EEPROM<256> eeprom(hi2c1, 32);
+    ConfigStorage config_storage(eeprom);
+
+    // eeprom.Fill(255);
+
+    // config_storage.SaveConfig(ConfigStorage::Config_Id::SSID, (const uint8_t*)"MySSID", 6);
+
+    uint8_t* ssid;
+    int16_t ssid_len;
+    bool loaded = config_storage.GetConfig(ConfigStorage::Config_Id::SSID, &ssid, ssid_len);
+
+    if (loaded)
+    {
+        UI_LOG_INFO("SSID loaded");
+        for (int i = 0; i < ssid_len; ++i)
+        {
+            UI_LOG_INFO("%c", ssid[i]);
+        }
+    }
+
+    // eeprom.Clear();
+    // uint16_t my_num = 1025;
+    // uint16_t addr = eeprom.Write(my_num, sizeof(my_num));
+    // uint16_t my_num2 = 0;
+    // eeprom.Read(addr + 1, &my_num2, 2);
+    // UI_LOG_INFO("eeprom result %d", my_num2);
+
+    // char x[2] = {6, 3};
+    // int16_t addr2 = eeprom.Write(x, 2);
+
+    // char my_char[2] = {0};
+    // eeprom.Read(addr2 + 1, my_char, 2);
+    // UI_LOG_INFO("eeprom result %d %d", (int)my_char[0], (int)my_char[1]);
+
     while (1)
     {
         Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
