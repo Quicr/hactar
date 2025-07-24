@@ -21,7 +21,8 @@ public:
                   uint8_t& rx_buff,
                   const uint32_t rx_buff_sz,
                   void (*Transmit)(void* self),
-                  void* transmit_arg);
+                  void* transmit_arg,
+                  const bool use_slip = true);
     ~SerialHandler();
 
     link_packet_t* Read();
@@ -52,6 +53,14 @@ protected:
     bool UpdateTx();
     bool PrepTransmit();
 
+    link_packet_t* SlipRead();
+    link_packet_t* TLVRead();
+
+    link_packet_t* GetReadyPacket();
+
+    void SlipWrite(const uint8_t* data, const uint16_t size, const bool end_frame = true);
+    void TLVWrite(const uint8_t* data, const uint16_t size);
+
     RingBuffer<link_packet_t> rx_packets;
 
     uint8_t* tx_buff;
@@ -72,6 +81,8 @@ protected:
 
     void (*Transmit)(void* self);
     void* transmit_arg;
+
+    const bool use_slip;
 
     link_packet_t* packet;
     uint32_t bytes_read;
