@@ -37,6 +37,15 @@ public:
     {
     }
 
+    bool LoadAll()
+    {
+        return (
+            GetConfig(Config_Id::SSID, (uint8_t**)&ssid, ssid_len)
+            && GetConfig(Config_Id::SSID_Password, (uint8_t**)&pwd, pwd_len)
+            && GetConfig(Config_Id::Sframe_Key, (uint8_t**)&sframe_key, sframe_key_len)
+            && GetConfig(Config_Id::Moq_Relay_Url, (uint8_t**)&moq_relay_url, moq_relay_url_len));
+    }
+
     bool GetConfig(Config_Id config, uint8_t** buf_ptr, int16_t& len)
     {
         switch (config)
