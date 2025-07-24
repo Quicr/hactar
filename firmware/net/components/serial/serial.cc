@@ -22,8 +22,18 @@ Serial::Serial(const uart_port_t port,
                const uint32_t rx_rings) :
     SerialHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this),
     port(port),
+    uart(uart),
     read_handle(read_handle),
+    uart_config(uart_config),
+    tx_pin(tx_pin),
+    rx_pin(rx_pin),
+    rts_pin(rts_pin),
+    cts_pin(cts_pin),
     uart_task_handle(nullptr)
+{
+}
+
+void Serial::Begin()
 {
     ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(port, tx_pin, rx_pin, rts_pin, cts_pin));

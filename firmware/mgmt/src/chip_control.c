@@ -38,7 +38,7 @@ void UIBootloaderMode()
     HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_RESET);
 
     // Power cycle
-    PowerCycle(UI_NRST_GPIO_Port, UI_NRST_Pin, 10);
+    UIPowerCycle();
 }
 
 void UINormalMode()
@@ -48,7 +48,7 @@ void UINormalMode()
     HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_SET);
 
     // Power cycle
-    PowerCycle(UI_NRST_GPIO_Port, UI_NRST_Pin, 10);
+    UIPowerCycle();
 }
 
 void UIHoldInReset()
@@ -58,6 +58,14 @@ void UIHoldInReset()
     HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_SET);
 
     HAL_GPIO_WritePin(UI_NRST_GPIO_Port, UI_NRST_Pin, GPIO_PIN_RESET);
+}
+
+void UIPowerCycle()
+{
+    ChangeToOutput(UI_NRST_GPIO_Port, UI_NRST_Pin);
+    PowerCycle(UI_NRST_GPIO_Port, UI_NRST_Pin, 10);
+    HAL_GPIO_WritePin(UI_NRST_GPIO_Port, UI_NRST_Pin, GPIO_PIN_RESET);
+    ChangeToInput(UI_NRST_GPIO_Port, UI_NRST_Pin);
 }
 
 void NormalStart()

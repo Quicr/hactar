@@ -27,7 +27,9 @@ upload: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/bootloader/bootloader.bin ${BOOTLOADER_ADDR} verify exit"
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/partition_table/partition-table.bin ${PARITIONS_ADDR} verify exit"
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ./build/net.bin 0x10000 verify exit"
-	python3 ../tools/command_sender.py ${CONSOLE_PORT} 115200 debug
+
+# TODO use my monitor to reset it.
+# python3 ../../software/tools/command_sender.py ${CONSOLE_PORT} 115200 debug
 
 upload_py: compile
 	python3 ../../software/flasher/main.py  --baud=${BAUD} --port=${PORT} --chip="net" -bin=${BUILD_PATH}

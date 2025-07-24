@@ -1,4 +1,5 @@
 #include "peripherals.hh"
+#include "driver/gpio.h"
 #include "net.hh"
 
 extern QueueHandle_t uart_queue;
@@ -29,6 +30,19 @@ void IntitializeLEDs()
     gpio_set_level(NET_LED_R, 1);
     gpio_set_level(NET_LED_G, 1);
     gpio_set_level(NET_LED_B, 1);
+}
+
+void InitializeUIReadyISR(gpio_isr_t isr_handler)
+{
+
+    gpio_config_t io_conf = {.pin_bit_mask = UI_READY_MASK,
+                             .mode = GPIO_MODE_INPUT,
+                             .pull_up_en = GPIO_PULLUP_DISABLE,
+                             .pull_down_en = GPIO_PULLDOWN_DISABLE,
+                             .intr_type = GPIO_INTR_POSEDGE};
+    gpio_config(&io_conf);
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(UI_READY, isr_handler, (void*)UI_READY);
 }
 
 void IntitializePWM()

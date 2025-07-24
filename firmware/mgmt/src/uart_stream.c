@@ -173,6 +173,10 @@ void HandleCommands(uart_stream_t* stream, enum State* state)
         {
             *state = Normal;
         }
+        else if (strcmp((const char*)cmd_buff, (const char*)reset_ui) == 0)
+        {
+            UINormalMode();
+        }
         else if (strcmp((const char*)cmd_buff, (const char*)reset_net) == 0)
         {
             NetNormalMode();

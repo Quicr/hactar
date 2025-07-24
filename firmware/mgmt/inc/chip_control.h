@@ -4,6 +4,7 @@
 void UIBootloaderMode();
 void UINormalMode();
 void UIHoldInReset();
+void UIPowerCycle();
 
 void NetBootloaderMode();
 void NetNormalMode();
