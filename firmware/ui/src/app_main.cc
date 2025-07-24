@@ -228,6 +228,14 @@ int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
 
+    M24C02_EEPROM<256> eeprom(hi2c1, 32);
+    ConfigStorage config_storage(eeprom);
+
+    if (!config_storage.LoadAll())
+    {
+        UI_LOG_INFO("Could not load all configurations");
+    }
+
     if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
     {
         Error("main", "cmox failed to initialise");
@@ -258,25 +266,22 @@ int app_main()
 
     UI_LOG_INFO("Starting main loop");
 
-    M24C02_EEPROM<256> eeprom(hi2c1, 32);
-    ConfigStorage config_storage(eeprom);
+    // // eeprom.Fill(255);
 
-    // eeprom.Fill(255);
+    // // config_storage.SaveConfig(ConfigStorage::Config_Id::SSID, (const uint8_t*)"MySSID", 6);
 
-    // config_storage.SaveConfig(ConfigStorage::Config_Id::SSID, (const uint8_t*)"MySSID", 6);
+    // uint8_t* ssid;
+    // int16_t ssid_len;
+    // bool loaded = config_storage.GetConfig(ConfigStorage::Config_Id::SSID, &ssid, ssid_len);
 
-    uint8_t* ssid;
-    int16_t ssid_len;
-    bool loaded = config_storage.GetConfig(ConfigStorage::Config_Id::SSID, &ssid, ssid_len);
-
-    if (loaded)
-    {
-        UI_LOG_INFO("SSID loaded");
-        for (int i = 0; i < ssid_len; ++i)
-        {
-            UI_LOG_INFO("%c", ssid[i]);
-        }
-    }
+    // if (loaded)
+    // {
+    //     UI_LOG_INFO("SSID loaded");
+    //     for (int i = 0; i < ssid_len; ++i)
+    //     {
+    //         UI_LOG_INFO("%c", ssid[i]);
+    //     }
+    // }
 
     // eeprom.Clear();
     // uint16_t my_num = 1025;
