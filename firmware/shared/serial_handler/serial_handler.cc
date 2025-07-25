@@ -256,7 +256,8 @@ link_packet_t* SerialHandler::TLVRead()
 
     while (total_bytes_read + update_cache < unread)
     {
-        packet->data[bytes_read++] = ReadFromRxBuff();
+        uint8_t byte = ReadFromRxBuff();
+        packet->data[bytes_read++] = byte;
         ++total_bytes_read;
 
         if (bytes_read < link_packet_t::Header_Size)
@@ -264,7 +265,7 @@ link_packet_t* SerialHandler::TLVRead()
             continue;
         }
 
-        if (bytes_read >= packet->length)
+        if (bytes_read >= packet->length + link_packet_t::Header_Size)
         {
             packet = &rx_packets.Write();
             bytes_read = 0;

@@ -2,10 +2,11 @@
 
 #include "app_main.hh"
 #include "font.hh"
+#include "logger.hh"
 #include "m24c02_eeprom.hh"
-#include <array>
 #include <cstring>
 
+// TODO split into header and source files
 class ConfigStorage
 {
 public:
@@ -39,11 +40,50 @@ public:
 
     bool LoadAll()
     {
-        return (
-            GetConfig(Config_Id::SSID, (uint8_t**)&ssid, ssid_len)
-            && GetConfig(Config_Id::SSID_Password, (uint8_t**)&pwd, pwd_len)
-            && GetConfig(Config_Id::Sframe_Key, (uint8_t**)&sframe_key, sframe_key_len)
-            && GetConfig(Config_Id::Moq_Relay_Url, (uint8_t**)&moq_relay_url, moq_relay_url_len));
+        bool ret;
+        bool loaded;
+        if (loaded = GetConfig(Config_Id::SSID, (uint8_t**)&ssid, ssid_len))
+        {
+            UI_LOG_INFO("Loaded SSID");
+        }
+        else
+        {
+            UI_LOG_WARN("Failed to load SSID");
+        }
+        ret = ret && loaded;
+
+        if (loaded = GetConfig(Config_Id::SSID_Password, (uint8_t**)&pwd, pwd_len))
+        {
+            UI_LOG_INFO("Loaded SSID Password");
+        }
+        else
+        {
+            UI_LOG_WARN("Failed to load SSID Password");
+        }
+        ret = ret && loaded;
+
+        if (loaded = GetConfig(Config_Id::Sframe_Key, (uint8_t**)&sframe_key, sframe_key_len))
+        {
+            UI_LOG_INFO("Loaded SFrame Key");
+        }
+        else
+        {
+            UI_LOG_WARN("Failed to load SFrame Key");
+        }
+        ret = ret && loaded;
+
+        if (loaded =
+                GetConfig(Config_Id::Moq_Relay_Url, (uint8_t**)&moq_relay_url, moq_relay_url_len))
+        {
+            UI_LOG_INFO("Loaded Moq Relay URL");
+        }
+        else
+        {
+            UI_LOG_WARN("Failed to load Moq Relay URL");
+        }
+        ret = ret && loaded;
+
+        return ret;
     }
 
     bool GetConfig(Config_Id config, uint8_t** buf_ptr, int16_t& len)

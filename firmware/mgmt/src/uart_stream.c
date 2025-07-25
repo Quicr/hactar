@@ -1,8 +1,8 @@
 #include "uart_stream.h"
+#include "app_mgmt.h"
 #include "chip_control.h"
 #include "main.h"
-
-#define COMMAND_BUFF_SZ 32
+#include "ui_mgmt_link.h"
 
 static uint8_t quiet = 0;
 
@@ -65,6 +65,15 @@ void HandleTx(uart_stream_t* stream, enum State* state)
     }
     case (Ignore):
     {
+        break;
+    }
+    case Configuration:
+    {
+        if (stream->tx.uart->gState != HAL_UART_STATE_READY && !stream->tx.free)
+        {
+            return;
+        }
+        HandleConfiguration(stream, state);
         break;
     }
     default:
@@ -181,6 +190,12 @@ void HandleCommands(uart_stream_t* stream, enum State* state)
         {
             NetNormalMode();
         }
+        else if (strcmp((const char*)cmd_buff, (const char*)configure) == 0)
+        {
+            HAL_UART_Transmit(stream->rx.uart, (const uint8_t*)"Configuration Mode\n", 19,
+                              HAL_MAX_DELAY);
+            *state = Configator;
+        }
         else if (strcmp((const char*)cmd_buff, (const char*)HELLO) == 0)
         {
             quiet = 1;
@@ -196,6 +211,152 @@ void HandleCommands(uart_stream_t* stream, enum State* state)
         for (uint16_t i = 0; i < idx; ++i)
         {
             cmd_buff[i] = 0;
+        }
+        last_update = HAL_GetTick();
+        idx = 0;
+        ready = 0;
+    }
+}
+
+void HandleConfiguration(uart_stream_t* stream, enum State* state)
+{
+    static uint8_t ready = 0;
+    static uint8_t config_buff[CONFIGURATOR_BUFF_SZ] = {0};
+    static uint16_t idx = 0;
+    static uint32_t last_update = 0;
+
+    // I don't care about performance as much in this function as
+    // commands should be pretty short.
+    while (stream->tx.unsent > 0)
+    {
+        if (stream->tx.read >= stream->tx.size)
+        {
+            stream->tx.read = 0;
+        }
+
+        if (idx >= CONFIGURATOR_BUFF_SZ)
+        {
+            ready = 1;
+            break;
+        }
+
+        const uint8_t ch = stream->tx.buff[stream->tx.read++];
+        --stream->tx.unsent;
+        if (ch)
+        {
+            config_buff[idx++] = ch;
+            last_update = HAL_GetTick();
+        }
+        else
+        {
+            if (idx > 0)
+            {
+                ready = 1;
+            }
+            break;
+        }
+    }
+
+    if (idx > 0 && (ready || HAL_GetTick() - last_update >= COMMAND_TIMEOUT))
+    {
+        uint8_t type = Config_Type_Not_Found;
+        size_t config_type_len = 0;
+
+        // Find the next word
+        char* next_word = strstr((const char*)(config_buff + config_type_len), " ");
+
+        if (next_word != NULL)
+        {
+            // Null terminate the space so the strcmp can work.
+            *next_word = '\0';
+        }
+
+        if (strcmp((const char*)config_buff, (const char*)quit_config) == 0)
+        {
+            HAL_UART_Transmit(stream->rx.uart, (const uint8_t*)"Leaving configuration mode\n", 27,
+                              HAL_MAX_DELAY);
+            *state = default_state;
+            goto cleanup;
+        }
+        else if (strcmp((const char*)config_buff, (const char*)set_ssid) == 0)
+        {
+            type = Set_Ssid;
+            config_type_len = strlen(set_ssid);
+        }
+        else if (strcmp((const char*)config_buff, (const char*)set_pwd) == 0)
+        {
+            type = Set_Pwd;
+            config_type_len = strlen(set_pwd);
+        }
+        else if (strcmp((const char*)config_buff, (const char*)set_moq_url) == 0)
+        {
+            type = Set_Moq_Url;
+            config_type_len = strlen(set_moq_url);
+        }
+        else if (strcmp((const char*)config_buff, (const char*)set_sframe_key) == 0)
+        {
+            type = Set_Sframe_Key;
+            config_type_len = strlen(set_sframe_key);
+        }
+
+        if (type == Config_Type_Not_Found)
+        {
+            HAL_UART_Transmit(stream->rx.uart,
+                              (const uint8_t*)"ERROR! Invalid configuration type\n", 35,
+                              HAL_MAX_DELAY);
+            goto cleanup;
+        }
+
+        if (next_word == NULL)
+        {
+            // TODO send back a NACK of sort sort to the USB
+            HAL_UART_Transmit(stream->rx.uart,
+                              (const uint8_t*)"ERROR! Missing argument after command\n", 38,
+                              HAL_MAX_DELAY);
+            ;
+            goto cleanup;
+        }
+
+        uint32_t len;
+        // Skip the space
+        for (len = config_type_len + 1; len < CONFIGURATOR_BUFF_SZ; ++len)
+        {
+            if (config_buff[len] == '\0')
+            {
+                break;
+            }
+        }
+
+        if (config_buff[len] != '\0')
+        {
+            HAL_UART_Transmit(stream->rx.uart,
+                              (const uint8_t*)"ERROR! missing null termination for argument\n", 45,
+                              HAL_MAX_DELAY);
+            goto cleanup;
+        }
+
+        len -= (config_type_len + 1);
+
+        if (len == 0)
+        {
+            HAL_UART_Transmit(stream->rx.uart, (const uint8_t*)"ERROR! configration is too short\n",
+                              33, HAL_MAX_DELAY);
+            goto cleanup;
+        }
+
+        HAL_UART_Transmit(stream->rx.uart, (const uint8_t*)"OK!\n", 4, HAL_MAX_DELAY);
+
+        // Send the configuration to the ui chip in blocking mode.
+        HAL_UART_Transmit(stream->tx.uart, (uint8_t*)&type, 1, HAL_MAX_DELAY);
+        HAL_UART_Transmit(stream->tx.uart, (uint8_t*)&len, sizeof(len), HAL_MAX_DELAY);
+        // skip the space +1
+        HAL_UART_Transmit(stream->tx.uart, (const uint8_t*)(next_word + 1), len, HAL_MAX_DELAY);
+
+    cleanup:
+        // Clean up our buff
+        for (uint16_t i = 0; i < idx; ++i)
+        {
+            config_buff[i] = 0;
         }
         last_update = HAL_GetTick();
         idx = 0;
