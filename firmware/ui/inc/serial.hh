@@ -13,7 +13,8 @@ public:
            uint8_t& tx_buff,
            const uint32_t tx_buff_sz,
            uint8_t& rx_buff,
-           const uint32_t rx_buff_sz);
+           const uint32_t rx_buff_sz,
+           const bool use_slip = true);
     ~Serial();
 
     void StartReceive();
