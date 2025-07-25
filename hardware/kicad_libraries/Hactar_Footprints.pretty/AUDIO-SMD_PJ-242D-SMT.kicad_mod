@@ -225,6 +225,17 @@
 		(layer "Cmts.User")
 		(uuid "37ad4b54-a344-414a-a029-62f342e97dfe")
 	)
+	(fp_rect
+		(start -5.6 -3.2)
+		(end 5.3 3.3)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "cf90441c-7f43-4fbe-ad74-063a15c2a8e5")
+	)
 	(fp_line
 		(start -5.4 -2.5)
 		(end -6.9 -2.5)
@@ -279,7 +290,7 @@
 	)
 	(pad "" thru_hole circle
 		(at -2.6 0)
-		(size 1.6 1.6)
+		(size 2 2)
 		(drill 1.6)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
@@ -287,7 +298,7 @@
 	)
 	(pad "" thru_hole circle
 		(at 2.4 0)
-		(size 1.6 1.6)
+		(size 2 2)
 		(drill 1.6)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
