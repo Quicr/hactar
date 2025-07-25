@@ -10,6 +10,7 @@
 #include "screen.hh"
 #include "serial.hh"
 #include "tools.hh"
+#include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 #include <cmox_crypto.h>
 #include <cmox_init.h>
@@ -28,8 +29,8 @@ inline void HandleAiResponse(link_packet_t* packet);
 inline void HandleKeypress();
 inline bool TryProtect(link_packet_t* link_packet);
 inline bool TryUnprotect(link_packet_t* link_packet);
+inline void HandleMgmtLinkPackets(ConfigStorage& storage);
 
-constexpr const char* mls_key = "sixteen byte key";
 sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
 uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
 
@@ -156,14 +157,27 @@ static constexpr uint16_t net_ui_serial_rx_buff_sz = 2048;
 uint8_t net_ui_serial_rx_buff[net_ui_serial_rx_buff_sz] = {0};
 static constexpr uint16_t net_ui_serial_num_rx_packets = 7;
 
+static constexpr uint16_t mgmt_ui_serial_tx_buff_sz = 128;
+uint8_t mgmt_ui_serial_tx_buff[mgmt_ui_serial_tx_buff_sz] = {0};
+static constexpr uint16_t mgmt_ui_serial_rx_buff_sz = 128;
+uint8_t mgmt_ui_serial_rx_buff[mgmt_ui_serial_rx_buff_sz] = {0};
+static constexpr uint16_t mgmt_ui_serial_num_rx_packets = 1;
+
 static AudioChip audio_chip(hi2s3, hi2c1);
 
-static Serial serial(&huart2,
-                     net_ui_serial_num_rx_packets,
-                     *net_ui_serial_tx_buff,
-                     net_ui_serial_tx_buff_sz,
-                     *net_ui_serial_rx_buff,
-                     net_ui_serial_rx_buff_sz);
+static Serial net_serial(&huart2,
+                         net_ui_serial_num_rx_packets,
+                         *net_ui_serial_tx_buff,
+                         net_ui_serial_tx_buff_sz,
+                         *net_ui_serial_rx_buff,
+                         net_ui_serial_rx_buff_sz);
+static Serial mgmt_serial(&huart1,
+                          mgmt_ui_serial_num_rx_packets,
+                          *mgmt_ui_serial_tx_buff,
+                          mgmt_ui_serial_tx_buff_sz,
+                          *mgmt_ui_serial_rx_buff,
+                          mgmt_ui_serial_rx_buff_sz,
+                          false);
 
 Screen screen(hspi1,
               DISP_CS_GPIO_Port,
@@ -241,16 +255,40 @@ int app_main()
         Error("main", "cmox failed to initialise");
     }
 
-    mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(&mls_key[0]), 16});
+    {
+        // Get the mls key
+        uint8_t mls_key[16];
+        int16_t len;
+        if (config_storage.GetConfig(ConfigStorage::Config_Id::Sframe_Key, (uint8_t**)(&mls_key),
+                                     len))
+        {
+            if (len != 16)
+            {
+                Error("Initialize crypto", "MLS key length is not 16 bytes");
+            }
+            UI_LOG_INFO("Using stored MLS key!");
+            mls_ctx.add_epoch(0,
+                              sframe::input_bytes{reinterpret_cast<const uint8_t*>(mls_key), len});
+        }
+        else
+        {
+            UI_LOG_WARN("No MLS key stored, using default");
+            constexpr const char* mls_key = "sixteen byte key";
+            mls_ctx.add_epoch(0,
+                              sframe::input_bytes{reinterpret_cast<const uint8_t*>(mls_key), 16});
+        }
+    }
 
     Renderer renderer(screen, keyboard);
 
     audio_chip.Init();
-    // audio_chip.StartI2S();
+    audio_chip.StartI2S();
+    CountNumAudioInterrupts(audio_chip, sleeping);
+
     InitScreen();
-    LEDS(LOW, LOW, LOW);
-    serial.StartReceive();
     LEDS(HIGH, HIGH, HIGH);
+    net_serial.StartReceive();
+    mgmt_serial.StartReceive();
 
     uint32_t redraw = uwTick;
 
@@ -258,7 +296,6 @@ int app_main()
     uint32_t next_print = 0;
 
     // Test in case the audio chip settings change and something looks suspicious
-    // CountNumAudioInterrupts(audio_chip, sleeping);
 
     // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
@@ -331,7 +368,8 @@ int app_main()
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
-        HandleRecvLinkPackets();
+        HandleNetLinkPackets();
+        HandleMgmtLinkPackets(config_storage);
 
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
@@ -403,12 +441,12 @@ inline void CheckFlags()
     }
 }
 
-void HandleRecvLinkPackets()
+void HandleNetLinkPackets()
 {
     // If there are bytes available read them
     while (true)
     {
-        link_packet = serial.Read();
+        link_packet = net_serial.Read();
         if (!link_packet)
         {
             return;
@@ -497,6 +535,79 @@ void HandleRecvLinkPackets()
     }
 }
 
+void HandleMgmtLinkPackets(ConfigStorage& storage)
+{
+    while (true)
+    {
+        link_packet = mgmt_serial.Read();
+        if (!link_packet)
+        {
+            break;
+        }
+
+        switch (link_packet->type)
+        {
+        case Configuration_Type::Set_Ssid:
+        {
+            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID, link_packet->payload,
+                                    link_packet->length))
+            {
+                UI_LOG_ERROR("ERR. Failed to save SSID configuration");
+            }
+            else
+            {
+                UI_LOG_INFO("OK! Saved SSID configuration");
+            }
+            break;
+        }
+        case Configuration_Type::Set_Pwd:
+        {
+            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_Password, link_packet->payload,
+                                    link_packet->length))
+            {
+                UI_LOG_ERROR("ERR. Failed to save SSID password configuration");
+            }
+            else
+            {
+                UI_LOG_INFO("OK! Saved SSID password configuration");
+            }
+            break;
+        }
+        case Configuration_Type::Set_Moq_Url:
+        {
+            if (!storage.SaveConfig(ConfigStorage::Config_Id::Moq_Relay_Url, link_packet->payload,
+                                    link_packet->length))
+            {
+                UI_LOG_ERROR("ERR. Failed to save MoQ Relay Url configuration");
+            }
+            else
+            {
+                UI_LOG_INFO("OK! Saved MoQ Relay Url configuration");
+            }
+            break;
+        }
+        case Configuration_Type::Set_Sframe_Key:
+        {
+            if (!storage.SaveConfig(ConfigStorage::Config_Id::Sframe_Key, link_packet->payload,
+                                    link_packet->length))
+            {
+                UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
+            }
+            else
+            {
+                UI_LOG_INFO("OK! Saved SFrame Key configuration");
+            }
+            break;
+        }
+        default:
+        {
+            UI_LOG_ERROR("ERR. No handler for received packet type");
+            break;
+        }
+        }
+    }
+}
+
 // inline void ProcessText(uint16_t len)
 // {
 //     // Get the room
@@ -557,7 +668,7 @@ void CheckPTT()
         // TODO channel id
         ui_net_link::TalkStart talk_start = {.channel_id = ui_net_link::Channel_Id::Ptt};
         ui_net_link::Serialize(talk_start, message_packet);
-        serial.Write(message_packet);
+        net_serial.Write(message_packet);
         ptt_down = true;
         LedGOn();
     }
@@ -565,7 +676,7 @@ void CheckPTT()
     {
         ui_net_link::TalkStop talk_stop = {.channel_id = ui_net_link::Channel_Id::Ptt};
         ui_net_link::Serialize(talk_stop, message_packet);
-        serial.Write(message_packet);
+        net_serial.Write(message_packet);
         ptt_down = false;
         SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::PttObject, true);
         LedGOff();
@@ -586,7 +697,7 @@ void CheckPTTAI()
         // TODO channel id
         ui_net_link::TalkStart talk_start = {.channel_id = ui_net_link::Channel_Id::Ptt_Ai};
         ui_net_link::Serialize(talk_start, message_packet);
-        serial.Write(message_packet);
+        net_serial.Write(message_packet);
         ptt_ai_down = true;
         LedBOn();
     }
@@ -595,7 +706,7 @@ void CheckPTTAI()
     {
         ui_net_link::TalkStart talk_stop = {.channel_id = ui_net_link::Channel_Id::Ptt_Ai};
         ui_net_link::Serialize(talk_stop, message_packet);
-        serial.Write(message_packet);
+        net_serial.Write(message_packet);
         ptt_ai_down = false;
         SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::PttAiObject, true);
         LedBOff();
@@ -624,7 +735,7 @@ void SendAudio(const ui_net_link::Channel_Id channel_id,
     }
 
     // LedRToggle();
-    serial.Write(message_packet);
+    net_serial.Write(message_packet);
     ++num_packets_tx;
 }
 
@@ -643,7 +754,7 @@ void HandleAiResponse(link_packet_t* packet)
     if (response->chunk_data[0] == '{' && response->chunk_data[response->chunk_length - 1] == '}')
     {
         UI_LOG_INFO("IS JSON");
-        serial.Write(*packet);
+        net_serial.Write(*packet);
     }
     else
     {
@@ -674,7 +785,7 @@ void HandleKeypress()
             }
 
             UI_LOG_INFO("Transmit text message");
-            serial.Write(message_packet);
+            net_serial.Write(message_packet);
             ++num_packets_tx;
             screen.ClearUserText();
             break;
@@ -727,35 +838,39 @@ catch (const std::exception& e)
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     // UI_LOG_ERROR("rx %u", size);
-    if (huart->Instance == Serial::UART(&serial)->Instance)
+    if (huart->Instance == Serial::UART(&net_serial)->Instance)
     {
-        Serial::RxISR(&serial, size);
+        Serial::RxISR(&net_serial, size);
+    }
+    else if (huart->Instance == Serial::UART(&mgmt_serial)->Instance)
+    {
+        Serial::RxISR(&mgmt_serial, size);
     }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == Serial::UART(&serial)->Instance)
+    if (huart->Instance == Serial::UART(&net_serial)->Instance)
     {
-        Serial::TxISR(&serial);
+        Serial::TxISR(&net_serial);
         RaiseFlag(Rx_Audio_Transmitted);
     }
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == Serial::UART(&serial)->Instance)
+    if (huart->Instance == Serial::UART(&net_serial)->Instance)
     {
-        serial.Stop();
-        serial.StartReceive();
+        net_serial.Stop();
+        net_serial.StartReceive();
     }
 }
 
 void HAL_UART_AbortReceiveCpltCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == Serial::UART(&serial)->Instance)
+    if (huart->Instance == Serial::UART(&net_serial)->Instance)
     {
-        serial.StartReceive();
+        net_serial.StartReceive();
     }
 }
 
@@ -813,7 +928,7 @@ inline void Error(const char* who, const char* why)
     // Disable interrupts
     UI_LOG_ERROR("Error has occurred; who: %s; why: %s", who, why);
     audio_chip.StopI2S();
-    serial.Stop();
+    net_serial.Stop();
 
     HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, HIGH);
     HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, HIGH);
@@ -840,7 +955,7 @@ void SlowSendTest(int delay, int num)
     while (i++ != num)
     {
         HAL_Delay(delay);
-        serial.Write(packet);
+        net_serial.Write(packet);
     }
 }
 
@@ -872,13 +987,13 @@ void InterHactarSerialRoundTripTest(int delay, int num)
     while (true)
     {
         start = HAL_GetTick();
-        serial.Write(tmp);
+        net_serial.Write(tmp);
         err_timeout = HAL_GetTick() + 1000;
         HAL_Delay(delay);
 
         while (true)
         {
-            recv = serial.Read();
+            recv = net_serial.Read();
             if (recv != nullptr)
             {
                 if (HAL_GetTick() > err_timeout)
@@ -948,7 +1063,7 @@ void InterHactarFullRoundTripTest(int delay, int num)
 
     for (int i = 0; i < 20; ++i)
     {
-        serial.Write(tmp);
+        net_serial.Write(tmp);
         HAL_Delay(delay);
     }
     UI_LOG_WARN("Sent");
@@ -963,11 +1078,11 @@ void InterHactarFullRoundTripTest(int delay, int num)
     while (true)
     {
         HAL_Delay(delay);
-        serial.Write(tmp);
+        net_serial.Write(tmp);
         uint32_t start = HAL_GetTick();
         while (true)
         {
-            recv = serial.Read();
+            recv = net_serial.Read();
             if (recv != nullptr)
             {
                 break;
@@ -1003,7 +1118,8 @@ void InterHactarFullRoundTripTest(int delay, int num)
 void DumpRxBuff()
 {
     char dmp[256];
-    UI_LOG_INFO("rx w idx %u, rx r idx %u", serial.RxBuffWriteIdx(), serial.RxBuffReadIdx());
+    UI_LOG_INFO("rx w idx %u, rx r idx %u", net_serial.RxBuffWriteIdx(),
+                net_serial.RxBuffReadIdx());
     // Dump the rx buff slowly
     for (int i = 0; i < net_ui_serial_rx_buff_sz; ++i)
     {
@@ -1045,7 +1161,7 @@ void FakeChangeChannelPacket()
         packet.payload[i] = fake_data[i];
     }
 
-    serial.Write(packet);
+    net_serial.Write(packet);
 }
 
 void LedROn()

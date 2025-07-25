@@ -11,7 +11,8 @@ enum State
     Debug,
     UI_Debug,
     Net_Debug,
-    Loopback
+    Loopback,
+    Configator
 };
 
 #endif
