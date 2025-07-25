@@ -13,6 +13,8 @@ running = False
 uart = None
 rx_thread = None
 
+dump_file = None
+
 
 def FindHactar(uart_config):
     HELLO = bytes("WHO ARE YOU?\0", "utf-8")
@@ -58,16 +60,15 @@ def FindHactar(uart_config):
 
 def ReadSerial():
     global uart
+    global dump_file
     has_received = False
     erase = "\x1b[1A\x1b[2K"
     while running:
         try:
             if uart.in_waiting:
                 data = uart.readline().decode()
-                # if (dump):
-                #     with open(dump_file, "a") as my_file:
-                #         my_file.write(data);
-                # print(data)
+                if dump_file:
+                    dump_file.write(data)
                 print("\r\033[0m" + erase + data, end="")
                 print("\033[1m\033[92mEnter a command:\033[0m")
             else:
@@ -111,6 +112,7 @@ def main():
         global rx_thread
         global running
         global uart
+        global dump_file
 
         parser = argparse.ArgumentParser()
 
@@ -131,6 +133,8 @@ def main():
             required=False,
         )
 
+        parser.add_argument("--dump_file", help="Dump file of incoming logs", default=None, type=str, required=False)
+
         args = parser.parse_args()
 
         uart_args = {
@@ -140,6 +144,9 @@ def main():
             "stopbits": serial.STOPBITS_ONE,
             "timeout": 0.5,
         }
+
+        if args.dump_file:
+            dump_file = open(args.dump_file, "a")
 
         port = args.port
         if port == "":
