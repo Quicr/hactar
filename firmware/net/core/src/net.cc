@@ -38,6 +38,7 @@ bool loopback = false;
 
 std::vector<std::shared_ptr<moq::TrackReader>> readers;
 std::vector<std::shared_ptr<moq::TrackWriter>> writers;
+
 std::shared_ptr<moq::Session> moq_session;
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 
@@ -89,7 +90,7 @@ uint64_t last_audio_isr_time = esp_timer_get_time();
 #if __has_include("wifi_creds.hh")
 #include "wifi_creds.hh"
 #else
-#warning "wifi_creds.hh not found!!
+#warning "wifi_creds.hh not found!!"
 #endif
 #else
 #include "wifi_creds.hh"
@@ -99,7 +100,7 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
     int gpio_num = (int)arg;
 
-    if (gpio_num == NET_STAT)
+    if (gpio_num == UI_READY)
     {
         last_audio_isr_time = curr_audio_isr_time;
         curr_audio_isr_time = esp_timer_get_time();
@@ -143,29 +144,59 @@ static void LinkPacketTask(void* args)
             case ui_net_link::Packet_Type::TalkStop:
                 talk_stopped = true;
                 break;
+            case ui_net_link::Packet_Type::AiResponse:
+            {
+                NET_LOG_INFO("got ai response from ui");
+                // Check if json for sure
+                uint8_t channel_id = packet->payload[0];
+                auto* response = static_cast<ui_net_link::AIResponseChunk*>(
+                    static_cast<void*>(packet->payload + 1));
+
+                if (!json::accept(response->chunk_data))
+                {
+                    NET_LOG_ERROR("Received invalid json");
+                    break;
+                }
+
+                json change_channel = json::parse(response->chunk_data);
+                NET_LOG_INFO("start track write for new channel");
+                if (auto writer = CreateWriteTrack(change_channel))
+                {
+                    writer->Start();
+                }
+
+                NET_LOG_INFO("start track read for new channel");
+                if (auto reader = CreateReadTrack(change_channel, ui_layer))
+                {
+                    reader->Start();
+                }
+                break;
+            }
             case ui_net_link::Packet_Type::TextMessage:
                 NET_LOG_INFO("Got text message");
                 [[fallthrough]];
-            case ui_net_link::Packet_Type::PttAIObject:
+            case ui_net_link::Packet_Type::PttAiObject:
                 [[fallthrough]];
             case ui_net_link::Packet_Type::PttMultiObject:
                 [[fallthrough]];
             case ui_net_link::Packet_Type::PttObject:
             {
-                // Channel id
+                // Channel id is always zero, so, gotta fix that.
+                uint8_t channel_id = packet->payload[0];
                 uint32_t ext_bytes = 1;
                 uint32_t length = packet->length;
-
-                // oof lol.
-                uint8_t channel_id = packet->payload[0];
 
                 // Remove the bytes already read from the payload length
                 length -= ext_bytes;
 
-                // NET_LOG_INFO("chid %d", (int)channel_id);
-                // If the publisher is not ready just ignore the link packet
-                std::shared_ptr<moq::TrackWriter> writer = moq_session->Writer(channel_id);
-                writer->PushObject(packet->payload + 1, length, curr_audio_isr_time);
+                if (channel_id < (uint8_t)ui_net_link::Channel_Id::Count - 1)
+                {
+                    if (auto& writer = writers[channel_id])
+                    {
+                        writers[channel_id]->PushObject(packet->payload + 1, length,
+                                                        curr_audio_isr_time);
+                    }
+                }
 
                 // TODO use notifies, currently it doesn't notify fast enough?
                 // xTaskNotifyGive(rtos_pub_handle);
@@ -190,53 +221,108 @@ static void LinkPacketTask(void* args)
 std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial)
 try
 {
-    // TODO something with channel name, like transmitting it to ui
-    // std::string channel_name = subscription.at("channel_name").get<std::string>();
-
-    // TODO transmit to the ui chip probably
-    // std::string lang = subscription.at("language").get<std::string>();
-
     std::vector<std::string> track_namespace =
         subscription.at("tracknamespace").get<std::vector<std::string>>();
     std::string trackname = subscription.at("trackname").get<std::string>();
 
-    if (trackname == "")
+    std::string codec = subscription.at("codec").get<std::string>();
+    std::string channel_name = subscription.at("channel_name").get<std::string>();
+
+    uint32_t offset = 0;
+    if (codec == "pcm")
     {
-        trackname = std::to_string(device_id);
+        if (channel_name == "self_ai_audio")
+        {
+            offset = (uint32_t)ui_net_link::Channel_Id::Ptt_Ai;
+        }
+        else
+        {
+            offset = (uint32_t)ui_net_link::Channel_Id::Ptt;
+        }
+    }
+    else if (codec == "ascii")
+    {
+        offset = (uint32_t)ui_net_link::Channel_Id::Chat;
+    }
+    else if (codec == "ai_cmd_response:json")
+    {
+        offset = (uint32_t)ui_net_link::Channel_Id::Chat_Ai;
+    }
+    else
+    {
+        // do nothing with the reader if we don't know it.
+        NET_LOG_ERROR("Unknown reader channel %s", codec.c_str());
+        return nullptr;
     }
 
-    std::string codec = subscription.at("codec").get<std::string>();
-    ESP_LOGE("sub", "%s", codec.c_str());
+    std::unique_lock<std::mutex> lock = moq_session->GetReaderLock();
+    if (readers[offset] != nullptr)
+    {
+        NET_LOG_WARN("Reader on %d already exists", offset);
+        readers[offset]->Stop();
+        moq_session->UnsubscribeTrack(readers[offset]);
+    }
 
-    return std::make_shared<moq::TrackReader>(moq::MakeFullTrackName(track_namespace, trackname),
-                                              serial, codec);
+    NET_LOG_WARN("Create reader %s:%s idx %d", channel_name.c_str(), codec.c_str(), offset);
+    readers[offset].reset(
+        new moq::TrackReader(moq::MakeFullTrackName(track_namespace, trackname), serial, codec));
+
+    lock.unlock();
+    return readers[offset];
 }
 catch (const std::exception& ex)
 {
     ESP_LOGE("sub", "Exception in sub %s", ex.what());
     return nullptr;
 }
+
 std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& publication)
 try
 {
-    // TODO something with channel name, like transmitting it to ui
-    // std::string channel_name = publication.at("channel_name").get<std::string>();
-
-    // TODO transmit to the ui chip probably
-    // std::string lang = publication.at("language").get<std::string>();
-
     std::vector<std::string> track_namespace =
         publication.at("tracknamespace").get<std::vector<std::string>>();
     std::string trackname = publication.at("trackname").get<std::string>();
 
-    // TODO something with this?
-    // std::string codec = publication.at("codec").get<std::string>();
+    std::string codec = publication.at("codec").get<std::string>();
+    std::string channel_name = publication.at("channel_name").get<std::string>();
 
-    // uint64_t sample_rate = publication.at("sample_rate").get<uint64_t>();
-    // std::string channel_config = publication.at("channelConfig").get<std::string>();
+    uint32_t offset = 0;
+    if (codec == "pcm")
+    {
+        if (channel_name == "ai_audio")
+        {
+            offset = (uint32_t)ui_net_link::Channel_Id::Ptt_Ai;
+        }
+        else
+        {
+            offset = (uint32_t)ui_net_link::Channel_Id::Ptt;
+        }
+    }
+    else if (codec == "ascii")
+    {
+        offset = (uint32_t)ui_net_link::Channel_Id::Chat;
+    }
+    else
+    {
+        // do nothing with the writer if we don't know it.
+        NET_LOG_ERROR("Unknown writer channel");
+        return nullptr;
+    }
 
-    return std::make_shared<moq::TrackWriter>(moq::MakeFullTrackName(track_namespace, trackname),
-                                              quicr::TrackMode::kDatagram, 2, 100);
+    std::unique_lock<std::mutex> lock = moq_session->GetWriterLock();
+    if (writers[offset] != nullptr)
+    {
+        NET_LOG_WARN("Writer on %d already exists", offset);
+        writers[offset]->Stop();
+        moq_session->UnpublishTrack(writers[offset]);
+    }
+
+    NET_LOG_WARN("Create writer %s:%s idx %d", channel_name.c_str(), codec.c_str(), offset);
+    writers[offset].reset(new moq::TrackWriter(moq::MakeFullTrackName(track_namespace, trackname),
+                                               quicr::TrackMode::kDatagram, 2, 100));
+
+    lock.unlock();
+    return writers[offset];
 }
 catch (const std::exception& ex)
 {
@@ -266,17 +352,13 @@ extern "C" void app_main(void)
 
     NET_LOG_INFO("Starting Net Main");
 
-    gpio_config_t io_conf = {.pin_bit_mask = NET_STAT_MASK,
-                             .mode = GPIO_MODE_INPUT,
-                             .pull_up_en = GPIO_PULLUP_DISABLE,
-                             .pull_down_en = GPIO_PULLDOWN_DISABLE,
-                             .intr_type = GPIO_INTR_POSEDGE};
-    gpio_config(&io_conf);
-    gpio_install_isr_service(0);
-    gpio_isr_handler_add(NET_STAT, GpioIsrRisingHandler, (void*)NET_STAT);
+    InitializeUIReadyISR(GpioIsrRisingHandler);
 
     InitializeGPIO();
     IntitializeLEDs();
+    CreateLinkPacketTask();
+
+    ui_layer.Begin();
 
     wifi.Begin();
 
@@ -307,26 +389,29 @@ extern "C" void app_main(void)
 
     NET_LOG_ERROR("mac addr %llu", mac);
 
-    moq_session.reset(new moq::Session(config));
+    moq_session.reset(new moq::Session(config, readers, writers));
 
     PrintRAM();
 
     NET_LOG_INFO("Components ready");
 
     json subscriptions = default_channel_json.at("subscriptions");
+    readers.resize((uint32_t)ui_net_link::Channel_Id::Count);
+    NET_LOG_ERROR("Readers size %d", readers.size());
     for (int i = 0; i < subscriptions.size(); ++i)
     {
-        // NOTE- I am not doing all of the subs because I don't want text rn
-        readers.emplace_back(CreateReadTrack(subscriptions[i], ui_layer));
+        CreateReadTrack(subscriptions[i], ui_layer);
     }
+    NET_LOG_ERROR("Readers size %d", readers.size());
 
     json publications = default_channel_json.at("publications");
+    // Kinda odd, but we only have 3 writers.
+    writers.resize((uint32_t)ui_net_link::Channel_Id::Count - 1);
+    NET_LOG_ERROR("Writers size %d", writers.size());
     for (int i = 0; i < publications.size(); ++i)
     {
-        writers.emplace_back(CreateWriteTrack(publications[i]));
+        CreateWriteTrack(publications[i]);
     }
-
-    CreateLinkPacketTask();
 
     int next = 0;
     int64_t heartbeat = 0;
@@ -336,6 +421,7 @@ extern "C" void app_main(void)
     while (true)
     {
         moq::Session::Status status = moq_session->GetStatus();
+
         Wifi::State wifi_state = wifi.GetState();
 
         // TODO cleanup
@@ -361,15 +447,21 @@ extern "C" void app_main(void)
 
                     for (const auto& reader : readers)
                     {
-                        reader->Stop();
+                        if (reader)
+                        {
+                            reader->Stop();
+                        }
                     }
 
                     for (const auto& writer : writers)
                     {
-                        writer->Stop();
+                        if (writer)
+                        {
+                            writer->Stop();
+                        }
                     }
 
-                    moq_session.reset(new moq::Session(config));
+                    moq_session.reset(new moq::Session(config, readers, writers));
                     status = moq_session->GetStatus();
                 }
             }
@@ -393,18 +485,26 @@ extern "C" void app_main(void)
         // TODO move into a different task?
         if (prev_status != status && wifi.IsConnected())
         {
+            NET_LOG_INFO("New moq state %d", (int)status);
             switch (status)
             {
             case moq::Session::Status::kReady:
             {
                 for (const auto& reader : readers)
                 {
-                    reader->Start();
+                    NET_LOG_INFO("Starting reader");
+                    if (reader)
+                    {
+                        reader->Start();
+                    }
                 }
 
                 for (const auto& writer : writers)
                 {
-                    writer->Start();
+                    if (writer)
+                    {
+                        writer->Start();
+                    }
                 }
 
                 // TODO
@@ -417,20 +517,24 @@ extern "C" void app_main(void)
             case moq::Session::Status::kFailedToConnect:
                 for (const auto& reader : readers)
                 {
-                    reader->Stop();
+                    if (reader)
+                    {
+                        reader->Stop();
+                    }
                 }
 
                 for (const auto& writer : writers)
                 {
-                    writer->Stop();
+                    if (writer)
+                    {
+                        writer->Stop();
+                    }
                 }
 
-                moq_session.reset(new moq::Session(config));
+                moq_session.reset(new moq::Session(config, readers, writers));
                 [[fallthrough]];
             case moq::Session::Status::kNotReady:
             {
-                moq_session->SetReaders(readers);
-                moq_session->SetWriters(writers);
 
                 NET_LOG_INFO("MOQ Transport Calling Connect");
 
@@ -445,6 +549,7 @@ extern "C" void app_main(void)
             default:
             {
                 // TODO the rest
+                NET_LOG_INFO("No handler for this moq state");
                 break;
             }
             }
@@ -469,7 +574,7 @@ void SetupComponents(const DeviceSetupConfig& config)
 
 bool CreateLinkPacketTask()
 {
-    constexpr size_t stack_size = 4096;
+    constexpr size_t stack_size = 8092 * 2;
     serial_read_stack =
         (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
     if (serial_read_stack == NULL)

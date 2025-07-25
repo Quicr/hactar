@@ -61,6 +61,7 @@ void SlowSendTest(int delay, int num);
 void InterHactarSerialRoundTripTest(int delay, int num);
 void InterHactarFullRoundTripTest(int delay, int num);
 void DumpRxBuff();
+void FakeChangeChannelPacket();
 
 inline void LedROn();
 inline void LedROff();

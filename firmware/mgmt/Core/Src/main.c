@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2024 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2024 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -114,13 +114,13 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  return app_main();
-  while (1)
-  {
+    return app_main();
+    while (1)
+    {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+    }
   /* USER CODE END 3 */
 }
 
@@ -352,52 +352,54 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, NET_STAT_Pin|LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin
+  HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin|MGMT_DEBUG_1_Pin|LEDA_G_Pin|LEDA_B_Pin
                           |UI_BOOT0_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_NRST_Pin
-                          |NET_NRST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LEDB_R_Pin|MGMT_DEBUG_2_Pin|LEDB_B_Pin|UI_NRST_Pin
+                          |NET_NRST_Pin|NET_BOOT_Pin|LEDB_G_Pin|UI_BOOT1_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : UI_STAT_Pin */
-  GPIO_InitStruct.Pin = UI_STAT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  /*Configure GPIO pins : USB_CC2_DETECT_Pin USB_CC1_DETECT_Pin */
+  GPIO_InitStruct.Pin = USB_CC2_DETECT_Pin|USB_CC1_DETECT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(UI_STAT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : NET_STAT_Pin */
-  GPIO_InitStruct.Pin = NET_STAT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pins : CTS_NOT_NEEDED_Pin RTS_NOT_NEEDED_Pin MISTAKE_Pin MISTAKEA12_Pin */
+  GPIO_InitStruct.Pin = CTS_NOT_NEEDED_Pin|RTS_NOT_NEEDED_Pin|MISTAKE_Pin|MISTAKEA12_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(NET_STAT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDA_R_Pin LEDA_G_Pin LEDA_B_Pin UI_BOOT0_Pin */
-  GPIO_InitStruct.Pin = LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin|UI_BOOT0_Pin;
+  /*Configure GPIO pins : LEDA_R_Pin MGMT_DEBUG_1_Pin LEDA_G_Pin LEDA_B_Pin
+                           UI_BOOT0_Pin */
+  GPIO_InitStruct.Pin = LEDA_R_Pin|MGMT_DEBUG_1_Pin|LEDA_G_Pin|LEDA_B_Pin
+                          |UI_BOOT0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDB_R_Pin LEDB_G_Pin LEDB_B_Pin UI_NRST_Pin
-                           NET_NRST_Pin NET_BOOT_Pin UI_BOOT1_Pin */
-  GPIO_InitStruct.Pin = LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_NRST_Pin
-                          |NET_NRST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin;
+  /*Configure GPIO pins : LEDB_R_Pin MGMT_DEBUG_2_Pin LEDB_B_Pin UI_NRST_Pin
+                           NET_NRST_Pin NET_BOOT_Pin LEDB_G_Pin UI_BOOT1_Pin */
+  GPIO_InitStruct.Pin = LEDB_R_Pin|MGMT_DEBUG_2_Pin|LEDB_B_Pin|UI_NRST_Pin
+                          |NET_NRST_Pin|NET_BOOT_Pin|LEDB_G_Pin|UI_BOOT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : USB_DTR_Pin */
-  GPIO_InitStruct.Pin = USB_DTR_Pin;
+  /*Configure GPIO pins : USB_DTR_MGMT_Pin NET_STAT_Pin UI_STAT_Pin */
+  GPIO_InitStruct.Pin = USB_DTR_MGMT_Pin|NET_STAT_Pin|UI_STAT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(USB_DTR_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : MCLK_Pin */
   GPIO_InitStruct.Pin = MCLK_Pin;
@@ -406,10 +408,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
   HAL_GPIO_Init(MCLK_GPIO_Port, &GPIO_InitStruct);
-
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   /* USER CODE END MX_GPIO_Init_2 */
@@ -427,24 +425,24 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
     // Set LEDS for ui
-  HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
 
-  // Set LEDS for net
-  HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
-  uint32_t blink_r = 0;
-  while (1)
-  {
-    if (HAL_GetTick() > blink_r)
+    // Set LEDS for net
+    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
+    uint32_t blink_r = 0;
+    while (1)
     {
-      HAL_GPIO_TogglePin(LEDA_R_GPIO_Port, LEDA_R_Pin);
-      HAL_GPIO_TogglePin(LEDB_R_GPIO_Port, LEDB_R_Pin);
-      blink_r = HAL_GetTick() + 200;
+        if (HAL_GetTick() > blink_r)
+        {
+            HAL_GPIO_TogglePin(LEDA_R_GPIO_Port, LEDA_R_Pin);
+            HAL_GPIO_TogglePin(LEDB_R_GPIO_Port, LEDB_R_Pin);
+            blink_r = HAL_GetTick() + 200;
+        }
     }
-  }
   /* USER CODE END Error_Handler_Debug */
 }
 
@@ -459,8 +457,8 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+    /* User can add his own implementation to report the file name and line number,
+       ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
