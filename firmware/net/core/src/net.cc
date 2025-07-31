@@ -34,7 +34,7 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = false;
+bool loopback = true;
 
 std::vector<std::shared_ptr<moq::TrackReader>> readers;
 std::vector<std::shared_ptr<moq::TrackWriter>> writers;
@@ -100,7 +100,7 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
     int gpio_num = (int)arg;
 
-    if (gpio_num == UI_READY)
+    if (gpio_num == NET_STAT)
     {
         last_audio_isr_time = curr_audio_isr_time;
         curr_audio_isr_time = esp_timer_get_time();

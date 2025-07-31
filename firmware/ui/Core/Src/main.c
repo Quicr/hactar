@@ -53,7 +53,6 @@ DMA_HandleTypeDef hdma_i2s3_ext_rx;
 RNG_HandleTypeDef hrng;
 
 SPI_HandleTypeDef hspi1;
-DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
 
 TIM_HandleTypeDef htim2;
@@ -233,7 +232,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_14;
+  sConfig.Channel = ADC_CHANNEL_12;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -384,7 +383,7 @@ static void MX_SPI1_Init(void)
   /* SPI1 parameter configuration*/
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.Direction = SPI_DIRECTION_1LINE;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
@@ -587,9 +586,6 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream7_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
-  /* DMA2_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
   /* DMA2_Stream3_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
@@ -618,27 +614,21 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, DISP_RST_Pin|DISP_BL_Pin|UI_DEBUG_1_Pin|UI_READY_Pin
-                          |UI_LED_G_Pin|KB_COL3_Pin|KB_COL4_Pin|KB_COL5_Pin
-                          |UI_STAT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, DISP_RST_Pin|DISP_BL_Pin|UI_LED_G_Pin|KB_COL3_Pin
+                          |KB_COL4_Pin|KB_COL5_Pin|UI_STAT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, UI_LED_B_Pin|UI_DEBUG_3_Pin|UI_LED_R_Pin|UI_DEBUG_1_Pin
+                          |UI_DEBUG_2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, KB_COL1_Pin|KB_COL2_Pin|UI_LED_B_Pin|DISP_CS_Pin
+  HAL_GPIO_WritePin(GPIOB, KB_LED_Pin|KB_COL1_Pin|KB_COL2_Pin|DISP_CS_Pin
                           |DISP_DC_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(UI_DEBUG_2_GPIO_Port, UI_DEBUG_2_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pins : DISP_RST_Pin DISP_BL_Pin UI_DEBUG_1_Pin UI_READY_Pin
-                           UI_LED_G_Pin */
-  GPIO_InitStruct.Pin = DISP_RST_Pin|DISP_BL_Pin|UI_DEBUG_1_Pin|UI_READY_Pin
-                          |UI_LED_G_Pin;
+  /*Configure GPIO pins : DISP_RST_Pin DISP_BL_Pin UI_LED_G_Pin */
+  GPIO_InitStruct.Pin = DISP_RST_Pin|DISP_BL_Pin|UI_LED_G_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -650,18 +640,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : NET_READY_Pin */
-  GPIO_InitStruct.Pin = NET_READY_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(NET_READY_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : UI_LED_R_Pin */
-  GPIO_InitStruct.Pin = UI_LED_R_Pin;
+  /*Configure GPIO pins : UI_LED_B_Pin UI_DEBUG_3_Pin UI_LED_R_Pin UI_DEBUG_1_Pin
+                           UI_DEBUG_2_Pin */
+  GPIO_InitStruct.Pin = UI_LED_B_Pin|UI_DEBUG_3_Pin|UI_LED_R_Pin|UI_DEBUG_1_Pin
+                          |UI_DEBUG_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(UI_LED_R_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : KB_ROW5_Pin KB_ROW6_Pin KB_ROW7_Pin KB_ROW1_Pin
                            KB_ROW2_Pin */
@@ -676,6 +662,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(UI_BOOT1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : KB_LED_Pin DISP_CS_Pin DISP_DC_Pin */
+  GPIO_InitStruct.Pin = KB_LED_Pin|DISP_CS_Pin|DISP_DC_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : KB_COL1_Pin KB_COL2_Pin */
   GPIO_InitStruct.Pin = KB_COL1_Pin|KB_COL2_Pin;
@@ -709,26 +702,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
   HAL_GPIO_Init(UI_STAT_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : MIC_IO_Pin */
-  GPIO_InitStruct.Pin = MIC_IO_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(MIC_IO_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : UI_DEBUG_2_Pin */
-  GPIO_InitStruct.Pin = UI_DEBUG_2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(UI_DEBUG_2_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : UI_LED_B_Pin DISP_CS_Pin DISP_DC_Pin */
-  GPIO_InitStruct.Pin = UI_LED_B_Pin|DISP_CS_Pin|DISP_DC_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   /* USER CODE END MX_GPIO_Init_2 */

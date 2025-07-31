@@ -267,7 +267,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 115200/2;
   huart2.Init.WordLength = UART_WORDLENGTH_9B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_EVEN;
@@ -352,54 +352,52 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin|MGMT_DEBUG_1_Pin|LEDA_G_Pin|LEDA_B_Pin
+  HAL_GPIO_WritePin(GPIOA, NET_STAT_Pin|LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin
                           |UI_BOOT0_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LEDB_R_Pin|MGMT_DEBUG_2_Pin|LEDB_B_Pin|UI_NRST_Pin
-                          |NET_NRST_Pin|NET_BOOT_Pin|LEDB_G_Pin|UI_BOOT1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_NRST_Pin
+                          |NET_NRST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : USB_CC2_DETECT_Pin USB_CC1_DETECT_Pin */
-  GPIO_InitStruct.Pin = USB_CC2_DETECT_Pin|USB_CC1_DETECT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pin : UI_STAT_Pin */
+  GPIO_InitStruct.Pin = UI_STAT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(UI_STAT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : CTS_NOT_NEEDED_Pin RTS_NOT_NEEDED_Pin MISTAKE_Pin MISTAKEA12_Pin */
-  GPIO_InitStruct.Pin = CTS_NOT_NEEDED_Pin|RTS_NOT_NEEDED_Pin|MISTAKE_Pin|MISTAKEA12_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pin : NET_STAT_Pin */
+  GPIO_InitStruct.Pin = NET_STAT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(NET_STAT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDA_R_Pin MGMT_DEBUG_1_Pin LEDA_G_Pin LEDA_B_Pin
-                           UI_BOOT0_Pin */
-  GPIO_InitStruct.Pin = LEDA_R_Pin|MGMT_DEBUG_1_Pin|LEDA_G_Pin|LEDA_B_Pin
-                          |UI_BOOT0_Pin;
+  /*Configure GPIO pins : LEDA_R_Pin LEDA_G_Pin LEDA_B_Pin UI_BOOT0_Pin */
+  GPIO_InitStruct.Pin = LEDA_R_Pin|LEDA_G_Pin|LEDA_B_Pin|UI_BOOT0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LEDB_R_Pin MGMT_DEBUG_2_Pin LEDB_B_Pin UI_NRST_Pin
-                           NET_NRST_Pin NET_BOOT_Pin LEDB_G_Pin UI_BOOT1_Pin */
-  GPIO_InitStruct.Pin = LEDB_R_Pin|MGMT_DEBUG_2_Pin|LEDB_B_Pin|UI_NRST_Pin
-                          |NET_NRST_Pin|NET_BOOT_Pin|LEDB_G_Pin|UI_BOOT1_Pin;
+  /*Configure GPIO pins : LEDB_R_Pin LEDB_G_Pin LEDB_B_Pin UI_NRST_Pin
+                           NET_NRST_Pin NET_BOOT_Pin UI_BOOT1_Pin */
+  GPIO_InitStruct.Pin = LEDB_R_Pin|LEDB_G_Pin|LEDB_B_Pin|UI_NRST_Pin
+                          |NET_NRST_Pin|NET_BOOT_Pin|UI_BOOT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : USB_DTR_MGMT_Pin NET_STAT_Pin UI_STAT_Pin */
-  GPIO_InitStruct.Pin = USB_DTR_MGMT_Pin|NET_STAT_Pin|UI_STAT_Pin;
+  /*Configure GPIO pin : USB_DTR_Pin */
+  GPIO_InitStruct.Pin = USB_DTR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(USB_DTR_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : MCLK_Pin */
   GPIO_InitStruct.Pin = MCLK_Pin;
@@ -408,6 +406,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
   HAL_GPIO_Init(MCLK_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   /* USER CODE END MX_GPIO_Init_2 */
