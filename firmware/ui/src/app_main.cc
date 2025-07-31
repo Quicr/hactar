@@ -31,6 +31,8 @@ inline bool TryProtect(link_packet_t* link_packet);
 inline bool TryUnprotect(link_packet_t* link_packet);
 inline void HandleMgmtLinkPackets(ConfigStorage& storage);
 
+inline void SendStoredWifi(ConfigStorage& storage, Serial& serial, link_packet_t& packet);
+
 sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
 uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
 
@@ -242,13 +244,12 @@ int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
 
-    M24C02_EEPROM<256> eeprom(hi2c1, 32);
-    ConfigStorage config_storage(eeprom);
+    ConfigStorage config_storage(hi2c1);
+    config_storage.Clear();
 
-    if (!config_storage.LoadAll())
-    {
-        UI_LOG_INFO("Could not load all configurations");
-    }
+    // TODO I need to make sure the net chip is able to receive serial?
+
+    // SendStoredWifi(config_storage, net_serial, message_packet);
 
     if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
     {
@@ -256,22 +257,20 @@ int app_main()
     }
 
     {
-        // Get the mls key
-        uint8_t mls_key[16];
-        int16_t len;
-        if (config_storage.GetConfig(ConfigStorage::Config_Id::Sframe_Key, (uint8_t**)(&mls_key),
-                                     len))
+        ConfigStorage::Config config =
+            config_storage.LoadConfig(ConfigStorage::Config_Id::Sframe_Key);
+        if (config.loaded && config.len == 16)
         {
-            if (len != 16)
-            {
-                Error("Initialize crypto", "MLS key length is not 16 bytes");
-            }
             UI_LOG_INFO("Using stored MLS key!");
-            mls_ctx.add_epoch(0,
-                              sframe::input_bytes{reinterpret_cast<const uint8_t*>(mls_key), len});
+            mls_ctx.add_epoch(
+                0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(config.buff), config.len});
         }
         else
         {
+            if (config.len != 16)
+            {
+                UI_LOG_ERROR("MLS key len malformed %d", (int)config.len);
+            }
             UI_LOG_WARN("No MLS key stored, using default");
             constexpr const char* mls_key = "sixteen byte key";
             mls_ctx.add_epoch(0,
@@ -280,7 +279,6 @@ int app_main()
     }
 
     Renderer renderer(screen, keyboard);
-
     audio_chip.Init();
     audio_chip.StartI2S();
     CountNumAudioInterrupts(audio_chip, sleeping);
@@ -369,7 +367,7 @@ int app_main()
         RaiseFlag(Rx_Audio_Transmitted);
 
         HandleNetLinkPackets();
-        HandleMgmtLinkPackets(config_storage);
+        // HandleMgmtLinkPackets(config_storage);
 
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
@@ -547,29 +545,81 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
 
         switch (link_packet->type)
         {
-        case Configuration_Type::Set_Ssid:
+        case Configuration_Type::Set_Ssid_0:
         {
-            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID, link_packet->payload,
+            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_0, link_packet->payload,
                                     link_packet->length))
             {
-                UI_LOG_ERROR("ERR. Failed to save SSID configuration");
+                UI_LOG_ERROR("ERR. Failed to save SSID 0 configuration");
             }
             else
             {
-                UI_LOG_INFO("OK! Saved SSID configuration");
+                UI_LOG_INFO("OK! Saved SSID 0 configuration");
             }
             break;
         }
-        case Configuration_Type::Set_Pwd:
+        case Configuration_Type::Set_Pwd_0:
         {
-            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_Password, link_packet->payload,
+            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_Password_0, link_packet->payload,
                                     link_packet->length))
             {
-                UI_LOG_ERROR("ERR. Failed to save SSID password configuration");
+                UI_LOG_ERROR("ERR. Failed to save SSID password 0 configuration");
             }
             else
             {
-                UI_LOG_INFO("OK! Saved SSID password configuration");
+                UI_LOG_INFO("OK! Saved SSID password 0 configuration");
+            }
+            break;
+        }
+        case Configuration_Type::Set_Ssid_1:
+        {
+            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_1, link_packet->payload,
+                                    link_packet->length))
+            {
+                UI_LOG_ERROR("ERR. Failed to save SSID 1 configuration");
+            }
+            else
+            {
+                UI_LOG_INFO("OK! Saved SSID 1 configuration");
+            }
+            break;
+        }
+        case Configuration_Type::Set_Pwd_1:
+        {
+            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_Password_1, link_packet->payload,
+                                    link_packet->length))
+            {
+                UI_LOG_ERROR("ERR. Failed to save SSID password 1 configuration");
+            }
+            else
+            {
+                UI_LOG_INFO("OK! Saved SSID password 1 configuration");
+            }
+            break;
+        }
+        case Configuration_Type::Set_Ssid_2:
+        {
+            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_2, link_packet->payload,
+                                    link_packet->length))
+            {
+                UI_LOG_ERROR("ERR. Failed to save SSID 2 configuration");
+            }
+            else
+            {
+                UI_LOG_INFO("OK! Saved SSID 2 configuration");
+            }
+            break;
+        }
+        case Configuration_Type::Set_Pwd_2:
+        {
+            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_Password_2, link_packet->payload,
+                                    link_packet->length))
+            {
+                UI_LOG_ERROR("ERR. Failed to save SSID password 2 configuration");
+            }
+            else
+            {
+                UI_LOG_INFO("OK! Saved SSID password 2 configuration");
             }
             break;
         }
@@ -598,6 +648,9 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
                 UI_LOG_INFO("OK! Saved SFrame Key configuration");
             }
             break;
+        }
+        case Configuration_Type::Clear_Configuration:
+        {
         }
         default:
         {
@@ -833,6 +886,29 @@ catch (const std::exception& e)
 {
     UI_LOG_ERROR("%s", e.what());
     return false;
+}
+
+void SendStoredWifi(ConfigStorage& storage, Serial& serial, link_packet_t& packet)
+{
+    // uint8_t* ssid;
+    // int16_t ssid_len;
+    // if (!storage.GetConfig(ConfigStorage::Config_Id::SSID_0, &ssid, ssid_len))
+    // {
+    //     UI_LOG_ERROR("Failed to load SSID to send to the net chip");
+    //     return;
+    // }
+
+    // uint8_t* pwd;
+    // int16_t pwd_len;
+    // if (!storage.GetConfig(ConfigStorage::Config_Id::SSID_Password_0, &pwd, pwd_len))
+    // {
+    //     UI_LOG_ERROR("Failed to load ssid password to send to the net chip");
+    //     return;
+    // }
+
+    // ui_net_link::Serialize(ssid, ssid_len, pwd, pwd_len, packet);
+
+    // serial.Write(packet);
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)

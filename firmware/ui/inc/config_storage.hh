@@ -4,6 +4,7 @@
 #include "font.hh"
 #include "logger.hh"
 #include "m24c02_eeprom.hh"
+#include <algorithm>
 #include <cstring>
 
 // TODO split into header and source files
@@ -14,23 +15,43 @@ public:
     // NOTE - this is the order in which the settings are saved to the eeprom
     enum class Config_Id
     {
-        SSID,
-        SSID_Password,
+        Config_Id,
+        SSID_0,
+        SSID_Password_0,
+        SSID_1,
+        SSID_Password_1,
+        SSID_2,
+        SSID_Password_2,
         Sframe_Key,
-        Moq_Relay_Url
+        Moq_Relay_Url,
+        Num_Reserved
     };
 
-    static constexpr uint32_t Ssid_Size = 32;
-    static constexpr uint32_t Pwd_Size = 64;
+    static constexpr uint32_t Ssid_Size = 22;
+    static constexpr uint32_t Pwd_Size = 30;
     static constexpr uint32_t Sframe_Key_Size = 16;
     static constexpr uint32_t Moq_Relay_Url_Size = 64;
 
-    ConfigStorage(M24C02_EEPROM<256>& eeprom) :
-        eeprom(eeprom),
-        ssid{0},
-        pwd{0},
-        sframe_key{0},
-        moq_relay_url{0}
+    static constexpr uint32_t Largest_Size =
+        std::max({Ssid_Size, Pwd_Size, Sframe_Key_Size, Moq_Relay_Url_Size});
+
+    static constexpr uint32_t Config_Len_Size = 1;
+    static constexpr uint32_t Total_Usage =
+        ((Ssid_Size * 3) + (Pwd_Size * 3) + Sframe_Key_Size + Moq_Relay_Url_Size
+         + Config_Len_Size * (uint32_t)Config_Id::Num_Reserved + (uint32_t)Config_Id::Num_Reserved);
+    static_assert(Total_Usage < 256);
+
+    struct Config
+    {
+        Config_Id id;
+        bool loaded;
+        int16_t len;
+        uint8_t buff[Largest_Size];
+    };
+
+    ConfigStorage(I2C_HandleTypeDef& i2c) :
+        eeprom(i2c, 256, (uint16_t)Config_Id::Num_Reserved),
+        config{Config_Id::Num_Reserved, false, 0, {0}}
     {
     }
 
@@ -38,122 +59,34 @@ public:
     {
     }
 
-    bool LoadAll()
+    Config LoadConfig(const Config_Id config_id)
     {
-        bool ret;
-        bool loaded;
-        if (loaded = GetConfig(Config_Id::SSID, (uint8_t**)&ssid, ssid_len))
-        {
-            UI_LOG_INFO("Loaded SSID");
-        }
-        else
-        {
-            UI_LOG_WARN("Failed to load SSID");
-        }
-        ret = ret && loaded;
+        Config config{Config_Id::Num_Reserved, false, 0, {0}};
 
-        if (loaded = GetConfig(Config_Id::SSID_Password, (uint8_t**)&pwd, pwd_len))
+        if (config_id == Config_Id::Num_Reserved)
         {
-            UI_LOG_INFO("Loaded SSID Password");
+            return config;
         }
-        else
-        {
-            UI_LOG_WARN("Failed to load SSID Password");
-        }
-        ret = ret && loaded;
 
-        if (loaded = GetConfig(Config_Id::Sframe_Key, (uint8_t**)&sframe_key, sframe_key_len))
-        {
-            UI_LOG_INFO("Loaded SFrame Key");
-        }
-        else
-        {
-            UI_LOG_WARN("Failed to load SFrame Key");
-        }
-        ret = ret && loaded;
+        config.id = config_id;
+        config.loaded = Load(config_id, config.buff, config.len);
 
-        if (loaded =
-                GetConfig(Config_Id::Moq_Relay_Url, (uint8_t**)&moq_relay_url, moq_relay_url_len))
-        {
-            UI_LOG_INFO("Loaded Moq Relay URL");
-        }
-        else
-        {
-            UI_LOG_WARN("Failed to load Moq Relay URL");
-        }
-        ret = ret && loaded;
-
-        return ret;
+        return config;
     }
 
-    bool GetConfig(Config_Id config, uint8_t** buf_ptr, int16_t& len)
+    bool SaveConfig(const Config_Id config_id, const uint8_t* data, int16_t len)
     {
-        switch (config)
+        if (!VerifySize(config_id, len))
         {
-        case Config_Id::SSID:
-            *buf_ptr = ssid;
-            len = ssid_len;
-            break;
-        case Config_Id::SSID_Password:
-            *buf_ptr = pwd;
-            len = pwd_len;
-            break;
-        case Config_Id::Sframe_Key:
-            *buf_ptr = sframe_key;
-            len = sframe_key_len;
-            break;
-        case Config_Id::Moq_Relay_Url:
-            *buf_ptr = moq_relay_url;
-            len = moq_relay_url_len;
-            break;
-        default:
             return false;
         }
 
-        const uint8_t mask = 1 << (uint8_t)config;
-        if (!(loaded & mask))
-        {
-            if (Load(config, *buf_ptr, len))
-            {
-                loaded |= mask;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return Save(config_id, data, len);
     }
 
-    bool SaveConfig(const Config_Id config, const uint8_t* data, int16_t len)
+    void Clear()
     {
-        uint8_t* buf_ptr = nullptr;
-        switch (config)
-        {
-        case Config_Id::SSID:
-            buf_ptr = ssid;
-            break;
-        case Config_Id::SSID_Password:
-            buf_ptr = pwd;
-            break;
-        case Config_Id::Sframe_Key:
-            buf_ptr = sframe_key;
-            break;
-        case Config_Id::Moq_Relay_Url:
-            buf_ptr = moq_relay_url;
-            break;
-        default:
-            return false;
-        }
-
-        if (!Save(config, data, len))
-        {
-            return false;
-        }
-        memcpy(buf_ptr, data, len);
-
-        return true;
+        eeprom.Fill(255);
     }
 
 private:
@@ -220,16 +153,16 @@ private:
     template <typename T>
     bool Save(const Config_Id config, T* data, const uint16_t size)
     {
-        if (!VerifySize(config, size))
-        {
-            return false;
-        }
-
         // Get the address
-        uint8_t address = eeprom.ReadByte(static_cast<uint8_t>(config));
+        int16_t address = eeprom.ReadByte(static_cast<uint8_t>(config));
 
         // The address is unset
-        if (address == 0xFF)
+        if (address == -1)
+        {
+            // An error has occurred
+            return false;
+        }
+        else if (address == 0xFF)
         {
             // Get the next address available and save the data there
             address = eeprom.Write<T>(data, size);
@@ -246,43 +179,17 @@ private:
         return true;
     }
 
-    void Clear()
-    {
-        eeprom.Fill(0);
-        ClearConfig(Config_Id::SSID);
-        ClearConfig(Config_Id::SSID_Password);
-        ClearConfig(Config_Id::Sframe_Key);
-        ClearConfig(Config_Id::Moq_Relay_Url);
-    }
-
-    void ClearConfig(const Config_Id config)
-    {
-        switch (config)
-        {
-        case Config_Id::SSID:
-            memset(ssid, 0, Ssid_Size);
-            break;
-        case Config_Id::SSID_Password:
-            memset(pwd, 0, Pwd_Size);
-            break;
-        case Config_Id::Sframe_Key:
-            memset(sframe_key, 0, Sframe_Key_Size);
-            break;
-        case Config_Id::Moq_Relay_Url:
-            memset(moq_relay_url, 0, Moq_Relay_Url_Size);
-            break;
-        default:
-            break;
-        }
-    }
-
     bool VerifySize(const Config_Id config, const uint32_t size)
     {
         switch (config)
         {
-        case Config_Id::SSID:
+        case Config_Id::SSID_0:
+        case Config_Id::SSID_1:
+        case Config_Id::SSID_2:
             return size <= Ssid_Size;
-        case Config_Id::SSID_Password:
+        case Config_Id::SSID_Password_0:
+        case Config_Id::SSID_Password_1:
+        case Config_Id::SSID_Password_2:
             return size <= Pwd_Size;
         case Config_Id::Sframe_Key:
             return size <= Sframe_Key_Size;
@@ -293,17 +200,6 @@ private:
         }
     }
 
-    M24C02_EEPROM<256>& eeprom;
-    uint8_t loaded;
-    uint8_t ssid[Ssid_Size];
-    int16_t ssid_len;
-
-    uint8_t pwd[Pwd_Size];
-    int16_t pwd_len;
-
-    uint8_t sframe_key[Sframe_Key_Size];
-    int16_t sframe_key_len;
-
-    uint8_t moq_relay_url[Moq_Relay_Url_Size];
-    int16_t moq_relay_url_len;
+    M24C02_EEPROM eeprom;
+    Config config;
 };
