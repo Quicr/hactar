@@ -61,6 +61,7 @@ static const uint8_t set_ssid[] = "set_ssid";
 static const uint8_t set_pwd[] = "set_pwd";
 static const uint8_t set_moq_url[] = "set_moq_url";
 static const uint8_t set_sframe_key[] = "set_sframe_key";
+static const uint8_t clear_configuration[] = "clear_configuration";
 
 static const uint8_t ACK[] = {0x79};
 static const uint8_t READY[] = {0x80};
