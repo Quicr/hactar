@@ -6,6 +6,7 @@
 
 #include "serial.hh"
 #include <quicr/client.h>
+#include <cwchar>
 #include <deque>
 
 namespace moq
@@ -17,7 +18,12 @@ public:
     TrackReader(const quicr::FullTrackName& full_track_name,
                 Serial& serial,
                 const std::string& codec);
-    virtual ~TrackReader() = default;
+
+    virtual ~TrackReader();
+
+    void Start();
+
+    void Stop();
 
     //
     // overrides from SubscribeTrackHandler
@@ -36,12 +42,14 @@ public:
     std::optional<std::vector<uint8_t>> AudioPopFront() noexcept;
     size_t AudioNumAvailable() noexcept;
 
+    const std::string& GetTrackName() const noexcept;
+
 private:
     static void SubscribeTask(void* param);
 
     void TransmitAudio();
     void TransmitText();
-
+    void TransmitAiResponse();
     // Audio variables
     // TODO move into an audio object?
     Serial& serial;
@@ -49,6 +57,8 @@ private:
     std::string track_name;
     // TODO rename to link_packet_buffer
     std::queue<std::vector<uint8_t>> byte_buffer;
+
+    std::mutex task_mutex;
 
     bool audio_playing;
     size_t audio_min_depth;
@@ -58,9 +68,11 @@ private:
     StaticTask_t task_buffer;
     StackType_t* task_stack;
 
-    uint32_t ai_request_id = 0;
-    uint64_t num_print = 0;
-    uint64_t num_recv = 0;
+    uint32_t ai_request_id;
+    uint64_t num_print;
+    uint64_t num_recv;
+
+    bool is_running;
 };
 
 } // namespace moq

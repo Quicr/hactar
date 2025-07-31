@@ -18,7 +18,13 @@ public:
                 quicr::TrackMode track_mode,
                 uint8_t default_priority,
                 uint32_t default_ttl);
+
     virtual ~TrackWriter();
+
+    void Start();
+
+    void Stop();
+
     void StatusChanged(Status status) override;
     void PushObject(const uint8_t* bytes, const uint32_t len, const uint64_t timestamp);
 
@@ -38,6 +44,8 @@ public:
         std::vector<uint8_t> data;
     };
 
+    const std::string& GetTrackName() const noexcept;
+
 private:
     static void PublishTask(void* params);
 
@@ -45,11 +53,12 @@ private:
     std::deque<moq::TrackWriter::link_data_obj> moq_objs;
     uint64_t object_id;
 
+    bool is_running;
+    std::mutex task_mutex;
+    std::mutex obj_mux;
     TaskHandle_t task_handle;
     StaticTask_t task_buffer;
     StackType_t* task_stack;
-
-    std::mutex obj_mux;
 };
 } // namespace moq
 

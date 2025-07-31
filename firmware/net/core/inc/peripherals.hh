@@ -25,5 +25,6 @@
 void InitializeGPIO();
 void IntitializeLEDs();
 void IntitializePWM();
+void InitializeUIReadyISR(gpio_isr_t isr_handler);
 
 #endif
