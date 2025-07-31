@@ -51,7 +51,7 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
     int gpio_num = (int)arg;
 
-    if (gpio_num == UI_READY)
+    if (gpio_num == NET_STAT)
     {
         runtime_ctx.last_audio_isr_time = runtime_ctx.curr_audio_isr_time;
         runtime_ctx.curr_audio_isr_time = esp_timer_get_time();
