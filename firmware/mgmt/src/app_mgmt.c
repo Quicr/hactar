@@ -54,7 +54,6 @@ uint8_t usb_tx_buff[UART_BUFF_SZ] = {0};
 static uint8_t uploader = 0;
 static uint32_t timeout_tick = 0;
 
-const enum State default_state = Debug;
 enum State state = default_state;
 enum State next_state = Running;
 
@@ -304,6 +303,15 @@ int app_main(void)
             NormalInit();
             SetStreamModes(Passthrough, Ignore, Ignore);
             LEDA(LOW, LOW, LOW);
+            break;
+        }
+        case Configator:
+        {
+            UINormalMode();
+            NormalAndNetUploadUartInit(&usb_stream, &huart2);
+            SetStreamModes(Configuration, Passthrough, Ignore);
+            LEDA(LOW, LOW, LOW);
+            LEDB(LOW, LOW, LOW);
             break;
         }
         default:

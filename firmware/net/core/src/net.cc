@@ -203,6 +203,20 @@ static void LinkPacketTask(void* args)
 
                 break;
             }
+            case ui_net_link::Packet_Type::WifiConnect:
+            {
+                NET_LOG_INFO("Got a wifi connect packet");
+                // Get the SSID and password from the packet.
+
+                std::string ssid;
+                std::string pwd;
+
+                ui_net_link::Deserialize(*packet, ssid, pwd);
+
+                wifi.Connect(ssid, pwd);
+
+                break;
+            }
             default:
                 NET_LOG_ERROR("Got a packet without a handler %d", (int)packet->type);
 
@@ -358,16 +372,16 @@ extern "C" void app_main(void)
     IntitializeLEDs();
     CreateLinkPacketTask();
 
-    ui_layer.Begin();
-
     wifi.Begin();
 
     wifi.Connect("quicr.io", "noPassword");
     wifi.Connect("m10x-interference", "goodlife");
 
-#if defined(my_ssid) && defined(my_ssid_pwd)
-    wifi.Connect(my_ssid, my_ssid_pwd);
-#endif
+    // #if defined(my_ssid) && defined(my_ssid_pwd)
+    //     wifi.Connect(my_ssid, my_ssid_pwd);
+    // #endif
+
+    ui_layer.Begin();
 
     // setup moq transport
     quicr::ClientConfig config;

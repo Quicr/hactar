@@ -6,12 +6,15 @@
 #include <string.h>
 
 #define COMMAND_TIMEOUT 1000
+#define COMMAND_BUFF_SZ 32
+#define CONFIGURATOR_BUFF_SZ 128
 
 typedef enum _
 {
     Ignore,
     Passthrough,
-    Command
+    Command,
+    Configuration
 } StreamMode;
 
 typedef struct
@@ -50,6 +53,23 @@ static const uint8_t net_debug_cmd[] = "net_debug";
 static const uint8_t reset_cmd[] = "reset";
 static const uint8_t reset_ui[] = "reset_ui";
 static const uint8_t reset_net[] = "reset_net";
+static const uint8_t configure[] = "configure";
+
+// Configure commands
+static const uint8_t quit_config[] = "quit";
+static const uint8_t set_ssid_0[] = "set_ssid_0";
+static const uint8_t set_pwd_0[] = "set_pwd_0";
+static const uint8_t set_ssid_1[] = "set_ssid_1";
+static const uint8_t set_pwd_1[] = "set_pwd_1";
+static const uint8_t set_ssid_2[] = "set_ssid_2";
+static const uint8_t set_pwd_2[] = "set_pwd_2";
+static const uint8_t set_moq_url[] = "set_moq_url";
+static const uint8_t set_sframe_key[] = "set_sframe_key";
+static const uint8_t get_ssid_0[] = "get_ssid_0";
+static const uint8_t get_ssid_1[] = "get_ssid_1";
+static const uint8_t get_ssid_2[] = "get_ssid_2";
+static const uint8_t get_moq_url[] = "get_moq_url";
+static const uint8_t clear_configuration[] = "clear_configuration";
 
 static const uint8_t ACK[] = {0x79};
 static const uint8_t READY[] = {0x80};
@@ -58,7 +78,9 @@ static const uint8_t HELLO[] = "WHO ARE YOU?";
 static const uint8_t HELLO_RES[] = "HELLO, I AM A HACTAR DEVICE";
 
 void Receive(uart_stream_t* stream, uint16_t num_received);
+uint8_t TryCommand(const char* buff, enum State* state, uart_stream_t* stream);
 void HandleCommands(uart_stream_t* stream, enum State* state);
+void HandleConfiguration(uart_stream_t* stream, enum State* state);
 void TxISR(uart_stream_t* stream, enum State* state);
 void HandleTx(uart_stream_t* stream, enum State* state);
 void Transmit(uart_stream_t* stream, enum State* state);
