@@ -117,6 +117,65 @@ void Transmit(uart_stream_t* stream, enum State* state)
                           stream->tx.num_sending);
 }
 
+uint8_t TryCommand(const char* buff, enum State* state, uart_stream_t* stream)
+{
+    uint8_t ret = 1;
+    if (strcmp(buff, (const char*)ui_upload_cmd) == 0)
+    {
+        *state = UI_Upload;
+    }
+    else if (strcmp(buff, (const char*)net_upload_cmd) == 0)
+    {
+        *state = Net_Upload;
+    }
+    else if (strcmp(buff, (const char*)debug_cmd) == 0)
+    {
+        *state = Debug;
+    }
+    else if (strcmp(buff, (const char*)ui_debug_cmd) == 0)
+    {
+        *state = UI_Debug;
+    }
+    else if (strcmp(buff, (const char*)net_debug_cmd) == 0)
+    {
+        *state = Net_Debug;
+    }
+    else if (strcmp(buff, (const char*)reset_cmd) == 0)
+    {
+        *state = Normal;
+    }
+    else if (strcmp(buff, (const char*)reset_ui) == 0)
+    {
+        UINormalMode();
+    }
+    else if (strcmp(buff, (const char*)reset_net) == 0)
+    {
+        NetNormalMode();
+    }
+    else if (strcmp(buff, (const char*)configure) == 0)
+    {
+        HAL_UART_Transmit(stream->rx.uart, (const uint8_t*)"Configuration Mode\n", 19,
+                          HAL_MAX_DELAY);
+        *state = Configator;
+    }
+    else if (strcmp(buff, (const char*)HELLO) == 0)
+    {
+        quiet = 1;
+        while (!stream->tx.free)
+        {
+            __NOP();
+        }
+        HAL_UART_Transmit(stream->rx.uart, HELLO_RES, 28, HAL_MAX_DELAY);
+        quiet = 0;
+    }
+    else
+    {
+        ret = 0;
+    }
+
+    return ret;
+}
+
 void HandleCommands(uart_stream_t* stream, enum State* state)
 {
     static uint8_t ready = 0;
@@ -158,54 +217,7 @@ void HandleCommands(uart_stream_t* stream, enum State* state)
 
     if (ready || HAL_GetTick() - last_update >= COMMAND_TIMEOUT)
     {
-        if (strcmp((const char*)cmd_buff, (const char*)ui_upload_cmd) == 0)
-        {
-            *state = UI_Upload;
-        }
-        else if (strcmp((const char*)cmd_buff, (const char*)net_upload_cmd) == 0)
-        {
-            *state = Net_Upload;
-        }
-        else if (strcmp((const char*)cmd_buff, (const char*)debug_cmd) == 0)
-        {
-            *state = Debug;
-        }
-        else if (strcmp((const char*)cmd_buff, (const char*)ui_debug_cmd) == 0)
-        {
-            *state = UI_Debug;
-        }
-        else if (strcmp((const char*)cmd_buff, (const char*)net_debug_cmd) == 0)
-        {
-            *state = Net_Debug;
-        }
-        else if (strcmp((const char*)cmd_buff, (const char*)reset_cmd) == 0)
-        {
-            *state = Normal;
-        }
-        else if (strcmp((const char*)cmd_buff, (const char*)reset_ui) == 0)
-        {
-            UINormalMode();
-        }
-        else if (strcmp((const char*)cmd_buff, (const char*)reset_net) == 0)
-        {
-            NetNormalMode();
-        }
-        else if (strcmp((const char*)cmd_buff, (const char*)configure) == 0)
-        {
-            HAL_UART_Transmit(stream->rx.uart, (const uint8_t*)"Configuration Mode\n", 19,
-                              HAL_MAX_DELAY);
-            *state = Configator;
-        }
-        else if (strcmp((const char*)cmd_buff, (const char*)HELLO) == 0)
-        {
-            quiet = 1;
-            while (!stream->tx.free)
-            {
-                __NOP();
-            }
-            HAL_UART_Transmit(stream->rx.uart, HELLO_RES, 28, HAL_MAX_DELAY);
-            quiet = 0;
-        }
+        TryCommand((const char*)cmd_buff, state, stream);
 
         // Clear the ring
         for (uint16_t i = 0; i < idx; ++i)
@@ -257,6 +269,7 @@ void HandleConfiguration(uart_stream_t* stream, enum State* state)
         }
     }
 
+    // TODO rewrite this is a poc
     if (idx > 0 && (ready || HAL_GetTick() - last_update >= COMMAND_TIMEOUT))
     {
         uint8_t type = Config_Type_Not_Found;
@@ -271,6 +284,12 @@ void HandleConfiguration(uart_stream_t* stream, enum State* state)
             *next_word = '\0';
         }
 
+        // Try previous commands first
+        if (TryCommand(config_buff, state, stream))
+        {
+            goto cleanup;
+        }
+
         if (strcmp((const char*)config_buff, (const char*)quit_config) == 0)
         {
             HAL_UART_Transmit(stream->rx.uart, (const uint8_t*)"Leaving configuration mode\n", 27,
@@ -278,15 +297,35 @@ void HandleConfiguration(uart_stream_t* stream, enum State* state)
             *state = default_state;
             goto cleanup;
         }
-        else if (strcmp((const char*)config_buff, (const char*)set_ssid) == 0)
+        else if (strcmp((const char*)config_buff, (const char*)set_ssid_0) == 0)
         {
-            type = Set_Ssid;
-            config_type_len = strlen(set_ssid);
+            type = Set_Ssid_0;
+            config_type_len = strlen(set_ssid_0);
         }
-        else if (strcmp((const char*)config_buff, (const char*)set_pwd) == 0)
+        else if (strcmp((const char*)config_buff, (const char*)set_pwd_0) == 0)
         {
-            type = Set_Pwd;
-            config_type_len = strlen(set_pwd);
+            type = Set_Pwd_0;
+            config_type_len = strlen(set_pwd_0);
+        }
+        else if (strcmp((const char*)config_buff, (const char*)set_ssid_1) == 0)
+        {
+            type = Set_Ssid_1;
+            config_type_len = strlen(set_ssid_1);
+        }
+        else if (strcmp((const char*)config_buff, (const char*)set_pwd_1) == 0)
+        {
+            type = Set_Pwd_1;
+            config_type_len = strlen(set_pwd_1);
+        }
+        else if (strcmp((const char*)config_buff, (const char*)set_ssid_2) == 0)
+        {
+            type = Set_Ssid_2;
+            config_type_len = strlen(set_ssid_2);
+        }
+        else if (strcmp((const char*)config_buff, (const char*)set_pwd_2) == 0)
+        {
+            type = Set_Pwd_2;
+            config_type_len = strlen(set_pwd_2);
         }
         else if (strcmp((const char*)config_buff, (const char*)set_moq_url) == 0)
         {
@@ -297,6 +336,40 @@ void HandleConfiguration(uart_stream_t* stream, enum State* state)
         {
             type = Set_Sframe_Key;
             config_type_len = strlen(set_sframe_key);
+        }
+        // TODO these need more work
+        // else if (strcmp((const char*)config_buff, (const char*)get_ssid_0) == 0)
+        // {
+        //     type = Get_Ssid_0;
+        //     config_type_len = strlen(get_ssid_0);
+        // }
+        // else if (strcmp((const char*)config_buff, (const char*)get_ssid_1) == 0)
+        // {
+        //     type = Get_Ssid_1;
+        //     config_type_len = strlen(get_ssid_1);
+        // }
+        // else if (strcmp((const char*)config_buff, (const char*)get_ssid_2) == 0)
+        // {
+        //     type = Get_Ssid_2;
+        //     config_type_len = strlen(get_ssid_2);
+        // }
+        // else if (strcmp((const char*)config_buff, (const char*)get_moq_url) == 0)
+        // {
+        //     type = Get_Moq_Url;
+        //     config_type_len = strlen(get_moq_url);
+        // }
+        else if (strcmp((const char*)config_buff, (const char*)clear_configuration) == 0)
+        {
+            type = Clear_Configuration;
+            config_type_len = strlen(clear_configuration);
+
+            HAL_UART_Transmit(stream->rx.uart, (const uint8_t*)"OK!\n", 4, HAL_MAX_DELAY);
+
+            // Send the configuration to the ui chip in blocking mode.
+            HAL_UART_Transmit(stream->tx.uart, (uint8_t*)&type, 1, HAL_MAX_DELAY);
+            // Transmit dummy data for confirmation.
+            HAL_UART_Transmit(stream->tx.uart, (const uint8_t*)"11", 2, HAL_MAX_DELAY);
+            goto cleanup;
         }
 
         if (type == Config_Type_Not_Found)
