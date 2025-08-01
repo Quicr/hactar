@@ -31,7 +31,8 @@ inline bool TryProtect(link_packet_t* link_packet);
 inline bool TryUnprotect(link_packet_t* link_packet);
 inline void HandleMgmtLinkPackets(ConfigStorage& storage);
 
-inline void SendStoredWifi(ConfigStorage& storage, Serial& serial, link_packet_t& packet);
+inline void TransmitStoredWifiCreds(ConfigStorage& storage, Serial& serial);
+inline void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx);
 
 sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
 uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
@@ -245,38 +246,11 @@ int app_main()
     HAL_TIM_Base_Start_IT(&htim2);
 
     ConfigStorage config_storage(hi2c1);
-    config_storage.Clear();
 
     // TODO I need to make sure the net chip is able to receive serial?
 
-    // SendStoredWifi(config_storage, net_serial, message_packet);
-
-    if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
-    {
-        Error("main", "cmox failed to initialise");
-    }
-
-    {
-        ConfigStorage::Config config =
-            config_storage.LoadConfig(ConfigStorage::Config_Id::Sframe_Key);
-        if (config.loaded && config.len == 16)
-        {
-            UI_LOG_INFO("Using stored MLS key!");
-            mls_ctx.add_epoch(
-                0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(config.buff), config.len});
-        }
-        else
-        {
-            if (config.len != 16)
-            {
-                UI_LOG_ERROR("MLS key len malformed %d", (int)config.len);
-            }
-            UI_LOG_WARN("No MLS key stored, using default");
-            constexpr const char* mls_key = "sixteen byte key";
-            mls_ctx.add_epoch(0,
-                              sframe::input_bytes{reinterpret_cast<const uint8_t*>(mls_key), 16});
-        }
-    }
+    TransmitStoredWifiCreds(config_storage, net_serial);
+    InitialzeMLS(config_storage, mls_ctx);
 
     Renderer renderer(screen, keyboard);
     audio_chip.Init();
@@ -367,7 +341,7 @@ int app_main()
         RaiseFlag(Rx_Audio_Transmitted);
 
         HandleNetLinkPackets();
-        // HandleMgmtLinkPackets(config_storage);
+        HandleMgmtLinkPackets(config_storage);
 
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
@@ -651,6 +625,8 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         }
         case Configuration_Type::Clear_Configuration:
         {
+            storage.Clear();
+            UI_LOG_INFO("OK! Cleared all configurations");
         }
         default:
         {
@@ -888,27 +864,65 @@ catch (const std::exception& e)
     return false;
 }
 
-void SendStoredWifi(ConfigStorage& storage, Serial& serial, link_packet_t& packet)
+void TransmitWifiCred(ConfigStorage& storage,
+                      Serial& serial,
+                      const ConfigStorage::Config_Id ssid_id,
+                      const ConfigStorage::Config_Id pwd_id)
 {
-    // uint8_t* ssid;
-    // int16_t ssid_len;
-    // if (!storage.GetConfig(ConfigStorage::Config_Id::SSID_0, &ssid, ssid_len))
-    // {
-    //     UI_LOG_ERROR("Failed to load SSID to send to the net chip");
-    //     return;
-    // }
+    link_packet_t packet;
 
-    // uint8_t* pwd;
-    // int16_t pwd_len;
-    // if (!storage.GetConfig(ConfigStorage::Config_Id::SSID_Password_0, &pwd, pwd_len))
-    // {
-    //     UI_LOG_ERROR("Failed to load ssid password to send to the net chip");
-    //     return;
-    // }
+    ConfigStorage::Config ssid = storage.LoadConfig(ssid_id);
+    ConfigStorage::Config pwd = storage.LoadConfig(pwd_id);
 
-    // ui_net_link::Serialize(ssid, ssid_len, pwd, pwd_len, packet);
+    if (!ssid.loaded || !pwd.loaded)
+    {
+        UI_LOG_ERROR("Failed to load ssid with id %d", (int)ssid.id);
+        return;
+    }
+    else
+    {
+        UI_LOG_INFO("Loaded ssid with id %d", (int)ssid.id);
+    }
 
-    // serial.Write(packet);
+    ui_net_link::Serialize(ssid.buff, ssid.len, pwd.buff, pwd.len, packet);
+
+    serial.Write(packet);
+}
+
+void TransmitStoredWifiCreds(ConfigStorage& storage, Serial& serial)
+{
+    TransmitWifiCred(storage, serial, ConfigStorage::Config_Id::SSID_0,
+                     ConfigStorage::Config_Id::SSID_Password_0);
+    TransmitWifiCred(storage, serial, ConfigStorage::Config_Id::SSID_1,
+                     ConfigStorage::Config_Id::SSID_Password_1);
+    TransmitWifiCred(storage, serial, ConfigStorage::Config_Id::SSID_2,
+                     ConfigStorage::Config_Id::SSID_Password_2);
+}
+
+void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx)
+{
+    if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
+    {
+        Error("main", "cmox failed to initialise");
+    }
+
+    ConfigStorage::Config config = storage.LoadConfig(ConfigStorage::Config_Id::Sframe_Key);
+    if (config.loaded && config.len == 16)
+    {
+        UI_LOG_INFO("Using stored MLS key!");
+        mls_ctx.add_epoch(
+            0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(config.buff), config.len});
+    }
+    else
+    {
+        if (config.len != 16)
+        {
+            UI_LOG_ERROR("MLS key len malformed %d", (int)config.len);
+        }
+        UI_LOG_WARN("No MLS key stored, using default");
+        constexpr const char* mls_key = "sixteen byte key";
+        mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(mls_key), 16});
+    }
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)

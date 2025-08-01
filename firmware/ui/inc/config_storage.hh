@@ -15,7 +15,7 @@ public:
     // NOTE - this is the order in which the settings are saved to the eeprom
     enum class Config_Id
     {
-        Config_Id,
+        Version,
         SSID_0,
         SSID_Password_0,
         SSID_1,
@@ -24,21 +24,38 @@ public:
         SSID_Password_2,
         Sframe_Key,
         Moq_Relay_Url,
-        Num_Reserved
+        Ext_Reserved
     };
 
-    static constexpr uint32_t Ssid_Size = 22;
-    static constexpr uint32_t Pwd_Size = 30;
+    static constexpr uint32_t Version_Size = 1;
+    static constexpr uint32_t Ssid_Size = 23;
+    static constexpr uint32_t Pwd_Size = 32;
     static constexpr uint32_t Sframe_Key_Size = 16;
     static constexpr uint32_t Moq_Relay_Url_Size = 64;
+
+    static constexpr uint32_t Version_Address = 0;
+
+    static constexpr uint32_t SSID_0_Address = Version_Address + Version_Size;
+    static constexpr uint32_t SSID_Password_0_Address = SSID_0_Address + Ssid_Size;
+
+    static constexpr uint32_t SSID_1_Address = SSID_Password_0_Address + Pwd_Size;
+    static constexpr uint32_t SSID_Password_1_Address = SSID_1_Address + Ssid_Size;
+
+    static constexpr uint32_t SSID_2_Address = SSID_Password_1_Address + Pwd_Size;
+    static constexpr uint32_t SSID_Password_2_Address = SSID_2_Address + Ssid_Size;
+
+    static constexpr uint32_t Sframe_Key_Address = SSID_Password_2_Address + Pwd_Size;
+
+    static constexpr uint32_t Moq_Relay_Url_Address = Sframe_Key_Address + Moq_Relay_Url_Size;
 
     static constexpr uint32_t Largest_Size =
         std::max({Ssid_Size, Pwd_Size, Sframe_Key_Size, Moq_Relay_Url_Size});
 
     static constexpr uint32_t Config_Len_Size = 1;
     static constexpr uint32_t Total_Usage =
-        ((Ssid_Size * 3) + (Pwd_Size * 3) + Sframe_Key_Size + Moq_Relay_Url_Size
-         + Config_Len_Size * (uint32_t)Config_Id::Num_Reserved + (uint32_t)Config_Id::Num_Reserved);
+        Version_Size
+        + ((Ssid_Size * 3) + (Pwd_Size * 3) + Sframe_Key_Size + Moq_Relay_Url_Size
+           + ((uint32_t)Config_Id::Ext_Reserved - 1) * Config_Len_Size);
     static_assert(Total_Usage < 256);
 
     struct Config
@@ -50,8 +67,7 @@ public:
     };
 
     ConfigStorage(I2C_HandleTypeDef& i2c) :
-        eeprom(i2c, 256, (uint16_t)Config_Id::Num_Reserved),
-        config{Config_Id::Num_Reserved, false, 0, {0}}
+        eeprom(i2c, 256)
     {
     }
 
@@ -61,17 +77,28 @@ public:
 
     Config LoadConfig(const Config_Id config_id)
     {
-        Config config{Config_Id::Num_Reserved, false, 0, {0}};
+        Config config{Config_Id::Ext_Reserved, false, 0, {0}};
 
-        if (config_id == Config_Id::Num_Reserved)
+        switch (config_id)
         {
+        case Config_Id::Version:
+        {
+            // TODO
+            break;
+        }
+        case Config_Id::Ext_Reserved:
+        {
+            // TODO
             return config;
         }
+        default:
+        {
+            config.id = config_id;
+            config.loaded = Load(config_id, config.buff, config.len);
 
-        config.id = config_id;
-        config.loaded = Load(config_id, config.buff, config.len);
-
-        return config;
+            return config;
+        }
+        }
     }
 
     bool SaveConfig(const Config_Id config_id, const uint8_t* data, int16_t len)
@@ -90,6 +117,7 @@ public:
     }
 
 private:
+    // TODO finish rewriting this
     bool Load(const Config_Id config, uint8_t* data, int16_t& len) const
     {
 
@@ -201,5 +229,4 @@ private:
     }
 
     M24C02_EEPROM eeprom;
-    Config config;
 };

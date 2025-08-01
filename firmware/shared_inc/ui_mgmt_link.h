@@ -9,5 +9,10 @@ enum Configuration_Type
     Set_Pwd_2,
     Set_Moq_Url,
     Set_Sframe_Key,
+    Get_Version,
+    Get_Ssid_0,
+    Get_Ssid_1,
+    Get_Ssid_2,
+    Get_Moq_Url,
     Clear_Configuration
 };
