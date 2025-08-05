@@ -176,5 +176,5 @@ private:
 
     I2C_HandleTypeDef* i2c;
     const size_t size_in_bytes;
-    uint8_t write_operation_timeout_ms;
+    const uint8_t write_operation_timeout_ms;
 };
