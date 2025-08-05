@@ -5,7 +5,12 @@
 #include "logger.hh"
 #include "m24c02_eeprom.hh"
 #include <algorithm>
+#include <cstddef>
 #include <cstring>
+
+#ifndef CONFIG_VERSION
+#define CONFIG_VERSION 0
+#endif
 
 // TODO split into header and source files
 class ConfigStorage
@@ -15,7 +20,6 @@ public:
     // NOTE - this is the order in which the settings are saved to the eeprom
     enum class Config_Id
     {
-        Version,
         SSID_0,
         SSID_Password_0,
         SSID_1,
@@ -24,7 +28,7 @@ public:
         SSID_Password_2,
         Sframe_Key,
         Moq_Relay_Url,
-        Ext_Reserved
+        NumConfig
     };
 
     static constexpr uint32_t Version_Size = 1;
@@ -55,8 +59,15 @@ public:
     static constexpr uint32_t Total_Usage =
         Version_Size
         + ((Ssid_Size * 3) + (Pwd_Size * 3) + Sframe_Key_Size + Moq_Relay_Url_Size
-           + ((uint32_t)Config_Id::Ext_Reserved - 1) * Config_Len_Size);
+           + ((uint32_t)Config_Id::NumConfig - 1) * Config_Len_Size);
     static_assert(Total_Usage < 256);
+
+    static constexpr uint8_t sizes[(size_t)Config_Id::NumConfig] = {
+        Ssid_Size, Pwd_Size, Ssid_Size,       Pwd_Size,
+        Ssid_Size, Pwd_Size, Sframe_Key_Size, Moq_Relay_Url_Size};
+    static constexpr uint8_t addresses[(size_t)Config_Id::NumConfig] = {
+        SSID_0_Address, SSID_Password_0_Address, SSID_1_Address,     SSID_Password_1_Address,
+        SSID_2_Address, SSID_Password_2_Address, Sframe_Key_Address, Moq_Relay_Url_Address};
 
     struct Config
     {
@@ -69,46 +80,71 @@ public:
     ConfigStorage(I2C_HandleTypeDef& i2c) :
         eeprom(i2c, 256)
     {
+        Initialize();
     }
 
     ~ConfigStorage()
     {
     }
 
-    Config LoadConfig(const Config_Id config_id)
+    Config Load(const Config_Id config_id)
     {
-        Config config{Config_Id::Ext_Reserved, false, 0, {0}};
+        Config config{Config_Id::NumConfig, false, 0, {0}};
 
         switch (config_id)
         {
-        case Config_Id::Version:
+        case Config_Id::NumConfig:
         {
-            // TODO
             break;
-        }
-        case Config_Id::Ext_Reserved:
-        {
-            // TODO
-            return config;
         }
         default:
         {
+            // Get the address
+            uint8_t address = addresses[static_cast<size_t>(config_id)];
             config.id = config_id;
-            config.loaded = Load(config_id, config.buff, config.len);
 
-            return config;
+            // Get the length
+            config.len = eeprom.ReadByte(address);
+
+            if (config.len == 255 || config.len == -1)
+            {
+                config.len = 0;
+                config.loaded = false;
+            }
+            else
+            {
+                auto res = eeprom.Read(address + 1, config.buff, config.len);
+
+                if (res != HAL_OK)
+                {
+                    // failed
+                    config.loaded = true;
+                }
+                else
+                {
+                    config.loaded = true;
+                }
+            }
+            break;
         }
         }
+        return config;
     }
 
-    bool SaveConfig(const Config_Id config_id, const uint8_t* data, int16_t len)
+    template <typename T>
+    bool Save(const Config_Id config, T* data, const uint16_t size)
     {
-        if (!VerifySize(config_id, len))
+        if (size > sizes[static_cast<size_t>(config)])
         {
             return false;
         }
 
-        return Save(config_id, data, len);
+        // Get the address
+        uint8_t address = addresses[static_cast<size_t>(config)];
+
+        eeprom.Write(address, data, size);
+
+        return true;
     }
 
     void Clear()
@@ -117,114 +153,43 @@ public:
     }
 
 private:
-    // TODO finish rewriting this
-    bool Load(const Config_Id config, uint8_t* data, int16_t& len) const
+    void Initialize()
     {
+        // Determine if the eeprom is unwritten to
+        // If version is a zero or 255 then it is unset.
+        int16_t version = eeprom.ReadByte(static_cast<uint8_t>(Version_Address));
 
-        // The config is an address on its own
-        int16_t address = eeprom.ReadByte((uint8_t)config);
-
-        if (address == 255 || address == -1)
+        if (version == -1)
         {
-            return false;
+            // An error has occured TODO
+            return;
         }
 
-        // Get the length from the address we are going to read from
-        len = eeprom.ReadByte(address);
-
-        eeprom.Read(address + 1, data, len);
-
-        return true;
-    }
-
-    template <typename T>
-    bool Load(const Config_Id config, T* data, int16_t& len) const
-    {
-        // The config is an address on its own
-        int16_t address = eeprom.ReadByte((uint8_t)config);
-
-        if (address == 0xFF || address == -1)
+        if (version != 255 && version != -1)
         {
-            return false;
+            // Already set return
+            return;
         }
 
-        // Get the length from the address we are going to read from
-        len = eeprom.ReadByte(address);
-
-        eeprom.Read(address + 1, data, len);
-
-        return true;
-    }
-
-    template <typename T>
-    void Save(const Config_Id config, T data, const uint16_t size)
-    {
-        // Get the address
-        uint8_t address = eeprom.ReadByte(static_cast<uint8_t>(config));
-
-        // The address is unset
-        if (address == 0xFF)
+        if (version != CONFIG_VERSION && version != 255)
         {
-            // Get the next address available and save the data there
-            address = eeprom.Write<T>(data, size);
-
-            // Save the address to the reserved space
-            eeprom.WriteByte(static_cast<uint8_t>(config), address);
-        }
-        else
-        {
-            // We have written to this address before, so overwrite it
-            eeprom.Write(address, data, size);
-        }
-    }
-
-    template <typename T>
-    bool Save(const Config_Id config, T* data, const uint16_t size)
-    {
-        // Get the address
-        int16_t address = eeprom.ReadByte(static_cast<uint8_t>(config));
-
-        // The address is unset
-        if (address == -1)
-        {
-            // An error has occurred
-            return false;
-        }
-        else if (address == 0xFF)
-        {
-            // Get the next address available and save the data there
-            address = eeprom.Write<T>(data, size);
-
-            // Save the address to the reserved space
-            eeprom.WriteByte(static_cast<uint8_t>(config), address);
-        }
-        else
-        {
-            // We have written to this address before, so overwrite it
-            eeprom.Write(address, data, size);
+            // Different version todo?
+            return;
         }
 
-        return true;
-    }
-
-    bool VerifySize(const Config_Id config, const uint32_t size)
-    {
-        switch (config)
+        if (version == CONFIG_VERSION)
         {
-        case Config_Id::SSID_0:
-        case Config_Id::SSID_1:
-        case Config_Id::SSID_2:
-            return size <= Ssid_Size;
-        case Config_Id::SSID_Password_0:
-        case Config_Id::SSID_Password_1:
-        case Config_Id::SSID_Password_2:
-            return size <= Pwd_Size;
-        case Config_Id::Sframe_Key:
-            return size <= Sframe_Key_Size;
-        case Config_Id::Moq_Relay_Url:
-            return size <= Moq_Relay_Url_Size;
-        default:
-            return false;
+            // Same version number
+            return;
+        }
+
+        // First write the version number
+        eeprom.WriteByte(Version_Address, CONFIG_VERSION);
+
+        // Set the length of each config to zero.
+        for (size_t i = 0; i < static_cast<size_t>(Config_Id::NumConfig); ++i)
+        {
+            eeprom.WriteByte(addresses[i], 0);
         }
     }
 

@@ -246,6 +246,7 @@ int app_main()
     HAL_TIM_Base_Start_IT(&htim2);
 
     ConfigStorage config_storage(hi2c1);
+    config_storage.Clear();
 
     // TODO I need to make sure the net chip is able to receive serial?
 
@@ -277,7 +278,7 @@ int app_main()
 
     // // eeprom.Fill(255);
 
-    // // config_storage.SaveConfig(ConfigStorage::Config_Id::SSID, (const uint8_t*)"MySSID", 6);
+    // // config_storage.Save(ConfigStorage::Config_Id::SSID, (const uint8_t*)"MySSID", 6);
 
     // uint8_t* ssid;
     // int16_t ssid_len;
@@ -521,8 +522,8 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         {
         case Configuration_Type::Set_Ssid_0:
         {
-            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_0, link_packet->payload,
-                                    link_packet->length))
+            if (!storage.Save(ConfigStorage::Config_Id::SSID_0, link_packet->payload,
+                              link_packet->length))
             {
                 UI_LOG_ERROR("ERR. Failed to save SSID 0 configuration");
             }
@@ -534,8 +535,8 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         }
         case Configuration_Type::Set_Pwd_0:
         {
-            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_Password_0, link_packet->payload,
-                                    link_packet->length))
+            if (!storage.Save(ConfigStorage::Config_Id::SSID_Password_0, link_packet->payload,
+                              link_packet->length))
             {
                 UI_LOG_ERROR("ERR. Failed to save SSID password 0 configuration");
             }
@@ -547,8 +548,8 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         }
         case Configuration_Type::Set_Ssid_1:
         {
-            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_1, link_packet->payload,
-                                    link_packet->length))
+            if (!storage.Save(ConfigStorage::Config_Id::SSID_1, link_packet->payload,
+                              link_packet->length))
             {
                 UI_LOG_ERROR("ERR. Failed to save SSID 1 configuration");
             }
@@ -560,8 +561,8 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         }
         case Configuration_Type::Set_Pwd_1:
         {
-            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_Password_1, link_packet->payload,
-                                    link_packet->length))
+            if (!storage.Save(ConfigStorage::Config_Id::SSID_Password_1, link_packet->payload,
+                              link_packet->length))
             {
                 UI_LOG_ERROR("ERR. Failed to save SSID password 1 configuration");
             }
@@ -573,8 +574,8 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         }
         case Configuration_Type::Set_Ssid_2:
         {
-            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_2, link_packet->payload,
-                                    link_packet->length))
+            if (!storage.Save(ConfigStorage::Config_Id::SSID_2, link_packet->payload,
+                              link_packet->length))
             {
                 UI_LOG_ERROR("ERR. Failed to save SSID 2 configuration");
             }
@@ -586,8 +587,8 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         }
         case Configuration_Type::Set_Pwd_2:
         {
-            if (!storage.SaveConfig(ConfigStorage::Config_Id::SSID_Password_2, link_packet->payload,
-                                    link_packet->length))
+            if (!storage.Save(ConfigStorage::Config_Id::SSID_Password_2, link_packet->payload,
+                              link_packet->length))
             {
                 UI_LOG_ERROR("ERR. Failed to save SSID password 2 configuration");
             }
@@ -599,8 +600,8 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         }
         case Configuration_Type::Set_Moq_Url:
         {
-            if (!storage.SaveConfig(ConfigStorage::Config_Id::Moq_Relay_Url, link_packet->payload,
-                                    link_packet->length))
+            if (!storage.Save(ConfigStorage::Config_Id::Moq_Relay_Url, link_packet->payload,
+                              link_packet->length))
             {
                 UI_LOG_ERROR("ERR. Failed to save MoQ Relay Url configuration");
             }
@@ -612,8 +613,8 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         }
         case Configuration_Type::Set_Sframe_Key:
         {
-            if (!storage.SaveConfig(ConfigStorage::Config_Id::Sframe_Key, link_packet->payload,
-                                    link_packet->length))
+            if (!storage.Save(ConfigStorage::Config_Id::Sframe_Key, link_packet->payload,
+                              link_packet->length))
             {
                 UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
             }
@@ -871,8 +872,8 @@ void TransmitWifiCred(ConfigStorage& storage,
 {
     link_packet_t packet;
 
-    ConfigStorage::Config ssid = storage.LoadConfig(ssid_id);
-    ConfigStorage::Config pwd = storage.LoadConfig(pwd_id);
+    ConfigStorage::Config ssid = storage.Load(ssid_id);
+    ConfigStorage::Config pwd = storage.Load(pwd_id);
 
     if (!ssid.loaded || !pwd.loaded)
     {
@@ -906,7 +907,7 @@ void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx)
         Error("main", "cmox failed to initialise");
     }
 
-    ConfigStorage::Config config = storage.LoadConfig(ConfigStorage::Config_Id::Sframe_Key);
+    ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
     if (config.loaded && config.len == 16)
     {
         UI_LOG_INFO("Using stored MLS key!");
