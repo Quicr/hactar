@@ -246,7 +246,7 @@ int app_main()
     HAL_TIM_Base_Start_IT(&htim2);
 
     ConfigStorage config_storage(hi2c1);
-    config_storage.Clear();
+    // config_storage.Clear();
 
     // TODO I need to make sure the net chip is able to receive serial?
 
@@ -256,7 +256,9 @@ int app_main()
     Renderer renderer(screen, keyboard);
     audio_chip.Init();
     audio_chip.StartI2S();
-    CountNumAudioInterrupts(audio_chip, sleeping);
+
+    // Test in case the audio chip settings change and something looks suspicious
+    // CountNumAudioInterrupts(audio_chip, sleeping);
 
     InitScreen();
     LEDS(HIGH, HIGH, HIGH);
@@ -268,44 +270,14 @@ int app_main()
     uint32_t blinky = 0;
     uint32_t next_print = 0;
 
-    // Test in case the audio chip settings change and something looks suspicious
-
     // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
     bool done_booting = false;
 
     UI_LOG_INFO("Starting main loop");
 
-    // // eeprom.Fill(255);
-
-    // // config_storage.Save(ConfigStorage::Config_Id::SSID, (const uint8_t*)"MySSID", 6);
-
-    // uint8_t* ssid;
-    // int16_t ssid_len;
-    // bool loaded = config_storage.GetConfig(ConfigStorage::Config_Id::SSID, &ssid, ssid_len);
-
-    // if (loaded)
-    // {
-    //     UI_LOG_INFO("SSID loaded");
-    //     for (int i = 0; i < ssid_len; ++i)
-    //     {
-    //         UI_LOG_INFO("%c", ssid[i]);
-    //     }
-    // }
-
-    // eeprom.Clear();
-    // uint16_t my_num = 1025;
-    // uint16_t addr = eeprom.Write(my_num, sizeof(my_num));
-    // uint16_t my_num2 = 0;
-    // eeprom.Read(addr + 1, &my_num2, 2);
-    // UI_LOG_INFO("eeprom result %d", my_num2);
-
-    // char x[2] = {6, 3};
-    // int16_t addr2 = eeprom.Write(x, 2);
-
-    // char my_char[2] = {0};
-    // eeprom.Read(addr2 + 1, my_char, 2);
-    // UI_LOG_INFO("eeprom result %d %d", (int)my_char[0], (int)my_char[1]);
+    // ERROR remove
+    uint32_t sleep_timeout = 0;
 
     while (1)
     {
@@ -323,9 +295,10 @@ int app_main()
             next_print = HAL_GetTick() + 1000;
         }
 
-        while (sleeping)
+        while (sleeping && HAL_GetTick() - sleep_timeout >= 20000)
         {
             // LowPowerMode();
+            sleep_timeout = HAL_GetTick();
         }
 
         if (error)
@@ -628,6 +601,7 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         {
             storage.Clear();
             UI_LOG_INFO("OK! Cleared all configurations");
+            break;
         }
         default:
         {

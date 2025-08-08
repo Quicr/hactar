@@ -274,6 +274,7 @@ void HandleConfiguration(uart_stream_t* stream, enum State* state)
     {
         uint8_t type = Config_Type_Not_Found;
         size_t config_type_len = 0;
+        uint32_t len = 0;
 
         // Find the next word
         char* next_word = strstr((const char*)(config_buff + config_type_len), " ");
@@ -367,8 +368,12 @@ void HandleConfiguration(uart_stream_t* stream, enum State* state)
 
             // Send the configuration to the ui chip in blocking mode.
             HAL_UART_Transmit(stream->tx.uart, (uint8_t*)&type, 1, HAL_MAX_DELAY);
+
             // Transmit dummy data for confirmation.
-            HAL_UART_Transmit(stream->tx.uart, (const uint8_t*)"11", 2, HAL_MAX_DELAY);
+            len = 1;
+            HAL_UART_Transmit(stream->tx.uart, (uint8_t*)&len, sizeof(len), HAL_MAX_DELAY);
+
+            HAL_UART_Transmit(stream->tx.uart, (uint8_t*)"1", 1, HAL_MAX_DELAY);
             goto cleanup;
         }
 
@@ -390,7 +395,6 @@ void HandleConfiguration(uart_stream_t* stream, enum State* state)
             goto cleanup;
         }
 
-        uint32_t len;
         // Skip the space
         for (len = config_type_len + 1; len < CONFIGURATOR_BUFF_SZ; ++len)
         {
