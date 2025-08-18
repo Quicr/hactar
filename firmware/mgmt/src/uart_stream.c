@@ -165,6 +165,10 @@ void HandleCommands(uart_stream_t* stream, enum State* state)
         {
             *state = UI_Debug;
         }
+        else if (strcmp((const char*)cmd_buff, (const char*)ui_console_cmd) == 0)
+        {
+            *state = UI_Console;
+        }
         else if (strcmp((const char*)cmd_buff, (const char*)net_debug_cmd) == 0)
         {
             *state = Net_Debug;
