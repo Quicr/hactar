@@ -270,6 +270,13 @@ int app_main(void)
             LEDA(LOW, HIGH, LOW);
             break;
         }
+        case UI_Console:
+        {
+            NormalInit();
+            SetStreamModes(Passthrough, Passthrough, Ignore);
+            LEDA(HIGH, HIGH, HIGH);
+            break;
+        }
         case Net_Debug:
         {
             NormalInit();

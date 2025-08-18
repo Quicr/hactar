@@ -6,6 +6,7 @@ enum State
     Error,
     Running,
     UI_Upload,
+    UI_Console,
     Net_Upload,
     Normal,
     Debug,

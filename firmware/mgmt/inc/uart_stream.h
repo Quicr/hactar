@@ -46,6 +46,7 @@ static const uint8_t ui_upload_cmd[] = "ui_upload";
 static const uint8_t net_upload_cmd[] = "net_upload";
 static const uint8_t debug_cmd[] = "debug";
 static const uint8_t ui_debug_cmd[] = "ui_debug";
+static const uint8_t ui_console_cmd[] = "ui_console";
 static const uint8_t net_debug_cmd[] = "net_debug";
 static const uint8_t reset_cmd[] = "reset";
 static const uint8_t reset_net[] = "reset_net";
