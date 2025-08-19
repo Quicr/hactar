@@ -90,7 +90,7 @@ Core/Src/main.c \
 Core/Src/sysmem.c \
 Core/Src/syscalls.c \
 src/app_mgmt.c \
-src/uart_stream.c \
+src/uart_router.c \
 src/io_control.c \
 src/chip_control.c
 
