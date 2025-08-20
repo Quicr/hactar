@@ -137,11 +137,18 @@ void TrackWriter::PublishTask(void* params)
     std::lock_guard<std::mutex> _(writer->task_mutex);
     writer->is_running = true;
 
+    const auto can_publish = [&] {
+        const auto status = writer->GetStatus();
+        return status == moq::TrackWriter::Status::kOk
+            || status == moq::TrackWriter::Status::kSubscriptionUpdated
+            || status == moq::TrackWriter::Status::kNewGroupRequested;
+    };
+
     while (writer->is_running)
     {
         uint32_t next_print = 0;
         // TODO add in changing pub
-        while (writer->GetStatus() != moq::TrackWriter::Status::kOk && writer->is_running)
+        while (!can_publish() && writer->is_running)
         {
             if (esp_timer_get_time_ms() > next_print)
             {
@@ -152,10 +159,11 @@ void TrackWriter::PublishTask(void* params)
             vTaskDelay(300 / portTICK_PERIOD_MS);
         }
 
-        NET_LOG_INFO("Publishing to track %s", writer->track_name.c_str());
+        NET_LOG_INFO("Publishing to track %s (status=%d)", writer->track_name.c_str(),
+                     static_cast<int>(writer->GetStatus()));
 
         // TODO changing pub
-        while (writer->GetStatus() == TrackWriter::Status::kOk && writer->is_running)
+        while (can_publish() && writer->is_running)
         {
             // TODO use notifies and then drain the entire moq objs
             vTaskDelay(2 / portTICK_PERIOD_MS);
@@ -167,8 +175,11 @@ void TrackWriter::PublishTask(void* params)
 
             std::lock_guard<std::mutex> _(writer->obj_mux);
             const link_data_obj& obj = writer->moq_objs.front();
-            writer->PublishObject(obj.headers, obj.data);
-            writer->moq_objs.pop_front();
+            if (auto pub_status = writer->PublishObject(obj.headers, obj.data);
+                pub_status == moq::TrackWriter::PublishObjectStatus::kOk)
+            {
+                writer->moq_objs.pop_front();
+            }
         }
     }
 
