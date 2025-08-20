@@ -145,8 +145,8 @@ void TrackWriter::PublishTask(void* params)
         {
             if (esp_timer_get_time_ms() > next_print)
             {
-                NET_LOG_WARN("Publisher on track %s waiting to for pub ok",
-                             writer->track_name.c_str());
+                NET_LOG_WARN("Publisher on track %s waiting to for pub ok status %d",
+                             writer->track_name.c_str(), (int)writer->GetStatus());
                 next_print = esp_timer_get_time_ms() + 2000;
             }
             vTaskDelay(300 / portTICK_PERIOD_MS);
