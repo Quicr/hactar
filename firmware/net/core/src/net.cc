@@ -44,7 +44,7 @@ SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 
 /** END EXTERNAL VARIABLES */
 
-constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
+constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33437";
 // constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
@@ -440,7 +440,7 @@ extern "C" void app_main(void)
             case Wifi::State::Disconnected:
             {
                 if (status == moq::Session::Status::kConnecting
-                    || status == moq::Session::Status::kPendingSeverSetup
+                    || status == moq::Session::Status::kPendingServerSetup
                     || status == moq::Session::Status::kReady)
                 {
                     moq_session->Disconnect();

@@ -12,13 +12,13 @@ Session::Session(const quicr::ClientConfig& cfg,
                  std::vector<std::shared_ptr<TrackWriter>>& writers) :
     Client(cfg),
     readers(readers),
-    readers_task_handle(nullptr),
-    readers_task_buffer({0}),
-    readers_task_stack(nullptr),
+    readers_task_handle(),
+    readers_task_buffer(),
+    readers_task_stack(),
     writers(writers),
-    writers_task_handle(nullptr),
-    writers_task_buffer({0}),
-    writers_task_stack(nullptr),
+    writers_task_handle(),
+    writers_task_buffer(),
+    writers_task_stack(),
     readers_mux(),
     writers_mux()
 {
@@ -44,7 +44,7 @@ void Session::StatusChanged(Status status)
         break;
     case Status::kConnecting:
         break;
-    case Status::kPendingSeverSetup:
+    case Status::kPendingServerSetup:
         Logger::Log(Logger::Level::Info, "MOQ Connection connected and now pending server setup");
         break;
     default:
@@ -80,7 +80,6 @@ void Session::PublishTrackTask(void* params)
 
         {
             std::lock_guard<std::mutex> _(session->writers_mux);
-            NET_LOG_INFO("num writers %d", session->writers.size());
 
             for (auto& writer : session->writers)
             {
@@ -99,8 +98,6 @@ void Session::PublishTrackTask(void* params)
 
                 while (writer->GetStatus() != moq::TrackWriter::Status::kOk)
                 {
-                    NET_LOG_INFO("writer %s status %d", writer->GetTrackName().c_str(),
-                                 writer->GetStatus());
                     vTaskDelay(300 / portTICK_PERIOD_MS);
                 }
             }
@@ -130,7 +127,6 @@ void Session::SubscribeTrackTask(void* params)
 
         {
             std::lock_guard<std::mutex> _(session->readers_mux);
-            NET_LOG_INFO("num readers %d", session->readers.size());
 
             for (auto& reader : session->readers)
             {
@@ -149,8 +145,6 @@ void Session::SubscribeTrackTask(void* params)
 
                 while (reader->GetStatus() != moq::TrackReader::Status::kOk)
                 {
-                    NET_LOG_ERROR("Reader %s status %d", reader->GetTrackName().c_str(),
-                                  (int)reader->GetStatus());
                     vTaskDelay(300 / portTICK_PERIOD_MS);
                 }
             }

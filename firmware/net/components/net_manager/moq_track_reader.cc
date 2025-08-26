@@ -23,7 +23,7 @@ TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
     SubscribeTrackHandler(full_track_name,
                           3,
                           quicr::messages::GroupOrder::kAscending,
-                          quicr::messages::FilterType::kLatestObject),
+                          quicr::messages::FilterType::kLargestObject),
     serial(serial),
     codec(codec),
     track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end())
