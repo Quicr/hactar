@@ -49,6 +49,18 @@
 			)
 		)
 	)
+	(property "JLCPCB Part #" "C431536"
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "434d32ab-a4e5-4c92-b494-e2ac15cf6fb6")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
 	(attr smd)
 	(fp_line
 		(start -6.9 -2.5)
@@ -213,6 +225,17 @@
 		(layer "Cmts.User")
 		(uuid "37ad4b54-a344-414a-a029-62f342e97dfe")
 	)
+	(fp_rect
+		(start -5.6 -3.2)
+		(end 5.3 3.3)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "cf90441c-7f43-4fbe-ad74-063a15c2a8e5")
+	)
 	(fp_line
 		(start -5.4 -2.5)
 		(end -6.9 -2.5)
@@ -267,7 +290,7 @@
 	)
 	(pad "" thru_hole circle
 		(at -2.6 0)
-		(size 1.6 1.6)
+		(size 2 2)
 		(drill 1.6)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
@@ -275,43 +298,43 @@
 	)
 	(pad "" thru_hole circle
 		(at 2.4 0)
-		(size 1.6 1.6)
+		(size 2 2)
 		(drill 1.6)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(uuid "4dec9696-dcdb-4d19-aabc-7cbf8d78eeb6")
 	)
-	(pad "R1" smd rect
-		(at -3.7 2.75 180)
-		(size 1.6 1.6)
-		(layers "F.Cu" "F.Mask" "F.Paste")
-		(uuid "2f0f0331-ebfc-49c7-98ee-ae10b2e9e9b6")
-	)
-	(pad "R2" smd rect
-		(at 0 -2.75 180)
-		(size 1.5 1.5)
-		(layers "F.Cu" "F.Mask" "F.Paste")
-		(uuid "cf198872-fc6b-4239-968d-1d4c92d3ae3f")
-	)
-	(pad "R2" smd rect
-		(at 3.7 -2.75 180)
-		(size 1.5 1.5)
-		(layers "F.Cu" "F.Mask" "F.Paste")
-		(uuid "9a161de1-eee8-48ab-8db8-5dda3504fa5d")
-	)
-	(pad "S" smd rect
+	(pad "2" smd rect
 		(at -3.7 -2.75 180)
 		(size 1.5 1.5)
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "5c0c4534-328a-4fa4-8e5d-1250e5392d40")
 	)
-	(pad "T" smd rect
+	(pad "3" smd rect
+		(at -3.7 2.75 180)
+		(size 1.6 1.6)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "2f0f0331-ebfc-49c7-98ee-ae10b2e9e9b6")
+	)
+	(pad "4" smd rect
+		(at 0 -2.75 180)
+		(size 1.5 1.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "cf198872-fc6b-4239-968d-1d4c92d3ae3f")
+	)
+	(pad "5" smd rect
+		(at 3.7 -2.75 180)
+		(size 1.5 1.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "9a161de1-eee8-48ab-8db8-5dda3504fa5d")
+	)
+	(pad "6" smd rect
 		(at 0 2.75 180)
 		(size 1.6 1.6)
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "0f6e6770-ed08-48bf-8f81-288068649b8d")
 	)
-	(pad "T" smd rect
+	(pad "7" smd rect
 		(at 3.7 2.75 180)
 		(size 1.6 1.6)
 		(layers "F.Cu" "F.Mask" "F.Paste")
