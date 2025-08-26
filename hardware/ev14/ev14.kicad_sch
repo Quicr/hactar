@@ -28753,7 +28753,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Device" ""
+		(property "FT Position Offset" "0, -3.6195"
 			(at 245.11 113.03 0)
 			(effects
 				(font
@@ -30162,6 +30162,15 @@
 				(hide yes)
 			)
 		)
+		(property "FT Rotation Offset" "-90"
+			(at 328.93 231.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "S"
 			(uuid "41c0634e-f5aa-4f74-8c1f-c71b7c7437c1")
 		)
@@ -30883,7 +30892,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Hactar_Footprints:SW-SMD_YIYUAN_YTS1C003XXX"
+		(property "Footprint" "Hactar_Footprints:SW-SMD_SHOU_TS36CA-0.6"
 			(at 167.64 115.57 0)
 			(effects
 				(font
@@ -30910,7 +30919,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C5188566"
+		(property "JLCPCB Part #" "C2906288"
 			(at 167.64 120.65 0)
 			(effects
 				(font
@@ -31003,31 +31012,6 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
-			)
-		)
-		(property "FT Position Offset" "0,1.397"
-			(at 41.91 234.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 41.91 234.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 41.91 234.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
 			)
 		)
 		(pin "A1"
@@ -34187,31 +34171,6 @@
 					(size 1.27 1.27)
 				)
 				(hide yes)
-			)
-		)
-		(property "FT Position Offset" "0,-3.556"
-			(at 104.14 306.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 104.14 306.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 104.14 306.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
 			)
 		)
 		(pin "2"
@@ -47204,7 +47163,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Hactar_Footprints:SW-SMD_YIYUAN_YTS1C003XXX"
+		(property "Footprint" "Hactar_Footprints:SW-SMD_SHOU_TS36CA-0.6"
 			(at 157.48 148.59 0)
 			(effects
 				(font
@@ -47231,7 +47190,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C5188566"
+		(property "JLCPCB Part #" "C2906288"
 			(at 157.48 153.67 0)
 			(effects
 				(font
@@ -49776,6 +49735,15 @@
 			)
 		)
 		(property "Description" ""
+			(at 328.93 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "FT Rotation Offset" "90"
 			(at 328.93 213.36 0)
 			(effects
 				(font
