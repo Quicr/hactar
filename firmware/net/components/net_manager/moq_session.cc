@@ -88,15 +88,22 @@ void Session::PublishTrackTask(void* params)
                     continue;
                 }
 
+                const auto can_publish = [&] {
+                    const auto status = writer->GetStatus();
+                    return status == moq::TrackWriter::Status::kOk
+                        || status == moq::TrackWriter::Status::kSubscriptionUpdated
+                        || status == moq::TrackWriter::Status::kNewGroupRequested;
+                };
+
                 // Writer is publishing
-                if (writer->GetStatus() == moq::TrackWriter::Status::kOk)
+                if (can_publish())
                 {
                     continue;
                 }
 
                 session->PublishTrack(writer);
 
-                while (writer->GetStatus() != moq::TrackWriter::Status::kOk)
+                while (!can_publish())
                 {
                     vTaskDelay(300 / portTICK_PERIOD_MS);
                 }
