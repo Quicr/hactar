@@ -224,6 +224,10 @@ try
     std::vector<std::string> track_namespace =
         subscription.at("tracknamespace").get<std::vector<std::string>>();
     std::string trackname = subscription.at("trackname").get<std::string>();
+    if (trackname.empty())
+    {
+        trackname = std::to_string(device_id);
+    }
 
     std::string codec = subscription.at("codec").get<std::string>();
     std::string channel_name = subscription.at("channel_name").get<std::string>();
