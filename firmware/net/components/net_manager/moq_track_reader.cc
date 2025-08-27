@@ -91,7 +91,7 @@ void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::Byt
     {
         num_recv += num_print;
         num_print = 0;
-        SPDLOG_INFO("Received {}", num_recv);
+        SPDLOG_INFO("{} Received {}", Stringify(GetFullTrackName()), num_recv);
     }
 
     if (!loopback && headers.group_id == device_id)
