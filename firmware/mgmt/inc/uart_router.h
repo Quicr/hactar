@@ -1,21 +1,14 @@
 #ifndef UART_ROUTER_H
 #define UART_ROUTER_H
 
+#include "command_handler.h"
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_uart.h"
 
 #define UART_BUFF_SZ 1024
 #define COMMAND_TIMEOUT 1000
-#define INTERNAL_BUFF_SZ 32
-#define CONFIGURATOR_BUFF_SZ 128
-
-typedef enum
-{
-    Ignore,
-    Passthrough,
-    Command,
-    Configuration
-} StreamMode;
+#define INTERNAL_BUFF_SZ 64
+#define PACKET_SZ 64
 
 typedef enum
 {
@@ -51,14 +44,15 @@ typedef struct
 {
     receive_t* rx;
     transmit_t* tx;
-    StreamMode mode;
     Buffer_Direction direction;
 } uart_stream_t;
 
 void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received);
-void uart_router_copy_rx_data(receive_t* rx, transmit_t* tx, const uint16_t num_bytes);
+void uart_router_copy_to_tx(transmit_t* tx, uint8_t* buff, const uint16_t num_bytes);
+void uart_router_copy_string_to_tx(transmit_t* tx, const char* str);
 void uart_router_tx_isr(transmit_t* tx);
 void uart_router_transmit(transmit_t* tx);
+void uart_router_parse_internal(const command_map_t command_map[Cmd_Count]);
 uart_stream_t* uart_router_get_ui_stream();
 uart_stream_t* uart_router_get_net_stream();
 uart_stream_t* uart_router_get_usb_stream();

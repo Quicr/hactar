@@ -3,65 +3,33 @@
 
 #include "stm32f0xx_hal.h"
 
-#define WORD_COUNT_MAX 4
+typedef enum
+{
+    Cmd_Version = 0,
+    Cmd_Who_Are_You,
+    Cmd_Hard_Reset,
+    Cmd_Reset,
+    Cmd_Reset_Ui,
+    Cmd_Reset_Net,
+    Cmd_Toggle_Logs,
+    Cmd_Toggle_Logs_Ui,
+    Cmd_Toggle_Logs_Net,
+    Cmd_Quiet_Logs,
+    Cmd_Quiet_Logs_Ui,
+    Cmd_Quiet_Logs_Net,
+    Cmd_To_Ui,
+    Cmd_To_Net,
+    Cmd_Loopback,
+    Cmd_Count
+} Command;
 
 typedef struct
 {
-    const char* pattern;
-    uint8_t word_count;
-    void (*callback)(
-        UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-} command_t;
+    const Command command;
+    void (*callback)(void* arg);
+    void* usr_arg;
+} command_map_t;
 
-typedef struct
-{
-    const char* w1;
-    const char* w2;
-    void (*callback)(const char* w1, const char* w2);
-} subcommand_t;
-
-int8_t ParseWords(const uint8_t* buff, const size_t len, char words[][32], uint8_t* word_count);
-void ProcessCommand(UART_HandleTypeDef* huart, const uint8_t* buff, const size_t len);
-
-void Cmd_Help(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Upload(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Debug(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Reset(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Hide_Logs(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Show_Logs(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Status(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Version(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Clear(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Get(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Set(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-void Cmd_Stop(
-    UART_HandleTypeDef* huart, const char* w1, const char* w2, const char* w3, const char* w4);
-
-const command_t commands[] = {{"HELP", 1, Cmd_Help},
-                              {"STATUS", 1, Cmd_Status},
-                              {"CLEAR", 2, Cmd_Clear},
-                              {"DEBUG", 2, Cmd_Debug},
-                              {"HIDE", 2, Cmd_Hide_Logs},
-                              {"RESET", 2, Cmd_Reset},
-                              {"SHOW", 2, Cmd_Show_Logs},
-                              {"STOP", 2, Cmd_Stop},
-                              {"UPLOAD", 2, Cmd_Upload},
-                              {"VERSION", 2, Cmd_Version},
-                              {"GET", 3, Cmd_Get},
-                              {"SET", 4, Cmd_Set},
-                              {NULL, 0, NULL}};
-
-// const
+void command_get_version(void* arg);
 
 #endif
