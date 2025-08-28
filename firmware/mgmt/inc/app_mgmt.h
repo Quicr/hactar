@@ -35,6 +35,8 @@ extern "C" {
 #include "stm32f0xx_hal.h"
 #include "uart_stream.h"
 
+static const enum State default_state = Loopback;
+
 int app_main(void);
 
 void NetBootloaderMode();
