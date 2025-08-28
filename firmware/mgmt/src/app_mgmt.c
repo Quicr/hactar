@@ -47,6 +47,10 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
     __enable_irq();
 }
 
+const command_map_t command_map[Cmd_Count] = {
+    {Cmd_Version, command_get_version, NULL},
+};
+
 void HAL_GPIO_EXTI_Callback(uint16_t pin)
 {
     if (pin == UI_STAT_Pin)
@@ -101,7 +105,9 @@ int app_main(void)
 
         // InitUartStream(usb_stream);
         StartUartReceive(usb_stream);
-        usb_stream->direction = Usb;
+        usb_stream->direction = Internal;
+        // StartUartReceive(ui_stream);
+        // ui_stream->direction = Usb;
 
         switch (state)
         {
@@ -207,6 +213,7 @@ int app_main(void)
             uart_router_transmit(usb_stream->tx);
             uart_router_transmit(ui_stream->tx);
             uart_router_transmit(net_stream->tx);
+            uart_router_parse_internal(command_map);
             CheckTimeout();
 
             if (state != next_state)

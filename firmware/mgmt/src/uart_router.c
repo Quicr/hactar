@@ -39,7 +39,7 @@ static receive_t usb_rx = {
     .idx = 0,
 };
 
-uart_stream_t usb_stream = {.rx = &usb_rx, .tx = &usb_tx, .mode = Ignore};
+uart_stream_t usb_stream = {.rx = &usb_rx, .tx = &usb_tx, .direction = None};
 
 static transmit_t ui_tx = {
     .uart = &huart1,
@@ -59,7 +59,7 @@ static receive_t ui_rx = {
     .idx = 0,
 };
 
-uart_stream_t ui_stream = {.rx = &ui_rx, .tx = &ui_tx, .mode = Ignore};
+uart_stream_t ui_stream = {.rx = &ui_rx, .tx = &ui_tx, .direction = None};
 
 static transmit_t net_tx = {
     .uart = &huart1,
@@ -79,7 +79,7 @@ static receive_t net_rx = {
     .idx = 0,
 };
 
-uart_stream_t net_stream = {.rx = &net_rx, .tx = &net_tx, .mode = Ignore};
+uart_stream_t net_stream = {.rx = &net_rx, .tx = &net_tx, .direction = None};
 
 static transmit_t internal_tx = {
     .uart = NULL,
@@ -93,6 +93,21 @@ static transmit_t internal_tx = {
 };
 
 static uint32_t last_receive_tick = 0;
+
+// Assumes unsent > 0
+static uint8_t read_from_tx(transmit_t* tx, int32_t* num_read)
+{
+    if (tx->read >= tx->size)
+    {
+        tx->read = 0;
+    }
+
+    --tx->unsent;
+
+    (*num_read) += 1;
+
+    return tx->buff[tx->read++];
+}
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
 {
@@ -156,20 +171,20 @@ void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received)
     case None:
         break;
     case Usb:
-        uart_router_copy_rx_data(stream->rx, &usb_tx, num_bytes);
+        uart_router_copy_to_tx(&usb_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         break;
     case Ui:
-        uart_router_copy_rx_data(stream->rx, &ui_tx, num_bytes);
+        uart_router_copy_to_tx(&ui_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         break;
     case Net:
-        uart_router_copy_rx_data(stream->rx, &net_tx, num_bytes);
+        uart_router_copy_to_tx(&net_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         break;
     case Ui_Net:
-        uart_router_copy_rx_data(stream->rx, &ui_tx, num_bytes);
-        uart_router_copy_rx_data(stream->rx, &net_tx, num_bytes);
+        uart_router_copy_to_tx(&ui_tx, stream->rx->buff + stream->rx->idx, num_bytes);
+        uart_router_copy_to_tx(&net_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         break;
     case Internal:
-        uart_router_copy_rx_data(stream->rx, &internal_tx, num_bytes);
+        uart_router_copy_to_tx(&internal_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         break;
     }
 
@@ -181,25 +196,33 @@ void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received)
     }
 }
 
-void uart_router_copy_rx_data(receive_t* rx, transmit_t* tx, const uint16_t num_bytes)
+void uart_router_copy_to_tx(transmit_t* tx, uint8_t* buff, const uint16_t num_bytes)
 {
     if (tx->write + num_bytes >= tx->size)
     {
         const uint16_t wrap_bytes = tx->size - tx->write;
 
-        memcpy(tx->buff + tx->write, rx->buff + rx->idx, wrap_bytes);
-        memcpy(tx->buff, rx->buff + rx->idx + wrap_bytes, num_bytes - wrap_bytes);
+        memcpy(tx->buff + tx->write, buff, wrap_bytes);
+        memcpy(tx->buff, buff + wrap_bytes, num_bytes - wrap_bytes);
 
         tx->write = 0;
     }
     else
     {
-        memcpy(tx->buff + tx->write, rx->buff + rx->idx, num_bytes);
+        memcpy(tx->buff + tx->write, buff, num_bytes);
     }
 
     // Copy bytes to tx buffer
     tx->unsent += num_bytes;
     tx->write += num_bytes;
+}
+
+void uart_router_copy_string_to_tx(transmit_t* tx, const char* str)
+{
+    // Get the string len
+    size_t len = strlen(str);
+
+    uart_router_copy_to_tx(tx, str, len);
 }
 
 void uart_router_tx_isr(transmit_t* tx)
@@ -232,6 +255,108 @@ void uart_router_transmit(transmit_t* tx)
     }
 
     HAL_UART_Transmit_DMA(tx->uart, tx->buff + tx->read, tx->num_sending);
+}
+
+void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
+{
+    // Parse our internal, if it is a zero length TLV then we can just assume it is a command
+    // otherwise... I dunno right now.
+
+    const uint16_t Header_Bytes = 3;
+
+    static Command command = 0;
+    static uint16_t len = 0;
+    static int32_t num_read = 0;
+
+    static uint16_t packet_idx = 0;
+    static uint8_t packet[PACKET_SZ] = {0};
+
+    while (internal_tx.unsent > 0)
+    {
+        // If we don't have enough bytes for the length and the command
+        if (internal_tx.unsent < 3 && num_read != 0)
+        {
+            break;
+        }
+
+        if (num_read == 0)
+        {
+            command = read_from_tx(&internal_tx, &num_read);
+            len = read_from_tx(&internal_tx, &num_read);
+            len |= read_from_tx(&internal_tx, &num_read) << 8;
+        }
+
+        if (command >= Cmd_Count)
+        {
+            // bad data continue
+            num_read = 0;
+            continue;
+        }
+
+        // Get the type
+        if (len == 0)
+        {
+            switch (command)
+            {
+            case Cmd_To_Ui:
+            case Cmd_To_Net:
+            case Cmd_Loopback:
+            {
+                // Bad data continue;
+                num_read = 0;
+                break;
+            }
+            default:
+            {
+                // Is command, check if the idx matches the type.
+                if (command_map[command].command == command
+                    && command_map[command].callback != NULL)
+                {
+                    command_map[command].callback(command_map[command].usr_arg);
+                }
+                break;
+            }
+            }
+            num_read = 0;
+        }
+        else if (num_read - Header_Bytes >= len)
+        {
+            // Send the packet to ui or net
+            switch (command)
+            {
+            case Cmd_To_Ui:
+            {
+
+                break;
+            }
+            case Cmd_To_Net:
+            {
+                break;
+            }
+            case Cmd_Loopback:
+            {
+                break;
+            }
+            default:
+                break;
+            }
+
+            num_read = 0;
+            packet_idx = 0;
+        }
+        else
+        {
+            if (packet_idx >= PACKET_SZ)
+            {
+                packet_idx = 0;
+                num_read = 0;
+                continue;
+            }
+
+            // Read more bytes!
+            packet[packet_idx++] = read_from_tx(&internal_tx, &num_read);
+        }
+    }
 }
 
 uart_stream_t* uart_router_get_ui_stream()

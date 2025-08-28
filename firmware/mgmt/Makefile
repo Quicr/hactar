@@ -24,7 +24,7 @@ FIRMWARE = ${TARGET}.elf
 # building variables
 ######################################
 # debug build?
-DEBUG = 0
+DEBUG = 1
 # optimization
 
 OPT = -Os
@@ -92,7 +92,8 @@ Core/Src/syscalls.c \
 src/app_mgmt.c \
 src/uart_router.c \
 src/io_control.c \
-src/chip_control.c
+src/chip_control.c \
+src/command_handler.c
 
 # ASM sources
 ASM_SOURCES =  \
