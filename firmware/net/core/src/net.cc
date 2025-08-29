@@ -34,7 +34,9 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = true;
+
+// TODO make this a config that can be changed using mgmt
+bool loopback = false;
 
 std::vector<std::shared_ptr<moq::TrackReader>> readers;
 std::vector<std::shared_ptr<moq::TrackWriter>> writers;
