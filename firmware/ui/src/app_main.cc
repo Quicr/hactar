@@ -23,7 +23,9 @@ inline void CheckPTTAI();
 inline void SendAudio(const ui_net_link::Channel_Id channel_id,
                       const ui_net_link::Packet_Type packet_type,
                       bool last);
+inline void HandleMedia(link_packet_t* packet);
 inline void HandleAiResponse(link_packet_t* packet);
+inline void HandleChat(link_packet_t* packet);
 inline void HandleKeypress();
 inline bool TryProtect(link_packet_t* link_packet);
 inline bool TryUnprotect(link_packet_t* link_packet);
@@ -389,47 +391,46 @@ void HandleRecvLinkPackets()
         {
             break;
         }
-        case ui_net_link::Packet_Type::TextMessage:
-        {
-            UI_LOG_INFO("Got text message");
-
-            if (!TryUnprotect(link_packet))
-            {
-                UI_LOG_ERROR("Failed to decrypt text message");
-                continue;
-            }
-
-            // Ignore the first byte
-            constexpr uint8_t payload_offset = 6;
-            char* text = (char*)(link_packet->payload + payload_offset);
-
-            screen.CommitText(text, link_packet->length - payload_offset);
-            break;
-        }
+        case ui_net_link::Packet_Type::Message:
         case ui_net_link::Packet_Type::AiResponse:
         {
-            UI_LOG_INFO("Got an ai response");
-
-            HandleAiResponse(link_packet);
-            break;
-        }
-        case ui_net_link::Packet_Type::PttMultiObject:
-        case ui_net_link::Packet_Type::PttObject:
-        {
-
             if (!TryUnprotect(link_packet))
             {
                 UI_LOG_ERROR("Failed to decrypt ptt object");
                 continue;
             }
 
-            // TODO we need to know if it is mono or stereo data
-            // that we have received
-            // For now assume we receive mono
-            ui_net_link::Deserialize(*link_packet, play_frame);
-            AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz,
-                                   audio_chip.TxBuffer(), constants::Audio_Buffer_Sz,
-                                   constants::Stereo, true);
+            // Get the second byte of the data which is the message type
+            // Since the first byte is channel id
+            const auto message_type =
+                static_cast<ui_net_link::MessageType>(link_packet->payload[1]);
+
+            switch (message_type)
+            {
+            case ui_net_link::MessageType::Media:
+            {
+                // Ptt audio/translated audio
+                HandleMedia(link_packet);
+                break;
+            }
+            case ui_net_link::MessageType::AIRequest:
+            {
+                // Do nothing.
+                break;
+            }
+            case ui_net_link::MessageType::AIResponse:
+            {
+                // Json, text, or ai audio
+                HandleAiResponse(link_packet);
+                break;
+            }
+            case ui_net_link::MessageType::Chat:
+            {
+                // Text/translated text
+                HandleChat(link_packet);
+                break;
+            }
+            }
             break;
         }
         case ui_net_link::Packet_Type::MoQStatus:
@@ -526,13 +527,13 @@ void CheckPTT()
         ui_net_link::Serialize(talk_stop, message_packet);
         serial.Write(message_packet);
         ptt_down = false;
-        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::PttObject, true);
+        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, true);
         LedGOff();
     }
 
     if (ptt_down)
     {
-        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::PttObject, false);
+        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, false);
     }
 }
 
@@ -556,13 +557,13 @@ void CheckPTTAI()
         ui_net_link::Serialize(talk_stop, message_packet);
         serial.Write(message_packet);
         ptt_ai_down = false;
-        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::PttAiObject, true);
+        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, true);
         LedBOff();
     }
 
     if (ptt_ai_down)
     {
-        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::PttAiObject, false);
+        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, false);
     }
 }
 
@@ -587,28 +588,62 @@ void SendAudio(const ui_net_link::Channel_Id channel_id,
     ++num_packets_tx;
 }
 
+void HandleMedia(link_packet_t* packet)
+{
+    ui_net_link::Deserialize(*link_packet, play_frame);
+    AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
+                           constants::Audio_Buffer_Sz, constants::Stereo, true);
+}
+
 void HandleAiResponse(link_packet_t* packet)
 {
-    UI_LOG_INFO("ai response len %d", packet->length);
-    if (!TryUnprotect(packet))
-    {
-        UI_LOG_ERROR("Failed to decrypt ai response packet");
-        return;
-    }
 
     auto* response =
         static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
 
-    if (response->chunk_data[0] == '{' && response->chunk_data[response->chunk_length - 1] == '}')
+    switch (response->content_type)
     {
-        UI_LOG_INFO("IS JSON");
-        serial.Write(*packet);
-    }
-    else
+    case ui_net_link::ContentType::Audio:
     {
-        response->chunk_data[response->chunk_length] = 0;
-        UI_LOG_INFO("[AI] %s", response->chunk_data);
+        const uint16_t len = constants::Audio_Phonic_Sz < response->chunk_length
+                               ? constants::Audio_Phonic_Sz
+                               : response->chunk_length;
+
+        AudioCodec::ALawExpand(response->chunk_data, len, audio_chip.TxBuffer(),
+                               constants::Audio_Buffer_Sz, constants::Stereo, true);
+        break;
     }
+    case ui_net_link::ContentType::Json:
+    {
+        if (response->chunk_data[0] == '{'
+            && response->chunk_data[response->chunk_length - 1] == '}')
+        {
+            UI_LOG_INFO("ai response len %d", packet->length);
+            UI_LOG_INFO("IS JSON");
+            packet->type = static_cast<uint8_t>(ui_net_link::Packet_Type::AiResponse);
+            serial.Write(*packet);
+        }
+        else
+        {
+            // This is a text.
+            response->chunk_data[response->chunk_length] = 0;
+            UI_LOG_INFO("[AI] %s", response->chunk_data);
+        }
+        break;
+    }
+    }
+}
+
+void HandleChat(link_packet_t* packet)
+{
+    UI_LOG_INFO("Got text message");
+
+    // Ignore the first bytes, which are just header information
+    // +1 channel id, +1 message type, +4 length
+    constexpr uint8_t payload_offset = 6;
+    char* text = (char*)(link_packet->payload + payload_offset);
+
+    screen.CommitText(text, link_packet->length - payload_offset);
 }
 
 void HandleKeypress()
@@ -793,7 +828,7 @@ void SlowSendTest(int delay, int num)
         talk_frame.data[i] = i;
     }
 
-    ui_net_link::Serialize(talk_frame, ui_net_link::Packet_Type::PttObject, false, packet);
+    ui_net_link::Serialize(talk_frame, ui_net_link::Packet_Type::Message, false, packet);
 
     int i = 0;
     while (i++ != num)
@@ -811,7 +846,7 @@ void InterHactarSerialRoundTripTest(int delay, int num)
     const size_t buff_sz = 321;
     link_packet_t tmp;
     // Fill the tmp audio buffer with random
-    tmp.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
+    tmp.type = (uint8_t)ui_net_link::Packet_Type::Message;
     tmp.length = buff_sz;
     for (size_t i = 0; i < buff_sz; ++i)
     {
@@ -898,7 +933,7 @@ void InterHactarFullRoundTripTest(int delay, int num)
     const size_t buff_sz = 321;
     link_packet_t tmp;
     // Fill the tmp audio buffer with random
-    tmp.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
+    tmp.type = (uint8_t)ui_net_link::Packet_Type::Message;
     tmp.length = buff_sz;
     for (size_t i = 0; i < buff_sz; ++i)
     {

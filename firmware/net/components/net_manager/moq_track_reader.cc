@@ -203,13 +203,9 @@ void TrackReader::SubscribeTask(void* param)
         {
             reader->TransmitAudio();
         }
-        else if (reader->codec == "ascii")
+        else if (reader->codec == "ascii" || reader->codec == "ai_cmd_response:json")
         {
             reader->TransmitText();
-        }
-        else if (reader->codec == "ai_cmd_response:json")
-        {
-            reader->TransmitAiResponse();
         }
         else
         {
@@ -225,7 +221,7 @@ void TrackReader::SubscribeTask(void* param)
 
 void TrackReader::TransmitAudio()
 {
-    NET_LOG_INFO("Track reader - audio mode");
+    NET_LOG_INFO("Track reader %s", codec.c_str());
     while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
         // TODO use notifies and then drain the entire moq objs
@@ -254,14 +250,7 @@ void TrackReader::TransmitAudio()
             continue;
         }
 
-        link_packet_t link_packet;
-        link_packet.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
-        link_packet.payload[0] = 0;
-        link_packet.length = data->size() + 1;
-
-        memcpy(link_packet.payload + 1, data->data(), data->size());
-
-        serial.Write(link_packet);
+        WriteToSerial(data);
     }
 }
 
@@ -282,43 +271,18 @@ void TrackReader::TransmitText()
         std::optional<std::vector<uint8_t>> data = std::move(byte_buffer.front());
         byte_buffer.pop();
 
-        link_packet_t link_packet = {0};
-        link_packet.type = (uint8_t)ui_net_link::Packet_Type::TextMessage;
-        link_packet.payload[0] = 0; // TODO channel id
-        link_packet.length = data->size() + 1;
-
-        memcpy(link_packet.payload + 1, data->data(), data->size());
-
-        serial.Write(link_packet);
+        WriteToSerial(data);
     }
 }
 
-void TrackReader::TransmitAiResponse()
+void TrackReader::WriteToSerial(std::optional<quicr::Bytes> data)
 {
-    NET_LOG_INFO("Track reader - ai response mode");
+    link_packet_t link_packet = {0};
+    link_packet.type = (uint8_t)ui_net_link::Packet_Type::Message;
+    link_packet.payload[0] = 0; // TODO channel id
+    link_packet.length = data->size() + 1;
 
-    while (GetStatus() == TrackReader::Status::kOk && is_running)
-    {
-        vTaskDelay(2 / portTICK_PERIOD_MS);
+    memcpy(link_packet.payload + 1, data->data(), data->size());
 
-        if (byte_buffer.empty())
-        {
-            continue;
-        }
-
-        std::optional<std::vector<uint8_t>> data = std::move(byte_buffer.front());
-        byte_buffer.pop();
-
-        link_packet_t link_packet = {0};
-        link_packet.type = (uint8_t)ui_net_link::Packet_Type::AiResponse;
-        link_packet.payload[0] = 0; // TODO channel id
-        link_packet.length = data->size() + 1;
-
-        // TODO split into smaller chunks
-        NET_LOG_INFO("got a change channel len %d", data->size());
-
-        memcpy(link_packet.payload + 1, data->data(), data->size());
-
-        serial.Write(link_packet);
-    }
+    serial.Write(link_packet);
 }

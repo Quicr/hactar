@@ -49,7 +49,9 @@ private:
 
     void TransmitAudio();
     void TransmitText();
-    void TransmitAiResponse();
+
+    void WriteToSerial(std::optional<quicr::Bytes> data);
+
     // Audio variables
     // TODO move into an audio object?
     Serial& serial;
