@@ -16,14 +16,21 @@ extern TIM_HandleTypeDef htim3;
 
 #define TRANSMISSION_TIMEOUT 10000
 
-uint8_t Ok_Byte[] = {0x80};
-uint8_t Ready_Byte[] = {0x81};
-
 static uint8_t uploader = 0;
 static uint32_t timeout_tick = 0;
 
 enum State state = default_state;
 enum State next_state = Running;
+
+const command_map_t command_map[Cmd_Count] = {
+    {Cmd_Version, command_get_version, NULL},
+    {Cmd_Who_Are_You, command_who_are_you, NULL},
+    {Cmd_Hard_Reset, command_hard_reset, NULL},
+    {Cmd_Reset, command_reset, NULL},
+    {Cmd_Reset_Ui, command_reset_ui, NULL},
+    {Cmd_Reset_Net, command_reset_net, NULL},
+    {Cmd_Flash_Ui, command_flash_ui, (void*)&uploader},
+};
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
@@ -46,10 +53,6 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
     // }
     __enable_irq();
 }
-
-const command_map_t command_map[Cmd_Count] = {
-    {Cmd_Version, command_get_version, NULL},
-};
 
 void HAL_GPIO_EXTI_Callback(uint16_t pin)
 {
@@ -94,6 +97,8 @@ int app_main(void)
     uart_stream_t* net_stream = uart_router_get_net_stream();
     uart_stream_t* ui_stream = uart_router_get_ui_stream();
 
+    StartUartReceive(usb_stream);
+    usb_stream->path = Tx_Path_Internal;
     while (1)
     {
         NetHoldInReset();
@@ -104,10 +109,8 @@ int app_main(void)
         CancelAllUart();
 
         // InitUartStream(usb_stream);
-        StartUartReceive(usb_stream);
-        usb_stream->direction = Internal;
         // StartUartReceive(ui_stream);
-        // ui_stream->direction = Usb;
+        // ui_stream->path = Tx_Path_Usb;
 
         switch (state)
         {
@@ -214,6 +217,7 @@ int app_main(void)
             uart_router_transmit(ui_stream->tx);
             uart_router_transmit(net_stream->tx);
             uart_router_parse_internal(command_map);
+
             CheckTimeout();
 
             if (state != next_state)
@@ -244,23 +248,23 @@ void CheckTimeout()
 
 void SendUploadOk()
 {
-    static uint8_t rx_buff[1];
-    rx_buff[0] = 0;
+    // static uint8_t rx_buff[1];
+    // rx_buff[0] = 0;
 
-    for (int i = 0; i < 5; i++)
-    {
-        // HAL_UART_Transmit(usb_stream.rx->uart, Ok_Byte, 1, HAL_MAX_DELAY);
-        HAL_Delay(100);
-        // HAL_UART_Receive(usb_stream.rx->uart, rx_buff, 1, 1000);
+    // for (int i = 0; i < 5; i++)
+    // {
+    //     // HAL_UART_Transmit(usb_stream.rx->uart, Ok_Byte, 1, HAL_MAX_DELAY);
+    //     HAL_Delay(100);
+    //     // HAL_UART_Receive(usb_stream.rx->uart, rx_buff, 1, 1000);
 
-        if (rx_buff[0] == Ok_Byte[0])
-        {
-            return;
-        }
-    }
+    //     if (rx_buff[0] == Ok_Byte[0])
+    //     {
+    //         return;
+    //     }
+    // }
 
-    // If we got here then the flasher never responded so put the state back to normal
-    next_state = default_state;
+    // // If we got here then the flasher never responded so put the state back to normal
+    // next_state = default_state;
 }
 
 void CancelAllUart()
@@ -323,4 +327,12 @@ void LEDB(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b)
     HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, r);
     HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, g);
     HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, b);
+}
+
+void app_mgmt_reset(const Reset_Type reset_type)
+{
+    if (reset_type == Hard_Reset)
+    {
+        next_state = default_state;
+    }
 }

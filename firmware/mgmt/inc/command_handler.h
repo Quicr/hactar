@@ -11,6 +11,8 @@ typedef enum
     Cmd_Reset,
     Cmd_Reset_Ui,
     Cmd_Reset_Net,
+    Cmd_Flash_Ui,
+    Cmd_Flash_Net,
     Cmd_Toggle_Logs,
     Cmd_Toggle_Logs_Ui,
     Cmd_Toggle_Logs_Net,
@@ -31,5 +33,13 @@ typedef struct
 } command_map_t;
 
 void command_get_version(void* arg);
+void command_who_are_you(void* arg);
+void command_hard_reset(void* arg);
+void command_reset(void* arg);
+void command_reset_ui(void* arg);
+void command_reset_net(void* arg);
+void command_flash_ui(void* arg);
+void command_flash_net(void* arg);
+void command_toggle_logs(void* arg);
 
 #endif
