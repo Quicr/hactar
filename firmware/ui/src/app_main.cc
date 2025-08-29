@@ -638,7 +638,8 @@ void HandleChat(link_packet_t* packet)
 {
     UI_LOG_INFO("Got text message");
 
-    // Ignore the first byte
+    // Ignore the first bytes, which are just header information
+    // +1 channel id, +1 message type, +4 length
     constexpr uint8_t payload_offset = 6;
     char* text = (char*)(link_packet->payload + payload_offset);
 
