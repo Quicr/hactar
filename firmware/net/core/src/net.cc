@@ -34,7 +34,7 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
-bool loopback = false;
+bool loopback = true;
 
 std::vector<std::shared_ptr<moq::TrackReader>> readers;
 std::vector<std::shared_ptr<moq::TrackWriter>> writers;
@@ -172,14 +172,7 @@ static void LinkPacketTask(void* args)
                 }
                 break;
             }
-            case ui_net_link::Packet_Type::TextMessage:
-                NET_LOG_INFO("Got text message");
-                [[fallthrough]];
-            case ui_net_link::Packet_Type::PttAiObject:
-                [[fallthrough]];
-            case ui_net_link::Packet_Type::PttMultiObject:
-                [[fallthrough]];
-            case ui_net_link::Packet_Type::PttObject:
+            case ui_net_link::Packet_Type::Message:
             {
                 // Channel id is always zero, so, gotta fix that.
                 uint8_t channel_id = packet->payload[0];

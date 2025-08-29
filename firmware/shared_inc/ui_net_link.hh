@@ -17,11 +17,8 @@ enum struct Packet_Type : uint8_t
     PlayStop,
     MoQStatus,
     MoQChangeNamespace,
-    PttObject,
-    PttMultiObject,
-    PttAiObject,
+    Message,
     AiResponse,
-    TextMessage,
     SSIDRequest,
     WifiConnect,
     WifiStatus
@@ -207,12 +204,12 @@ struct __attribute__((packed)) AIResponseChunk
                                        bool is_last,
                                        link_packet_t& packet)
 {
-    if (packet_type != Packet_Type::PttObject && packet_type != Packet_Type::PttAiObject)
+    if (packet_type != Packet_Type::Message)
     {
         // This should maybe be an error instead?
         Logger::Log(Logger::Level::Error, "audio object packet type is a wrong type %d",
                     (int)packet_type);
-        packet_type = Packet_Type::PttObject;
+        packet_type = Packet_Type::Message;
     }
 
     packet.type = (uint8_t)packet_type;
@@ -221,7 +218,7 @@ struct __attribute__((packed)) AIResponseChunk
     uint32_t offset = 1;
 
     static constexpr std::uint32_t audio_size = constants::Audio_Phonic_Sz;
-    if (packet_type == Packet_Type::PttObject)
+    if (talk_frame.channel_id == Channel_Id::Ptt)
     {
         packet.payload[offset] = static_cast<uint8_t>(MessageType::Media);
         offset += sizeof(Chunk::type);
@@ -232,7 +229,7 @@ struct __attribute__((packed)) AIResponseChunk
         memcpy(packet.payload + offset, &audio_size, sizeof(uint32_t));
         offset += sizeof(uint32_t);
     }
-    else if (packet_type == Packet_Type::PttAiObject)
+    else if (talk_frame.channel_id == Channel_Id::Ptt_Ai)
     {
         packet.payload[offset] = static_cast<uint8_t>(MessageType::AIRequest);
         offset += sizeof(Chunk::type);
@@ -259,7 +256,7 @@ struct __attribute__((packed)) AIResponseChunk
 [[maybe_unused]] static void
 Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, link_packet_t& packet)
 {
-    packet.type = (uint8_t)Packet_Type::TextMessage;
+    packet.type = (uint8_t)Packet_Type::Message;
     packet.payload[0] = (uint8_t)channel_id;
 
     uint32_t offset = 1;
