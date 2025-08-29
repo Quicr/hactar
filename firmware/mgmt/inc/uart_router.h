@@ -12,13 +12,13 @@
 
 typedef enum
 {
-    None = 0,
-    Usb,
-    Ui,
-    Net,
-    Ui_Net,
-    Internal,
-} Buffer_Direction;
+    Tx_Path_None = 0,
+    Tx_Path_Usb,
+    Tx_Path_Ui,
+    Tx_Path_Net,
+    Tx_Path_Ui_Net,
+    Tx_Path_Internal,
+} Tx_Path;
 
 typedef struct
 {
@@ -44,11 +44,11 @@ typedef struct
 {
     receive_t* rx;
     transmit_t* tx;
-    Buffer_Direction direction;
+    Tx_Path path;
 } uart_stream_t;
 
 void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received);
-void uart_router_copy_to_tx(transmit_t* tx, uint8_t* buff, const uint16_t num_bytes);
+void uart_router_copy_to_tx(transmit_t* tx, const uint8_t* buff, const uint16_t num_bytes);
 void uart_router_copy_string_to_tx(transmit_t* tx, const char* str);
 void uart_router_tx_isr(transmit_t* tx);
 void uart_router_transmit(transmit_t* tx);
@@ -57,5 +57,10 @@ uart_stream_t* uart_router_get_ui_stream();
 uart_stream_t* uart_router_get_net_stream();
 uart_stream_t* uart_router_get_usb_stream();
 uint32_t uart_router_get_last_received_tick();
+void uart_router_update_last_received_tick(const uint32_t current_tick);
+void uart_router_send_flash_ok();
+void uart_router_send_ready();
+void uart_router_usb_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity);
+void uart_router_reset_stream(uart_stream_t* stream);
 
 #endif

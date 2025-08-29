@@ -39,7 +39,7 @@ static receive_t usb_rx = {
     .idx = 0,
 };
 
-uart_stream_t usb_stream = {.rx = &usb_rx, .tx = &usb_tx, .direction = None};
+uart_stream_t usb_stream = {.rx = &usb_rx, .tx = &usb_tx, .path = Tx_Path_None};
 
 static transmit_t ui_tx = {
     .uart = &huart1,
@@ -59,7 +59,7 @@ static receive_t ui_rx = {
     .idx = 0,
 };
 
-uart_stream_t ui_stream = {.rx = &ui_rx, .tx = &ui_tx, .direction = None};
+uart_stream_t ui_stream = {.rx = &ui_rx, .tx = &ui_tx, .path = Tx_Path_None};
 
 static transmit_t net_tx = {
     .uart = &huart1,
@@ -79,7 +79,7 @@ static receive_t net_rx = {
     .idx = 0,
 };
 
-uart_stream_t net_stream = {.rx = &net_rx, .tx = &net_tx, .direction = None};
+uart_stream_t net_stream = {.rx = &net_rx, .tx = &net_tx, .path = Tx_Path_None};
 
 static transmit_t internal_tx = {
     .uart = NULL,
@@ -93,6 +93,9 @@ static transmit_t internal_tx = {
 };
 
 static uint32_t last_receive_tick = 0;
+
+static uint8_t Ok_Byte[] = {0x80};
+static uint8_t Ready_Byte[] = {0x81};
 
 // Assumes unsent > 0
 static uint8_t read_from_tx(transmit_t* tx, int32_t* num_read)
@@ -166,24 +169,24 @@ void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received)
 
     // Faster than putting a check inside of the copy loop since this is only
     // checked once per rx event.
-    switch (stream->direction)
+    switch (stream->path)
     {
-    case None:
+    case Tx_Path_None:
         break;
-    case Usb:
+    case Tx_Path_Usb:
         uart_router_copy_to_tx(&usb_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         break;
-    case Ui:
+    case Tx_Path_Ui:
         uart_router_copy_to_tx(&ui_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         break;
-    case Net:
+    case Tx_Path_Net:
         uart_router_copy_to_tx(&net_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         break;
-    case Ui_Net:
+    case Tx_Path_Ui_Net:
         uart_router_copy_to_tx(&ui_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         uart_router_copy_to_tx(&net_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         break;
-    case Internal:
+    case Tx_Path_Internal:
         uart_router_copy_to_tx(&internal_tx, stream->rx->buff + stream->rx->idx, num_bytes);
         break;
     }
@@ -196,7 +199,7 @@ void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received)
     }
 }
 
-void uart_router_copy_to_tx(transmit_t* tx, uint8_t* buff, const uint16_t num_bytes)
+void uart_router_copy_to_tx(transmit_t* tx, const uint8_t* buff, const uint16_t num_bytes)
 {
     if (tx->write + num_bytes >= tx->size)
     {
@@ -222,7 +225,7 @@ void uart_router_copy_string_to_tx(transmit_t* tx, const char* str)
     // Get the string len
     size_t len = strlen(str);
 
-    uart_router_copy_to_tx(tx, str, len);
+    uart_router_copy_to_tx(tx, (const uint8_t*)str, len);
 }
 
 void uart_router_tx_isr(transmit_t* tx)
@@ -326,6 +329,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
             {
             case Cmd_To_Ui:
             {
+                // TODO
 
                 break;
             }
@@ -377,4 +381,55 @@ uart_stream_t* uart_router_get_usb_stream()
 uint32_t uart_router_get_last_received_tick()
 {
     return last_receive_tick;
+}
+
+void uart_router_update_last_received_tick(const uint32_t current_tick)
+{
+    last_receive_tick = current_tick;
+}
+
+void uart_router_send_flash_ok()
+{
+    uart_router_copy_to_tx(usb_stream.tx, Ok_Byte, 1);
+}
+
+void uart_router_send_ready()
+{
+    uart_router_copy_to_tx(usb_stream.tx, Ready_Byte, 1);
+}
+
+void uart_router_usb_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity)
+{
+    UART_HandleTypeDef* uart = usb_stream.rx->uart;
+
+    HAL_UART_Abort(uart);
+
+    // Init uart1 for UI upload
+    if (HAL_UART_DeInit(uart) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    uart->Init.WordLength = HAL_word_length;
+    uart->Init.Parity = HAL_parity;
+
+    if (HAL_UART_Init(uart) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    uart_router_reset_stream(&usb_stream);
+
+    HAL_UARTEx_ReceiveToIdle_DMA(uart, usb_rx.buff, usb_rx.size);
+}
+
+void uart_router_reset_stream(uart_stream_t* stream)
+{
+    stream->tx->free = 1;
+    stream->tx->num_sending = 0;
+    stream->tx->read = 0;
+    stream->tx->unsent = 0;
+    stream->tx->write = 0;
+
+    stream->rx->idx = 0;
 }

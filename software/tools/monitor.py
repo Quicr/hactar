@@ -15,6 +15,17 @@ rx_thread = None
 
 dump_file = None
 
+command_map = {
+    "version": bytes([0, 0, 0]),
+    "who are you": bytes([1, 0, 0]),
+    "hard reset": bytes([2, 0, 0]),
+    "reset": bytes([3, 0, 0]),
+    "reset ui": bytes([4, 0, 0]),
+    "reset net": bytes([5, 0, 0]),
+    "flash ui": bytes([6, 0, 0]),
+    "flash net": bytes([7, 0, 0]),
+}
+
 
 def FindHactar(uart_config):
     HELLO = bytes("WHO ARE YOU?\0", "utf-8")
@@ -69,8 +80,9 @@ def ReadSerial():
                 data = uart.readline().decode()
                 if dump_file:
                     dump_file.write(data)
-                print("\r\033[0m" + erase + data, end="")
-                print("\033[1m\033[92mEnter a command:\033[0m")
+                print(data)
+                # print("\r\033[0m" + erase + data, end="")
+                # print("\033[1m\033[92mEnter a command:\033[0m")
             else:
                 time.sleep(0.05)
         except Exception as ex:
@@ -84,8 +96,12 @@ def WriteCommand():
         if user_input.lower() == "exit":
             running = False
         else:
-            send_data = [ch for ch in bytes(user_input, "UTF-8")]
-            uart.write(bytes(send_data))
+            if user_input in command_map:
+                print(command_map[user_input])
+                uart.write(command_map[user_input])
+            # uart.write(bytes([0, 0, 0]))
+            # send_data = [ch for ch in bytes(user_input, "UTF-8")]
+            # uart.write(bytes(send_data))
 
     except Exception as ex:
         print(ex)

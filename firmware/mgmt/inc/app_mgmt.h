@@ -37,7 +37,16 @@ extern "C" {
 
 static const enum State default_state = Loopback;
 
+typedef enum
+{
+    Hard_Reset,
+    Ui_Reset,
+    Net_Reset
+} Reset_Type;
+
 int app_main(void);
+
+void app_mgmt_reset(const Reset_Type reset_type);
 
 void NetBootloaderMode();
 void NetNormalMode();
