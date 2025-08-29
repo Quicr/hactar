@@ -41,7 +41,7 @@
 #define NET_LOG_DEBUG(...)
 #endif
 
-constexpr int MAX_LOG_LENGTH = 128;
+constexpr int MAX_LOG_LENGTH = 256;
 
 class Logger
 {
@@ -54,6 +54,7 @@ public:
         Warn,
         Info,
         Debug,
+        Raw
     };
 
     template <typename... T>
@@ -76,6 +77,9 @@ public:
             break;
         case Level::Debug:
             ESP_LOGD(TAG, "%s", line);
+            break;
+        case Level::Raw:
+            ESP_LOGI("", "%s", line);
             break;
         }
     }

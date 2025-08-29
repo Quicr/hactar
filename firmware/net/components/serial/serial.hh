@@ -31,6 +31,8 @@ public:
 
     ~Serial();
 
+    void Begin();
+
     uint16_t NumReadyRxPackets();
 
 protected:
@@ -42,7 +44,13 @@ private:
     static void EventTask(void* args);
 
     uart_port_t port;
+    uart_dev_t& uart;
     TaskHandle_t& read_handle;
+    const uart_config_t uart_config;
+    const int tx_pin;
+    const int rx_pin;
+    const int rts_pin;
+    const int cts_pin;
     QueueHandle_t queue;
     TaskHandle_t uart_task_handle;
 };

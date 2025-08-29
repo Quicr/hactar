@@ -20,8 +20,12 @@
 // Forward declare
 inline void CheckPTT();
 inline void CheckPTTAI();
-inline void
-SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last);
+inline void SendAudio(const ui_net_link::Channel_Id channel_id,
+                      const ui_net_link::Packet_Type packet_type,
+                      bool last);
+inline void HandleMedia(link_packet_t* packet);
+inline void HandleAiResponse(link_packet_t* packet);
+inline void HandleChat(link_packet_t* packet);
 inline void HandleKeypress();
 inline bool TryProtect(link_packet_t* link_packet);
 inline bool TryUnprotect(link_packet_t* link_packet);
@@ -192,7 +196,7 @@ uint32_t num_req_sent = 0;
 uint32_t num_packets_rx = 0;
 uint32_t num_packets_tx = 0;
 
-ui_net_link::AudioObject talk_frame = {0, 0};
+ui_net_link::AudioObject talk_frame = {.channel_id = ui_net_link::Channel_Id::Ptt, .data = {0}};
 
 GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
@@ -219,12 +223,7 @@ Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
 uint32_t timeout = 0;
 
 bool ptt_down = false;
-const uint8_t ptt_channel = 0;
-
 bool ptt_ai_down = false;
-const uint8_t ptt_ai_channel = 1;
-
-const uint8_t text_channel = 2;
 
 int app_main()
 {
@@ -392,44 +391,46 @@ void HandleRecvLinkPackets()
         {
             break;
         }
-        case ui_net_link::Packet_Type::TextMessage:
+        case ui_net_link::Packet_Type::Message:
+        case ui_net_link::Packet_Type::AiResponse:
         {
-            UI_LOG_INFO("Got text message");
-
-            if (!TryUnprotect(link_packet))
-            {
-                UI_LOG_ERROR("Failed to decrypt text message");
-                continue;
-            }
-
-            // Ignore the first byte
-            constexpr uint8_t payload_offset = 6;
-            char* text = (char*)(link_packet->payload + payload_offset);
-
-            screen.CommitText(text, link_packet->length - payload_offset);
-            break;
-        }
-        case ui_net_link::Packet_Type::PttAIObject:
-        {
-            // TODO something but do let fallthrough
-        }
-        case ui_net_link::Packet_Type::PttMultiObject:
-        case ui_net_link::Packet_Type::PttObject:
-        {
-
             if (!TryUnprotect(link_packet))
             {
                 UI_LOG_ERROR("Failed to decrypt ptt object");
                 continue;
             }
 
-            // TODO we need to know if it is mono or stereo data
-            // that we have received
-            // For now assume we receive mono
-            ui_net_link::Deserialize(*link_packet, play_frame);
-            AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz,
-                                   audio_chip.TxBuffer(), constants::Audio_Buffer_Sz,
-                                   constants::Stereo, true);
+            // Get the second byte of the data which is the message type
+            // Since the first byte is channel id
+            const auto message_type =
+                static_cast<ui_net_link::MessageType>(link_packet->payload[1]);
+
+            switch (message_type)
+            {
+            case ui_net_link::MessageType::Media:
+            {
+                // Ptt audio/translated audio
+                HandleMedia(link_packet);
+                break;
+            }
+            case ui_net_link::MessageType::AIRequest:
+            {
+                // Do nothing.
+                break;
+            }
+            case ui_net_link::MessageType::AIResponse:
+            {
+                // Json, text, or ai audio
+                HandleAiResponse(link_packet);
+                break;
+            }
+            case ui_net_link::MessageType::Chat:
+            {
+                // Text/translated text
+                HandleChat(link_packet);
+                break;
+            }
+            }
             break;
         }
         case ui_net_link::Packet_Type::MoQStatus:
@@ -514,8 +515,7 @@ void CheckPTT()
     if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && !ptt_down)
     {
         // TODO channel id
-        ui_net_link::TalkStart talk_start = {0};
-        talk_start.channel_id = ptt_channel;
+        ui_net_link::TalkStart talk_start = {.channel_id = ui_net_link::Channel_Id::Ptt};
         ui_net_link::Serialize(talk_start, message_packet);
         serial.Write(message_packet);
         ptt_down = true;
@@ -523,18 +523,17 @@ void CheckPTT()
     }
     else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && ptt_down)
     {
-        ui_net_link::TalkStop talk_stop = {0};
-        talk_stop.channel_id = ptt_channel;
+        ui_net_link::TalkStop talk_stop = {.channel_id = ui_net_link::Channel_Id::Ptt};
         ui_net_link::Serialize(talk_stop, message_packet);
         serial.Write(message_packet);
         ptt_down = false;
-        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject, true);
+        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, true);
         LedGOff();
     }
 
     if (ptt_down)
     {
-        SendAudio(ptt_channel, ui_net_link::Packet_Type::PttObject, false);
+        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, false);
     }
 }
 
@@ -545,8 +544,7 @@ void CheckPTTAI()
     if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET && !ptt_ai_down)
     {
         // TODO channel id
-        ui_net_link::TalkStart talk_start = {0};
-        talk_start.channel_id = ptt_ai_channel;
+        ui_net_link::TalkStart talk_start = {.channel_id = ui_net_link::Channel_Id::Ptt_Ai};
         ui_net_link::Serialize(talk_start, message_packet);
         serial.Write(message_packet);
         ptt_ai_down = true;
@@ -554,22 +552,23 @@ void CheckPTTAI()
     }
     else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET && ptt_ai_down)
     {
-        ui_net_link::TalkStop talk_stop = {0};
-        talk_stop.channel_id = ptt_ai_channel;
+        ui_net_link::TalkStart talk_stop = {.channel_id = ui_net_link::Channel_Id::Ptt_Ai};
         ui_net_link::Serialize(talk_stop, message_packet);
         serial.Write(message_packet);
         ptt_ai_down = false;
-        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject, true);
+        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, true);
         LedBOff();
     }
 
     if (ptt_ai_down)
     {
-        SendAudio(ptt_ai_channel, ui_net_link::Packet_Type::PttAIObject, false);
+        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, false);
     }
 }
 
-void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_type, bool last)
+void SendAudio(const ui_net_link::Channel_Id channel_id,
+               const ui_net_link::Packet_Type packet_type,
+               bool last)
 {
     AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, talk_frame.data,
                             constants::Audio_Phonic_Sz, true, constants::Stereo);
@@ -588,6 +587,64 @@ void SendAudio(const uint8_t channel_id, const ui_net_link::Packet_Type packet_t
     ++num_packets_tx;
 }
 
+void HandleMedia(link_packet_t* packet)
+{
+    ui_net_link::Deserialize(*link_packet, play_frame);
+    AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
+                           constants::Audio_Buffer_Sz, constants::Stereo, true);
+}
+
+void HandleAiResponse(link_packet_t* packet)
+{
+
+    auto* response =
+        static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
+
+    switch (response->content_type)
+    {
+    case ui_net_link::ContentType::Audio:
+    {
+        const uint16_t len = constants::Audio_Phonic_Sz < response->chunk_length
+                               ? constants::Audio_Phonic_Sz
+                               : response->chunk_length;
+
+        AudioCodec::ALawExpand(response->chunk_data, len, audio_chip.TxBuffer(),
+                               constants::Audio_Buffer_Sz, constants::Stereo, true);
+        break;
+    }
+    case ui_net_link::ContentType::Json:
+    {
+        if (response->chunk_data[0] == '{'
+            && response->chunk_data[response->chunk_length - 1] == '}')
+        {
+            UI_LOG_INFO("ai response len %d", packet->length);
+            UI_LOG_INFO("IS JSON");
+            packet->type = static_cast<uint8_t>(ui_net_link::Packet_Type::AiResponse);
+            serial.Write(*packet);
+        }
+        else
+        {
+            // This is a text.
+            response->chunk_data[response->chunk_length] = 0;
+            UI_LOG_INFO("[AI] %s", response->chunk_data);
+        }
+        break;
+    }
+    }
+}
+
+void HandleChat(link_packet_t* packet)
+{
+    UI_LOG_INFO("Got text message");
+
+    // Ignore the first bytes, which are just header information
+    // +1 channel id, +1 message type, +4 length
+    constexpr uint8_t payload_offset = 6;
+    char* text = (char*)(link_packet->payload + payload_offset);
+
+    screen.CommitText(text, link_packet->length - payload_offset);
+}
+
 void HandleKeypress()
 {
     while (keyboard.NumAvailable() > 0)
@@ -600,8 +657,8 @@ void HandleKeypress()
         {
         case Keyboard::Ent:
         {
-            ui_net_link::Serialize(text_channel, screen.UserText(), screen.UserTextLength(),
-                                   message_packet);
+            ui_net_link::Serialize(ui_net_link::Channel_Id::Chat, screen.UserText(),
+                                   screen.UserTextLength(), message_packet);
 
             if (!TryProtect(&message_packet))
             {
@@ -656,6 +713,7 @@ try
 }
 catch (const std::exception& e)
 {
+    UI_LOG_ERROR("%s", e.what());
     return false;
 }
 
@@ -762,14 +820,14 @@ inline void Error(const char* who, const char* why)
 void SlowSendTest(int delay, int num)
 {
     link_packet_t packet;
-    ui_net_link::AudioObject talk_frame = {0, 0};
+    ui_net_link::AudioObject talk_frame = {.channel_id = ui_net_link::Channel_Id::Ptt, 0};
     // Fill the tmp audio buffer with random
     for (int i = 0; i < constants::Audio_Buffer_Sz; ++i)
     {
         talk_frame.data[i] = i;
     }
 
-    ui_net_link::Serialize(talk_frame, ui_net_link::Packet_Type::PttObject, false, packet);
+    ui_net_link::Serialize(talk_frame, ui_net_link::Packet_Type::Message, false, packet);
 
     int i = 0;
     while (i++ != num)
@@ -787,7 +845,7 @@ void InterHactarSerialRoundTripTest(int delay, int num)
     const size_t buff_sz = 321;
     link_packet_t tmp;
     // Fill the tmp audio buffer with random
-    tmp.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
+    tmp.type = (uint8_t)ui_net_link::Packet_Type::Message;
     tmp.length = buff_sz;
     for (size_t i = 0; i < buff_sz; ++i)
     {
@@ -874,7 +932,7 @@ void InterHactarFullRoundTripTest(int delay, int num)
     const size_t buff_sz = 321;
     link_packet_t tmp;
     // Fill the tmp audio buffer with random
-    tmp.type = (uint8_t)ui_net_link::Packet_Type::PttObject;
+    tmp.type = (uint8_t)ui_net_link::Packet_Type::Message;
     tmp.length = buff_sz;
     for (size_t i = 0; i < buff_sz; ++i)
     {
@@ -953,6 +1011,34 @@ void DumpRxBuff()
         HAL_Delay(2);
     }
     Error("Main loop", "rx stopped receiving data, dumping");
+}
+
+void FakeChangeChannelPacket()
+{
+    link_packet_t packet;
+    packet.type = (uint8_t)ui_net_link::Packet_Type::AiResponse;
+    packet.length = 237;
+    uint8_t fake_data[] = {
+        0,   3,   0,   0,   0,   0,   1,   1,   225, 0,   0,   0,   123, 34,  99,  104, 97,
+        110, 110, 101, 108, 67,  111, 110, 102, 105, 103, 34,  58,  34,  49,  34,  44,  34,
+        99,  104, 97,  110, 110, 101, 108, 95,  110, 97,  109, 101, 34,  58,  34,  112, 108,
+        117, 109, 98,  105, 110, 103, 34,  44,  34,  99,  111, 100, 101, 99,  34,  58,  34,
+        112, 99,  109, 34,  44,  34,  108, 97,  110, 103, 117, 97,  103, 101, 34,  58,  34,
+        101, 110, 45,  85,  83,  34,  44,  34,  115, 97,  109, 112, 108, 101, 114, 97,  116,
+        101, 34,  58,  56,  48,  48,  48,  44,  34,  116, 114, 97,  99,  107, 110, 97,  109,
+        101, 34,  58,  34,  112, 99,  109, 95,  101, 110, 95,  56,  107, 104, 122, 95,  109,
+        111, 110, 111, 95,  105, 49,  54,  34,  44,  34,  116, 114, 97,  99,  107, 110, 97,
+        109, 101, 115, 112, 97,  99,  101, 34,  58,  91,  34,  109, 111, 113, 58,  47,  47,
+        109, 111, 113, 46,  112, 116, 116, 46,  97,  114, 112, 97,  47,  118, 49,  34,  44,
+        34,  111, 114, 103, 47,  97,  99,  109, 101, 34,  44,  34,  115, 116, 111, 114, 101,
+        47,  49,  50,  51,  52,  34,  44,  34,  99,  104, 97,  110, 110, 101, 108, 47,  112,
+        108, 117, 109, 98,  105, 110, 103, 34,  44,  34,  112, 116, 116, 34,  93,  125};
+    for (int i = 0; i < packet.length; ++i)
+    {
+        packet.payload[i] = fake_data[i];
+    }
+
+    serial.Write(packet);
 }
 
 void LedROn()

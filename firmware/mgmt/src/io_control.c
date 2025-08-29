@@ -68,3 +68,33 @@ void UIUploadStreamInit(uart_stream_t* usb_stream, UART_HandleTypeDef* tx_uart)
 
     usb_stream->tx.uart = tx_uart;
 }
+
+void ChangeToInput(GPIO_TypeDef* port, uint16_t pin)
+{
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+
+    HAL_GPIO_DeInit(port, pin);
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    GPIO_InitStruct.Pin = pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(port, &GPIO_InitStruct);
+}
+
+void ChangeToOutput(GPIO_TypeDef* port, uint16_t pin)
+{
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+
+    HAL_GPIO_DeInit(port, pin);
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    GPIO_InitStruct.Pin = pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(port, &GPIO_InitStruct);
+}

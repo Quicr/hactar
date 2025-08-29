@@ -48,6 +48,7 @@ static const uint8_t debug_cmd[] = "debug";
 static const uint8_t ui_debug_cmd[] = "ui_debug";
 static const uint8_t net_debug_cmd[] = "net_debug";
 static const uint8_t reset_cmd[] = "reset";
+static const uint8_t reset_ui[] = "reset_ui";
 static const uint8_t reset_net[] = "reset_net";
 
 static const uint8_t ACK[] = {0x79};

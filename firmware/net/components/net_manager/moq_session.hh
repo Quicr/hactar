@@ -24,23 +24,29 @@ class Session : public quicr::Client
 public:
     using quicr::Client::Client;
 
-    Session(const quicr::ClientConfig& cfg);
+    Session(const quicr::ClientConfig& cfg,
+            std::vector<std::shared_ptr<TrackReader>>& readers,
+            std::vector<std::shared_ptr<TrackWriter>>& writers);
 
     virtual ~Session() = default;
 
     void StatusChanged(Status status) override;
 
     // public API - send subscribe, setup queue for incoming objects
-    void StartReadTrack(const json& subscription, Serial& serial);
     void Read();
-    void StopReadTrack(const std::string& track_name);
 
-    void StartWriteTrack(const json& publication);
     void Write();
-    void StopWriteTrack(const std::string& track_name);
 
     std::shared_ptr<TrackReader> Reader(const size_t id) noexcept;
     std::shared_ptr<TrackWriter> Writer(const size_t id) noexcept;
+
+    void StopAudioReader();
+    void StopTextReader();
+    void StopAudioWriter();
+
+    // TODO delete after moq session can be reused
+    std::unique_lock<std::mutex> GetReaderLock();
+    std::unique_lock<std::mutex> GetWriterLock();
 
 private:
     Session() = delete;
@@ -54,17 +60,18 @@ private:
 
     void StartTasks() noexcept;
 
-    std::vector<std::shared_ptr<TrackReader>> readers;
-    std::mutex readers_mux;
+    std::vector<std::shared_ptr<TrackReader>>& readers;
     TaskHandle_t readers_task_handle;
     StaticTask_t readers_task_buffer;
     StackType_t* readers_task_stack;
 
-    std::vector<std::shared_ptr<TrackWriter>> writers;
-    std::mutex writers_mux;
+    std::vector<std::shared_ptr<TrackWriter>>& writers;
     TaskHandle_t writers_task_handle;
     StaticTask_t writers_task_buffer;
     StackType_t* writers_task_stack;
+
+    std::mutex readers_mux;
+    std::mutex writers_mux;
 };
 
 } // namespace moq

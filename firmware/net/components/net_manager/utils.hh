@@ -34,8 +34,7 @@ MakeFullTrackName(const std::string& track_namespace,
     };
 
     quicr::FullTrackName full_track_name{quicr::TrackNamespace{split(track_namespace, ",")},
-                                         {track_name.begin(), track_name.end()},
-                                         track_alias};
+                                         {track_name.begin(), track_name.end()}};
     return full_track_name;
 }
 
@@ -50,10 +49,6 @@ MakeFullTrackName(const std::string& track_namespace,
     }
     ss << std::string(entries.back().begin(), entries.back().end());
     ss << "/" << std::string(ftn.name.begin(), ftn.name.end());
-    if (ftn.track_alias)
-    {
-        ss << ";Alias=" << ftn.track_alias.value();
-    }
     ss << "]";
     return ss.str();
 }
@@ -88,8 +83,7 @@ MakeFullTrackName(const std::string& track_namespace,
     };
 
     quicr::FullTrackName full_track_name{quicr::TrackNamespace{split(track_namespace, "/")},
-                                         {track_name.begin(), track_name.end()},
-                                         track_alias};
+                                         {track_name.begin(), track_name.end()}};
     return full_track_name;
 }
 
@@ -100,7 +94,6 @@ MakeFullTrackName(const std::vector<std::string>& entries, const std::string& na
     quicr::FullTrackName ftn;
     ftn.name_space = quicr::TrackNamespace{entries};
     ftn.name.assign(name.begin(), name.end());
-    ftn.track_alias = std::nullopt;
 
     return ftn;
 }

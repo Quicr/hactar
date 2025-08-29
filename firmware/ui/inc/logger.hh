@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stm32.h"
+#include <string.h>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -16,33 +17,40 @@
 #define UI_LOGGING_DEBUG 4
 
 #define UI_LOG(level, format, ...) Logger::Log(level, format __VA_OPT__(, ) __VA_ARGS__)
-#if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_ERROR
+
+#if LOGGER_ACTIVE_LEVEL >= LOGGING_ERROR
 #define UI_LOG_ERROR(format, ...) UI_LOG(Logger::Level::Error, format, __VA_ARGS__)
 #else
 #define UI_LOG_ERROR(...)
 #endif
 
-#if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_WARN
+#if LOGGER_ACTIVE_LEVEL >= LOGGING_WARN
 #define UI_LOG_WARN(format, ...) UI_LOG(Logger::Level::Warn, format, __VA_ARGS__)
 #else
 #define UI_LOG_WARN(...)
 #endif
 
-#if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_INFO
+#if LOGGER_ACTIVE_LEVEL >= LOGGING_INFO
 #define UI_LOG_INFO(format, ...) UI_LOG(Logger::Level::Info, format, __VA_ARGS__)
 #else
 #define UI_LOG_INFO(...)
 #endif
 
-#if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_DEBUG
+#if LOGGER_ACTIVE_LEVEL >= LOGGING_DEBUG
 #define UI_LOG_DEBUG(format, ...) UI_LOG(Logger::Level::Debug, format, __VA_ARGS__)
 #else
 #define UI_LOG_DEBUG(...)
 #endif
 
-extern UART_HandleTypeDef huart1;
-constexpr int MAX_LOG_LENGTH = 128;
+#if LOGGER_ACTIVE_LEVEL >= LOGGING_DEBUG
+#define UI_LOG_RAW(format, ...) UI_LOG(Logger::Level::Raw, format, __VA_ARGS__)
+#else
+#define UI_LOG_RAW(...)
+#endif
 
+extern UART_HandleTypeDef huart1;
+constexpr int MAX_LOG_LENGTH = 256;
+constexpr int Prefix_Len = 8;
 class Logger
 {
 public:
@@ -52,21 +60,34 @@ public:
         Warn,
         Info,
         Debug,
+        Raw
     };
 
+#ifdef STM32F405xx
     template <typename... T>
     static void Log(Level level, const char* format, const T&... args)
     {
         static char log_line[MAX_LOG_LENGTH] = {0};
-        std::sprintf(log_line, format, args...);
+        const int line_size = std::sprintf(log_line, format, args...);
 
-        char line[MAX_LOG_LENGTH + 8];
-        const auto line_size =
-            std::sprintf(line, "[UI-%s] %s\n", log_level_string(level).c_str(), log_line);
-
-        const auto* line_ptr = reinterpret_cast<const uint8_t*>(line);
-        HAL_UART_Transmit(&huart1, line_ptr, line_size, HAL_MAX_DELAY);
+        // If raw don't add any additional text.
+        switch (level)
+        {
+        case Level::Raw:
+        {
+            break;
+        }
+        default:
+        {
+            HAL_UART_Transmit(&huart1, (const uint8_t*)log_level_string(level), Prefix_Len,
+                              HAL_MAX_DELAY);
+            break;
+        }
+        }
+        HAL_UART_Transmit(&huart1, (const uint8_t*)log_line, line_size, HAL_MAX_DELAY);
+        HAL_UART_Transmit(&huart1, (const uint8_t*)"\n", 1, HAL_MAX_DELAY);
     }
+#endif
 
     static std::string to_hex(const uint8_t* data, size_t size)
     {
@@ -80,20 +101,22 @@ public:
     }
 
 private:
-    static std::string log_level_string(Level level)
+    static const char* log_level_string(Level level)
     {
         switch (level)
         {
         case Level::Error:
-            return "E";
+            return "[UI-E] ";
         case Level::Warn:
-            return "W";
+            return "[UI-W] ";
         case Level::Info:
-            return "I";
+            return "[UI-I] ";
         case Level::Debug:
-            return "D";
+            return "[UI-D] ";
+        default:
+            break;
         }
 
-        return "UNKN";
+        return "[UI-U] ";
     }
 };
