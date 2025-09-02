@@ -16,15 +16,15 @@ static uint8_t ui_tx_buff[UART_BUFF_SZ] = {0};
 static uint8_t net_rx_buff[UART_BUFF_SZ] = {0};
 static uint8_t net_tx_buff[UART_BUFF_SZ] = {0};
 
-static uint8_t usb_rx_buff[UART_BUFF_SZ] = {0};
-static uint8_t usb_tx_buff[UART_BUFF_SZ] = {0};
+static uint8_t usb_rx_buff[USB_UART_BUFF_SZ] = {0};
+static uint8_t usb_tx_buff[USB_UART_BUFF_SZ] = {0};
 
 static uint8_t internal_buff[INTERNAL_BUFF_SZ];
 
 static transmit_t usb_tx = {
     .uart = &huart1,
     .buff = usb_tx_buff,
-    .size = UART_BUFF_SZ,
+    .size = USB_UART_BUFF_SZ,
     .read = 0,
     .write = 0,
     .unsent = 0,
@@ -35,7 +35,7 @@ static transmit_t usb_tx = {
 static receive_t usb_rx = {
     .uart = &huart1,
     .buff = usb_rx_buff,
-    .size = UART_BUFF_SZ,
+    .size = USB_UART_BUFF_SZ,
     .idx = 0,
 };
 
@@ -208,16 +208,16 @@ void uart_router_copy_to_tx(transmit_t* tx, const uint8_t* buff, const uint16_t 
         memcpy(tx->buff + tx->write, buff, wrap_bytes);
         memcpy(tx->buff, buff + wrap_bytes, num_bytes - wrap_bytes);
 
-        tx->write = 0;
+        tx->write = num_bytes - wrap_bytes;
     }
     else
     {
         memcpy(tx->buff + tx->write, buff, num_bytes);
+        tx->write += num_bytes;
     }
 
     // Copy bytes to tx buffer
     tx->unsent += num_bytes;
-    tx->write += num_bytes;
 }
 
 void uart_router_copy_string_to_tx(transmit_t* tx, const char* str)
@@ -238,10 +238,20 @@ void uart_router_tx_isr(transmit_t* tx)
         tx->read = 0;
     }
 
-    uart_router_transmit(tx);
+    uart_router_perform_transmit(tx);
 }
 
 void uart_router_transmit(transmit_t* tx)
+{
+    if (!tx->free)
+    {
+        return;
+    }
+
+    uart_router_perform_transmit(tx);
+}
+
+void uart_router_perform_transmit(transmit_t* tx)
 {
     if (tx->unsent == 0)
     {

@@ -97,20 +97,22 @@ int app_main(void)
     uart_stream_t* net_stream = uart_router_get_net_stream();
     uart_stream_t* ui_stream = uart_router_get_ui_stream();
 
+    NormalInit();
+    HAL_Delay(100);
+
     StartUartReceive(usb_stream);
     usb_stream->path = Tx_Path_Internal;
+    StartUartReceive(net_stream);
+    net_stream->path = Tx_Path_Usb;
+    StartUartReceive(ui_stream);
+    ui_stream->path = Tx_Path_Usb;
+
+    TurnOffLEDs();
+
     while (1)
     {
-        NetHoldInReset();
-        UIHoldInReset();
         uploader = 0;
         next_state = Running;
-        TurnOffLEDs();
-        CancelAllUart();
-
-        // InitUartStream(usb_stream);
-        // StartUartReceive(ui_stream);
-        // ui_stream->path = Tx_Path_Usb;
 
         switch (state)
         {
@@ -169,7 +171,7 @@ int app_main(void)
         }
         case Debug:
         {
-            NormalInit();
+            // NormalInit();
             // SetStreamModes(Command, Passthrough, Passthrough);
             LEDA(LOW, HIGH, HIGH);
             break;
