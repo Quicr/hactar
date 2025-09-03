@@ -43,15 +43,20 @@ void command_flash_ui(void* arg)
 {
     uint8_t* uploader = (uint8_t*)arg;
 
-    uart_stream_t* stream = uart_router_get_usb_stream();
+    uart_stream_t* usb_stream = uart_router_get_usb_stream();
+    uart_stream_t* net_stream = uart_router_get_net_stream();
+    uart_stream_t* ui_stream = uart_router_get_ui_stream();
 
     uart_router_send_flash_ok();
 
-    stream->path = Tx_Path_Ui;
+    usb_stream->path = Tx_Path_Ui;
+    net_stream->path = Tx_Path_None;
+    uart_router_usb_reinit(UART_WORDLENGTH_9B, UART_PARITY_EVEN);
+
     *uploader = 1;
 
-    // uart_router_usb_reinit(UART_WORDLENGTH_9B, UART_PARITY_EVEN);
-
+    NetHoldInReset();
+    HAL_Delay(200);
     UIBootloaderMode();
 
     uart_router_send_ready();

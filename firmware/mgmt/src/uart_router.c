@@ -42,7 +42,7 @@ static receive_t usb_rx = {
 uart_stream_t usb_stream = {.rx = &usb_rx, .tx = &usb_tx, .path = Tx_Path_None};
 
 static transmit_t ui_tx = {
-    .uart = &huart1,
+    .uart = &huart2,
     .buff = ui_tx_buff,
     .size = UART_BUFF_SZ,
     .read = 0,
@@ -62,7 +62,7 @@ static receive_t ui_rx = {
 uart_stream_t ui_stream = {.rx = &ui_rx, .tx = &ui_tx, .path = Tx_Path_None};
 
 static transmit_t net_tx = {
-    .uart = &huart1,
+    .uart = &huart3,
     .buff = net_tx_buff,
     .size = UART_BUFF_SZ,
     .read = 0,
@@ -287,7 +287,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
     while (internal_tx.unsent > 0)
     {
         // If we don't have enough bytes for the length and the command
-        if (internal_tx.unsent < 3 && num_read != 0)
+        if (internal_tx.unsent < 3 && num_read == 0)
         {
             break;
         }
@@ -400,12 +400,14 @@ void uart_router_update_last_received_tick(const uint32_t current_tick)
 
 void uart_router_send_flash_ok()
 {
-    uart_router_copy_to_tx(usb_stream.tx, Ok_Byte, 1);
+    // uart_router_copy_to_tx(usb_stream.tx, Ok_Byte, 1);
+    HAL_UART_Transmit(usb_stream.tx->uart, Ok_Byte, 1, HAL_MAX_DELAY);
 }
 
 void uart_router_send_ready()
 {
-    uart_router_copy_to_tx(usb_stream.tx, Ready_Byte, 1);
+    // uart_router_copy_to_tx(usb_stream.tx, Ready_Byte, 1);
+    HAL_UART_Transmit(usb_stream.tx->uart, Ready_Byte, 1, HAL_MAX_DELAY);
 }
 
 void uart_router_usb_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity)

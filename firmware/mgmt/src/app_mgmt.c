@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim3;
 
 // TODO add messages that to the monitor
@@ -32,25 +33,45 @@ const command_map_t command_map[Cmd_Count] = {
     {Cmd_Flash_Ui, command_flash_ui, (void*)&uploader},
 };
 
+void StartUartReceive(uart_stream_t* uart_stream)
+{
+    uint8_t attempt = 0;
+    while (attempt++ != 10
+           && HAL_OK
+                  != HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->rx->uart, uart_stream->rx->buff,
+                                                  uart_stream->rx->size))
+    {
+        // Make sure the uart is cancelled, sometimes it doesn't want to cancel
+        HAL_UART_Abort(uart_stream->rx->uart);
+    }
+
+    if (attempt >= 10)
+    {
+        Error_Handler();
+    }
+}
+
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
     __disable_irq();
-    // if (huart->Instance == huart1.Instance)
-    // {
-    //     if (usb_stream.mode != Ignore)
-    //     {
-    //         InitUartStream(&usb_stream);
-    //         StartUartReceive(&usb_stream);
-    //     }
-    // }
-    // else if (huart->Instance == huart2.Instance)
-    // {
-    //     if (ui_stream.mode != Ignore)
-    //     {
-    //         InitUartStream(&ui_stream);
-    //         StartUartReceive(&ui_stream);
-    //     }
-    // }
+    // // if (huart->Instance == huart1.Instance)
+    // // {
+    // // if (usb_stream.mode != Ignore)
+    // // {
+    // //     InitUartStream(&usb_stream);
+    // //     StartUartReceive(&usb_stream);
+    // // }
+    // // }
+    if (huart->Instance == huart2.Instance)
+    {
+        // uart_stream_t* ui_stream = uart_router_get_ui_stream();
+        // LEDB(GPIO_PIN_RESET, GPIO_PIN_SET, GPIO_PIN_SET);
+        // if (uploader == 1)
+        // {
+        //     HAL_UART_Abort(ui_stream->rx->uart);
+        //     StartUartReceive(ui_stream);
+        // }
+    }
     __enable_irq();
 }
 
@@ -71,24 +92,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin)
     }
 }
 
-void StartUartReceive(uart_stream_t* uart_stream)
-{
-    uint8_t attempt = 0;
-    while (attempt++ != 10
-           && HAL_OK
-                  != HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->rx->uart, uart_stream->rx->buff,
-                                                  uart_stream->rx->size))
-    {
-        // Make sure the uart is cancelled, sometimes it doesn't want to cancel
-        HAL_UART_Abort(uart_stream->rx->uart);
-    }
-
-    if (attempt >= 10)
-    {
-        Error_Handler();
-    }
-}
-
 int app_main(void)
 {
     state = default_state;
@@ -98,6 +101,7 @@ int app_main(void)
     uart_stream_t* ui_stream = uart_router_get_ui_stream();
 
     NormalInit();
+    NetHoldInReset();
     HAL_Delay(100);
 
     StartUartReceive(usb_stream);
@@ -114,118 +118,121 @@ int app_main(void)
         uploader = 0;
         next_state = Running;
 
-        switch (state)
-        {
-        case Error:
-        {
-            Error_Handler();
-            break;
-        }
-        case Running:
-        {
-            // If we get here its an error
-            // because there should never be anyway it gets out of the main loop with this state
-            Error_Handler();
-            break;
-        }
-        case UI_Upload:
-        {
-            NetHoldInReset();
+        // switch (state)
+        // {
+        // case Error:
+        // {
+        //     Error_Handler();
+        //     break;
+        // }
+        // case Running:
+        // {
+        //     // If we get here its an error
+        //     // because there should never be anyway it gets out of the main loop with this
+        //     state Error_Handler(); break;
+        // }
+        // case UI_Upload:
+        // {
+        //     NetHoldInReset();
 
-            // UIUploadStreamInit(&usb_stream, &ui_tx);
-            SendUploadOk();
+        //     // UIUploadStreamInit(&usb_stream, &ui_tx);
+        //     SendUploadOk();
 
-            // SetStreamModes(Passthrough, Passthrough, Ignore);
+        //     // SetStreamModes(Passthrough, Passthrough, Ignore);
 
-            UIBootloaderMode();
-            uploader = 1;
-            // HAL_UART_Transmit(usb_stream.rx->uart, Ready_Byte, 1, HAL_MAX_DELAY);
+        //     UIBootloaderMode();
+        //     uploader = 1;
+        //     // HAL_UART_Transmit(usb_stream.rx->uart, Ready_Byte, 1, HAL_MAX_DELAY);
 
-            LEDA(HIGH, HIGH, LOW);
+        //     LEDA(HIGH, HIGH, LOW);
 
-            break;
-        }
-        case Net_Upload:
-        {
-            UIHoldInReset();
+        //     break;
+        // }
+        // case Net_Upload:
+        // {
+        //     UIHoldInReset();
 
-            // NormalAndNetUploadUartInit(&usb_stream, &net_tx);
-            SendUploadOk();
+        //     // NormalAndNetUploadUartInit(&usb_stream, &net_tx);
+        //     SendUploadOk();
 
-            // SetStreamModes(Passthrough, Ignore, Passthrough);
+        //     // SetStreamModes(Passthrough, Ignore, Passthrough);
 
-            NetBootloaderMode();
-            uploader = 1;
-            // HAL_UART_Transmit(usb_stream.rx->uart, Ready_Byte, 1, HAL_MAX_DELAY);
+        //     NetBootloaderMode();
+        //     uploader = 1;
+        //     // HAL_UART_Transmit(usb_stream.rx->uart, Ready_Byte, 1, HAL_MAX_DELAY);
 
-            LEDA(HIGH, LOW, HIGH);
+        //     LEDA(HIGH, LOW, HIGH);
 
-            break;
-        }
-        case Normal:
-        {
-            NormalInit();
-            // SetStreamModes(Command, Ignore, Ignore);
-            LEDA(HIGH, LOW, LOW);
-            break;
-        }
-        case Debug:
-        {
-            // NormalInit();
-            // SetStreamModes(Command, Passthrough, Passthrough);
-            LEDA(LOW, HIGH, HIGH);
-            break;
-        }
-        case UI_Debug:
-        {
-            NormalInit();
-            // SetStreamModes(Command, Passthrough, Ignore);
-            LEDA(LOW, HIGH, LOW);
-            break;
-        }
-        case Net_Debug:
-        {
-            NormalInit();
-            // SetStreamModes(Command, Ignore, Passthrough);
-            LEDA(LOW, LOW, HIGH);
-            break;
-        }
-        case Loopback:
-        {
-            NormalInit();
-            // SetStreamModes(Passthrough, Ignore, Ignore);
-            LEDA(LOW, LOW, LOW);
-            break;
-        }
-        case Configator:
-        {
-            UINormalMode();
-            // NormalAndNetUploadUartInit(&usb_stream, &huart2);
-            // SetStreamModes(Configuration, Passthrough, Ignore);
-            LEDA(LOW, LOW, LOW);
-            LEDB(LOW, LOW, LOW);
-            break;
-        }
-        default:
-        {
-            Error_Handler();
-        }
-        }
+        //     break;
+        // }
+        // case Normal:
+        // {
+        //     NormalInit();
+        //     // SetStreamModes(Command, Ignore, Ignore);
+        //     LEDA(HIGH, LOW, LOW);
+        //     break;
+        // }
+        // case Debug:
+        // {
+        //     // NormalInit();
+        //     // SetStreamModes(Command, Passthrough, Passthrough);
+        //     // LEDA(LOW, HIGH, HIGH);
+        //     break;
+        // }
+        // case UI_Debug:
+        // {
+        //     NormalInit();
+        //     // SetStreamModes(Command, Passthrough, Ignore);
+        //     LEDA(LOW, HIGH, LOW);
+        //     break;
+        // }
+        // case Net_Debug:
+        // {
+        //     NormalInit();
+        //     // SetStreamModes(Command, Ignore, Passthrough);
+        //     LEDA(LOW, LOW, HIGH);
+        //     break;
+        // }
+        // case Loopback:
+        // {
+        //     NormalInit();
+        //     // SetStreamModes(Passthrough, Ignore, Ignore);
+        //     LEDA(LOW, LOW, LOW);
+        //     break;
+        // }
+        // case Configator:
+        // {
+        //     UINormalMode();
+        //     // NormalAndNetUploadUartInit(&usb_stream, &huart2);
+        //     // SetStreamModes(Configuration, Passthrough, Ignore);
+        //     LEDA(LOW, LOW, LOW);
+        //     LEDB(LOW, LOW, LOW);
+        //     break;
+        // }
+        // default:
+        // {
+        //     Error_Handler();
+        // }
+        // }
 
         state = next_state;
         while (state == Running)
         {
+            if (!uploader)
+            {
+                uart_router_parse_internal(command_map);
+            }
+
             uart_router_transmit(usb_stream->tx);
             uart_router_transmit(ui_stream->tx);
             uart_router_transmit(net_stream->tx);
-            uart_router_parse_internal(command_map);
 
-            CheckTimeout();
+            // CheckTimeout();
 
-            if (state != next_state)
-            {
-                state = next_state;
-            }
+            // if (state != next_state)
+            // {
+            //     state = next_state;
+            // }
         }
     }
     return 0;
