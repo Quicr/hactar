@@ -670,6 +670,8 @@ void HandleKeypress()
             UI_LOG_INFO("Transmit text message");
             serial.Write(message_packet);
             ++num_packets_tx;
+
+            screen.CommitText(screen.UserText(), screen.UserTextLength());
             screen.ClearUserText();
             break;
         }
