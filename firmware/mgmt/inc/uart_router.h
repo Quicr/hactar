@@ -60,10 +60,15 @@ uart_stream_t* uart_router_get_net_stream();
 uart_stream_t* uart_router_get_usb_stream();
 uint32_t uart_router_get_last_received_tick();
 void uart_router_update_last_received_tick(const uint32_t current_tick);
-void uart_router_send_flash_ok();
-void uart_router_send_ready();
+void uart_router_usb_send_flash_ok();
+void uart_router_usb_send_ready();
+void uart_router_usb_reply_ok();
+void uart_router_send_string(UART_HandleTypeDef* huart, const char* str);
+void uart_router_start_receive(uart_stream_t* uart_stream);
 void uart_router_usb_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity);
 void uart_router_huart_reinit(uart_stream_t* stream);
 void uart_router_reset_stream(uart_stream_t* stream);
+
+extern uint32_t last_receive_tick;
 
 #endif

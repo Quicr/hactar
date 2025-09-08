@@ -41,25 +41,27 @@ void command_reset_net(void* arg)
 
 void command_flash_ui(void* arg)
 {
+    NetHoldInReset();
+
     uint8_t* uploader = (uint8_t*)arg;
 
     uart_stream_t* usb_stream = uart_router_get_usb_stream();
     uart_stream_t* net_stream = uart_router_get_net_stream();
     uart_stream_t* ui_stream = uart_router_get_ui_stream();
 
-    uart_router_send_flash_ok();
-
     usb_stream->path = Tx_Path_Ui;
     net_stream->path = Tx_Path_None;
+
+    uart_router_usb_send_flash_ok();
     uart_router_usb_reinit(UART_WORDLENGTH_9B, UART_PARITY_EVEN);
+    uart_router_start_receive(ui_stream);
 
     *uploader = 1;
 
-    NetHoldInReset();
     HAL_Delay(200);
     UIBootloaderMode();
 
-    uart_router_send_ready();
+    uart_router_usb_send_ready();
 }
 
 void command_flash_net(void* arg)

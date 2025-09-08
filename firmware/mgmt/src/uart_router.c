@@ -92,10 +92,11 @@ static transmit_t internal_tx = {
     .free = 1,
 };
 
-static uint32_t last_receive_tick = 0;
-
 static uint8_t Ok_Byte[] = {0x80};
 static uint8_t Ready_Byte[] = {0x81};
+static uint8_t Ok_Ascii[] = "Ok\n";//{'O', 'k', '\n'};
+
+uint32_t last_receive_tick = 0;
 
 // Assumes unsent > 0
 static uint8_t read_from_tx(transmit_t* tx, int32_t* num_read)
@@ -325,6 +326,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
                 if (command_map[command].command == command
                     && command_map[command].callback != NULL)
                 {
+                    uart_router_usb_reply_ok();
                     command_map[command].callback(command_map[command].usr_arg);
                 }
                 break;
@@ -398,16 +400,49 @@ void uart_router_update_last_received_tick(const uint32_t current_tick)
     last_receive_tick = current_tick;
 }
 
-void uart_router_send_flash_ok()
+void uart_router_usb_send_flash_ok()
 {
     // uart_router_copy_to_tx(usb_stream.tx, Ok_Byte, 1);
     HAL_UART_Transmit(usb_stream.tx->uart, Ok_Byte, 1, HAL_MAX_DELAY);
 }
 
-void uart_router_send_ready()
+void uart_router_usb_send_ready()
 {
     // uart_router_copy_to_tx(usb_stream.tx, Ready_Byte, 1);
     HAL_UART_Transmit(usb_stream.tx->uart, Ready_Byte, 1, HAL_MAX_DELAY);
+}
+
+void uart_router_usb_reply_ok()
+{
+    HAL_UART_Transmit(usb_stream.tx->uart, Ok_Ascii, sizeof(Ok_Ascii), HAL_MAX_DELAY);
+}
+
+void uart_router_send_string(UART_HandleTypeDef* huart, const char* str)
+{
+    // Get the len
+    uint16_t len = strlen(str);
+
+    HAL_UART_Transmit(huart, str, len, HAL_MAX_DELAY);
+}
+
+void uart_router_start_receive(uart_stream_t* uart_stream)
+{
+    uart_router_reset_stream(uart_stream);
+
+    uint8_t attempt = 0;
+    while (attempt++ != 10
+           && HAL_OK
+                  != HAL_UARTEx_ReceiveToIdle_DMA(uart_stream->rx->uart, uart_stream->rx->buff,
+                                                  uart_stream->rx->size))
+    {
+        // Make sure the uart is cancelled, sometimes it doesn't want to cancel
+        HAL_UART_Abort(uart_stream->rx->uart);
+    }
+
+    if (attempt >= 10)
+    {
+        Error_Handler();
+    }
 }
 
 void uart_router_usb_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity)
@@ -430,9 +465,7 @@ void uart_router_usb_reinit(const uint32_t HAL_word_length, const uint32_t HAL_p
         Error_Handler();
     }
 
-    uart_router_reset_stream(&usb_stream);
-
-    HAL_UARTEx_ReceiveToIdle_DMA(uart, usb_rx.buff, usb_rx.size);
+    uart_router_start_receive(&usb_stream);
 }
 
 void uart_router_reset_stream(uart_stream_t* stream)
