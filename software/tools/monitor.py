@@ -24,6 +24,7 @@ command_map = {
     "reset net": bytes([5, 0, 0]),
     "flash ui": bytes([6, 0, 0]),
     "flash net": bytes([7, 0, 0]),
+    "sync": bytes([0x7F]),
 }
 
 
@@ -77,7 +78,7 @@ def ReadSerial():
     while running:
         try:
             if uart.in_waiting:
-                data = uart.readline().decode()
+                data = uart.readline()
                 if dump_file:
                     dump_file.write(data)
                 print(data)
@@ -97,7 +98,7 @@ def WriteCommand():
             running = False
         else:
             if user_input in command_map:
-                print(command_map[user_input])
+                # print(command_map[user_input])
                 uart.write(command_map[user_input])
             # uart.write(bytes([0, 0, 0]))
             # send_data = [ch for ch in bytes(user_input, "UTF-8")]
@@ -149,7 +150,13 @@ def main():
             required=False,
         )
 
-        parser.add_argument("--dump_file", help="Dump file of incoming logs", default=None, type=str, required=False)
+        parser.add_argument(
+            "--dump_file",
+            help="Dump file of incoming logs",
+            default=None,
+            type=str,
+            required=False,
+        )
 
         args = parser.parse_args()
 
