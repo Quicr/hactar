@@ -33,7 +33,6 @@ extern "C" {
 #include "main.h"
 #include "state.h"
 #include "stm32f0xx_hal.h"
-#include "uart_stream.h"
 
 static const enum State default_state = Debug;
 
