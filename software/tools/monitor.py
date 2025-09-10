@@ -33,6 +33,12 @@ command_map = {
     "default logging": bytes([14, 0, 0]),
 }
 
+bypass_map = {
+    "to ui": bytes([15, 0, 0]),
+    "to net": bytes([16, 0, 0]),
+    "loopback": bytes([17, 0, 0]),
+}
+
 
 def FindHactar(uart_config):
     HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE", "utf-8")
@@ -114,11 +120,12 @@ def WriteCommand():
             running = False
         else:
             if user_input in command_map:
-                print(command_map[user_input])
+                # print(command_map[user_input])
                 uart.write(command_map[user_input])
-            # uart.write(bytes([0, 0, 0]))
-            # send_data = [ch for ch in bytes(user_input, "UTF-8")]
-            # uart.write(bytes(send_data))
+            else if user_input in bypass_map:
+                pass
+                # Do something
+            else
 
     except Exception as ex:
         print(ex)
