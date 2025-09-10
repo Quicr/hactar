@@ -5,11 +5,12 @@
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_uart.h"
 
-#define UART_BUFF_SZ 1024
-#define USB_UART_BUFF_SZ 4096
-#define COMMAND_TIMEOUT 1000
+#define NET_UART_BUFF_SZ 2048
+#define USB_UART_BUFF_SZ 2048
+#define UI_UART_BUFF_SZ 1024
 #define INTERNAL_BUFF_SZ 64
 #define PACKET_SZ 64
+#define COMMAND_TIMEOUT 1000
 
 typedef enum
 {

@@ -16,6 +16,24 @@ import serial.tools.list_ports
 
 # TODO only allow .bin files
 
+# TODO put this into a command file
+command_map = {
+    "version": bytes([0, 0, 0]),
+    "who are you": bytes([1, 0, 0]),
+    "hard reset": bytes([2, 0, 0]),
+    "reset": bytes([3, 0, 0]),
+    "reset ui": bytes([4, 0, 0]),
+    "reset net": bytes([5, 0, 0]),
+    "flash ui": bytes([6, 0, 0]),
+    "flash net": bytes([7, 0, 0]),
+    "enable logs": bytes([8, 0, 0]),
+    "enable ui logs": bytes([9, 0, 0]),
+    "enable net logs": bytes([10, 0, 0]),
+    "disable logs": bytes([11, 0, 0]),
+    "disable ui logs": bytes([12, 0, 0]),
+    "disable net logs": bytes([13, 0, 0]),
+}
+
 
 def main():
     try:
@@ -97,9 +115,7 @@ def main():
                 try:
                     uart = serial.Serial(port=port, **uart_config)
 
-                    print(
-                        f"Opened port: {BB}{port}{NW} " f"baudrate: {BG}{args.baud}{NW}"
-                    )
+                    print(f"Opened port: {BB}{port}{NW} " f"baudrate: {BG}{args.baud}{NW}")
 
                     uploader = UploaderFactory(uart, args.chip)
 
@@ -121,8 +137,7 @@ def main():
 
 
 def SerialPorts(uart_config):
-    HELLO = bytes("WHO ARE YOU?\0", "utf-8")
-    HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE\0", "utf-8")
+    HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE", "utf-8")
 
     # Get all ports
     ports = []
@@ -146,7 +161,10 @@ def SerialPorts(uart_config):
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
             # append it.
-            s.write(HELLO)
+            s.write(command_map["who are you"])
+
+            # Read the ok reponse and ignore it
+            ok = s.read(3)
 
             resp = s.read(len(HELLO_RES))
 
@@ -192,9 +210,7 @@ def RecoverableEraseMemory(flasher, sectors, chip, recover):
     finished_erasing = False
     while not finished_erasing:
         try:
-            finished_erasing = flasher.SendExtendedEraseMemory(
-                sectors, False, True, True
-            )
+            finished_erasing = flasher.SendExtendedEraseMemory(sectors, False, True, True)
         except Exception as ex:
             if not recover:
                 raise ex
@@ -209,9 +225,7 @@ def RecoverableFlashMemory(flasher, firmware, chip, recover):
     while not finished_writing:
         try:
             # TODO add a function for getting the start of the address?
-            finished_writing = flasher.SendWriteMemory(
-                firmware, flasher.chip_config["usr_start_addr"], recover
-            )
+            finished_writing = flasher.SendWriteMemory(firmware, flasher.chip_config["usr_start_addr"], recover)
         except Exception as ex:
             if not recover:
                 raise ex

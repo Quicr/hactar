@@ -29,6 +29,13 @@ const command_map_t command_map[Cmd_Count] = {
     {Cmd_Reset_Ui, command_reset_ui, NULL},
     {Cmd_Reset_Net, command_reset_net, NULL},
     {Cmd_Flash_Ui, command_flash_ui, (void*)&uploader},
+    {Cmd_Flash_Net, command_flash_net, (void*)&uploader},
+    {Cmd_Enable_Logs, command_enable_logs, NULL},
+    {Cmd_Enable_Logs_Ui, command_enable_logs_ui, NULL},
+    {Cmd_Enable_Logs_Net, command_enable_logs_net, NULL},
+    {Cmd_Disable_Logs, command_disable_logs, NULL},
+    {Cmd_Disable_Logs_Ui, command_disable_logs_ui, NULL},
+    {Cmd_Disable_Logs_Net, command_disable_logs_net, NULL},
 };
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
@@ -62,9 +69,8 @@ int app_main(void)
 
     while (1)
     {
-
-        NetNormalMode();
-        UINormalMode();
+        chip_control_net_normal_mode();
+        chip_control_ui_normal_mode();
 
         uart_router_usb_reinit(UART_WORDLENGTH_8B, UART_PARITY_NONE);
         usb_stream->path = Tx_Path_Internal;

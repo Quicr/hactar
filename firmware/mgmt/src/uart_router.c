@@ -10,11 +10,11 @@ static UART_HandleTypeDef* usb_uart = &huart1;
 static UART_HandleTypeDef* ui_uart = &huart2;
 static UART_HandleTypeDef* net_uart = &huart3;
 
-static uint8_t ui_rx_buff[UART_BUFF_SZ] = {0};
-static uint8_t ui_tx_buff[UART_BUFF_SZ] = {0};
+static uint8_t ui_rx_buff[UI_UART_BUFF_SZ] = {0};
+static uint8_t ui_tx_buff[UI_UART_BUFF_SZ] = {0};
 
-static uint8_t net_rx_buff[UART_BUFF_SZ] = {0};
-static uint8_t net_tx_buff[UART_BUFF_SZ] = {0};
+static uint8_t net_rx_buff[NET_UART_BUFF_SZ] = {0};
+static uint8_t net_tx_buff[NET_UART_BUFF_SZ] = {0};
 
 static uint8_t usb_rx_buff[USB_UART_BUFF_SZ] = {0};
 static uint8_t usb_tx_buff[USB_UART_BUFF_SZ] = {0};
@@ -44,7 +44,7 @@ uart_stream_t usb_stream = {.rx = &usb_rx, .tx = &usb_tx, .path = Tx_Path_None};
 static transmit_t ui_tx = {
     .uart = &huart2,
     .buff = ui_tx_buff,
-    .size = UART_BUFF_SZ,
+    .size = UI_UART_BUFF_SZ,
     .read = 0,
     .write = 0,
     .unsent = 0,
@@ -55,7 +55,7 @@ static transmit_t ui_tx = {
 static receive_t ui_rx = {
     .uart = &huart2,
     .buff = ui_rx_buff,
-    .size = UART_BUFF_SZ,
+    .size = UI_UART_BUFF_SZ,
     .idx = 0,
 };
 
@@ -64,7 +64,7 @@ uart_stream_t ui_stream = {.rx = &ui_rx, .tx = &ui_tx, .path = Tx_Path_None};
 static transmit_t net_tx = {
     .uart = &huart3,
     .buff = net_tx_buff,
-    .size = UART_BUFF_SZ,
+    .size = NET_UART_BUFF_SZ,
     .read = 0,
     .write = 0,
     .unsent = 0,
@@ -75,7 +75,7 @@ static transmit_t net_tx = {
 static receive_t net_rx = {
     .uart = &huart3,
     .buff = net_rx_buff,
-    .size = UART_BUFF_SZ,
+    .size = NET_UART_BUFF_SZ,
     .idx = 0,
 };
 
@@ -94,7 +94,7 @@ static transmit_t internal_tx = {
 
 static uint8_t Ok_Byte[] = {0x80};
 static uint8_t Ready_Byte[] = {0x81};
-static uint8_t Ok_Ascii[] = "Ok\n";//{'O', 'k', '\n'};
+static uint8_t Ok_Ascii[3] = "Ok\n";
 
 uint32_t last_receive_tick = 0;
 
@@ -329,6 +329,10 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
                     uart_router_usb_reply_ok();
                     command_map[command].callback(command_map[command].usr_arg);
                 }
+                else
+                {
+                    uart_router_send_string(usb_uart, "Error");
+                }
                 break;
             }
             }
@@ -422,7 +426,7 @@ void uart_router_send_string(UART_HandleTypeDef* huart, const char* str)
     // Get the len
     uint16_t len = strlen(str);
 
-    HAL_UART_Transmit(huart, str, len, HAL_MAX_DELAY);
+    HAL_UART_Transmit(huart, (const uint8_t*)str, len, HAL_MAX_DELAY);
 }
 
 void uart_router_start_receive(uart_stream_t* uart_stream)
