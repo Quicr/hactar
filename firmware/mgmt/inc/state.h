@@ -1,11 +1,11 @@
 #ifndef STATE_H
 #define STATE_H
 
-enum State
+typedef enum
 {
     Running,
     Normal,
     Debug
-};
+} State;
 
 #endif

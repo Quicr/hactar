@@ -34,7 +34,7 @@ extern "C" {
 #include "state.h"
 #include "stm32f0xx_hal.h"
 
-static const enum State default_state = Debug;
+static const State default_state = Debug;
 
 typedef enum
 {
@@ -47,23 +47,7 @@ int app_main(void);
 
 void app_mgmt_reset(const Reset_Type reset_type);
 
-void NetBootloaderMode();
-void NetNormalMode();
-void NetHoldInReset();
-void UIBootloaderMode();
-void UINormalMode();
-void UIHoldInReset();
-void UIHoldInReset();
-void NetUpload();
-void UIUpload();
-void RunningMode();
-void DebugMode();
-void NormalInit();
-
 void CheckTimeout();
-void WaitForNetReady(const enum State* state);
-void CancelAllUart();
-void SendUploadOk();
 void LEDA(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
 void LEDB(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
 void TurnOffLEDs();

@@ -58,20 +58,22 @@ def FindHactar(uart_config):
             s.timeout = 0.5
 
             # Silence the chattering chips (I'M LOOKING AT YOU ESP32!)
+            # Also read and ignore the ok
             s.write(command_map["disable logs"])
-            ok = s.read(3)
+            s.read(3)
 
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
             # append it.
             s.write(command_map["who are you"])
 
-            # Read the ok reponse and ignore it
-            ok = s.read(3)
+            # Read and ignore the ok reponse and ignore it
+            s.read(3)
 
             resp = s.read(len(HELLO_RES))
 
             s.write(command_map["default logging"])
+            s.read(3)
             s.close()
 
             if resp == HELLO_RES:
