@@ -24,13 +24,17 @@ command_map = {
     "reset net": bytes([5, 0, 0]),
     "flash ui": bytes([6, 0, 0]),
     "flash net": bytes([7, 0, 0]),
-    "sync": bytes([0x7F]),
+    "enable logs": bytes([8, 0, 0]),
+    "enable ui logs": bytes([9, 0, 0]),
+    "enable net logs": bytes([10, 0, 0]),
+    "disable logs": bytes([11, 0, 0]),
+    "disable ui logs": bytes([12, 0, 0]),
+    "disable net logs": bytes([13, 0, 0]),
 }
 
 
 def FindHactar(uart_config):
-    HELLO = bytes("WHO ARE YOU?\0", "utf-8")
-    HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE\0", "utf-8")
+    HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE", "utf-8")
 
     # Get all ports
     ports = []
@@ -54,10 +58,13 @@ def FindHactar(uart_config):
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
             # append it.
-            s.write(HELLO)
+            s.write(command_map["who are you"])
+
+            # Read the ok reponse and ignore it
+            ok = s.read(3)
 
             resp = s.read(len(HELLO_RES))
-
+            print(resp)
             s.close()
 
             if resp == HELLO_RES:
@@ -78,12 +85,12 @@ def ReadSerial():
     while running:
         try:
             if uart.in_waiting:
-                data = uart.readline()
+                data = uart.readline().decode()
                 if dump_file:
                     dump_file.write(data)
-                print(data)
-                # print("\r\033[0m" + erase + data, end="")
-                # print("\033[1m\033[92mEnter a command:\033[0m")
+                # print(data)
+                print("\r\033[0m" + erase + data, end="")
+                print("\033[1m\033[92mEnter a command:\033[0m")
             else:
                 time.sleep(0.05)
         except Exception as ex:
@@ -98,7 +105,7 @@ def WriteCommand():
             running = False
         else:
             if user_input in command_map:
-                # print(command_map[user_input])
+                print(command_map[user_input])
                 uart.write(command_map[user_input])
             # uart.write(bytes([0, 0, 0]))
             # send_data = [ch for ch in bytes(user_input, "UTF-8")]

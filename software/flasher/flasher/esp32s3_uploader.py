@@ -32,20 +32,24 @@ class ESP32S3Uploader(Uploader):
         super().__init__(uart, chip)
 
     def FlashSelect(self):
-        send_data = [ch for ch in bytes("net_upload", "UTF-8")]
+        send_data = bytes([7, 0, 0])
         self.uart.write(send_data)
+        print(f"Sent command to flash Net")
+
         self.uart.flush()
 
-        print(f"Update uart to parity: {BB}NONE{NW}")
+        self.TryPattern(uart_utils.OK, 1, 5)
+        print(f"Flash UI command: {BG}CONFIRMED{NW}")
 
-        time.sleep(2)
+        print(f"Update uart to parity: {BB}EVEN{NW}")
         self.uart.parity = serial.PARITY_NONE
+
+        self.TryPattern(uart_utils.READY, 1, 5)
+        print(f"Flash UI: {BB}READY{NW}")
+
+        self.uart.flush()
         self.uart.reset_input_buffer()
 
-        self.TryHandshake(uart_utils.OK, 1, 10)
-        self.TryPattern(uart_utils.READY, 1, 10)
-
-        self.uart.reset_input_buffer()
         print(f"Activating NET Upload Mode: {BG}SUCCESS{NW}")
 
     def FlashFirmware(self, binary_path: str) -> bool:
@@ -147,10 +151,7 @@ class ESP32S3Uploader(Uploader):
             offset = int(binary["offset"], 16)
             num_blocks = (size + self.Block_Size - 1) // self.Block_Size
 
-            print(
-                f"Flashing: {BY}{binary['name']}{NW}, size: {hex(size)}, "
-                f"start_addr: {hex(offset)}"
-            )
+            print(f"Flashing: {BY}{binary['name']}{NW}, size: {hex(size)}, " f"start_addr: {hex(offset)}")
 
             self.StartFlash(size, num_blocks, offset)
             self.WriteFlash(binary["file"], data, num_blocks)
@@ -212,9 +213,7 @@ class ESP32S3Uploader(Uploader):
             bin_packet.PushDataArray(data_bytes, "big")
 
             # Write the packet and wait for a reply
-            reply = self.WritePacketWaitForResponsePacket(
-                bin_packet, self.FLASH_DATA, checksum=True
-            )
+            reply = self.WritePacketWaitForResponsePacket(bin_packet, self.FLASH_DATA, checksum=True)
 
             if reply.GetCommand() != self.FLASH_DATA:
                 print(reply)
@@ -271,11 +270,7 @@ class ESP32S3Uploader(Uploader):
 
         for i in range(len(loc_md5)):
             if res_md5[i] != loc_md5[i]:
-                raise Exception(
-                    "MD5 hashes did not match."
-                    f"\n\rReceived: {res_md5}"
-                    f"\n\rCalculated: {loc_md5}"
-                )
+                raise Exception("MD5 hashes did not match." f"\n\rReceived: {res_md5}" f"\n\rCalculated: {loc_md5}")
 
     def AttachSPI(self):
         packet = ESP32SlipPacket(0, self.SPI_ATTACH)
