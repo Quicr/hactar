@@ -7,7 +7,7 @@
 void command_get_version(void* arg)
 {
     uart_stream_t* stream = uart_router_get_usb_stream();
-    uart_router_copy_string_to_tx(stream->tx, "v1.0.0");
+    uart_router_copy_string_to_tx(&stream->tx, "v1.0.0");
 }
 
 void command_who_are_you(void* arg)
@@ -15,7 +15,7 @@ void command_who_are_you(void* arg)
     uart_stream_t* stream = uart_router_get_usb_stream();
 
     static const char Who_Are_You_Response[] = "HELLO, I AM A HACTAR DEVICE";
-    uart_router_copy_string_to_tx(stream->tx, Who_Are_You_Response);
+    uart_router_copy_string_to_tx(&stream->tx, Who_Are_You_Response);
 }
 
 void command_hard_reset(void* arg)
@@ -129,4 +129,9 @@ void command_disable_logs_net(void* arg)
     uart_stream_t* net_stream = uart_router_get_net_stream();
 
     net_stream->path = Tx_Path_None;
+}
+
+void command_default_logs(void* arg)
+{
+    // TODO
 }

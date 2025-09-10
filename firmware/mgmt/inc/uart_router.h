@@ -24,7 +24,6 @@ typedef enum
 
 typedef struct
 {
-    UART_HandleTypeDef* uart;
     uint8_t* buff;
     const uint16_t size;
     uint16_t idx;
@@ -32,7 +31,6 @@ typedef struct
 
 typedef struct
 {
-    UART_HandleTypeDef* uart;
     uint8_t* buff;
     const uint16_t size;
     uint16_t read;
@@ -44,17 +42,18 @@ typedef struct
 
 typedef struct
 {
-    receive_t* rx;
-    transmit_t* tx;
+    UART_HandleTypeDef* uart;
+    receive_t rx;
+    transmit_t tx;
     Tx_Path path;
 } uart_stream_t;
 
 void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received);
 void uart_router_copy_to_tx(transmit_t* tx, const uint8_t* buff, const uint16_t num_bytes);
 void uart_router_copy_string_to_tx(transmit_t* tx, const char* str);
-void uart_router_tx_isr(transmit_t* tx);
-void uart_router_transmit(transmit_t* tx);
-void uart_router_perform_transmit(transmit_t* tx);
+void uart_router_tx_isr(uart_stream_t* tx);
+void uart_router_transmit(uart_stream_t* tx);
+void uart_router_perform_transmit(uart_stream_t* tx);
 void uart_router_parse_internal(const command_map_t command_map[Cmd_Count]);
 uart_stream_t* uart_router_get_ui_stream();
 uart_stream_t* uart_router_get_net_stream();
