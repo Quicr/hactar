@@ -19,6 +19,7 @@ typedef enum
     Cmd_Disable_Logs,
     Cmd_Disable_Logs_Ui,
     Cmd_Disable_Logs_Net,
+    Cmd_Default_Logging,
     Cmd_To_Ui,
     Cmd_To_Net,
     Cmd_Loopback,
@@ -52,5 +53,6 @@ void command_enable_logs_net(void* arg);
 void command_disable_logs(void* arg);
 void command_disable_logs_ui(void* arg);
 void command_disable_logs_net(void* arg);
+void command_default_logging(void* arg);
 
 #endif

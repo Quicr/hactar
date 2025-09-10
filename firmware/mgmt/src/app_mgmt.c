@@ -35,7 +35,7 @@ const command_map_t command_map[Cmd_Count] = {
     {Cmd_Enable_Logs_Net, command_enable_logs_net, NULL},
     {Cmd_Disable_Logs, command_disable_logs, NULL},
     {Cmd_Disable_Logs_Ui, command_disable_logs_ui, NULL},
-    {Cmd_Disable_Logs_Net, command_disable_logs_net, NULL},
+    {Cmd_Default_Logging, command_default_logging, (void*)&default_state},
 };
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
@@ -72,12 +72,27 @@ int app_main(void)
         chip_control_net_normal_mode();
         chip_control_ui_normal_mode();
 
-        uart_router_usb_reinit(UART_WORDLENGTH_8B, UART_PARITY_NONE);
         usb_stream->path = Tx_Path_Internal;
+
+        // TODO this should go into some function that can be used on app_mgmt and
+        // inside of command handler
+        switch (state)
+        {
+        case Normal:
+            net_stream->path = Tx_Path_None;
+            ui_stream->path = Tx_Path_None;
+            break;
+        case Debug:
+            net_stream->path = Tx_Path_Usb;
+            ui_stream->path = Tx_Path_Usb;
+            break;
+        default:
+            break;
+        }
+
+        uart_router_usb_reinit(UART_WORDLENGTH_8B, UART_PARITY_NONE);
         uart_router_start_receive(net_stream);
-        net_stream->path = Tx_Path_Usb;
         uart_router_start_receive(ui_stream);
-        ui_stream->path = Tx_Path_Usb;
 
         TurnOffLEDs();
 
@@ -91,9 +106,9 @@ int app_main(void)
                 uart_router_parse_internal(command_map);
             }
 
-            uart_router_transmit(usb_stream->tx);
-            uart_router_transmit(ui_stream->tx);
-            uart_router_transmit(net_stream->tx);
+            uart_router_transmit(usb_stream);
+            uart_router_transmit(ui_stream);
+            uart_router_transmit(net_stream);
 
             CheckTimeout();
 
