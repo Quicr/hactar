@@ -164,6 +164,25 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 
     __enable_irq();
 }
+void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
+{
+    __disable_irq();
+
+    if (huart->Instance == net_stream.uart->Instance)
+    {
+        uart_router_reinit_stream(&net_stream);
+    }
+    else if (huart->Instance == ui_stream.uart->Instance)
+    {
+        uart_router_reinit_stream(&ui_stream);
+    }
+    else if (huart->Instance == usb_stream.uart->Instance)
+    {
+        uart_router_reinit_stream(&usb_stream);
+    }
+
+    __enable_irq();
+}
 
 void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received)
 {
@@ -449,7 +468,7 @@ void uart_router_start_receive(uart_stream_t* uart_stream)
     }
 }
 
-void uart_router_usb_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity)
+void uart_router_usb_update_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity)
 {
     HAL_UART_Abort(&usb_uart);
 
@@ -468,6 +487,24 @@ void uart_router_usb_reinit(const uint32_t HAL_word_length, const uint32_t HAL_p
     }
 
     uart_router_start_receive(&usb_stream);
+}
+
+void uart_router_reinit_stream(uart_stream_t* stream)
+{
+    HAL_UART_Abort(stream->uart);
+
+    // Init uart1 for UI upload
+    if (HAL_UART_DeInit(stream->uart) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    if (HAL_UART_Init(stream->uart) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    uart_router_start_receive(stream);
 }
 
 void uart_router_reset_stream(uart_stream_t* stream)

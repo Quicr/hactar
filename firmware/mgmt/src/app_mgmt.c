@@ -18,8 +18,8 @@ extern TIM_HandleTypeDef htim3;
 
 static uint8_t uploader = 0;
 
-enum State state = default_state;
-enum State next_state = Running;
+State state = default_state;
+State next_state = Running;
 
 const command_map_t command_map[Cmd_Count] = {
     {Cmd_Version, command_get_version, NULL},
@@ -37,10 +37,6 @@ const command_map_t command_map[Cmd_Count] = {
     {Cmd_Disable_Logs_Ui, command_disable_logs_ui, NULL},
     {Cmd_Default_Logging, command_default_logging, (void*)&default_state},
 };
-
-void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
-{
-}
 
 void HAL_GPIO_EXTI_Callback(uint16_t pin)
 {
@@ -74,23 +70,9 @@ int app_main(void)
 
         usb_stream->path = Tx_Path_Internal;
 
-        // TODO this should go into some function that can be used on app_mgmt and
-        // inside of command handler
-        switch (state)
-        {
-        case Normal:
-            net_stream->path = Tx_Path_None;
-            ui_stream->path = Tx_Path_None;
-            break;
-        case Debug:
-            net_stream->path = Tx_Path_Usb;
-            ui_stream->path = Tx_Path_Usb;
-            break;
-        default:
-            break;
-        }
+        command_default_logging((void*)state);
 
-        uart_router_usb_reinit(UART_WORDLENGTH_8B, UART_PARITY_NONE);
+        uart_router_usb_update_reinit(UART_WORDLENGTH_8B, UART_PARITY_NONE);
         uart_router_start_receive(net_stream);
         uart_router_start_receive(ui_stream);
 

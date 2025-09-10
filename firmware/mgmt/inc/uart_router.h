@@ -65,7 +65,8 @@ void uart_router_usb_send_ready();
 void uart_router_usb_reply_ok();
 void uart_router_send_string(UART_HandleTypeDef* huart, const char* str);
 void uart_router_start_receive(uart_stream_t* uart_stream);
-void uart_router_usb_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity);
+void uart_router_usb_update_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity);
+void uart_router_reinit_stream(uart_stream_t* uart_stream);
 void uart_router_huart_reinit(uart_stream_t* stream);
 void uart_router_reset_stream(uart_stream_t* stream);
 

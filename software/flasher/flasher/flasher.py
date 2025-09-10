@@ -32,6 +32,7 @@ command_map = {
     "disable logs": bytes([11, 0, 0]),
     "disable ui logs": bytes([12, 0, 0]),
     "disable net logs": bytes([13, 0, 0]),
+    "default logging": bytes([14, 0, 0]),
 }
 
 
@@ -158,16 +159,24 @@ def SerialPorts(uart_config):
         try:
             s = serial.Serial(**uart_config, port=port)
             s.timeout = 0.5
+
+            # Silence the chattering chips (I'M LOOKING AT YOU ESP32!)
+            # Also read and ignore the ok
+            s.write(command_map["disable logs"])
+            s.read(3)
+
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
             # append it.
             s.write(command_map["who are you"])
 
-            # Read the ok reponse and ignore it
-            ok = s.read(3)
+            # Read and ignore the ok reponse and ignore it
+            s.read(3)
 
             resp = s.read(len(HELLO_RES))
 
+            s.write(command_map["default logging"])
+            s.read(3)
             s.close()
 
             if resp == HELLO_RES:

@@ -2,6 +2,7 @@
 #include "app_mgmt.h"
 #include "chip_control.h"
 #include "io_control.h"
+#include "state.h"
 #include "uart_router.h"
 
 void command_get_version(void* arg)
@@ -54,7 +55,7 @@ void command_flash_ui(void* arg)
     ui_stream->path = Tx_Path_Usb;
 
     uart_router_usb_send_flash_ok();
-    uart_router_usb_reinit(UART_WORDLENGTH_9B, UART_PARITY_EVEN);
+    uart_router_usb_update_reinit(UART_WORDLENGTH_9B, UART_PARITY_EVEN);
     uart_router_start_receive(ui_stream);
 
     *uploader = 1;
@@ -80,7 +81,7 @@ void command_flash_net(void* arg)
     ui_stream->path = Tx_Path_None;
 
     uart_router_usb_send_flash_ok();
-    uart_router_usb_reinit(UART_WORDLENGTH_8B, UART_PARITY_NONE);
+    uart_router_usb_update_reinit(UART_WORDLENGTH_8B, UART_PARITY_NONE);
     uart_router_start_receive(net_stream);
 
     *uploader = 1;
@@ -131,7 +132,23 @@ void command_disable_logs_net(void* arg)
     net_stream->path = Tx_Path_None;
 }
 
-void command_default_logs(void* arg)
+void command_default_logging(void* arg)
 {
-    // TODO
+    const State* state = (const State*)arg;
+    uart_stream_t* ui_stream = uart_router_get_ui_stream();
+    uart_stream_t* net_stream = uart_router_get_net_stream();
+
+    switch (*state)
+    {
+    case Normal:
+        net_stream->path = Tx_Path_None;
+        ui_stream->path = Tx_Path_None;
+        break;
+    case Debug:
+        net_stream->path = Tx_Path_Usb;
+        ui_stream->path = Tx_Path_Usb;
+        break;
+    default:
+        break;
+    }
 }
