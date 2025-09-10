@@ -13,23 +13,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "vendor"))
 from monitor import main as monitor_main
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        prog="hactar", description="Firmware flashing and serial monitoring tool"
-    )
+    parser = argparse.ArgumentParser(prog="hactar", description="Firmware flashing and serial monitoring tool")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Flasher command
     flash_parser = subparsers.add_parser("flash", help="Flash firmware to device")
     flash_parser.add_argument("file", help="Path to firmware file")
-    flash_parser.add_argument("-p", "--port", help="Serial port", required=True)
+    flash_parser.add_argument("-p", "--port", help="Serial port", required=False)
 
     # Monitor command
     monitor_parser = subparsers.add_parser("monitor", help="Open serial monitor")
-    monitor_parser.add_argument("-p", "--port", help="Serial port", required=False)
-    monitor_parser.add_argument(
-        "-b", "--baud", type=int, default=115200, help="Baud rate (default: 115200)"
-    )
+    monitor_parser.add_argument("-p", "--port", help="Serial port", required=False, default="")
+    monitor_parser.add_argument("-b", "--baud", type=int, default=115200, help="Baud rate (default: 115200)")
 
     args = parser.parse_args()
 

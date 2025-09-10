@@ -35,6 +35,7 @@ const command_map_t command_map[Cmd_Count] = {
     {Cmd_Enable_Logs_Net, command_enable_logs_net, NULL},
     {Cmd_Disable_Logs, command_disable_logs, NULL},
     {Cmd_Disable_Logs_Ui, command_disable_logs_ui, NULL},
+    {Cmd_Disable_Logs_Net, command_disable_logs_net, NULL},
     {Cmd_Default_Logging, command_default_logging, (void*)&default_state},
 };
 
