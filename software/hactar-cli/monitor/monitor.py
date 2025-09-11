@@ -16,6 +16,9 @@ from hactar_scanning import HactarScanning
 from hactar_commands import command_map, bypass_map, ui_command_map, net_command_map
 
 
+print(command_map["who are you"])
+
+
 class Monitor:
     def __init__(self, port, uart_args, threaded_reading=True):
         self.uart = serial.Serial(port, **uart_args)
@@ -63,80 +66,82 @@ class Monitor:
             if usr_input == "exit":
                 self.running = False
             else:
-                if usr_input in command_map:
+                split = usr_input.split()
+                print("split", split)
+                if split[0] in command_map:
                     self.uart.write(command_map[usr_input])
                     continue
 
-                found = False
-                for to_whom in bypass_map:
-                    if to_whom in usr_input:
-                        found = True
-                        self.ProcessBypassCommand(to_whom, usr_input[(len(to_whom) + 1) :])
-                        break
+                if split[0] in bypass_map:
+                    self.ProcessBypassCommand(split)
+                    continue
+                # for to_whom in bypass_map:
+                #     if to_whom in usr_input:
+                #         found = True
+                #         self.ProcessBypassCommand(
+                #             to_whom, usr_input[(len(to_whom) + 1) :]
+                #         )
+                #         break
 
-                if not found:
-                    print("Unknown command " + usr_input)
+                print("Unknown command " + usr_input)
 
-    def ProcessBypassCommand(self, to_whom, usr_input):
-        to_whom_id = bypass_map[to_whom]
-        command = None
-        command_params = None
+    def ProcessBypassCommand(self, split):
+        if len(split) < 2:
+            print("[ERROR] Not enough parameters to determine sub command")
+            return
+
+        to_whom = split[0]
+        command = split[1]
+
         if to_whom == "ui":
-            for cmd in ui_command_map:
-                if cmd in usr_input:
-                    command = cmd
-                    command_params = ui_command_map[cmd]
-                    break
-            if command == None:
-                print("[ERROR] Malformed command")
-                return
+            chip_commands = ui_command_map
+        else:
+            chip_commands = net_command_map
 
-            num_params = command_params["num_params"]
-            command_id = command_params["id"]
-            print(to_whom, to_whom_id)
-            print(command, command_id)
-            print(command_params)
-            params = []
-            usr_value = usr_input[len(command) + 1 :]
-            print("new usr value", usr_value)
+        if not (command in chip_commands):
+            print(f"[ERROR] subcommand {command} is unknown")
+            return
 
-            if len(usr_value) == 0 and num_params > 0:
-                print(
-                    f"[ERROR] Invalid number of params for command ({to_whom} {command}) expected {num_params} received {len(params)}"
-                )
-                return
+        num_params = chip_commands[command]["num_params"]
+        command_id = chip_commands[command]["id"]
 
-            for i in range(num_params):
-                space_idx = usr_value.find(" ")
-                if space_idx == -1:
-                    # Last param is what is in usr_value
-                    params.append(usr_value)
-                    if len(params) < num_params:
-                        print(
-                            f"[ERROR] Invalid number of params for command ({to_whom} {command}) expected {num_params} received {len(params)}"
-                        )
-                        return
-                    break
+        if len(split) - 2 < num_params:
+            print("[ERROR] Not enough parameters")
+            return
 
-                # Found a space, so take the
-                param = usr_value[:space_idx]
-                params.append(param)
-                usr_value = usr_value[space_idx + 1]
-            print(params)
+        Header_Bytes = 5  # 1 type, 4 length
+        # Create the length of the mgmt TLV and ui TLV
 
-            Header_Bytes = 5  # 1 type, 4 length
-            # Create the length of the mgmt TLV and ui TLV
+        to_whom_len = Header_Bytes
+        command_len = 0
+        # transmit the TLV
 
-            command_len = Header_Bytes
-            sub_command_len = 0
-            # transmit the TLV
+        collapsed_params = []
+        for param in split[2:]:
+            to_whom_len += len(param)
+            command_len += len(param)
+            collapsed_params += param.encode("utf-8")
 
-            for param in params:
-                command_len += len(param)
-                sub_command_len += len(param)
+        # print(to_whom_len)
+        # print(command_len)
 
-        elif to_whom == "net":
-            pass
+        data = []
+        data += bypass_map[to_whom].to_bytes(1, byteorder="little")
+        # print("comamnd id as bytes", data)
+
+        data += to_whom_len.to_bytes(4, byteorder="little")
+        # print("command len as bytes", data)
+
+        data += command_id.to_bytes(1, byteorder="little")
+        # print(data)
+
+        data += command_len.to_bytes(4, byteorder="little")
+        # print(data)
+
+        data += collapsed_params
+        print(data)
+
+        self.uart.write(bytes(data))
 
     def Close(self):
         self.running = False
