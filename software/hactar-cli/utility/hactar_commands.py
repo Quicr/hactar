@@ -18,18 +18,20 @@ command_map = {
 
 
 bypass_map = {
-    "to ui": 15,
-    "to net": 16,
+    "ui": 15,
+    "net": 16,
     "loopback": 17,
 }
 
 ui_command_map = {
-    "version": 0
-    "sframe": 1,
+    "version": {"id": 0, "num_params": 0},
+    "sframe": {"id": 1, "num_params": 1},
 }
 
 net_command_map = {
-    "version": 0
-    "set ssid": 1,
-    "get ssid": 2,
+    "version": {"id": 0, "num_params": 0},
+    "set network ssid": {"id": 1, "num_params": 1},
+    "set network password": {"id": 2, "num_params": 1},
+    "get network ssids": {"id": 3, "num_params": 0},
+    "get network passwords": {"id": 4, "num_params": 0},
 }
