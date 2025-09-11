@@ -3,6 +3,7 @@
 
 #include "stm32f0xx_hal.h"
 
+// TODO Get commands
 typedef enum
 {
     Cmd_Version = 0,
