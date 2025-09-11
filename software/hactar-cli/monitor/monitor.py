@@ -62,10 +62,18 @@ class Monitor:
             else:
                 if usr_input in command_map:
                     self.uart.write(command_map[usr_input])
-                elif usr_input in bypass_map:
+                    continue
 
-                else:
-                    print("Unknown command " + usr_input)
+                found = False
+                for to_whom in bypass_map:
+                    if to_whom in usr_input:
+                        print(to_whom)
+                        print("yay")
+                        found = True
+
+                if found:
+                    continue
+                print("Unknown command " + usr_input)
 
     def Close(self):
         self.running = False

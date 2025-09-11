@@ -16,8 +16,20 @@ command_map = {
     "default logging": bytes([14, 0, 0]),
 }
 
+
 bypass_map = {
-    "to ui": bytes([15, 0, 0]),
-    "to net": bytes([16, 0, 0]),
-    "loopback": bytes([17, 0, 0]),
+    "to ui": 15,
+    "to net": 16,
+    "loopback": 17,
+}
+
+ui_command_map = {
+    "version": 0
+    "sframe": 1,
+}
+
+net_command_map = {
+    "version": 0
+    "set ssid": 1,
+    "get ssid": 2,
 }
