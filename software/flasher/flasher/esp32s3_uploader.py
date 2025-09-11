@@ -39,13 +39,13 @@ class ESP32S3Uploader(Uploader):
         self.uart.flush()
 
         self.TryPattern(uart_utils.OK, 1, 5)
-        print(f"Flash UI command: {BG}CONFIRMED{NW}")
+        print(f"Flash Net command: {BG}CONFIRMED{NW}")
 
-        print(f"Update uart to parity: {BB}EVEN{NW}")
+        print(f"Update uart to parity: {BB}NONE{NW}")
         self.uart.parity = serial.PARITY_NONE
 
         self.TryPattern(uart_utils.READY, 1, 5)
-        print(f"Flash UI: {BB}READY{NW}")
+        print(f"Flash Net: {BB}READY{NW}")
 
         self.uart.flush()
         self.uart.reset_input_buffer()
@@ -151,7 +151,10 @@ class ESP32S3Uploader(Uploader):
             offset = int(binary["offset"], 16)
             num_blocks = (size + self.Block_Size - 1) // self.Block_Size
 
-            print(f"Flashing: {BY}{binary['name']}{NW}, size: {hex(size)}, " f"start_addr: {hex(offset)}")
+            print(
+                f"Flashing: {BY}{binary['name']}{NW}, size: {hex(size)}, "
+                f"start_addr: {hex(offset)}"
+            )
 
             self.StartFlash(size, num_blocks, offset)
             self.WriteFlash(binary["file"], data, num_blocks)
@@ -213,7 +216,9 @@ class ESP32S3Uploader(Uploader):
             bin_packet.PushDataArray(data_bytes, "big")
 
             # Write the packet and wait for a reply
-            reply = self.WritePacketWaitForResponsePacket(bin_packet, self.FLASH_DATA, checksum=True)
+            reply = self.WritePacketWaitForResponsePacket(
+                bin_packet, self.FLASH_DATA, checksum=True
+            )
 
             if reply.GetCommand() != self.FLASH_DATA:
                 print(reply)
@@ -270,7 +275,11 @@ class ESP32S3Uploader(Uploader):
 
         for i in range(len(loc_md5)):
             if res_md5[i] != loc_md5[i]:
-                raise Exception("MD5 hashes did not match." f"\n\rReceived: {res_md5}" f"\n\rCalculated: {loc_md5}")
+                raise Exception(
+                    "MD5 hashes did not match."
+                    f"\n\rReceived: {res_md5}"
+                    f"\n\rCalculated: {loc_md5}"
+                )
 
     def AttachSPI(self):
         packet = ESP32SlipPacket(0, self.SPI_ATTACH)
