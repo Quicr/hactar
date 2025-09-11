@@ -297,7 +297,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
     // Parse our internal, if it is a zero length TLV then we can just assume it is a command
     // otherwise... I dunno right now.
 
-    const uint16_t Header_Bytes = 3;
+    const uint16_t Header_Bytes = 5;
 
     static Command command = 0;
     static uint16_t len = 0;
@@ -306,19 +306,23 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
     static uint16_t packet_idx = 0;
     static uint8_t packet[PACKET_SZ] = {0};
 
+
     while (internal_tx.unsent > 0)
     {
         // If we don't have enough bytes for the length and the command
-        if (internal_tx.unsent < 3 && num_read == 0)
+        if (internal_tx.unsent < Header_Bytes && num_read == 0)
         {
             break;
         }
 
         if (num_read == 0)
         {
+            // TODO test to make sure that the read_from_tx works properly!!
             command = read_from_tx(&internal_tx, &num_read);
             len = read_from_tx(&internal_tx, &num_read);
             len |= read_from_tx(&internal_tx, &num_read) << 8;
+            len |= read_from_tx(&internal_tx, &num_read) << 16;
+            len |= read_from_tx(&internal_tx, &num_read) << 24;
         }
 
         if (command >= Cmd_Count)

@@ -1,6 +1,8 @@
+# TODO finish adding more zeroes to the commands
+
 command_map = {
-    "version": bytes([0, 0, 0]),
-    "who are you": bytes([1, 0, 0]),
+    "version": bytes([0] + [0] * 4),
+    "who are you": bytes([1] + [0] * 4),
     "hard reset": bytes([2, 0, 0]),
     "reset": bytes([3, 0, 0]),
     "reset ui": bytes([4, 0, 0]),
@@ -30,8 +32,8 @@ ui_command_map = {
 
 net_command_map = {
     "version": {"id": 0, "num_params": 0},
-    "set network ssid": {"id": 1, "num_params": 1},
-    "set network password": {"id": 2, "num_params": 1},
-    "get network ssids": {"id": 3, "num_params": 0},
-    "get network passwords": {"id": 4, "num_params": 0},
+    "set_network_ssid": {"id": 1, "num_params": 1},
+    "set_network_password": {"id": 2, "num_params": 1},
+    "get_network_ssids": {"id": 3, "num_params": 0},
+    "get_network_passwords": {"id": 4, "num_params": 0},
 }
