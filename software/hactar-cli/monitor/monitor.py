@@ -3,6 +3,7 @@ import os
 import threading
 import time
 import signal
+import numbers
 
 # No support on windows
 try:
@@ -12,7 +13,7 @@ except Exception:
 
 import serial
 from hactar_scanning import HactarScanning
-from hactar_commands import command_map, bypass_map
+from hactar_commands import command_map, bypass_map, ui_command_map, net_command_map
 
 
 class Monitor:
@@ -28,6 +29,8 @@ class Monitor:
             self.rx_thread = threading.Thread(target=self.ReadSerial, args=(True,))
             self.rx_thread.daemon = True
             self.rx_thread.start()
+
+        self.uart.write(command_map["disable logs"])
 
         self.WriteSerial()
 
@@ -67,13 +70,73 @@ class Monitor:
                 found = False
                 for to_whom in bypass_map:
                     if to_whom in usr_input:
-                        print(to_whom)
-                        print("yay")
                         found = True
+                        self.ProcessBypassCommand(to_whom, usr_input[(len(to_whom) + 1) :])
+                        break
 
-                if found:
-                    continue
-                print("Unknown command " + usr_input)
+                if not found:
+                    print("Unknown command " + usr_input)
+
+    def ProcessBypassCommand(self, to_whom, usr_input):
+        to_whom_id = bypass_map[to_whom]
+        command = None
+        command_params = None
+        if to_whom == "ui":
+            for cmd in ui_command_map:
+                if cmd in usr_input:
+                    command = cmd
+                    command_params = ui_command_map[cmd]
+                    break
+            if command == None:
+                print("[ERROR] Malformed command")
+                return
+
+            num_params = command_params["num_params"]
+            command_id = command_params["id"]
+            print(to_whom, to_whom_id)
+            print(command, command_id)
+            print(command_params)
+            params = []
+            usr_value = usr_input[len(command) + 1 :]
+            print("new usr value", usr_value)
+
+            if len(usr_value) == 0 and num_params > 0:
+                print(
+                    f"[ERROR] Invalid number of params for command ({to_whom} {command}) expected {num_params} received {len(params)}"
+                )
+                return
+
+            for i in range(num_params):
+                space_idx = usr_value.find(" ")
+                if space_idx == -1:
+                    # Last param is what is in usr_value
+                    params.append(usr_value)
+                    if len(params) < num_params:
+                        print(
+                            f"[ERROR] Invalid number of params for command ({to_whom} {command}) expected {num_params} received {len(params)}"
+                        )
+                        return
+                    break
+
+                # Found a space, so take the
+                param = usr_value[:space_idx]
+                params.append(param)
+                usr_value = usr_value[space_idx + 1]
+            print(params)
+
+            Header_Bytes = 5  # 1 type, 4 length
+            # Create the length of the mgmt TLV and ui TLV
+
+            command_len = Header_Bytes
+            sub_command_len = 0
+            # transmit the TLV
+
+            for param in params:
+                command_len += len(param)
+                sub_command_len += len(param)
+
+        elif to_whom == "net":
+            pass
 
     def Close(self):
         self.running = False
@@ -112,9 +175,17 @@ def main(args):
             for i, p in enumerate(ports):
                 print(f"{i}. {p}")
 
-            idx = int(input("> "))
+            idx = input("> ")
+            if not idx.isdigit():
+                print("Error: not a number entered")
+                idx = -1
+                continue
+
+            idx = int(idx)
+
             if idx < 0 or idx >= len(ports):
                 print("Invalid selection, try again")
+                continue
 
         port = ports[idx]
 
