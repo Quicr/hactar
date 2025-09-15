@@ -94,6 +94,8 @@ static transmit_t internal_tx = {
     .free = 1,
 };
 
+static uint32_t num_read = 0;
+
 static uint8_t Ok_Byte[] = {0x80};
 static uint8_t Ready_Byte[] = {0x81};
 static uint8_t Ok_Ascii[3] = "Ok\n";
@@ -101,7 +103,7 @@ static uint8_t Ok_Ascii[3] = "Ok\n";
 uint32_t last_receive_tick = 0;
 
 // Assumes unsent > 0
-static uint8_t read_from_tx(transmit_t* tx, int32_t* num_read)
+static uint8_t read_from_tx(transmit_t* tx, uint32_t* num_read)
 {
     if (tx->read >= tx->size)
     {
@@ -164,6 +166,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 
     __enable_irq();
 }
+
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
     __disable_irq();
@@ -297,15 +300,21 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
     // Parse our internal, if it is a zero length TLV then we can just assume it is a command
     // otherwise... I dunno right now.
 
-    const uint16_t Header_Bytes = 5;
+    const uint32_t Header_Bytes = 5;
 
     static Command command = 0;
-    static uint16_t len = 0;
-    static int32_t num_read = 0;
+    static uint32_t len = 0;
 
-    static uint16_t packet_idx = 0;
+    static uint32_t packet_idx = 0;
     static uint8_t packet[PACKET_SZ] = {0};
 
+    // Time out internal data
+    if (HAL_GetTick() - last_receive_tick >= 2000 && num_read > 0)
+    {
+        num_read = 0;
+        packet_idx = 0;
+        uart_router_send_string(&usb_uart, "[Error] command timeout\n");
+    }
 
     while (internal_tx.unsent > 0)
     {
@@ -317,12 +326,11 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 
         if (num_read == 0)
         {
-            // TODO test to make sure that the read_from_tx works properly!!
             command = read_from_tx(&internal_tx, &num_read);
-            len = read_from_tx(&internal_tx, &num_read);
-            len |= read_from_tx(&internal_tx, &num_read) << 8;
-            len |= read_from_tx(&internal_tx, &num_read) << 16;
-            len |= read_from_tx(&internal_tx, &num_read) << 24;
+            len = (uint32_t)(read_from_tx(&internal_tx, &num_read));
+            len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 8);
+            len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 16);
+            len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 24);
         }
 
         if (command >= Cmd_Count)
@@ -356,38 +364,15 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
                 }
                 else
                 {
-                    uart_router_send_string(&usb_uart, "Error");
+                    uart_router_send_string(&usb_uart, "Error\n");
                 }
                 break;
             }
             }
-            num_read = 0;
-        }
-        else if (num_read - Header_Bytes >= len)
-        {
-            // Send the packet to ui or net
-            switch (command)
-            {
-            case Cmd_To_Ui:
-            {
-                // TODO
-
-                break;
-            }
-            case Cmd_To_Net:
-            {
-                break;
-            }
-            case Cmd_Loopback:
-            {
-                break;
-            }
-            default:
-                break;
-            }
 
             num_read = 0;
             packet_idx = 0;
+            continue;
         }
         else
         {
@@ -400,6 +385,37 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 
             // Read more bytes!
             packet[packet_idx++] = read_from_tx(&internal_tx, &num_read);
+        }
+
+        if (num_read - Header_Bytes >= len && num_read >= 0)
+        {
+            uart_router_copy_string_to_tx(&usb_stream.tx, "packet!");
+
+            // Send the packet to ui or net
+            switch (command)
+            {
+            case Cmd_To_Ui:
+            {
+                uart_router_copy_to_tx(&ui_stream.tx, packet, packet_idx);
+                break;
+            }
+            case Cmd_To_Net:
+            {
+                uart_router_copy_to_tx(&net_stream.tx, packet, packet_idx);
+                break;
+            }
+            case Cmd_Loopback:
+            {
+                uart_router_copy_to_tx(&usb_stream.tx, packet, packet_idx);
+                break;
+            }
+            default:
+                break;
+            }
+
+            num_read = 0;
+            packet_idx = 0;
+            continue;
         }
     }
 }
@@ -513,11 +529,11 @@ void uart_router_reinit_stream(uart_stream_t* stream)
 
 void uart_router_reset_stream(uart_stream_t* stream)
 {
-    stream->tx.free = 1;
-    stream->tx.num_sending = 0;
     stream->tx.read = 0;
-    stream->tx.unsent = 0;
     stream->tx.write = 0;
+    stream->tx.unsent = 0;
+    stream->tx.num_sending = 0;
+    stream->tx.free = 1;
 
     stream->rx.idx = 0;
 }

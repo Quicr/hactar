@@ -7,8 +7,9 @@
 
 void command_get_version(void* arg)
 {
+    // TODO actually get a version
     uart_stream_t* stream = uart_router_get_usb_stream();
-    uart_router_copy_string_to_tx(&stream->tx, "v1.0.0");
+    uart_router_copy_string_to_tx(&stream->tx, "v1.0.0\n");
 }
 
 void command_who_are_you(void* arg)

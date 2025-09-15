@@ -12,11 +12,8 @@ except Exception:
     readline = None
 
 import serial
-from hactar_scanning import HactarScanning
+from hactar_scanning import HactarScanning, SelectHactarPort
 from hactar_commands import command_map, bypass_map, ui_command_map, net_command_map
-
-
-print(command_map["who are you"])
 
 
 class Monitor:
@@ -53,6 +50,8 @@ class Monitor:
                 # return to start of line and clear current line
                 sys.stdout.write("\r\033[K")
                 # print log (adds newline)
+                if data[-1] != "\n":
+                    data += "\n"
                 print(f"{data}", end="")
                 # reprint prompt + saved user text
                 sys.stdout.write(f"> {saved_input}")
@@ -68,7 +67,8 @@ class Monitor:
             else:
                 split = usr_input.split()
                 print("split", split)
-                if split[0] in command_map:
+                if split[0] in command_map or usr_input in command_map:
+                    print("is command", command_map[usr_input])
                     self.uart.write(command_map[usr_input])
                     continue
 
@@ -161,41 +161,17 @@ def main(args):
         "bytesize": serial.EIGHTBITS,
         "parity": serial.PARITY_NONE,
         "stopbits": serial.STOPBITS_ONE,
-        "timeout": 2,
+        "timeout": 1,
     }
 
     signal.signal(signal.SIGINT, SignalHandler)
     port = args.port
     if port == "" or port == None:
-        ports = HactarScanning(uart_config)
-
-        if len(ports) == 0:
-            print("No hactars found, exiting")
-            return
-
-        idx = -1
-        while idx < 0 or idx >= len(ports):
-            print(f"Hactars found: {len(ports)}")
-            print(f"Select a port [0-{len(ports)-1}]")
-            for i, p in enumerate(ports):
-                print(f"{i}. {p}")
-
-            idx = input("> ")
-            if not idx.isdigit():
-                print("Error: not a number entered")
-                idx = -1
-                continue
-
-            idx = int(idx)
-
-            if idx < 0 or idx >= len(ports):
-                print("Invalid selection, try again")
-                continue
-
-        port = ports[idx]
+        port = SelectHactarPort(uart_config)
 
     monitor = Monitor(port, uart_config)
 
 
+# TODO
 if __name__ == "__main__":
     pass

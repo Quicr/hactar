@@ -32,7 +32,8 @@ def HactarScanning(uart_config):
             # Silence the chattering chips (I'M LOOKING AT YOU ESP32!)
             # Also read and ignore the ok
             s.write(command_map["disable logs"])
-            s.read(3)
+            ok = s.read(3)
+            print(ok)
 
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
@@ -40,9 +41,11 @@ def HactarScanning(uart_config):
             s.write(command_map["who are you"])
 
             # Read and ignore the ok reponse and ignore it
-            s.read(3)
+            ok = s.read(3)
+            print(ok)
 
             resp = s.read(len(HELLO_RES))
+            print(resp)
 
             s.write(command_map["default logging"])
             s.read(3)
@@ -56,3 +59,32 @@ def HactarScanning(uart_config):
         except (OSError, serial.SerialException):
             pass
     return result
+
+
+def SelectHactarPort(uart_config):
+    ports = HactarScanning(uart_config)
+
+    if len(ports) == 0:
+        print("No hactars found, exiting")
+        return
+
+    idx = -1
+    while idx < 0 or idx >= len(ports):
+        print(f"Hactars found: {len(ports)}")
+        print(f"Select a port [0-{len(ports)-1}]")
+        for i, p in enumerate(ports):
+            print(f"{i}. {p}")
+
+        idx = input("> ")
+        if not idx.isdigit():
+            print("Error: not a number entered")
+            idx = -1
+            continue
+
+        idx = int(idx)
+
+        if idx < 0 or idx >= len(ports):
+            print("Invalid selection, try again")
+            continue
+
+    return ports[idx]
