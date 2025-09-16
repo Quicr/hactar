@@ -226,7 +226,7 @@ ${BUILD_DIR}:
 	@mkdir -p $@
 
 upload: compile
-	python3 ../../software//flasher/main.py --baud=${BAUD} --chip="mgmt" --port=${PORT} \
+	python3 ../../software/hactar-cli/main.py flash --chip="mgmt" --port=${PORT} \
 								 -bin=${BUILD_DIR}/${TARGET}.bin
 
 upload_stflash: compile
@@ -249,6 +249,9 @@ docker:
 		-v ${PWD}/..:/project \
 		-v /dev:/dev \
 		-it ${DOCKER_IMAGE}
+
+monitor:
+	python3 ../../software/hactar-cli/main.py monitor --port=${PORT}
 
 format:
 	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
