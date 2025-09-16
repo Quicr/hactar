@@ -32,8 +32,13 @@ def HactarScanning(uart_config):
             # Silence the chattering chips (I'M LOOKING AT YOU ESP32!)
             # Also read and ignore the ok
             s.write(command_map["disable logs"])
-            ok = s.read(3)
-            print(ok)
+
+            while True:
+                byte = s.read(1)
+                print(byte)
+
+                if byte == bytes(0):
+                    break
 
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
@@ -88,3 +93,14 @@ def SelectHactarPort(uart_config):
             continue
 
     return ports[idx]
+
+
+def SilentLogs(uart):
+    uart.write(command_map["disable logs"])
+
+    # Scan bytes until we get no reply meaning the disable logs completed
+    while True:
+        byte = s.read(1)
+
+        if byte == bytes(0):
+            break
