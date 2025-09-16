@@ -33,27 +33,21 @@ extern "C" {
 #include "main.h"
 #include "state.h"
 #include "stm32f0xx_hal.h"
-#include "uart_stream.h"
+
+static const State default_state = Debug;
+
+typedef enum
+{
+    Hard_Reset,
+    Ui_Reset,
+    Net_Reset
+} Reset_Type;
 
 int app_main(void);
 
-void NetBootloaderMode();
-void NetNormalMode();
-void NetHoldInReset();
-void UIBootloaderMode();
-void UINormalMode();
-void UIHoldInReset();
-void UIHoldInReset();
-void NetUpload();
-void UIUpload();
-void RunningMode();
-void DebugMode();
-void NormalInit();
+void app_mgmt_reset(const Reset_Type reset_type);
 
 void CheckTimeout();
-void WaitForNetReady(const enum State* state);
-void CancelAllUart();
-void SendUploadOk();
 void LEDA(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
 void LEDB(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
 void TurnOffLEDs();

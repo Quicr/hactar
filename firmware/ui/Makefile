@@ -61,11 +61,11 @@ upload: compile
 	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
 
 upload_py: compile
-	python3 ../../software/flasher/main.py --port=${PORT} --baud=${BAUD} --chip="ui" \
+	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="ui" \
 								 -bin=${BUILD_DIR}/${TARGET}.bin
 
 upload_cube_serial: compile
-	python3 ../../software/flasher/main.py --port=${PORT} --baud=${BAUD} --chip="ui" --use_external_flasher=true
+	python3 ../../software/hactar-cli/main.py --port=${PORT} --chip="ui" --use_external_flasher=true
 	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS}
 
 upload_cube_swd: compile
@@ -93,7 +93,7 @@ openocd:
 	openocd $(OCDFLAGS)
 
 monitor:
-	python3 ../../software/tools/monitor.py --port=${PORT} --baud=${BAUD}
+	python3 ../../software/hactar-cli/main.py monitor --port=${PORT}
 
 format:
 	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i

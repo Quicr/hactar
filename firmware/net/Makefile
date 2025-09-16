@@ -32,10 +32,10 @@ upload: compile
 # python3 ../../software/tools/command_sender.py ${CONSOLE_PORT} 115200 debug
 
 upload_py: compile
-	python3 ../../software/flasher/main.py  --baud=${BAUD} --port=${PORT} --chip="net" -bin=${BUILD_PATH}
+	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" -bin=${BUILD_PATH}
 
 upload_esptool:
-	python3 ../../software/flasher/main.py --port=${PORT} --baud=${BAUD} --chip="net" --use_external_flasher=true
+	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" --use_external_flasher=true
 	if [ ${OS} == Windows_NT ] ; then \
 		python3 -m esptool ${ESP_TOOL_ARGS} ; \
 	else \
@@ -55,11 +55,11 @@ docker: docker-build
 		-it ${DOCKER_IMAGE}
 
 burn_jtag_efuse:
-	python3 ../../software/flasher/main.py --port=${PORT} --baud=${BAUD} --chip="net" --use_external_flasher=true
+	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" --use_external_flasher=true
 	idf.py efuse-burn DIS_USB_JTAG
 
 monitor:
-	python3 ../../software/tools/monitor.py --port=${PORT} --baud=${BAUD}
+	python3 ../../software/hactar-cli/main.py monitor --port=${PORT}
 
 idf_monitor:
 	python3 ../../softare/tools/command_sender.py ${PORT} ${BAUD} net_debug

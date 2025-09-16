@@ -2,15 +2,12 @@
 #define IO_CONTROL_H
 
 #include "main.h"
-#include "uart_stream.h"
+#include "uart_router.h"
 
 #define BAUD 115200
 
-void PowerCycle(GPIO_TypeDef* port, uint16_t pin, uint32_t delay);
-void HoldInReset(GPIO_TypeDef* port, uint16_t pin);
-void ChangeToInput(GPIO_TypeDef* port, uint16_t pin);
-void ChangeToOutput(GPIO_TypeDef* port, uint16_t pin);
-void NormalAndNetUploadUartInit(uart_stream_t* stream, UART_HandleTypeDef* tx_uart);
-void UIUploadStreamInit(uart_stream_t* stream, UART_HandleTypeDef* tx_uart);
+void io_control_power_cycle(GPIO_TypeDef* port, uint16_t pin, uint32_t delay);
+void io_control_change_to_input(GPIO_TypeDef* port, uint16_t pin);
+void io_control_change_to_output(GPIO_TypeDef* port, uint16_t pin);
 
 #endif

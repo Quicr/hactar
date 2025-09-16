@@ -296,6 +296,31 @@ Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, lin
     packet.is_ready = true;
 }
 
+[[maybe_unused]] static void Serialize(const uint8_t* ssid,
+                                       const uint16_t ssid_len,
+                                       const uint8_t* pwd,
+                                       const uint16_t pwd_len,
+                                       link_packet_t& packet)
+{
+    const uint16_t num_extra_bytes = sizeof(ssid_len) + sizeof(pwd_len);
+    size_t payload_offset = 0;
+
+    packet.type = (uint8_t)Packet_Type::WifiConnect;
+    packet.length = ssid_len + pwd_len + num_extra_bytes;
+
+    memcpy(packet.payload, &ssid_len, sizeof(ssid_len));
+    payload_offset += sizeof(ssid_len);
+    memcpy(packet.payload + payload_offset, ssid, ssid_len);
+    payload_offset += ssid_len;
+
+    memcpy(packet.payload + payload_offset, &pwd_len, sizeof(pwd_len));
+    payload_offset += sizeof(pwd_len);
+    memcpy(packet.payload + payload_offset, pwd, pwd_len);
+    payload_offset += pwd_len;
+
+    packet.is_ready = true;
+}
+
 [[maybe_unused]] static void Deserialize(const link_packet_t& packet, TalkStart& talk_start)
 {
     talk_start.channel_id = (Channel_Id)packet.payload[0];
@@ -342,6 +367,27 @@ Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, lin
 
     memcpy(change_moq_namespace_frame.trackname, packet.payload + payload_offset,
            change_moq_namespace_frame.trackname_len);
+}
+
+[[maybe_unused]] static void
+Deserialize(const link_packet_t& packet, std::string& ssid, std::string& pwd)
+{
+    size_t payload_offset = 0;
+
+    uint16_t ssid_len = 0;
+    uint16_t pwd_len = 0;
+
+    memcpy(&ssid_len, packet.payload + payload_offset, sizeof(ssid_len));
+    payload_offset += sizeof(ssid_len);
+    ssid.resize(ssid_len);
+    memcpy(ssid.data(), packet.payload, ssid_len);
+    payload_offset += ssid_len;
+
+    memcpy(&pwd_len, packet.payload + payload_offset, sizeof(pwd_len));
+    payload_offset += sizeof(pwd_len);
+    pwd.resize(pwd_len);
+    memcpy(pwd.data(), packet.payload + payload_offset, pwd_len);
+    payload_offset += pwd_len;
 }
 
 // TODO serialize and deserialize for audioobjectS

@@ -15,10 +15,33 @@ rx_thread = None
 
 dump_file = None
 
+command_map = {
+    "version": bytes([0, 0, 0]),
+    "who are you": bytes([1, 0, 0]),
+    "hard reset": bytes([2, 0, 0]),
+    "reset": bytes([3, 0, 0]),
+    "reset ui": bytes([4, 0, 0]),
+    "reset net": bytes([5, 0, 0]),
+    "flash ui": bytes([6, 0, 0]),
+    "flash net": bytes([7, 0, 0]),
+    "enable logs": bytes([8, 0, 0]),
+    "enable ui logs": bytes([9, 0, 0]),
+    "enable net logs": bytes([10, 0, 0]),
+    "disable logs": bytes([11, 0, 0]),
+    "disable ui logs": bytes([12, 0, 0]),
+    "disable net logs": bytes([13, 0, 0]),
+    "default logging": bytes([14, 0, 0]),
+}
+
+bypass_map = {
+    "to ui": bytes([15, 0, 0]),
+    "to net": bytes([16, 0, 0]),
+    "loopback": bytes([17, 0, 0]),
+}
+
 
 def FindHactar(uart_config):
-    HELLO = bytes("WHO ARE YOU?\0", "utf-8")
-    HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE\0", "utf-8")
+    HELLO_RES = bytes("HELLO, I AM A HACTAR DEVICE", "utf-8")
 
     # Get all ports
     ports = []
@@ -39,13 +62,24 @@ def FindHactar(uart_config):
         try:
             s = serial.Serial(**uart_config, port=port)
             s.timeout = 0.5
+
+            # Silence the chattering chips (I'M LOOKING AT YOU ESP32!)
+            # Also read and ignore the ok
+            s.write(command_map["disable logs"])
+            s.read(3)
+
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
             # append it.
-            s.write(HELLO)
+            s.write(command_map["who are you"])
+
+            # Read and ignore the ok reponse and ignore it
+            s.read(3)
 
             resp = s.read(len(HELLO_RES))
 
+            s.write(command_map["default logging"])
+            s.read(3)
             s.close()
 
             if resp == HELLO_RES:
@@ -69,6 +103,7 @@ def ReadSerial():
                 data = uart.readline().decode()
                 if dump_file:
                     dump_file.write(data)
+                # print(data)
                 print("\r\033[0m" + erase + data, end="")
                 print("\033[1m\033[92mEnter a command:\033[0m")
             else:
@@ -84,8 +119,13 @@ def WriteCommand():
         if user_input.lower() == "exit":
             running = False
         else:
-            send_data = [ch for ch in bytes(user_input, "UTF-8")]
-            uart.write(bytes(send_data))
+            if user_input in command_map:
+                # print(command_map[user_input])
+                uart.write(command_map[user_input])
+            else if user_input in bypass_map:
+                pass
+                # Do something
+            else
 
     except Exception as ex:
         print(ex)
@@ -133,7 +173,13 @@ def main():
             required=False,
         )
 
-        parser.add_argument("--dump_file", help="Dump file of incoming logs", default=None, type=str, required=False)
+        parser.add_argument(
+            "--dump_file",
+            help="Dump file of incoming logs",
+            default=None,
+            type=str,
+            required=False,
+        )
 
         args = parser.parse_args()
 
