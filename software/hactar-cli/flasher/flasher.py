@@ -12,7 +12,7 @@ import esp32s3_uploader
 import serial
 import serial.tools.list_ports
 from hactar_scanning import HactarScanning
-from hactar_commands import command_map, bypass_map, ui_command_map, net_command_map
+from hactar_commands import command_map
 
 
 # TODO only allow .bin files
@@ -56,6 +56,14 @@ def main(args):
                     uart = serial.Serial(port=port, **uart_config)
 
                     print(f"Opened port: {BB}{port}{NW} " f"baudrate: {BG}{115200}{NW}")
+
+                    uart.write(command_map["disable logs"])
+                    while True:
+                        byte = uart.read(1)
+                        print(byte)
+
+                        if byte == bytes(0):
+                            break
 
                     uploader = UploaderFactory(uart, args.chip)
 

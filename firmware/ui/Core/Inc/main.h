@@ -79,8 +79,8 @@ void Error_Handler(void);
 #define UI_TX2_NET_GPIO_Port GPIOA
 #define UI_RX2_NET_Pin GPIO_PIN_3
 #define UI_RX2_NET_GPIO_Port GPIOA
-#define UI_LED_R_Pin GPIO_PIN_4
-#define UI_LED_R_GPIO_Port GPIOA
+#define MIC_IO_Pin GPIO_PIN_4
+#define MIC_IO_GPIO_Port GPIOA
 #define SPI1_CLK_Pin GPIO_PIN_5
 #define SPI1_CLK_GPIO_Port GPIOA
 #define SPI1_MOSI_Pin GPIO_PIN_7
@@ -125,8 +125,8 @@ void Error_Handler(void);
 #define I2S_BCLK_GPIO_Port GPIOC
 #define UI_STAT_Pin GPIO_PIN_11
 #define UI_STAT_GPIO_Port GPIOC
-#define MIC_IO_Pin GPIO_PIN_12
-#define MIC_IO_GPIO_Port GPIOC
+#define UI_LED_R_Pin GPIO_PIN_12
+#define UI_LED_R_GPIO_Port GPIOC
 #define UI_DEBUG_2_Pin GPIO_PIN_2
 #define UI_DEBUG_2_GPIO_Port GPIOD
 #define UI_LED_B_Pin GPIO_PIN_3
