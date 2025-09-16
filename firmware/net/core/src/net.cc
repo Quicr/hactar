@@ -34,6 +34,8 @@ using json = nlohmann::json;
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
+
+// TODO make this a config that can be changed using mgmt
 bool loopback = false;
 
 std::vector<std::shared_ptr<moq::TrackReader>> readers;
@@ -172,14 +174,7 @@ static void LinkPacketTask(void* args)
                 }
                 break;
             }
-            case ui_net_link::Packet_Type::TextMessage:
-                NET_LOG_INFO("Got text message");
-                [[fallthrough]];
-            case ui_net_link::Packet_Type::PttAiObject:
-                [[fallthrough]];
-            case ui_net_link::Packet_Type::PttMultiObject:
-                [[fallthrough]];
-            case ui_net_link::Packet_Type::PttObject:
+            case ui_net_link::Packet_Type::Message:
             {
                 // Channel id is always zero, so, gotta fix that.
                 uint8_t channel_id = packet->payload[0];
@@ -238,6 +233,10 @@ try
     std::vector<std::string> track_namespace =
         subscription.at("tracknamespace").get<std::vector<std::string>>();
     std::string trackname = subscription.at("trackname").get<std::string>();
+    if (trackname.empty())
+    {
+        trackname = std::to_string(device_id);
+    }
 
     std::string codec = subscription.at("codec").get<std::string>();
     std::string channel_name = subscription.at("channel_name").get<std::string>();
@@ -454,7 +453,7 @@ extern "C" void app_main(void)
             case Wifi::State::Disconnected:
             {
                 if (status == moq::Session::Status::kConnecting
-                    || status == moq::Session::Status::kPendingSeverSetup
+                    || status == moq::Session::Status::kPendingServerSetup
                     || status == moq::Session::Status::kReady)
                 {
                     moq_session->Disconnect();
