@@ -376,9 +376,9 @@ extern "C" void app_main(void)
     wifi.Connect("quicr.io", "noPassword");
     wifi.Connect("m10x-interference", "goodlife");
 
-    // #if defined(my_ssid) && defined(my_ssid_pwd)
-    //     wifi.Connect(my_ssid, my_ssid_pwd);
-    // #endif
+#if defined(my_ssid) && defined(my_ssid_pwd)
+    wifi.Connect(my_ssid, my_ssid_pwd);
+#endif
 
     ui_layer.Begin();
 

@@ -30,34 +30,34 @@ class Monitor:
             self.rx_thread.daemon = True
             self.rx_thread.start()
 
-        self.uart.write(command_map["disable logs"])
-
         self.WriteSerial()
 
     def ReadSerial(self, threaded=False):
         data = None
         while self.running and threaded:
-            time.sleep(0.05)
+            try:
+                if self.uart.in_waiting:
+                    data = self.uart.readline().decode()
+                else:
+                    data = None
+                    time.sleep(0.05)
+                    continue
 
-            if self.uart.in_waiting:
-                data = self.uart.readline().decode()
-            else:
-                data = None
-                continue
-
-            if readline:
-                saved_input = readline.get_line_buffer()
-                # return to start of line and clear current line
-                sys.stdout.write("\r\033[K")
-                # print log (adds newline)
-                if data[-1] != "\n":
-                    data += "\n"
-                print(f"{data}", end="")
-                # reprint prompt + saved user text
-                sys.stdout.write(f"> {saved_input}")
-                sys.stdout.flush()
-            else:
-                print(data)
+                if readline and data != None and data != "":
+                    saved_input = readline.get_line_buffer()
+                    # return to start of line and clear current line
+                    sys.stdout.write("\r\033[K")
+                    # print log (adds newline)
+                    if data[-1] != "\n":
+                        data += "\n"
+                    print(f"{data}", end="")
+                    # reprint prompt + saved user text
+                    sys.stdout.write(f"> {saved_input}")
+                    sys.stdout.flush()
+                else:
+                    print(data)
+            except:
+                pass
 
     def WriteSerial(self):
         while self.running:
