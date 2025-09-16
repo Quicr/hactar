@@ -27,7 +27,7 @@ def HactarScanning(uart_config):
     for port in ports:
         try:
             s = serial.Serial(**uart_config, port=port)
-            s.timeout = 0.5
+            s.timeout = 0.1
 
             # Silence the chattering chips (I'M LOOKING AT YOU ESP32!)
             # Also read and ignore the ok
@@ -35,7 +35,6 @@ def HactarScanning(uart_config):
 
             while True:
                 byte = s.read(1)
-                print(byte)
 
                 if byte == bytes(0):
                     break
@@ -46,14 +45,12 @@ def HactarScanning(uart_config):
             s.write(command_map["who are you"])
 
             # Read and ignore the ok reponse and ignore it
-            ok = s.read(3)
-            print(ok)
-
-            resp = s.read(len(HELLO_RES))
-            print(resp)
+            # 3 for ok\n
+            resp = s.read(3 + len(HELLO_RES))
+            # Skip the Ok\n
+            resp = resp[3:]
 
             s.write(command_map["default logging"])
-            s.read(3)
             s.close()
 
             if resp == HELLO_RES:

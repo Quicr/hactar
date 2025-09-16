@@ -278,9 +278,6 @@ int app_main()
 
     UI_LOG_INFO("Starting main loop");
 
-    // ERROR remove
-    uint32_t sleep_timeout = 0;
-
     while (1)
     {
         Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
@@ -297,10 +294,10 @@ int app_main()
             next_print = HAL_GetTick() + 1000;
         }
 
-        while (sleeping && HAL_GetTick() - sleep_timeout >= 20000)
+        while (sleeping)
         {
             // LowPowerMode();
-            sleep_timeout = HAL_GetTick();
+            __NOP();
         }
 
         if (error)
