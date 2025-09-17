@@ -665,7 +665,9 @@ inline void AudioCallback()
 void CheckPTT()
 {
     // Send talk start and sot packets
-    if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET && !ptt_down)
+    if ((HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET
+         || HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_RESET)
+        && !ptt_down)
     {
         // TODO channel id
         ui_net_link::TalkStart talk_start = {.channel_id = ui_net_link::Channel_Id::Ptt};
@@ -674,7 +676,8 @@ void CheckPTT()
         ptt_down = true;
         LedGOn();
     }
-    else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET && ptt_down)
+    else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET
+             && HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_SET && ptt_down)
     {
         ui_net_link::TalkStop talk_stop = {.channel_id = ui_net_link::Channel_Id::Ptt};
         ui_net_link::Serialize(talk_stop, message_packet);
