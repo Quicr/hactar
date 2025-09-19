@@ -7,7 +7,8 @@
 #include <iostream>
 #include <mutex>
 
-Wifi::Wifi(const int64_t scan_timeout_ms) :
+Wifi::Wifi(Storage& storage, const int64_t scan_timeout_ms) :
+    storage(storage),
     scan_timeout_ms(scan_timeout_ms),
     credentials(),
     ap_in_range(),
@@ -19,6 +20,7 @@ Wifi::Wifi(const int64_t scan_timeout_ms) :
     wifi_cfg({}),
     state(State::NotInitialized),
     is_initialized(false),
+    saved_ssids(0),
     connect_task(),
     state_mux()
 {
@@ -32,6 +34,26 @@ Wifi::~Wifi()
 
 void Wifi::Begin()
 {
+    // Get the number of saved ssids
+    saved_ssids = storage.Loadu32("wifi", "saved_ssids");
+
+    char buff[32];
+    ssize_t len = 0;
+    std::string ssid;
+    std::string pwd;
+
+    // Load all ssids
+    for (size_t i = 0; i < saved_ssids; ++i)
+    {
+        len = storage.Load("wifi", "ssid_name" + std::to_string(i + 1), buff, sizeof(buff));
+        ssid.assign(buff, len);
+
+        len = storage.Load("wifi", "ssid_pwd" + std::to_string(i + 1), buff, sizeof(buff));
+        pwd.assign(buff, len);
+
+        Connect(ssid, pwd);
+    }
+
     xTaskCreate(WifiTask, "wifi_connect_task", 4096, (void*)this, 12, &connect_task);
 }
 
@@ -48,6 +70,35 @@ void Wifi::Connect(const std::string& ssid, const std::string& pwd)
     }
 
     credentials.push_back({ssid, pwd, 0});
+}
+
+void Wifi::SaveSSID(const std::string ssid, const std::string pwd)
+{
+    esp_err_t err = storage.Save("wifi", "ssid_name" + std::to_string(saved_ssids + 1), ssid.data(),
+                                 ssid.length());
+
+    if (err != ESP_OK)
+    {
+        NET_LOG_ERROR("Failed to save ssid %s", ssid.c_str());
+        return;
+    }
+
+    err = storage.Save("wifi", "ssid_pwd" + std::to_string(saved_ssids + 1), pwd.data(),
+                       pwd.length());
+
+    if (err != ESP_OK)
+    {
+        NET_LOG_ERROR("Failed to save ssid pwd %s", pwd.c_str());
+        return;
+    }
+
+    saved_ssids += 1;
+    Connect(ssid, pwd);
+}
+
+void Wifi::ClearSavedSSIDs()
+{
+    // storage.Clear("wifi");
 }
 
 esp_err_t Wifi::Deinitialize()
