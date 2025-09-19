@@ -3,6 +3,7 @@
 #include "esp_event.h"
 #include "esp_wifi.h"
 #include "nvs_flash.h"
+#include "storage.hh"
 #include <cstring>
 #include <mutex>
 #include <string>
@@ -32,7 +33,7 @@ public:
         Scanning
     };
 
-    Wifi(const int64_t scan_timeout_ms = 15'000);
+    Wifi(Storage& storage, const int64_t scan_timeout_ms = 15'000);
     Wifi(Wifi& other) = delete;
     ~Wifi();
     void operator=(const Wifi& other) = delete;
@@ -41,6 +42,8 @@ public:
 
     const std::vector<std::string>& GetNetworksInRange() const;
     void Connect(const std::string& ssid, const std::string& pwd);
+    void SaveSSID(const std::string ssid, const std::string pwd);
+    void ClearSavedSSIDs();
     esp_err_t Disconnect();
 
     State GetState() const;
@@ -73,6 +76,7 @@ private:
     inline void IpEvents(int32_t event_id);
 
     // Private variables
+    Storage& storage;
     int64_t scan_timeout_ms;
 
     std::vector<ap_cred_t> credentials;
@@ -89,6 +93,8 @@ private:
     State prev_state;
 
     bool is_initialized;
+
+    size_t saved_ssids;
 
     TaskHandle_t connect_task;
     std::mutex state_mux;

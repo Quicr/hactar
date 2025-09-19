@@ -23,6 +23,13 @@
 #define NET_UI_UART_RING_TX_NUM 30
 #define NET_UI_UART_RING_RX_NUM 30
 
+#define NET_MGMT_UART_RX_BUFF_SIZE 256
+#define NET_MGMT_UART_TX_BUFF_SIZE 256
+#define NET_MGMT_UART_RING_TX_NUM 3
+#define NET_MGMT_UART_RING_RX_NUM 3
+#define NET_MGMT_UART_TX_PIN GPIO_NUM_43
+#define NET_MGMT_UART_RX_PIN GPIO_NUM_44
+
 extern Wifi wifi;
 extern Serial ui_layer;
 extern std::shared_ptr<moq::Session> moq_session;
@@ -37,6 +44,7 @@ struct DeviceSetupConfig
 };
 
 void SetupComponents(const DeviceSetupConfig& config);
-bool CreateLinkPacketTask();
+bool CreateUILinkPacketTask();
+bool CreateMgmtLinkPacketTask();
 std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial);
 std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& subscription);

@@ -18,6 +18,7 @@
 #include "peripherals.hh"
 #include "sdkconfig.h"
 #include "serial.hh"
+#include "storage.hh"
 #include "ui_net_link.hh"
 #include "utils.hh"
 #include "wifi.hh"
@@ -50,9 +51,9 @@ constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33435
 // constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
 // constexpr const char* moq_server = "moq://192.168.50.19:33435";
 
-TaskHandle_t serial_read_handle;
-StaticTask_t serial_read_buffer;
-StackType_t* serial_read_stack = nullptr;
+TaskHandle_t net_ui_serial_read_handle;
+StaticTask_t net_ui_serial_read_buffer;
+StackType_t* net_ui_serial_read_stack = nullptr;
 
 uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = {0};
 uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = {0};
@@ -69,7 +70,7 @@ uart_config_t net_ui_uart_config = {
 
 Serial ui_layer(NET_UI_UART_PORT,
                 NET_UI_UART_DEV,
-                serial_read_handle,
+                net_ui_serial_read_handle,
                 ETS_UART1_INTR_SOURCE,
                 net_ui_uart_config,
                 NET_UI_UART_TX_PIN,
@@ -82,7 +83,38 @@ Serial ui_layer(NET_UI_UART_PORT,
                 NET_UI_UART_RX_BUFF_SIZE,
                 NET_UI_UART_RING_RX_NUM);
 
-Wifi wifi;
+TaskHandle_t net_mgmt_serial_read_handle;
+StaticTask_t net_mgmt_serial_read_buffer;
+StackType_t* net_mgmt_serial_read_stack = nullptr;
+
+uint8_t net_mgmt_uart_tx_buff[NET_MGMT_UART_TX_BUFF_SIZE] = {0};
+uint8_t net_mgmt_uart_rx_buff[NET_MGMT_UART_RX_BUFF_SIZE] = {0};
+
+uart_config_t net_mgmt_uart_config = {
+    .baud_rate = 115200,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+};
+
+Serial mgmt_layer(UART_NUM_0,
+                  UART0,
+                  net_mgmt_serial_read_handle,
+                  ETS_UART0_INTR_SOURCE,
+                  net_mgmt_uart_config,
+                  NET_MGMT_UART_TX_PIN,
+                  NET_MGMT_UART_RX_PIN,
+                  UART_PIN_NO_CHANGE,
+                  UART_PIN_NO_CHANGE,
+                  *net_mgmt_uart_tx_buff,
+                  NET_MGMT_UART_TX_BUFF_SIZE,
+                  *net_mgmt_uart_rx_buff,
+                  NET_MGMT_UART_RX_BUFF_SIZE,
+                  NET_MGMT_UART_RING_RX_NUM);
+
+Storage storage;
+Wifi wifi(storage);
 
 uint64_t curr_audio_isr_time = esp_timer_get_time();
 uint64_t last_audio_isr_time = esp_timer_get_time();
@@ -112,9 +144,9 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 
 uint32_t request_id = 0;
 
-static void LinkPacketTask(void* args)
+static void UILinkPacketTask(void* args)
 {
-    NET_LOG_INFO("Start link packet task");
+    NET_LOG_INFO("Start ui link packet task");
     bool talk_stopped = false;
     while (true)
     {
@@ -224,6 +256,16 @@ static void LinkPacketTask(void* args)
                 break;
             }
         }
+    }
+}
+
+static void MgmtLinkPacketTask(void* args)
+{
+    // TODO need to use TLV not slip, serial should take a param for that oops
+    NET_LOG_INFO("Start mgmt link packet task");
+    while (true)
+    {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     }
 }
 
@@ -363,13 +405,27 @@ extern "C" void app_main(void)
     SetPThreadDefault();
     PrintRAM();
 
+    mgmt_layer.Begin();
+
+    NET_LOG_INFO("UART0 logging and reading enabled");
+
     NET_LOG_INFO("Starting Net Main");
+    uint8_t data[128];
+    while (1)
+    {
+        int len = uart_read_bytes(UART_NUM_0, data, sizeof(data), 20 / portTICK_PERIOD_MS);
+        if (len > 0)
+        {
+            NET_LOG_INFO("Got %d bytes", len);
+            uart_write_bytes(UART_NUM_0, (const char*)data, len); // echo input back
+        }
+    }
 
     InitializeUIReadyISR(GpioIsrRisingHandler);
 
     InitializeGPIO();
     IntitializeLEDs();
-    CreateLinkPacketTask();
+    CreateUILinkPacketTask();
 
     wifi.Begin();
 
@@ -585,18 +641,38 @@ void SetupComponents(const DeviceSetupConfig& config)
 {
 }
 
-bool CreateLinkPacketTask()
+bool CreateUILinkPacketTask()
 {
     constexpr size_t stack_size = 8092 * 2;
-    serial_read_stack =
+    net_ui_serial_read_stack =
         (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
-    if (serial_read_stack == NULL)
+    if (net_ui_serial_read_stack == NULL)
     {
         NET_LOG_INFO("Failed to allocate stack for link packet handler");
         return false;
     }
-    serial_read_handle = xTaskCreateStatic(LinkPacketTask, "link packet handler", stack_size, NULL,
-                                           10, serial_read_stack, &serial_read_buffer);
+    net_ui_serial_read_handle =
+        xTaskCreateStatic(UILinkPacketTask, "link packet handler", stack_size, NULL, 10,
+                          net_ui_serial_read_stack, &net_ui_serial_read_buffer);
+
+    NET_LOG_INFO("Created link packet handler PSRAM left %ld",
+                 heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    return true;
+}
+
+bool CreateMgmtLinkPacketTask()
+{
+    constexpr size_t stack_size = 8092 * 2;
+    net_mgmt_serial_read_stack =
+        (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
+    if (net_mgmt_serial_read_stack == NULL)
+    {
+        NET_LOG_INFO("Failed to allocate stack for link packet handler");
+        return false;
+    }
+    net_mgmt_serial_read_handle =
+        xTaskCreateStatic(MgmtLinkPacketTask, "link packet handler", stack_size, NULL, 10,
+                          net_mgmt_serial_read_stack, &net_mgmt_serial_read_buffer);
 
     NET_LOG_INFO("Created link packet handler PSRAM left %ld",
                  heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
