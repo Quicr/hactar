@@ -1,13 +1,13 @@
-(footprint "Untitled"
+(footprint "MouseBite"
 	(version 20241229)
 	(generator "pcbnew")
 	(generator_version "9.0")
 	(layer "F.Cu")
 	(property "Reference" "REF**"
-		(at 0 -0.5 0)
+		(at 0 -1.5 0)
 		(unlocked yes)
 		(layer "F.SilkS")
-		(uuid "8dadc0d8-c9df-4d2a-8081-22a7edbf1020")
+		(uuid "bbc9a2ba-221a-4919-a5a4-61a073477a51")
 		(effects
 			(font
 				(size 1 1)
@@ -15,11 +15,11 @@
 			)
 		)
 	)
-	(property "Value" "Untitled"
+	(property "Value" "MouseBite"
 		(at 0 1 0)
 		(unlocked yes)
 		(layer "F.Fab")
-		(uuid "912204d0-cb15-4ec8-979f-5b2508706559")
+		(uuid "3ea161fd-5a88-4463-ba65-1f385f44109b")
 		(effects
 			(font
 				(size 1 1)
@@ -32,7 +32,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "0d6c1b22-fe1c-4a92-b1d6-7604dbd0dbae")
+		(uuid "ccf53822-1924-4455-a270-8899bcd736b2")
 		(effects
 			(font
 				(size 1 1)
@@ -45,7 +45,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "7bf0b734-1d38-4f61-9671-eb727d7fc3e1")
+		(uuid "6c79d300-1b01-4292-ac20-73cd9a9ab436")
 		(effects
 			(font
 				(size 1 1)
@@ -53,18 +53,25 @@
 			)
 		)
 	)
-	(attr through_hole)
+	(attr smd)
 	(fp_text user "${REFERENCE}"
 		(at 0 2.5 0)
 		(unlocked yes)
 		(layer "F.Fab")
-		(uuid "48c6c28a-7fb1-4fb1-8d9c-36517479d3a0")
+		(uuid "3da7b69f-b531-4cec-b0eb-94098b86a2b9")
 		(effects
 			(font
 				(size 1 1)
 				(thickness 0.15)
 			)
 		)
+	)
+	(pad "" np_thru_hole oval
+		(at 0 0)
+		(size 2.54 1.27)
+		(drill oval 2.54 1.27)
+		(layers "F&B.Cu" "*.Mask")
+		(uuid "9ed70b2d-6f74-421c-8516-ad42ce88c2b4")
 	)
 	(embedded_fonts no)
 )
