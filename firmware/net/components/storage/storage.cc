@@ -59,21 +59,28 @@ Storage::Save(const std::string ns, const std::string key, const void* buff, con
 {
     Open(ns);
 
+    NET_LOG_INFO("Opened");
+
     if (!opened)
     {
         return ESP_ERR_INVALID_STATE;
     }
 
+    NET_LOG_INFO("Save blob at %s len %d data %s", key.c_str(), len, (char*)buff);
     esp_err_t err = nvs_set_blob(handle, key.c_str(), buff, len);
+    NET_LOG_INFO("Set blob");
 
     if (err != ESP_OK)
     {
+        Close();
         return err;
     }
 
     err = nvs_commit(handle);
+    NET_LOG_INFO("committed");
 
     Close();
+    NET_LOG_INFO("Closed");
 
     return err;
 }
@@ -109,6 +116,7 @@ esp_err_t Storage::ClearKey(const std::string ns, const std::string key)
 
     if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND)
     {
+        Close();
         return err;
     }
 

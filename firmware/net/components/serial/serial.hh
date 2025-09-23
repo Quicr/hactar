@@ -27,11 +27,16 @@ public:
            const uint32_t tx_buff_sz,
            uint8_t& rx_buff,
            const uint32_t rx_buff_sz,
-           const uint32_t rx_rings);
+           const uint32_t rx_rings,
+           const uint32_t driver_tx_size = 2048,
+           const uint32_t driver_rx_size = 4096,
+           const uint32_t driver_queue_size = 20,
+           const bool use_queue_task = true,
+           const bool use_slip = true);
 
     ~Serial();
 
-    void Begin();
+    void BeginEventTask();
 
     uint16_t NumReadyRxPackets();
 
@@ -41,7 +46,8 @@ protected:
 private:
     static void Transmit(void* arg);
 
-    static void EventTask(void* args);
+    static void ReadTask(void* args);
+    static void QueueReadTask(void* args);
 
     uart_port_t port;
     uart_dev_t& uart;
@@ -51,6 +57,10 @@ private:
     const int rx_pin;
     const int rts_pin;
     const int cts_pin;
+    const uint32_t driver_tx_size;
+    const uint32_t driver_rx_size;
+    const uint32_t driver_queue_size;
+    const bool use_queue_task;
     QueueHandle_t queue;
     TaskHandle_t uart_task_handle;
 };

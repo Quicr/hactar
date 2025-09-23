@@ -61,6 +61,14 @@ if __name__ == "__main__":
     # Monitor command
     monitor_parser = subparsers.add_parser("monitor", help="Open serial monitor")
     monitor_parser.add_argument("-p", "--port", help="Serial port", required=False, default="")
+    monitor_parser.add_argument(
+        "-b",
+        "--baud",
+        help="Baudrate to communicate at",
+        default=115200,
+        type=int,
+        required=False,
+    )
 
     args = parser.parse_args()
 

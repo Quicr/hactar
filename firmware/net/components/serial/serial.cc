@@ -19,8 +19,13 @@ Serial::Serial(const uart_port_t port,
                const uint32_t tx_buff_sz,
                uint8_t& rx_buff,
                const uint32_t rx_buff_sz,
-               const uint32_t rx_rings) :
-    SerialHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this),
+               const uint32_t rx_rings,
+               const uint32_t driver_tx_size,
+               const uint32_t driver_rx_size,
+               const uint32_t driver_queue_size,
+               const bool use_queue_task,
+               const bool use_slip) :
+    SerialHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this, use_slip),
     port(port),
     uart(uart),
     read_handle(read_handle),
@@ -29,17 +34,32 @@ Serial::Serial(const uart_port_t port,
     rx_pin(rx_pin),
     rts_pin(rts_pin),
     cts_pin(cts_pin),
+    driver_tx_size(driver_tx_size),
+    driver_rx_size(driver_rx_size),
+    driver_queue_size(driver_queue_size),
+    use_queue_task(use_queue_task),
+    queue(),
     uart_task_handle(nullptr)
 {
 }
 
-void Serial::Begin()
+void Serial::BeginEventTask()
 {
     ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(port, tx_pin, rx_pin, rts_pin, cts_pin));
-    ESP_ERROR_CHECK(uart_driver_install(port, 4096, 2048, 20, &queue, 0));
 
-    xTaskCreate(EventTask, "UART Event Task", 4096, this, 10, &uart_task_handle);
+    if (use_queue_task)
+    {
+        ESP_ERROR_CHECK(uart_driver_install(port, driver_rx_size, driver_tx_size, driver_queue_size,
+                                            &queue, 0));
+        xTaskCreate(QueueReadTask, "UART Queue Event Task", 4096, this, 10, &uart_task_handle);
+    }
+    else
+    {
+        ESP_ERROR_CHECK(uart_driver_install(port, driver_rx_size, driver_tx_size, driver_queue_size,
+                                            nullptr, 0));
+        xTaskCreate(ReadTask, "UART Read Event Task", 4096, this, 10, &uart_task_handle);
+    }
 }
 
 Serial::~Serial()
@@ -49,7 +69,10 @@ Serial::~Serial()
         vTaskDelete(uart_task_handle);
     }
 
-    uart_driver_delete(port);
+    if (use_queue_task)
+    {
+        uart_driver_delete(port);
+    }
 }
 
 void Serial::UpdateUnread(const uint16_t update)
@@ -66,7 +89,36 @@ void Serial::Transmit(void* arg)
     serial->UpdateTx();
 }
 
-void Serial::EventTask(void* arg)
+void Serial::ReadTask(void* arg)
+{
+    Serial* serial = static_cast<Serial*>(arg);
+
+    int space_remaining = 0;
+    int bytes_to_read = 0;
+    int num_bytes = 0;
+    while (true)
+    {
+        space_remaining = serial->rx_buff_sz - serial->rx_write_idx;
+
+        num_bytes = uart_read_bytes(serial->port, serial->rx_buff + serial->rx_write_idx,
+                                    space_remaining, 20 / portTICK_PERIOD_MS);
+
+        if (num_bytes == -1 || num_bytes == 0)
+        {
+            continue;
+        }
+
+        serial->rx_write_idx += num_bytes;
+        if (serial->rx_write_idx >= serial->rx_buff_sz)
+        {
+            serial->rx_write_idx = 0;
+        }
+        serial->unread += num_bytes;
+        xTaskNotifyGive(serial->read_handle);
+    }
+}
+
+void Serial::QueueReadTask(void* arg)
 {
     Serial* serial = static_cast<Serial*>(arg);
     uart_event_t event;
@@ -84,15 +136,15 @@ void Serial::EventTask(void* arg)
         {
         case UART_DATA:
         {
-            int space_remain;
+            int space_remaining;
             int bytes_to_read;
             int num_bytes = 0;
             int total_read = 0;
             while (total_read < event.size)
             {
-                space_remain = serial->rx_buff_sz - serial->rx_write_idx;
+                space_remaining = serial->rx_buff_sz - serial->rx_write_idx;
 
-                bytes_to_read = space_remain < event.size ? space_remain : event.size;
+                bytes_to_read = space_remaining < event.size ? space_remaining : event.size;
 
                 num_bytes = uart_read_bytes(serial->port, serial->rx_buff + serial->rx_write_idx,
                                             bytes_to_read, 0);

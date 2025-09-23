@@ -14,6 +14,7 @@
 #include "freertos/task.h"
 #include "logger.hh"
 #include "macros.hh"
+#include "net_mgmt_link.h"
 #include "nvs_flash.h"
 #include "peripherals.hh"
 #include "sdkconfig.h"
@@ -81,7 +82,12 @@ Serial ui_layer(NET_UI_UART_PORT,
                 NET_UI_UART_TX_BUFF_SIZE,
                 *net_ui_uart_rx_buff,
                 NET_UI_UART_RX_BUFF_SIZE,
-                NET_UI_UART_RING_RX_NUM);
+                NET_UI_UART_RING_RX_NUM,
+                2048,
+                4096,
+                20,
+                true,
+                true);
 
 TaskHandle_t net_mgmt_serial_read_handle;
 StaticTask_t net_mgmt_serial_read_buffer;
@@ -111,7 +117,12 @@ Serial mgmt_layer(UART_NUM_0,
                   NET_MGMT_UART_TX_BUFF_SIZE,
                   *net_mgmt_uart_rx_buff,
                   NET_MGMT_UART_RX_BUFF_SIZE,
-                  NET_MGMT_UART_RING_RX_NUM);
+                  NET_MGMT_UART_RING_RX_NUM,
+                  0,
+                  256,
+                  2,
+                  true,
+                  false);
 
 Storage storage;
 Wifi wifi(storage);
@@ -266,6 +277,50 @@ static void MgmtLinkPacketTask(void* args)
     while (true)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        NET_LOG_INFO("notified");
+
+        storage.Save("my_test", "other_key", (void*)"my_buff", 7);
+
+        while (auto packet = mgmt_layer.Read())
+        {
+            NET_LOG_INFO("Packet type received %d", (int)packet->type);
+
+            switch (packet->type)
+            {
+            case Configuration::Version:
+            {
+                break;
+            }
+            case Configuration::Set_Ssid_Name:
+            {
+                // Parse ssid from packet.
+                std::string ssid((char*)packet->payload, packet->length);
+                NET_LOG_INFO("Got ssid configuration of %s", ssid.c_str());
+                wifi.SaveSSIDName(ssid);
+                break;
+            }
+            case Configuration::Set_Ssid_Password:
+            {
+                std::string pwd((char*)packet->payload, packet->length);
+                NET_LOG_INFO("Got pwd configuration of %s", pwd.c_str());
+                wifi.SaveSSIDPwd(pwd);
+                break;
+            }
+            case Configuration::Get_Ssid_Names:
+            {
+                break;
+            }
+            case Configuration::Get_Ssid_Passwords:
+            {
+                break;
+            }
+            default:
+            {
+                NET_LOG_ERROR("Unknown packet type from mgmt");
+                break;
+            }
+            }
+        }
     }
 }
 
@@ -402,24 +457,21 @@ void SetPThreadDefault()
 
 extern "C" void app_main(void)
 {
+
     SetPThreadDefault();
     PrintRAM();
 
-    mgmt_layer.Begin();
-
-    NET_LOG_INFO("UART0 logging and reading enabled");
+    CreateMgmtLinkPacketTask();
+    mgmt_layer.BeginEventTask();
 
     NET_LOG_INFO("Starting Net Main");
-    uint8_t data[128];
-    while (1)
-    {
-        int len = uart_read_bytes(UART_NUM_0, data, sizeof(data), 20 / portTICK_PERIOD_MS);
-        if (len > 0)
-        {
-            NET_LOG_INFO("Got %d bytes", len);
-            uart_write_bytes(UART_NUM_0, (const char*)data, len); // echo input back
-        }
-    }
+
+    // storage.SaveStr("test", "the_key", "my_test");
+    // storage.Save("test", "the_key", (void*)"my_other_test", 13);
+    // std::string str = storage.LoadStr("test", "the_key");
+    // storage.Load()
+
+    // NET_LOG_WARN("loaded %s", str.c_str());
 
     InitializeUIReadyISR(GpioIsrRisingHandler);
 
@@ -436,7 +488,7 @@ extern "C" void app_main(void)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
 
-    ui_layer.Begin();
+    ui_layer.BeginEventTask();
 
     // setup moq transport
     quicr::ClientConfig config;
