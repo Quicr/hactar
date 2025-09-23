@@ -61,27 +61,19 @@ class Monitor:
 
     def WriteSerial(self):
         while self.running:
-            usr_input = input("> ").lower()
-            if usr_input == "exit":
+            usr_input = input("> ")
+            if usr_input.lower() == "exit":
                 self.running = False
             else:
                 split = usr_input.split()
                 print("split", split)
-                if split[0] in command_map or usr_input in command_map:
-                    print("is command", command_map[usr_input])
-                    self.uart.write(command_map[usr_input])
+                if split[0].lower() in command_map or usr_input.lower() in command_map:
+                    self.uart.write(command_map[usr_input.lower()])
                     continue
 
-                if split[0] in bypass_map:
+                if split[0].lower() in bypass_map:
                     self.ProcessBypassCommand(split)
                     continue
-                # for to_whom in bypass_map:
-                #     if to_whom in usr_input:
-                #         found = True
-                #         self.ProcessBypassCommand(
-                #             to_whom, usr_input[(len(to_whom) + 1) :]
-                #         )
-                #         break
 
                 print("Unknown command " + usr_input)
 
@@ -90,8 +82,8 @@ class Monitor:
             print("[ERROR] Not enough parameters to determine sub command")
             return
 
-        to_whom = split[0]
-        command = split[1]
+        to_whom = split[0].lower()
+        command = split[1].lower()
 
         if to_whom == "ui":
             chip_commands = ui_command_map
@@ -161,7 +153,7 @@ def main(args):
         "bytesize": serial.EIGHTBITS,
         "parity": serial.PARITY_NONE,
         "stopbits": serial.STOPBITS_ONE,
-        "timeout": 1,
+        "timeout": 0.01,
     }
 
     signal.signal(signal.SIGINT, SignalHandler)

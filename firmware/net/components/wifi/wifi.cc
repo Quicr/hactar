@@ -22,7 +22,9 @@ Wifi::Wifi(Storage& storage, const int64_t scan_timeout_ms) :
     is_initialized(false),
     saved_ssids(0),
     connect_task(),
-    state_mux()
+    state_mux(),
+    tmp_ssid(),
+    tmp_pwd()
 {
 }
 
@@ -76,7 +78,7 @@ void Wifi::SaveSSID(const std::string ssid, const std::string pwd)
 {
     esp_err_t err = storage.Save("wifi", "ssid_name" + std::to_string(saved_ssids + 1), ssid.data(),
                                  ssid.length());
-
+    NET_LOG_INFO("Saved ssid");
     if (err != ESP_OK)
     {
         NET_LOG_ERROR("Failed to save ssid %s", ssid.c_str());
@@ -99,6 +101,36 @@ void Wifi::SaveSSID(const std::string ssid, const std::string pwd)
 void Wifi::ClearSavedSSIDs()
 {
     // storage.Clear("wifi");
+}
+
+void Wifi::SaveSSIDName(const std::string& ssid)
+{
+    tmp_ssid = ssid;
+
+    if (tmp_pwd.empty())
+    {
+        return;
+    }
+
+    SaveSSID(tmp_ssid, tmp_pwd);
+
+    tmp_ssid = "";
+    tmp_pwd = "";
+}
+
+void Wifi::SaveSSIDPwd(const std::string& pwd)
+{
+    tmp_pwd = pwd;
+
+    if (tmp_ssid.empty())
+    {
+        return;
+    }
+
+    SaveSSID(tmp_ssid, tmp_pwd);
+
+    tmp_ssid = "";
+    tmp_pwd = "";
 }
 
 esp_err_t Wifi::Deinitialize()

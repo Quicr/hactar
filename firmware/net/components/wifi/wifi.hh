@@ -44,6 +44,8 @@ public:
     void Connect(const std::string& ssid, const std::string& pwd);
     void SaveSSID(const std::string ssid, const std::string pwd);
     void ClearSavedSSIDs();
+    void SaveSSIDName(const std::string& ssid);
+    void SaveSSIDPwd(const std::string& pwd);
     esp_err_t Disconnect();
 
     State GetState() const;
@@ -98,4 +100,7 @@ private:
 
     TaskHandle_t connect_task;
     std::mutex state_mux;
+
+    std::string tmp_ssid;
+    std::string tmp_pwd;
 };

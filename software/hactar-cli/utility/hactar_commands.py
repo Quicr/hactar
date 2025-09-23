@@ -32,8 +32,8 @@ ui_command_map = {
 
 net_command_map = {
     "version": {"id": 0, "num_params": 0},
-    "set_network_ssid": {"id": 1, "num_params": 1},
-    "set_network_password": {"id": 2, "num_params": 1},
-    "get_network_ssids": {"id": 3, "num_params": 0},
-    "get_network_passwords": {"id": 4, "num_params": 0},
+    "set_ssid_name": {"id": 1, "num_params": 1},
+    "set_ssid_password": {"id": 2, "num_params": 1},
+    "get_ssid_names": {"id": 3, "num_params": 0},
+    "get_ssid_passwords": {"id": 4, "num_params": 0},
 }

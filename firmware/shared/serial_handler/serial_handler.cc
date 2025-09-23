@@ -267,9 +267,9 @@ link_packet_t* SerialHandler::TLVRead()
 
         if (bytes_read >= packet->length + link_packet_t::Header_Size)
         {
-            packet = &rx_packets.Write();
             bytes_read = 0;
             packet->is_ready = true;
+            packet = &rx_packets.Write();
             continue;
         }
         else if (bytes_read >= link_packet_t::Packet_Size)
