@@ -1,4 +1,5 @@
-# TODO finish adding more zeroes to the commands
+import readline
+import sys
 
 command_map = {
     "version": bytes([0] + [0] * 4),
@@ -36,4 +37,37 @@ net_command_map = {
     "set_ssid_password": {"id": 2, "num_params": 1},
     "get_ssid_names": {"id": 3, "num_params": 0},
     "get_ssid_passwords": {"id": 4, "num_params": 0},
+    "clear_ssids": {"id": 5, "num_params": 0},
 }
+
+
+def hactar_command_completer(text, state):
+    buffer = readline.get_line_buffer()
+    tokens = buffer.split()
+
+    options = []
+
+    if len(tokens) == 0 or (len(tokens) == 1 and not buffer.endswith(" ")):
+        # complete from command_map and bypass_map keys
+        options = [cmd for cmd in list(command_map.keys()) + list(bypass_map.keys()) if cmd.startswith(text)]
+    elif tokens[0] == "ui":
+        options = [cmd for cmd in ui_command_map if cmd.startswith(text)]
+    elif tokens[0] == "net":
+        options = [cmd for cmd in net_command_map if cmd.startswith(text)]
+    elif tokens[0] == "loopback":
+        options = []  # nothing to complete here
+    else:
+        options = []
+
+    if state < len(options):
+        return options[state]
+    return None
+
+
+def hactar_command_print_matches(substitution, matches, longest_match_length):
+    print()
+    print("Available commands: ")
+    for m in matches:
+        print(f"- {m}")
+    # reprint prompt + current buffer
+    print("> " + readline.get_line_buffer(), end="", flush=True)

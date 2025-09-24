@@ -77,7 +77,7 @@ def SelectHactarPort(uart_config):
         for i, p in enumerate(ports):
             print(f"{i}. {p}")
 
-        idx = input("> ")
+        idx = input("> ").strip()
         if not idx.isdigit():
             print("Error: not a number entered")
             idx = -1
