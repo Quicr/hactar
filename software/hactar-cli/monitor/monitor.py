@@ -13,7 +13,14 @@ except Exception:
 
 import serial
 from hactar_scanning import HactarScanning, SelectHactarPort
-from hactar_commands import command_map, bypass_map, ui_command_map, net_command_map
+from hactar_commands import (
+    command_map,
+    bypass_map,
+    ui_command_map,
+    net_command_map,
+    hactar_command_completer,
+    hactar_command_print_matches,
+)
 
 
 class Monitor:
@@ -66,7 +73,6 @@ class Monitor:
                 self.running = False
             else:
                 split = usr_input.split()
-                print("split", split)
                 if split[0].lower() in command_map or usr_input.lower() in command_map:
                     self.uart.write(command_map[usr_input.lower()])
                     continue
@@ -114,24 +120,16 @@ class Monitor:
             command_len += len(param)
             collapsed_params += param.encode("utf-8")
 
-        # print(to_whom_len)
-        # print(command_len)
-
         data = []
         data += bypass_map[to_whom].to_bytes(1, byteorder="little")
-        # print("comamnd id as bytes", data)
 
         data += to_whom_len.to_bytes(4, byteorder="little")
-        # print("command len as bytes", data)
 
         data += command_id.to_bytes(1, byteorder="little")
-        # print(data)
 
         data += command_len.to_bytes(4, byteorder="little")
-        # print(data)
 
         data += collapsed_params
-        print(data)
 
         self.uart.write(bytes(data))
 
@@ -160,6 +158,10 @@ def main(args):
     port = args.port
     if port == "" or port == None:
         port = SelectHactarPort(uart_config)
+
+    readline.set_completer(hactar_command_completer)
+    readline.set_completion_display_matches_hook(hactar_command_print_matches)
+    readline.parse_and_bind("tab: complete")
 
     monitor = Monitor(port, uart_config)
 
