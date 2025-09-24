@@ -389,7 +389,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 
         if (num_read - Header_Bytes >= len && num_read >= 0)
         {
-            uart_router_copy_string_to_tx(&usb_stream.tx, "packet!");
+            uart_router_copy_string_to_tx(&usb_stream.tx, "packet!\n");
 
             // Send the packet to ui or net
             switch (command)

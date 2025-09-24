@@ -46,6 +46,10 @@ public:
     void ClearSavedSSIDs();
     void SaveSSIDName(const std::string& ssid);
     void SaveSSIDPwd(const std::string& pwd);
+    std::string LoadSSIDName(const uint32_t ssid_num);
+    std::string LoadSSIDNames();
+    std::string LoadSSIDPassword(const uint32_t ssid_num);
+    std::string LoadSSIDPasswords();
     esp_err_t Disconnect();
 
     State GetState() const;
@@ -58,6 +62,8 @@ public:
         std::string pwd;
         uint32_t attempts;
     };
+
+    const std::vector<ap_cred_t>& GetCredentials();
 
 private:
     esp_err_t Initialize();

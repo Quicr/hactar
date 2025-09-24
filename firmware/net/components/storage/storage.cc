@@ -57,31 +57,32 @@ ssize_t Storage::Load(const std::string ns, const std::string key, void* buff, c
 esp_err_t
 Storage::Save(const std::string ns, const std::string key, const void* buff, const size_t len)
 {
-    Open(ns);
-
-    NET_LOG_INFO("Opened");
-
-    if (!opened)
+    esp_err_t err = ESP_FAIL;
+    try
     {
-        return ESP_ERR_INVALID_STATE;
-    }
+        Open(ns);
 
-    NET_LOG_INFO("Save blob at %s len %d data %s", key.c_str(), len, (char*)buff);
-    esp_err_t err = nvs_set_blob(handle, key.c_str(), buff, len);
-    NET_LOG_INFO("Set blob");
+        if (!opened)
+        {
+            return ESP_ERR_INVALID_STATE;
+        }
 
-    if (err != ESP_OK)
-    {
+        err = nvs_set_blob(handle, key.c_str(), buff, len);
+
+        if (err != ESP_OK)
+        {
+            Close();
+            return err;
+        }
+
+        err = nvs_commit(handle);
+
         Close();
-        return err;
     }
-
-    err = nvs_commit(handle);
-    NET_LOG_INFO("committed");
-
-    Close();
-    NET_LOG_INFO("Closed");
-
+    catch (std::exception& ex)
+    {
+        NET_LOG_ERROR("Exception has occured %s", ex.what());
+    }
     return err;
 }
 
@@ -135,7 +136,7 @@ std::string Storage::LoadStr(const std::string ns, const std::string key)
     size_t required_size = 0;
     std::string val = "";
 
-    NET_LOG_INFO("Reading string from NVS...");
+    // NET_LOG_INFO("Reading string from NVS...");
     esp_err_t err = nvs_get_str(handle, key.c_str(), NULL, &required_size);
     if (err == ESP_OK)
     {
@@ -161,7 +162,7 @@ void Storage::SaveStr(const std::string ns, const std::string key, std::string s
     Open(ns);
 
     // Store and read a string
-    NET_LOG_INFO("Writing string to NVS...");
+    // NET_LOG_INFO("Writing string to NVS...");
     esp_err_t err = nvs_set_str(handle, key.c_str(), str.c_str());
     if (err != ESP_OK)
     {
@@ -192,7 +193,7 @@ void Storage::Saveu32(const std::string ns, const std::string key, const uint32_
 {
     Open(ns);
 
-    NET_LOG_INFO("Writing %lld", (uint64_t)val);
+    // NET_LOG_INFO("Writing %lld", (uint64_t)val);
 
     esp_err_t err = nvs_set_u32(handle, key.c_str(), val);
     if (err != ESP_OK)
@@ -230,7 +231,7 @@ esp_err_t Storage::Open(const std::string& ns)
     }
 
     // Open NVS handle
-    NET_LOG_INFO("Opening Non-Volatile Storage (NVS) handle...");
+    // NET_LOG_INFO("Opening Non-Volatile Storage (NVS) handle...");
     esp_err_t err = nvs_open(ns.c_str(), NVS_READWRITE, &handle);
     if (err != ESP_OK)
     {

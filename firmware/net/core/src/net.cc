@@ -277,14 +277,9 @@ static void MgmtLinkPacketTask(void* args)
     while (true)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        NET_LOG_INFO("notified");
-
-        storage.Save("my_test", "other_key", (void*)"my_buff", 7);
 
         while (auto packet = mgmt_layer.Read())
         {
-            NET_LOG_INFO("Packet type received %d", (int)packet->type);
-
             switch (packet->type)
             {
             case Configuration::Version:
@@ -308,10 +303,21 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Get_Ssid_Names:
             {
+                std::string ssids = "Saved SSIDS Names: ";
+                ssids += wifi.LoadSSIDNames();
+                mgmt_layer.Write((uint8_t*)ssids.data(), ssids.length());
                 break;
             }
             case Configuration::Get_Ssid_Passwords:
             {
+                std::string passwords = "Saved SSID Passwords: ";
+                passwords += wifi.LoadSSIDPasswords();
+                mgmt_layer.Write((uint8_t*)passwords.data(), passwords.length());
+                break;
+            }
+            case Configuration::Clear_Ssids:
+            {
+                wifi.ClearSavedSSIDs();
                 break;
             }
             default:
@@ -487,6 +493,11 @@ extern "C" void app_main(void)
 #if defined(my_ssid) && defined(my_ssid_pwd)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
+
+    while (true)
+    {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
 
     ui_layer.BeginEventTask();
 
@@ -700,33 +711,35 @@ bool CreateUILinkPacketTask()
         (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
     if (net_ui_serial_read_stack == NULL)
     {
-        NET_LOG_INFO("Failed to allocate stack for link packet handler");
+        NET_LOG_INFO("Failed to allocate stack for ui link packet handler");
         return false;
     }
     net_ui_serial_read_handle =
-        xTaskCreateStatic(UILinkPacketTask, "link packet handler", stack_size, NULL, 10,
+        xTaskCreateStatic(UILinkPacketTask, "ui link packet handler", stack_size, NULL, 10,
                           net_ui_serial_read_stack, &net_ui_serial_read_buffer);
 
-    NET_LOG_INFO("Created link packet handler PSRAM left %ld",
+    NET_LOG_INFO("Created ui link packet handler PSRAM left %ld",
                  heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     return true;
 }
 
 bool CreateMgmtLinkPacketTask()
 {
-    constexpr size_t stack_size = 8092 * 2;
+    NET_LOG_INFO("Creating mgmt link packet task");
+
+    constexpr size_t stack_size = 4096;
     net_mgmt_serial_read_stack =
-        (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
+        (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_INTERNAL);
     if (net_mgmt_serial_read_stack == NULL)
     {
-        NET_LOG_INFO("Failed to allocate stack for link packet handler");
+        NET_LOG_INFO("Failed to allocate stack for mgmt link packet handler");
         return false;
     }
     net_mgmt_serial_read_handle =
-        xTaskCreateStatic(MgmtLinkPacketTask, "link packet handler", stack_size, NULL, 10,
+        xTaskCreateStatic(MgmtLinkPacketTask, "mgmt link packet handler", stack_size, NULL, 10,
                           net_mgmt_serial_read_stack, &net_mgmt_serial_read_buffer);
 
-    NET_LOG_INFO("Created link packet handler PSRAM left %ld",
-                 heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    NET_LOG_INFO("Created mgmt link packet handler Internal RAM left %ld",
+                 heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     return true;
 }
