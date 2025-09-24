@@ -1,4 +1,6 @@
-enum Configuration_Type
+#pragma once
+
+enum Configuration
 {
     Config_Type_Not_Found,
     Set_Ssid_0,
