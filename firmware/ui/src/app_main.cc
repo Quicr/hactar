@@ -33,7 +33,6 @@ inline bool TryProtect(link_packet_t* link_packet);
 inline bool TryUnprotect(link_packet_t* link_packet);
 inline void HandleMgmtLinkPackets(ConfigStorage& storage);
 
-inline void TransmitStoredWifiCreds(ConfigStorage& storage, Serial& serial);
 inline void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx);
 
 sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
@@ -248,11 +247,7 @@ int app_main()
     HAL_TIM_Base_Start_IT(&htim2);
 
     ConfigStorage config_storage(hi2c1);
-    // config_storage.Clear();
 
-    // TODO I need to make sure the net chip is able to receive serial?
-
-    TransmitStoredWifiCreds(config_storage, net_serial);
     InitialzeMLS(config_storage, mls_ctx);
 
     Renderer renderer(screen, keyboard);
@@ -491,114 +486,57 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
 
         switch (link_packet->type)
         {
-        case Configuration_Type::Set_Ssid_0:
+        case Configuration::Version:
         {
-            if (!storage.Save(ConfigStorage::Config_Id::SSID_0, link_packet->payload,
-                              link_packet->length))
-            {
-                UI_LOG_ERROR("ERR. Failed to save SSID 0 configuration");
-            }
-            else
-            {
-                UI_LOG_INFO("OK! Saved SSID 0 configuration");
-            }
+            UI_LOG_INFO("VERSION TODO");
             break;
         }
-        case Configuration_Type::Set_Pwd_0:
+        case Configuration::Clear:
         {
-            if (!storage.Save(ConfigStorage::Config_Id::SSID_Password_0, link_packet->payload,
-                              link_packet->length))
-            {
-                UI_LOG_ERROR("ERR. Failed to save SSID password 0 configuration");
-            }
-            else
-            {
-                UI_LOG_INFO("OK! Saved SSID password 0 configuration");
-            }
+            // NOTE, the storage clear WILL brick your hactar for some amount of time until
+            // the eeprom fixes itself
+            UI_LOG_INFO("OK! Clearing configurations");
+            storage.Clear();
+            UI_LOG_INFO("OK! Cleared all configurations");
             break;
         }
-        case Configuration_Type::Set_Ssid_1:
+        case Configuration::Set_Sframe:
         {
-            if (!storage.Save(ConfigStorage::Config_Id::SSID_1, link_packet->payload,
-                              link_packet->length))
+            if (link_packet->length != 16)
             {
-                UI_LOG_ERROR("ERR. Failed to save SSID 1 configuration");
+                UI_LOG_ERROR("ERR. Sframe key is too short!");
+                break;
             }
-            else
-            {
-                UI_LOG_INFO("OK! Saved SSID 1 configuration");
-            }
-            break;
-        }
-        case Configuration_Type::Set_Pwd_1:
-        {
-            if (!storage.Save(ConfigStorage::Config_Id::SSID_Password_1, link_packet->payload,
-                              link_packet->length))
-            {
-                UI_LOG_ERROR("ERR. Failed to save SSID password 1 configuration");
-            }
-            else
-            {
-                UI_LOG_INFO("OK! Saved SSID password 1 configuration");
-            }
-            break;
-        }
-        case Configuration_Type::Set_Ssid_2:
-        {
-            if (!storage.Save(ConfigStorage::Config_Id::SSID_2, link_packet->payload,
-                              link_packet->length))
-            {
-                UI_LOG_ERROR("ERR. Failed to save SSID 2 configuration");
-            }
-            else
-            {
-                UI_LOG_INFO("OK! Saved SSID 2 configuration");
-            }
-            break;
-        }
-        case Configuration_Type::Set_Pwd_2:
-        {
-            if (!storage.Save(ConfigStorage::Config_Id::SSID_Password_2, link_packet->payload,
-                              link_packet->length))
-            {
-                UI_LOG_ERROR("ERR. Failed to save SSID password 2 configuration");
-            }
-            else
-            {
-                UI_LOG_INFO("OK! Saved SSID password 2 configuration");
-            }
-            break;
-        }
-        case Configuration_Type::Set_Moq_Url:
-        {
-            if (!storage.Save(ConfigStorage::Config_Id::Moq_Relay_Url, link_packet->payload,
-                              link_packet->length))
-            {
-                UI_LOG_ERROR("ERR. Failed to save MoQ Relay Url configuration");
-            }
-            else
-            {
-                UI_LOG_INFO("OK! Saved MoQ Relay Url configuration");
-            }
-            break;
-        }
-        case Configuration_Type::Set_Sframe_Key:
-        {
-            if (!storage.Save(ConfigStorage::Config_Id::Sframe_Key, link_packet->payload,
-                              link_packet->length))
-            {
-                UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
-            }
-            else
+
+            if (storage.Save(ConfigStorage::Config_Id::Sframe_Key, link_packet->payload,
+                             link_packet->length))
             {
                 UI_LOG_INFO("OK! Saved SFrame Key configuration");
             }
+            else
+            {
+                UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
+            }
             break;
         }
-        case Configuration_Type::Clear_Configuration:
+        case Configuration::Get_Sframe:
         {
-            storage.Clear();
-            UI_LOG_INFO("OK! Cleared all configurations");
+            UI_LOG_INFO("Getting sframe key");
+            ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
+            if (config.loaded && config.len == 16)
+            {
+                // Copy to a buff and print it.
+                char buff[config.len + 1] = {0};
+                for (int i = 0; i < config.len; ++i)
+                {
+                    buff[i] = config.buff[i];
+                }
+                UI_LOG_INFO("Stored sframe key %s", (const char*)buff);
+            }
+            else
+            {
+                UI_LOG_INFO("ERR. No sframe key in storage");
+            }
             break;
         }
         default:
@@ -876,41 +814,6 @@ catch (const std::exception& e)
     return false;
 }
 
-void TransmitWifiCred(ConfigStorage& storage,
-                      Serial& serial,
-                      const ConfigStorage::Config_Id ssid_id,
-                      const ConfigStorage::Config_Id pwd_id)
-{
-    link_packet_t packet;
-
-    ConfigStorage::Config ssid = storage.Load(ssid_id);
-    ConfigStorage::Config pwd = storage.Load(pwd_id);
-
-    if (!ssid.loaded || !pwd.loaded)
-    {
-        UI_LOG_ERROR("Failed to load ssid with id %d", (int)ssid.id);
-        return;
-    }
-    else
-    {
-        UI_LOG_INFO("Loaded ssid with id %d", (int)ssid.id);
-    }
-
-    ui_net_link::Serialize(ssid.buff, ssid.len, pwd.buff, pwd.len, packet);
-
-    serial.Write(packet);
-}
-
-void TransmitStoredWifiCreds(ConfigStorage& storage, Serial& serial)
-{
-    TransmitWifiCred(storage, serial, ConfigStorage::Config_Id::SSID_0,
-                     ConfigStorage::Config_Id::SSID_Password_0);
-    TransmitWifiCred(storage, serial, ConfigStorage::Config_Id::SSID_1,
-                     ConfigStorage::Config_Id::SSID_Password_1);
-    TransmitWifiCred(storage, serial, ConfigStorage::Config_Id::SSID_2,
-                     ConfigStorage::Config_Id::SSID_Password_2);
-}
-
 void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx)
 {
     if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
@@ -918,23 +821,28 @@ void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx)
         Error("main", "cmox failed to initialise");
     }
 
+// Not currently in use.
+#if 0
     ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
     if (config.loaded && config.len == 16)
     {
         UI_LOG_INFO("Using stored MLS key!");
         mls_ctx.add_epoch(
             0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(config.buff), config.len});
+
+        return;
     }
-    else
+    else if (config.len != 16)
     {
-        if (config.len != 16)
-        {
-            UI_LOG_ERROR("MLS key len malformed %d", (int)config.len);
-        }
-        UI_LOG_WARN("No MLS key stored, using default");
-        constexpr const char* mls_key = "sixteen byte key";
-        mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(mls_key), 16});
+        UI_LOG_ERROR("MLS key len malformed %d", (int)config.len);
+        Error_Handler("Initialize MLS", "MLS key len malformed");
+        return;
     }
+#endif
+
+    UI_LOG_WARN("No MLS key stored, using default");
+    constexpr const char* mls_key = "sixteen byte key";
+    mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(mls_key), 16});
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)

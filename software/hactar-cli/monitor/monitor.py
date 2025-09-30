@@ -4,6 +4,7 @@ import threading
 import time
 import signal
 import numbers
+import shlex
 
 # No support on windows
 try:
@@ -72,7 +73,7 @@ class Monitor:
             if usr_input.lower() == "exit":
                 self.running = False
             else:
-                split = usr_input.split()
+                split = shlex.split(usr_input)
                 if split[0].lower() in command_map or usr_input.lower() in command_map:
                     self.uart.write(command_map[usr_input.lower()])
                     continue
@@ -158,6 +159,10 @@ def main(args):
     port = args.port
     if port == "" or port == None:
         port = SelectHactarPort(uart_config)
+
+    if port == "" or port == None:
+        print("Error. No port selected")
+        return
 
     readline.set_completer(hactar_command_completer)
     readline.set_completion_display_matches_hook(hactar_command_print_matches)

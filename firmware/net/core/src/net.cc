@@ -494,11 +494,6 @@ extern "C" void app_main(void)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
 
-    while (true)
-    {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-
     ui_layer.BeginEventTask();
 
     // setup moq transport
