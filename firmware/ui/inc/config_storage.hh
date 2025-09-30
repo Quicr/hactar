@@ -20,54 +20,33 @@ public:
     // NOTE - this is the order in which the settings are saved to the eeprom
     enum class Config_Id
     {
-        SSID_0,
-        SSID_Password_0,
-        SSID_1,
-        SSID_Password_1,
-        SSID_2,
-        SSID_Password_2,
+        Version,
         Sframe_Key,
-        Moq_Relay_Url,
         NumConfig
     };
 
     static constexpr uint32_t Version_Size = 1;
-    static constexpr uint32_t Ssid_Size = 23;
-    static constexpr uint32_t Pwd_Size = 32;
     static constexpr uint32_t Sframe_Key_Size = 16;
-    static constexpr uint32_t Moq_Relay_Url_Size = 64;
 
     static constexpr uint32_t Version_Address = 0;
 
-    static constexpr uint32_t SSID_0_Address = Version_Address + Version_Size;
-    static constexpr uint32_t SSID_Password_0_Address = SSID_0_Address + Ssid_Size;
+    static constexpr uint32_t Sframe_Key_Address = Version_Address + Version_Size;
 
-    static constexpr uint32_t SSID_1_Address = SSID_Password_0_Address + Pwd_Size;
-    static constexpr uint32_t SSID_Password_1_Address = SSID_1_Address + Ssid_Size;
-
-    static constexpr uint32_t SSID_2_Address = SSID_Password_1_Address + Pwd_Size;
-    static constexpr uint32_t SSID_Password_2_Address = SSID_2_Address + Ssid_Size;
-
-    static constexpr uint32_t Sframe_Key_Address = SSID_Password_2_Address + Pwd_Size;
-
-    static constexpr uint32_t Moq_Relay_Url_Address = Sframe_Key_Address + Moq_Relay_Url_Size;
-
-    static constexpr uint32_t Largest_Size =
-        std::max({Ssid_Size, Pwd_Size, Sframe_Key_Size, Moq_Relay_Url_Size});
+    static constexpr uint32_t Largest_Size = std::max({Version_Size, Sframe_Key_Size});
 
     static constexpr uint32_t Config_Len_Size = 1;
     static constexpr uint32_t Total_Usage =
-        Version_Size
-        + ((Ssid_Size * 3) + (Pwd_Size * 3) + Sframe_Key_Size + Moq_Relay_Url_Size
-           + ((uint32_t)Config_Id::NumConfig - 1) * Config_Len_Size);
+        Version_Size + Sframe_Key_Size + ((uint32_t)Config_Id::NumConfig - 1) * Config_Len_Size;
     static_assert(Total_Usage < 256);
 
     static constexpr uint8_t sizes[(size_t)Config_Id::NumConfig] = {
-        Ssid_Size, Pwd_Size, Ssid_Size,       Pwd_Size,
-        Ssid_Size, Pwd_Size, Sframe_Key_Size, Moq_Relay_Url_Size};
+        Version_Size,
+        Sframe_Key_Size,
+    };
     static constexpr uint8_t addresses[(size_t)Config_Id::NumConfig] = {
-        SSID_0_Address, SSID_Password_0_Address, SSID_1_Address,     SSID_Password_1_Address,
-        SSID_2_Address, SSID_Password_2_Address, Sframe_Key_Address, Moq_Relay_Url_Address};
+        Version_Address,
+        Sframe_Key_Address,
+    };
 
     struct Config
     {

@@ -7,7 +7,7 @@ class M24C02_EEPROM
 public:
     M24C02_EEPROM(I2C_HandleTypeDef& hi2c,
                   const size_t size_in_bytes,
-                  const uint8_t write_operation_timeout_ms = 8) :
+                  const uint8_t write_operation_timeout_ms = 10) :
         i2c(&hi2c),
         size_in_bytes(size_in_bytes),
         write_operation_timeout_ms(write_operation_timeout_ms)
@@ -101,6 +101,11 @@ public:
         return data;
     }
 
+    // For reasons unknown to me, this will cause some maaaaaaaaaaaaaaaaaaaaaassive issues
+    // the chip gets locked up and then it causes all kinds of havoc with the ui chip.
+    // Probably related to the i2c being all bonkered from it.
+    // but I need to figure out how to fix it without
+    // too many bricks.
     bool Fill(uint8_t fill_value = 0xFF)
     {
         // Address to start writing is 0
