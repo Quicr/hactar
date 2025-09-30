@@ -3,12 +3,14 @@ set(priv_requires
     lwip
     wifi
     quicr
+    storage
 )
 
 set (SOURCES
       moq_track_reader.cc
       moq_track_writer.cc
       moq_session.cc
+      moq_storage.cc
 )
 
 set(CMAKE_CXX_FLAGS "-mlongcalls  -Wno-error=format -Wno-error=pessimizing-move")
