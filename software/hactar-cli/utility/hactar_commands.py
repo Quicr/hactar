@@ -40,6 +40,8 @@ net_command_map = {
     "get_ssid_names": {"id": 3, "num_params": 0},
     "get_ssid_passwords": {"id": 4, "num_params": 0},
     "clear_ssids": {"id": 5, "num_params": 0},
+    "set_moq_url": {"id": 6, "num_params": 1},
+    "get_moq_url": {"id": 7, "num_params": 0},
 }
 
 

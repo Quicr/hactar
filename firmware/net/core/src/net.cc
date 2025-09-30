@@ -14,6 +14,7 @@
 #include "freertos/task.h"
 #include "logger.hh"
 #include "macros.hh"
+#include "moq_storage.hh"
 #include "net_mgmt_link.h"
 #include "nvs_flash.h"
 #include "peripherals.hh"
@@ -47,11 +48,6 @@ std::shared_ptr<moq::Session> moq_session;
 SemaphoreHandle_t audio_req_smpr = xSemaphoreCreateBinary();
 
 /** END EXTERNAL VARIABLES */
-
-constexpr const char* moq_server = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
-// constexpr const char* moq_server = "moq://relay.us-east-2.quicr.ctgpoc.com:33435";
-// constexpr const char* moq_server = "moq://192.168.50.19:33435";
-
 TaskHandle_t net_ui_serial_read_handle;
 StaticTask_t net_ui_serial_read_buffer;
 StackType_t* net_ui_serial_read_stack = nullptr;
@@ -126,6 +122,7 @@ Serial mgmt_layer(UART_NUM_0,
 
 Storage storage;
 Wifi wifi(storage);
+MoqStorage moq_storage(storage);
 
 uint64_t curr_audio_isr_time = esp_timer_get_time();
 uint64_t last_audio_isr_time = esp_timer_get_time();
@@ -320,6 +317,20 @@ static void MgmtLinkPacketTask(void* args)
                 wifi.ClearSavedSSIDs();
                 break;
             }
+            case Configuration::Set_Moq_Url:
+            {
+                std::string moq_url((char*)packet->payload, packet->length);
+                NET_LOG_INFO("Got moq url %d - %s", moq_url.length(), moq_url.c_str());
+                moq_storage.SaveMoqServerUrl(moq_url);
+                break;
+            }
+            case Configuration::Get_Moq_Url:
+            {
+                std::string moq_url = "Saved moq url: ";
+                moq_url += moq_storage.LoadMoqServerUrl();
+                mgmt_layer.Write((uint8_t*)moq_url.data(), moq_url.length());
+                break;
+            }
             default:
             {
                 NET_LOG_ERROR("Unknown packet type from mgmt");
@@ -466,24 +477,16 @@ extern "C" void app_main(void)
 
     SetPThreadDefault();
     PrintRAM();
+    InitializeGPIO();
+    IntitializeLEDs();
+    InitializeUIReadyISR(GpioIsrRisingHandler);
 
     CreateMgmtLinkPacketTask();
     mgmt_layer.BeginEventTask();
 
-    NET_LOG_INFO("Starting Net Main");
-
-    // storage.SaveStr("test", "the_key", "my_test");
-    // storage.Save("test", "the_key", (void*)"my_other_test", 13);
-    // std::string str = storage.LoadStr("test", "the_key");
-    // storage.Load()
-
-    // NET_LOG_WARN("loaded %s", str.c_str());
-
-    InitializeUIReadyISR(GpioIsrRisingHandler);
-
-    InitializeGPIO();
-    IntitializeLEDs();
     CreateUILinkPacketTask();
+
+    NET_LOG_INFO("Starting Net Main");
 
     wifi.Begin();
 
@@ -498,8 +501,9 @@ extern "C" void app_main(void)
 
     // setup moq transport
     quicr::ClientConfig config;
+
     config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = moq_server;
+    config.connect_uri = moq_storage.LoadMoqServerUrl();
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;
@@ -681,6 +685,43 @@ extern "C" void app_main(void)
             }
             }
             prev_status = status;
+        }
+
+        if (config.connect_uri != moq_storage.LoadMoqServerUrl())
+        {
+            // TODO cleanup
+            NET_LOG_INFO("Config was updated");
+
+            for (const auto& reader : readers)
+            {
+                if (reader)
+                {
+                    reader->Stop();
+                }
+            }
+
+            for (const auto& writer : writers)
+            {
+                if (writer)
+                {
+                    writer->Stop();
+                }
+            }
+
+            moq_session->Disconnect();
+
+            NET_LOG_INFO("Load moq server uri");
+            config.connect_uri = moq_storage.LoadMoqServerUrl();
+            NET_LOG_INFO("Make a new session %s", config.connect_uri.c_str());
+            moq_session.reset(new moq::Session(config, readers, writers));
+
+            NET_LOG_INFO("MOQ Transport Calling Connect");
+
+            if (moq_session->Connect() != quicr::Transport::Status::kConnecting)
+            {
+                NET_LOG_ERROR("MOQ Transport Session Connection Failure");
+            }
+            gpio_set_level(NET_LED_B, 1);
         }
 
         // if (esp_timer_get_time_ms() > heartbeat)

@@ -73,9 +73,9 @@ class Monitor:
             if usr_input.lower() == "exit":
                 self.running = False
             else:
-                split = shlex.split(usr_input)
+                split = shlex.split(usr_input.strip())
                 if split[0].lower() in command_map or usr_input.lower() in command_map:
-                    self.uart.write(command_map[usr_input.lower()])
+                    self.uart.write(command_map[split[0].lower()])
                     continue
 
                 if split[0].lower() in bypass_map:

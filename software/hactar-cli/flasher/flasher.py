@@ -59,10 +59,11 @@ def main(args):
 
                     uart.write(command_map["disable logs"])
                     while True:
+                        uart.timeout = 0.1
                         byte = uart.read(1)
-                        print(byte)
 
                         if byte == bytes(0):
+                            uart.timeout = 2
                             break
 
                     uploader = UploaderFactory(uart, args.chip)
