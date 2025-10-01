@@ -57,7 +57,6 @@ ssize_t Storage::Load(const std::string ns, const std::string key, void* buff, c
 esp_err_t
 Storage::Save(const std::string ns, const std::string key, const void* buff, const size_t len)
 {
-    NET_LOG_WARN("val %d", (*(int32_t*)buff));
     esp_err_t err = ESP_FAIL;
     try
     {
@@ -75,8 +74,6 @@ Storage::Save(const std::string ns, const std::string key, const void* buff, con
             Close();
             return err;
         }
-
-        err = nvs_commit(handle);
 
         Close();
     }
@@ -125,6 +122,7 @@ esp_err_t Storage::ClearKey(const std::string ns, const std::string key)
 
     Close();
 
+    NET_LOG_INFO("ns %s cleared key %s", ns.c_str(), key.c_str());
     return err;
 }
 

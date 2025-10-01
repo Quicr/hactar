@@ -18,8 +18,8 @@ concept ContiguousRange = std::is_standard_layout_v<typename T::value_type> && r
 template <StandardLayout T>
 class StoredValue
 {
-    using load_value_t = std::
-        conditional_t<ContiguousRange<T>, const T&, std::optional<std::reference_wrapper<const T>>>;
+    using load_value_t =
+        std::conditional_t<ContiguousRange<T>, T&, std::optional<std::reference_wrapper<T>>>;
 
 public:
     StoredValue(Storage& storage, const std::string ns, const std::string key) :
@@ -29,6 +29,7 @@ public:
         loaded(false),
         stored()
     {
+        // Load();
     }
 
     load_value_t Load()
@@ -43,13 +44,16 @@ public:
             const uint32_t size =
                 storage.Loadu32(ns, std::string(std::string{key} + "_size").c_str());
 
-            stored.resize(size);
+            NET_LOG_WARN("Loaded size of %u at namespace %s key %s", size, ns.c_str(), key.c_str());
 
             if (size == 0)
             {
+                NET_LOG_WARN("No data stored in namespace %s key %s", ns.c_str(), key.c_str());
+                loaded = true;
                 return stored;
             }
 
+            stored.resize(size / sizeof(typename T::value_type));
             storage.Load(ns, key, reinterpret_cast<void*>(stored.data()), size);
             loaded = true;
             return stored;
@@ -57,14 +61,41 @@ public:
         else
         {
             const ssize_t ret_size = storage.Load(ns, key, &stored, sizeof(T));
-            if (ret_size <= 0)
-            {
-                return std::nullopt;
-            }
 
             loaded = true;
             return stored;
         }
+    }
+
+    bool Save()
+    {
+        if constexpr (ContiguousRange<T>)
+        {
+            const size_t size = stored.size() * sizeof(typename T::value_type);
+            if (ESP_OK
+                != storage.Saveu32(ns, std::string(std::string{key} + "_size").c_str(), size))
+            {
+                return false;
+            }
+
+            NET_LOG_INFO("Saved size of %d, %d, %d", (int)size, (int)stored.size(),
+                         (int)sizeof(typename T::value_type));
+
+            if (ESP_OK != storage.Save(ns, key, reinterpret_cast<const void*>(stored.data()), size))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (ESP_OK != storage.Save(ns, key, &stored, sizeof(T)))
+            {
+                return false;
+            }
+        }
+
+        loaded = true;
+        return true;
     }
 
     bool Save(const T& new_value)
@@ -102,5 +133,7 @@ private:
     const std::string ns;
     const std::string key;
     bool loaded;
+
+public:
     T stored;
 };
