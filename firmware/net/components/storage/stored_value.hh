@@ -6,63 +6,90 @@
 #include <string>
 #include <vector>
 
-class StoredValueInterface
-{
-protected:
-    StoredValueInterface(Storage& storage, const std::string ns, const std::string key) :
-        storage(storage),
-        ns(ns),
-        key(key),
-        loaded(false)
-    {
-    }
-
-    Storage& storage;
-    const std::string ns;
-    const std::string key;
-    bool loaded;
-};
-
-template <typename T>
-class StoredValue;
-
 template <typename T>
 concept StandardLayout = std::is_standard_layout_v<T>;
 
+template <typename T>
+concept ContiguousRange = std::is_standard_layout_v<typename T::value_type> && requires(T& v) {
+    v.data();
+    v.size();
+};
+
 template <StandardLayout T>
-class StoredValue<T> : public StoredValueInterface
+class StoredValue
 {
+    using load_value_t = std::
+        conditional_t<ContiguousRange<T>, const T&, std::optional<std::reference_wrapper<const T>>>;
+
 public:
     StoredValue(Storage& storage, const std::string ns, const std::string key) :
-        StoredValueInterface(storage, ns, key),
+        storage(storage),
+        ns(ns),
+        key(key),
+        loaded(false),
         stored()
     {
-        memset(&stored, 0, sizeof(T));
     }
 
-    std::optional<std::reference_wrapper<const T>> Load()
+    load_value_t Load()
     {
         if (loaded)
         {
             return stored;
         }
 
-        ssize_t ret_size = storage.Load(ns, key, &stored, sizeof(T));
-
-        if (ret_size < 0)
+        if constexpr (ContiguousRange<T>)
         {
-            return std::nullopt;
-        }
+            const uint32_t size =
+                storage.Loadu32(ns, std::string(std::string{key} + "_size").c_str());
 
-        loaded = ret_size > 0;
-        return stored;
+            stored.resize(size);
+
+            if (size == 0)
+            {
+                return stored;
+            }
+
+            storage.Load(ns, key, reinterpret_cast<void*>(stored.data()), size);
+            loaded = true;
+            return stored;
+        }
+        else
+        {
+            const ssize_t ret_size = storage.Load(ns, key, &stored, sizeof(T));
+            if (ret_size <= 0)
+            {
+                return std::nullopt;
+            }
+
+            loaded = true;
+            return stored;
+        }
     }
 
     bool Save(const T& new_value)
     {
-        if (ESP_OK != storage.Save(ns, key, &new_value, sizeof(T)))
+        if constexpr (ContiguousRange<T>)
         {
-            return false;
+            const size_t size = new_value.size() * sizeof(typename T::value_type);
+            if (ESP_OK
+                != storage.Saveu32(ns, std::string(std::string{key} + "_size").c_str(), size))
+            {
+                return false;
+            }
+
+            if (ESP_OK
+                != storage.Save(ns, key, reinterpret_cast<const void*>(new_value.data()), size))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (ESP_OK != storage.Save(ns, key, &new_value, sizeof(T)))
+            {
+                return false;
+            }
         }
 
         stored = new_value;
@@ -71,72 +98,9 @@ public:
     }
 
 private:
-    T stored;
-};
-
-template <typename T>
-concept ContiguousRange = std::is_standard_layout_v<typename T::value_type> && requires(T& v)
-{
-    v.data();
-    v.size();
-};
-
-template <ContiguousRange T>
-class StoredValue<T> : public StoredValueInterface
-{
-public:
-    StoredValue(Storage& storage, const std::string ns, const std::string key) :
-        StoredValueInterface(storage, ns, key),
-        key_size(key + "_size"),
-        stored()
-    {
-    }
-
-    const T& Load()
-    {
-        if (loaded)
-        {
-            return stored;
-        }
-
-        // Load the size of the value
-        const uint32_t size = storage.Loadu32(ns, key_size);
-
-        stored.resize(size);
-
-        if (size == 0)
-        {
-            return stored;
-        }
-
-        // Try to load from nvs
-        storage.Load(ns, key, reinterpret_cast<void*>(stored.data()), size);
-
-        loaded = true;
-
-        return stored;
-    }
-
-    bool Save(const T& new_values)
-    {
-        const size_t size = new_values.size() * sizeof(T);
-        if (ESP_OK != storage.Saveu32(ns, key_size, size))
-        {
-            return false;
-        }
-
-        if (ESP_OK != storage.Save(ns, key, reinterpret_cast<const void*>(new_values.data()), size))
-        {
-            return false;
-        }
-
-        stored = new_values;
-        loaded = true;
-
-        return true;
-    }
-
-private:
-    const std::string key_size;
+    Storage& storage;
+    const std::string ns;
+    const std::string key;
+    bool loaded;
     T stored;
 };
