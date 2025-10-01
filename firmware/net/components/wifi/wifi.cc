@@ -6,6 +6,7 @@
 #include <bit>
 #include <iostream>
 #include <mutex>
+#include <vector>
 
 Wifi::Wifi(Storage& storage, const int64_t scan_timeout_ms) :
     storage(storage),
@@ -24,7 +25,8 @@ Wifi::Wifi(Storage& storage, const int64_t scan_timeout_ms) :
     connect_task(),
     state_mux(),
     tmp_ssid(),
-    tmp_pwd()
+    tmp_pwd(),
+    stored_creds(storage, "wifi", "ssids")
 {
 }
 
@@ -74,7 +76,14 @@ void Wifi::Connect(const std::string& ssid, const std::string& pwd)
         return;
     }
 
-    credentials.push_back({ssid, pwd, 0});
+    ap_cred_t cred;
+    memcpy(cred.name, ssid.data(), ssid.length());
+    cred.name_len = ssid.length();
+    memcpy(cred.pwd, pwd.data(), pwd.length());
+    cred.pwd_len = pwd.length();
+    cred.attempts = 0;
+
+    credentials.push_back(std::move(cred));
 }
 
 void Wifi::SaveSSID(const std::string ssid, const std::string pwd)
@@ -251,7 +260,9 @@ esp_err_t Wifi::ScanNetworks()
         for (uint16_t j = 0; j < credentials.size(); ++j)
         {
             // totally inefficient, but the lists are small so eh
-            if (str == credentials[j].ssid)
+            const uint32_t max_len =
+                std::max(str.length(), static_cast<size_t>(credentials[j].name_len));
+            if (strncmp(str.data(), credentials[j].name, max_len))
             {
                 ap_in_range.push_back(credentials[j]);
             }
@@ -299,9 +310,9 @@ void Wifi::Connect()
         memset(wifi_cfg.sta.ssid, 0, sizeof(wifi_cfg.sta.ssid));
         memset(wifi_cfg.sta.password, 0, sizeof(wifi_cfg.sta.password));
 
-        memcpy(wifi_cfg.sta.ssid, creds.ssid.c_str(), creds.ssid.length());
+        memcpy(wifi_cfg.sta.ssid, creds.name, creds.name_len);
 
-        memcpy(wifi_cfg.sta.password, creds.pwd.c_str(), creds.pwd.length());
+        memcpy(wifi_cfg.sta.password, creds.pwd, creds.pwd_len);
     }
 
     NET_LOG_ERROR("Ap Info: ssid: %s password: %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);

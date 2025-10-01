@@ -4,6 +4,7 @@
 #include "esp_wifi.h"
 #include "nvs_flash.h"
 #include "storage.hh"
+#include "stored_value.hh"
 #include <cstring>
 #include <mutex>
 #include <string>
@@ -58,8 +59,11 @@ public:
 
     struct ap_cred_t
     {
-        std::string ssid;
-        std::string pwd;
+        // ap cred names and pwd are max 32 bytes, but need a extra char for null characters
+        char name[32];
+        uint32_t name_len;
+        char pwd[64];
+        uint32_t pwd_len;
         uint32_t attempts;
     };
 
@@ -109,4 +113,6 @@ private:
 
     std::string tmp_ssid;
     std::string tmp_pwd;
+
+    StoredValue<std::vector<ap_cred_t>> stored_creds;
 };
