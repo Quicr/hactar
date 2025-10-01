@@ -21,6 +21,7 @@
 #include "sdkconfig.h"
 #include "serial.hh"
 #include "storage.hh"
+#include "stored_value.hh"
 #include "ui_net_link.hh"
 #include "utils.hh"
 #include "wifi.hh"
@@ -474,7 +475,6 @@ void SetPThreadDefault()
 
 extern "C" void app_main(void)
 {
-
     SetPThreadDefault();
     PrintRAM();
     InitializeGPIO();
@@ -487,6 +487,56 @@ extern "C" void app_main(void)
     CreateUILinkPacketTask();
 
     NET_LOG_INFO("Starting Net Main");
+
+    std::vector<std::string> strings;
+    strings.push_back("Test");
+    strings.push_back("Other test");
+
+    StoredValue<int32_t> val(storage, "test_ns", "key");
+
+    val.Save(10);
+
+    if (auto loaded_val = val.Load(); loaded_val.has_value())
+    {
+        NET_LOG_INFO("Does this work? %d", loaded_val.value().get());
+    }
+
+    std::vector<Wifi::ap_cred_t> aps;
+
+    Wifi::ap_cred_t cred_1;
+    memcpy(cred_1.name, "Hello1", 7);
+    cred_1.name_len = 6;
+    memcpy(cred_1.pwd, "pass1", 6);
+    cred_1.pwd_len = 5;
+    cred_1.attempts = 0;
+
+    Wifi::ap_cred_t cred_2;
+    memcpy(cred_2.name, "Hello2", 7);
+    cred_2.name_len = 6;
+    memcpy(cred_2.pwd, "pass2", 6);
+    cred_2.pwd_len = 5;
+    cred_2.attempts = 1;
+
+    aps.push_back(std::move(cred_1));
+    aps.push_back(std::move(cred_2));
+
+    StoredValue<std::vector<Wifi::ap_cred_t>> store_aps(storage, "test_ns", "vector_key");
+
+    store_aps.Save(aps);
+
+    if (auto loaded_aps = store_aps.Load(); !loaded_aps.empty())
+    {
+        for (const auto& cred : loaded_aps)
+        {
+            NET_LOG_INFO("%u %s %u %s %u", cred.name_len, cred.name, cred.pwd_len, cred.pwd,
+                         cred.attempts);
+        }
+    }
+
+    while (true)
+    {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
 
     wifi.Begin();
 
