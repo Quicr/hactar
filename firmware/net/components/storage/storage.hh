@@ -11,7 +11,7 @@ public:
 
     ssize_t Load(const std::string ns, const std::string key, void* buff, const size_t len);
     esp_err_t Save(const std::string ns, const std::string key, const void* buff, const size_t len);
-    esp_err_t Clear(const std::string key);
+    esp_err_t Clear(const std::string ns);
     esp_err_t ClearKey(const std::string ns, const std::string key);
 
     std::string LoadStr(const std::string ns, const std::string key);

@@ -282,6 +282,12 @@ static void MgmtLinkPacketTask(void* args)
             {
             case Configuration::Version:
             {
+                NET_LOG_WARN("VERSION NOT IMPLEMENTED");
+                break;
+            }
+            case Configuration::Clear_Storage:
+            {
+                NET_LOG_WARN("CLEAR STORAGE NOT IMPLEMENTED");
                 break;
             }
             case Configuration::Set_Ssid_Name:
@@ -533,9 +539,14 @@ extern "C" void app_main(void)
         }
     }
 
-    while (true)
+    std::string my_string = "test";
+    StoredValue<std::string> stored_string(storage, "test_ns", "string_key");
+
+    stored_string.Save(my_string);
+
+    if (auto str = stored_string.Load(); !str.empty())
     {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        NET_LOG_INFO("Loaded string %s", str.c_str());
     }
 
     wifi.Begin();
@@ -546,6 +557,11 @@ extern "C" void app_main(void)
 #if defined(my_ssid) && defined(my_ssid_pwd)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
+
+    while (true)
+    {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
 
     ui_layer.BeginEventTask();
 

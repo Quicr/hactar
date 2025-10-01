@@ -26,7 +26,7 @@ Wifi::Wifi(Storage& storage, const int64_t scan_timeout_ms) :
     state_mux(),
     tmp_ssid(),
     tmp_pwd(),
-    stored_creds(storage, "wifi", "ssids")
+    stored_creds(storage, "wifi", "creds")
 {
 }
 
@@ -38,28 +38,52 @@ Wifi::~Wifi()
 
 void Wifi::Begin()
 {
+    // storage.Clear("wifi");
+
+    std::vector<ap_cred_t>& creds = stored_creds.Load();
+
+    // Wifi::ap_cred_t cred_1;
+    // memcpy(cred_1.name, "Hello1", 7);
+    // cred_1.name_len = 6;
+    // memcpy(cred_1.pwd, "pass1", 6);
+    // cred_1.pwd_len = 5;
+    // cred_1.attempts = 0;
+
+    // creds.push_back(std::move(cred_1));
+
+    stored_creds.Save();
+
+    // if (auto creds1 = stored_creds.Load(); !creds1.empty())
+    // {
+    //     for (const auto& cred : creds1)
+    //     {
+    //         NET_LOG_INFO("%u %s %u %s %u", cred.name_len, cred.name, cred.pwd_len, cred.pwd,
+    //                      cred.attempts);
+    //     }
+    // }
+
     // Get the number of saved ssids
-    storage.Load("wifi", "saved_ssids", &saved_ssids, sizeof(saved_ssids));
+    // storage.Load("wifi", "saved_ssids", &saved_ssids, sizeof(saved_ssids));
 
-    NET_LOG_INFO("saved ssids %d", (int)saved_ssids);
-    char buff[32];
-    ssize_t len = 0;
-    std::string ssid;
-    std::string pwd;
+    // NET_LOG_INFO("saved ssids %d", (int)saved_ssids);
+    // char buff[32];
+    // ssize_t len = 0;
+    // std::string ssid;
+    // std::string pwd;
 
-    // Load all ssids
-    for (size_t i = 0; i < saved_ssids; ++i)
-    {
-        len = storage.Load("wifi", "ssid_name" + std::to_string(i + 1), buff, sizeof(buff));
-        ssid.assign(buff, len);
+    // // Load all ssids
+    // for (size_t i = 0; i < saved_ssids; ++i)
+    // {
+    //     len = storage.Load("wifi", "ssid_name" + std::to_string(i + 1), buff, sizeof(buff));
+    //     ssid.assign(buff, len);
 
-        len = storage.Load("wifi", "ssid_pwd" + std::to_string(i + 1), buff, sizeof(buff));
-        pwd.assign(buff, len);
+    //     len = storage.Load("wifi", "ssid_pwd" + std::to_string(i + 1), buff, sizeof(buff));
+    //     pwd.assign(buff, len);
 
-        NET_LOG_WARN("loading ssid %s pwd %s", ssid.c_str(), pwd.c_str());
+    //     NET_LOG_WARN("loading ssid %s pwd %s", ssid.c_str(), pwd.c_str());
 
-        Connect(ssid, pwd);
-    }
+    //     Connect(ssid, pwd);
+    // }
 
     xTaskCreate(WifiTask, "wifi_connect_task", 4096, (void*)this, 12, &connect_task);
 }
@@ -255,6 +279,8 @@ esp_err_t Wifi::ScanNetworks()
     {
         std::string str = reinterpret_cast<char*>(wifi_records[i].ssid);
         scanned_aps.push_back(str);
+
+        NET_LOG_WARN("AP %u: %s", i, str.c_str());
 
         // Order of strength
         for (uint16_t j = 0; j < credentials.size(); ++j)
