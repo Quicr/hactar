@@ -11,7 +11,7 @@
 Wifi::Wifi(Storage& storage, const int64_t scan_timeout_ms) :
     storage(storage),
     scan_timeout_ms(scan_timeout_ms),
-    credentials(),
+    stored_creds(storage, "wifi", "creds"),
     ap_in_range(),
     scanned_aps(),
     ap_idx(0),
@@ -25,8 +25,7 @@ Wifi::Wifi(Storage& storage, const int64_t scan_timeout_ms) :
     connect_task(),
     state_mux(),
     tmp_ssid(),
-    tmp_pwd(),
-    stored_creds(storage, "wifi", "creds")
+    tmp_pwd()
 {
 }
 
@@ -38,53 +37,6 @@ Wifi::~Wifi()
 
 void Wifi::Begin()
 {
-    // storage.Clear("wifi");
-
-    std::vector<ap_cred_t>& creds = stored_creds.Load();
-
-    // Wifi::ap_cred_t cred_1;
-    // memcpy(cred_1.name, "Hello1", 7);
-    // cred_1.name_len = 6;
-    // memcpy(cred_1.pwd, "pass1", 6);
-    // cred_1.pwd_len = 5;
-    // cred_1.attempts = 0;
-
-    // creds.push_back(std::move(cred_1));
-
-    stored_creds.Save();
-
-    // if (auto creds1 = stored_creds.Load(); !creds1.empty())
-    // {
-    //     for (const auto& cred : creds1)
-    //     {
-    //         NET_LOG_INFO("%u %s %u %s %u", cred.name_len, cred.name, cred.pwd_len, cred.pwd,
-    //                      cred.attempts);
-    //     }
-    // }
-
-    // Get the number of saved ssids
-    // storage.Load("wifi", "saved_ssids", &saved_ssids, sizeof(saved_ssids));
-
-    // NET_LOG_INFO("saved ssids %d", (int)saved_ssids);
-    // char buff[32];
-    // ssize_t len = 0;
-    // std::string ssid;
-    // std::string pwd;
-
-    // // Load all ssids
-    // for (size_t i = 0; i < saved_ssids; ++i)
-    // {
-    //     len = storage.Load("wifi", "ssid_name" + std::to_string(i + 1), buff, sizeof(buff));
-    //     ssid.assign(buff, len);
-
-    //     len = storage.Load("wifi", "ssid_pwd" + std::to_string(i + 1), buff, sizeof(buff));
-    //     pwd.assign(buff, len);
-
-    //     NET_LOG_WARN("loading ssid %s pwd %s", ssid.c_str(), pwd.c_str());
-
-    //     Connect(ssid, pwd);
-    // }
-
     xTaskCreate(WifiTask, "wifi_connect_task", 4096, (void*)this, 12, &connect_task);
 }
 
@@ -100,6 +52,45 @@ void Wifi::Connect(const std::string& ssid, const std::string& pwd)
         return;
     }
 
+    if (ssid.length() > Max_SSID_Name_Len || pwd.length() > Max_SSID_Password_Len)
+    {
+        NET_LOG_ERROR("Received ssid name %s of length %u max size is %u", ssid.c_str(),
+                      ssid.length(), Max_SSID_Name_Len);
+        NET_LOG_ERROR("Received ssid password %s of length %u max size is %u", pwd.c_str(),
+                      pwd.length(), Max_SSID_Password_Len);
+
+        return;
+    }
+
+    // Check if the ssid name is already saved and if the password is the same,
+    // if we are using a different password we should overwrite the one that already exists.
+    auto& credentials = stored_creds.Load();
+
+    for (auto& cred : credentials)
+    {
+        const uint32_t min_name_len = std::min(ssid.length(), static_cast<size_t>(cred.name_len));
+        const uint32_t min_pwd_len = std::min(pwd.length(), static_cast<size_t>(cred.pwd_len));
+
+        const bool name_same = strncmp(ssid.data(), cred.name, min_name_len) == 0;
+        const bool pwd_same = strncmp(pwd.data(), cred.pwd, min_pwd_len) == 0;
+
+        if (name_same && pwd_same)
+        {
+            NET_LOG_WARN("SSID %s already exists in storage", ssid.c_str());
+            return;
+        }
+        else if (name_same && !pwd_same)
+        {
+            // Update the credential password and save the stored_creds
+            memcpy(cred.pwd, pwd.data(), pwd.length());
+            stored_creds.Save();
+
+            // If this was a wifi network we are connected to, then we should disconnect
+            return;
+        }
+    }
+
+    // If doesn't exist add to list of creds
     ap_cred_t cred;
     memcpy(cred.name, ssid.data(), ssid.length());
     cred.name_len = ssid.length();
@@ -108,6 +99,7 @@ void Wifi::Connect(const std::string& ssid, const std::string& pwd)
     cred.attempts = 0;
 
     credentials.push_back(std::move(cred));
+    stored_creds.Save();
 }
 
 void Wifi::SaveSSID(const std::string ssid, const std::string pwd)
@@ -148,6 +140,7 @@ void Wifi::ClearSavedSSIDs()
 {
     NET_LOG_INFO("Clearing ssids");
     storage.Clear("wifi");
+    NET_LOG_INFO("Clearing complete");
 }
 
 void Wifi::SaveSSIDName(const std::string& ssid)
@@ -275,6 +268,8 @@ esp_err_t Wifi::ScanNetworks()
     scanned_aps.clear();
     ap_in_range.clear();
     res = esp_wifi_scan_get_ap_records(&num_aps, wifi_records);
+
+    auto& credentials = stored_creds.Load();
     for (uint16_t i = 0; i < num_aps; ++i)
     {
         std::string str = reinterpret_cast<char*>(wifi_records[i].ssid);
@@ -286,9 +281,9 @@ esp_err_t Wifi::ScanNetworks()
         for (uint16_t j = 0; j < credentials.size(); ++j)
         {
             // totally inefficient, but the lists are small so eh
-            const uint32_t max_len =
-                std::max(str.length(), static_cast<size_t>(credentials[j].name_len));
-            if (strncmp(str.data(), credentials[j].name, max_len))
+            const uint32_t min_len =
+                std::min(str.length(), static_cast<size_t>(credentials[j].name_len));
+            if (strncmp(str.data(), credentials[j].name, min_len) == 0)
             {
                 ap_in_range.push_back(credentials[j]);
             }
@@ -434,7 +429,7 @@ bool Wifi::IsInitialized() const
 
 const std::vector<Wifi::ap_cred_t>& Wifi::GetCredentials()
 {
-    return credentials;
+    return stored_creds.Load();
 }
 
 /** Private functions **/

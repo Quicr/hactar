@@ -29,7 +29,6 @@ public:
         loaded(false),
         stored()
     {
-        // Load();
     }
 
     load_value_t Load()

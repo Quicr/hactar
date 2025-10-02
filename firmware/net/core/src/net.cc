@@ -14,7 +14,6 @@
 #include "freertos/task.h"
 #include "logger.hh"
 #include "macros.hh"
-#include "moq_storage.hh"
 #include "net_mgmt_link.h"
 #include "nvs_flash.h"
 #include "peripherals.hh"
@@ -123,7 +122,7 @@ Serial mgmt_layer(UART_NUM_0,
 
 Storage storage;
 Wifi wifi(storage);
-MoqStorage moq_storage(storage);
+StoredValue<std::string> moq_server_url(storage, "moq", "server_url");
 
 uint64_t curr_audio_isr_time = esp_timer_get_time();
 uint64_t last_audio_isr_time = esp_timer_get_time();
@@ -328,13 +327,21 @@ static void MgmtLinkPacketTask(void* args)
             {
                 std::string moq_url((char*)packet->payload, packet->length);
                 NET_LOG_INFO("Got moq url %d - %s", moq_url.length(), moq_url.c_str());
-                moq_storage.SaveMoqServerUrl(moq_url);
+
+                if (moq_url.length() == 0)
+                {
+                    // MOQ url will be cleared.
+                    NET_LOG_INFO("Clearning moq url because length is zero");
+                    storage.ClearKey("moq", "server_url");
+                    break;
+                }
+                moq_server_url.Save(moq_url);
                 break;
             }
             case Configuration::Get_Moq_Url:
             {
                 std::string moq_url = "Saved moq url: ";
-                moq_url += moq_storage.LoadMoqServerUrl();
+                moq_url += moq_server_url.Load();
                 mgmt_layer.Write((uint8_t*)moq_url.data(), moq_url.length());
                 break;
             }
@@ -494,61 +501,6 @@ extern "C" void app_main(void)
 
     NET_LOG_INFO("Starting Net Main");
 
-    std::vector<std::string> strings;
-    strings.push_back("Test");
-    strings.push_back("Other test");
-
-    StoredValue<int32_t> val(storage, "test_ns", "key");
-
-    val.Save(10);
-
-    if (auto loaded_val = val.Load(); loaded_val.has_value())
-    {
-        NET_LOG_INFO("Does this work? %d", loaded_val.value().get());
-    }
-
-    std::vector<Wifi::ap_cred_t> aps;
-
-    Wifi::ap_cred_t cred_1;
-    memcpy(cred_1.name, "Hello1", 7);
-    cred_1.name_len = 6;
-    memcpy(cred_1.pwd, "pass1", 6);
-    cred_1.pwd_len = 5;
-    cred_1.attempts = 0;
-
-    Wifi::ap_cred_t cred_2;
-    memcpy(cred_2.name, "Hello2", 7);
-    cred_2.name_len = 6;
-    memcpy(cred_2.pwd, "pass2", 6);
-    cred_2.pwd_len = 5;
-    cred_2.attempts = 1;
-
-    aps.push_back(std::move(cred_1));
-    aps.push_back(std::move(cred_2));
-
-    StoredValue<std::vector<Wifi::ap_cred_t>> store_aps(storage, "test_ns", "vector_key");
-
-    store_aps.Save(aps);
-
-    if (auto loaded_aps = store_aps.Load(); !loaded_aps.empty())
-    {
-        for (const auto& cred : loaded_aps)
-        {
-            NET_LOG_INFO("%u %s %u %s %u", cred.name_len, cred.name, cred.pwd_len, cred.pwd,
-                         cred.attempts);
-        }
-    }
-
-    std::string my_string = "test";
-    StoredValue<std::string> stored_string(storage, "test_ns", "string_key");
-
-    stored_string.Save(my_string);
-
-    if (auto str = stored_string.Load(); !str.empty())
-    {
-        NET_LOG_INFO("Loaded string %s", str.c_str());
-    }
-
     wifi.Begin();
 
     wifi.Connect("quicr.io", "noPassword");
@@ -558,18 +510,22 @@ extern "C" void app_main(void)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
 
-    while (true)
-    {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-
     ui_layer.BeginEventTask();
+
+    std::string& connect_uri = moq_server_url.Load();
+    if (connect_uri.empty())
+    {
+        // No moq url found, using default
+        NET_LOG_WARN(
+            "No moq server_url found, using default moq://relay.us-west-2.quicr.ctgpoc.com:33435");
+        connect_uri = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
+        moq_server_url.Save();
+    }
 
     // setup moq transport
     quicr::ClientConfig config;
-
     config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = moq_storage.LoadMoqServerUrl();
+    config.connect_uri = connect_uri;
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;
@@ -753,7 +709,7 @@ extern "C" void app_main(void)
             prev_status = status;
         }
 
-        if (config.connect_uri != moq_storage.LoadMoqServerUrl())
+        if (config.connect_uri != moq_server_url.Load())
         {
             // TODO cleanup
             NET_LOG_INFO("Config was updated");
@@ -777,7 +733,7 @@ extern "C" void app_main(void)
             moq_session->Disconnect();
 
             NET_LOG_INFO("Load moq server uri");
-            config.connect_uri = moq_storage.LoadMoqServerUrl();
+            config.connect_uri = moq_server_url.Load();
             NET_LOG_INFO("Make a new session %s", config.connect_uri.c_str());
             moq_session.reset(new moq::Session(config, readers, writers));
 
