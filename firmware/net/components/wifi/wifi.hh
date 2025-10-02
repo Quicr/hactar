@@ -18,6 +18,8 @@
 class Wifi
 {
 public:
+    static constexpr size_t Max_SSID_Name_Len = 32;
+    static constexpr size_t Max_SSID_Password_Len = 64;
     enum class State
     {
         NotInitialized = 0,
@@ -60,9 +62,9 @@ public:
     struct ap_cred_t
     {
         // ap cred names and pwd are max 32 bytes, but need a extra char for null characters
-        char name[32];
+        char name[Max_SSID_Name_Len];
         uint32_t name_len;
-        char pwd[64];
+        char pwd[Max_SSID_Password_Len];
         uint32_t pwd_len;
         uint32_t attempts;
     };
@@ -91,7 +93,7 @@ private:
     Storage& storage;
     int64_t scan_timeout_ms;
 
-    std::vector<ap_cred_t> credentials;
+    StoredValue<std::vector<ap_cred_t>> stored_creds;
     std::vector<ap_cred_t> ap_in_range;
     std::vector<std::string> scanned_aps;
 
@@ -113,6 +115,4 @@ private:
 
     std::string tmp_ssid;
     std::string tmp_pwd;
-
-    StoredValue<std::vector<ap_cred_t>> stored_creds;
 };
