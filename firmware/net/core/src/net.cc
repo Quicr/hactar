@@ -171,15 +171,7 @@ static void UILinkPacketTask(void* args)
             }
             case ui_net_link::Packet_Type::MoQChangeNamespace:
             {
-                // TODO check if the channel is the same and if it is don't change it.
-                // NET_LOG_INFO("got change packet");
-                // ui_net_link::ChangeNamespace change_namespace;
-                // ui_net_link::Deserialize(*packet, change_namespace);
-                // track_location = std::string(change_namespace.trackname,
-                // change_namespace.trackname_len);
-
-                // xSemaphoreGive(pub_change_smpr);
-                // xSemaphoreGive(sub_change_smpr);
+                break;
             }
             case ui_net_link::Packet_Type::TalkStart:
                 break;
@@ -254,13 +246,6 @@ static void UILinkPacketTask(void* args)
             }
             default:
                 NET_LOG_ERROR("Got a packet without a handler %d", (int)packet->type);
-
-                // for (int i = 0 ; i < NET_UI_UART_RX_BUFF_SIZE; ++i)
-                // {
-                //     NET_LOG_INFO("idx %d: %d", i, (int)net_ui_uart_rx_buff[i]);
-                // }
-                // abort();
-
                 break;
             }
         }
@@ -335,7 +320,7 @@ static void MgmtLinkPacketTask(void* args)
                     moq_server_url.Clear();
                     break;
                 }
-                moq_server_url.Save(moq_url);
+                moq_server_url = moq_url;
                 break;
             }
             case Configuration::Get_Moq_Url:
@@ -512,22 +497,22 @@ extern "C" void app_main(void)
 
     ui_layer.BeginEventTask();
 
-    std::string& connect_uri = moq_server_url.Load();
-    if (connect_uri.empty())
+    // std::string& connect_uri = moq_server_url.Load();
+    if (moq_server_url->empty())
     {
         // No moq url found, using default
         NET_LOG_WARN(
             "No moq server url found, using default moq://relay.us-west-2.quicr.ctgpoc.com:33435");
-        connect_uri = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
-        moq_server_url.Save();
+        moq_server_url = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
     }
 
-    NET_LOG_WARN("Using moq server url of %s len %u", connect_uri.c_str(), connect_uri.length());
+    NET_LOG_WARN("Using moq server url of %s len %u", moq_server_url->c_str(),
+                 moq_server_url->length());
 
     // setup moq transport
     quicr::ClientConfig config;
     config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = connect_uri;
+    config.connect_uri = moq_server_url.Load();
     config.transport_config.debug = true;
     config.transport_config.use_reset_wait_strategy = false;
     config.transport_config.time_queue_max_duration = 5000;
@@ -677,15 +662,14 @@ extern "C" void app_main(void)
             prev_status = status;
         }
 
-        if (config.connect_uri != moq_server_url.Load())
+        if (config.connect_uri != moq_server_url)
         {
             StopMoqSession(moq_session, readers, writers);
 
             NET_LOG_INFO("Load moq server uri");
-            config.connect_uri = moq_server_url.Load();
+            config.connect_uri = moq_server_url;
             NET_LOG_INFO("Make a new session with uri %s", config.connect_uri.c_str());
             moq_session.reset(new moq::Session(config, readers, writers));
-            gpio_set_level(NET_LED_B, 1);
         }
 
         // if (esp_timer_get_time_ms() > heartbeat)
@@ -698,10 +682,6 @@ extern "C" void app_main(void)
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
-}
-
-void SetupComponents(const DeviceSetupConfig& config)
-{
 }
 
 bool CreateUILinkPacketTask()
@@ -765,6 +745,8 @@ void StopMoqSession(std::shared_ptr<moq::Session> session,
             writer->Stop();
         }
     }
+
+    gpio_set_level(NET_LED_B, 1);
 }
 
 void RestartMoqSession(std::shared_ptr<moq::Session> session,

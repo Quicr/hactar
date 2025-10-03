@@ -91,7 +91,7 @@ void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::Byt
     {
         num_recv += num_print;
         num_print = 0;
-        SPDLOG_INFO("{} Received {}", Stringify(GetFullTrackName()), num_recv);
+        NET_LOG_INFO("%s Received %llu", Stringify(GetFullTrackName()).c_str(), num_recv);
     }
 
     if (!loopback && headers.group_id == device_id)
@@ -110,8 +110,8 @@ void TrackReader::StatusChanged(TrackReader::Status status)
     {
         if (auto track_alias = GetTrackAlias(); track_alias.has_value())
         {
-            SPDLOG_INFO("Reader:Track {0} with alias: {1} is ready to read",
-                        Stringify(GetFullTrackName()), track_alias.value());
+            NET_LOG_INFO("Reader:Track %s with alias: %u is ready to read",
+                         Stringify(GetFullTrackName()), track_alias.value());
         }
     }
     break;
