@@ -46,5 +46,12 @@ struct DeviceSetupConfig
 void SetupComponents(const DeviceSetupConfig& config);
 bool CreateUILinkPacketTask();
 bool CreateMgmtLinkPacketTask();
+void StopMoqSession(std::shared_ptr<moq::Session> session,
+                    std::vector<std::shared_ptr<moq::TrackReader>>& readers,
+                    std::vector<std::shared_ptr<moq::TrackWriter>>& writers);
+void RestartMoqSession(std::shared_ptr<moq::Session> session,
+                       quicr::ClientConfig& config,
+                       std::vector<std::shared_ptr<moq::TrackReader>>& readers,
+                       std::vector<std::shared_ptr<moq::TrackWriter>>& writers);
 std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial);
 std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& subscription);
