@@ -80,7 +80,7 @@ void TrackWriter::StatusChanged(TrackWriter::Status status)
     {
         if (auto track_alias = GetTrackAlias(); track_alias.has_value())
         {
-            SPDLOG_INFO("Publish track alias: {0} is ready to send", track_alias.value());
+            NET_LOG_INFO("Publish track alias: %u is ready to send", track_alias.value());
         }
         break;
     }
@@ -88,7 +88,7 @@ void TrackWriter::StatusChanged(TrackWriter::Status status)
     {
         if (auto track_alias = GetTrackAlias(); track_alias.has_value())
         {
-            SPDLOG_INFO("Publish track alias: {0} has no subscribers", track_alias.value());
+            NET_LOG_INFO("Publish track alias: %u has no subscribers", track_alias.value());
         }
         break;
     }
@@ -96,15 +96,15 @@ void TrackWriter::StatusChanged(TrackWriter::Status status)
     {
         if (auto track_alias = GetTrackAlias(); track_alias.has_value())
         {
-            SPDLOG_INFO("Publish track alias: {0} has updated subscription", track_alias.value());
+            NET_LOG_INFO("Publish track alias: %u has updated subscription", track_alias.value());
         }
         break;
     }
     default:
         if (auto track_alias = GetTrackAlias(); track_alias.has_value())
         {
-            SPDLOG_INFO("Publish track alias: {0} status {1}", track_alias.value(),
-                        static_cast<int>(status));
+            NET_LOG_INFO("Publish track alias: %u status %d", track_alias.value(),
+                         static_cast<int>(status));
         }
         break;
     }

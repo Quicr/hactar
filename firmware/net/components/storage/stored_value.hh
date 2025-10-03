@@ -29,6 +29,7 @@ public:
         loaded(false),
         stored()
     {
+        Load();
     }
 
     load_value_t Load()
@@ -135,6 +136,131 @@ public:
         }
 
         storage.ClearKey(ns, key);
+    }
+
+    const T* operator->() const
+    {
+        return &stored;
+    }
+
+    explicit operator bool() const
+    {
+        return loaded;
+    }
+
+    StoredValue& operator=(const T& new_value)
+    {
+        Save(new_value);
+        return *this;
+    }
+
+    StoredValue& operator=(T&& new_value)
+    {
+        stored = std::move(new_value);
+        Save();
+        return *this;
+    }
+
+    operator T&()
+    {
+        if (!loaded)
+        {
+            Load();
+        }
+        return stored;
+    }
+
+    operator const T&() const
+    {
+        return stored;
+    }
+
+    StoredValue& operator+=(const T& rhs)
+    {
+        stored += rhs;
+        Save();
+        return *this;
+    }
+
+    StoredValue& operator-=(const T& rhs)
+    {
+        stored -= rhs;
+        Save();
+        return *this;
+    }
+
+    StoredValue& operator*=(const T& rhs)
+    {
+        stored *= rhs;
+        Save();
+        return *this;
+    }
+
+    StoredValue& operator/=(const T& rhs)
+    {
+        stored /= rhs;
+        Save();
+        return *this;
+    }
+
+    bool operator==(const T& rhs) const
+    {
+        return stored == rhs;
+    }
+
+    bool operator!=(const T& rhs) const
+    {
+        return stored != rhs;
+    }
+
+    bool operator<(const T& rhs) const
+    {
+        return stored < rhs;
+    }
+
+    bool operator<=(const T& rhs) const
+    {
+        return stored <= rhs;
+    }
+
+    bool operator>(const T& rhs) const
+    {
+        return stored > rhs;
+    }
+
+    bool operator>=(const T& rhs) const
+    {
+        return stored >= rhs;
+    }
+
+    friend bool operator==(const T& lhs, const StoredValue& rhs)
+    {
+        return lhs == rhs.stored;
+    }
+
+    friend bool operator!=(const T& lhs, const StoredValue& rhs)
+    {
+        return lhs != rhs.stored;
+    }
+
+    friend bool operator<(const T& lhs, const StoredValue& rhs)
+    {
+        return lhs < rhs.stored;
+    }
+
+    friend bool operator<=(const T& lhs, const StoredValue& rhs)
+    {
+        return lhs <= rhs.stored;
+    }
+
+    friend bool operator>(const T& lhs, const StoredValue& rhs)
+    {
+        return lhs > rhs.stored;
+    }
+
+    friend bool operator>=(const T& lhs, const StoredValue& rhs)
+    {
+        return lhs >= rhs.stored;
     }
 
 private:

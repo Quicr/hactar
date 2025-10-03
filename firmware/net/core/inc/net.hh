@@ -37,13 +37,6 @@ extern SemaphoreHandle_t audio_req_smpr;
 
 using json = nlohmann::json;
 
-struct DeviceSetupConfig
-{
-    std::string moq_connect_uri{"moq://192.168.10.246:1234"};
-    std::string moq_endpoint_id{"hactar-12-suhas"};
-};
-
-void SetupComponents(const DeviceSetupConfig& config);
 bool CreateUILinkPacketTask();
 bool CreateMgmtLinkPacketTask();
 void StopMoqSession(std::shared_ptr<moq::Session> session,
