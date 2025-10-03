@@ -4,8 +4,7 @@ enum Configuration
 {
     Version,
     Clear_Storage,
-    Set_Ssid_Name,
-    Set_Ssid_Password,
+    Set_Ssid,
     Get_Ssid_Names,
     Get_Ssid_Passwords,
     Clear_Ssids,

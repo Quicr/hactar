@@ -74,15 +74,14 @@ class Monitor:
                 self.running = False
             else:
                 split = shlex.split(usr_input.strip())
-                if split[0].lower() in command_map or usr_input.lower() in command_map:
+                if usr_input.lower() in command_map:
+                    self.uart.write(command_map[usr_input.lower()])
+                elif split[0].lower() in command_map:
                     self.uart.write(command_map[split[0].lower()])
-                    continue
-
-                if split[0].lower() in bypass_map:
+                elif split[0].lower() in bypass_map:
                     self.ProcessBypassCommand(split)
-                    continue
-
-                print("Unknown command " + usr_input)
+                else:
+                    print("Unknown command " + usr_input)
 
     def ProcessBypassCommand(self, split):
         if len(split) < 2:
@@ -105,7 +104,15 @@ class Monitor:
         command_id = chip_commands[command]["id"]
 
         if len(split) - 2 < num_params:
-            print("[ERROR] Not enough parameters")
+            print(
+                f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}"
+            )
+            return
+
+        if len(split) - 2 > num_params:
+            print(
+                f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}"
+            )
             return
 
         Header_Bytes = 5  # 1 type, 4 length
@@ -113,25 +120,42 @@ class Monitor:
 
         to_whom_len = Header_Bytes
         command_len = 0
-        # transmit the TLV
 
-        collapsed_params = []
         for param in split[2:]:
+            # Get the total sizes before we can continue
             to_whom_len += len(param)
             command_len += len(param)
-            collapsed_params += param.encode("utf-8")
+
+            if num_params > 1:
+                # Less than two params, we don't need to add data lens for each param
+                to_whom_len += 4
+                command_len += 4
 
         data = []
+        # MGMT - T
         data += bypass_map[to_whom].to_bytes(1, byteorder="little")
 
+        # MGMT - L
         data += to_whom_len.to_bytes(4, byteorder="little")
 
+        # MGMT - V and also UI/NET - T
         data += command_id.to_bytes(1, byteorder="little")
 
+        # UI/NET - L
         data += command_len.to_bytes(4, byteorder="little")
 
-        data += collapsed_params
+        # UI/NET - V
+        for param in split[2:]:
+            # If there is > 1 params then we add the size of the param first
+            if num_params > 1:
+                data += len(param).to_bytes(4, byteorder="little")
+                pass
 
+            data += param.encode("utf-8")
+
+        print(data)
+
+        # transmit the TLV
         self.uart.write(bytes(data))
 
     def Close(self):
