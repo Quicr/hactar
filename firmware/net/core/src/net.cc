@@ -331,8 +331,8 @@ static void MgmtLinkPacketTask(void* args)
                 if (moq_url.length() == 0)
                 {
                     // MOQ url will be cleared.
-                    NET_LOG_INFO("Clearning moq url because length is zero");
-                    storage.ClearKey("moq", "server_url");
+                    NET_LOG_INFO("Cleaning moq url because length is zero");
+                    moq_server_url.Clear();
                     break;
                 }
                 moq_server_url.Save(moq_url);
@@ -517,10 +517,12 @@ extern "C" void app_main(void)
     {
         // No moq url found, using default
         NET_LOG_WARN(
-            "No moq server_url found, using default moq://relay.us-west-2.quicr.ctgpoc.com:33435");
+            "No moq server url found, using default moq://relay.us-west-2.quicr.ctgpoc.com:33435");
         connect_uri = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
         moq_server_url.Save();
     }
+
+    NET_LOG_WARN("Using moq server url of %s len %u", connect_uri.c_str(), connect_uri.length());
 
     // setup moq transport
     quicr::ClientConfig config;
@@ -536,8 +538,8 @@ extern "C" void app_main(void)
     // Use mac addr as id for my session
     uint64_t mac = 0;
     esp_efuse_mac_get_default((uint8_t*)&mac);
-    mac = mac >> 2;
     mac = mac << 2;
+    mac = mac >> 2;
     device_id = mac;
 
     NET_LOG_ERROR("mac addr %llu", mac);
@@ -596,27 +598,9 @@ extern "C" void app_main(void)
                     || status == moq::Session::Status::kPendingServerSetup
                     || status == moq::Session::Status::kReady)
                 {
-                    moq_session->Disconnect();
-
-                    for (const auto& reader : readers)
-                    {
-                        if (reader)
-                        {
-                            reader->Stop();
-                        }
-                    }
-
-                    for (const auto& writer : writers)
-                    {
-                        if (writer)
-                        {
-                            writer->Stop();
-                        }
-                    }
-
-                    moq_session.reset(new moq::Session(config, readers, writers));
-                    status = moq_session->GetStatus();
+                    RestartMoqSession(moq_session, config, readers, writers);
                 }
+                break;
             }
             case Wifi::State::Initialized:
             {
@@ -635,7 +619,6 @@ extern "C" void app_main(void)
             }
         }
 
-        // TODO move into a different task?
         if (prev_status != status && wifi.IsConnected())
         {
             NET_LOG_INFO("New moq state %d", (int)status);
@@ -668,27 +651,12 @@ extern "C" void app_main(void)
             case moq::Session::Status::kNotConnected:
                 [[fallthrough]];
             case moq::Session::Status::kFailedToConnect:
-                for (const auto& reader : readers)
-                {
-                    if (reader)
-                    {
-                        reader->Stop();
-                    }
-                }
-
-                for (const auto& writer : writers)
-                {
-                    if (writer)
-                    {
-                        writer->Stop();
-                    }
-                }
-
-                moq_session.reset(new moq::Session(config, readers, writers));
-                [[fallthrough]];
+            {
+                RestartMoqSession(moq_session, config, readers, writers);
+                break;
+            }
             case moq::Session::Status::kNotReady:
             {
-
                 NET_LOG_INFO("MOQ Transport Calling Connect");
 
                 if (moq_session->Connect() != quicr::Transport::Status::kConnecting)
@@ -711,38 +679,12 @@ extern "C" void app_main(void)
 
         if (config.connect_uri != moq_server_url.Load())
         {
-            // TODO cleanup
-            NET_LOG_INFO("Config was updated");
-
-            for (const auto& reader : readers)
-            {
-                if (reader)
-                {
-                    reader->Stop();
-                }
-            }
-
-            for (const auto& writer : writers)
-            {
-                if (writer)
-                {
-                    writer->Stop();
-                }
-            }
-
-            moq_session->Disconnect();
+            StopMoqSession(moq_session, readers, writers);
 
             NET_LOG_INFO("Load moq server uri");
             config.connect_uri = moq_server_url.Load();
-            NET_LOG_INFO("Make a new session %s", config.connect_uri.c_str());
+            NET_LOG_INFO("Make a new session with uri %s", config.connect_uri.c_str());
             moq_session.reset(new moq::Session(config, readers, writers));
-
-            NET_LOG_INFO("MOQ Transport Calling Connect");
-
-            if (moq_session->Connect() != quicr::Transport::Status::kConnecting)
-            {
-                NET_LOG_ERROR("MOQ Transport Session Connection Failure");
-            }
             gpio_set_level(NET_LED_B, 1);
         }
 
@@ -800,4 +742,36 @@ bool CreateMgmtLinkPacketTask()
     NET_LOG_INFO("Created mgmt link packet handler Internal RAM left %ld",
                  heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     return true;
+}
+
+void StopMoqSession(std::shared_ptr<moq::Session> session,
+                    std::vector<std::shared_ptr<moq::TrackReader>>& readers,
+                    std::vector<std::shared_ptr<moq::TrackWriter>>& writers)
+{
+    moq_session->Disconnect();
+
+    for (const auto& reader : readers)
+    {
+        if (reader)
+        {
+            reader->Stop();
+        }
+    }
+
+    for (const auto& writer : writers)
+    {
+        if (writer)
+        {
+            writer->Stop();
+        }
+    }
+}
+
+void RestartMoqSession(std::shared_ptr<moq::Session> session,
+                       quicr::ClientConfig& config,
+                       std::vector<std::shared_ptr<moq::TrackReader>>& readers,
+                       std::vector<std::shared_ptr<moq::TrackWriter>>& writers)
+{
+    StopMoqSession(session, readers, writers);
+    moq_session.reset(new moq::Session(config, readers, writers));
 }

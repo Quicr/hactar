@@ -127,6 +127,16 @@ public:
         return true;
     }
 
+    void Clear()
+    {
+        if constexpr (ContiguousRange<T>)
+        {
+            storage.ClearKey(ns, key + "_size");
+        }
+
+        storage.ClearKey(ns, key);
+    }
+
 private:
     Storage& storage;
     const std::string ns;
