@@ -45,14 +45,9 @@ public:
 
     const std::vector<std::string>& GetNetworksInRange() const;
     void Connect(const std::string& ssid, const std::string& pwd);
-    void SaveSSID(const std::string ssid, const std::string pwd);
     void ClearSavedSSIDs();
-    void SaveSSIDName(const std::string& ssid);
-    void SaveSSIDPwd(const std::string& pwd);
-    std::string LoadSSIDName(const uint32_t ssid_num);
-    std::string LoadSSIDNames();
-    std::string LoadSSIDPassword(const uint32_t ssid_num);
-    std::string LoadSSIDPasswords();
+    std::string GetSSIDNames();
+    std::string GetSSIDPasswords();
     esp_err_t Disconnect();
 
     State GetState() const;
@@ -108,11 +103,6 @@ private:
 
     bool is_initialized;
 
-    size_t saved_ssids;
-
     TaskHandle_t connect_task;
     std::mutex state_mux;
-
-    std::string tmp_ssid;
-    std::string tmp_pwd;
 };

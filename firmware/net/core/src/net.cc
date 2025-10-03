@@ -274,32 +274,45 @@ static void MgmtLinkPacketTask(void* args)
                 NET_LOG_WARN("CLEAR STORAGE NOT IMPLEMENTED");
                 break;
             }
-            case Configuration::Set_Ssid_Name:
+            case Configuration::Set_Ssid:
             {
-                // Parse ssid from packet.
-                std::string ssid((char*)packet->payload, packet->length);
-                NET_LOG_INFO("Got ssid configuration of %s", ssid.c_str());
-                wifi.SaveSSIDName(ssid);
-                break;
-            }
-            case Configuration::Set_Ssid_Password:
-            {
-                std::string pwd((char*)packet->payload, packet->length);
-                NET_LOG_INFO("Got pwd configuration of %s", pwd.c_str());
-                wifi.SaveSSIDPwd(pwd);
+                // Parse ssid from packet, first four bytes of payload will be
+                // the ssid name length and so on
+                uint32_t ssid_name_len = 0;
+                uint32_t ssid_password_len = 0;
+
+                uint32_t offset = 0;
+
+                packet->Get(&ssid_name_len, sizeof(ssid_name_len), offset);
+                offset += sizeof(ssid_name_len);
+
+                std::string ssid_name((char*)packet->payload + offset, ssid_name_len);
+                offset += ssid_name_len;
+
+                packet->Get(&ssid_password_len, sizeof(ssid_password_len), offset);
+                offset += sizeof(ssid_password_len);
+
+                std::string ssid_password((char*)packet->payload + offset, ssid_password_len);
+                offset += ssid_password_len;
+
+                NET_LOG_INFO("Got ssid name len %lu %s", ssid_name_len, ssid_name.c_str());
+                NET_LOG_INFO("Got ssid password len %lu %s", ssid_password_len,
+                             ssid_password.c_str());
+
+                wifi.Connect(ssid_name, ssid_password);
                 break;
             }
             case Configuration::Get_Ssid_Names:
             {
                 std::string ssids = "Saved SSIDS Names: ";
-                ssids += wifi.LoadSSIDNames();
+                ssids += wifi.GetSSIDNames();
                 mgmt_layer.Write((uint8_t*)ssids.data(), ssids.length());
                 break;
             }
             case Configuration::Get_Ssid_Passwords:
             {
                 std::string passwords = "Saved SSID Passwords: ";
-                passwords += wifi.LoadSSIDPasswords();
+                passwords += wifi.GetSSIDPasswords();
                 mgmt_layer.Write((uint8_t*)passwords.data(), passwords.length());
                 break;
             }

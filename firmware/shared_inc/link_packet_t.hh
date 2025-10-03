@@ -33,6 +33,21 @@ struct link_packet_t
     };
     PACKET_READY_TYPE is_ready = false;
 
+    // DO NOTE- This function is not intended to be safe
+    void Get(void* data, const uint32_t num_bytes, const uint32_t payload_offset)
+    {
+        if (payload_offset + num_bytes > length)
+        {
+            return;
+        }
+
+        uint8_t* storage = (uint8_t*)data;
+        for (uint32_t i = 0; i < num_bytes; ++i)
+        {
+            storage[i] |= payload[payload_offset + i];
+        }
+    }
+
     void Dump()
     {
         Logger::Log(Logger::Level::Info, "Dumping packet");

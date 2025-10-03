@@ -21,11 +21,8 @@ Wifi::Wifi(Storage& storage, const int64_t scan_timeout_ms) :
     wifi_cfg({}),
     state(State::NotInitialized),
     is_initialized(false),
-    saved_ssids(0),
     connect_task(),
-    state_mux(),
-    tmp_ssid(),
-    tmp_pwd()
+    state_mux()
 {
 }
 
@@ -102,40 +99,6 @@ void Wifi::Connect(const std::string& ssid, const std::string& pwd)
     stored_creds.Save();
 }
 
-void Wifi::SaveSSID(const std::string ssid, const std::string pwd)
-{
-    esp_err_t err = storage.Save("wifi", "ssid_name" + std::to_string(saved_ssids + 1), ssid.data(),
-                                 ssid.length());
-    NET_LOG_INFO("Saved ssid");
-    if (err != ESP_OK)
-    {
-        NET_LOG_ERROR("Failed to save ssid %s", ssid.c_str());
-        return;
-    }
-
-    err = storage.Save("wifi", "ssid_pwd" + std::to_string(saved_ssids + 1), pwd.data(),
-                       pwd.length());
-
-    if (err != ESP_OK)
-    {
-        NET_LOG_ERROR("Failed to save ssid pwd %s", pwd.c_str());
-        return;
-    }
-
-    saved_ssids += 1;
-
-    // Save number of ssids
-    err = storage.Save("wifi", "saved_ssids", &saved_ssids, sizeof(saved_ssids));
-
-    if (err != ESP_OK)
-    {
-        NET_LOG_ERROR("Failed to save number of saved ssids  %ld", (long int)saved_ssids);
-        return;
-    }
-
-    Connect(ssid, pwd);
-}
-
 void Wifi::ClearSavedSSIDs()
 {
     NET_LOG_INFO("Clearing ssids");
@@ -143,89 +106,27 @@ void Wifi::ClearSavedSSIDs()
     NET_LOG_INFO("Clearing complete");
 }
 
-void Wifi::SaveSSIDName(const std::string& ssid)
-{
-    tmp_ssid = ssid;
-
-    if (tmp_pwd.empty())
-    {
-        return;
-    }
-
-    SaveSSID(tmp_ssid, tmp_pwd);
-
-    tmp_ssid = "";
-    tmp_pwd = "";
-}
-
-void Wifi::SaveSSIDPwd(const std::string& pwd)
-{
-    tmp_pwd = pwd;
-
-    if (tmp_ssid.empty())
-    {
-        return;
-    }
-
-    SaveSSID(tmp_ssid, tmp_pwd);
-
-    tmp_ssid = "";
-    tmp_pwd = "";
-}
-
-std::string Wifi::LoadSSIDName(const uint32_t ssid_num)
-{
-    ssize_t len = 0;
-    char buff[32];
-
-    // Load all ssids
-    len = storage.Load("wifi", "ssid_name" + std::to_string(ssid_num), buff, sizeof(buff));
-    std::string ssid(buff, len);
-
-    // NET_LOG_WARN("loading ssid name %d - %s", ssid_num, ssid.c_str());
-    return ssid;
-}
-
-std::string Wifi::LoadSSIDNames()
+std::string Wifi::GetSSIDNames()
 {
     std::string str;
 
-    for (size_t i = 0; i < saved_ssids; ++i)
+    for (auto& cred : stored_creds.Load())
     {
-        str += LoadSSIDName(i + 1);
-        if (i != saved_ssids - 1)
-        {
-            str += ", ";
-        }
+        str += std::string(cred.name, cred.name_len);
+        str += ", ";
     }
 
     return str;
 }
 
-std::string Wifi::LoadSSIDPassword(const uint32_t ssid_num)
-{
-    ssize_t len = 0;
-    char buff[32];
-
-    // Load all ssids
-    len = storage.Load("wifi", "ssid_pwd" + std::to_string(ssid_num), buff, sizeof(buff));
-    std::string password(buff, len);
-
-    // NET_LOG_WARN("loading password name %d - %s", ssid_num, password.c_str());
-    return password;
-}
-
-std::string Wifi::LoadSSIDPasswords()
+std::string Wifi::GetSSIDPasswords()
 {
     std::string str;
 
-    for (size_t i = 0; i < saved_ssids; ++i)
+    for (auto& cred : stored_creds.Load())
     {
-        str += LoadSSIDPassword(i + 1);
-        if (i != saved_ssids - 1)
-        {
-            str += ", ";
-        }
+        str += std::string(cred.pwd, cred.pwd_len);
+        str += ", ";
     }
 
     return str;
