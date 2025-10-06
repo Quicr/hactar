@@ -57,9 +57,9 @@ ssize_t Storage::Load(const std::string ns, const std::string key, void* buff, c
 esp_err_t
 Storage::Save(const std::string ns, const std::string key, const void* buff, const size_t len)
 {
-    esp_err_t err = ESP_FAIL;
     try
     {
+        esp_err_t err = ESP_FAIL;
         err = Open(ns);
         if (ESP_OK != err)
         {
@@ -76,12 +76,13 @@ Storage::Save(const std::string ns, const std::string key, const void* buff, con
         }
 
         Close();
+        return err;
     }
     catch (std::exception& ex)
     {
         NET_LOG_ERROR("Exception has occured %s", ex.what());
+        return ESP_FAIL;
     }
-    return err;
 }
 
 esp_err_t Storage::Clear(const std::string ns)
@@ -138,20 +139,22 @@ std::string Storage::LoadStr(const std::string ns, const std::string key)
     size_t required_size = 0;
     std::string val = "";
 
-    // NET_LOG_INFO("Reading string from NVS...");
     err = nvs_get_str(handle, key.c_str(), NULL, &required_size);
-    if (err == ESP_OK)
+    if (err != ESP_OK)
     {
-        val.resize(required_size);
-        err = nvs_get_str(handle, key.c_str(), val.data(), &required_size);
-        if (err != ESP_OK)
-        {
-            val = "";
-        }
-        else
-        {
-            NET_LOG_WARN("Read string: %s", val.c_str());
-        }
+        Close();
+        return val;
+    }
+
+    val.resize(required_size);
+    err = nvs_get_str(handle, key.c_str(), val.data(), &required_size);
+    if (err != ESP_OK)
+    {
+        val = "";
+    }
+    else
+    {
+        NET_LOG_WARN("Read string: %s", val.c_str());
     }
 
     Close();
@@ -169,7 +172,6 @@ esp_err_t Storage::SaveStr(const std::string ns, const std::string key, std::str
     }
 
     // Store and read a string
-    // NET_LOG_INFO("Writing string to NVS...");
     err = nvs_set_str(handle, key.c_str(), str.c_str());
     if (ESP_OK != err)
     {
@@ -193,9 +195,10 @@ uint32_t Storage::Loadu32(const std::string ns, const std::string key)
     uint32_t val = 0;
 
     err = nvs_get_u32(handle, key.c_str(), &val);
-    if (err == ESP_OK)
+
+    if (err != ESP_OK)
     {
-        NET_LOG_WARN("Read u32 %lld", (uint64_t)val);
+        val = 0;
     }
 
     Close();
@@ -211,8 +214,6 @@ esp_err_t Storage::Saveu32(const std::string ns, const std::string key, const ui
         NET_LOG_ERROR("Failed to open fail for ns %s key %s", ns.c_str(), key.c_str());
         return err;
     }
-
-    // NET_LOG_INFO("Writing %lld", (uint64_t)val);
 
     err = nvs_set_u32(handle, key.c_str(), val);
     if (err != ESP_OK)
