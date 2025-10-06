@@ -15,7 +15,7 @@ Storage::~Storage()
     nvs_flash_deinit();
 }
 
-ssize_t Storage::Load(const std::string ns, const std::string key, void* buff, const size_t len)
+ssize_t Storage::Load(const std::string& ns, const std::string& key, void* buff, const size_t len)
 {
     // TODO rethink error codes?
     esp_err_t err = Open(ns);
@@ -55,7 +55,7 @@ ssize_t Storage::Load(const std::string ns, const std::string key, void* buff, c
 }
 
 esp_err_t
-Storage::Save(const std::string ns, const std::string key, const void* buff, const size_t len)
+Storage::Save(const std::string& ns, const std::string& key, const void* buff, const size_t len)
 {
     try
     {
@@ -85,13 +85,17 @@ Storage::Save(const std::string ns, const std::string key, const void* buff, con
     }
 }
 
-esp_err_t Storage::Clear(const std::string ns)
+esp_err_t Storage::Clear(const std::string& ns)
 {
-    if (!opened)
+    esp_err_t err = Open(ns);
+    if (ESP_OK != err)
     {
-        Close();
+        NET_LOG_ERROR("Failed to open fail for ns %s key %s", ns.c_str());
+        return err;
     }
-    esp_err_t err = nvs_flash_erase();
+
+    err = nvs_erase_all(handle);
+
     if (err != ESP_OK)
     {
         NET_LOG_ERROR("ERROR, failed to erase nvs flash");
@@ -103,7 +107,7 @@ esp_err_t Storage::Clear(const std::string ns)
     return err;
 }
 
-esp_err_t Storage::ClearKey(const std::string ns, const std::string key)
+esp_err_t Storage::ClearKey(const std::string& ns, const std::string& key)
 {
     esp_err_t err = Open(ns);
     if (ESP_OK != err)
@@ -127,7 +131,7 @@ esp_err_t Storage::ClearKey(const std::string ns, const std::string key)
     return err;
 }
 
-std::string Storage::LoadStr(const std::string ns, const std::string key)
+std::string Storage::LoadStr(const std::string& ns, const std::string& key)
 {
     esp_err_t err = Open(ns);
     if (ESP_OK != err)
@@ -162,7 +166,7 @@ std::string Storage::LoadStr(const std::string ns, const std::string key)
     return val;
 }
 
-esp_err_t Storage::SaveStr(const std::string ns, const std::string key, std::string str)
+esp_err_t Storage::SaveStr(const std::string& ns, const std::string& key, std::string str)
 {
     esp_err_t err = Open(ns);
     if (ESP_OK != err)
@@ -183,7 +187,7 @@ esp_err_t Storage::SaveStr(const std::string ns, const std::string key, std::str
     return err;
 }
 
-uint32_t Storage::Loadu32(const std::string ns, const std::string key)
+uint32_t Storage::Loadu32(const std::string& ns, const std::string& key)
 {
     esp_err_t err = Open(ns);
     if (ESP_OK != err)
@@ -206,7 +210,7 @@ uint32_t Storage::Loadu32(const std::string ns, const std::string key)
     return val;
 }
 
-esp_err_t Storage::Saveu32(const std::string ns, const std::string key, const uint32_t val)
+esp_err_t Storage::Saveu32(const std::string& ns, const std::string& key, const uint32_t val)
 {
     esp_err_t err = Open(ns);
     if (ESP_OK != err)

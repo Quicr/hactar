@@ -304,16 +304,31 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Get_Ssid_Names:
             {
-                std::string ssids = "Saved SSIDS Names: ";
-                ssids += wifi.GetSSIDNames();
-                mgmt_layer.Write((uint8_t*)ssids.data(), ssids.length());
+                std::string str = "Saved SSIDS Names:";
+                const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
+                for (size_t i = 0; i < creds.size(); ++i)
+                {
+                    str.append("\n");
+                    str.append(creds[i].name, creds[i].name_len);
+                }
+
+                mgmt_layer.Write((uint8_t*)str.data(), str.length());
                 break;
             }
             case Configuration::Get_Ssid_Passwords:
             {
-                std::string passwords = "Saved SSID Passwords: ";
-                passwords += wifi.GetSSIDPasswords();
-                mgmt_layer.Write((uint8_t*)passwords.data(), passwords.length());
+                std::string str = "Saved SSID Passwords:";
+                const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
+                for (size_t i = 0; i < creds.size(); ++i)
+                {
+                    if (i > 0)
+                    {
+                        str.append("\n");
+                    }
+
+                    str.append(creds[i].pwd, creds[i].pwd_len);
+                }
+                mgmt_layer.Write((uint8_t*)str.data(), str.length());
                 break;
             }
             case Configuration::Clear_Ssids:
@@ -741,9 +756,9 @@ void StopMoqSession(std::shared_ptr<moq::Session>& session,
                     std::vector<std::shared_ptr<moq::TrackReader>>& readers,
                     std::vector<std::shared_ptr<moq::TrackWriter>>& writers)
 {
-    moq_session->Disconnect();
-
     moq_session->StopTracks();
+
+    moq_session->Disconnect();
 
     for (const auto& reader : readers)
     {
