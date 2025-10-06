@@ -106,30 +106,33 @@ void Wifi::ClearSavedSSIDs()
     NET_LOG_INFO("Clearing complete");
 }
 
-std::string Wifi::GetSSIDNames()
+std::vector<std::string> Wifi::GetSSIDNames()
 {
-    std::string str;
+    std::vector<std::string> vec;
 
     for (auto& cred : stored_creds.Load())
     {
-        str += std::string(cred.name, cred.name_len);
-        str += ", ";
+        vec.push_back(std::string(cred.name, cred.name_len));
     }
 
-    return str;
+    return vec;
 }
 
-std::string Wifi::GetSSIDPasswords()
+std::vector<std::string> Wifi::GetSSIDPasswords()
 {
-    std::string str;
+    std::vector<std::string> vec;
 
     for (auto& cred : stored_creds.Load())
     {
-        str += std::string(cred.pwd, cred.pwd_len);
-        str += ", ";
+        vec.push_back(std::string(cred.pwd, cred.pwd_len));
     }
 
-    return str;
+    return vec;
+}
+
+const std::vector<Wifi::ap_cred_t>& Wifi::GetStoredCreds()
+{
+    return stored_creds.Load();
 }
 
 esp_err_t Wifi::Deinitialize()
@@ -326,11 +329,6 @@ bool Wifi::IsConnected() const
 bool Wifi::IsInitialized() const
 {
     return is_initialized;
-}
-
-const std::vector<Wifi::ap_cred_t>& Wifi::GetCredentials()
-{
-    return stored_creds.Load();
 }
 
 /** Private functions **/

@@ -9,15 +9,16 @@ public:
     Storage();
     ~Storage();
 
-    ssize_t Load(const std::string ns, const std::string key, void* buff, const size_t len);
-    esp_err_t Save(const std::string ns, const std::string key, const void* buff, const size_t len);
-    esp_err_t Clear(const std::string ns);
-    esp_err_t ClearKey(const std::string ns, const std::string key);
+    ssize_t Load(const std::string& ns, const std::string& key, void* buff, const size_t len);
+    esp_err_t
+    Save(const std::string& ns, const std::string& key, const void* buff, const size_t len);
+    esp_err_t Clear(const std::string& ns);
+    esp_err_t ClearKey(const std::string& ns, const std::string& key);
 
-    std::string LoadStr(const std::string ns, const std::string key);
-    esp_err_t SaveStr(const std::string ns, const std::string key, std::string str);
-    uint32_t Loadu32(const std::string ns, const std::string key);
-    esp_err_t Saveu32(const std::string ns, const std::string key, const uint32_t val);
+    std::string LoadStr(const std::string& ns, const std::string& key);
+    esp_err_t SaveStr(const std::string& ns, const std::string& key, std::string str);
+    uint32_t Loadu32(const std::string& ns, const std::string& key);
+    esp_err_t Saveu32(const std::string& ns, const std::string& key, const uint32_t val);
 
 private:
     esp_err_t Initialize();

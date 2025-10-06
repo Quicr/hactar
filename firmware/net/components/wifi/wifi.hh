@@ -20,6 +20,17 @@ class Wifi
 public:
     static constexpr size_t Max_SSID_Name_Len = 32;
     static constexpr size_t Max_SSID_Password_Len = 64;
+
+    struct ap_cred_t
+    {
+        // ap cred names and pwd are max 32 bytes, but need a extra char for null characters
+        char name[Max_SSID_Name_Len];
+        uint32_t name_len;
+        char pwd[Max_SSID_Password_Len];
+        uint32_t pwd_len;
+        uint32_t attempts;
+    };
+
     enum class State
     {
         NotInitialized = 0,
@@ -46,25 +57,14 @@ public:
     const std::vector<std::string>& GetNetworksInRange() const;
     void Connect(const std::string& ssid, const std::string& pwd);
     void ClearSavedSSIDs();
-    std::string GetSSIDNames();
-    std::string GetSSIDPasswords();
+    std::vector<std::string> GetSSIDNames();
+    std::vector<std::string> GetSSIDPasswords();
+    const std::vector<ap_cred_t>& GetStoredCreds();
     esp_err_t Disconnect();
 
     State GetState() const;
     bool IsConnected() const;
     bool IsInitialized() const;
-
-    struct ap_cred_t
-    {
-        // ap cred names and pwd are max 32 bytes, but need a extra char for null characters
-        char name[Max_SSID_Name_Len];
-        uint32_t name_len;
-        char pwd[Max_SSID_Password_Len];
-        uint32_t pwd_len;
-        uint32_t attempts;
-    };
-
-    const std::vector<ap_cred_t>& GetCredentials();
 
 private:
     esp_err_t Initialize();
