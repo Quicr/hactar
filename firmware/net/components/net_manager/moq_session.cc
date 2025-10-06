@@ -25,6 +25,25 @@ Session::Session(const quicr::ClientConfig& cfg,
     StartTasks();
 }
 
+void Session::StopTracks() noexcept
+{
+    for (const auto& reader : readers)
+    {
+        if (reader)
+        {
+            UnsubscribeTrack(reader);
+        }
+    }
+
+    for (const auto& writer : writers)
+    {
+        if (writer)
+        {
+            UnpublishTrack(writer);
+        }
+    }
+}
+
 void Session::StartTasks() noexcept
 {
     task_helpers::Start_PSRAM_Task(PublishTrackTask, this, "Publish Tracks task",
