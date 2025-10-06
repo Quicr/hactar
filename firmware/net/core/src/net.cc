@@ -737,11 +737,13 @@ bool CreateMgmtLinkPacketTask()
     return true;
 }
 
-void StopMoqSession(std::shared_ptr<moq::Session> session,
+void StopMoqSession(std::shared_ptr<moq::Session>& session,
                     std::vector<std::shared_ptr<moq::TrackReader>>& readers,
                     std::vector<std::shared_ptr<moq::TrackWriter>>& writers)
 {
     moq_session->Disconnect();
+
+    moq_session->StopTracks();
 
     for (const auto& reader : readers)
     {
@@ -762,7 +764,7 @@ void StopMoqSession(std::shared_ptr<moq::Session> session,
     gpio_set_level(NET_LED_B, 1);
 }
 
-void RestartMoqSession(std::shared_ptr<moq::Session> session,
+void RestartMoqSession(std::shared_ptr<moq::Session>& session,
                        quicr::ClientConfig& config,
                        std::vector<std::shared_ptr<moq::TrackReader>>& readers,
                        std::vector<std::shared_ptr<moq::TrackWriter>>& writers)

@@ -30,6 +30,8 @@ public:
 
     virtual ~Session() = default;
 
+    void StopTracks() noexcept;
+
     void StatusChanged(Status status) override;
 
     // public API - send subscribe, setup queue for incoming objects
