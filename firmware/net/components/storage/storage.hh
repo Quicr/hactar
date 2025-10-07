@@ -16,7 +16,7 @@ public:
     esp_err_t ClearKey(const std::string& ns, const std::string& key);
 
     std::string LoadStr(const std::string& ns, const std::string& key);
-    esp_err_t SaveStr(const std::string& ns, const std::string& key, std::string str);
+    esp_err_t SaveStr(const std::string& ns, const std::string& key, const std::string& str);
     uint32_t Loadu32(const std::string& ns, const std::string& key);
     esp_err_t Saveu32(const std::string& ns, const std::string& key, const uint32_t val);
 

@@ -166,7 +166,7 @@ std::string Storage::LoadStr(const std::string& ns, const std::string& key)
     return val;
 }
 
-esp_err_t Storage::SaveStr(const std::string& ns, const std::string& key, std::string str)
+esp_err_t Storage::SaveStr(const std::string& ns, const std::string& key, const std::string& str)
 {
     esp_err_t err = Open(ns);
     if (ESP_OK != err)
