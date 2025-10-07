@@ -321,11 +321,7 @@ static void MgmtLinkPacketTask(void* args)
                 const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
                 for (size_t i = 0; i < creds.size(); ++i)
                 {
-                    if (i > 0)
-                    {
-                        str.append("\n");
-                    }
-
+                    str.append("\n");
                     str.append(creds[i].pwd, creds[i].pwd_len);
                 }
                 mgmt_layer.Write((uint8_t*)str.data(), str.length());
