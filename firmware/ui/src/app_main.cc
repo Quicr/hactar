@@ -174,7 +174,8 @@ static Serial net_serial(&huart2,
                          *net_ui_serial_tx_buff,
                          net_ui_serial_tx_buff_sz,
                          *net_ui_serial_rx_buff,
-                         net_ui_serial_rx_buff_sz);
+                         net_ui_serial_rx_buff_sz,
+                         false);
 static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_num_rx_packets,
                           *mgmt_ui_serial_tx_buff,

@@ -83,7 +83,7 @@ Serial ui_layer(NET_UI_UART_PORT,
                 4096,
                 20,
                 true,
-                true);
+                false);
 
 TaskHandle_t net_mgmt_serial_read_handle;
 StaticTask_t net_mgmt_serial_read_buffer;
