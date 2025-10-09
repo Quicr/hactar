@@ -5,12 +5,14 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "flasher"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "monitor"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "configurator"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "utility"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "vendor"))
 
 
 from flasher import main as flasher_main
 from monitor import main as monitor_main
+from configurator import main as configurator_main
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="hactar-cli", description="Firmware flashing and serial monitoring tool")
@@ -70,12 +72,26 @@ if __name__ == "__main__":
         required=False,
     )
 
+    # Configurator command
+    configurator_parser = subparsers.add_parser("configurator", help="Open serial monitor")
+    configurator_parser.add_argument("-p", "--port", help="Serial port", required=False, default="")
+    configurator_parser.add_argument(
+        "-b",
+        "--baud",
+        help="Baudrate to communicate at",
+        default=115200,
+        type=int,
+        required=False,
+    )
+
     args = parser.parse_args()
 
     if args.command == "flash":
         sys.exit(flasher_main(args))
     elif args.command == "monitor":
         sys.exit(monitor_main(args))
+    elif args.command == "configurator":
+        sys.exit(configurator_main(args))
     else:
         parser.print_help()
         sys.exit(1)

@@ -17,8 +17,11 @@
 #include "net_mgmt_link.h"
 #include "nvs_flash.h"
 #include "peripherals.hh"
+#include "picoquic_utils.h"
+#include "reply.h"
 #include "sdkconfig.h"
 #include "serial.hh"
+#include "spdlog/logger.h"
 #include "storage.hh"
 #include "stored_value.hh"
 #include "ui_net_link.hh"
@@ -127,6 +130,8 @@ StoredValue<std::string> moq_server_url(storage, "moq", "server_url");
 uint64_t curr_audio_isr_time = esp_timer_get_time();
 uint64_t last_audio_isr_time = esp_timer_get_time();
 
+bool logs_disabled = false;
+
 // TODO remove me some day
 #ifdef __has_include
 #if __has_include("wifi_creds.hh")
@@ -137,6 +142,44 @@ uint64_t last_audio_isr_time = esp_timer_get_time();
 #else
 #include "wifi_creds.hh"
 #endif
+
+static void ReplyAck()
+{
+    mgmt_layer.Write((const uint8_t*)&Ack, 1);
+}
+
+static void ReplyNack()
+{
+    mgmt_layer.Write((const uint8_t*)&Nack, 1);
+}
+
+static void DisableLogging()
+{
+    esp_log_level_set("*", ESP_LOG_NONE);
+    auto logger = spdlog::get("MTC");
+    if (logger)
+    {
+        logger->set_level(spdlog::level::level_enum::off);
+    }
+
+    debug_printf_suspend();
+    logs_disabled = true;
+}
+
+static void EnableLogging()
+{
+    // Renable
+    esp_log_level_set("*", ESP_LOG_MAX);
+
+    auto logger = spdlog::get("MTC");
+    if (logger)
+    {
+        logger->set_level(spdlog::level::level_enum::trace);
+    }
+
+    debug_printf_resume();
+    logs_disabled = false;
+}
 
 static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
@@ -271,7 +314,12 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Clear_Storage:
             {
-                NET_LOG_WARN("CLEAR STORAGE NOT IMPLEMENTED");
+                if (ESP_OK != storage.Clear())
+                {
+                    ReplyNack();
+                }
+
+                ReplyAck();
                 break;
             }
             case Configuration::Set_Ssid:
@@ -300,16 +348,18 @@ static void MgmtLinkPacketTask(void* args)
                              ssid_password.c_str());
 
                 wifi.Connect(ssid_name, ssid_password);
+
+                ReplyAck();
                 break;
             }
             case Configuration::Get_Ssid_Names:
             {
-                std::string str = "Saved SSIDS Names:";
+                std::string str = "";
                 const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
                 for (size_t i = 0; i < creds.size(); ++i)
                 {
-                    str.append("\n");
                     str.append(creds[i].name, creds[i].name_len);
+                    str.append("\n");
                 }
 
                 mgmt_layer.Write((uint8_t*)str.data(), str.length());
@@ -317,12 +367,12 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Get_Ssid_Passwords:
             {
-                std::string str = "Saved SSID Passwords:";
+                std::string str = "";
                 const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
                 for (size_t i = 0; i < creds.size(); ++i)
                 {
-                    str.append("\n");
                     str.append(creds[i].pwd, creds[i].pwd_len);
+                    str.append("\n");
                 }
                 mgmt_layer.Write((uint8_t*)str.data(), str.length());
                 break;
@@ -330,6 +380,7 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Clear_Ssids:
             {
                 wifi.ClearSavedSSIDs();
+                ReplyAck();
                 break;
             }
             case Configuration::Set_Moq_Url:
@@ -345,13 +396,40 @@ static void MgmtLinkPacketTask(void* args)
                     break;
                 }
                 moq_server_url = moq_url;
+                ReplyAck();
                 break;
             }
             case Configuration::Get_Moq_Url:
             {
-                std::string moq_url = "Saved moq url: ";
-                moq_url += moq_server_url.Load();
+                std::string moq_url = moq_server_url.Load();
                 mgmt_layer.Write((uint8_t*)moq_url.data(), moq_url.length());
+                break;
+            }
+            case Configuration::Toggle_Logs:
+            {
+                if (logs_disabled)
+                {
+                    EnableLogging();
+                }
+                else
+                {
+                    DisableLogging();
+                }
+
+                // Reply with an ack before the logs begin again.
+                ReplyAck();
+                break;
+            }
+            case Configuration::Disable_Logs:
+            {
+                ReplyAck();
+                DisableLogging();
+                break;
+            }
+            case Configuration::Enable_Logs:
+            {
+                ReplyAck();
+                EnableLogging();
                 break;
             }
             default:
