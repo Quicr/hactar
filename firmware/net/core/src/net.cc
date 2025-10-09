@@ -18,7 +18,6 @@
 #include "nvs_flash.h"
 #include "peripherals.hh"
 #include "picoquic_utils.h"
-#include "reply.h"
 #include "sdkconfig.h"
 #include "serial.hh"
 #include "spdlog/logger.h"
@@ -41,7 +40,7 @@ using json = nlohmann::json;
 // External variables defined in net.hh
 uint64_t device_id = 0;
 
-// TODO make this a config that can be changed using mgmt
+// NOTE! This can be enabled during run on via serial
 bool loopback = false;
 
 std::vector<std::shared_ptr<moq::TrackReader>> readers;
@@ -142,16 +141,6 @@ bool logs_disabled = false;
 #else
 #include "wifi_creds.hh"
 #endif
-
-static void ReplyAck()
-{
-    mgmt_layer.Write((const uint8_t*)&Ack, 1);
-}
-
-static void ReplyNack()
-{
-    mgmt_layer.Write((const uint8_t*)&Nack, 1);
-}
 
 static void DisableLogging()
 {
@@ -316,10 +305,10 @@ static void MgmtLinkPacketTask(void* args)
             {
                 if (ESP_OK != storage.Clear())
                 {
-                    ReplyNack();
+                    mgmt_layer.ReplyNack();
                 }
 
-                ReplyAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Set_Ssid:
@@ -349,7 +338,7 @@ static void MgmtLinkPacketTask(void* args)
 
                 wifi.Connect(ssid_name, ssid_password);
 
-                ReplyAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Get_Ssid_Names:
@@ -380,7 +369,7 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Clear_Ssids:
             {
                 wifi.ClearSavedSSIDs();
-                ReplyAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Set_Moq_Url:
@@ -396,7 +385,7 @@ static void MgmtLinkPacketTask(void* args)
                     break;
                 }
                 moq_server_url = moq_url;
-                ReplyAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Get_Moq_Url:
@@ -417,19 +406,31 @@ static void MgmtLinkPacketTask(void* args)
                 }
 
                 // Reply with an ack before the logs begin again.
-                ReplyAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Disable_Logs:
             {
-                ReplyAck();
+                mgmt_layer.ReplyAck();
                 DisableLogging();
                 break;
             }
             case Configuration::Enable_Logs:
             {
-                ReplyAck();
+                mgmt_layer.ReplyAck();
                 EnableLogging();
+                break;
+            }
+            case Configuration::Disable_Loopback:
+            {
+                loopback = false;
+                mgmt_layer.ReplyAck();
+                break;
+            }
+            case Configuration::Enable_Loopback:
+            {
+                loopback = true;
+                mgmt_layer.ReplyAck();
                 break;
             }
             default:

@@ -286,7 +286,7 @@ int app_main()
 
         if (HAL_GetTick() > next_print)
         {
-            // UI_LOG_ERROR("rx %lu, tx %lu", num_packets_rx, num_packets_tx);
+            UI_LOG_INFO("Alive!");
             next_print = HAL_GetTick() + 1000;
         }
 
@@ -505,6 +505,7 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         {
             if (link_packet->length != 16)
             {
+                mgmt_serial.ReplyNack();
                 UI_LOG_ERROR("ERR. Sframe key is too short!");
                 break;
             }
@@ -512,27 +513,31 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
             if (storage.Save(ConfigStorage::Config_Id::Sframe_Key, link_packet->payload,
                              link_packet->length))
             {
+                mgmt_serial.ReplyAck();
                 UI_LOG_INFO("OK! Saved SFrame Key configuration");
             }
             else
             {
+                mgmt_serial.ReplyNack();
                 UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
             }
+
             break;
         }
         case Configuration::Get_Sframe:
         {
-            UI_LOG_INFO("Getting sframe key");
             ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
             if (config.loaded && config.len == 16)
             {
+
                 // Copy to a buff and print it.
                 char buff[config.len + 1] = {0};
                 for (int i = 0; i < config.len; ++i)
                 {
                     buff[i] = config.buff[i];
                 }
-                UI_LOG_INFO("Stored sframe key %s", (const char*)buff);
+
+                mgmt_serial.Write(config.buff, config.len);
             }
             else
             {
@@ -542,7 +547,20 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
         }
         case Configuration::Toggle_Logs:
         {
-            // TODO
+            mgmt_serial.ReplyAck();
+            Logger::Toggle();
+            break;
+        }
+        case Configuration::Disable_Logs:
+        {
+            mgmt_serial.ReplyAck();
+            Logger::Disable();
+            break;
+        }
+        case Configuration::Enable_Logs:
+        {
+            mgmt_serial.ReplyAck();
+            Logger::Enable();
             break;
         }
         default:

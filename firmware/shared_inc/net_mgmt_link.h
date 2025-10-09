@@ -13,4 +13,6 @@ enum Configuration
     Toggle_Logs,
     Disable_Logs,
     Enable_Logs,
+    Disable_Loopback,
+    Enable_Loopback,
 };

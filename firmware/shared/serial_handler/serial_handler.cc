@@ -342,3 +342,13 @@ void SerialHandler::TLVWrite(const uint8_t* data, const uint16_t size)
 
     unsent += size;
 }
+
+void SerialHandler::ReplyAck()
+{
+    Write(const_cast<uint8_t*>(&Ack), 1);
+}
+
+void SerialHandler::ReplyNack()
+{
+    Write(const_cast<uint8_t*>(&Nack), 1);
+}
