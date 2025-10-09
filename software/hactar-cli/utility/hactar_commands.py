@@ -31,6 +31,9 @@ ui_command_map = {
     "clear_config": {"id": 1, "num_params": 0},
     "set_sframe": {"id": 2, "num_params": 1},
     "get_sframe": {"id": 3, "num_params": 0},
+    "toggle_logs": {"id": 4, "num_params": 0},
+    "disable_logs": {"id": 5, "num_params": 0},
+    "enable_logs": {"id": 6, "num_params": 0},
 }
 
 net_command_map = {
@@ -42,7 +45,16 @@ net_command_map = {
     "clear_ssids": {"id": 5, "num_params": 0},
     "set_moq_url": {"id": 6, "num_params": 1},
     "get_moq_url": {"id": 7, "num_params": 0},
+    "toggle_logs": {"id": 8, "num_params": 0},
+    "disable_logs": {"id": 9, "num_params": 0},
+    "enable_logs": {"id": 10, "num_params": 0},
 }
+
+ST_Ack = 0x79
+Reply_Ok = 0x80
+Reply_Ready = 0x81
+Reply_Ack = 0x82
+Reply_Nack = 0x83
 
 
 def hactar_command_completer(text, state):
@@ -53,11 +65,7 @@ def hactar_command_completer(text, state):
 
     if len(tokens) == 0 or (len(tokens) == 1 and not buffer.endswith(" ")):
         # complete from command_map and bypass_map keys
-        options = [
-            cmd
-            for cmd in list(command_map.keys()) + list(bypass_map.keys())
-            if cmd.startswith(text)
-        ]
+        options = [cmd for cmd in list(command_map.keys()) + list(bypass_map.keys()) if cmd.startswith(text)]
     elif tokens[0] == "ui":
         options = [cmd for cmd in ui_command_map if cmd.startswith(text)]
     elif tokens[0] == "net":

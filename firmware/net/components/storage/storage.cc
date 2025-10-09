@@ -85,7 +85,27 @@ Storage::Save(const std::string& ns, const std::string& key, const void* buff, c
     }
 }
 
-esp_err_t Storage::Clear(const std::string& ns)
+esp_err_t Storage::Clear()
+{
+    if (opened)
+    {
+        Close();
+    }
+
+    esp_err_t err = nvs_flash_erase();
+
+    if (err != ESP_OK)
+    {
+        NET_LOG_ERROR("ERROR. Failed to erase vns flash");
+        return err;
+    }
+
+    err = Initialize();
+
+    return err;
+}
+
+esp_err_t Storage::ClearNamespace(const std::string& ns)
 {
     esp_err_t err = Open(ns);
     if (ESP_OK != err)
@@ -98,7 +118,7 @@ esp_err_t Storage::Clear(const std::string& ns)
 
     if (err != ESP_OK)
     {
-        NET_LOG_ERROR("ERROR, failed to erase nvs flash");
+        NET_LOG_ERROR("ERROR. Failed to erase namespace %s", ns.c_str());
         return err;
     }
 

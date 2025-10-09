@@ -540,6 +540,11 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
             }
             break;
         }
+        case Configuration::Toggle_Logs:
+        {
+            // TODO
+            break;
+        }
         default:
         {
             UI_LOG_ERROR("ERR. No handler for received packet type");

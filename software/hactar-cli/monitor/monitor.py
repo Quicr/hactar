@@ -104,20 +104,16 @@ class Monitor:
         command_id = chip_commands[command]["id"]
 
         if len(split) - 2 < num_params:
-            print(
-                f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}"
-            )
+            print(f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}")
             return
 
         if len(split) - 2 > num_params:
-            print(
-                f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}"
-            )
+            print(f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}")
             return
 
         Header_Bytes = 5  # 1 type, 4 length
-        # Create the length of the mgmt TLV and ui TLV
 
+        # Create the length of the mgmt TLV and ui TLV
         to_whom_len = Header_Bytes
         command_len = 0
 
@@ -152,8 +148,6 @@ class Monitor:
                 pass
 
             data += param.encode("utf-8")
-
-        print(data)
 
         # transmit the TLV
         self.uart.write(bytes(data))

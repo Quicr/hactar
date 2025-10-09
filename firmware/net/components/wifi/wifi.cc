@@ -102,7 +102,7 @@ void Wifi::Connect(const std::string& ssid, const std::string& pwd)
 void Wifi::ClearSavedSSIDs()
 {
     NET_LOG_INFO("Clearing ssids");
-    storage.Clear("wifi");
+    storage.ClearNamespace("wifi");
     NET_LOG_INFO("Clearing complete");
 }
 

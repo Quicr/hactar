@@ -10,4 +10,7 @@ enum Configuration
     Clear_Ssids,
     Set_Moq_Url,
     Get_Moq_Url,
+    Toggle_Logs,
+    Disable_Logs,
+    Enable_Logs,
 };
