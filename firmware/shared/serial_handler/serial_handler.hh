@@ -10,6 +10,9 @@
 class SerialHandler
 {
 public:
+    static constexpr uint8_t Ack = 0x82;
+    static constexpr uint8_t Nack = 0x83;
+
     static constexpr uint8_t END = 0xC0;
     static constexpr uint8_t ESC = 0xDB;
     static constexpr uint8_t ESC_END = 0xDC;
@@ -30,6 +33,9 @@ public:
     void Write(const uint8_t data, const bool end_frame = true);
     void Write(const link_packet_t& packet, const bool end_frame = true);
     void Write(const uint8_t* data, const uint16_t size, const bool end_frame = true);
+
+    void ReplyAck();
+    void ReplyNack();
 
     uint16_t Unread();
     uint16_t Unsent();

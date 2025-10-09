@@ -70,7 +70,9 @@ class Monitor:
     def WriteSerial(self):
         while self.running:
             usr_input = input("> ")
-            if usr_input.lower() == "exit":
+            if len(usr_input) == 0:
+                continue
+            elif usr_input.lower() == "exit":
                 self.running = False
             else:
                 split = shlex.split(usr_input.strip())
@@ -104,11 +106,15 @@ class Monitor:
         command_id = chip_commands[command]["id"]
 
         if len(split) - 2 < num_params:
-            print(f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}")
+            print(
+                f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}"
+            )
             return
 
         if len(split) - 2 > num_params:
-            print(f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}")
+            print(
+                f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}"
+            )
             return
 
         Header_Bytes = 5  # 1 type, 4 length

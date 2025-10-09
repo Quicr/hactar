@@ -13,94 +13,150 @@ from hactar_commands import (
     bypass_map,
     ui_command_map,
     net_command_map,
+    Reply_Ack,
+    Reply_Nack,
 )
 
 running = True
+uart = None
 
 
-def SendConfiguration(uart, to_whom, command, input_message):
-    print(input_message)
-    usr_input = input("> ")
+def SendCommand(uart, to_whom, command, message="", wait_for_ack=True):
+    success = False
 
-    split = shlex.split(usr_input.strip())
+    while not success:
+        if message != "":
+            print(message)
 
-    chip_commands = net_command_map
-    if to_whom == "ui":
-        chip_commands = ui_command_map
+        chip_commands = {}
+        if to_whom == "ui":
+            chip_commands = ui_command_map
+        elif to_whom == "net":
+            chip_commands = net_command_map
+        elif to_whom == "mgmt":
+            if command in command_map:
+                uart.write(command_map[command])
+                return
+            else:
+                print(f"ERROR, {command} does not exist in command_map")
+                return
 
-    if not command in chip_commands:
-        print(f"[ERROR] this shouldn't happen. subcommand {command} is unknown")
+        if not command in chip_commands:
+            print(f"[ERROR] this shouldn't happen. subcommand {command} is unknown")
 
-    num_params = chip_commands[command]["num_params"]
-    command_id = chip_commands[command]["id"]
+        num_params = chip_commands[command]["num_params"]
+        command_id = chip_commands[command]["id"]
 
-    if len(split) < num_params:
-        print(f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)}")
-        return
+        split = []
+        if num_params > 0:
+            usr_input = input("> ")
+            split = shlex.split(usr_input.strip())
 
-    if len(split) > num_params:
-        print(f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)}")
-        return
+        if len(split) < num_params:
+            print(
+                f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)}"
+            )
+            continue
 
-    Header_Bytes = 5  # 1 type, 4 length
+        if len(split) > num_params:
+            print(
+                f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)}"
+            )
+            continue
 
-    # Create the length of the mgmt TLV and ui TLV
-    to_whom_len = Header_Bytes
-    command_len = 0
+        Header_Bytes = 5  # 1 type, 4 length
 
-    for param in split[0:]:
-        # Get the total sizes before we can continue
-        to_whom_len += len(param)
-        command_len += len(param)
+        # Create the length of the mgmt TLV and ui TLV
+        to_whom_len = Header_Bytes
+        command_len = 0
 
-        if num_params > 1:
-            # Less than two params, we don't need to add data lens for each param
-            to_whom_len += 4
-            command_len += 4
+        for param in split[0:]:
+            # Get the total sizes before we can continue
+            to_whom_len += len(param)
+            command_len += len(param)
 
-    data = []
-    # MGMT - T
-    data += bypass_map[to_whom].to_bytes(1, byteorder="little")
+            if num_params > 1:
+                # Less than two params, we don't need to add data lens for each param
+                to_whom_len += 4
+                command_len += 4
 
-    # MGMT - L
-    data += to_whom_len.to_bytes(4, byteorder="little")
+        data = []
+        # MGMT - T
+        data += bypass_map[to_whom].to_bytes(1, byteorder="little")
 
-    # MGMT - V and also UI/NET - T
-    data += command_id.to_bytes(1, byteorder="little")
+        # MGMT - L
+        data += to_whom_len.to_bytes(4, byteorder="little")
 
-    # UI/NET - L
-    data += command_len.to_bytes(4, byteorder="little")
+        # MGMT - V and also UI/NET - T
+        data += command_id.to_bytes(1, byteorder="little")
 
-    # UI/NET - V
-    for param in split[0:]:
-        # If there is > 1 params then we add the size of the param first
-        if num_params > 1:
-            data += len(param).to_bytes(4, byteorder="little")
-            pass
+        # UI/NET - L
+        data += command_len.to_bytes(4, byteorder="little")
 
-        data += param.encode("utf-8")
+        # UI/NET - V
+        for param in split[0:]:
+            # If there is > 1 params then we add the size of the param first
+            if num_params > 1:
+                data += len(param).to_bytes(4, byteorder="little")
+                pass
 
-    uart.write(bytes(data))
+            data += param.encode("utf-8")
 
-    # TODO Wait for an ok, but logging on ui and net needs to be changed
-    # so that we can disable all logs during configuration
+        uart.write(bytes(data))
+
+        attempts = 0
+        got_ack = False
+        if wait_for_ack:
+            while running and wait_for_ack:
+                data = uart.readline()
+
+                if data == bytes([]):
+                    print("No reply... listening again")
+                    attempts += 1
+
+                    if attempts >= 3:
+                        print("Hactar is not responding, try resetting the board.")
+                        exit()
+
+                if data == Reply_Ack:
+                    got_ack = True
+                    print("Ack received")
+                    break
+                elif data == Reply_Nack:
+                    got_ack = False
+                    print(f"Nack received for command {command}")
+                    break
+        else:
+            got_ack = True
+
+        if got_ack:
+            success = True
 
 
 def SignalHandler(signal, frame):
     global running
+    global uart
+
     running = False
+
+    # Reset the hactar before leaving
+    if uart:
+        SendCommand(uart, "mgmt", "reset", "Resetting hactar...", wait_for_ack=False)
+
     print(f"Signal {signal}, in file {frame.f_code.co_filename} line {frame.f_lineno}")
     exit(-1)
 
 
 def main(args):
+    global uart
+
     # Request user to give a uart port we want to configure
     uart_args = {
         "baudrate": 115200,
         "bytesize": serial.EIGHTBITS,
         "parity": serial.PARITY_NONE,
         "stopbits": serial.STOPBITS_ONE,
-        "timeout": 0.01,
+        "timeout": 0.1,
     }
 
     signal.signal(signal.SIGINT, SignalHandler)
@@ -113,24 +169,25 @@ def main(args):
         return
     uart = serial.Serial(port, **uart_args)
 
+    # Silence all logs on UI and Net
+    SendCommand(uart, "ui", "disable_logs", "silencing ui logs")
+    SendCommand(uart, "net", "disable_logs", "silencing net logs")
+
     # TODO when we need it configure something on ui
+    # SendCommand(uart, "ui", "set_sframe", "Enter sframe key, 16 bytes minimum")
 
     # Configure net ssid
-    SendConfiguration(uart, "net", "set_ssid", "Enter ssid name and password ex. My_SSID P@ssw0rd123")
-    SendConfiguration(uart, "net", "set_moq_url", "Enter moq url")
+    SendCommand(
+        uart, "net", "set_ssid", "Enter ssid name and password ex. My_SSID P@ssw0rd123"
+    )
 
-    while running:
-        try:
-            if uart.in_waiting:
-                data = uart.readline().decode()
-            else:
-                data = None
-                time.sleep(0.05)
-                continue
+    # NOTE! Leave this for last, as the net chip still crashes when
+    # destroying a moq session
+    SendCommand(uart, "net", "set_moq_url", "Enter moq url")
 
-            print(data, end="")
-        except:
-            pass
+    SendCommand(uart, "mgmt", "reset", "Resetting hactar...", wait_for_ack=False)
+    time.sleep(1)
+    print("Goodbye!")
 
 
 # TODO?

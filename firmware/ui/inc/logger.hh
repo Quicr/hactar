@@ -54,6 +54,8 @@ constexpr int Prefix_Len = 8;
 class Logger
 {
 public:
+    static inline bool enabled = true;
+
     enum class Level
     {
         Error,
@@ -67,6 +69,11 @@ public:
     template <typename... T>
     static void Log(Level level, const char* format, const T&... args)
     {
+        if (!enabled)
+        {
+            return;
+        }
+
         static char log_line[MAX_LOG_LENGTH] = {0};
         const int line_size = std::sprintf(log_line, format, args...);
 
@@ -88,6 +95,21 @@ public:
         HAL_UART_Transmit(&huart1, (const uint8_t*)"\n", 1, HAL_MAX_DELAY);
     }
 #endif
+
+    static void Enable()
+    {
+        enabled = true;
+    }
+
+    static void Disable()
+    {
+        enabled = false;
+    }
+
+    static void Toggle()
+    {
+        enabled = !enabled;
+    }
 
     static std::string to_hex(const uint8_t* data, size_t size)
     {
