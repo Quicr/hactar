@@ -65,7 +65,7 @@ upload_py: compile
 								 -bin=${BUILD_DIR}/${TARGET}.bin
 
 upload_cube_serial: compile
-	python3 ../../software/hactar-cli/main.py --port=${PORT} --chip="ui" --use_external_flasher=true
+	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="ui" --use_external_flasher=true
 	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS}
 
 upload_cube_swd: compile

@@ -62,7 +62,7 @@ monitor:
 	python3 ../../software/hactar-cli/main.py monitor --port=${PORT}
 
 idf_monitor:
-	python3 ../../softare/tools/command_sender.py ${PORT} ${BAUD} net_debug
+	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" --use_external_flasher=true
 	idf.py monitor
 
 format:
