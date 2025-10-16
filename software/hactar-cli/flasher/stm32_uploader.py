@@ -42,7 +42,7 @@ class STM32Uploader(Uploader):
     config_file: dict = None
     chip_config: dict = None
 
-    def __init__(self, uart, chip):
+    def __init__(self, uart: serial.Serial, chip: str, binary_path: str):
         super().__init__(uart, chip)
 
         self.upload_enabled = False
@@ -63,6 +63,8 @@ class STM32Uploader(Uploader):
         self.sectors_to_delete = []
         self.sectors_deleted = []
 
+        self.binary_path = binary_path
+
         config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stm32_configurations.json")
 
         if not os.path.isfile(config_path):
@@ -81,7 +83,6 @@ class STM32Uploader(Uploader):
             self.uart.write(command_map["flash ui"])
             print(f"Sent command to flash UI")
 
-            # time.sleep(1)
             self.uart.flush()
 
             self.TryPattern(uart_utils.OK, 1, 5)
@@ -100,10 +101,10 @@ class STM32Uploader(Uploader):
 
             time.sleep(1)
 
-    def FlashFirmware(self, binary_path: str) -> bool:
+    def FlashFirmware(self) -> bool:
         self.FlashSelect()
 
-        binary = open(binary_path, "rb").read()
+        binary = open(self.binary_path, "rb").read()
 
         sectors = self.GetSectorsForFirmware(len(binary))
 

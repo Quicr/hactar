@@ -9,6 +9,7 @@ import shlex
 import serial
 from hactar_scanning import HactarScanning, SelectHactarPort
 from hactar_commands import (
+    hactar_get_ack,
     command_map,
     bypass_map,
     ui_command_map,
@@ -103,24 +104,10 @@ def SendCommand(uart, to_whom, command, message="", wait_for_ack=True):
         attempts = 0
         if wait_for_ack:
             while running and wait_for_ack:
-                data = uart.readline()
+                got_ack = hactar_get_ack(uart, 5)
 
-                if data == bytes([]):
-                    print("No reply... listening again")
-                    attempts += 1
-
-                    if attempts >= 3:
-                        print("Hactar is not responding, try resetting the board.")
-                        exit()
-
-                if data == Reply_Ack:
-                    got_ack = True
-                    print("Ack received")
-                    break
-                elif data == Reply_Nack:
-                    got_ack = False
-                    print(f"Nack received for command {command}")
-                    break
+                if not got_ack:
+                    exit(-1)
         else:
             got_ack = True
 

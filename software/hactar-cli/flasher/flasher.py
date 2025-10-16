@@ -12,7 +12,7 @@ import esp32s3_uploader
 import serial
 import serial.tools.list_ports
 from hactar_scanning import HactarScanning
-from hactar_commands import command_map
+from hactar_commands import command_map, hactar_send_command
 
 
 # TODO only allow .bin files
@@ -47,50 +47,43 @@ def main(args):
 
         num_attempts = 5
         i = 0
-        uploader = None
+        uploader = UploaderFactory(args.chip, args.binary_path)
         for port in ports:
             flashed = False
-            while not flashed and i < num_attempts:
+            while not flashed:
                 i += 1
                 try:
                     uart = serial.Serial(port=port, **uart_config)
 
                     print(f"Opened port: {BB}{port}{NW} " f"baudrate: {BG}{115200}{NW}")
 
-                    uart.write(command_map["disable logs"])
-                    while True:
-                        uart.timeout = 0.1
-                        byte = uart.read(1)
-
-                        if byte == bytes(0):
-                            uart.timeout = 2
-                            break
-
-                    uploader = UploaderFactory(uart, args.chip)
+                    ack = hactar_send_command(uart, command_map["disable logs"], 1)
+                    if not ack:
+                        raise Exception("Failed to get an ack after disabling logs.")
 
                     if args.use_external_flasher:
-                        uploader.FlashSelect()
+                        uploader.FlashSelect(uart)
                         flashed = True
                     else:
-                        flashed = uploader.FlashFirmware(args.binary_path)
+                        flashed = uploader.FlashFirmware(uart)
 
                     print(f"Done Flashing {BR}GOODBYE{NW}")
                     uart.close()
                 except Exception as ex:
-                    print(f"{BR}[Error]{NW} {ex}, will try again")
+                    print(f"{BR}[Error]{NW} {ex}, will try again after hactar timeout")
                     uart.close()
-                    time.sleep(12)
+                    time.sleep(15)
             # End while
     except Exception as ex:
         print(f"{BR}[Error]{NW} {ex}")
 
 
-def UploaderFactory(uart: serial.Serial, chip: str):
+def UploaderFactory(chip: str, binary_path: str):
     chip = chip.lower()
     if chip == "mgmt" or chip == "ui":
-        return stm32_uploader.STM32Uploader(uart, chip)
+        return stm32_uploader.STM32Uploader(chip, binary_path)
     elif chip == "net":
-        return esp32s3_uploader.ESP32S3Uploader(uart, chip)
+        return esp32s3_uploader.ESP32S3Uploader(chip, binary_path)
     else:
         print(f"Unsupported option for chip: {chip}")
         exit()

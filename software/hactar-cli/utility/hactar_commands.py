@@ -1,5 +1,6 @@
 import readline
 import sys
+import serial
 
 command_map = {
     "version": bytes([0] + [0] * 4),
@@ -59,6 +60,38 @@ Reply_Ack = bytes([0x82])
 Reply_Nack = bytes([0x83])
 
 
+def hactar_send_command(uart: serial.Serial, command: bytes, max_attempts: int = 5):
+    uart.write(command)
+
+    return hactar_get_ack(uart, max_attempts)
+
+
+def hactar_get_ack(uart: serial.Serial, max_attempts: int = 5):
+    got_ack = False
+    attempts = 0
+    while True:
+        data = uart.read(1)
+
+        if data == bytes([]):
+            print("No reply... listening again")
+            attempts += 1
+
+        if attempts >= max_attempts:
+            print("Hactar is not responding. Try resetting the board")
+            return got_ack
+
+        if data == Reply_Ack:
+            got_ack = True
+            print("Ack received")
+            break
+        elif data == Reply_Nack:
+            got_ack = False
+            print(f"Nack received for command {command}")
+            break
+
+    return got_ack
+
+
 def hactar_command_completer(text, state):
     buffer = readline.get_line_buffer()
     tokens = buffer.split()
@@ -67,11 +100,7 @@ def hactar_command_completer(text, state):
 
     if len(tokens) == 0 or (len(tokens) == 1 and not buffer.endswith(" ")):
         # complete from command_map and bypass_map keys
-        options = [
-            cmd
-            for cmd in list(command_map.keys()) + list(bypass_map.keys())
-            if cmd.startswith(text)
-        ]
+        options = [cmd for cmd in list(command_map.keys()) + list(bypass_map.keys()) if cmd.startswith(text)]
     elif tokens[0] == "ui":
         options = [cmd for cmd in ui_command_map if cmd.startswith(text)]
     elif tokens[0] == "net":
