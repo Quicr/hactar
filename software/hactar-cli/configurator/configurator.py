@@ -22,9 +22,9 @@ uart = None
 
 
 def SendCommand(uart, to_whom, command, message="", wait_for_ack=True):
-    success = False
+    got_ack = False
 
-    while not success:
+    while not got_ack:
         if message != "":
             print(message)
 
@@ -53,15 +53,11 @@ def SendCommand(uart, to_whom, command, message="", wait_for_ack=True):
             split = shlex.split(usr_input.strip())
 
         if len(split) < num_params:
-            print(
-                f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)}"
-            )
+            print(f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)}")
             continue
 
         if len(split) > num_params:
-            print(
-                f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)}"
-            )
+            print(f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)}")
             continue
 
         Header_Bytes = 5  # 1 type, 4 length
@@ -105,7 +101,6 @@ def SendCommand(uart, to_whom, command, message="", wait_for_ack=True):
         uart.write(bytes(data))
 
         attempts = 0
-        got_ack = False
         if wait_for_ack:
             while running and wait_for_ack:
                 data = uart.readline()
@@ -128,9 +123,6 @@ def SendCommand(uart, to_whom, command, message="", wait_for_ack=True):
                     break
         else:
             got_ack = True
-
-        if got_ack:
-            success = True
 
 
 def SignalHandler(signal, frame):
@@ -177,9 +169,7 @@ def main(args):
     # SendCommand(uart, "ui", "set_sframe", "Enter sframe key, 16 bytes minimum")
 
     # Configure net ssid
-    SendCommand(
-        uart, "net", "set_ssid", "Enter ssid name and password ex. My_SSID P@ssw0rd123"
-    )
+    SendCommand(uart, "net", "set_ssid", "Enter ssid name and password ex. My_SSID P@ssw0rd123")
 
     # NOTE! Leave this for last, as the net chip still crashes when
     # destroying a moq session

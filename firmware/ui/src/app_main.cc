@@ -284,11 +284,11 @@ int app_main()
             done_booting = true;
         }
 
-        if (HAL_GetTick() > next_print)
-        {
-            UI_LOG_INFO("Alive!");
-            next_print = HAL_GetTick() + 1000;
-        }
+        // if (HAL_GetTick() > next_print)
+        // {
+        //     UI_LOG_INFO("Alive!");
+        //     next_print = HAL_GetTick() + 1000;
+        // }
 
         while (sleeping)
         {
