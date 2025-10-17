@@ -36,19 +36,20 @@ class ESP32S3Uploader(Uploader):
         super().__init__(chip)
 
         self.binary_path = binary_path
-
-        flasher_args = json.load(open(f"{binary_path}/flasher_args.json"))
-
         self.binaries = []
-        if "bootloader" in flasher_args:
-            flasher_args["bootloader"]["name"] = "bootloader"
-            self.binaries.append(flasher_args["bootloader"])
-        if "partition-table" in flasher_args:
-            flasher_args["partition-table"]["name"] = "partition-table"
-            self.binaries.append(flasher_args["partition-table"])
-        if "app" in flasher_args:
-            flasher_args["app"]["name"] = "app"
-            self.binaries.append(flasher_args["app"])
+
+        if binary_path != "":
+            flasher_args = json.load(open(f"{binary_path}/flasher_args.json"))
+
+            if "bootloader" in flasher_args:
+                flasher_args["bootloader"]["name"] = "bootloader"
+                self.binaries.append(flasher_args["bootloader"])
+            if "partition-table" in flasher_args:
+                flasher_args["partition-table"]["name"] = "partition-table"
+                self.binaries.append(flasher_args["partition-table"])
+            if "app" in flasher_args:
+                flasher_args["app"]["name"] = "app"
+                self.binaries.append(flasher_args["app"])
 
         self.binary_idx = 0
         self.data_idx = 0

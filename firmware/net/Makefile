@@ -35,8 +35,9 @@ upload_py: compile
 	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" -bin=${BUILD_PATH}
 
 upload_esptool:
-	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" -bin=${BUILD_PATH} --use_external_flasher=true
+	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" --use_external_flasher=true
 	esptool.py ${ESP_TOOL_ARGS}
+
 
 docker: docker-build
 	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \

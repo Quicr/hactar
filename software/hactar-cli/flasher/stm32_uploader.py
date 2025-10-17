@@ -15,6 +15,9 @@ from ansi_colours import BW, BC, BG, BR, BB, BY, BM, NW, NY
 from uploader import Uploader
 from hactar_commands import command_map
 
+# TODO fundamental issue with checking if we are synced.
+# If we fail, we need to invalid the sync and do it again.
+
 
 class STM32Uploader(Uploader):
     ACK = 0x79
@@ -42,26 +45,10 @@ class STM32Uploader(Uploader):
     config_file: dict = None
     chip_config: dict = None
 
-    def __init__(self, uart: serial.Serial, chip: str, binary_path: str):
-        super().__init__(uart, chip)
+    def __init__(self, chip: str, binary_path: str):
+        super().__init__(chip)
 
-        self.upload_enabled = False
-        self.synced = False
-        self.uid = None
-        self.chip_config_config = None
-        self.available_commands = None  # TODO
-        self.use_exception = True
-
-        self.write_started = False
-        self.last_write_addr = 0
-        self.last_data_addr = 0
-        self.write_data = None
-        self.last_verify_addr = 0
-        self.last_verify_data_addr = 0
-
-        self.erase_started = False
-        self.sectors_to_delete = []
-        self.sectors_deleted = []
+        self.Reset()
 
         self.binary_path = binary_path
 
@@ -72,50 +59,74 @@ class STM32Uploader(Uploader):
 
         self.configs_file = json.load(open(f"{config_path}"))
 
-    def FlashSelect(self):
+    def Reset(self):
+        self.synced = False
+        self.uid = None
+        self.chip_config_config = None
+        self.available_commands = None  # TODO
+        self.use_exception = True
+
+        self.erase_started = False
+        self.sectors_deleted = []
+        self.sector_idx = 0
+
+        self.write_address = 0
+        self.data_idx = 0
+
+        self.last_verify_addr = 0
+        self.last_verify_data_addr = 0
+
+    def FlashFirmware(self, uart: serial.Serial) -> bool:
+        self.synced = False
+        self.uid = None
+
+        # Open the binary first
+        binary = open(self.binary_path, "rb").read()
+
+        self.FlashSelect(uart)
+
+        self.sectors = self.GetSectorsForFirmware(uart, len(binary))
+
+        self.SendExtendedEraseMemory(uart, self.sectors, False, True, True)
+
+        address = self.chip_config["usr_start_addr"] + self.write_address
+        data_offset = self.data_idx
+        self.SendWriteMemory(uart, binary, data_offset, address)
+
+        # UI chip is controlled by mgmt chip, so sending a go only matters on the mgmt chip.
         if self.chip == "mgmt":
-            self.uart.parity = serial.PARITY_EVEN
+            self.SendGo(uart, self.chip_config["usr_start_addr"])
+
+        return True
+
+    def FlashSelect(self, uart):
+        if self.chip == "mgmt":
+            uart.parity = serial.PARITY_EVEN
             print(f"Updated uart to parity: {BB}EVEN{NW}")
             print(f"User, put Hactar into bootloader mode!!")
             input("Press enter once it is done...")
-            self.uart.reset_input_buffer()
+            uart.reset_input_buffer()
         elif self.chip == "ui":
-            self.uart.write(command_map["flash ui"])
+            uart.write(command_map["flash ui"])
             print(f"Sent command to flash UI")
 
-            self.uart.flush()
+            uart.flush()
 
-            self.TryPattern(uart_utils.OK, 1, 5)
+            self.TryPattern(uart, uart_utils.OK, 1, 5)
             print(f"Flash UI command: {BG}CONFIRMED{NW}")
 
             print(f"Update uart to parity: {BB}EVEN{NW}")
-            self.uart.parity = serial.PARITY_EVEN
+            uart.parity = serial.PARITY_EVEN
 
-            self.TryPattern(uart_utils.READY, 1, 5)
+            self.TryPattern(uart, uart_utils.READY, 1, 5)
             print(f"Flash UI: {BB}READY{NW}")
 
-            self.uart.flush()
-            self.uart.reset_input_buffer()
+            uart.flush()
+            uart.reset_input_buffer()
 
             print(f"Activating UI Upload Mode: {BG}SUCCESS{NW}")
 
             time.sleep(1)
-
-    def FlashFirmware(self) -> bool:
-        self.FlashSelect()
-
-        binary = open(self.binary_path, "rb").read()
-
-        sectors = self.GetSectorsForFirmware(len(binary))
-
-        self.SendExtendedEraseMemory(sectors, False, True, True)
-
-        self.SendWriteMemory(binary, self.chip_config["usr_start_addr"], True)
-
-        if self.chip == "mgmt":
-            self.SendGo(self.chip_config["usr_start_addr"])
-
-        return True
 
     def SetChipConfig(self, pid: int):
         print(f"Retrieving configurations for chip ID: {BC}{hex(pid)}{NW}")
@@ -128,10 +139,10 @@ class STM32Uploader(Uploader):
     def CalculateChecksum(self, arr: [int]):
         return functools.reduce(lambda a, b: a ^ b, arr).to_bytes(1, "big")
 
-    def GetSectorsForFirmware(self, data_len: int):
+    def GetSectorsForFirmware(self, uart, data_len: int):
         """Gets the sectors, starting from zero, that the firmware will fill."""
         # Attempt to get the chip uid
-        self.CheckInit()
+        self.CheckInit(uart)
 
         if self.chip_config == None:
             raise Exception("Chip configuration has not been set")
@@ -167,21 +178,19 @@ class STM32Uploader(Uploader):
             print(f"{caller}: {BG}SUCCESSFUL{NW}")
         return True
 
-    def SendSync(self, retry_num: int = 5):
+    def SendSync(self, uart: serial.Serial, retry_num: int = 5):
         """Sends the sync byte 0x7F and waits for an self.ACK from the device."""
 
-        # reply = uart_utils.WriteByteWaitForACK(self.uart, self.Commands.sync, retry_num, False)
+        # reply = uart_utils.WriteByteWaitForACK(uart, self.Commands.sync, retry_num, False)
 
         data = [self.Commands.sync]
 
         while retry_num > 0:
             retry_num -= 1
 
-            self.uart.write(bytes(data))
+            uart.write(bytes(data))
 
-            reply = uart_utils.GetBytes(self.uart, 1)
-
-            print(reply)
+            reply = uart_utils.GetBytes(uart, 1)
 
             if reply == -1:
                 continue
@@ -193,28 +202,28 @@ class STM32Uploader(Uploader):
 
         return self.synced
 
-    def CheckSync(self):
+    def CheckSync(self, uart: serial.Serial):
         if self.synced:
             return True
 
-        return self.SendSync()
+        return self.SendSync(uart)
 
-    def CheckUid(self):
+    def CheckUid(self, uart: serial.Serial):
         if self.uid != None:
             return True
 
-        return self.SendGetID()
+        return self.SendGetID(uart)
 
-    def CheckInit(self):
-        if not self.CheckSync():
+    def CheckInit(self, uart: serial.Serial):
+        if not self.CheckSync(uart):
             return False
 
-        if not self.CheckUid():
+        if not self.CheckUid(uart):
             return False
 
         return True
 
-    def SendGetID(self, retry_num: int = 5):
+    def SendGetID(self, uart: serial.Serial, retry_num: int = 5):
         """Sends the GetID command and it's compliment.
         Command = 0x02
         Compliment = 0xFD = 0x02 ^ 0xFF
@@ -222,20 +231,20 @@ class STM32Uploader(Uploader):
         returns pid
         """
 
-        self.CheckSync()
+        self.CheckSync(uart)
 
-        res = uart_utils.WriteByteWaitForACK(self.uart, self.Commands.get_id, 5)
+        res = uart_utils.WriteByteWaitForACK(uart, self.Commands.get_id, 5)
 
         self.HandleReply(res, "Get ID command", "ACK was not received")
 
         # Get the number of incoming bytes
-        num_bytes = uart_utils.TryGetBytes(self.uart, 1)
+        num_bytes = uart_utils.TryGetBytes(uart, 1)
 
         # Get the pid which should be N+1 bytes
-        pid_bytes = uart_utils.TryGetBytes(self.uart, num_bytes + 1)
+        pid_bytes = uart_utils.TryGetBytes(uart, num_bytes + 1)
 
         # Wait for an ack
-        res = uart_utils.TryGetBytes(self.uart, 1)
+        res = uart_utils.TryGetBytes(uart, 1)
         self.HandleReply(res, "GetID PID ACK", "Failed to get PID", False)
 
         self.uid = int.from_bytes(bytes(pid_bytes), "big")
@@ -245,16 +254,16 @@ class STM32Uploader(Uploader):
 
         return True
 
-    def SendGet(self, retry_num: int = 5):
+    def SendGet(self, uart: serial.Serial, retry_num: int = 5):
         """Sends the Get command and it's compliment.
         Command = 0x00
         Compliment = 0xFF = 0x00 ^ 0xFF
 
         returns all available commands
         """
-        self.CheckInit()
+        self.CheckInit(uart)
 
-        reply = uart_utils.WriteByteWaitForACK(self.uart, self.Commands.get, retry_num)
+        reply = uart_utils.WriteByteWaitForACK(uart, self.Commands.get, retry_num)
 
         self.HandleReply(
             reply,
@@ -264,15 +273,15 @@ class STM32Uploader(Uploader):
         )
         # Read the next byte which should be the num of bytes - 1
         #  for some reason they minus off one even tho 2 bytes come in
-        num_bytes = uart_utils.TryGetBytes(self.uart, 1)
+        num_bytes = uart_utils.TryGetBytes(uart, 1)
 
-        bootloader_verison = uart_utils.TryGetBytes(self.uart, 1)
+        bootloader_verison = uart_utils.TryGetBytes(uart, 1)
 
         # Get all of the available commands
-        recv_commands = uart_utils.TryGetBytes(self.uart, num_bytes)
+        recv_commands = uart_utils.TryGetBytes(uart, num_bytes)
 
         # Wait for an ack
-        reply = uart_utils.TryGetBytes(self.uart, 1)
+        reply = uart_utils.TryGetBytes(uart, 1)
 
         # Parse the commands
         available_commands = []
@@ -294,7 +303,7 @@ class STM32Uploader(Uploader):
 
         return available_commands
 
-    def SendReadMemory(self, address: bytes, num_bytes: int, retry_num: int = 5):
+    def SendReadMemory(self, uart: serial.Serial, address: bytes, num_bytes: int, retry_num: int = 5):
         """Sends the Read Memory command and it's compliment.
         Command = 0x11
         Compliment = 0xEE = 0x11 ^ 0xFF
@@ -302,16 +311,16 @@ class STM32Uploader(Uploader):
         returns [bytes] contents of memory [address:address + num_bytes]
 
         """
-        self.CheckInit()
+        self.CheckInit(uart)
 
-        reply = uart_utils.WriteByteWaitForACK(self.uart, self.Commands.read_memory, retry_num)
+        reply = uart_utils.WriteByteWaitForACK(uart, self.Commands.read_memory, retry_num)
 
         self.HandleReply(reply, "Read memory command", "Failed to read memory command", False)
 
         memory_addr = address + self.CalculateChecksum(address)
 
         # Write the memory we want to read from and the checksum
-        reply = uart_utils.WriteBytesWaitForACK(self.uart, memory_addr, 1)
+        reply = uart_utils.WriteBytesWaitForACK(uart, memory_addr, 1)
 
         self.HandleReply(
             reply,
@@ -320,7 +329,7 @@ class STM32Uploader(Uploader):
             False,
         )
 
-        reply = uart_utils.WriteByteWaitForACK(self.uart, num_bytes - 1, 1)
+        reply = uart_utils.WriteByteWaitForACK(uart, num_bytes - 1, 1)
         self.HandleReply(
             reply,
             "Read memory num bytes available",
@@ -328,36 +337,38 @@ class STM32Uploader(Uploader):
             False,
         )
 
-        recv_data = uart_utils.TryGetBytes(self.uart, num_bytes)
+        recv_data = uart_utils.TryGetBytes(uart, num_bytes)
         if type(recv_data) is int:
             recv_data = [recv_data]
 
         return recv_data
 
-    def SendExtendedEraseMemory(self, sectors_to_delete: [int], special: bool, fast_verify: bool, recover: bool):
+    def SendExtendedEraseMemory(
+        self, uart: serial.Serial, sectors_to_delete: [int], special: bool, fast_verify: bool, recover: bool
+    ):
         """Sends the Erase memory command and it's compliment.
         Command = 0x44
         Compliment = 0xBB = 0x44 ^ 0xFF
 
         returns true
         """
-        if recover:
-            if not self.erase_started:
-                self.sectors_to_delete = sectors_to_delete
-                self.sectors_deleted = []
-                self.erase_started = True
-        else:
-            self.sectors_to_delete = sectors_to_delete
-            self.sectors_deleted = []
-            self.erase_started = True
+        if len(sectors_to_delete) < 1:
+            raise Exception("Cannot delete zero sectors")
 
-        self.CheckInit()
+        if self.sectors_deleted == sectors_to_delete:
+            print("Already deleted sectors, skipping")
+            return True
+
+        self.CheckInit(uart)
 
         print(f"Erase: {BB}STARTED{NW}")
-        print(f"Erase  {BB}SECTORS{NW} {NY}{self.sectors_to_delete}{NW}")
+        print(f"Erase  {BB}SECTORS{NW} {NY}{sectors_to_delete}{NW}")
         print(f"Erased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}", end="")
-        while self.sectors_to_delete:
-            reply = uart_utils.WriteByteWaitForACK(self.uart, self.Commands.extended_erase, 1)
+
+        while self.sectors_deleted != sectors_to_delete:
+            sector = sectors_to_delete[self.sector_idx]
+
+            reply = uart_utils.WriteByteWaitForACK(uart, self.Commands.extended_erase, 1)
 
             self.HandleReply(reply, "\nExtended Erase", "Extended erase failed")
 
@@ -367,7 +378,7 @@ class STM32Uploader(Uploader):
             num_sectors = [int(0).to_bytes(2, "big")]
 
             # Turn the sectors received into two byte elements
-            sector_in_bytes = [self.sectors_to_delete[0].to_bytes(2, "big")]
+            sector_in_bytes = [sector.to_bytes(2, "big")]
 
             # Join the num sectors and the byte sectors into one list
             data = b"".join(num_sectors + sector_in_bytes)
@@ -381,19 +392,22 @@ class STM32Uploader(Uploader):
             print(f"\rErased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}", end="")
 
             # Give more time to reply with the deleted sectors
-            self.uart.timeout = 5
-            reply = uart_utils.WriteBytesWaitForACK(self.uart, data, 1)
+            uart.timeout = 5
+            reply = uart_utils.WriteBytesWaitForACK(uart, data, 1)
             # Revert the change back to two seconds
-            self.uart.timeout = 2
+            uart.timeout = 2
             self.HandleReply(reply, "\nErase memory", "Failed to Erase", False)
 
             # Update the number of deleted sectors and remove the deleted sector
-            self.sectors_deleted.append(self.sectors_to_delete.pop(0))
+            self.sectors_deleted.append(sector)
+
+            self.sector_idx += 1
 
         print(f"\rErased {BB}SECTORS{NW} {NY}{self.sectors_deleted}{NW}")
 
+        # TODO verify at the same time
         if fast_verify:
-            return self.FastEraseVerify(self.sectors_deleted)
+            return self.FastEraseVerify(uart, self.sectors_deleted)
         else:
             total_bytes = 0
             for sector in self.sectors_deleted:
@@ -401,7 +415,7 @@ class STM32Uploader(Uploader):
                 print(total_bytes)
 
             data = bytes([255] * total_bytes)
-            for verify_status in self.FullVerify(data):
+            for verify_status in self.FullVerify(uart, data):
                 print(
                     f"Verifying erase: {BG}{verify_status['percent']:.2f}" f"{NW}% verified",
                     end="\r",
@@ -413,13 +427,12 @@ class STM32Uploader(Uploader):
 
             print(f"Verifying erase: {BG}100{NW}% verified")
 
-        self.erase_started = False
         return True
 
-    def FullVerify(self, data: bytes):
+    def FullVerify(self, uart: serial.Serial, data: bytes):
         """Takes a chunk of memory and verifies it sequentially from the start addr"""
         # TODO recoverable
-        self.CheckInit()
+        self.CheckInit(uart)
 
         Max_Num_Bytes = 256
         addr = self.chip_config["usr_start_addr"]
@@ -433,7 +446,7 @@ class STM32Uploader(Uploader):
             yield verify_status
 
             chunk = data[data_addr : data_addr + Max_Num_Bytes]
-            if not self.FlashCompare(chunk, addr):
+            if not self.FlashCompare(uart, chunk, addr):
                 verify_status["failed"] = True
                 break
 
@@ -443,9 +456,9 @@ class STM32Uploader(Uploader):
         verify_status["percent"] = 100
         yield verify_status
 
-    def FastEraseVerify(self, sectors: [int]):
+    def FastEraseVerify(self, uart: serial.Serial, sectors: [int]):
         # TODO recoverable
-        self.CheckInit()
+        self.CheckInit(uart)
         print(f"Erase Verify: {BB}BEGIN{NW}")
         Mem_Bytes_Sz = 256
         expected_mem = bytes([255] * Mem_Bytes_Sz)
@@ -460,7 +473,7 @@ class STM32Uploader(Uploader):
             # Get the next address to verify
             addr = self.chip_config["sectors"][sector]["addr"]
             # Verify the flash at that memory location
-            if not (self.FlashCompare(expected_mem, addr)):
+            if not (self.FlashCompare(uart, expected_mem, addr)):
                 print(f"Verifying: {BR}Failed to verify sector " f"[{sector}]{NW}")
                 return False
 
@@ -471,11 +484,11 @@ class STM32Uploader(Uploader):
 
         return True
 
-    def FlashCompare(self, chunk: bytes, addr: int):
+    def FlashCompare(self, uart: serial.Serial, chunk: bytes, addr: int):
         """Compares a byte array to the flash at the provided addr.
         True if equal, False otherwise
         """
-        self.CheckInit()
+        self.CheckInit(uart)
 
         # Get the flash chunk from the address of equal size to chunk
         Max_Attempts = 10
@@ -483,16 +496,16 @@ class STM32Uploader(Uploader):
         mem = [0] * len(chunk)
 
         while mem != chunk and read_count < Max_Attempts:
-            mem = bytes(self.SendReadMemory(addr.to_bytes(4, "big"), len(chunk)))
+            mem = bytes(self.SendReadMemory(uart, addr.to_bytes(4, "big"), len(chunk)))
             read_count += 1
 
         return chunk == mem
 
-    def SendGo(self, address: int, num_retry: int = 1):
+    def SendGo(self, uart: serial.Serial, address: int, num_retry: int = 1):
         """Sends the Go command according to the passed in address"""
-        self.CheckInit()
+        self.CheckInit(uart)
 
-        reply = uart_utils.WriteByteWaitForACK(self.uart, self.Commands.go, num_retry)
+        reply = uart_utils.WriteByteWaitForACK(uart, self.Commands.go, num_retry)
 
         self.HandleReply(reply, "Go Command", "Failed to send Go Command")
 
@@ -506,7 +519,7 @@ class STM32Uploader(Uploader):
         addr_bytes += checksum
 
         # Send the data and get a reply
-        reply = uart_utils.WriteBytesWaitForACK(self.uart, addr_bytes, num_retry)
+        reply = uart_utils.WriteBytesWaitForACK(uart, addr_bytes, num_retry)
 
         self.HandleReply(
             reply,
@@ -515,7 +528,7 @@ class STM32Uploader(Uploader):
             True,
         )
 
-    def SendWriteMemory(self, data: bytes, address: int, recover: bool):
+    def SendWriteMemory(self, uart: serial.Serial, data: bytes, data_offset: int, address: int):
         """Sends the Write memory command and it's compliment.
         Then writes the address bytes and its checksum
         Then writes the entire data stream
@@ -525,48 +538,32 @@ class STM32Uploader(Uploader):
         returns true if successful
         """
 
+        uart.timeout = 1
+
         Max_Num_Bytes = 256
+        total_bytes = len(data)
 
-        # Check if this function has been ran before by checking the write_data
-        # Also allow a first run in the case where its a new flash
-        if recover:
-            if not self.write_started:
-                self.last_write_addr = address
-                self.last_data_addr = 0
-                self.write_data = data
-                self.write_started = True
-                self.last_verify_addr = address
-                self.last_verify_data_addr = 0
-        else:
-            self.last_write_addr = address
-            self.last_data_addr = 0
-            self.write_data = data
-            self.write_started = True
-            self.last_verify_addr = address
-            self.last_verify_data_addr = 0
-
-        total_bytes = len(self.write_data)
+        current_idx = data_offset
+        current_write_addr = address
 
         print(f"Write to Memory: {BB}STARTED{NW}")
-        print(f"Address: {BW}{self.last_write_addr:04x}{NW}")
+        print(f"Address: {BW}{current_write_addr:04x}{NW}")
         print(f"Byte Stream Size: {BW}{total_bytes}{NW}")
 
         # Either a exception or a positive return will break out
-        self.CheckInit()
+        self.CheckInit(uart)
 
-        self.uart.timeout = 1
-
-        while self.last_data_addr < total_bytes:
-            percent_flashed = (self.last_data_addr / total_bytes) * 100
+        while current_idx < total_bytes:
+            percent_flashed = (current_idx / total_bytes) * 100
             print(f"\rFlashing: {BG}{percent_flashed:2.2f}{NW}%", end="")
 
-            reply = uart_utils.WriteByteWaitForACK(self.uart, self.Commands.write_memory, 1)
+            reply = uart_utils.WriteByteWaitForACK(uart, self.Commands.write_memory, 1)
             self.HandleReply(reply, "Write Command", "Failed to send Write command", False)
 
             # Send the address and the checksum
-            checksum = self.CalculateChecksum(self.last_write_addr.to_bytes(4, "big"))
-            write_address_bytes = self.last_write_addr.to_bytes(4, "big") + checksum
-            reply = uart_utils.WriteBytesWaitForACK(self.uart, write_address_bytes, 1)
+            checksum = self.CalculateChecksum(current_write_addr.to_bytes(4, "big"))
+            write_address_bytes = current_write_addr.to_bytes(4, "big") + checksum
+            reply = uart_utils.WriteBytesWaitForACK(uart, write_address_bytes, 1)
 
             self.HandleReply(
                 reply,
@@ -575,7 +572,7 @@ class STM32Uploader(Uploader):
             )
 
             # Get the contents of the binary
-            chunk = self.write_data[self.last_data_addr : self.last_data_addr + Max_Num_Bytes]
+            chunk = data[current_idx : current_idx + Max_Num_Bytes]
 
             # Get the chunk size before padding
             chunk_size = len(chunk)
@@ -591,16 +588,19 @@ class STM32Uploader(Uploader):
             chunk = chunk + self.CalculateChecksum(chunk)
 
             # Write the chunk to the chip
-            reply = uart_utils.WriteBytesWaitForACK(self.uart, chunk, 1)
+            reply = uart_utils.WriteBytesWaitForACK(uart, chunk, 1)
             self.HandleReply(
                 reply,
-                f"\nWrite to address {hex(self.last_write_addr)}",
-                f"Failed to write to address {hex(self.last_write_addr)}",
+                f"\nWrite to address {hex(current_write_addr)}",
+                f"Failed to write to address {hex(current_write_addr)}",
             )
 
+            self.data_idx = current_idx
+            self.write_address = current_write_addr
+
             # Shift over by the amount of byte stream bytes were sent
-            self.last_data_addr += chunk_size
-            self.last_write_addr += chunk_size
+            current_idx += chunk_size
+            current_write_addr += chunk_size
 
         # Don't need to calculate it here it finished
         print(f"\rFlashing: {BG}100.00{NW}%")
@@ -613,7 +613,7 @@ class STM32Uploader(Uploader):
                 end="",
             )
 
-            chunk = self.write_data[self.last_verify_data_addr : self.last_verify_data_addr + Max_Num_Bytes]
+            chunk = data[self.last_verify_data_addr : self.last_verify_data_addr + Max_Num_Bytes]
             mem = bytes(self.SendReadMemory(self.last_verify_addr.to_bytes(4, "big"), len(chunk)))
 
             if chunk != mem:
@@ -625,5 +625,4 @@ class STM32Uploader(Uploader):
         print(f"\rVerifying write: {BG}100.00{NW}% verified")
         print(f"Write: {BG}COMPLETE{NW}")
 
-        self.write_started = False
         return True
