@@ -63,6 +63,7 @@ void uart_router_update_last_received_tick(const uint32_t current_tick);
 void uart_router_usb_send_flash_ok();
 void uart_router_usb_send_ready();
 void uart_router_usb_reply_ok();
+void uart_router_send_byte(UART_HandleTypeDef* huart, const uint8_t byte);
 void uart_router_send_string(UART_HandleTypeDef* huart, const char* str);
 void uart_router_start_receive(uart_stream_t* uart_stream);
 void uart_router_usb_update_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity);

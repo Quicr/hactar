@@ -1,16 +1,17 @@
 class ESP32SlipPacket:
     """Slip packet for esp32 bootloader.
-        |-------------------|
-        |Byte    name       |
-        |-------------------|
-        |0       Direction  |
-        |1       Command    |
-        |2-3     Size       |
-        |4-7     Checksum   |
-        |8..n    Data       |
-        |-------------------|
-        - NOTE: Data is stored in little endian format for multi-byte fields
+    |-------------------|
+    |Byte    name       |
+    |-------------------|
+    |0       Direction  |
+    |1       Command    |
+    |2-3     Size       |
+    |4-7     Checksum   |
+    |8..n    Data       |
+    |-------------------|
+    - NOTE: Data is stored in little endian format for multi-byte fields
     """
+
     END = 0xC0
     ESC = 0xDB
     ESC_END = 0xDC
@@ -18,8 +19,7 @@ class ESP32SlipPacket:
 
     # Header is at least 8 bytes + 1 for end byte at start
 
-    def __init__(self, direction: int = 0, command: int = 0,
-                 size: int = 0):
+    def __init__(self, direction: int = 0, command: int = 0, size: int = 0):
         self.data = [0] * 8
         self.data_length = 0
         self.SetHeader(direction, command, size)
@@ -29,7 +29,7 @@ class ESP32SlipPacket:
         if key < 0 and key > len(self.data) - 2:
             return -1
 
-        return self.data[key-1]
+        return self.data[key - 1]
 
     def FromBytes(self, data: bytes):
         """
@@ -40,7 +40,7 @@ class ESP32SlipPacket:
         for d in data:
             array.append(int.from_bytes(d, "little"))
 
-        if (array[0] != self.END or array[-1] != self.END):
+        if array[0] != self.END or array[-1] != self.END:
             raise Exception("Error. Start and end bytes missing")
 
         idx = 1
@@ -48,14 +48,13 @@ class ESP32SlipPacket:
         decoded_bytes = []
         while idx < len(array):
             if array[idx] == self.ESC:
-                if array[idx+1] == self.ESC_END:
+                if array[idx + 1] == self.ESC_END:
                     decoded_bytes.append(self.END)
-                elif array[idx+1] == self.ESC_ESC:
+                elif array[idx + 1] == self.ESC_ESC:
                     # following byte is not an escape
                     decoded_bytes.append(self.ESC)
                 else:
-                    raise Exception(f"{array[idx]} not properly escaped" +
-                                    f" at idx {idx}")
+                    raise Exception(f"{array[idx]} not properly escaped" + f" at idx {idx}")
                 idx += 1
             elif array[idx] == self.END:
                 break
@@ -64,14 +63,15 @@ class ESP32SlipPacket:
 
             idx += 1
 
-        if (len(decoded_bytes) < 8):
+        if len(decoded_bytes) < 8:
+            print("FromBytes. Data received", decoded_bytes)
             raise Exception("Error. Data needs to be at least 8 bytes")
 
         for i in range(8):
             self.data[i] = decoded_bytes[i]
 
         length = self.GetSize()
-        self.PushDataArray(decoded_bytes[8:8+length], "little")
+        self.PushDataArray(decoded_bytes[8 : 8 + length], "little")
 
     def SetHeader(self, direction: int, command: int, size: int = 0):
         self.SetDirection(direction)
@@ -79,29 +79,29 @@ class ESP32SlipPacket:
         self.SetSize(size)
 
     def SetDirection(self, direction: int):
-        if (direction != 0 and direction != 1):
+        if direction != 0 and direction != 1:
             raise Exception("Direction must be either 0 or 1")
         self.data[0] = direction
 
     def SetCommand(self, command: int):
-        if (command.bit_length() > 8):
+        if command.bit_length() > 8:
             raise Exception("Command should not be larger than 1 byte")
         self.data[1] = command
 
     def SetSize(self, size: int):
-        if (size.bit_length() > 16):
+        if size.bit_length() > 16:
             raise Exception("Size should not be larger than 2 bytes")
         data = size.to_bytes(2, "little")
         self.data[2] = data[0]
         self.data[3] = data[1]
 
     def Get(self, start_idx: int, num_bytes: int):
-        data = self.data[start_idx:start_idx+num_bytes]
+        data = self.data[start_idx : start_idx + num_bytes]
 
         return int.from_bytes(data, "little")
 
     def GetBytes(self, start_idx: int, num_bytes: int):
-        data = self.data[start_idx:start_idx+num_bytes]
+        data = self.data[start_idx : start_idx + num_bytes]
 
         return data
 
@@ -112,17 +112,17 @@ class ESP32SlipPacket:
         return self.data[1]
 
     def GetDataField(self):
-        return self.data[8:8+self.data_length]
+        return self.data[8 : 8 + self.data_length]
 
     def GetSize(self):
         return int.from_bytes(bytes(self.data[2:3]), "little")
 
     def PushData(self, ele: int, size: int = -1):
-        """ Pushes an element into the data, if the element is > 1 byte it
-            will be stored in little endian format.
+        """Pushes an element into the data, if the element is > 1 byte it
+        will be stored in little endian format.
         """
         num_bytes = size
-        if (num_bytes == -1):
+        if num_bytes == -1:
             num_bytes = (max(ele.bit_length(), 1) + 7) // 8
         ele_bytes = ele.to_bytes(num_bytes, "little")
 
@@ -131,12 +131,11 @@ class ESP32SlipPacket:
 
         self.data_length += len(ele_bytes)
 
-    def PushDataArray(self, data_in: [], endian_format: str = "little",
-                      size: int = -1):
-        """ Pushes an array of data into the data array
-            - Expects data in big endian format
+    def PushDataArray(self, data_in: [], endian_format: str = "little", size: int = -1):
+        """Pushes an array of data into the data array
+        - Expects data in big endian format
         """
-        if (endian_format == "little"):
+        if endian_format == "little":
             for ele in reversed(data_in):
                 self.PushData(ele, size)
         else:
@@ -150,7 +149,7 @@ class ESP32SlipPacket:
         # Checksum seed
         checksum = 0xEF
         idx = 16
-        while (idx < len(self.data)):
+        while idx < len(self.data):
             checksum ^= self.data[idx]
             idx += 1
 
@@ -175,7 +174,7 @@ class ESP32SlipPacket:
         encoded_data.append(self.END)
 
         idx = 0
-        while (idx < len(self.data)):
+        while idx < len(self.data):
             if self.END == self.data[idx]:
                 encoded_data.append(self.ESC)
                 encoded_data.append(self.ESC_END)
@@ -199,9 +198,9 @@ class ESP32SlipPacket:
         idx = 1
         for b in to_print:
             s_out += "%0.2X" % b
-            if (idx % 8 == 0):
+            if idx % 8 == 0:
                 s_out += " "
-            if (idx % 16 == 0):
+            if idx % 16 == 0:
                 s_out += "\n"
             idx += 1
 
