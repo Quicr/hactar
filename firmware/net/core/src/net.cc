@@ -131,6 +131,9 @@ uint64_t last_audio_isr_time = esp_timer_get_time();
 
 bool logs_disabled = false;
 
+spdlog::level::level_enum last_spd_log_level =
+    static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL);
+
 // TODO remove me some day
 #ifdef __has_include
 #if __has_include("wifi_creds.hh")
@@ -148,6 +151,7 @@ static void DisableLogging()
     auto logger = spdlog::get("MTC");
     if (logger)
     {
+        last_spd_log_level = logger->level();
         logger->set_level(spdlog::level::level_enum::off);
     }
 
@@ -163,7 +167,7 @@ static void EnableLogging()
     auto logger = spdlog::get("MTC");
     if (logger)
     {
-        logger->set_level(spdlog::level::level_enum::trace);
+        logger->set_level(last_spd_log_level);
     }
 
     debug_printf_resume();
