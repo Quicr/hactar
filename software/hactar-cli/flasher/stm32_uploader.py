@@ -70,7 +70,7 @@ class STM32Uploader(Uploader):
         self.sectors_deleted = []
         self.sector_idx = 0
 
-        self.write_address = 0
+        self.flash_addr_offset = 0
         self.data_idx = 0
 
         self.last_verify_addr = 0
@@ -87,11 +87,10 @@ class STM32Uploader(Uploader):
 
         self.sectors = self.GetSectorsForFirmware(uart, len(binary))
 
-        self.SendExtendedEraseMemory(uart, self.sectors, False, True, True)
+        self.SendExtendedEraseMemory(uart, self.sectors, False, True)
 
-        address = self.chip_config["usr_start_addr"] + self.write_address
-        data_offset = self.data_idx
-        self.SendWriteMemory(uart, binary, data_offset, address)
+        address = self.chip_config["usr_start_addr"]
+        self.SendWriteMemory(uart, binary, address)
 
         # UI chip is controlled by mgmt chip, so sending a go only matters on the mgmt chip.
         if self.chip == "mgmt":
@@ -328,7 +327,6 @@ class STM32Uploader(Uploader):
             "Failed to set address for read memory command",
             False,
         )
-
         reply = uart_utils.WriteByteWaitForACK(uart, num_bytes - 1, 1)
         self.HandleReply(
             reply,
@@ -343,9 +341,7 @@ class STM32Uploader(Uploader):
 
         return recv_data
 
-    def SendExtendedEraseMemory(
-        self, uart: serial.Serial, sectors_to_delete: [int], special: bool, fast_verify: bool, recover: bool
-    ):
+    def SendExtendedEraseMemory(self, uart: serial.Serial, sectors_to_delete: [int], special: bool, fast_verify: bool):
         """Sends the Erase memory command and it's compliment.
         Command = 0x44
         Compliment = 0xBB = 0x44 ^ 0xFF
@@ -528,7 +524,7 @@ class STM32Uploader(Uploader):
             True,
         )
 
-    def SendWriteMemory(self, uart: serial.Serial, data: bytes, data_offset: int, address: int):
+    def SendWriteMemory(self, uart: serial.Serial, data: bytes, flash_address: int):
         """Sends the Write memory command and it's compliment.
         Then writes the address bytes and its checksum
         Then writes the entire data stream
@@ -543,11 +539,11 @@ class STM32Uploader(Uploader):
         Max_Num_Bytes = 256
         total_bytes = len(data)
 
-        current_idx = data_offset
-        current_write_addr = address
+        current_idx = self.data_idx
+        flash_addr_offset = self.flash_addr_offset
 
         print(f"Write to Memory: {BB}STARTED{NW}")
-        print(f"Address: {BW}{current_write_addr:04x}{NW}")
+        print(f"Address: {BW}{flash_address:04x}{NW}")
         print(f"Byte Stream Size: {BW}{total_bytes}{NW}")
 
         # Either a exception or a positive return will break out
@@ -561,9 +557,10 @@ class STM32Uploader(Uploader):
             self.HandleReply(reply, "Write Command", "Failed to send Write command", False)
 
             # Send the address and the checksum
-            checksum = self.CalculateChecksum(current_write_addr.to_bytes(4, "big"))
-            write_address_bytes = current_write_addr.to_bytes(4, "big") + checksum
-            reply = uart_utils.WriteBytesWaitForACK(uart, write_address_bytes, 1)
+            address = flash_address + flash_addr_offset
+            checksum = self.CalculateChecksum(address.to_bytes(4, "big"))
+            address_bytes = address.to_bytes(4, "big") + checksum
+            reply = uart_utils.WriteBytesWaitForACK(uart, address_bytes, 1)
 
             self.HandleReply(
                 reply,
@@ -591,36 +588,39 @@ class STM32Uploader(Uploader):
             reply = uart_utils.WriteBytesWaitForACK(uart, chunk, 1)
             self.HandleReply(
                 reply,
-                f"\nWrite to address {hex(current_write_addr)}",
-                f"Failed to write to address {hex(current_write_addr)}",
+                f"\nWrite to address {hex(flash_addr_offset)}",
+                f"Failed to write to address {hex(flash_addr_offset)}",
             )
 
             self.data_idx = current_idx
-            self.write_address = current_write_addr
+            self.flash_addr_offset = flash_addr_offset
 
             # Shift over by the amount of byte stream bytes were sent
             current_idx += chunk_size
-            current_write_addr += chunk_size
+            flash_addr_offset += chunk_size
 
         # Don't need to calculate it here it finished
         print(f"\rFlashing: {BG}100.00{NW}%")
 
-        # TODO verify function?
-        while self.last_verify_data_addr < total_bytes:
+        verify_data_addr = self.last_verify_data_addr
+        verify_mem_addr = self.last_verify_addr
+        while verify_data_addr < total_bytes:
             percent_verified = (self.last_verify_data_addr / total_bytes) * 100
             print(
                 f"\rVerifying write: {BG}{percent_verified:2.2f}{NW}" f"% verified",
                 end="",
             )
 
-            chunk = data[self.last_verify_data_addr : self.last_verify_data_addr + Max_Num_Bytes]
-            mem = bytes(self.SendReadMemory(self.last_verify_addr.to_bytes(4, "big"), len(chunk)))
+            chunk = data[verify_data_addr : verify_data_addr + Max_Num_Bytes]
+            address = self.chip_config["usr_start_addr"] + verify_mem_addr
+            if not (self.FlashCompare(uart, chunk, address)):
+                raise Exception(f"\nFailed to verify at memory address {hex(verify_data_addr)}")
 
-            if chunk != mem:
-                raise Exception(f"\nFailed to verify at memory address {hex(self.last_verify_addr)}")
+            self.last_verify_data_addr = verify_data_addr
+            self.last_verify_addr = verify_mem_addr
 
-            self.last_verify_addr += len(mem)
-            self.last_verify_data_addr += len(chunk)
+            verify_data_addr += len(chunk)
+            verify_mem_addr += len(chunk)
 
         print(f"\rVerifying write: {BG}100.00{NW}% verified")
         print(f"Write: {BG}COMPLETE{NW}")

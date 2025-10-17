@@ -59,7 +59,7 @@ def main(args):
 
                     ack = hactar_send_command(uart, command_map["disable logs"], 1)
                     if not ack:
-                        raise Exception("Failed to get an ack after disabling logs.")
+                        print(f"{BY}[WARN]{BW} didn't get a reply on disable logs, but will try anyways")
 
                     if args.use_external_flasher:
                         uploader.FlashSelect(uart)

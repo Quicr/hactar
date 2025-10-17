@@ -73,20 +73,16 @@ def hactar_get_ack(uart: serial.Serial, max_attempts: int = 5):
         data = uart.read(1)
 
         if data == bytes([]):
-            print("No reply... listening again")
             attempts += 1
 
         if attempts >= max_attempts:
-            print("Hactar is not responding. Try resetting the board")
             return got_ack
 
         if data == Reply_Ack:
             got_ack = True
-            print("Ack received")
             break
         elif data == Reply_Nack:
             got_ack = False
-            print(f"Nack received for command {command}")
             break
 
     return got_ack
