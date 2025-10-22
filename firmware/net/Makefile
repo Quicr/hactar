@@ -13,7 +13,7 @@ PROG_ADDR			= 0x10000
 DOCKER_IMAGE 		= build-hactar-net
 mft					= compile
 
-ESP_TOOL_ARGS 		= --no-stub --port=${PORT} --baud=${BAUD} write_flash --no-compress \
+ESP_TOOL_ARGS 		= --trace --no-stub --port=${PORT} --baud=${BAUD} write_flash --no-compress \
 	${BOOTLOADER_ADDR} ${BUILD_PATH}/bootloader/bootloader.bin \
 	${PARITIONS_ADDR} ${BUILD_PATH}/partition_table/partition-table.bin \
 	${PROG_ADDR} ${BUILD_PATH}/${TARGET}.bin
@@ -36,11 +36,8 @@ upload_py: compile
 
 upload_esptool:
 	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" --use_external_flasher=true
-	if [ ${OS} == Windows_NT ] ; then \
-		python3 -m esptool ${ESP_TOOL_ARGS} ; \
-	else \
-		esptool.py ${ESP_TOOL_ARGS} ; \
-	fi \
+	esptool.py ${ESP_TOOL_ARGS}
+
 
 docker: docker-build
 	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \

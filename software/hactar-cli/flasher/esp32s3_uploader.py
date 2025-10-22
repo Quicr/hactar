@@ -29,45 +29,147 @@ class ESP32S3Uploader(Uploader):
     # Block size (1k)
     Block_Size = 0x400
 
-    def __init__(self, uart: serial.Serial, chip: str):
-        super().__init__(uart, chip)
+    # Flash pages are 4KB aligned
+    Page_Size = 0x1000
 
-    def FlashSelect(self):
-        self.uart.write(command_map["flash net"])
-        print(f"Sent command to flash Net")
+    def __init__(self, chip: str, binary_path: str):
+        super().__init__(chip)
 
-        self.uart.flush()
+        self.binary_path = binary_path
+        self.binaries = []
 
-        self.TryPattern(uart_utils.OK, 1, 5)
-        print(f"Flash Net command: {BG}CONFIRMED{NW}")
+        if binary_path != "":
+            flasher_args = json.load(open(f"{binary_path}/flasher_args.json"))
 
-        print(f"Update uart to parity: {BB}NONE{NW}")
-        self.uart.parity = serial.PARITY_NONE
+            if "bootloader" in flasher_args:
+                flasher_args["bootloader"]["name"] = "bootloader"
+                self.binaries.append(flasher_args["bootloader"])
+            if "partition-table" in flasher_args:
+                flasher_args["partition-table"]["name"] = "partition-table"
+                self.binaries.append(flasher_args["partition-table"])
+            if "app" in flasher_args:
+                flasher_args["app"]["name"] = "app"
+                self.binaries.append(flasher_args["app"])
 
-        self.TryPattern(uart_utils.READY, 1, 5)
-        print(f"Flash Net: {BB}READY{NW}")
+        self.binary_idx = 0
+        self.data_idx = 0
 
-        self.uart.flush()
-        self.uart.reset_input_buffer()
-
-        print(f"Activating NET Upload Mode: {BG}SUCCESS{NW}")
-
-    def FlashFirmware(self, binary_path: str) -> bool:
+    def FlashFirmware(self, uart: serial.Serial) -> bool:
         print(f"{BW}Starting Net Upload{NW}")
 
-        self.FlashSelect()
+        self.FlashSelect(uart)
 
-        self.Sync()
+        self.Sync(uart)
 
-        self.AttachSPI()
-        self.SetSPIParameters()
+        self.AttachSPI(uart)
+        self.SetSPIParameters(uart)
 
-        self.Flash(binary_path)
+        self.Flash(uart)
 
         return True
 
+    def FlashSelect(self, uart: serial.Serial):
+        uart.write(command_map["flash net"])
+        print(f"Sent command to flash Net")
+
+        uart.flush()
+
+        self.TryPattern(uart, uart_utils.OK, 1, 5)
+        print(f"Flash Net command: {BG}CONFIRMED{NW}")
+
+        print(f"Update uart to parity: {BB}NONE{NW}")
+        uart.parity = serial.PARITY_NONE
+
+        self.TryPattern(uart, uart_utils.READY, 1, 5)
+        print(f"Flash Net: {BB}READY{NW}")
+
+        uart.flush()
+        uart.reset_input_buffer()
+
+        print(f"Activating NET Upload Mode: {BG}SUCCESS{NW}")
+
+    def Sync(self, uart: serial.Serial):
+        print(f"Syncing uart to ESP32S3")
+        # For some reason sync sends 4 packets
+        packet = ESP32SlipPacket(0x00, self.SYNC)
+
+        packet.PushDataArray([0x07, 0x07, 0x012, 0x20], "big")
+        packet.PushDataArray([0x55] * 32, "big")
+
+        timeout = time.time() + 10
+
+        num_replies = 0
+        synced = False
+
+        reply = self.WritePacketWaitForResponsePacket(uart, packet, self.SYNC, retry_num=10)
+
+        num_sync_received = 0
+
+        while True:
+            if time.time() > timeout:
+                raise Exception("Timed out on sync")
+
+            if reply == -1:
+                if not synced:
+                    print(f"Activating device: {BY}NO REPLY{NW}")
+                    raise Exception("Failed to Activate device")
+
+                # We are synced and we got a no reply, which means we read all of the syncs
+                break
+
+            if reply.GetCommand() != self.SYNC:
+                print(f"Got a different command. Expected {self.SYNC} Got {reply.GetCommand()}")
+                raise Exception("Failed to Activate device")
+
+            if reply.GetCommand() == self.SYNC:
+                synced = True
+                num_sync_received += 1
+                timeout = time.time() + 10
+
+            reply = self.WaitForResponsePacket(uart, self.SYNC)
+
+            print(f"Sync packets recevied: {num_sync_received}")
+
+        print(f"Syncing uart to ESP32S3: {BG}SUCCESS{NW}")
+
+    def AttachSPI(self, uart: serial.Serial):
+        packet = ESP32SlipPacket(0, self.SPI_ATTACH)
+        packet.PushDataArray([0] * 8)
+
+        reply = self.WritePacketWaitForResponsePacket(uart, packet, self.SPI_ATTACH)
+
+        if reply.data[-1] == 1 or reply.GetCommand() != self.SPI_ATTACH:
+            raise Exception(f"Error occurred in attach spi. Reply dump: {reply}")
+
+        print("Attached SPI")
+
+    def SetSPIParameters(self, uart: serial.Serial):
+        # This is all hardcoded...
+
+        packet = ESP32SlipPacket(0, self.SPI_SET_PARAMS)
+        # ID
+        packet.PushData(0, 4)
+        # total size (4MB)
+        packet.PushData(0x400000, 4)
+        # esp32s3 block size
+        packet.PushData(64 * 1024, 4)
+        # esp32s3 sector size
+        packet.PushData(4 * 1024, 4)
+        # esp32s3 Page size
+        packet.PushData(256, 4)
+        # status mask
+        packet.PushData(0xFFFF, 4)
+
+        reply = self.WritePacketWaitForResponsePacket(uart, packet, self.SPI_SET_PARAMS)
+
+        if reply.data[-1] == 1 or reply.GetCommand() != self.SPI_SET_PARAMS:
+            print(f"Error occurred in spi set params. Reply dump: {reply}")
+
+        print("SPI parameters set!")
+
     def WritePacketWaitForResponsePacket(
         self,
+        uart: serial.Serial,
         packet: ESP32SlipPacket,
         packet_type: int = -1,
         checksum: bool = False,
@@ -75,9 +177,9 @@ class ESP32S3Uploader(Uploader):
     ):
         while retry_num > 0:
             retry_num -= 1
-            self.WritePacket(packet, checksum)
+            self.WritePacket(uart, packet, checksum)
 
-            reply = self.WaitForResponsePacket(packet_type)
+            reply = self.WaitForResponsePacket(uart, packet_type)
 
             if reply == -1:
                 continue
@@ -86,80 +188,44 @@ class ESP32S3Uploader(Uploader):
 
         return -1
 
-    def WritePacket(self, packet: ESP32SlipPacket, checksum: bool = False):
-        data = packet.SLIPEncode(checksum)
-        self.uart.write(data)
+    def Flash(self, uart: serial.Serial):
+        while self.binary_idx < len(self.binaries):
+            binary = self.binaries[self.binary_idx]
 
-    def WaitForResponsePacket(self, packet_type: int = -1):
-        rx_byte = bytes(1)
-        in_bytes = []
+            # Determine our current page number
+            page = self.data_idx // self.Page_Size
 
-        packet = None
-        packets = []
+            self.data_idx = page * self.Page_Size
 
-        # Loop until we get no reply, or we get the packet type we want
-        while True:
-            packet = ESP32SlipPacket()
-            # Wait for start byte
-            while rx_byte[0] != ESP32SlipPacket.END:
-                rx_byte = self.uart.read(1)
-                if len(rx_byte) < 1:
-                    if len(packets) > 0:
-                        return packets
-                    else:
-                        return -1
+            # Get the firmware binary
+            data = open(f"{self.binary_path}/{binary['file']}", "rb").read()
+            binary_size = len(data)
+            starting_offset = int(binary["offset"], 16)
 
-            # Append the end byte
-            in_bytes.append(rx_byte)
+            # Get the total number of bytes we'll be sending
+            send_size = binary_size - self.data_idx
 
-            # Reset rx_byte
-            rx_byte = bytes(1)
-            while rx_byte[0] != ESP32SlipPacket.END:
-                rx_byte = self.uart.read(1)
-                if len(rx_byte) < 1:
-                    if len(packets) > 0:
-                        return packets
-                    else:
-                        return -1
-                in_bytes.append(rx_byte)
+            # Get the offset of where we will be writing to
+            offset = starting_offset + self.data_idx
 
-            packet.FromBytes(in_bytes)
-            if packet.Get(1, 1) == packet_type:
-                break
-            elif packet_type == -1:
-                packets.append(packet)
+            # Determine the number of packets we'll be sending
+            num_blocks = (send_size - 1) // self.Block_Size
 
-        return packet
+            print(f"Flashing: {BY}{binary['name']}{NW}, send_size: {hex(send_size)}, start_addr: {hex(offset)}")
 
-    def Flash(self, build_path: str):
-        flasher_args = json.load(open(f"{build_path}/flasher_args.json"))
+            self.StartFlash(uart, send_size, num_blocks, offset)
+            self.WriteFlash(uart, binary["file"], data, num_blocks)
+            self.FlashMD5(uart, data, starting_offset, binary_size)
 
-        binaries = []
-        if "bootloader" in flasher_args:
-            flasher_args["bootloader"]["name"] = "bootloader"
-            binaries.append(flasher_args["bootloader"])
-        if "partition-table" in flasher_args:
-            flasher_args["partition-table"]["name"] = "partition-table"
-            binaries.append(flasher_args["partition-table"])
-        if "app" in flasher_args:
-            flasher_args["app"]["name"] = "app"
-            binaries.append(flasher_args["app"])
+            # Reset our data ptr
+            self.data_idx = 0
 
-        for binary in binaries:
-            data = open(f"{build_path}/{binary['file']}", "rb").read()
-            size = len(data)
-            offset = int(binary["offset"], 16)
-            num_blocks = (size + self.Block_Size - 1) // self.Block_Size
+            self.binary_idx += 1
 
-            print(f"Flashing: {BY}{binary['name']}{NW}, size: {hex(size)}, " f"start_addr: {hex(offset)}")
+        # End flashing and reboot
+        self.EndFlash(uart)
 
-            self.StartFlash(size, num_blocks, offset)
-            self.WriteFlash(binary["file"], data, num_blocks)
-            self.FlashMD5(data, offset, size)
-
-        self.EndFlash()
-
-    def StartFlash(self, size: int, num_blocks: int, offset: int):
+    def StartFlash(self, uart: serial.Serial, size: int, num_blocks: int, offset: int):
         packet = ESP32SlipPacket(0x00, self.FLASH_BEGIN)
 
         # Size to erase
@@ -177,25 +243,27 @@ class ESP32S3Uploader(Uploader):
         # Just some zeroes
         packet.PushData(0, 4)
 
-        reply = self.WritePacketWaitForResponsePacket(packet, self.FLASH_BEGIN)
+        reply = self.WritePacketWaitForResponsePacket(uart, packet, self.FLASH_BEGIN)
 
         # Check for error
-        if reply.data[-1] == 1:
+        if reply.data[-1] == 1 and reply.GetCommand() == self.FLASH_BEGIN:
             print(reply)
             raise Exception("Error occurred when starting flashing")
 
-    def WriteFlash(self, file: str, data: bytes, num_blocks: int):
-        data_ptr = 0
-        size = len(data)
+    def WriteFlash(self, uart: serial.Serial, file: str, data: bytes, num_blocks: int):
         packet_idx = 0
+        current_idx = self.data_idx
+        binary_size = len(data)
 
         print(f"Flashing: {BG}00.00{NW}%", end="\r")
 
-        while data_ptr < size:
+        while current_idx < binary_size:
+            # Create a flashing slip packet with the direction and command
             bin_packet = ESP32SlipPacket(0, self.FLASH_DATA)
 
             # Push on the data size which will be the block size
             bin_packet.PushData(self.Block_Size, 4)
+
             # Push the current bin_packet num aka sequence number
             bin_packet.PushData(packet_idx, 4)
 
@@ -203,7 +271,7 @@ class ESP32S3Uploader(Uploader):
             bin_packet.PushData(0, 4)
             bin_packet.PushData(0, 4)
 
-            data_bytes = data[data_ptr : data_ptr + self.Block_Size]
+            data_bytes = data[current_idx : current_idx + self.Block_Size]
 
             if len(data_bytes) < self.Block_Size:
                 # Pad the data to fit the block size
@@ -213,43 +281,48 @@ class ESP32S3Uploader(Uploader):
             bin_packet.PushDataArray(data_bytes, "big")
 
             # Write the packet and wait for a reply
-            reply = self.WritePacketWaitForResponsePacket(bin_packet, self.FLASH_DATA, checksum=True)
+            reply = self.WritePacketWaitForResponsePacket(uart, bin_packet, self.FLASH_DATA, checksum=True)
 
-            if reply.GetCommand() != self.FLASH_DATA:
+            if reply == self.NO_REPLY or reply.GetCommand() != self.FLASH_DATA:
+                print("")
                 print(reply)
-                print(f"Error occurred when writing address {data_ptr}" f" of {file}")
+                if reply != self.NO_REPLY:
+                    print(reply.GetCommand())
+                print(f"Error occurred when writing address {current_idx}" f" of {file}")
                 raise Exception("Error. Failed to write")
 
-            print(f"Flashing: {BG}{(data_ptr/size) * 100:2.2f}{NW}%", end="\r")
+            print(f"Flashing: {BG}{(current_idx/binary_size) * 100:2.2f}{NW}%", end="\r")
+
+            self.data_idx = current_idx
 
             # Move the file pointer
-            data_ptr += self.Block_Size
+            current_idx += self.Block_Size
 
             # Increment the sequence number
             packet_idx += 1
 
         print(f"Flashing: {BG}100.00{NW}%")
 
-    def EndFlash(self):
+    def EndFlash(self, uart: serial.Serial):
         packet = ESP32SlipPacket(0, self.FLASH_END)
 
-        packet.PushData(0x1, 4)
+        packet.PushData(0, 4)
 
-        reply = self.WritePacketWaitForResponsePacket(packet, self.FLASH_END)
+        reply = self.WritePacketWaitForResponsePacket(uart, packet, self.FLASH_END)
 
         if reply == self.NO_REPLY or reply.GetCommand() != self.FLASH_END:
             print("Failed to restart board")
 
         print(f"Flashing: {BG}COMPLETE{NW}")
 
-    def FlashMD5(self, data: bytes, address: int, size: int):
+    def FlashMD5(self, uart: serial.Serial, data: bytes, address: int, size: int):
         packet = ESP32SlipPacket(0, self.SPI_FLASH_MD5)
         packet.PushData(address, 4)
         packet.PushData(size, 4)
         packet.PushData(0, 4)
         packet.PushData(0, 4)
 
-        reply = self.WritePacketWaitForResponsePacket(packet, self.SPI_FLASH_MD5)
+        reply = self.WritePacketWaitForResponsePacket(uart, packet, self.SPI_FLASH_MD5)
 
         if reply.data[-1] == 1:
             print(f"Error occurred during flash. Reply dump: {reply}")
@@ -272,48 +345,62 @@ class ESP32S3Uploader(Uploader):
             if res_md5[i] != loc_md5[i]:
                 raise Exception("MD5 hashes did not match." f"\n\rReceived: {res_md5}" f"\n\rCalculated: {loc_md5}")
 
-    def AttachSPI(self):
-        packet = ESP32SlipPacket(0, self.SPI_ATTACH)
-        packet.PushDataArray([0] * 8)
+    def WritePacket(self, uart: serial.Serial, packet: ESP32SlipPacket, checksum: bool = False):
+        data = packet.SLIPEncode(checksum)
+        uart.write(data)
 
-        reply = self.WritePacketWaitForResponsePacket(packet, self.SPI_ATTACH)
+    def WaitForResponsePacket(self, uart: serial.Serial, packet_type: int = -1):
+        Timeout_Duration_s = 3
 
-        if reply.data[-1] == 1:
-            raise Exception(f"Error occurred in attach spi. Reply dump: {reply}")
+        rx_byte = bytes(1)
+        in_bytes = []
 
-    def SetSPIParameters(self):
-        # This is all hardcoded...
+        packet = None
 
-        packet = ESP32SlipPacket(0, self.SPI_SET_PARAMS)
-        # ID
-        packet.PushData(0, 4)
-        # total size (4MB)
-        packet.PushData(0x400000, 4)
-        # esp32s3 block size
-        packet.PushData(64 * 1024, 4)
-        # esp32s3 sector size
-        packet.PushData(4 * 1024, 4)
-        # esp32s3 Page size
-        packet.PushData(256, 4)
-        # status mask
-        packet.PushData(0xFFFF, 4)
+        packet = ESP32SlipPacket()
 
-        reply = self.WritePacketWaitForResponsePacket(packet, self.SPI_SET_PARAMS)
+        timeout = time.time() + Timeout_Duration_s
 
-        if reply.data[-1] == 1:
-            print(f"Error occurred in spi set params. Reply dump: {reply}")
+        # Read until we hit a end byte, otherwise, timeout
+        while rx_byte[0] != ESP32SlipPacket.END:
+            if time.time() > timeout:
+                print("Timed out waiting for a start byte")
+                return -1
 
-    def Sync(self):
-        packet = ESP32SlipPacket(0x00, self.SYNC)
+            rx_byte = uart.read(1)
 
-        packet.PushDataArray([0x07, 0x07, 0x012, 0x20], "big")
-        packet.PushDataArray([0x55] * 32, "big")
+            if len(rx_byte) < 1:
+                return -1
 
-        reply = self.WritePacketWaitForResponsePacket(packet, self.SYNC, retry_num=5)
+        # We have the start byte, append it to our bytes
+        in_bytes.append(rx_byte)
 
-        # We got a packet, so we are pleased with that
-        if reply == -1:
-            print(f"Activating device: {BY}NO REPLY{NW}")
-            raise Exception("Failed to Activate device")
+        rx_byte = bytes(1)
+        while rx_byte[0] != ESP32SlipPacket.END:
+            if time.time() > timeout:
+                return -1
 
-        print(f"Activating device: {BG}SUCCESS{NW}")
+            rx_byte = uart.read(1)
+
+            if len(rx_byte) < 1:
+                print("Timed out waiting for a start byte")
+
+                return -1
+
+            in_bytes.append(rx_byte)
+
+            # Since this could in theory have double the size
+            # from the encoding we'll only break if we are bigger than
+            # double our max packet size
+            if len(in_bytes) > self.Block_Size * 2:
+                print("In bytes is too large")
+                return -1
+
+        # Packet is done, convert it
+        packet.FromBytes(in_bytes)
+
+        if packet.Length() > self.Block_Size:
+            print("Packet too large")
+            return -1
+
+        return packet

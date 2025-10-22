@@ -1,4 +1,4 @@
-from hactar_commands import command_map
+from hactar_commands import command_map, hactar_send_command
 from ansi_codes import *
 import serial
 import serial.tools.list_ports
@@ -26,32 +26,26 @@ def HactarScanning(uart_config):
     result = []
     for port in ports:
         try:
-            s = serial.Serial(**uart_config, port=port)
-            s.timeout = 0.1
+            uart = serial.Serial(**uart_config, port=port)
+            uart.timeout = 0.1
 
             # Silence the chattering chips (I'M LOOKING AT YOU ESP32!)
             # Also read and ignore the ok
-            s.write(command_map["disable logs"])
-
-            while True:
-                byte = s.read(1)
-
-                if byte == bytes(0):
-                    break
+            hactar_send_command(uart, command_map["disable logs"], 1)
 
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
             # append it.
-            s.write(command_map["who are you"])
+            hactar_send_command(uart, command_map["who are you"], 1)
 
             # Read and ignore the ok reponse and ignore it
-            # 3 for ok\n
-            resp = s.read(3 + len(HELLO_RES))
-            # Skip the Ok\n
-            resp = resp[3:]
+            resp = uart.read(len(HELLO_RES))
 
-            s.write(command_map["default logging"])
-            s.close()
+            hactar_send_command(uart, command_map["default logging"], 1)
+
+            print(resp)
+
+            uart.close()
 
             if resp == HELLO_RES:
                 print(f"Device on port {BY}{port}{NW} {BG}is{NW} a Hactar!")

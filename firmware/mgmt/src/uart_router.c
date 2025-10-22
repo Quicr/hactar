@@ -2,6 +2,14 @@
 #include "main.h"
 #include <string.h>
 
+// https://stackoverflow.com/questions/3437404/min-and-max-in-c
+#define min(a, b)                                                                                  \
+    ({                                                                                             \
+        __typeof__(a) _a = (a);                                                                    \
+        __typeof__(b) _b = (b);                                                                    \
+        _a < _b ? _a : _b;                                                                         \
+    })
+
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
@@ -35,7 +43,6 @@ uart_stream_t usb_stream = {
             .size = USB_UART_BUFF_SZ,
             .read = 0,
             .write = 0,
-            .unsent = 0,
             .num_sending = 0,
             .free = 1,
         },
@@ -56,7 +63,6 @@ uart_stream_t ui_stream = {
             .size = UI_UART_BUFF_SZ,
             .read = 0,
             .write = 0,
-            .unsent = 0,
             .num_sending = 0,
             .free = 1,
         },
@@ -77,7 +83,6 @@ uart_stream_t net_stream = {
             .size = NET_UART_BUFF_SZ,
             .read = 0,
             .write = 0,
-            .unsent = 0,
             .num_sending = 0,
             .free = 1,
         },
@@ -89,7 +94,6 @@ static transmit_t internal_tx = {
     .size = INTERNAL_BUFF_SZ,
     .read = 0,
     .write = 0,
-    .unsent = 0,
     .num_sending = 0,
     .free = 1,
 };
@@ -99,6 +103,8 @@ static uint32_t num_read = 0;
 static uint8_t Ok_Byte[] = {0x80};
 static uint8_t Ready_Byte[] = {0x81};
 static uint8_t Ok_Ascii[3] = "Ok\n";
+static uint8_t Ack = 0x82;
+static uint8_t Nack = 0x83;
 
 uint32_t last_receive_tick = 0;
 
@@ -110,11 +116,22 @@ static uint8_t read_from_tx(transmit_t* tx, uint32_t* num_read)
         tx->read = 0;
     }
 
-    --tx->unsent;
-
     (*num_read) += 1;
 
     return tx->buff[tx->read++];
+}
+
+static uint16_t get_distance(transmit_t* tx)
+{
+    if (tx->write > tx->read)
+    {
+        // read head is directly behind write head just need the difference
+        return tx->write - tx->read;
+    }
+
+    // the read head is a head of the write head, so we read until the end of the buffer
+    // and wrap around on the isr
+    return tx->size - tx->read;
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
@@ -126,7 +143,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
     // 3. idle  -- Nothing has been received in awhile
 
     HAL_GPIO_TogglePin(LEDB_G_GPIO_Port, LEDB_G_Pin);
-    last_receive_tick = HAL_GetTick();
 
     __disable_irq();
 
@@ -140,6 +156,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
     }
     else if (huart->Instance == usb_uart.Instance)
     {
+        last_receive_tick = HAL_GetTick();
         uart_router_rx_isr(&usb_stream, rx_idx);
     }
 
@@ -226,23 +243,25 @@ void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received)
 
 void uart_router_copy_to_tx(transmit_t* tx, const uint8_t* buff, const uint16_t num_bytes)
 {
-    if (tx->write + num_bytes >= tx->size)
+    // If num bytes overflows our buffer, only read the first bytes
+    const uint16_t bytes = min(tx->size, num_bytes);
+
+    uint16_t read_idx = 0;
+    while (read_idx < bytes)
     {
-        const uint16_t wrap_bytes = tx->size - tx->write;
+        // Get the amount we can copy
+        const uint16_t to_copy = min(tx->size - tx->write, bytes);
 
-        memcpy(tx->buff + tx->write, buff, wrap_bytes);
-        memcpy(tx->buff, buff + wrap_bytes, num_bytes - wrap_bytes);
+        memcpy(tx->buff + tx->write, buff + read_idx, to_copy);
 
-        tx->write = num_bytes - wrap_bytes;
+        tx->write += to_copy;
+        read_idx += to_copy;
+
+        if (tx->write >= tx->size)
+        {
+            tx->write = 0;
+        }
     }
-    else
-    {
-        memcpy(tx->buff + tx->write, buff, num_bytes);
-        tx->write += num_bytes;
-    }
-
-    // Copy bytes to tx buffer
-    tx->unsent += num_bytes;
 }
 
 void uart_router_copy_string_to_tx(transmit_t* tx, const char* str)
@@ -255,7 +274,6 @@ void uart_router_copy_string_to_tx(transmit_t* tx, const char* str)
 
 void uart_router_tx_isr(uart_stream_t* stream)
 {
-    stream->tx.unsent -= stream->tx.num_sending;
     stream->tx.read += stream->tx.num_sending;
 
     if (stream->tx.read >= stream->tx.size)
@@ -278,7 +296,7 @@ void uart_router_transmit(uart_stream_t* stream)
 
 void uart_router_perform_transmit(uart_stream_t* stream)
 {
-    if (stream->tx.unsent == 0)
+    if (stream->tx.read == stream->tx.write)
     {
         stream->tx.free = 1;
         return;
@@ -286,11 +304,7 @@ void uart_router_perform_transmit(uart_stream_t* stream)
 
     stream->tx.free = 0;
 
-    stream->tx.num_sending = stream->tx.unsent;
-    if (stream->tx.read + stream->tx.num_sending >= stream->tx.size)
-    {
-        stream->tx.num_sending = stream->tx.size - stream->tx.read;
-    }
+    stream->tx.num_sending = get_distance(&stream->tx);
 
     HAL_UART_Transmit_DMA(stream->uart, stream->tx.buff + stream->tx.read, stream->tx.num_sending);
 }
@@ -316,10 +330,23 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
         uart_router_send_string(&usb_uart, "[Error] command timeout\n");
     }
 
-    while (internal_tx.unsent > 0)
+    if (HAL_GetTick() - last_receive_tick >= 100 && internal_tx.read != internal_tx.write
+        && num_read == 0)
     {
+        // If we have timed out on the received data and have not read anything, clear the buffer
+        internal_tx.read = internal_tx.write;
+
+        // Reset
+        num_read = 0;
+        packet_idx = 0;
+    }
+
+    while (internal_tx.read != internal_tx.write)
+    {
+        const uint16_t distance = get_distance(&internal_tx);
+
         // If we don't have enough bytes for the length and the command
-        if (internal_tx.unsent < Header_Bytes && num_read == 0)
+        if (distance < Header_Bytes && num_read == 0)
         {
             break;
         }
@@ -359,12 +386,12 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
                 if (command_map[command].command == command
                     && command_map[command].callback != NULL)
                 {
-                    uart_router_usb_reply_ok();
+                    uart_router_send_byte(&usb_uart, Ack);
                     command_map[command].callback(command_map[command].usr_arg);
                 }
                 else
                 {
-                    uart_router_send_string(&usb_uart, "Error\n");
+                    uart_router_send_byte(&usb_uart, Nack);
                 }
                 break;
             }
@@ -456,6 +483,11 @@ void uart_router_usb_send_ready()
 void uart_router_usb_reply_ok()
 {
     HAL_UART_Transmit(&usb_uart, Ok_Ascii, sizeof(Ok_Ascii), HAL_MAX_DELAY);
+}
+
+void uart_router_send_byte(UART_HandleTypeDef* huart, const uint8_t byte)
+{
+    HAL_UART_Transmit(huart, &byte, 1, HAL_MAX_DELAY);
 }
 
 void uart_router_send_string(UART_HandleTypeDef* huart, const char* str)
