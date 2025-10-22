@@ -262,29 +262,6 @@ void uart_router_copy_to_tx(transmit_t* tx, const uint8_t* buff, const uint16_t 
             tx->write = 0;
         }
     }
-
-    // if (tx->write + num_bytes >= tx->size)
-    // {
-    //     const uint16_t wrap_bytes = tx->size - tx->write;
-
-    //     memcpy(tx->buff + tx->write, buff, wrap_bytes);
-    //     memcpy(tx->buff, buff + wrap_bytes, num_bytes - wrap_bytes);
-
-    //     tx->write = num_bytes - wrap_bytes;
-    // }
-    // else
-    // {
-    //     memcpy(tx->buff + tx->write, buff, num_bytes);
-    //     tx->write += num_bytes;
-    // }
-
-    // Copy bytes to tx buffer
-    // tx->unsent += num_bytes;
-
-    // if (tx->unsent > tx->size)
-    // {
-    //     tx->unsent = tx->size;
-    // }
 }
 
 void uart_router_copy_string_to_tx(transmit_t* tx, const char* str)
