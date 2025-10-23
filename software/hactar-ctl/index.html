@@ -3,243 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WASM Demo</title>
+    <title>Hactar Device Checker - WebSerial</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
             margin: 50px auto;
             padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
         }
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-size: 16px;
             cursor: pointer;
             background-color: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
-            margin: 5px;
+            margin: 10px 5px;
+            transition: background-color 0.2s;
         }
-        button:hover {
+        button:hover:not(:disabled) {
             background-color: #0056b3;
         }
         button:disabled {
             background-color: #6c757d;
             cursor: not-allowed;
+            opacity: 0.6;
         }
-        .section {
-            margin: 30px 0;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #f9f9f9;
+        .success {
+            background-color: #28a745;
         }
-        #output, #serialOutput {
+        .success:hover:not(:disabled) {
+            background-color: #218838;
+        }
+        #output {
             margin-top: 20px;
-            padding: 10px;
-            background-color: #f5f5f5;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
             border-radius: 4px;
-            min-height: 50px;
-            font-family: monospace;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
             white-space: pre-wrap;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
         }
-        input[type="text"], input[type="number"] {
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        label {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        input[type="number"] {
             padding: 8px;
             font-size: 14px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            margin: 5px;
-        }
-        label {
-            display: inline-block;
-            margin: 5px;
-            font-weight: bold;
+            width: 120px;
         }
     </style>
 </head>
 <body>
-    <h1>WASM Demo</h1>
+    <div class="container">
+        <h1>Hactar Device Checker</h1>
 
-    <!-- Hello Demo Section -->
-    <div class="section">
-        <h2>Hello Demo</h2>
-        <p>Click the button to call the WASM say_hello() function:</p>
-        <button id="helloButton">Say Hello</button>
-        <div id="output">
-            <p><em>Check the browser console for output</em></p>
-        </div>
-    </div>
-
-    <!-- Serial Port Demo Section -->
-    <div class="section">
-        <h2>Web Serial API Demo</h2>
-        <p>This demonstrates Web Serial API access from WASM code.</p>
-
-        <div>
-            <button id="requestPortBtn">Request Serial Port</button>
-            <button id="openPortBtn" disabled>Open Port</button>
-            <button id="closePortBtn" disabled>Close Port</button>
+        <div class="info">
+            <strong>ℹ️ Info:</strong> This page uses the Web Serial API to check if a connected serial device is a Hactar device.
+            It works by sending "who are you" and expecting the response "HELLO, I AM A HACTAR DEVICE".
         </div>
 
-        <div>
+        <div class="controls">
             <label>Baud Rate:</label>
             <input type="number" id="baudRate" value="115200" />
         </div>
 
-        <div>
-            <label>Send Data:</label>
-            <input type="text" id="sendData" placeholder="Enter text to send" />
-            <button id="sendBtn" disabled>Send</button>
+        <div class="controls">
+            <div id="status" class="status disconnected">Not connected</div>
         </div>
 
         <div>
-            <button id="readBtn" disabled>Read Data</button>
-            <button id="clearOutputBtn">Clear Output</button>
+            <button id="connectBtn">Connect to Serial Port</button>
+            <button id="testBtn" disabled>Test for Hactar Device</button>
+            <button id="disconnectBtn" disabled>Disconnect</button>
+            <button id="clearBtn">Clear Output</button>
         </div>
 
-        <div>
-            <button id="testHactarBtn" disabled>Test for Hactar Device</button>
-        </div>
-
-        <div id="serialOutput">
-Status: Not connected
-        </div>
+        <div id="output">Ready to connect...</div>
     </div>
 
     <script type="module">
-        import init, {
-            say_hello,
-            serial_request_port,
-            serial_open_port,
-            serial_close_port,
-            serial_read_bytes,
-            serial_write_string,
-            test_for_hactar
-        } from './pkg/wasm_demo.js';
+        import init, { HactarSerial } from './pkg/hactar_ctl.js';
 
-        let currentPort = null;
-        let isOpen = false;
+        // UI elements
+        const connectBtn = document.getElementById('connectBtn');
+        const testBtn = document.getElementById('testBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const output = document.getElementById('output');
+        const statusEl = document.getElementById('status');
+        const baudRateInput = document.getElementById('baudRate');
+
+        // HactarSerial instance (initialized after WASM loads)
+        let hactarSerial = null;
 
         function log(message) {
-            const output = document.getElementById('serialOutput');
             const timestamp = new Date().toLocaleTimeString();
             output.textContent += `[${timestamp}] ${message}\n`;
             output.scrollTop = output.scrollHeight;
         }
 
-        function updateButtons() {
-            const hasPort = currentPort !== null;
-            document.getElementById('openPortBtn').disabled = !hasPort || isOpen;
-            document.getElementById('closePortBtn').disabled = !isOpen;
-            document.getElementById('sendBtn').disabled = !isOpen;
-            document.getElementById('readBtn').disabled = !isOpen;
-            document.getElementById('testHactarBtn').disabled = !isOpen;
+        function updateStatus(connected) {
+            if (connected) {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status connected';
+                connectBtn.disabled = true;
+                testBtn.disabled = false;
+                disconnectBtn.disabled = false;
+                baudRateInput.disabled = true;
+            } else {
+                statusEl.textContent = 'Not connected';
+                statusEl.className = 'status disconnected';
+                connectBtn.disabled = false;
+                testBtn.disabled = true;
+                disconnectBtn.disabled = true;
+                baudRateInput.disabled = false;
+            }
+        }
+
+        async function connect() {
+            try {
+                log('Requesting serial port...');
+
+                const baudRate = parseInt(baudRateInput.value) || 115200;
+                log(`Opening port at ${baudRate} baud...`);
+
+                await hactarSerial.connect(baudRate);
+
+                log('✓ Port opened successfully');
+                updateStatus(true);
+
+            } catch (error) {
+                log(`❌ ERROR: ${error}`);
+                updateStatus(false);
+            }
+        }
+
+        async function disconnect() {
+            try {
+                await hactarSerial.disconnect();
+
+                log('Port closed');
+                updateStatus(false);
+            } catch (error) {
+                log(`❌ ERROR during disconnect: ${error}`);
+            }
+        }
+
+        async function testForHactar() {
+            try {
+                testBtn.disabled = true;
+                disconnectBtn.disabled = true;
+
+                const isHactar = await hactarSerial.checkForHactar();
+
+                if (isHactar) {
+                    log('✅ Device is a Hactar');
+                } else {
+                    log('❌ Not a Hactar device');
+                }
+
+            } catch (error) {
+                log(`❌ ERROR: ${error}`);
+            } finally {
+                testBtn.disabled = false;
+                disconnectBtn.disabled = false;
+            }
         }
 
         async function run() {
+            // Initialize WASM module
             await init();
 
-            // Hello button
-            document.getElementById('helloButton').addEventListener('click', () => {
-                say_hello();
+            // Create HactarSerial instance
+            hactarSerial = new HactarSerial();
+
+            // Event listeners
+            connectBtn.addEventListener('click', connect);
+            testBtn.addEventListener('click', testForHactar);
+            disconnectBtn.addEventListener('click', disconnect);
+            clearBtn.addEventListener('click', () => {
+                output.textContent = 'Output cleared.\n';
             });
 
-            // Request port button
-            document.getElementById('requestPortBtn').addEventListener('click', async () => {
-                try {
-                    log('Requesting serial port...');
-                    currentPort = await serial_request_port();
-                    log('Port granted');
-                    updateButtons();
-                } catch (error) {
-                    log(`Error: ${error}`);
-                }
-            });
-
-            // Open port button
-            document.getElementById('openPortBtn').addEventListener('click', async () => {
-                try {
-                    const baudRate = parseInt(document.getElementById('baudRate').value);
-                    log(`Opening port at ${baudRate} baud...`);
-                    await serial_open_port(currentPort, baudRate);
-                    log('Port opened successfully');
-                    isOpen = true;
-                    updateButtons();
-                } catch (error) {
-                    log(`Error: ${error}`);
-                }
-            });
-
-            // Close port button
-            document.getElementById('closePortBtn').addEventListener('click', async () => {
-                try {
-                    log('Closing port...');
-                    await serial_close_port(currentPort);
-                    log('Port closed');
-                    isOpen = false;
-                    updateButtons();
-                } catch (error) {
-                    log(`Error: ${error}`);
-                }
-            });
-
-            // Send button
-            document.getElementById('sendBtn').addEventListener('click', async () => {
-                try {
-                    const data = document.getElementById('sendData').value;
-                    if (data) {
-                        log(`Sending: ${data}`);
-                        await serial_write_string(currentPort, data);
-                        log('Data sent');
-                        document.getElementById('sendData').value = '';
-                    }
-                } catch (error) {
-                    log(`Error: ${error}`);
-                }
-            });
-
-            // Read button
-            document.getElementById('readBtn').addEventListener('click', async () => {
-                try {
-                    log('Reading data...');
-                    const data = await serial_read_bytes(currentPort);
-                    if (data.length === 0) {
-                        log('No data available (EOF)');
-                    } else {
-                        // Convert byte array to string
-                        const text = new TextDecoder().decode(new Uint8Array(data));
-                        log(`Received (${data.length} bytes): ${text}`);
-                    }
-                } catch (error) {
-                    log(`Error: ${error}`);
-                }
-            });
-
-            // Test for Hactar button
-            document.getElementById('testHactarBtn').addEventListener('click', async () => {
-                try {
-                    log('Testing for Hactar device...');
-                    log('Sending: who are you');
-                    const isHactar = await test_for_hactar(currentPort);
-                    if (isHactar) {
-                        log('✓ SUCCESS: Device is a Hactar device!');
-                    } else {
-                        log('✗ FAILED: Device is not a Hactar device or response mismatch');
-                    }
-                } catch (error) {
-                    log(`Error: ${error}`);
-                }
-            });
-
-            // Clear output button
-            document.getElementById('clearOutputBtn').addEventListener('click', () => {
-                document.getElementById('serialOutput').textContent = 'Status: Ready\n';
-            });
-
-            updateButtons();
+            // Check for Web Serial API support
+            if (!HactarSerial.isSupported()) {
+                log('⚠️ WARNING: Web Serial API is not supported in this browser.');
+                log('Please use Chrome, Edge, or Opera with HTTPS or localhost.');
+                connectBtn.disabled = true;
+            }
         }
 
         run();
