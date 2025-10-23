@@ -15,8 +15,6 @@ name = "check-hactar"
 path = "src/check_hactar.rs"
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
-tokio-serial = "5.4"
 rand = "0.8"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
@@ -35,3 +33,8 @@ web-sys = { version = "0.3", features = [
     "WritableStreamDefaultWriter",
     "ParityType",
 ] }
+
+# Native-only dependencies (not used in WASM)
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-serial = "5.4"
