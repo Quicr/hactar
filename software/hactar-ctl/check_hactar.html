@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hactar Device Checker - WebSerial</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin: 10px 5px;
+            transition: background-color 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .success {
+            background-color: #28a745;
+        }
+        .success:hover:not(:disabled) {
+            background-color: #218838;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        label {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hactar Device Checker</h1>
+
+        <div class="info">
+            <strong>ℹ️ Info:</strong> This page uses the Web Serial API to check if a connected serial device is a Hactar device.
+            It works by sending "who are you" and expecting the response "HELLO, I AM A HACTAR DEVICE".
+        </div>
+
+        <div class="controls">
+            <label>Baud Rate:</label>
+            <input type="number" id="baudRate" value="115200" />
+        </div>
+
+        <div class="controls">
+            <div id="status" class="status disconnected">Not connected</div>
+        </div>
+
+        <div>
+            <button id="connectBtn">Connect to Serial Port</button>
+            <button id="testBtn" disabled>Test for Hactar Device</button>
+            <button id="disconnectBtn" disabled>Disconnect</button>
+            <button id="clearBtn">Clear Output</button>
+        </div>
+
+        <div id="output">Ready to connect...</div>
+    </div>
+
+    <script>
+        // Hactar command protocol constants
+        const CMD_WHO_ARE_YOU = new Uint8Array([1, 0, 0, 0, 0]);
+        const CMD_DISABLE_LOGS = new Uint8Array([11, 0, 0, 0, 0]);
+        const CMD_DEFAULT_LOGGING = new Uint8Array([14, 0, 0, 0, 0]);
+
+        const EXPECTED_RESPONSE = 'HELLO, I AM A HACTAR DEVICE';
+        const OK_PREFIX_LEN = 3; // "ok\n"
+
+        const DRAIN_TIMEOUT_MS = 100;
+        const RESPONSE_TIMEOUT_MS = 2000;
+
+        let port = null;
+        let reader = null;
+        let writer = null;
+
+        const connectBtn = document.getElementById('connectBtn');
+        const testBtn = document.getElementById('testBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const output = document.getElementById('output');
+        const statusEl = document.getElementById('status');
+        const baudRateInput = document.getElementById('baudRate');
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            if (connected) {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status connected';
+                connectBtn.disabled = true;
+                testBtn.disabled = false;
+                disconnectBtn.disabled = false;
+                baudRateInput.disabled = true;
+            } else {
+                statusEl.textContent = 'Not connected';
+                statusEl.className = 'status disconnected';
+                connectBtn.disabled = false;
+                testBtn.disabled = true;
+                disconnectBtn.disabled = true;
+                baudRateInput.disabled = false;
+            }
+        }
+
+        async function connect() {
+            try {
+                // Check if Web Serial API is supported
+                if (!('serial' in navigator)) {
+                    log('❌ ERROR: Web Serial API is not supported in this browser.');
+                    log('Please use Chrome, Edge, or Opera.');
+                    return;
+                }
+
+                log('Requesting serial port...');
+
+                // Request a port from the user
+                port = await navigator.serial.requestPort();
+
+                const baudRate = parseInt(baudRateInput.value) || 115200;
+                log(`Opening port at ${baudRate} baud...`);
+
+                // Open the port
+                await port.open({
+                    baudRate: baudRate,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none'
+                });
+
+                log('✓ Port opened successfully');
+                updateStatus(true);
+
+                // Get the writer for sending data
+                writer = port.writable.getWriter();
+
+            } catch (error) {
+                log(`❌ ERROR: ${error.message}`);
+                updateStatus(false);
+            }
+        }
+
+        async function disconnect() {
+            try {
+                if (writer) {
+                    writer.releaseLock();
+                    writer = null;
+                }
+
+                if (reader) {
+                    await reader.cancel();
+                    reader.releaseLock();
+                    reader = null;
+                }
+
+                if (port) {
+                    await port.close();
+                    port = null;
+                }
+
+                log('Port closed');
+                updateStatus(false);
+            } catch (error) {
+                log(`❌ ERROR during disconnect: ${error.message}`);
+            }
+        }
+
+        async function readWithTimeout(timeoutMs) {
+            if (!port.readable) {
+                throw new Error('Port is not readable');
+            }
+
+            const reader = port.readable.getReader();
+
+            try {
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('timeout')), timeoutMs);
+                });
+
+                const readPromise = reader.read();
+                const result = await Promise.race([readPromise, timeoutPromise]);
+
+                if (result.done) {
+                    return new Uint8Array(0);
+                }
+
+                return result.value;
+            } finally {
+                reader.releaseLock();
+            }
+        }
+
+        async function testForHactar() {
+            if (!port || !writer) {
+                log('❌ Not connected');
+                return;
+            }
+
+            try {
+                testBtn.disabled = true;
+                disconnectBtn.disabled = true;
+
+                // Disable logs to silence boot messages
+                await writer.write(CMD_DISABLE_LOGS);
+
+                // Drain any pending data
+                while (true) {
+                    try {
+                        const data = await readWithTimeout(DRAIN_TIMEOUT_MS);
+                        if (data.length === 0) break;
+                    } catch (error) {
+                        break;
+                    }
+                }
+
+                // Send "who are you" command
+                await writer.write(CMD_WHO_ARE_YOU);
+
+                // Read response: "ok\n" + expected message
+                const totalBytes = OK_PREFIX_LEN + EXPECTED_RESPONSE.length;
+                const reader = port.readable.getReader();
+                const fullResponse = new Uint8Array(totalBytes);
+                let bytesRead = 0;
+
+                try {
+                    const startTime = Date.now();
+                    while (bytesRead < totalBytes && (Date.now() - startTime < RESPONSE_TIMEOUT_MS)) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+
+                        const bytesToCopy = Math.min(value.length, totalBytes - bytesRead);
+                        fullResponse.set(value.subarray(0, bytesToCopy), bytesRead);
+                        bytesRead += bytesToCopy;
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+
+                // Restore default logging
+                await writer.write(CMD_DEFAULT_LOGGING);
+
+                // Verify response
+                const responseStr = new TextDecoder().decode(fullResponse.slice(OK_PREFIX_LEN));
+
+                if (responseStr === EXPECTED_RESPONSE) {
+                    log('✅ Device is a Hactar');
+                } else {
+                    log('❌ Not a Hactar device');
+                }
+
+            } catch (error) {
+                log(`❌ ERROR: ${error.message}`);
+            } finally {
+                testBtn.disabled = false;
+                disconnectBtn.disabled = false;
+            }
+        }
+
+        // Event listeners
+        connectBtn.addEventListener('click', connect);
+        testBtn.addEventListener('click', testForHactar);
+        disconnectBtn.addEventListener('click', disconnect);
+        clearBtn.addEventListener('click', () => {
+            output.textContent = 'Output cleared.\n';
+        });
+
+        // Check for Web Serial API support on load
+        if (!('serial' in navigator)) {
+            log('⚠️ WARNING: Web Serial API is not supported in this browser.');
+            log('Please use Chrome, Edge, or Opera with HTTPS or localhost.');
+            connectBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>
