@@ -10,7 +10,13 @@ crate-type = ["cdylib", "rlib"]
 name = "hactar-ctl"
 path = "src/main.rs"
 
+[[bin]]
+name = "check-hactar"
+path = "src/check_hactar.rs"
+
 [dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-serial = "5.4"
 rand = "0.8"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"

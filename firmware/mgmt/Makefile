@@ -35,7 +35,7 @@ endif
 #######################################
 # programming
 #######################################
-PORT =
+PORT = # /dev/cu.usbserial-10
 BAUD = 115200
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
