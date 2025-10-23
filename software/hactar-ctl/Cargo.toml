@@ -27,6 +27,7 @@ web-sys = { version = "0.3", features = [
     "WritableStreamDefaultWriter",
     "ParityType",
 ] }
+num_enum = "0.7.5"
 
 # Native-only dependencies (not used in WASM)
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
