@@ -102,11 +102,6 @@
     <div class="container">
         <h1>Hactar Device Checker</h1>
 
-        <div class="info">
-            <strong>ℹ️ Info:</strong> This page uses the Web Serial API to check if a connected serial device is a Hactar device.
-            It works by sending "who are you" and expecting the response "HELLO, I AM A HACTAR DEVICE".
-        </div>
-
         <div class="controls">
             <label>Baud Rate:</label>
             <input type="number" id="baudRate" value="115200" />
@@ -127,7 +122,7 @@
     </div>
 
     <script type="module">
-        import init, { HactarSerial } from './pkg/hactar_ctl.js';
+        import init, { HactarControl } from './pkg/hactar_ctl.js';
 
         // UI elements
         const connectBtn = document.getElementById('connectBtn');
@@ -138,8 +133,8 @@
         const statusEl = document.getElementById('status');
         const baudRateInput = document.getElementById('baudRate');
 
-        // HactarSerial instance (initialized after WASM loads)
-        let hactarSerial = null;
+        // HactarControl instance (initialized after WASM loads)
+        let hactarControl = null;
 
         function log(message) {
             const timestamp = new Date().toLocaleTimeString();
@@ -172,7 +167,7 @@
                 const baudRate = parseInt(baudRateInput.value) || 115200;
                 log(`Opening port at ${baudRate} baud...`);
 
-                await hactarSerial.connect(baudRate);
+                await hactarControl.connect(baudRate);
 
                 log('✓ Port opened successfully');
                 updateStatus(true);
@@ -185,7 +180,7 @@
 
         async function disconnect() {
             try {
-                await hactarSerial.disconnect();
+                await hactarControl.disconnect();
 
                 log('Port closed');
                 updateStatus(false);
@@ -199,7 +194,7 @@
                 testBtn.disabled = true;
                 disconnectBtn.disabled = true;
 
-                const isHactar = await hactarSerial.checkForHactar();
+                const isHactar = await hactarControl.checkForHactar();
 
                 if (isHactar) {
                     log('✅ Device is a Hactar');
@@ -219,8 +214,8 @@
             // Initialize WASM module
             await init();
 
-            // Create HactarSerial instance
-            hactarSerial = new HactarSerial();
+            // Create HactarControl instance
+            hactarControl = new HactarControl();
 
             // Event listeners
             connectBtn.addEventListener('click', connect);
@@ -231,7 +226,7 @@
             });
 
             // Check for Web Serial API support
-            if (!HactarSerial.isSupported()) {
+            if (!HactarControl.isSupported()) {
                 log('⚠️ WARNING: Web Serial API is not supported in this browser.');
                 log('Please use Chrome, Edge, or Opera with HTTPS or localhost.');
                 connectBtn.disabled = true;
