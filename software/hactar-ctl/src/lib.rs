@@ -1,16 +1,16 @@
-mod logic;
-pub mod serial;
+pub mod hactar_control;
 
-use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")]
+mod web_serial;
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-}
+#[cfg(not(target_arch = "wasm32"))]
+pub mod tokio_serial_port;
 
-#[wasm_bindgen]
-pub fn say_hello() {
-    let message = logic::hello();
-    log(&message);
+use anyhow::Result;
+
+#[async_trait::async_trait(?Send)]
+pub trait SerialPort {
+    async fn write(&mut self, data: &[u8]) -> Result<()>;
+    async fn read_with_timeout(&mut self, timeout_ms: u32) -> Result<Vec<u8>>;
+    async fn flush(&mut self) -> Result<()>;
 }
