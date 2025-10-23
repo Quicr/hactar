@@ -126,184 +126,8 @@
         <div id="output">Ready to connect...</div>
     </div>
 
-    <script>
-        /**
-         * HactarSerial - Encapsulates Web Serial API logic for communicating with Hactar devices
-         */
-        class HactarSerial {
-            // Hactar command protocol constants
-            static CMD_WHO_ARE_YOU = new Uint8Array([1, 0, 0, 0, 0]);
-            static CMD_DISABLE_LOGS = new Uint8Array([11, 0, 0, 0, 0]);
-            static CMD_DEFAULT_LOGGING = new Uint8Array([14, 0, 0, 0, 0]);
-
-            static EXPECTED_RESPONSE = 'HELLO, I AM A HACTAR DEVICE';
-            static OK_PREFIX_LEN = 3; // "ok\n"
-
-            static DRAIN_TIMEOUT_MS = 100;
-            static RESPONSE_TIMEOUT_MS = 2000;
-
-            constructor() {
-                this.port = null;
-                this.writer = null;
-            }
-
-            /**
-             * Check if Web Serial API is supported
-             */
-            static isSupported() {
-                return 'serial' in navigator;
-            }
-
-            /**
-             * Check if currently connected to a serial port
-             */
-            isConnected() {
-                return this.port !== null && this.writer !== null;
-            }
-
-            /**
-             * Connect to a serial port
-             * @param {number} baudRate - Baud rate for serial connection
-             * @throws {Error} If Web Serial API is not supported or connection fails
-             */
-            async connect(baudRate = 115200) {
-                if (!HactarSerial.isSupported()) {
-                    throw new Error('Web Serial API is not supported in this browser');
-                }
-
-                // Request a port from the user
-                this.port = await navigator.serial.requestPort();
-
-                // Open the port
-                await this.port.open({
-                    baudRate: baudRate,
-                    dataBits: 8,
-                    stopBits: 1,
-                    parity: 'none'
-                });
-
-                // Get the writer for sending data
-                this.writer = this.port.writable.getWriter();
-            }
-
-            /**
-             * Disconnect from the serial port
-             */
-            async disconnect() {
-                if (this.writer) {
-                    this.writer.releaseLock();
-                    this.writer = null;
-                }
-
-                if (this.port) {
-                    await this.port.close();
-                    this.port = null;
-                }
-            }
-
-            /**
-             * Read data from the serial port with a timeout
-             * @param {number} timeoutMs - Timeout in milliseconds
-             * @returns {Promise<Uint8Array>} Data read from the port
-             * @throws {Error} If timeout occurs or port is not readable
-             */
-            async readWithTimeout(timeoutMs) {
-                if (!this.port.readable) {
-                    throw new Error('Port is not readable');
-                }
-
-                const reader = this.port.readable.getReader();
-
-                try {
-                    const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('timeout')), timeoutMs);
-                    });
-
-                    const readPromise = reader.read();
-                    const result = await Promise.race([readPromise, timeoutPromise]);
-
-                    if (result.done) {
-                        return new Uint8Array(0);
-                    }
-
-                    return result.value;
-                } finally {
-                    reader.releaseLock();
-                }
-            }
-
-            /**
-             * Drain any pending data from the serial port
-             */
-            async drainPendingData() {
-                while (true) {
-                    try {
-                        const data = await this.readWithTimeout(HactarSerial.DRAIN_TIMEOUT_MS);
-                        if (data.length === 0) break;
-                    } catch (error) {
-                        break;
-                    }
-                }
-            }
-
-            /**
-             * Check if the connected device is a Hactar
-             * @returns {Promise<boolean>} True if device is a Hactar, false otherwise
-             * @throws {Error} If not connected or communication fails
-             */
-            async checkForHactar() {
-                if (!this.isConnected()) {
-                    throw new Error('Not connected to a serial port');
-                }
-
-                try {
-                    // Disable logs to silence boot messages
-                    await this.writer.write(HactarSerial.CMD_DISABLE_LOGS);
-
-                    // Drain any pending data
-                    await this.drainPendingData();
-
-                    // Send "who are you" command
-                    await this.writer.write(HactarSerial.CMD_WHO_ARE_YOU);
-
-                    // Read response: "ok\n" + expected message
-                    const totalBytes = HactarSerial.OK_PREFIX_LEN + HactarSerial.EXPECTED_RESPONSE.length;
-                    const reader = this.port.readable.getReader();
-                    const fullResponse = new Uint8Array(totalBytes);
-                    let bytesRead = 0;
-
-                    try {
-                        const startTime = Date.now();
-                        while (bytesRead < totalBytes && (Date.now() - startTime < HactarSerial.RESPONSE_TIMEOUT_MS)) {
-                            const { value, done } = await reader.read();
-                            if (done) break;
-
-                            const bytesToCopy = Math.min(value.length, totalBytes - bytesRead);
-                            fullResponse.set(value.subarray(0, bytesToCopy), bytesRead);
-                            bytesRead += bytesToCopy;
-                        }
-                    } finally {
-                        reader.releaseLock();
-                    }
-
-                    // Restore default logging
-                    await this.writer.write(HactarSerial.CMD_DEFAULT_LOGGING);
-
-                    // Verify response
-                    const responseStr = new TextDecoder().decode(fullResponse.slice(HactarSerial.OK_PREFIX_LEN));
-
-                    return responseStr === HactarSerial.EXPECTED_RESPONSE;
-                } catch (error) {
-                    // Restore default logging even on error
-                    try {
-                        await this.writer.write(HactarSerial.CMD_DEFAULT_LOGGING);
-                    } catch (e) {
-                        // Ignore errors when restoring logging
-                    }
-                    throw error;
-                }
-            }
-        }
+    <script type="module">
+        import init, { HactarSerial } from './pkg/hactar_ctl.js';
 
         // UI elements
         const connectBtn = document.getElementById('connectBtn');
@@ -314,8 +138,8 @@
         const statusEl = document.getElementById('status');
         const baudRateInput = document.getElementById('baudRate');
 
-        // HactarSerial instance
-        const hactarSerial = new HactarSerial();
+        // HactarSerial instance (initialized after WASM loads)
+        let hactarSerial = null;
 
         function log(message) {
             const timestamp = new Date().toLocaleTimeString();
@@ -354,7 +178,7 @@
                 updateStatus(true);
 
             } catch (error) {
-                log(`❌ ERROR: ${error.message}`);
+                log(`❌ ERROR: ${error}`);
                 updateStatus(false);
             }
         }
@@ -366,7 +190,7 @@
                 log('Port closed');
                 updateStatus(false);
             } catch (error) {
-                log(`❌ ERROR during disconnect: ${error.message}`);
+                log(`❌ ERROR during disconnect: ${error}`);
             }
         }
 
@@ -384,27 +208,37 @@
                 }
 
             } catch (error) {
-                log(`❌ ERROR: ${error.message}`);
+                log(`❌ ERROR: ${error}`);
             } finally {
                 testBtn.disabled = false;
                 disconnectBtn.disabled = false;
             }
         }
 
-        // Event listeners
-        connectBtn.addEventListener('click', connect);
-        testBtn.addEventListener('click', testForHactar);
-        disconnectBtn.addEventListener('click', disconnect);
-        clearBtn.addEventListener('click', () => {
-            output.textContent = 'Output cleared.\n';
-        });
+        async function run() {
+            // Initialize WASM module
+            await init();
 
-        // Check for Web Serial API support on load
-        if (!HactarSerial.isSupported()) {
-            log('⚠️ WARNING: Web Serial API is not supported in this browser.');
-            log('Please use Chrome, Edge, or Opera with HTTPS or localhost.');
-            connectBtn.disabled = true;
+            // Create HactarSerial instance
+            hactarSerial = new HactarSerial();
+
+            // Event listeners
+            connectBtn.addEventListener('click', connect);
+            testBtn.addEventListener('click', testForHactar);
+            disconnectBtn.addEventListener('click', disconnect);
+            clearBtn.addEventListener('click', () => {
+                output.textContent = 'Output cleared.\n';
+            });
+
+            // Check for Web Serial API support
+            if (!HactarSerial.isSupported()) {
+                log('⚠️ WARNING: Web Serial API is not supported in this browser.');
+                log('Please use Chrome, Edge, or Opera with HTTPS or localhost.');
+                connectBtn.disabled = true;
+            }
         }
+
+        run();
     </script>
 </body>
 </html>
