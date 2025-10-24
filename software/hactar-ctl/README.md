@@ -1,17 +1,7 @@
-# WASM Demo
+# hactar-ctl
 
-A Rust crate that demonstrates dual-target compilation: command-line binary and WebAssembly library.
-
-## Features
-
-- Shared business logic in `src/logic.rs` with a `hello()` function that generates random greetings
-- Command-line binary that prints to stdout
-- WebAssembly library that logs to the browser console
-- Interactive HTML demo with a button to trigger the WASM function
-- **Web Serial API integration** - Access serial ports from WASM code
-  - Request and manage serial ports
-  - Read and write data through serial connections
-  - JavaScript wrapper with simplified async API
+A cross-platform tool for checking, flashing, and configuring Hactar devices. Runs both as a command-line
+utility and as a WASM program leveraging the Web Serial API.
 
 ## Prerequisites
 
@@ -25,113 +15,131 @@ A Rust crate that demonstrates dual-target compilation: command-line binary and 
 Build and run the binary:
 
 ```bash
-cargo run
+# Check if a device is a Hactar
+cargo run -- check --port /dev/ttyUSB0
+
+# Use custom baud rate
+cargo run -- check --port /dev/ttyUSB0 --baud-rate 9600
+
+# Show help
+cargo run -- --help
+cargo run -- check --help
 ```
 
 Or build in release mode:
 
 ```bash
 cargo build --release
-./target/release/wasm-demo
+./target/release/hactar-ctl check --port /dev/ttyUSB0
 ```
 
-### WebAssembly Library
+### HTML + WASM
 
 Build the WASM library:
 
 ```bash
-wasm-pack build --target web
+wasm-pack build --target web --out-dir pkg
 ```
 
-This creates a `pkg` directory with the compiled WASM module and JavaScript bindings.
-
-### Running the HTML Demo
-
-After building the WASM library, serve the project directory with a local web server:
+This creates a `pkg` directory with the compiled WASM module and JavaScript
+bindings. After building the WASM library, serve the project directory with a
+local web server:
 
 ```bash
-# Using Python 3
-python3 -m http.server 8000
-
-# Or using Python 2
-python -m SimpleHTTPServer 8000
-
-# Or using Node.js http-server (npm install -g http-server)
-http-server
+python -m http.server 8000
 ```
 
-Then open http://localhost:8000 in your browser and click the "Say Hello" button. Check the browser console to see the output.
+Then open http://localhost:8000/index.html in your browser and use the GUI to connect to
+a serial port and check if the attached device is a Hactar.
 
 ## Project Structure
 
 ```
-wasm-demo/
-├── .cargo/
-│   └── config.toml     # Enables web_sys_unstable_apis flag
-├── Cargo.toml          # Project configuration with dual targets
+hactar-ctl/
+├── Cargo.toml                    # Project configuration with dual targets
 ├── src/
-│   ├── logic.rs        # Shared business logic
-│   ├── main.rs         # Command-line binary entry point
-│   ├── lib.rs          # WASM library entry point
-│   └── serial.rs       # Web Serial API bindings using web-sys
-├── index.html          # HTML demo with serial port UI
-└── README.md           # This file
+│   ├── main.rs                   # Command-line binary entry point (with clap)
+│   ├── lib.rs                    # WASM library entry point
+│   ├── web_serial.rs             # WebSerial implementation (WASM only)
+│   ├── tokio_serial_port.rs      # Tokio-serial implementation (native only)
+│   └── hactar_control.rs         # Business logic for Hactar protocol
+├── index.html                    # HTML interface with Web Serial UI
+└── README.md                     # This file
 ```
 
-## How It Works
+## Architecture
 
-The `logic::hello()` function generates a random number (1-100) and returns a greeting string. This function is shared by both targets:
+This project uses a trait-based architecture to separate serial port I/O from Hactar-specific business logic:
 
-- **Binary**: `main.rs` calls `hello()` and prints to stdout using `println!`
-- **WASM**: `lib.rs` exports `say_hello()` which calls `hello()` and passes the result to JavaScript's `console.log()`
+### Core Components
 
-The HTML demo loads the WASM module and provides a button that triggers the `say_hello()` function when clicked.
+1. **`SerialPort` trait** (`port_trait.rs`)
+   - Platform-agnostic abstraction for serial communication
+   - Methods: `write()`, `read_with_timeout()`, `flush()`
+   - Implemented differently for WASM and native platforms
 
-## Web Serial API Integration
+2. **Platform Implementations**
+   - **`WebSerialPort`** (`web_serial.rs`) - Uses Web Serial API via `web-sys` (WASM only)
+   - **`TokioSerialPort`** (`tokio_serial_port.rs`) - Uses `tokio-serial` (native only)
 
-This project demonstrates how to access the Web Serial API from WASM code using `web-sys` bindings directly.
+3. **`HactarControl`** (`hactar_control.rs`)
+   - Contains all Hactar protocol logic (commands, response parsing)
+   - Generic over any `SerialPort` implementation
+   - Same business logic works on both WASM and native platforms
 
-### Architecture
+## Command-Line Interface
 
-**Rust Bindings (`src/serial.rs`)**
-   - Uses `web-sys` to access the Web Serial API directly from Rust
-   - No JavaScript wrapper needed - `web-sys` provides type-safe bindings
-   - Converts between Rust types (Vec<u8>, String) and JavaScript types (Uint8Array)
-   - Uses `wasm-bindgen-futures` for async/await support with Promises
+The CLI uses `clap` with a subcommand structure:
 
-**Configuration**
-   - Requires `--cfg=web_sys_unstable_apis` flag (set in `.cargo/config.toml`)
-   - Web Serial API is marked as unstable in `web-sys`
+### Commands
 
-### Available Functions
+#### `check`
+Check if a serial device is a Hactar device.
 
-The following functions are exported to JavaScript:
+**Options:**
+- `-p, --port <PORT>` - Serial port path (e.g., `/dev/ttyUSB0`, `COM3`)
+- `-b, --baud-rate <BAUD_RATE>` - Baud rate for serial communication (default: 115200)
 
-- `serial_request_port()` - Request a serial port from the user, returns SerialPort object
-- `serial_open_port(port, baud_rate)` - Open a port with specified baud rate
-- `serial_close_port(port)` - Close a port
-- `serial_read_bytes(port)` - Read available data as Vec<u8>
-- `serial_write_bytes(port, data)` - Write bytes to the port
-- `serial_write_string(port, text)` - Write a string to the port
-- `serial_get_ports()` - Get previously granted ports
+**Examples:**
+```bash
+# Check device on specific port
+hactar-ctl check --port /dev/ttyUSB0
 
-### Usage Example
+# Check with custom baud rate
+hactar-ctl check --port COM3 --baud-rate 9600
+
+# Auto-scan (not yet implemented)
+hactar-ctl check
+```
+
+## WASM API
+
+The WASM module exports a `HactarControl` class that encapsulates all Hactar protocol logic.
+
+### JavaScript API
 
 ```javascript
-import init, {
-    serial_request_port,
-    serial_open_port,
-    serial_write_string
-} from './pkg/wasm_demo.js';
+import init, { HactarControl } from './pkg/hactar_ctl.js';
 
 await init();
 
-// Request and open a port
-const port = await serial_request_port();
-await serial_open_port(port, 9600);
+// Create instance
+const control = new HactarControl();
 
-// Send data
-await serial_write_string(port, "Hello from WASM!\n");
+// Check if Web Serial is supported
+if (!HactarControl.isSupported()) {
+    console.error('Web Serial API not supported');
+}
+
+// Connect to a port
+await control.connect(115200);
+
+// Check if device is a Hactar
+const isHactar = await control.checkForHactar();
+console.log(isHactar ? '✓ Device is a Hactar' : '✗ Not a Hactar');
+
+// Disconnect
+await control.disconnect();
 ```
 
 ### Browser Compatibility
@@ -141,14 +149,3 @@ The Web Serial API is supported on:
 - Opera 75+
 
 **Note**: Web Serial API requires a secure context (HTTPS or localhost) and user interaction to request port access.
-
-### Testing
-
-To test the serial port functionality:
-
-1. Build the WASM library: `wasm-pack build --target web`
-2. Start a local server: `python3 -m http.server 8000`
-3. Open http://localhost:8000 in Chrome or Edge
-4. Click "Request Serial Port" and select a device (e.g., Arduino, USB-to-serial adapter)
-5. Click "Open Port" to connect
-6. Use "Send" to write data and "Read Data" to receive data
