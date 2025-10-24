@@ -1,6 +1,7 @@
 use crate::SerialPort;
 use anyhow::Result;
 use num_enum::IntoPrimitive;
+use std::{thread, time};
 
 #[repr(u8)]
 #[derive(Copy, Clone, PartialEq, IntoPrimitive)]
@@ -53,7 +54,6 @@ impl<P: SerialPort> HactarControl<P> {
         // Disable logs to silence boot messages
         self.write_command(Command::DisableLogs).await?;
 
-        // Drain any pending data
         self.drain_pending_data().await?;
 
         // Send "who are you" command

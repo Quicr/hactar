@@ -30,6 +30,48 @@ enum Command {
     Check,
 }
 
+async fn get_available_serial_port() -> Result<String, String> {
+    let ports: Result<Vec<tokio_serial::SerialPortInfo>, tokio_serial::Error> =
+        tokio_serial::available_ports();
+
+    let ports: Vec<tokio_serial::SerialPortInfo> = match ports {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            return Err(format!("Error: {}", e));
+        }
+    };
+
+    if ports.is_empty() {
+        println!("No serial ports found");
+        return Err(String::from("No serial ports found"));
+    }
+
+    println!("Available serial ports");
+
+    let mut hactar_ports: Vec<String> = Vec::new();
+    for p in ports {
+        println!("  - {}", p.port_name);
+        let serial = TokioSerialPort::open(p.port_name.as_str(), 115200)
+            .await
+            .expect("Failed to open port");
+        let mut control: HactarControl = HactarControl::new(serial);
+
+        let is_hactar: bool = control
+            .check_for_hactar()
+            .await
+            .expect("Failed to check if hactar");
+
+        if is_hactar {
+            println!("Is a hactar!");
+            hactar_ports.push(p.port_name);
+            // push it into an array
+        }
+    }
+
+    return Ok("/dev/ttyUSB0".to_string());
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
@@ -37,7 +79,13 @@ async fn main() -> Result<()> {
     // Open serial port
     let port = match args.port {
         Some(port) => TokioSerialPort::open(&port, args.baud_rate).await?,
-        None => todo!("Scan through ports looking for Hactars"),
+        None => {
+            // let selected_port: Result<String, String> = get_available_serial_port().await;
+            let selected_port = get_available_serial_port()
+                .await
+                .expect("Failed to get available serial port");
+            TokioSerialPort::open(selected_port.as_str(), args.baud_rate).await?
+        }
     };
 
     // Create HactarControl with the port
