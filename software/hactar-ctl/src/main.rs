@@ -1,24 +1,56 @@
-use hactar_ctl::hactar_control::HactarControl;
-use hactar_ctl::tokio_serial_port::TokioSerialPort;
+use anyhow::Result;
+use clap::{Parser, Subcommand};
+use hactar_ctl::{
+    hactar_control::HactarControl as GenericHactarControl, tokio_serial_port::TokioSerialPort,
+};
 
-const BAUD_RATE: u32 = 115200;
+type HactarControl = GenericHactarControl<TokioSerialPort>;
+
+/// Hactar device control utility
+#[derive(Parser, Debug)]
+#[command(name = "hactar-ctl")]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Serial port path (e.g., /dev/ttyUSB0 or COM3)
+    #[arg(short, long)]
+    port: Option<String>,
+
+    /// Baud rate for serial communication
+    #[arg(short, long, default_value_t = 115200)]
+    baud_rate: u32,
+
+    #[command(subcommand)]
+    command: Command,
+}
+
+// TODO other comands
+#[derive(Subcommand, Debug)]
+enum Command {
+    /// Check if a serial device is a Hactar device
+    Check,
+}
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} <serial_port_path>", args[0]);
-        std::process::exit(1);
-    }
+async fn main() -> Result<()> {
+    let args = Args::parse();
 
     // Open serial port
-    let port = TokioSerialPort::open(&args[1], BAUD_RATE).await?;
+    let port = match args.port {
+        Some(port) => TokioSerialPort::open(&port, args.baud_rate).await?,
+        None => todo!("Scan through ports looking for Hactars"),
+    };
 
     // Create HactarControl with the port
     let mut control = HactarControl::new(port);
 
+    match args.command {
+        Command::Check => check(&mut control).await,
+    }
+}
+
+async fn check(ctl: &mut HactarControl) -> Result<()> {
     // Check if device is a Hactar
-    let is_hactar = control.check_for_hactar().await?;
+    let is_hactar = ctl.check_for_hactar().await?;
 
     if is_hactar {
         println!("✓ Device is a Hactar");
