@@ -32,6 +32,26 @@ impl crate::SerialPort for TokioSerialPort {
         Ok(())
     }
 
+    // async fn read_bytes(&mut self, num_bytes: usize, timeout_ms: u64) -> Result<Vec<u8>> {
+    //     let mut buff: Vec<u8> = Vec::with_capacity(num_bytes);
+    //
+    //     let result = timeout(Duration::from_millis(timeout_ms), self.port.read(&mut buff)).await;
+    //
+    //     match result {
+    //         Ok(read_result) => match read_result {
+    //             Ok(n) if n > 0 => {
+    //                 buff.truncate(n);
+    //                 return Ok(buff);
+    //             }
+    //             Ok(_) => Ok(buff),
+    //             Err(e) => {
+    //                 return Err(e.into());
+    //             }
+    //         },
+    //         Err(_) => Ok(Vec::new()),
+    //     }
+    // }
+
     async fn read_with_timeout(&mut self, timeout_ms: u32) -> Result<Vec<u8>> {
         let mut buffer = vec![0u8; 1024];
 

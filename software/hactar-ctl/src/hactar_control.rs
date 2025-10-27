@@ -14,6 +14,8 @@ enum Command {
 // Hactar command protocol constants
 const OK_RESPONSE: &[u8] = b"Ok\n";
 const HELLO_RESPONSE: &[u8] = b"HELLO, I AM A HACTAR DEVICE";
+const ACK_RESPONSE: u8 = 0x82;
+const NACK_RESPONSE: u8 = 0x83;
 
 const DRAIN_TIMEOUT_MS: u32 = 100;
 const RESPONSE_TIMEOUT_MS: u32 = 200;
@@ -60,7 +62,7 @@ impl<P: SerialPort> HactarControl<P> {
         self.write_command(Command::WhoAreYou).await?;
 
         // Read response: "ok\n" + expected message
-        let total_bytes = OK_RESPONSE.len() + HELLO_RESPONSE.len();
+        let total_bytes = size_of_val(&ACK_RESPONSE) + HELLO_RESPONSE.len();
         let mut full_response = Vec::new();
 
         // Read with timeout until we have enough data
@@ -82,7 +84,9 @@ impl<P: SerialPort> HactarControl<P> {
         }
 
         // Verify response
-        let (ok, hello) = full_response.split_at(OK_RESPONSE.len());
+
+        Ok(OK_RESPONSE == full_response.get(0));
+        let (ok_response, hello) = full_response.split_at(OK_RESPONSE.len());
         Ok(ok == OK_RESPONSE && hello == HELLO_RESPONSE)
     }
 }

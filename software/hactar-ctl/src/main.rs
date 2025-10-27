@@ -47,11 +47,11 @@ async fn get_available_serial_port() -> Result<String, String> {
         return Err(String::from("No serial ports found"));
     }
 
-    println!("Available serial ports");
+    // println!("Available serial ports");
 
     let mut hactar_ports: Vec<String> = Vec::new();
     for p in ports {
-        println!("  - {}", p.port_name);
+        // println!("  - {}", p.port_name);
         let serial = TokioSerialPort::open(p.port_name.as_str(), 115200)
             .await
             .expect("Failed to open port");
@@ -63,9 +63,11 @@ async fn get_available_serial_port() -> Result<String, String> {
             .expect("Failed to check if hactar");
 
         if is_hactar {
-            println!("Is a hactar!");
+            println!("{} Is a hactar!", p.port_name.as_str());
             hactar_ports.push(p.port_name);
             // push it into an array
+        } else {
+            println!("{} is not a hactar", p.port_name.as_str());
         }
     }
 
