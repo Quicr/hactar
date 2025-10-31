@@ -31,6 +31,5 @@ num_enum = "0.7.5"
 
 # Native-only dependencies (not used in WASM)
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { version = "1", features = ["full"] }
-tokio-serial = "5.4"
+serialport = "4.8.1"
 clap = { version = "4.5", features = ["derive"] }

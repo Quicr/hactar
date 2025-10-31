@@ -1,10 +1,8 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use hactar_ctl::{
-    hactar_control::HactarControl as GenericHactarControl, tokio_serial_port::TokioSerialPort,
-};
-
-type HactarControl = GenericHactarControl<TokioSerialPort>;
+use hactar_ctl::{hactar_control::HactarControl, /*monitor::Monitor,*/ serial::Serial};
+use std::io;
+use std::thread;
 
 /// Hactar device control utility
 #[derive(Parser, Debug)]
@@ -20,87 +18,109 @@ struct Args {
     baud_rate: u32,
 
     #[command(subcommand)]
-    command: Command,
+    tool: Tool,
 }
 
-// TODO other comands
 #[derive(Subcommand, Debug)]
-enum Command {
+enum Tool {
     /// Check if a serial device is a Hactar device
     Check,
+    Monitor,
+    Flash,
+    Configurator,
 }
 
-async fn get_available_serial_port() -> Result<String, String> {
-    let ports: Result<Vec<tokio_serial::SerialPortInfo>, tokio_serial::Error> =
-        tokio_serial::available_ports();
-
-    let ports: Vec<tokio_serial::SerialPortInfo> = match ports {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!("Error: {}", e);
-            return Err(format!("Error: {}", e));
-        }
-    };
-
-    if ports.is_empty() {
-        println!("No serial ports found");
-        return Err(String::from("No serial ports found"));
-    }
-
-    // println!("Available serial ports");
-
-    let mut hactar_ports: Vec<String> = Vec::new();
-    for p in ports {
-        // println!("  - {}", p.port_name);
-        let serial = TokioSerialPort::open(p.port_name.as_str(), 115200)
-            .await
-            .expect("Failed to open port");
-        let mut control: HactarControl = HactarControl::new(serial);
-
-        let is_hactar: bool = control
-            .check_for_hactar()
-            .await
-            .expect("Failed to check if hactar");
-
-        if is_hactar {
-            println!("{} Is a hactar!", p.port_name.as_str());
-            hactar_ports.push(p.port_name);
-            // push it into an array
-        } else {
-            println!("{} is not a hactar", p.port_name.as_str());
-        }
-    }
-
-    return Ok("/dev/ttyUSB0".to_string());
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() {
     let args = Args::parse();
 
     // Open serial port
     let port = match args.port {
-        Some(port) => TokioSerialPort::open(&port, args.baud_rate).await?,
+        Some(port) => BlockingSerialPort::open(&port, args.baud_rate)?,
         None => {
-            // let selected_port: Result<String, String> = get_available_serial_port().await;
-            let selected_port = get_available_serial_port()
-                .await
-                .expect("Failed to get available serial port");
-            TokioSerialPort::open(selected_port.as_str(), args.baud_rate).await?
+            let selected_port =
+                get_available_hactars().expect("Failed to get available serial port");
+            BlockingSerialPort::open(selected_port.as_str(), args.baud_rate)?
         }
     };
 
     // Create HactarControl with the port
     let mut control = HactarControl::new(port);
 
-    match args.command {
-        Command::Check => check(&mut control).await,
+    match args.tool {
+        Tool::Check => check(&mut control),
+        Tool::Monitor => Ok(()),
+        Tool::Flash => Ok(()),
+        Tool::Configurator => Ok(()),
     }
 }
 
-async fn check(ctl: &mut HactarControl) -> Result<()> {
+fn get_available_hactars() -> Result<String, String> {
+    let ports = serialport::available_ports().map_err(|e| format!("Error: {}", e))?;
+
+    if ports.is_empty() {
+        println!("No serial ports found");
+        return Err(String::from("No serial ports found"));
+    }
+
+    let mut hactar_ports: Vec<String> = Vec::new();
+    for p in ports {
+        match BlockingSerialPort::open(p.port_name.as_str(), 115200) {
+            Ok(serial) => {
+                let mut control: HactarControl = HactarControl::new(serial);
+
+                match control.check_for_hactar() {
+                    Ok(true) => {
+                        println!("{} is a hactar!", p.port_name.as_str());
+                        hactar_ports.push(p.port_name);
+                    }
+                    Ok(false) => {
+                        // Not a hactar, skip
+                    }
+                    Err(_) => {
+                        // Error checking, skip
+                    }
+                }
+            }
+            Err(_) => {
+                // Failed to open port, skip
+            }
+        }
+    }
+
+    if hactar_ports.is_empty() {
+        return Err(String::from("No hactars found"));
+    }
+
+    loop {
+        // Select a port
+        println!("Select a hactar");
+        for (idx, p) in hactar_ports.iter().enumerate() {
+            println!("[{}] - {}", idx, p);
+        }
+
+        let mut usr_input = String::new();
+        io::stdin()
+            .read_line(&mut usr_input)
+            .expect("Failed to read user input");
+
+        usr_input = usr_input.trim().to_string();
+
+        if usr_input.eq_ignore_ascii_case("quit") {
+            return Err(String::from("Quit"));
+        }
+
+        match usr_input.parse::<usize>() {
+            Ok(n) if n < hactar_ports.len() => {
+                return Ok(hactar_ports[n].clone());
+            }
+            _ => println!("Invalid input. Try again"),
+        }
+    }
+}
+
+fn check(ctl: &mut HactarControl) -> Result<()> {
     // Check if device is a Hactar
-    let is_hactar = ctl.check_for_hactar().await?;
+    let is_hactar = ctl.check_for_hactar()?;
 
     if is_hactar {
         println!("✓ Device is a Hactar");
@@ -110,3 +130,17 @@ async fn check(ctl: &mut HactarControl) -> Result<()> {
         std::process::exit(1);
     }
 }
+
+// fn run_monitor(ctl: HactarControl) -> Result<()> {
+//     let mut monitor = Monitor::new(ctl);
+//
+//     // Create a thread for reading
+//     let handle = thread::spawn(|| {
+//         let mon = &monitor;
+//         // print_serial(mon);
+//     });
+//
+//     handle.join().unwrap();
+//
+//     Ok(())
+// }

@@ -1,24 +1,27 @@
+use std::time::Duration;
+
 use crate::SerialPort;
 use anyhow::Result;
 use num_enum::IntoPrimitive;
-use std::{thread, time};
 
 #[repr(u8)]
 #[derive(Copy, Clone, PartialEq, IntoPrimitive)]
-enum Command {
+pub enum Command {
     WhoAreYou = 0x01,
     DisableLogs = 0x0b,
     DefaultLogging = 0x0e,
 }
 
 // Hactar command protocol constants
-const OK_RESPONSE: &[u8] = b"Ok\n";
+// const OK_RESPONSE: &[u8] = b"Ok\n";
 const HELLO_RESPONSE: &[u8] = b"HELLO, I AM A HACTAR DEVICE";
 const ACK_RESPONSE: u8 = 0x82;
-const NACK_RESPONSE: u8 = 0x83;
+// const NACK_RESPONSE: u8 = 0x83;
 
 const DRAIN_TIMEOUT_MS: u32 = 100;
 const RESPONSE_TIMEOUT_MS: u32 = 200;
+const READ_LINE_TIMEOUT_MS: u64 = 1000;
+const READ_DATA_TIMEOUT_MS: u64 = 100;
 
 /// HactarControl - Business logic for Hactar device communication
 /// Works with any SerialPort implementation
@@ -32,62 +35,84 @@ impl<P: SerialPort> HactarControl<P> {
         Self { port }
     }
 
-    async fn write_command(&mut self, cmd: Command) -> Result<()> {
+    pub fn write_command(&mut self, cmd: Command) {
         let cmd_data: [u8; 5] = [cmd.into(), 0, 0, 0, 0];
-        self.port.write(&cmd_data).await?;
-        self.port.flush().await?;
-        Ok(())
+        self.port.write(&cmd_data.to_vec());
+        self.port.flush();
     }
 
-    /// Drain any pending data from the serial port
-    async fn drain_pending_data(&mut self) -> Result<()> {
-        loop {
-            let data = self.port.read_with_timeout(DRAIN_TIMEOUT_MS).await?;
-            if data.is_empty() {
-                break;
-            }
-        }
-        Ok(())
-    }
+    // pub fn write(&mut self, data: Vec<u8>) -> Result<()> {
+    //     self.port.write(&data);
+    //     return Ok(());
+    // }
+    //
+    // pub async fn read(&mut self, num_bytes: usize) -> Result<Vec<u8>> {
+    //     return Ok(self
+    //         .port
+    //         .read_bytes(num_bytes, Duration::from_millis(READ_DATA_TIMEOUT_MS)));
+    // }
+    //
+    // pub async fn read_line(&mut self) -> Result<Vec<u8>> {
+    //     return Ok(self.port.read_line(READ_LINE_TIMEOUT_MS).await?);
+    // }
+    //
+    // pub async fn data_available(&mut self) -> Result<bool> {
+    //     return Ok(self.port.num_available().await? > 0);
+    // }
+    //
+    // pub async fn num_available(&mut self) -> Result<u32> {
+    //     return Ok(self.port.num_available().await?);
+    // }
+    //
+    // /// Drain any pending data from the serial port
+    // async fn drain_pending_data(&mut self) -> Result<()> {
+    //     loop {
+    //         let data = self.port.read_with_timeout(DRAIN_TIMEOUT_MS).await?;
+    //         if data.is_empty() {
+    //             break;
+    //         }
+    //     }
+    //     Ok(())
+    // }
 
     /// Check if the connected device is a Hactar
     /// Returns true if verified, false otherwise
     pub async fn check_for_hactar(&mut self) -> Result<bool> {
         // Disable logs to silence boot messages
-        self.write_command(Command::DisableLogs).await?;
+        self.write_command(Command::DisableLogs);
 
-        self.drain_pending_data().await?;
+        // self.drain_pending_data();
 
         // Send "who are you" command
-        self.write_command(Command::WhoAreYou).await?;
+        self.write_command(Command::WhoAreYou);
 
-        // Read response: "ok\n" + expected message
+        // Read response: 0x82 + expected message
         let total_bytes = size_of_val(&ACK_RESPONSE) + HELLO_RESPONSE.len();
-        let mut full_response = Vec::new();
+        // let mut full_response = Vec::new();
 
         // Read with timeout until we have enough data
-        while full_response.len() < total_bytes {
-            let chunk = self.port.read_with_timeout(RESPONSE_TIMEOUT_MS).await?;
-            if chunk.is_empty() {
-                break;
-            }
-
-            full_response.extend_from_slice(&chunk);
-        }
+        //
+        // while full_response.len() < total_bytes {
+        //     let chunk = self.port.read(RESPONSE_TIMEOUT_MS).await?;
+        //     if chunk.is_empty() {
+        //         break;
+        //     }
+        //
+        //     full_response.extend_from_slice(&chunk);
+        // }
 
         // Restore default logging (even if we had an error reading)
-        self.write_command(Command::DefaultLogging).await?;
+        self.write_command(Command::DefaultLogging);
 
         // Verify we got enough data
-        if full_response.len() < total_bytes {
-            return Ok(false);
-        }
-
-        // Verify response
-
-        Ok(OK_RESPONSE == full_response.get(0));
-        let (ok_response, hello) = full_response.split_at(OK_RESPONSE.len());
-        Ok(ok == OK_RESPONSE && hello == HELLO_RESPONSE)
+        // if full_response.len() < total_bytes {
+        //     return Ok(false);
+        // }
+        //
+        // // Verify response
+        // let (ack_response, hello_response) = full_response.split_at(size_of_val(&ACK_RESPONSE));
+        // Ok(ack_response == [ACK_RESPONSE] && hello_response == HELLO_RESPONSE)
+        return Ok(false);
     }
 }
 

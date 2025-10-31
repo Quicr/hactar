@@ -1,17 +1,18 @@
 pub mod hactar_control;
-
+pub mod monitor;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod serial;
 #[cfg(target_arch = "wasm32")]
 mod web_serial;
 
-#[cfg(not(target_arch = "wasm32"))]
-pub mod tokio_serial_port;
+// use anyhow::Result;
+use std::time::Duration;
 
-use anyhow::Result;
-
-#[async_trait::async_trait(?Send)]
 pub trait SerialPort {
-    async fn write(&mut self, data: &[u8]) -> Result<()>;
-    // async fn read_bytes(&mut self, num_bytes: usize, timeout_ms: u64) -> Result<Vec<u8>>;
-    async fn read_with_timeout(&mut self, timeout_ms: u32) -> Result<Vec<u8>>;
-    async fn flush(&mut self) -> Result<()>;
+    fn num_available(&mut self) -> u32;
+    fn write(&mut self, data: &Vec<u8>) -> usize;
+    fn read_byte(&mut self, timeout: Duration) -> Vec<u8>;
+    fn read_bytes(&mut self, num_bytes: usize, timeout: Duration) -> Vec<u8>;
+    fn read_line(&mut self, timeout: Duration) -> Vec<u8>;
+    fn flush(&mut self);
 }
