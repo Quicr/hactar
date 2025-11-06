@@ -1,6 +1,6 @@
 #include "net.hh"
 #include "chunk.hh"
-#include "default_json.hh"
+#include "config_builder.hh"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "driver/uart.h"
@@ -125,6 +125,8 @@ Serial mgmt_layer(UART_NUM_0,
 Storage storage;
 Wifi wifi(storage);
 StoredValue<std::string> moq_server_url(storage, "moq", "server_url");
+StoredValue<std::string> language(storage, "frontline", "language");
+StoredValue<std::string> default_channel(storage, "frontline", "channel");
 
 uint64_t curr_audio_isr_time = esp_timer_get_time();
 uint64_t last_audio_isr_time = esp_timer_get_time();
@@ -437,6 +439,28 @@ static void MgmtLinkPacketTask(void* args)
                 mgmt_layer.ReplyAck();
                 break;
             }
+            case Configuration::Set_Frontline_Config:
+            {
+                uint32_t language_len = 0;
+                uint32_t channel_len = 0;
+
+                uint32_t offset = 0;
+
+                packet->Get(&language_len, sizeof(language_len), offset);
+                offset += sizeof(language_len);
+
+                language = std::string{(char*)packet->payload + offset, language_len};
+                offset += language_len;
+
+                packet->Get(&channel_len, sizeof(channel_len), offset);
+                offset += sizeof(channel_len);
+
+                default_channel = std::string{(char*)packet->payload + offset, channel_len};
+                offset += channel_len;
+
+                mgmt_layer.ReplyAck();
+                break;
+            }
             default:
             {
                 NET_LOG_ERROR("Unknown packet type from mgmt");
@@ -616,6 +640,16 @@ extern "C" void app_main(void)
     NET_LOG_WARN("Using moq server url of %s len %u", moq_server_url->c_str(),
                  moq_server_url->length());
 
+    if (language->empty())
+    {
+        language = "en-US";
+    }
+
+    if (default_channel->empty())
+    {
+        default_channel = "gardening";
+    }
+
     // setup moq transport
     quicr::ClientConfig config;
     config.endpoint_id = "hactar-ev12-snk";
@@ -642,7 +676,18 @@ extern "C" void app_main(void)
 
     NET_LOG_INFO("Components ready");
 
-    json subscriptions = default_channel_json.at("subscriptions");
+    ChannelBuilder channel_builder({"moq://moq.ptt.arpa/v1", "org/acme", "store/1234"}, device_id);
+
+    const std::string lang = language.Load();
+    const std::string channel = default_channel.Load();
+
+    channel_builder.AddAIAudioPublicationChannel(lang);
+    channel_builder.AddPublicationChannel(channel, lang, "pcm");
+    channel_builder.AddSubscriptionChannel(channel, lang, "pcm");
+
+    json config_j = channel_builder.GetConfig();
+
+    json subscriptions = config_j.at("subscriptions");
     readers.resize((uint32_t)ui_net_link::Channel_Id::Count);
     NET_LOG_ERROR("Readers size %d", readers.size());
     for (int i = 0; i < subscriptions.size(); ++i)
@@ -651,7 +696,7 @@ extern "C" void app_main(void)
     }
     NET_LOG_ERROR("Readers size %d", readers.size());
 
-    json publications = default_channel_json.at("publications");
+    json publications = config_j.at("publications");
     // Kinda odd, but we only have 3 writers.
     writers.resize((uint32_t)ui_net_link::Channel_Id::Count - 1);
     NET_LOG_ERROR("Writers size %d", writers.size());

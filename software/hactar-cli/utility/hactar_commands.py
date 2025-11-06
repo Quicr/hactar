@@ -51,6 +51,7 @@ net_command_map = {
     "enable_logs": {"id": 10, "num_params": 0},
     "disable_loopback": {"id": 11, "num_params": 0},
     "enable_loopback": {"id": 12, "num_params": 0},
+    "set_fl_config": {"id": 13, "num_params": 2},
 }
 
 ST_Ack = 0x79
