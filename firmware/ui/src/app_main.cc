@@ -250,7 +250,8 @@ enum class Ptt_Btn_State
 {
     Released = 0,
     Pressed,
-    Releasing
+    Releasing,
+    Last_Send,
 };
 
 Ptt_Btn_State ptt_state;
@@ -658,6 +659,12 @@ void CheckPTT()
     {
         SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, false);
     }
+
+    if (ptt_state == Ptt_Btn_State::Last_Send)
+    {
+        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, true);
+        ptt_state = Ptt_Btn_State::Released;
+    }
 }
 
 void CheckPTTAI()
@@ -681,6 +688,12 @@ void CheckPTTAI()
     if (ptt_ai_state == Ptt_Btn_State::Pressed || ptt_ai_state == Ptt_Btn_State::Releasing)
     {
         SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, false);
+    }
+
+    if (ptt_ai_state == Ptt_Btn_State::Last_Send)
+    {
+        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, true);
+        ptt_ai_state = Ptt_Btn_State::Released;
     }
 }
 
@@ -941,13 +954,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     {
         // Turn off ptt
         HAL_TIM_Base_Stop(&htim4);
-        ptt_state = Ptt_Btn_State::Released;
+        ptt_state = Ptt_Btn_State::Last_Send;
         LedGOff();
     }
     else if (htim->Instance == TIM5)
     {
         HAL_TIM_Base_Stop(&htim5);
-        ptt_ai_state = Ptt_Btn_State::Released;
+        ptt_ai_state = Ptt_Btn_State::Last_Send;
         LedBOff();
     }
 }
