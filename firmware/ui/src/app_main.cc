@@ -152,6 +152,8 @@ extern I2C_HandleTypeDef hi2c1;
 extern I2S_HandleTypeDef hi2s3;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
+extern TIM_HandleTypeDef htim5;
 extern RNG_HandleTypeDef hrng;
 
 // Buffer declarations
@@ -244,24 +246,15 @@ uint32_t timeout = 0;
 // probably a better solution would be use a timer.
 static constexpr uint32_t Releasing_Timeout_ms = 500;
 
-enum class Ptt_Position
+enum class Ptt_Btn_State
 {
     Released = 0,
     Pressed,
     Releasing
 };
 
-struct
-{
-    Ptt_Position pos;
-    uint32_t timeout;
-} ptt_state;
-
-struct
-{
-    Ptt_Position pos;
-    uint32_t timeout;
-} ptt_ai_state;
+Ptt_Btn_State ptt_state;
+Ptt_Btn_State ptt_ai_state;
 
 int app_main()
 {
@@ -647,29 +640,23 @@ void CheckPTT()
     // Send talk start and sot packets
     if ((HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET
          || HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_RESET)
-        && ptt_state.pos != Ptt_Position::Pressed)
+        && ptt_state != Ptt_Btn_State::Pressed)
     {
-        ptt_state.pos = Ptt_Position::Pressed;
+        HAL_TIM_Base_Stop(&htim4);
+        ptt_state = Ptt_Btn_State::Pressed;
         LedGOn();
     }
     else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET
              && HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_SET
-             && ptt_state.pos == Ptt_Position::Pressed)
+             && ptt_state == Ptt_Btn_State::Pressed)
     {
-        ptt_state.pos = Ptt_Position::Releasing;
-        ptt_state.timeout = HAL_GetTick();
+        ptt_state = Ptt_Btn_State::Releasing;
+        HAL_TIM_Base_Start_IT(&htim4);
     }
 
-    if (ptt_state.pos == Ptt_Position::Pressed || ptt_state.pos == Ptt_Position::Releasing)
+    if (ptt_state == Ptt_Btn_State::Pressed || ptt_state == Ptt_Btn_State::Releasing)
     {
         SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, false);
-    }
-
-    if (ptt_state.pos == Ptt_Position::Releasing
-        && HAL_GetTick() - ptt_state.timeout >= Releasing_Timeout_ms)
-    {
-        ptt_state.pos = Ptt_Position::Released;
-        LedGOff();
     }
 }
 
@@ -678,28 +665,22 @@ void CheckPTTAI()
 
     // Send talk start and sot packets
     if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET
-        && ptt_ai_state.pos != Ptt_Position::Pressed)
+        && ptt_ai_state != Ptt_Btn_State::Pressed)
     {
-        ptt_ai_state.pos = Ptt_Position::Pressed;
+        HAL_TIM_Base_Stop(&htim5);
+        ptt_ai_state = Ptt_Btn_State::Pressed;
         LedBOn();
     }
     else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET
-             && ptt_ai_state.pos == Ptt_Position::Pressed)
+             && ptt_ai_state == Ptt_Btn_State::Pressed)
     {
-        ptt_ai_state.pos = Ptt_Position::Releasing;
-        ptt_ai_state.timeout = HAL_GetTick();
+        ptt_ai_state = Ptt_Btn_State::Releasing;
+        HAL_TIM_Base_Start_IT(&htim5);
     }
 
-    if (ptt_ai_state.pos == Ptt_Position::Pressed || ptt_ai_state.pos == Ptt_Position::Releasing)
+    if (ptt_ai_state == Ptt_Btn_State::Pressed || ptt_ai_state == Ptt_Btn_State::Releasing)
     {
         SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, false);
-    }
-
-    if (ptt_ai_state.pos == Ptt_Position::Releasing
-        && HAL_GetTick() - ptt_ai_state.timeout >= Releasing_Timeout_ms)
-    {
-        ptt_ai_state.pos == Ptt_Position::Released;
-        LedBOff();
     }
 }
 
@@ -955,6 +936,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
         // LedBToggle();
         HAL_GPIO_WritePin(UI_READY_GPIO_Port, UI_READY_Pin, LOW);
         HAL_TIM_Base_Stop_IT(&htim3);
+    }
+    else if (htim->Instance == TIM4)
+    {
+        // Turn off ptt
+        HAL_TIM_Base_Stop(&htim4);
+        ptt_state = Ptt_Btn_State::Released;
+        LedGOff();
+    }
+    else if (htim->Instance == TIM5)
+    {
+        HAL_TIM_Base_Stop(&htim5);
+        ptt_ai_state = Ptt_Btn_State::Released;
+        LedBOff();
     }
 }
 
