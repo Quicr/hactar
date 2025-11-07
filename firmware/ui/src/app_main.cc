@@ -240,8 +240,28 @@ Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
 
 uint32_t timeout = 0;
 
-bool ptt_down = false;
-bool ptt_ai_down = false;
+// For some reason... probably due to interrupts, this tick rate is half the speed.
+// probably a better solution would be use a timer.
+static constexpr uint32_t Releasing_Timeout_ms = 500;
+
+enum class Ptt_Position
+{
+    Released = 0,
+    Pressed,
+    Releasing
+};
+
+struct
+{
+    Ptt_Position pos;
+    uint32_t timeout;
+} ptt_state;
+
+struct
+{
+    Ptt_Position pos;
+    uint32_t timeout;
+} ptt_ai_state;
 
 int app_main()
 {
@@ -403,8 +423,6 @@ void HandleNetLinkPackets()
             // TODO: Stop loading screen?
             break;
         }
-        case ui_net_link::Packet_Type::TalkStart:
-        case ui_net_link::Packet_Type::TalkStop:
         case ui_net_link::Packet_Type::GetAudioLinkPacket:
         {
             break;
@@ -629,29 +647,29 @@ void CheckPTT()
     // Send talk start and sot packets
     if ((HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET
          || HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_RESET)
-        && !ptt_down)
+        && ptt_state.pos != Ptt_Position::Pressed)
     {
-        // TODO channel id
-        ui_net_link::TalkStart talk_start = {.channel_id = ui_net_link::Channel_Id::Ptt};
-        ui_net_link::Serialize(talk_start, message_packet);
-        net_serial.Write(message_packet);
-        ptt_down = true;
+        ptt_state.pos = Ptt_Position::Pressed;
         LedGOn();
     }
     else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET
-             && HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_SET && ptt_down)
+             && HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_SET
+             && ptt_state.pos == Ptt_Position::Pressed)
     {
-        ui_net_link::TalkStop talk_stop = {.channel_id = ui_net_link::Channel_Id::Ptt};
-        ui_net_link::Serialize(talk_stop, message_packet);
-        net_serial.Write(message_packet);
-        ptt_down = false;
-        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, true);
-        LedGOff();
+        ptt_state.pos = Ptt_Position::Releasing;
+        ptt_state.timeout = HAL_GetTick();
     }
 
-    if (ptt_down)
+    if (ptt_state.pos == Ptt_Position::Pressed || ptt_state.pos == Ptt_Position::Releasing)
     {
         SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, false);
+    }
+
+    if (ptt_state.pos == Ptt_Position::Releasing
+        && HAL_GetTick() - ptt_state.timeout >= Releasing_Timeout_ms)
+    {
+        ptt_state.pos = Ptt_Position::Released;
+        LedGOff();
     }
 }
 
@@ -659,29 +677,29 @@ void CheckPTTAI()
 {
 
     // Send talk start and sot packets
-    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET && !ptt_ai_down)
+    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET
+        && ptt_ai_state.pos != Ptt_Position::Pressed)
     {
-        // TODO channel id
-        ui_net_link::TalkStart talk_start = {.channel_id = ui_net_link::Channel_Id::Ptt_Ai};
-        ui_net_link::Serialize(talk_start, message_packet);
-        net_serial.Write(message_packet);
-        ptt_ai_down = true;
+        ptt_ai_state.pos = Ptt_Position::Pressed;
         LedBOn();
     }
     else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET
-             && ptt_ai_down)
+             && ptt_ai_state.pos == Ptt_Position::Pressed)
     {
-        ui_net_link::TalkStart talk_stop = {.channel_id = ui_net_link::Channel_Id::Ptt_Ai};
-        ui_net_link::Serialize(talk_stop, message_packet);
-        net_serial.Write(message_packet);
-        ptt_ai_down = false;
-        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, true);
-        LedBOff();
+        ptt_ai_state.pos = Ptt_Position::Releasing;
+        ptt_ai_state.timeout = HAL_GetTick();
     }
 
-    if (ptt_ai_down)
+    if (ptt_ai_state.pos == Ptt_Position::Pressed || ptt_ai_state.pos == Ptt_Position::Releasing)
     {
         SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, false);
+    }
+
+    if (ptt_ai_state.pos == Ptt_Position::Releasing
+        && HAL_GetTick() - ptt_ai_state.timeout >= Releasing_Timeout_ms)
+    {
+        ptt_ai_state.pos == Ptt_Position::Released;
+        LedBOff();
     }
 }
 
