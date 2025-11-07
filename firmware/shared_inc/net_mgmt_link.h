@@ -15,4 +15,5 @@ enum Configuration
     Enable_Logs,
     Disable_Loopback,
     Enable_Loopback,
+    Set_Frontline_Config,
 };
