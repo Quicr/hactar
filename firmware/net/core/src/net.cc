@@ -191,7 +191,6 @@ uint32_t request_id = 0;
 static void UILinkPacketTask(void* args)
 {
     NET_LOG_INFO("Start ui link packet task");
-    bool talk_stopped = false;
     while (true)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
@@ -209,11 +208,6 @@ static void UILinkPacketTask(void* args)
             {
                 break;
             }
-            case ui_net_link::Packet_Type::TalkStart:
-                break;
-            case ui_net_link::Packet_Type::TalkStop:
-                talk_stopped = true;
-                break;
             case ui_net_link::Packet_Type::AiResponse:
             {
                 NET_LOG_INFO("got ai response from ui");

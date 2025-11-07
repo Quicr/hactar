@@ -11,8 +11,6 @@ enum struct Packet_Type : uint8_t
     PowerOnReady,
     GetAudioLinkPacket,
     GetTextLinkPacket,
-    TalkStart, // Dead type?
-    TalkStop,  // Dead type?
     PlayStart,
     PlayStop,
     MoQStatus,
@@ -152,28 +150,6 @@ struct __attribute__((packed)) AIResponseChunk
     packet.type = wifi_status.type;
     packet.length = wifi_status.len;
     packet.payload[0] = (uint8_t)wifi_status.status;
-    packet.is_ready = true;
-}
-
-[[maybe_unused]] static void Serialize(const TalkStart& talk_start, link_packet_t& packet)
-{
-    packet.type = static_cast<uint8_t>(Packet_Type::TalkStart);
-    packet.length = 1;
-
-    // Channel id
-    packet.payload[0] = static_cast<uint8_t>(talk_start.channel_id);
-
-    packet.is_ready = true;
-}
-
-[[maybe_unused]] static void Serialize(const TalkStop& talk_stop, link_packet_t& packet)
-{
-    packet.type = (uint8_t)Packet_Type::TalkStop;
-    packet.length = 1;
-
-    // Channel id
-    packet.payload[0] = (uint8_t)talk_stop.channel_id;
-
     packet.is_ready = true;
 }
 
