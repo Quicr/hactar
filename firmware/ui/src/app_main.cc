@@ -9,6 +9,7 @@
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
+#include "st7789.hh"
 #include "tools.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
@@ -186,16 +187,26 @@ static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_rx_buff_sz,
                           false);
 
-Screen screen(hspi1,
-              DISP_CS_GPIO_Port,
-              DISP_CS_Pin,
-              DISP_DC_GPIO_Port,
-              DISP_DC_Pin,
-              DISP_RST_GPIO_Port,
-              DISP_RST_Pin,
-              DISP_BL_GPIO_Port,
-              DISP_BL_Pin,
-              Screen::Orientation::flipped_portrait);
+// Screen screen(hspi1,
+//               DISP_CS_GPIO_Port,
+//               DISP_CS_Pin,
+//               DISP_DC_GPIO_Port,
+//               DISP_DC_Pin,
+//               DISP_RST_GPIO_Port,
+//               DISP_RST_Pin,
+//               DISP_BL_GPIO_Port,
+//               DISP_BL_Pin,
+//               Screen::Orientation::flipped_portrait);
+
+ST7789<240, 240> screen(hspi1,
+                        DISP_CS_GPIO_Port,
+                        DISP_CS_Pin,
+                        DISP_DC_GPIO_Port,
+                        DISP_DC_Pin,
+                        DISP_RST_GPIO_Port,
+                        DISP_RST_Pin,
+                        DISP_BL_GPIO_Port,
+                        DISP_BL_Pin);
 
 link_packet_t message_packet;
 link_packet_t* link_packet = nullptr;
@@ -265,7 +276,10 @@ int app_main()
 
     InitialzeMLS(config_storage, mls_ctx);
 
-    Renderer renderer(screen, keyboard);
+    // Renderer renderer(screen, keyboard);
+
+    screen.Initialize();
+    screen.DrawPixel(10, 10, C_GREEN);
     audio_chip.Init();
     audio_chip.StartI2S();
 
@@ -294,7 +308,7 @@ int app_main()
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
-            renderer.ChangeView(Renderer::View::Chat);
+            // renderer.ChangeView(Renderer::View::Chat);
             done_booting = true;
         }
 
@@ -326,7 +340,7 @@ int app_main()
         HandleNetLinkPackets();
         HandleMgmtLinkPackets(config_storage);
 
-        renderer.Render(ticks_ms);
+        // renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
 
         sleeping = true;
@@ -611,14 +625,14 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
 
 void InitScreen()
 {
-    screen.Init();
-    // Do the first draw
-    screen.FillRectangle(0, WIDTH, 0, HEIGHT, Colour::Black);
-    for (int i = 0; i < 320; i += Screen::Num_Rows)
-    {
-        screen.Draw(0xFFFF);
-    }
-    screen.EnableBacklight();
+    // screen.Init();
+    // // Do the first draw
+    // screen.FillRectangle(0, WIDTH, 0, HEIGHT, Colour::Black);
+    // for (int i = 0; i < 320; i += Screen::Num_Rows)
+    // {
+    //     screen.Draw(0xFFFF);
+    // }
+    // screen.EnableBacklight();
 }
 
 inline void AudioCallback()
@@ -773,7 +787,7 @@ void HandleChat(link_packet_t* packet)
     constexpr uint8_t payload_offset = 6;
     char* text = (char*)(link_packet->payload + payload_offset);
 
-    screen.CommitText(text, link_packet->length - payload_offset);
+    // screen.CommitText(text, link_packet->length - payload_offset);
 }
 
 void HandleKeypress()
@@ -788,31 +802,31 @@ void HandleKeypress()
         {
         case Keyboard::Ent:
         {
-            ui_net_link::Serialize(ui_net_link::Channel_Id::Chat, screen.UserText(),
-                                   screen.UserTextLength(), message_packet);
+            // ui_net_link::Serialize(ui_net_link::Channel_Id::Chat, screen.UserText(),
+            //                        screen.UserTextLength(), message_packet);
 
-            if (!TryProtect(&message_packet))
-            {
-                UI_LOG_ERROR("Failed to encrypt text packet");
-                return;
-            }
+            // if (!TryProtect(&message_packet))
+            // {
+            //     UI_LOG_ERROR("Failed to encrypt text packet");
+            //     return;
+            // }
 
-            UI_LOG_INFO("Transmit text message");
-            net_serial.Write(message_packet);
-            ++num_packets_tx;
+            // UI_LOG_INFO("Transmit text message");
+            // net_serial.Write(message_packet);
+            // ++num_packets_tx;
 
-            screen.CommitText(screen.UserText(), screen.UserTextLength());
-            screen.ClearUserText();
+            // screen.CommitText(screen.UserText(), screen.UserTextLength());
+            // screen.ClearUserText();
             break;
         }
         case Keyboard::Bak:
         {
-            screen.BackspaceUserText();
+            // screen.BackspaceUserText();
             break;
         }
         default:
         {
-            screen.AppendUserText(ch);
+            // screen.AppendUserText(ch);
             break;
         }
         }
