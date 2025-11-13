@@ -109,11 +109,11 @@ public:
     bool Fill(uint8_t fill_value = 0xFF)
     {
         // Address to start writing is 0
-        uint8_t fill_byte[size_in_bytes + 1] = {0};
+        uint8_t fill_byte[256 + 1] = {0};
 
         // Write a bunch of 1s
         HAL_StatusTypeDef clear_res = HAL_ERROR;
-        for (int16_t i = 0; i < size_in_bytes; i++)
+        for (size_t i = 0; i < size_in_bytes; i++)
         {
             fill_byte[i + 1] = fill_value;
         }

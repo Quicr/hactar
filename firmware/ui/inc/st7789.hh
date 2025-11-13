@@ -1,13 +1,24 @@
 #pragma once
 
-#include "display.hh"
+#include "embedded_display.hh"
 #include "stm32.h"
 
 template <size_t Length, size_t Width>
-class ST7789 : public Display
+class ST7789 : public EmbeddedDisplay
 {
+private:
+    static constexpr uint8_t Software_Reset = 0x01;
+    static constexpr uint8_t Sleep_Out = 0x11;
+    static constexpr uint8_t Colour_Mode = 0x3A;
+    static constexpr uint8_t Colour_Mode_16Bit = 0x55;
+    static constexpr uint8_t MADCTL = 0x36;
+    static constexpr uint8_t No_Rotation = 0x00;
+    static constexpr uint8_t Display_Inversion_On = 0x21;
+    static constexpr uint8_t Normal_Display_Mode = 0x13;
+    static constexpr uint8_t Display_On = 0x29;
+
 public:
-    ST7789(SPI_HandleTypeDef& hspi,
+    ST7789(SPI_HandleTypeDef* hspi,
            GPIO_TypeDef* cs_port,
            const uint16_t cs_pin,
            GPIO_TypeDef* dc_port,
@@ -16,24 +27,16 @@ public:
            const uint16_t rst_pin,
            GPIO_TypeDef* bl_port,
            const uint16_t bl_pin) :
-        spi(&hspi),
-        cs_port(cs_port),
-        cs_pin(cs_pin),
-        dc_port(dc_port),
-        dc_pin(dc_pin),
-        rst_port(rst_port),
-        rst_pin(rst_pin),
-        bl_port(bl_port),
-        bl_pin(bl_pin)
+        EmbeddedDisplay(hspi, cs_port, cs_pin, dc_port, dc_pin, rst_port, rst_pin, bl_port, bl_pin)
     {
     }
 
-    void Initialize()
+    void Initialize() override
     {
         Select();
         Reset();
 
-        WriteCommand(0x01); // Software reset
+        WriteCommand(0x01U); // Software reset
         HAL_Delay(150);
 
         WriteCommand(0x11); // Sleep out
@@ -50,74 +53,16 @@ public:
         WriteCommand(0x29); // Display ON
         HAL_Delay(20);
 
-        SetDrawingWindow(0, 0, 239, 239);
-        WriteCommand(0x2C); // RAMWR
+        SetWriteablePixels(0, 0, 239, 239);
 
-        uint8_t data[2] = {0x00, 0x00};
-        for (uint32_t i = 0; i < 240UL * 240UL; i++)
+        uint8_t data[2] = {0x00, 0xFF};
+        for (uint32_t i = 0; i < 240 * 240; i++)
         {
             WriteData(data, 2);
         }
 
         SetBacklight(GPIO_PIN_SET);
     }
-
-    void Reset()
-    {
-        HAL_GPIO_WritePin(rst_port, rst_pin, GPIO_PIN_RESET);
-        HAL_Delay(50);
-        HAL_GPIO_WritePin(rst_port, rst_pin, GPIO_PIN_SET);
-        HAL_Delay(10);
-    }
-
-    void WriteCommand(const uint8_t cmd)
-    {
-        // DC low for commands
-        HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_RESET);
-        Transmit(&cmd, 1);
-    }
-
-    void WriteData(const uint8_t data)
-    {
-        HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
-        Transmit(&data, 1);
-    }
-
-    void WriteData(const uint8_t* data, const size_t len)
-    {
-        HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
-        Transmit(data, len);
-    }
-
-    void Select()
-    {
-        HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
-    }
-
-    void Deselect()
-    {
-        HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
-    }
-    void DrawPixel(uint16_t x, uint16_t y, uint16_t color)
-    {
-        SetDrawingWindow(x, y, x, y);
-        uint8_t data[] = {color >> 8, color & 0xFF};
-        WriteData(data, 2);
-    }
-
-private:
-    void Transmit(const uint8_t* data, const size_t len)
-    {
-        Select();
-        HAL_SPI_Transmit(spi, data, len, HAL_MAX_DELAY);
-        Deselect();
-    }
-
-    void SetBacklight(const GPIO_PinState set)
-    {
-        HAL_GPIO_WritePin(bl_port, bl_pin, set);
-    }
-
     void
     SetDrawingWindow(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1)
     {
@@ -132,14 +77,33 @@ private:
         WriteCommand(0x2C); // Write to RAM
     }
 
-    SPI_HandleTypeDef* spi;
+    void Reset() override
+    {
+        HAL_GPIO_WritePin(rst_port, rst_pin, GPIO_PIN_RESET);
+        HAL_Delay(50);
+        HAL_GPIO_WritePin(rst_port, rst_pin, GPIO_PIN_SET);
+        HAL_Delay(10);
+    }
 
-    GPIO_TypeDef* cs_port;
-    const uint16_t cs_pin;
-    GPIO_TypeDef* dc_port;
-    const uint16_t dc_pin;
-    GPIO_TypeDef* rst_port;
-    const uint16_t rst_pin;
-    GPIO_TypeDef* bl_port;
-    const uint16_t bl_pin;
+    void DrawPixel(uint16_t x, uint16_t y, uint16_t colour)
+    {
+        SetDrawingWindow(x, y, x, y);
+        uint8_t data[] = {colour >> 8, colour & 0xFF};
+        WriteData(data, 2);
+    }
+
+protected:
+    std::span<const uint8_t> UpdateTransmit() override
+    {
+    }
+
+    std::span<const uint8_t> UpdateReceive() override
+    {
+    }
+
+private:
+    void SetBacklight(const GPIO_PinState set)
+    {
+        HAL_GPIO_WritePin(bl_port, bl_pin, set);
+    }
 };

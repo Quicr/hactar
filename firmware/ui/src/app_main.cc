@@ -187,18 +187,7 @@ static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_rx_buff_sz,
                           false);
 
-// Screen screen(hspi1,
-//               DISP_CS_GPIO_Port,
-//               DISP_CS_Pin,
-//               DISP_DC_GPIO_Port,
-//               DISP_DC_Pin,
-//               DISP_RST_GPIO_Port,
-//               DISP_RST_Pin,
-//               DISP_BL_GPIO_Port,
-//               DISP_BL_Pin,
-//               Screen::Orientation::flipped_portrait);
-
-ST7789<240, 240> screen(hspi1,
+ST7789<240, 240> screen(&hspi1,
                         DISP_CS_GPIO_Port,
                         DISP_CS_Pin,
                         DISP_DC_GPIO_Port,
@@ -279,12 +268,14 @@ int app_main()
     // Renderer renderer(screen, keyboard);
 
     screen.Initialize();
-    screen.DrawPixel(10, 10, C_GREEN);
+    // screen.DrawPixel(10, 10, C_BLUE);
+    // screen.DrawPixel(20, 20, C_BLUE);
+    // screen.DrawPixel(21, 21, C_BLUE);
     audio_chip.Init();
     audio_chip.StartI2S();
 
     // Test in case the audio chip settings change and something looks suspicious
-    // CountNumAudioInterrupts(audio_chip, sleeping);
+    CountNumAudioInterrupts(audio_chip, sleeping);
 
     InitScreen();
     LEDS(HIGH, HIGH, HIGH);
@@ -1015,7 +1006,7 @@ inline void Error(const char* who, const char* why)
 void SlowSendTest(int delay, int num)
 {
     link_packet_t packet;
-    ui_net_link::AudioObject talk_frame = {.channel_id = ui_net_link::Channel_Id::Ptt, 0};
+    ui_net_link::AudioObject talk_frame = {.channel_id = ui_net_link::Channel_Id::Ptt, .data = 0};
     // Fill the tmp audio buffer with random
     for (int i = 0; i < constants::Audio_Buffer_Sz; ++i)
     {
