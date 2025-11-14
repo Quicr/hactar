@@ -1,4 +1,4 @@
-#include "ili9341.hh"
+#include "gfx/ili9341.hh"
 #include <math.h>
 
 ILI9341::ILI9341(SPI_HandleTypeDef& hspi,

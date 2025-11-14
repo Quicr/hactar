@@ -1,10 +1,12 @@
 #pragma once
 
 #include "display.hh"
+#include "shapes/shape.hh"
 #include "spi_device.hh"
 #include <stddef.h>
 #include <stdint-gcc.h>
 
+template <size_t Width, size_t Height>
 class EmbeddedDisplay : public Display, public SPIDevice
 {
 private:
@@ -39,6 +41,18 @@ public:
     {
     }
 
+    virtual void Reset() override
+    {
+        HAL_GPIO_WritePin(rst_port, rst_pin, GPIO_PIN_RESET);
+        HAL_Delay(50);
+        HAL_GPIO_WritePin(rst_port, rst_pin, GPIO_PIN_SET);
+        HAL_Delay(10);
+    }
+
+    virtual void PushShape(Shape shape) override
+    {
+    }
+
     virtual void WriteCommand(const uint8_t cmd)
     {
         // DC low for commands
@@ -58,21 +72,24 @@ public:
         Transmit(data, len);
     }
 
-    virtual void
-    SetWriteablePixels(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1)
+protected:
+    virtual void SetWritableWindow(const uint16_t x,
+                                   const uint16_t y,
+                                   const uint16_t width,
+                                   const uint16_t height)
     {
         const uint8_t col_data[] = {
-            static_cast<uint8_t>(x0 >> 8),
-            static_cast<uint8_t>(x0),
-            static_cast<uint8_t>(x1 >> 8),
-            static_cast<uint8_t>(x1),
+            static_cast<uint8_t>(x >> 8),
+            static_cast<uint8_t>(x),
+            static_cast<uint8_t>((width - 1) >> 8),
+            static_cast<uint8_t>((width - 1)),
         };
 
         const uint8_t row_data[] = {
-            static_cast<uint8_t>(y0 >> 8),
-            static_cast<uint8_t>(y0),
-            static_cast<uint8_t>(y1 >> 8),
-            static_cast<uint8_t>(y1),
+            static_cast<uint8_t>(y >> 8),
+            static_cast<uint8_t>(y),
+            static_cast<uint8_t>((height - 1) >> 8),
+            static_cast<uint8_t>((height - 1)),
         };
 
         WriteCommand(Column_Address_Set);
@@ -84,11 +101,14 @@ public:
         WriteCommand(Write_RAM);
     }
 
-protected:
+    // Variables
     GPIO_TypeDef* dc_port;
     const uint16_t dc_pin;
     GPIO_TypeDef* rst_port;
     const uint16_t rst_pin;
     GPIO_TypeDef* bl_port;
     const uint16_t bl_pin;
+
+    // Each byte stores two pixels
+    uint8_t matrix[(Width * Height) / 2];
 };
