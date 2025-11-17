@@ -16,7 +16,7 @@ enum class Colour : uint8_t
     Magenta,
 };
 
-enum class Colour16 : uint16_t
+enum Colour16 : uint16_t
 {
     Black = 0x0001U,
     Grey = 0xCE59U,

@@ -331,7 +331,6 @@ private:
     uint16_t row_bytes;
 
     DrawMemory memories[Num_Memories];
-    uint8_t ar[1024];
     uint32_t memory_read_idx;
     uint32_t memories_in_use;
     uint32_t memory_write_idx;

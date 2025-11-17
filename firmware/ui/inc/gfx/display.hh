@@ -1,6 +1,6 @@
 #pragma once
 
-#include "shapes/shape.hh"
+#include "shapes/polygon.hh"
 
 class Display
 {
@@ -9,5 +9,4 @@ public:
     virtual void Render() = 0;
     virtual void Update() = 0;
     virtual void Reset() = 0;
-    virtual void PushShape(Shape shape) = 0;
 };
