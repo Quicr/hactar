@@ -1,12 +1,22 @@
 #pragma once
 
 #include "gfx/colour.hh"
+#include "gfx/graphic_memory.hh"
 #include <stdint-gcc.h>
 #include <span>
 
 class Polygon
 {
 public:
+    typedef void (*DrawCallback)(GraphicMemory* memory,
+                                 uint8_t* matrix,
+                                 const uint16_t m_width,
+                                 const uint16_t scan_line_y0,
+                                 const uint16_t scan_line_y1);
+
+    static constexpr size_t Num_Bytes_Size = sizeof(uint8_t);
+    static constexpr size_t DrawCallbackSize = sizeof(DrawCallback);
+
     enum class Type : uint8_t
     {
         Empty = 0,

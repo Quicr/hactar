@@ -50,23 +50,31 @@ public:
         uint16_t memory_offset = 0;
         while (memory.TailHasAllocatedMemory())
         {
-            Polygon::Type type = static_cast<Polygon::Type>(memory.RetrieveMemory(memory_offset));
+            uint8_t len = memory.RetrieveMemory(memory_offset);
+            memory_offset += sizeof(len);
 
-            switch (type)
-            {
-            case Polygon::Type::SolidRectangle:
-            {
-                auto buff = memory.RetrieveMemory(memory_offset, sizeof(SolidRectangle));
-                SolidRectangle* rectangle =
-                    static_cast<SolidRectangle*>(static_cast<void*>(buff.data()));
+            // Get the callback and parameters
+            std::span<uint8_t> buff =
+                memory.RetrieveMemory(memory_offset, static_cast<size_t>(len));
 
-                SolidRectangle::Render(rectangle, matrix, Width, y0, y1);
-            }
-            default:
-            {
-                break;
-            }
-            }
+            // Callback the function with a offsetted span.
+            Polygon::DrawCallback callback = reinterpret_cast<Polygon::DrawCallback>(buff.data());
+
+            // switch (type)
+            // {
+            // case Polygon::Type::SolidRectangle:
+            // {
+            //     // auto buff = memory.RetrieveMemory(memory_offset, sizeof(SolidRectangle));
+            //     // SolidRectangle* rectangle =
+            //     //     static_cast<SolidRectangle*>(static_cast<void*>(buff.data()));
+
+            //     // SolidRectangle::Render(rectangle, matrix, Width, y0, y1);
+            // }
+            // default:
+            // {
+            //     break;
+            // }
+            // }
         }
     }
 

@@ -26,7 +26,7 @@ public:
         std::span buff(memory + memory_head, byte_cnt);
 
         memory_head += byte_cnt;
-        parameter_write_idx = 0;
+        parameter_write = 0;
         parameter_end_idx = byte_cnt;
 
         return buff;
@@ -65,6 +65,8 @@ public:
         {
             memory_tail = 0;
         }
+
+        memory_tail_read = memory_tail;
     }
 
     bool TailHasAllocatedMemory()
@@ -77,7 +79,7 @@ public:
     requires std::is_integral_v<T> && std::is_unsigned_v<T>
     void PushParameter(std::span<uint8_t>& buff, T param)
     {
-        const size_t end_idx = parameter_write_idx + sizeof(T);
+        const size_t end_idx = parameter_write + sizeof(T);
         if (end_idx + sizeof(T) > parameter_end_idx)
         {
             Error("GraphicMemory::PushParamter", "Tried to use more memory than was allocated");
@@ -87,8 +89,8 @@ public:
         for (size_t i = 0; i < sizeof(T); ++i)
         {
             // We are relying on truncation to save a cycle
-            buff[parameter_write_idx] = (param >> (8 * i));
-            ++parameter_write_idx;
+            buff[parameter_write] = (param >> (8 * i));
+            ++parameter_write;
         }
     }
 
@@ -102,8 +104,10 @@ public:
 
 private:
     uint8_t memory[Graphic_Memory_Size];
-    uint16_t memory_tail;
     uint16_t memory_head;
-    uint16_t parameter_write_idx;
+    uint16_t memory_tail;
+    uint16_t memory_tail_read;
+    uint16_t parameter_write;
     uint16_t parameter_end_idx;
+    uint16_t parameter_read;
 };
