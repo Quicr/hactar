@@ -1,0 +1,26 @@
+(version 1)
+(rule gnd_thickness
+	(constraint track_width (max 0.381mm))
+	(condition "A.NetName == 'GND'")
+	(severity error)
+)
+(rule gnda_thickness
+	(constraint track_width (max 0.381mm))
+	(condition "A.NetName == 'GNDA'")
+	(severity error)
+)
+(rule 3.3v_thickness
+	(constraint track_width (max 0.381mm))
+	(condition "A.NetName == '+3.3V'")
+	(severity error)
+)
+
+(rule 3.3va_thickness
+	(constraint track_width (max 0.381mm))
+	(condition "A.NetName == '+3.3VA'")
+	(severity error)
+)
+(rule min_trace_width
+	(constraint track_width (min 0.127mm))
+	(severity error)
+)
