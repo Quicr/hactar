@@ -7,7 +7,29 @@ on:
     branches: [ "main" ]
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      mgmt: ${{ steps.filter.outputs.mgmt }}
+      net: ${{ steps.filter.outputs.net }}
+      ui: ${{ steps.filter.outputs.ui }}
+    steps:
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          mgmt:
+            - 'firmware/mgmt/**'
+          net:
+            - 'firmware/net/**'
+          ui:
+            - 'firmware/ui/**'
+
   build-mgmt:
+    needs: changes
+    if: ${{ needs.changes.outputs.mgmt == 'true' }}
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -48,6 +70,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-net:
+    needs: changes
+    if: ${{ needs.changes.outputs.net == 'true' }}
     runs-on: ubuntu-latest
     continue-on-error: true
     container:
@@ -96,6 +120,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-ui:
+    needs: changes
+    if: ${{ needs.changes.outputs.ui == 'true' }}
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:

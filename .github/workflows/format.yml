@@ -7,7 +7,27 @@ on:
     branches: [ "main" ]
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      mgmt: ${{ steps.filter.outputs.firmware }}
+    steps:
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          firmware:
+            - '**.cpp'
+            - '**.cc'
+            - '**.c'
+            - '**.hh'
+            - '**.h'
+
   format-check:
+    needs: changes
+    if: ${{ needs.changes.outputs.firmware == 'true' }}
     name: Format Check
     runs-on: ubuntu-latest
     steps:
