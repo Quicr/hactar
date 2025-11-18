@@ -19,6 +19,7 @@
 #include <stm32f4xx_hal.h>
 #include <random>
 
+
 // Forward declare
 inline void CheckPTT();
 inline void CheckPTTAI();
