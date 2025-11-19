@@ -1,9 +1,0 @@
-### Module positions - created on Tue Jan 31 16:26:06 2023 ###
-### Printed by Pcbnew version (6.0.11)
-## Unit = mm, Angle = deg.
-## Side : top
-# Ref     Val       Package                               PosX       PosY       Rot  Side
-5V        5V        PinHeader_1x02_P2.54mm_Vertical     2.6162     4.0590  180.0000  top
-D1        LED       LED_0805_2012Metric                16.2814     6.6040  180.0000  top
-R1        145       R_0805_2012Metric                   9.7536     6.6294    0.0000  top
-## End

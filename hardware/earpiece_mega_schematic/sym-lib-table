@@ -1,4 +1,0 @@
-(sym_lib_table
-  (version 7)
-  (lib (name "hactar_symbols")(type "KiCad")(uri "${KIPRJMOD}/../kicad_libraries/hactar_symbols.kicad_sym")(options "")(descr ""))
-)
