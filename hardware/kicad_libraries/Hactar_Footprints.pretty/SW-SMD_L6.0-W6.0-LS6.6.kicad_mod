@@ -156,7 +156,7 @@
 		(uuid "0035caac-c785-4021-80d9-b62ad39124a4")
 	)
 	(embedded_fonts no)
-	(model "/hactar_footprints.3dshapes/SW-SMD_L6.0-W6.0-LS6.6.wrl"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/SW-SMD_L6.0-W6.0-LS6.6.wrl"
 		(offset
 			(xyz 0 -0 -0)
 		)

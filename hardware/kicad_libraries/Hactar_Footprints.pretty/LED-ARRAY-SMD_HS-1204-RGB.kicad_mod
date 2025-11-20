@@ -1,0 +1,132 @@
+(footprint "LED-ARRAY-SMD_HS-1204-RGB"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 0 -4.14 0)
+		(layer "F.SilkS")
+		(uuid "40a7a159-ed9b-423c-aef8-c1255f66bc24")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "LED-ARRAY-SMD_HS-1204-RGB"
+		(at 0 4.14 0)
+		(layer "F.Fab")
+		(uuid "1921fc10-74cc-4120-97c2-72368b094a1a")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "fe3d973d-e4b3-430a-a8d8-cff440d868f4")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "cb1bb721-e846-4951-80c7-e4ed2e75439b")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_line
+		(start -0.76 -0.65)
+		(end 0.76 -0.65)
+		(stroke
+			(width 0.25)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "787a1872-af18-4ef9-96d3-6500db167391")
+	)
+	(fp_arc
+		(start -0.92 -0.88)
+		(mid 0.029677 -1.442676)
+		(end 0.945473 -0.82639)
+		(stroke
+			(width 0.25)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "5d8c10f4-68a7-4f6f-8963-a5e6c748cf08")
+	)
+	(fp_circle
+		(center 1.6 0.09)
+		(end 1.63 0.09)
+		(stroke
+			(width 0.06)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "d8287ea8-5059-4e4e-9f37-3410270770e8")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "56a4b2c4-597d-4d9a-bf6b-bfbbdacc79b2")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd rect
+		(at 0.39 0.14)
+		(size 0.53 0.44)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "0700793d-b386-4739-9a33-152d1941537a")
+	)
+	(pad "2" smd rect
+		(at -0.39 0.14)
+		(size 0.53 0.44)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "77b1293d-17e2-49f7-86eb-2429322af183")
+	)
+	(pad "3" smd rect
+		(at 1.45 -0.14 180)
+		(size 0.88 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "b6836058-1990-40fd-88b8-050fa98f2db2")
+	)
+	(pad "4" smd rect
+		(at -1.45 -0.14 180)
+		(size 0.88 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "1b9ce5c7-a75e-46ea-bdbf-cd9c6536861b")
+	)
+	(embedded_fonts no)
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/LED-ARRAY-SMD_L3.2-W1.5-H1.0-HS-1204-RGB.wrl"
+		(offset
+			(xyz 0 0 1)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz -0 -0 -0)
+		)
+	)
+)
