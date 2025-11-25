@@ -5,9 +5,9 @@
 	(uuid "bd865368-262b-4f76-b7a6-1673c2cb0f8c")
 	(paper "A2")
 	(title_block
-		(title "EV15 FINN BERG & BRETT REGNIER")
-		(date "2025-07-25")
-		(rev "EV15")
+		(title "EV16 FINN BERG & BRETT REGNIER")
+		(date "2025-11-26")
+		(rev "EV16")
 		(company "CISCO SYSTEMS INC")
 	)
 	(lib_symbols
