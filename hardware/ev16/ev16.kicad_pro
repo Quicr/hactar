@@ -603,7 +603,7 @@
       "gencad": "ev14.cad",
       "idf": "",
       "netlist": "./",
-      "plot": "~/cisco/ev12.pdf",
+      "plot": "~/cisco/code/hactar/hardware/ev16/ev16_pcb.pdf",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "ev14.step",
