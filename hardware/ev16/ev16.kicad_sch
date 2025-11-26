@@ -5,9 +5,9 @@
 	(uuid "bd865368-262b-4f76-b7a6-1673c2cb0f8c")
 	(paper "A2")
 	(title_block
-		(title "EV16 FINN BERG & BRETT REGNIER")
+		(title "EV16MK1 FINN BERG & BRETT REGNIER")
 		(date "2025-11-26")
-		(rev "EV16")
+		(rev "EV16MK1")
 		(company "CISCO SYSTEMS INC")
 	)
 	(lib_symbols
@@ -13900,12 +13900,6 @@
 		(uuid "254126ce-b52d-440e-87bc-8311fd0ed161")
 	)
 	(junction
-		(at 401.32 149.86)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "26efd06e-b190-4acd-be7c-46f95e518412")
-	)
-	(junction
 		(at 57.15 234.95)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -14812,6 +14806,10 @@
 		(uuid "68f2d867-1bb5-489e-b79f-97fbb2cbf9dc")
 	)
 	(no_connect
+		(at 430.53 144.78)
+		(uuid "780a9b90-2194-4b05-a137-8467cb69362b")
+	)
+	(no_connect
 		(at 57.15 247.65)
 		(uuid "79de028d-4aca-4d87-873d-a4a0ff759838")
 	)
@@ -14878,6 +14876,10 @@
 	(no_connect
 		(at 115.57 223.52)
 		(uuid "bd80abff-4322-42a2-b517-29aaa797b6d0")
+	)
+	(no_connect
+		(at 430.53 142.24)
+		(uuid "ca9be059-688e-46c0-8796-cd82834d18af")
 	)
 	(no_connect
 		(at 430.53 83.82)
@@ -15693,16 +15695,6 @@
 	)
 	(wire
 		(pts
-			(xy 396.24 148.59) (xy 396.24 149.86)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1812dfaa-8de6-4392-b8aa-31e1bb3d549a")
-	)
-	(wire
-		(pts
 			(xy 149.86 210.82) (xy 157.48 210.82)
 		)
 		(stroke
@@ -16491,16 +16483,6 @@
 		)
 		(uuid "33714c1d-277d-4fe3-a365-f94c73d0383d")
 	)
-	(wire
-		(pts
-			(xy 396.24 132.08) (xy 430.53 132.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "33729484-0f50-4963-914d-ca7883628de7")
-	)
 	(polyline
 		(pts
 			(xy 142.24 223.52) (xy 142.24 247.65)
@@ -16790,16 +16772,6 @@
 			(type default)
 		)
 		(uuid "3baf85ee-4dff-4603-a9fc-db2d574ad95f")
-	)
-	(wire
-		(pts
-			(xy 415.29 144.78) (xy 430.53 144.78)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3bcc4fd3-bfe6-4246-8b45-fdc5e55c124b")
 	)
 	(wire
 		(pts
@@ -18313,16 +18285,6 @@
 	)
 	(wire
 		(pts
-			(xy 415.29 142.24) (xy 430.53 142.24)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "743b7cc6-0e03-4d05-a10a-051b363611c3")
-	)
-	(wire
-		(pts
 			(xy 57.15 217.17) (xy 57.15 219.71)
 		)
 		(stroke
@@ -18733,16 +18695,6 @@
 	)
 	(wire
 		(pts
-			(xy 396.24 140.97) (xy 396.24 132.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8515c150-cb6a-43e7-90b7-51406b65ea4d")
-	)
-	(wire
-		(pts
 			(xy 287.02 200.66) (xy 292.1 200.66)
 		)
 		(stroke
@@ -19080,16 +19032,6 @@
 			(type default)
 		)
 		(uuid "8f6f314f-d2f1-4a38-912d-c5975949effe")
-	)
-	(wire
-		(pts
-			(xy 396.24 149.86) (xy 401.32 149.86)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8fad5aac-3346-4254-9d7c-121c926d2764")
 	)
 	(wire
 		(pts
@@ -21503,6 +21445,16 @@
 	)
 	(wire
 		(pts
+			(xy 416.56 132.08) (xy 430.53 132.08)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e6edb161-2c6c-4ce9-bd44-65fe5d54e2ff")
+	)
+	(wire
+		(pts
 			(xy 147.32 140.97) (xy 147.32 143.51)
 		)
 		(stroke
@@ -22481,16 +22433,6 @@
 		)
 		(uuid "11255b09-b070-4748-b319-ce79009db042")
 	)
-	(label "UI_DEBUG_2"
-		(at 511.81 250.19 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "11cacd5a-fae9-47bb-aaef-7a5604bcceda")
-	)
 	(label "LEDA_R"
 		(at 170.18 69.85 180)
 		(effects
@@ -22640,16 +22582,6 @@
 			(justify right bottom)
 		)
 		(uuid "1eade441-6386-44d8-bb65-bbd52d3e09cb")
-	)
-	(label "VOLUME+"
-		(at 415.29 142.24 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "1fea5106-e3df-4db7-839f-ffdd71cdf80a")
 	)
 	(label "UI_SWDIO"
 		(at 490.22 224.79 180)
@@ -22891,16 +22823,6 @@
 		)
 		(uuid "460a2a32-ec48-465a-9432-15895c54c196")
 	)
-	(label "VOLUME-"
-		(at 415.29 144.78 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "4637febf-38d0-4acd-9b70-5c3245c8ba9e")
-	)
 	(label "BATTERY_MON"
 		(at 49.53 111.76 0)
 		(effects
@@ -22921,6 +22843,16 @@
 		)
 		(uuid "5158f88f-b4ad-4eda-a461-153deb7d0b28")
 	)
+	(label "VOLUME-"
+		(at 491.49 81.28 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "55cc4cd0-7738-4880-94e8-c6631f0ee119")
+	)
 	(label "UI_RTS1_MGMT"
 		(at 116.84 83.82 180)
 		(effects
@@ -22940,6 +22872,16 @@
 			(justify left bottom)
 		)
 		(uuid "55e775e2-6cdc-48d8-8cad-8686cea658fe")
+	)
+	(label "VOLUME+"
+		(at 416.56 132.08 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "565ed1fb-7d7f-447b-bcec-dd9bf4907bc4")
 	)
 	(label "NET_DEBUG_1"
 		(at 232.41 101.6 0)
@@ -23460,6 +23402,16 @@
 			(justify left bottom)
 		)
 		(uuid "9520269e-d325-4abc-a7a0-34e2419f0e29")
+	)
+	(label "VOLUME-"
+		(at 511.81 250.19 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "95958452-aaf1-46f3-b419-f728c64c5095")
 	)
 	(label "MIC_P"
 		(at 283.21 223.52 0)
@@ -24150,16 +24102,6 @@
 			(justify right bottom)
 		)
 		(uuid "f5fab1df-de66-48ed-9009-c53e9b73888c")
-	)
-	(label "UI_DEBUG_2"
-		(at 491.49 81.28 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "fa03a874-d193-4cb9-9fae-85c11f373198")
 	)
 	(label "LEDA_R"
 		(at 116.84 93.98 180)
@@ -37173,98 +37115,6 @@
 			(project "Buckboost converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R_US")
-		(at 396.24 144.78 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "981fa879-4159-435c-86b4-28b4f53903fa")
-		(property "Reference" "R40"
-			(at 398.018 141.478 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "4k7"
-			(at 398.018 147.828 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 398.018 144.78 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 396.24 144.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, US symbol"
-			(at 396.24 144.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C25900"
-			(at 396.24 144.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 396.24 144.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 396.24 144.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "03146c80-b7d6-46a2-b62f-55c114012cc9")
-		)
-		(pin "2"
-			(uuid "d6b16230-96a5-4493-99f1-3f14fad2e5af")
-		)
-		(instances
-			(project "EV13 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "R40")
 					(unit 1)
 				)
 			)
