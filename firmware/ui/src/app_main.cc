@@ -6,6 +6,7 @@
 #include "link_packet_t.hh"
 #include "logger.hh"
 #include "main.h"
+#include "mgmt_packet_handler.hh"
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
@@ -31,7 +32,6 @@ inline void HandleChat(link_packet_t* packet);
 inline void HandleKeypress();
 inline bool TryProtect(link_packet_t* link_packet);
 inline bool TryUnprotect(link_packet_t* link_packet);
-inline void HandleMgmtLinkPackets(ConfigStorage& storage);
 
 inline void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx);
 
@@ -40,92 +40,6 @@ uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
 
 #define HIGH GPIO_PIN_SET
 #define LOW GPIO_PIN_RESET
-
-void reverse(char* str, int length)
-{
-    int start = 0;
-    int end = length - 1;
-    while (start < end)
-    {
-        char temp = str[start];
-        str[start] = str[end];
-        str[end] = temp;
-        start++;
-        end--;
-    }
-}
-
-char* itoa(int value, char* str, int base)
-{
-    if (base < 2 || base > 36)
-    { // Base check: only supports bases 2-36
-        *str = '\0';
-        return str;
-    }
-
-    bool isNegative = false;
-    if (value < 0 && base == 10)
-    { // Handle negative numbers in base 10
-        isNegative = true;
-        value = -value;
-    }
-
-    int i = 0;
-    do
-    {
-        int digit = value % base;
-        str[i++] = (digit > 9) ? (digit - 10 + 'a') : (digit + '0');
-        value /= base;
-    } while (value != 0);
-
-    if (isNegative)
-    {
-        str[i++] = '-';
-    }
-
-    str[i] = '\0'; // Null-terminate the string
-
-    reverse(str, i); // Reverse the string to correct order
-
-    return str;
-}
-
-char* itoa(int value, char* str, int& len, int base)
-{
-    if (base < 2 || base > 36)
-    { // Base check: only supports bases 2-36
-        *str = '\0';
-        len = 0;
-        return str;
-    }
-
-    bool isNegative = false;
-    if (value < 0 && base == 10)
-    { // Handle negative numbers in base 10
-        isNegative = true;
-        value = -value;
-    }
-
-    int i = 0;
-    do
-    {
-        int digit = value % base;
-        str[i++] = (digit > 9) ? (digit - 10 + 'a') : (digit + '0');
-        value /= base;
-    } while (value != 0);
-
-    if (isNegative)
-    {
-        str[i++] = '-';
-    }
-
-    len = i;
-    str[i] = '\0'; // Null-terminate the string
-
-    reverse(str, i); // Reverse the string to correct order
-
-    return str;
-}
 
 cmox_init_retval_t cmox_ll_init(void* pArg)
 {
@@ -324,7 +238,7 @@ int app_main()
         RaiseFlag(Rx_Audio_Transmitted);
 
         HandleNetLinkPackets();
-        HandleMgmtLinkPackets(config_storage);
+        HandleMgmtLinkPackets(audio_chip, mgmt_serial, config_storage);
 
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
@@ -481,103 +395,6 @@ void HandleNetLinkPackets()
         {
             UI_LOG_ERROR("Unhandled packet type %d, %u, %lu, %lu", (int)link_packet->type,
                          link_packet->length, num_audio_req_packets, num_packets_rx);
-            break;
-        }
-        }
-    }
-}
-
-void HandleMgmtLinkPackets(ConfigStorage& storage)
-{
-    while (true)
-    {
-        link_packet = mgmt_serial.Read();
-        if (!link_packet)
-        {
-            break;
-        }
-
-        switch (link_packet->type)
-        {
-        case Configuration::Version:
-        {
-            UI_LOG_INFO("VERSION TODO");
-            break;
-        }
-        case Configuration::Clear:
-        {
-            // NOTE, the storage clear WILL brick your hactar for some amount of time until
-            // the eeprom fixes itself
-            UI_LOG_INFO("OK! Clearing configurations");
-            storage.Clear();
-            UI_LOG_INFO("OK! Cleared all configurations");
-            break;
-        }
-        case Configuration::Set_Sframe:
-        {
-            if (link_packet->length != 16)
-            {
-                mgmt_serial.ReplyNack();
-                UI_LOG_ERROR("ERR. Sframe key is too short!");
-                break;
-            }
-
-            if (storage.Save(ConfigStorage::Config_Id::Sframe_Key, link_packet->payload,
-                             link_packet->length))
-            {
-                mgmt_serial.ReplyAck();
-                UI_LOG_INFO("OK! Saved SFrame Key configuration");
-            }
-            else
-            {
-                mgmt_serial.ReplyNack();
-                UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
-            }
-
-            break;
-        }
-        case Configuration::Get_Sframe:
-        {
-            ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
-            if (config.loaded && config.len == 16)
-            {
-
-                // Copy to a buff and print it.
-                char buff[config.len + 1] = {0};
-                for (int i = 0; i < config.len; ++i)
-                {
-                    buff[i] = config.buff[i];
-                }
-
-                mgmt_serial.Write(config.buff, config.len);
-            }
-            else
-            {
-                UI_LOG_INFO("ERR. No sframe key in storage");
-            }
-            break;
-        }
-        case Configuration::Toggle_Logs:
-        {
-            mgmt_serial.ReplyAck();
-            Logger::Toggle();
-            break;
-        }
-        case Configuration::Disable_Logs:
-        {
-            mgmt_serial.ReplyAck();
-            Logger::Disable();
-            break;
-        }
-        case Configuration::Enable_Logs:
-        {
-            mgmt_serial.ReplyAck();
-            Logger::Enable();
-            break;
-        }
-        default:
-        {
-            UI_LOG_ERROR("ERR. No handler for received packet type");
             break;
         }
         }
@@ -900,6 +717,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     {
         Serial::TxISR(&net_serial);
         RaiseFlag(Rx_Audio_Transmitted);
+    }
+    else if (huart->Instance == Serial::UART(&mgmt_serial)->Instance)
+    {
+        Serial::TxISR(&mgmt_serial);
     }
 }
 

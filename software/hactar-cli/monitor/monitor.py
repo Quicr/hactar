@@ -45,7 +45,8 @@ class Monitor:
         while self.running and threaded:
             try:
                 if self.uart.in_waiting:
-                    data = self.uart.readline().decode()
+                    data = self.uart.readline()
+                    data = data.decode()
                 else:
                     data = None
                     time.sleep(0.05)
@@ -106,15 +107,11 @@ class Monitor:
         command_id = chip_commands[command]["id"]
 
         if len(split) - 2 < num_params:
-            print(
-                f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}"
-            )
+            print(f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}")
             return
 
         if len(split) - 2 > num_params:
-            print(
-                f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}"
-            )
+            print(f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}")
             return
 
         Header_Bytes = 5  # 1 type, 4 length

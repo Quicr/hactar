@@ -35,6 +35,12 @@ ui_command_map = {
     "toggle_logs": {"id": 4, "num_params": 0},
     "disable_logs": {"id": 5, "num_params": 0},
     "enable_logs": {"id": 6, "num_params": 0},
+    "get_preamp": {"id": 7, "num_params": 0},
+    "preamp_up": {"id": 8, "num_params": 0},
+    "preamp_down": {"id": 9, "num_params": 0},
+    "get_volume": {"id": 10, "num_params": 0},
+    "volume_up": {"id": 11, "num_params": 0},
+    "volume_down": {"id": 12, "num_params": 0},
 }
 
 net_command_map = {
@@ -97,7 +103,11 @@ def hactar_command_completer(text, state):
 
     if len(tokens) == 0 or (len(tokens) == 1 and not buffer.endswith(" ")):
         # complete from command_map and bypass_map keys
-        options = [cmd for cmd in list(command_map.keys()) + list(bypass_map.keys()) if cmd.startswith(text)]
+        options = [
+            cmd
+            for cmd in list(command_map.keys()) + list(bypass_map.keys())
+            if cmd.startswith(text)
+        ]
     elif tokens[0] == "ui":
         options = [cmd for cmd in ui_command_map if cmd.startswith(text)]
     elif tokens[0] == "net":
