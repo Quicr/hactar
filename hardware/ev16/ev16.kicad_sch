@@ -39919,7 +39919,7 @@
 				)
 			)
 		)
-		(property "Value" "4k7"
+		(property "Value" "10k"
 			(at 110.998 332.994 0)
 			(effects
 				(font
@@ -39954,7 +39954,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C25900"
+		(property "JLCPCB Part #" "C25744"
 			(at 109.22 330.2 0)
 			(effects
 				(font

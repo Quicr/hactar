@@ -22470,7 +22470,7 @@
 				)
 			)
 		)
-		(property "Value" "4k7"
+		(property "Value" "10k"
 			(at 0 1.17 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -22506,7 +22506,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" "C25900"
+		(property "JLCPCB Part #" "C25744"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
