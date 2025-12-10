@@ -1,5 +1,6 @@
 #pragma once
 
+#include "serial/serial.hh"
 #include "stm32.h"
 #include <string.h>
 #include <iomanip>
@@ -48,12 +49,12 @@
 #define UI_LOG_RAW(...)
 #endif
 
-extern UART_HandleTypeDef huart1;
 constexpr int MAX_LOG_LENGTH = 256;
 constexpr int Prefix_Len = 8;
 class Logger
 {
 public:
+    static Serial& serial;
     static inline bool enabled = true;
 
     enum class Level
@@ -86,13 +87,12 @@ public:
         }
         default:
         {
-            HAL_UART_Transmit(&huart1, (const uint8_t*)log_level_string(level), Prefix_Len,
-                              HAL_MAX_DELAY);
+            serial.Write((const uint8_t*)log_level_string(level), Prefix_Len);
             break;
         }
         }
-        HAL_UART_Transmit(&huart1, (const uint8_t*)log_line, line_size, HAL_MAX_DELAY);
-        HAL_UART_Transmit(&huart1, (const uint8_t*)"\n", 1, HAL_MAX_DELAY);
+        serial.Write((const uint8_t*)log_line, line_size);
+        serial.Write((const uint8_t*)"\n", 1);
     }
 #endif
 

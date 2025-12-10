@@ -3,6 +3,7 @@
 #include "app_main.hh"
 #include "link_packet_t.hh"
 #include "ring_buffer.hh"
+#include "serial/serial.hh"
 #include "uart_handler/uart_handler.hh"
 
 class Uart : public UartHandler

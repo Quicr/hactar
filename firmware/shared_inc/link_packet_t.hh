@@ -2,7 +2,6 @@
 #define __PACKET_H__
 
 #include "constants.hh"
-#include "logger.hh"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -48,16 +47,17 @@ struct link_packet_t
         }
     }
 
-    void Dump()
-    {
-        Logger::Log(Logger::Level::Info, "Dumping packet");
-        Logger::Log(Logger::Level::Raw, "type %d", type);
-        Logger::Log(Logger::Level::Raw, "len %d", length);
-        for (int i = 0; i < length; i++)
-        {
-            Logger::Log(Logger::Level::Raw, "%d", (int)payload[i]);
-        }
-    }
+    // TODO move
+    // void Dump()
+    // {
+    //     Logger::Log(Logger::Level::Info, "Dumping packet");
+    //     Logger::Log(Logger::Level::Raw, "type %d", type);
+    //     Logger::Log(Logger::Level::Raw, "len %d", length);
+    //     for (int i = 0; i < length; i++)
+    //     {
+    //         Logger::Log(Logger::Level::Raw, "%d", (int)payload[i]);
+    //     }
+    // }
 };
 
 #endif

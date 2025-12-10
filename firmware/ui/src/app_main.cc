@@ -99,6 +99,7 @@ static Uart mgmt_serial(&huart1,
                         *mgmt_ui_serial_rx_buff,
                         mgmt_ui_serial_rx_buff_sz,
                         false);
+Serial& Logger::serial = mgmt_serial;
 
 Screen screen(hspi1,
               DISP_CS_GPIO_Port,

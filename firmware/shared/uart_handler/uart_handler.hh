@@ -2,12 +2,13 @@
 
 #include "../../shared_inc/link_packet_t.hh"
 #include "../../shared_inc/ring_buffer.hh"
+#include "serial/serial.hh"
 
 #ifdef PLATFORM_ESP
 #include <mutex>
 #endif
 
-class UartHandler
+class UartHandler : public Serial
 {
 public:
     static constexpr uint8_t Ack = 0x82;

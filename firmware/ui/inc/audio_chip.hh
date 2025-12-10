@@ -44,12 +44,12 @@ public:
     void VolumeReset();
     uint16_t Volume();
 
-    void MicVolumeSet(const int16_t vol);
-    void MicVolumeAdjust(const int16_t step);
-    void MicVolumeUp();
-    void MicVolumeDown();
-    void MicVolumeReset();
-    uint16_t MicVolume();
+    void PreampSet(const int16_t vol);
+    void PreampAdjust(const int16_t step);
+    void PreampUp();
+    void PreampDown();
+    void PreampReset();
+    uint16_t Preamp();
 
     void TurnOnLeftInput3();
     void TurnOffLeftInput3();

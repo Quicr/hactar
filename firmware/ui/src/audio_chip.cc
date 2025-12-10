@@ -48,7 +48,7 @@ void AudioChip::Init()
     SetStereo();
 
     // Set the left and right headphone volumes
-    MicVolumeSet(mic_volume);
+    PreampSet(mic_volume);
     VolumeSet(volume);
 
     // Enable the outputs
@@ -267,7 +267,7 @@ uint16_t AudioChip::Volume()
     return volume;
 }
 
-void AudioChip::MicVolumeSet(const int16_t vol)
+void AudioChip::PreampSet(const int16_t vol)
 {
     if (vol >= Max_Mic_Volume)
     {
@@ -287,27 +287,27 @@ void AudioChip::MicVolumeSet(const int16_t vol)
     SetBits(0x00, 0b1'0011'1111, 0x100 + mic_volume);
 }
 
-void AudioChip::MicVolumeAdjust(const int16_t steps)
+void AudioChip::PreampAdjust(const int16_t steps)
 {
-    MicVolumeSet(mic_volume + steps);
+    PreampSet(mic_volume + steps);
 }
 
-void AudioChip::MicVolumeUp()
+void AudioChip::PreampUp()
 {
-    MicVolumeSet(mic_volume + 1);
+    PreampSet(mic_volume + 1);
 }
 
-void AudioChip::MicVolumeDown()
+void AudioChip::PreampDown()
 {
-    MicVolumeSet(mic_volume - 1);
+    PreampSet(mic_volume - 1);
 }
 
-void AudioChip::MicVolumeReset()
+void AudioChip::PreampReset()
 {
-    MicVolumeSet(Default_Mic_Volume);
+    PreampSet(Default_Mic_Volume);
 }
 
-uint16_t AudioChip::MicVolume()
+uint16_t AudioChip::Preamp()
 {
     return mic_volume;
 }

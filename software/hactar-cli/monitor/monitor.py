@@ -105,6 +105,8 @@ class Monitor:
 
         num_params = chip_commands[command]["num_params"]
         command_id = chip_commands[command]["id"]
+        arg_type = chip_commands[command]["type"]
+        params = split[2:]
 
         if len(split) - 2 < num_params:
             print(f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}")
@@ -116,19 +118,27 @@ class Monitor:
 
         Header_Bytes = 5  # 1 type, 4 length
 
-        # Create the length of the mgmt TLV and ui TLV
+        # Create the length of the mgmt TLV and ui/net TLV
         to_whom_len = Header_Bytes
         command_len = 0
 
-        for param in split[2:]:
+        for param in params:
             # Get the total sizes before we can continue
-            to_whom_len += len(param)
-            command_len += len(param)
+            if arg_type == "str":
+                to_whom_len += len(param)
+                command_len += len(param)
 
-            if num_params > 1:
-                # Less than two params, we don't need to add data lens for each param
-                to_whom_len += 4
-                command_len += 4
+                if num_params > 1:
+                    # Less than two params, we don't need to add data lens for each param
+                    to_whom_len += 4
+                    command_len += 4
+
+            elif arg_type == "int16":
+                to_whom_len += 2
+                command_len += 2
+            else:
+                print("Missing type handler for parameter")
+                return
 
         data = []
         # MGMT - T
@@ -144,13 +154,28 @@ class Monitor:
         data += command_len.to_bytes(4, byteorder="little")
 
         # UI/NET - V
-        for param in split[2:]:
+        for param in params:
             # If there is > 1 params then we add the size of the param first
             if num_params > 1:
                 data += len(param).to_bytes(4, byteorder="little")
-                pass
 
-            data += param.encode("utf-8")
+            # We really don't need anything too fancy here for now
+
+            if arg_type == "str":
+                data += param.encode("utf-8")
+            elif arg_type == "int16":
+                if not param.isdigit():
+                    print("Error. parameter was not a number")
+                    return
+                val = int(param)
+                if val > 0xFFFF:
+                    print(f"Error. Number {val} is greater than 2 bytes (65535)")
+                    return
+
+                data += int(param).to_bytes(2, byteorder="little")
+            else:
+                print("Missing type handler for parameter")
+                return
 
         # transmit the TLV
         self.uart.write(bytes(data))

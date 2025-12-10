@@ -2,92 +2,6 @@
 #include "logger.hh"
 #include "ui_mgmt_link.h"
 
-static void reverse(char* str, int length)
-{
-    int start = 0;
-    int end = length - 1;
-    while (start < end)
-    {
-        char temp = str[start];
-        str[start] = str[end];
-        str[end] = temp;
-        start++;
-        end--;
-    }
-}
-
-static char* int_to_arr(int value, char* str, int base)
-{
-    if (base < 2 || base > 36)
-    { // Base check: only supports bases 2-36
-        *str = '\0';
-        return str;
-    }
-
-    bool isNegative = false;
-    if (value < 0 && base == 10)
-    { // Handle negative numbers in base 10
-        isNegative = true;
-        value = -value;
-    }
-
-    int i = 0;
-    do
-    {
-        int digit = value % base;
-        str[i++] = (digit > 9) ? (digit - 10 + 'a') : (digit + '0');
-        value /= base;
-    } while (value != 0);
-
-    if (isNegative)
-    {
-        str[i++] = '-';
-    }
-
-    str[i] = '\0'; // Null-terminate the string
-
-    reverse(str, i); // Reverse the string to correct order
-
-    return str;
-}
-
-static char* int_to_arr(int value, char* str, int& len, int base)
-{
-    if (base < 2 || base > 36)
-    { // Base check: only supports bases 2-36
-        *str = '\0';
-        len = 0;
-        return str;
-    }
-
-    bool isNegative = false;
-    if (value < 0 && base == 10)
-    { // Handle negative numbers in base 10
-        isNegative = true;
-        value = -value;
-    }
-
-    int i = 0;
-    do
-    {
-        int digit = value % base;
-        str[i++] = (digit > 9) ? (digit - 10 + 'a') : (digit + '0');
-        value /= base;
-    } while (value != 0);
-
-    if (isNegative)
-    {
-        str[i++] = '-';
-    }
-
-    len = i;
-    str[i] = '\0'; // Null-terminate the string
-
-    reverse(str, i); // Reverse the string to correct order
-
-    return str;
-}
-
 void HandleMgmtLinkPackets(AudioChip& audio, Uart& serial, ConfigStorage& storage)
 {
     while (true)
@@ -142,14 +56,13 @@ void HandleMgmtLinkPackets(AudioChip& audio, Uart& serial, ConfigStorage& storag
             {
 
                 // Copy to a buff and print it.
-                char buff[config.len + 1] = {0};
+                char buff[config.len] = {0};
                 for (int i = 0; i < config.len; ++i)
                 {
                     buff[i] = config.buff[i];
                 }
-                buff[config.len + 1] = '\n';
 
-                serial.Write(config.buff, config.len);
+                UI_LOG_RAW("%s", config.buff);
             }
             else
             {
@@ -177,32 +90,50 @@ void HandleMgmtLinkPackets(AudioChip& audio, Uart& serial, ConfigStorage& storag
         }
         case Configuration::Get_Preamp:
         {
-            // UI_LOG_INFO("Got preamp command");
-            char str[3] = {0};
-            int len = 0;
-            uint16_t preamp = audio.MicVolume();
-            int_to_arr(preamp, str, len, 10);
-            str[len++] = '\n';
+            uint16_t preamp = audio.Preamp();
 
-            serial.Write((uint8_t*)str, len);
+            UI_LOG_RAW("%u", preamp);
+            break;
+        }
+        case Configuration::Set_Preamp:
+        {
+            // Get two bytes
+            uint16_t preamp = 0;
+            packet->Get(&preamp, 2, 0);
+
+            UI_LOG_INFO("Try to set preamp to %u", preamp);
+            audio.PreampSet(preamp);
+            UI_LOG_INFO("Preamp = %u", audio.Preamp());
             break;
         }
         case Configuration::Preamp_Up:
         {
             serial.ReplyAck();
-            audio.MicVolumeUp();
+            audio.PreampUp();
             break;
         }
         case Configuration::Preamp_Down:
         {
             serial.ReplyAck();
-            audio.MicVolumeDown();
+            audio.PreampDown();
             break;
         }
         case Configuration::Get_Volume:
         {
             uint16_t volume = audio.Volume();
-            serial.Write((uint8_t*)&volume, sizeof(volume));
+
+            UI_LOG_RAW("%u", volume);
+            break;
+        }
+        case Configuration::Set_Volume:
+        {
+            // Get two bytes
+            uint16_t volume = 0;
+            packet->Get(&volume, 2, 0);
+
+            UI_LOG_INFO("Try to set volume to %u", volume);
+            audio.VolumeSet(volume);
+            UI_LOG_INFO("Volume = %u", audio.Volume());
             break;
         }
         case Configuration::Volume_Up:

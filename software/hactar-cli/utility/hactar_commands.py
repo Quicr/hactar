@@ -28,36 +28,38 @@ bypass_map = {
 }
 
 ui_command_map = {
-    "version": {"id": 0, "num_params": 0},
-    "clear_config": {"id": 1, "num_params": 0},
-    "set_sframe": {"id": 2, "num_params": 1},
-    "get_sframe": {"id": 3, "num_params": 0},
-    "toggle_logs": {"id": 4, "num_params": 0},
-    "disable_logs": {"id": 5, "num_params": 0},
-    "enable_logs": {"id": 6, "num_params": 0},
-    "get_preamp": {"id": 7, "num_params": 0},
-    "preamp_up": {"id": 8, "num_params": 0},
-    "preamp_down": {"id": 9, "num_params": 0},
-    "get_volume": {"id": 10, "num_params": 0},
-    "volume_up": {"id": 11, "num_params": 0},
-    "volume_down": {"id": 12, "num_params": 0},
+    "version": {"id": 0, "num_params": 0, "type": "str"},
+    "clear_config": {"id": 1, "num_params": 0, "type": "str"},
+    "set_sframe": {"id": 2, "num_params": 1, "type": "str"},
+    "get_sframe": {"id": 3, "num_params": 0, "type": "str"},
+    "toggle_logs": {"id": 4, "num_params": 0, "type": "str"},
+    "disable_logs": {"id": 5, "num_params": 0, "type": "str"},
+    "enable_logs": {"id": 6, "num_params": 0, "type": "str"},
+    "get_preamp": {"id": 7, "num_params": 0, "type": "str"},
+    "set_preamp": {"id": 8, "num_params": 1, "type": "int16"},
+    "preamp_up": {"id": 9, "num_params": 0, "type": "str"},
+    "preamp_down": {"id": 10, "num_params": 0, "type": "str"},
+    "get_volume": {"id": 11, "num_params": 0, "type": "str"},
+    "set_volume": {"id": 12, "num_params": 1, "type": "int16"},
+    "volume_up": {"id": 13, "num_params": 0, "type": "str"},
+    "volume_down": {"id": 14, "num_params": 0, "type": "str"},
 }
 
 net_command_map = {
-    "version": {"id": 0, "num_params": 0},
-    "clear_storage": {"id": 1, "num_params": 0},
-    "set_ssid": {"id": 2, "num_params": 2},
-    "get_ssid_names": {"id": 3, "num_params": 0},
-    "get_ssid_passwords": {"id": 4, "num_params": 0},
-    "clear_ssids": {"id": 5, "num_params": 0},
-    "set_moq_url": {"id": 6, "num_params": 1},
-    "get_moq_url": {"id": 7, "num_params": 0},
-    "toggle_logs": {"id": 8, "num_params": 0},
-    "disable_logs": {"id": 9, "num_params": 0},
-    "enable_logs": {"id": 10, "num_params": 0},
-    "disable_loopback": {"id": 11, "num_params": 0},
-    "enable_loopback": {"id": 12, "num_params": 0},
-    "set_fl_config": {"id": 13, "num_params": 2},
+    "version": {"id": 0, "num_params": 0, "type": "str"},
+    "clear_storage": {"id": 1, "num_params": 0, "type": "str"},
+    "set_ssid": {"id": 2, "num_params": 2, "type": "str"},
+    "get_ssid_names": {"id": 3, "num_params": 0, "type": "str"},
+    "get_ssid_passwords": {"id": 4, "num_params": 0, "type": "str"},
+    "clear_ssids": {"id": 5, "num_params": 0, "type": "str"},
+    "set_moq_url": {"id": 6, "num_params": 1, "type": "str"},
+    "get_moq_url": {"id": 7, "num_params": 0, "type": "str"},
+    "toggle_logs": {"id": 8, "num_params": 0, "type": "str"},
+    "disable_logs": {"id": 9, "num_params": 0, "type": "str"},
+    "enable_logs": {"id": 10, "num_params": 0, "type": "str"},
+    "disable_loopback": {"id": 11, "num_params": 0, "type": "str"},
+    "enable_loopback": {"id": 12, "num_params": 0, "type": "str"},
+    "set_fl_config": {"id": 13, "num_params": 2, "type": "str"},
 }
 
 ST_Ack = 0x79
@@ -103,11 +105,7 @@ def hactar_command_completer(text, state):
 
     if len(tokens) == 0 or (len(tokens) == 1 and not buffer.endswith(" ")):
         # complete from command_map and bypass_map keys
-        options = [
-            cmd
-            for cmd in list(command_map.keys()) + list(bypass_map.keys())
-            if cmd.startswith(text)
-        ]
+        options = [cmd for cmd in list(command_map.keys()) + list(bypass_map.keys()) if cmd.startswith(text)]
     elif tokens[0] == "ui":
         options = [cmd for cmd in ui_command_map if cmd.startswith(text)]
     elif tokens[0] == "net":
