@@ -8,7 +8,7 @@
 #include "logger.hh"
 #include "moq_session.hh"
 #include "nvs_flash.h"
-#include "serial.hh"
+#include "uart.hh"
 #include "ui_net_link.hh"
 #include "wifi.hh"
 #include <nlohmann/json.hpp>
@@ -31,7 +31,7 @@
 #define NET_MGMT_UART_RX_PIN GPIO_NUM_44
 
 extern Wifi wifi;
-extern Serial ui_layer;
+extern Uart ui_layer;
 extern std::shared_ptr<moq::Session> moq_session;
 extern SemaphoreHandle_t audio_req_smpr;
 
@@ -46,5 +46,5 @@ void RestartMoqSession(std::shared_ptr<moq::Session>& session,
                        quicr::ClientConfig& config,
                        std::vector<std::shared_ptr<moq::TrackReader>>& readers,
                        std::vector<std::shared_ptr<moq::TrackWriter>>& writers);
-std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial);
+std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Uart& serial);
 std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& subscription);

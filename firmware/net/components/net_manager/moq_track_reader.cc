@@ -18,7 +18,7 @@ extern bool loopback;
 extern SemaphoreHandle_t audio_req_smpr;
 
 TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
-                         Serial& serial,
+                         Uart& serial,
                          const std::string& codec) :
     SubscribeTrackHandler(full_track_name,
                           3,

@@ -1,38 +1,37 @@
-#include "serial.hh"
 #include "logger.hh"
+#include "uart.hh"
 #include <memory.h>
 
 // TODO unify into ui and net
 
-Serial::Serial(UART_HandleTypeDef* uart,
-               const uint16_t num_rx_packets,
-               uint8_t& tx_buff,
-               const uint32_t tx_buff_sz,
-               uint8_t& rx_buff,
-               const uint32_t rx_buff_sz,
-               const bool use_slip) :
-    SerialHandler(
-        num_rx_packets, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this, use_slip),
+Uart::Uart(UART_HandleTypeDef* uart,
+           const uint16_t num_rx_packets,
+           uint8_t& tx_buff,
+           const uint32_t tx_buff_sz,
+           uint8_t& rx_buff,
+           const uint32_t rx_buff_sz,
+           const bool use_slip) :
+    UartHandler(num_rx_packets, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this, use_slip),
     uart(uart)
 {
 }
 
-Serial::~Serial()
+Uart::~Uart()
 {
     uart = nullptr;
 }
 
-void Serial::StartReceive()
+void Uart::StartReceive()
 {
     HAL_UARTEx_ReceiveToIdle_DMA(uart, rx_buff, rx_buff_sz);
 }
 
-void Serial::Stop()
+void Uart::Stop()
 {
     HAL_UART_AbortReceive_IT(uart);
 }
 
-void Serial::Reset()
+void Uart::Reset()
 {
     rx_write_idx = 0;
     rx_read_idx = 0;
@@ -49,7 +48,7 @@ void Serial::Reset()
     StartReceive();
 }
 
-void Serial::ResetRecv()
+void Uart::ResetRecv()
 {
     uint16_t err = uart->Instance->SR;
     Stop();
@@ -58,7 +57,7 @@ void Serial::ResetRecv()
     Reset();
 }
 
-void Serial::UpdateUnread(const uint16_t update)
+void Uart::UpdateUnread(const uint16_t update)
 {
     // UI_LOG_INFO("unread %d, update %d", (int)unread, (int)update);
     __disable_irq();
@@ -67,18 +66,18 @@ void Serial::UpdateUnread(const uint16_t update)
     // UI_LOG_INFO("unread %d", (int)unread);
 }
 
-void Serial::Transmit(void* arg)
+void Uart::Transmit(void* arg)
 {
-    Serial* self = static_cast<Serial*>(arg);
+    Uart* self = static_cast<Uart*>(arg);
     HAL_UART_Transmit_DMA(self->uart, self->tx_buff + self->tx_read_idx, self->num_to_send);
 }
 
-const UART_HandleTypeDef* Serial::UART(Serial* serial)
+const UART_HandleTypeDef* Uart::UART(Uart* serial)
 {
     return serial->uart;
 }
 
-void Serial::RxISR(Serial* serial, const uint16_t fifo_idx)
+void Uart::RxISR(Uart* serial, const uint16_t fifo_idx)
 {
     // NOTE- Do NOT put a breakpoint in here, the callbacks will
     // get blocked will get memory access errors because the
@@ -101,7 +100,7 @@ void Serial::RxISR(Serial* serial, const uint16_t fifo_idx)
     }
 }
 
-void Serial::TxISR(Serial* serial)
+void Uart::TxISR(Uart* serial)
 {
     serial->UpdateTx();
 }

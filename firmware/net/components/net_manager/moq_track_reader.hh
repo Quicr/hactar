@@ -4,7 +4,7 @@
 #ifndef __MOQ_TRACK_READER__
 #define __MOQ_TRACK_READER__
 
-#include "serial.hh"
+#include "uart.hh"
 #include <quicr/client.h>
 #include <cwchar>
 #include <deque>
@@ -16,7 +16,7 @@ class TrackReader : public quicr::SubscribeTrackHandler
 {
 public:
     TrackReader(const quicr::FullTrackName& full_track_name,
-                Serial& serial,
+                Uart& serial,
                 const std::string& codec);
 
     virtual ~TrackReader();
@@ -54,7 +54,7 @@ private:
 
     // Audio variables
     // TODO move into an audio object?
-    Serial& serial;
+    Uart& serial;
     const std::string codec;
     std::string track_name;
     // TODO rename to link_packet_buffer

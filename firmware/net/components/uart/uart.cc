@@ -1,31 +1,31 @@
-#include "serial.hh"
 #include "logger.hh"
+#include "uart.hh"
 #include <random>
 
 // This code is VERY specifically using espressif's serial event system which
 // has many flaws, including but not limited to taking forever and less
 // granularity.
 
-Serial::Serial(const uart_port_t port,
-               uart_dev_t& uart,
-               TaskHandle_t& read_handle,
-               const periph_interrput_t intr_source,
-               const uart_config_t uart_config,
-               const int tx_pin,
-               const int rx_pin,
-               const int rts_pin,
-               const int cts_pin,
-               uint8_t& tx_buff,
-               const uint32_t tx_buff_sz,
-               uint8_t& rx_buff,
-               const uint32_t rx_buff_sz,
-               const uint32_t rx_rings,
-               const uint32_t driver_tx_size,
-               const uint32_t driver_rx_size,
-               const uint32_t driver_queue_size,
-               const bool use_queue_task,
-               const bool use_slip) :
-    SerialHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this, use_slip),
+Uart::Uart(const uart_port_t port,
+           uart_dev_t& uart,
+           TaskHandle_t& read_handle,
+           const periph_interrput_t intr_source,
+           const uart_config_t uart_config,
+           const int tx_pin,
+           const int rx_pin,
+           const int rts_pin,
+           const int cts_pin,
+           uint8_t& tx_buff,
+           const uint32_t tx_buff_sz,
+           uint8_t& rx_buff,
+           const uint32_t rx_buff_sz,
+           const uint32_t rx_rings,
+           const uint32_t driver_tx_size,
+           const uint32_t driver_rx_size,
+           const uint32_t driver_queue_size,
+           const bool use_queue_task,
+           const bool use_slip) :
+    UartHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this, use_slip),
     port(port),
     uart(uart),
     read_handle(read_handle),
@@ -43,7 +43,7 @@ Serial::Serial(const uart_port_t port,
 {
 }
 
-void Serial::BeginEventTask()
+void Uart::BeginEventTask()
 {
     ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(port, tx_pin, rx_pin, rts_pin, cts_pin));
@@ -62,7 +62,7 @@ void Serial::BeginEventTask()
     }
 }
 
-Serial::~Serial()
+Uart::~Uart()
 {
     if (uart_task_handle)
     {
@@ -75,23 +75,23 @@ Serial::~Serial()
     }
 }
 
-void Serial::UpdateUnread(const uint16_t update)
+void Uart::UpdateUnread(const uint16_t update)
 {
     unread -= update;
 }
 
-void Serial::Transmit(void* arg)
+void Uart::Transmit(void* arg)
 {
     // TODO semaphores?
-    Serial* serial = static_cast<Serial*>(arg);
+    Uart* serial = static_cast<Uart*>(arg);
     uart_write_bytes(serial->port, serial->tx_buff + serial->tx_read_idx, serial->num_to_send);
     serial->tx_free = true;
     serial->UpdateTx();
 }
 
-void Serial::ReadTask(void* arg)
+void Uart::ReadTask(void* arg)
 {
-    Serial* serial = static_cast<Serial*>(arg);
+    Uart* serial = static_cast<Uart*>(arg);
 
     int space_remaining = 0;
     int bytes_to_read = 0;
@@ -118,9 +118,9 @@ void Serial::ReadTask(void* arg)
     }
 }
 
-void Serial::QueueReadTask(void* arg)
+void Uart::QueueReadTask(void* arg)
 {
-    Serial* serial = static_cast<Serial*>(arg);
+    Uart* serial = static_cast<Uart*>(arg);
     uart_event_t event;
 
     while (true)

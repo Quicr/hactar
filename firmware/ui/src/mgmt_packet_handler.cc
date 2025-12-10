@@ -88,7 +88,7 @@ static char* int_to_arr(int value, char* str, int& len, int base)
     return str;
 }
 
-void HandleMgmtLinkPackets(AudioChip& audio, Serial& serial, ConfigStorage& storage)
+void HandleMgmtLinkPackets(AudioChip& audio, Uart& serial, ConfigStorage& storage)
 {
     while (true)
     {

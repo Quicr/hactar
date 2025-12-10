@@ -9,8 +9,8 @@
 #include "mgmt_packet_handler.hh"
 #include "renderer.hh"
 #include "screen.hh"
-#include "serial.hh"
 #include "tools.hh"
+#include "uart.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 #include <cmox_crypto.h>
@@ -85,20 +85,20 @@ static constexpr uint16_t mgmt_ui_serial_num_rx_packets = 1;
 
 static AudioChip audio_chip(hi2s3, hi2c1);
 
-static Serial net_serial(&huart2,
-                         net_ui_serial_num_rx_packets,
-                         *net_ui_serial_tx_buff,
-                         net_ui_serial_tx_buff_sz,
-                         *net_ui_serial_rx_buff,
-                         net_ui_serial_rx_buff_sz,
-                         false);
-static Serial mgmt_serial(&huart1,
-                          mgmt_ui_serial_num_rx_packets,
-                          *mgmt_ui_serial_tx_buff,
-                          mgmt_ui_serial_tx_buff_sz,
-                          *mgmt_ui_serial_rx_buff,
-                          mgmt_ui_serial_rx_buff_sz,
-                          false);
+static Uart net_serial(&huart2,
+                       net_ui_serial_num_rx_packets,
+                       *net_ui_serial_tx_buff,
+                       net_ui_serial_tx_buff_sz,
+                       *net_ui_serial_rx_buff,
+                       net_ui_serial_rx_buff_sz,
+                       false);
+static Uart mgmt_serial(&huart1,
+                        mgmt_ui_serial_num_rx_packets,
+                        *mgmt_ui_serial_tx_buff,
+                        mgmt_ui_serial_tx_buff_sz,
+                        *mgmt_ui_serial_rx_buff,
+                        mgmt_ui_serial_rx_buff_sz,
+                        false);
 
 Screen screen(hspi1,
               DISP_CS_GPIO_Port,
@@ -701,32 +701,32 @@ void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx)
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
 {
     // UI_LOG_ERROR("rx %u", size);
-    if (huart->Instance == Serial::UART(&net_serial)->Instance)
+    if (huart->Instance == Uart::UART(&net_serial)->Instance)
     {
-        Serial::RxISR(&net_serial, size);
+        Uart::RxISR(&net_serial, size);
     }
-    else if (huart->Instance == Serial::UART(&mgmt_serial)->Instance)
+    else if (huart->Instance == Uart::UART(&mgmt_serial)->Instance)
     {
-        Serial::RxISR(&mgmt_serial, size);
+        Uart::RxISR(&mgmt_serial, size);
     }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == Serial::UART(&net_serial)->Instance)
+    if (huart->Instance == Uart::UART(&net_serial)->Instance)
     {
-        Serial::TxISR(&net_serial);
+        Uart::TxISR(&net_serial);
         RaiseFlag(Rx_Audio_Transmitted);
     }
-    else if (huart->Instance == Serial::UART(&mgmt_serial)->Instance)
+    else if (huart->Instance == Uart::UART(&mgmt_serial)->Instance)
     {
-        Serial::TxISR(&mgmt_serial);
+        Uart::TxISR(&mgmt_serial);
     }
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == Serial::UART(&net_serial)->Instance)
+    if (huart->Instance == Uart::UART(&net_serial)->Instance)
     {
         net_serial.Stop();
         net_serial.StartReceive();
@@ -735,7 +735,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 
 void HAL_UART_AbortReceiveCpltCallback(UART_HandleTypeDef* huart)
 {
-    if (huart->Instance == Serial::UART(&net_serial)->Instance)
+    if (huart->Instance == Uart::UART(&net_serial)->Instance)
     {
         net_serial.StartReceive();
     }

@@ -2,6 +2,6 @@
 
 #include "audio_chip.hh"
 #include "config_storage.hh"
-#include "serial.hh"
+#include "uart.hh"
 
-void HandleMgmtLinkPackets(AudioChip& audio_chip, Serial& serial, ConfigStorage& storage);
+void HandleMgmtLinkPackets(AudioChip& audio_chip, Uart& serial, ConfigStorage& storage);

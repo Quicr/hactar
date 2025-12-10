@@ -4,7 +4,7 @@
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "driver/uart.h"
-#include "serial.hh"
+#include "uart.hh"
 #include <memory>
 
 // Pin and peripheral definitions

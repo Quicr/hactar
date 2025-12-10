@@ -1,15 +1,15 @@
-#include "serial_handler.hh"
+#include "uart_handler.hh"
 #include "logger.hh"
 #include <memory.h>
 
-SerialHandler::SerialHandler(const uint16_t num_rx_packets,
-                             uint8_t& tx_buff,
-                             const uint32_t tx_buff_sz,
-                             uint8_t& rx_buff,
-                             const uint32_t rx_buff_sz,
-                             void (*Transmit)(void* arg),
-                             void* transmit_arg,
-                             const bool use_slip) :
+UartHandler::UartHandler(const uint16_t num_rx_packets,
+                         uint8_t& tx_buff,
+                         const uint32_t tx_buff_sz,
+                         uint8_t& rx_buff,
+                         const uint32_t rx_buff_sz,
+                         void (*Transmit)(void* arg),
+                         void* transmit_arg,
+                         const bool use_slip) :
     rx_packets(num_rx_packets),
     tx_buff(&tx_buff),
     tx_buff_sz(tx_buff_sz),
@@ -33,7 +33,7 @@ SerialHandler::SerialHandler(const uint16_t num_rx_packets,
 {
 }
 
-SerialHandler::~SerialHandler()
+UartHandler::~UartHandler()
 {
     Transmit = nullptr;
     transmit_arg = nullptr;
@@ -41,7 +41,7 @@ SerialHandler::~SerialHandler()
 
 // TODO optimize our buffers
 
-link_packet_t* SerialHandler::Read()
+link_packet_t* UartHandler::Read()
 {
     if (use_slip)
     {
@@ -53,17 +53,17 @@ link_packet_t* SerialHandler::Read()
     }
 }
 
-void SerialHandler::Write(const uint8_t data, const bool end_frame)
+void UartHandler::Write(const uint8_t data, const bool end_frame)
 {
     Write(&data, 1, end_frame);
 }
 
-void SerialHandler::Write(const link_packet_t& packet, const bool end_frame)
+void UartHandler::Write(const link_packet_t& packet, const bool end_frame)
 {
     Write(packet.data, packet.length + link_packet_t::Header_Size, end_frame);
 }
 
-void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool end_frame)
+void UartHandler::Write(const uint8_t* data, const uint16_t size, const bool end_frame)
 {
 #ifdef PLATFORM_ESP
     std::lock_guard<std::mutex> _(write_mux);
@@ -93,17 +93,17 @@ void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool e
     PrepTransmit();
 }
 
-uint16_t SerialHandler::Unread()
+uint16_t UartHandler::Unread()
 {
     return unread;
 }
 
-uint16_t SerialHandler::Unsent()
+uint16_t UartHandler::Unsent()
 {
     return unsent;
 }
 
-void SerialHandler::WriteToTxBuff(const uint8_t data)
+void UartHandler::WriteToTxBuff(const uint8_t data)
 {
     if (tx_write_idx >= tx_buff_sz)
     {
@@ -112,7 +112,7 @@ void SerialHandler::WriteToTxBuff(const uint8_t data)
     tx_buff[tx_write_idx++] = data;
 }
 
-uint8_t SerialHandler::ReadFromRxBuff()
+uint8_t UartHandler::ReadFromRxBuff()
 {
     if (rx_read_idx >= rx_buff_sz)
     {
@@ -121,7 +121,7 @@ uint8_t SerialHandler::ReadFromRxBuff()
     return rx_buff[rx_read_idx++];
 }
 
-void SerialHandler::UpdateRx(const uint16_t num_recv)
+void UartHandler::UpdateRx(const uint16_t num_recv)
 {
     unread += num_recv;
     rx_write_idx += num_recv;
@@ -137,7 +137,7 @@ void SerialHandler::UpdateRx(const uint16_t num_recv)
     }
 }
 
-bool SerialHandler::UpdateTx()
+bool UartHandler::UpdateTx()
 {
     // TODO esp semaphore of send
     unsent -= num_to_send;
@@ -151,7 +151,7 @@ bool SerialHandler::UpdateTx()
     return PrepTransmit();
 }
 
-bool SerialHandler::PrepTransmit()
+bool UartHandler::PrepTransmit()
 {
     // Nothing to send
     if (unsent == 0)
@@ -172,7 +172,7 @@ bool SerialHandler::PrepTransmit()
     return true;
 }
 
-link_packet_t* SerialHandler::SlipRead()
+link_packet_t* UartHandler::SlipRead()
 {
     // TODO for some reason when the semaphore can't be taken
     // we get a lot of frame errors
@@ -249,7 +249,7 @@ link_packet_t* SerialHandler::SlipRead()
     return GetReadyPacket();
 }
 
-link_packet_t* SerialHandler::TLVRead()
+link_packet_t* UartHandler::TLVRead()
 {
     uint16_t total_bytes_read = 0;
     uint8_t byte = 0;
@@ -290,7 +290,7 @@ link_packet_t* SerialHandler::TLVRead()
     return GetReadyPacket();
 }
 
-link_packet_t* SerialHandler::GetReadyPacket()
+link_packet_t* UartHandler::GetReadyPacket()
 {
     if (!rx_packets.Peek().is_ready)
     {
@@ -302,7 +302,7 @@ link_packet_t* SerialHandler::GetReadyPacket()
     return p;
 }
 
-void SerialHandler::SlipWrite(const uint8_t* data, const uint16_t size, const bool end_frame)
+void UartHandler::SlipWrite(const uint8_t* data, const uint16_t size, const bool end_frame)
 {
     for (uint16_t i = 0; i < size; ++i)
     {
@@ -333,7 +333,7 @@ void SerialHandler::SlipWrite(const uint8_t* data, const uint16_t size, const bo
     }
 }
 
-void SerialHandler::TLVWrite(const uint8_t* data, const uint16_t size)
+void UartHandler::TLVWrite(const uint8_t* data, const uint16_t size)
 {
     for (uint16_t i = 0; i < size; ++i)
     {
@@ -343,12 +343,12 @@ void SerialHandler::TLVWrite(const uint8_t* data, const uint16_t size)
     unsent += size;
 }
 
-void SerialHandler::ReplyAck()
+void UartHandler::ReplyAck()
 {
     Write(const_cast<uint8_t*>(&Ack), 1);
 }
 
-void SerialHandler::ReplyNack()
+void UartHandler::ReplyNack()
 {
     Write(const_cast<uint8_t*>(&Nack), 1);
 }

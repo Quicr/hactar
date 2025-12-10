@@ -7,7 +7,7 @@
 #include <mutex>
 #endif
 
-class SerialHandler
+class UartHandler
 {
 public:
     static constexpr uint8_t Ack = 0x82;
@@ -18,15 +18,15 @@ public:
     static constexpr uint8_t ESC_END = 0xDC;
     static constexpr uint8_t ESC_ESC = 0xDD;
 
-    SerialHandler(const uint16_t num_rx_packets,
-                  uint8_t& tx_buff,
-                  const uint32_t tx_buff_sz,
-                  uint8_t& rx_buff,
-                  const uint32_t rx_buff_sz,
-                  void (*Transmit)(void* self),
-                  void* transmit_arg,
-                  const bool use_slip = true);
-    ~SerialHandler();
+    UartHandler(const uint16_t num_rx_packets,
+                uint8_t& tx_buff,
+                const uint32_t tx_buff_sz,
+                uint8_t& rx_buff,
+                const uint32_t rx_buff_sz,
+                void (*Transmit)(void* self),
+                void* transmit_arg,
+                const bool use_slip = true);
+    ~UartHandler();
 
     link_packet_t* Read();
 

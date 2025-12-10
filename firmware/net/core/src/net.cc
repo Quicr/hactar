@@ -19,10 +19,10 @@
 #include "peripherals.hh"
 #include "picoquic_utils.h"
 #include "sdkconfig.h"
-#include "serial.hh"
 #include "spdlog/logger.h"
 #include "storage.hh"
 #include "stored_value.hh"
+#include "uart.hh"
 #include "ui_net_link.hh"
 #include "utils.hh"
 #include "wifi.hh"
@@ -67,25 +67,25 @@ uart_config_t net_ui_uart_config = {
     .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
 };
 
-Serial ui_layer(NET_UI_UART_PORT,
-                NET_UI_UART_DEV,
-                net_ui_serial_read_handle,
-                ETS_UART1_INTR_SOURCE,
-                net_ui_uart_config,
-                NET_UI_UART_TX_PIN,
-                NET_UI_UART_RX_PIN,
-                UART_PIN_NO_CHANGE,
-                UART_PIN_NO_CHANGE,
-                *net_ui_uart_tx_buff,
-                NET_UI_UART_TX_BUFF_SIZE,
-                *net_ui_uart_rx_buff,
-                NET_UI_UART_RX_BUFF_SIZE,
-                NET_UI_UART_RING_RX_NUM,
-                2048,
-                4096,
-                20,
-                true,
-                false);
+Uart ui_layer(NET_UI_UART_PORT,
+              NET_UI_UART_DEV,
+              net_ui_serial_read_handle,
+              ETS_UART1_INTR_SOURCE,
+              net_ui_uart_config,
+              NET_UI_UART_TX_PIN,
+              NET_UI_UART_RX_PIN,
+              UART_PIN_NO_CHANGE,
+              UART_PIN_NO_CHANGE,
+              *net_ui_uart_tx_buff,
+              NET_UI_UART_TX_BUFF_SIZE,
+              *net_ui_uart_rx_buff,
+              NET_UI_UART_RX_BUFF_SIZE,
+              NET_UI_UART_RING_RX_NUM,
+              2048,
+              4096,
+              20,
+              true,
+              false);
 
 TaskHandle_t net_mgmt_serial_read_handle;
 StaticTask_t net_mgmt_serial_read_buffer;
@@ -102,25 +102,25 @@ uart_config_t net_mgmt_uart_config = {
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
 };
 
-Serial mgmt_layer(UART_NUM_0,
-                  UART0,
-                  net_mgmt_serial_read_handle,
-                  ETS_UART0_INTR_SOURCE,
-                  net_mgmt_uart_config,
-                  NET_MGMT_UART_TX_PIN,
-                  NET_MGMT_UART_RX_PIN,
-                  UART_PIN_NO_CHANGE,
-                  UART_PIN_NO_CHANGE,
-                  *net_mgmt_uart_tx_buff,
-                  NET_MGMT_UART_TX_BUFF_SIZE,
-                  *net_mgmt_uart_rx_buff,
-                  NET_MGMT_UART_RX_BUFF_SIZE,
-                  NET_MGMT_UART_RING_RX_NUM,
-                  0,
-                  256,
-                  2,
-                  true,
-                  false);
+Uart mgmt_layer(UART_NUM_0,
+                UART0,
+                net_mgmt_serial_read_handle,
+                ETS_UART0_INTR_SOURCE,
+                net_mgmt_uart_config,
+                NET_MGMT_UART_TX_PIN,
+                NET_MGMT_UART_RX_PIN,
+                UART_PIN_NO_CHANGE,
+                UART_PIN_NO_CHANGE,
+                *net_mgmt_uart_tx_buff,
+                NET_MGMT_UART_TX_BUFF_SIZE,
+                *net_mgmt_uart_rx_buff,
+                NET_MGMT_UART_RX_BUFF_SIZE,
+                NET_MGMT_UART_RING_RX_NUM,
+                0,
+                256,
+                2,
+                true,
+                false);
 
 Storage storage;
 Wifi wifi(storage);
@@ -465,7 +465,7 @@ static void MgmtLinkPacketTask(void* args)
     }
 }
 
-std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial)
+std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Uart& serial)
 try
 {
     std::vector<std::string> track_namespace =

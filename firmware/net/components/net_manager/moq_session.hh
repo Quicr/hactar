@@ -4,7 +4,7 @@
 #include "constants.hh"
 #include "moq_track_reader.hh"
 #include "moq_track_writer.hh"
-#include "serial.hh"
+#include "uart.hh"
 #include <nlohmann/json.hpp>
 #include <quicr/client.h>
 #include <quicr/detail/defer.h>
