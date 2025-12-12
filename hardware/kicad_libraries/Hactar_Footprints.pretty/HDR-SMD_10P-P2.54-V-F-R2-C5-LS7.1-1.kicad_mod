@@ -284,7 +284,7 @@
 		(uuid "df3f7742-aa9b-464b-bd29-796481877c7b")
 	)
 	(embedded_fonts no)
-	(model "/hactar_footprints.3dshapes/HDR-SMD_10P-P2.54-V-F-R2-C5-LS7.1-1.wrl"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/HDR-SMD_10P-P2.54-V-F-R2-C5-LS7.1-1.wrl"
 		(offset
 			(xyz 0 -0 -0)
 		)
