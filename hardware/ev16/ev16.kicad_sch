@@ -12978,8 +12978,8 @@
 		(uuid 5078b2c3-8cae-418a-88e7-c36d89468872)
 	)
 	(rectangle
-		(start 129.54 99.06)
-		(end 160.02 123.19)
+		(start 175.26 100.33)
+		(end 205.74 149.86)
 		(stroke
 			(width 0)
 			(type default)
@@ -13074,8 +13074,8 @@
 		(uuid d7ae271c-ee9c-446d-bfbd-2beb46cb6c49)
 	)
 	(rectangle
-		(start 129.54 130.81)
-		(end 173.99 166.37)
+		(start 129.54 100.33)
+		(end 173.99 156.21)
 		(stroke
 			(width 0)
 			(type default)
@@ -13383,7 +13383,7 @@
 	)
 	(text "NRST"
 		(exclude_from_sim no)
-		(at 128.27 99.06 0)
+		(at 175.006 99.822 0)
 		(effects
 			(font
 				(size 5 5)
@@ -13485,7 +13485,7 @@
 	)
 	(text "BOOT"
 		(exclude_from_sim no)
-		(at 128.27 130.81 0)
+		(at 128.016 99.568 0)
 		(effects
 			(font
 				(size 5 5)
@@ -13906,7 +13906,7 @@
 		(uuid "2a7f534e-3332-443f-a528-5a5143d97333")
 	)
 	(junction
-		(at 168.91 -30.48)
+		(at 149.86 129.54)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "2b012d75-a58d-438b-b9e1-75573dd25f07")
@@ -13960,7 +13960,7 @@
 		(uuid "3e6c7298-ffa8-44a1-a85f-6ebcdf2957ea")
 	)
 	(junction
-		(at 156.21 111.76)
+		(at 201.93 113.03)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "3e8c6bf7-d832-4b47-bccd-2b74320807b4")
@@ -13996,7 +13996,7 @@
 		(uuid "41d16f14-d33f-4615-98e6-78a0b0ad688c")
 	)
 	(junction
-		(at 179.07 -17.78)
+		(at 160.02 142.24)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "43ca0c2f-c933-45c2-9b74-000644839c23")
@@ -14140,12 +14140,6 @@
 		(uuid "67c710cb-8671-45e0-9644-8c6f426e51be")
 	)
 	(junction
-		(at 193.04 115.57)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "67f60468-53b3-4926-9d93-442d6f9e43b4")
-	)
-	(junction
 		(at 245.11 170.18)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -14236,7 +14230,7 @@
 		(uuid "732842bb-4f16-49d3-9cff-89a283eac9d2")
 	)
 	(junction
-		(at 135.89 104.14)
+		(at 181.61 105.41)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "74f46393-1a5f-423d-8faa-d1b0d4eed2c8")
@@ -14386,12 +14380,6 @@
 		(uuid "a5df5417-0f8c-467a-a535-e6392c778d85")
 	)
 	(junction
-		(at 181.61 115.57)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "a631d7ad-98a4-4d25-9750-479d9cc87969")
-	)
-	(junction
 		(at 515.62 233.68)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -14404,13 +14392,13 @@
 		(uuid "a7e35e7f-c32a-41da-bea5-d8e6f68dbc54")
 	)
 	(junction
-		(at 179.07 -46.99)
+		(at 160.02 113.03)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "a8002ffe-5a90-4666-ad7b-1772e2e908ea")
 	)
 	(junction
-		(at 142.24 104.14)
+		(at 187.96 105.41)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "a96bf32d-2718-4894-a041-c847fe7e7845")
@@ -14462,12 +14450,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "b61953ef-9693-41d1-ae12-adf83ed71374")
-	)
-	(junction
-		(at 160.02 156.21)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "b6f112f5-a37a-4837-ae10-aec300af8917")
 	)
 	(junction
 		(at 265.43 322.58)
@@ -14522,12 +14504,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "cafded56-70d0-43fc-b2e4-005deda950c0")
-	)
-	(junction
-		(at 170.18 161.29)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "cbfc225a-27ca-4340-8e8c-fb8d2b4b0d52")
 	)
 	(junction
 		(at 250.19 181.61)
@@ -14668,12 +14644,6 @@
 		(uuid "ed40d455-0dd7-422a-beb9-ffb161057517")
 	)
 	(junction
-		(at 149.86 156.21)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "ed7f7908-2476-4a4f-b897-33a0408e2570")
-	)
-	(junction
 		(at 242.57 351.79)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -14702,12 +14672,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f23c5fc9-5c32-4be6-8fa2-0f9a71b94ce1")
-	)
-	(junction
-		(at 156.21 156.21)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "f4530cf8-3bfd-462a-8226-05685cf859c7")
 	)
 	(junction
 		(at 558.8 233.68)
@@ -14746,7 +14710,7 @@
 		(uuid "f8f1e403-3333-4642-8d6a-92f7b2203a51")
 	)
 	(junction
-		(at 179.07 -36.83)
+		(at 160.02 123.19)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f925bddf-8540-47e9-86de-0951d3ba3e6a")
@@ -15026,16 +14990,6 @@
 			(type default)
 		)
 		(uuid "01a87532-085d-4fab-a233-d3d89c35b1ec")
-	)
-	(wire
-		(pts
-			(xy 123.19 231.14) (xy 133.35 231.14)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "01af6fe9-93e8-42df-a79c-1c6819a374c7")
 	)
 	(wire
 		(pts
@@ -15569,7 +15523,7 @@
 	)
 	(wire
 		(pts
-			(xy 168.91 -30.48) (xy 171.45 -30.48)
+			(xy 149.86 129.54) (xy 152.4 129.54)
 		)
 		(stroke
 			(width 0)
@@ -15729,7 +15683,7 @@
 	)
 	(wire
 		(pts
-			(xy 151.13 -30.48) (xy 160.02 -30.48)
+			(xy 132.08 129.54) (xy 140.97 129.54)
 		)
 		(stroke
 			(width 0)
@@ -15859,17 +15813,7 @@
 	)
 	(wire
 		(pts
-			(xy 133.35 156.21) (xy 135.89 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1d30aeaa-6ee7-4153-8aae-8168f61a86ec")
-	)
-	(wire
-		(pts
-			(xy 168.91 -31.75) (xy 168.91 -30.48)
+			(xy 149.86 128.27) (xy 149.86 129.54)
 		)
 		(stroke
 			(width 0)
@@ -15966,16 +15910,6 @@
 			(type default)
 		)
 		(uuid "1f787b5e-18e4-4543-9d97-8b13097c96f4")
-	)
-	(wire
-		(pts
-			(xy 194.31 105.41) (xy 194.31 106.68)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1ffdc9e3-3fd3-481a-9b9a-3a4efe558b06")
 	)
 	(wire
 		(pts
@@ -16199,7 +16133,7 @@
 	)
 	(wire
 		(pts
-			(xy 179.07 -36.83) (xy 195.58 -36.83)
+			(xy 160.02 123.19) (xy 171.45 123.19)
 		)
 		(stroke
 			(width 0)
@@ -16216,16 +16150,6 @@
 			(type default)
 		)
 		(uuid "28230caa-1e0c-4241-a5bb-f927078fa116")
-	)
-	(wire
-		(pts
-			(xy 181.61 121.92) (xy 181.61 124.46)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "287b39c7-bf3f-4860-b31c-ae65fc9b1500")
 	)
 	(wire
 		(pts
@@ -16266,16 +16190,6 @@
 			(type default)
 		)
 		(uuid "29ef84fc-50e0-479c-9a04-c6493cee50a9")
-	)
-	(wire
-		(pts
-			(xy 146.05 149.86) (xy 149.86 149.86)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2a934fbd-6e14-4cca-ba35-d443aa326c89")
 	)
 	(wire
 		(pts
@@ -16369,7 +16283,7 @@
 	)
 	(wire
 		(pts
-			(xy 144.78 111.76) (xy 142.24 111.76)
+			(xy 190.5 113.03) (xy 187.96 113.03)
 		)
 		(stroke
 			(width 0)
@@ -16749,7 +16663,7 @@
 	)
 	(wire
 		(pts
-			(xy 168.91 -17.78) (xy 168.91 -19.05)
+			(xy 149.86 142.24) (xy 149.86 140.97)
 		)
 		(stroke
 			(width 0)
@@ -16776,16 +16690,6 @@
 			(type default)
 		)
 		(uuid "378517c6-98e6-4ed6-91f1-7585072c052b")
-	)
-	(wire
-		(pts
-			(xy 149.86 149.86) (xy 149.86 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "37a273c2-9e65-4527-9954-4156151cf04b")
 	)
 	(wire
 		(pts
@@ -16879,16 +16783,6 @@
 	)
 	(wire
 		(pts
-			(xy 181.61 115.57) (xy 182.88 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3b365cbb-75b3-4356-a456-0bb5d2a3b3af")
-	)
-	(wire
-		(pts
 			(xy 518.16 193.04) (xy 518.16 191.77)
 		)
 		(stroke
@@ -16936,16 +16830,6 @@
 			(type default)
 		)
 		(uuid "3c335d1b-7b27-42ee-96a7-9cf9079fce5d")
-	)
-	(wire
-		(pts
-			(xy 194.31 114.3) (xy 194.31 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3d1e0cca-73f1-442e-add4-77a4e70ad064")
 	)
 	(wire
 		(pts
@@ -17129,6 +17013,16 @@
 	)
 	(wire
 		(pts
+			(xy 115.57 233.68) (xy 130.81 233.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "43448a69-5787-43f7-9372-e2307c10c366")
+	)
+	(wire
+		(pts
 			(xy 256.54 200.66) (xy 264.16 200.66)
 		)
 		(stroke
@@ -17276,16 +17170,6 @@
 			(type default)
 		)
 		(uuid "478444f7-157a-4737-ae93-854602cb3700")
-	)
-	(wire
-		(pts
-			(xy 149.86 156.21) (xy 156.21 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "47d0f80b-b72d-4dc9-bcc2-8ac86d45a283")
 	)
 	(wire
 		(pts
@@ -17509,7 +17393,7 @@
 	)
 	(wire
 		(pts
-			(xy 153.67 104.14) (xy 156.21 104.14)
+			(xy 199.39 105.41) (xy 201.93 105.41)
 		)
 		(stroke
 			(width 0)
@@ -17579,7 +17463,7 @@
 	)
 	(wire
 		(pts
-			(xy 168.91 -46.99) (xy 179.07 -46.99)
+			(xy 149.86 113.03) (xy 160.02 113.03)
 		)
 		(stroke
 			(width 0)
@@ -17629,7 +17513,7 @@
 	)
 	(wire
 		(pts
-			(xy 179.07 -46.99) (xy 179.07 -45.72)
+			(xy 160.02 113.03) (xy 160.02 114.3)
 		)
 		(stroke
 			(width 0)
@@ -17666,6 +17550,16 @@
 			(type default)
 		)
 		(uuid "564b0b3e-a012-472f-b419-55629314ff7f")
+	)
+	(wire
+		(pts
+			(xy 181.61 119.38) (xy 181.61 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5692f4d8-8541-4767-8716-7b5c4206f7ca")
 	)
 	(wire
 		(pts
@@ -17729,16 +17623,6 @@
 	)
 	(wire
 		(pts
-			(xy 170.18 156.21) (xy 170.18 161.29)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5a9d1431-deb1-4df7-b6e9-4070a5a7bbc4")
-	)
-	(wire
-		(pts
 			(xy 459.74 252.73) (xy 462.28 252.73)
 		)
 		(stroke
@@ -17749,16 +17633,6 @@
 	)
 	(wire
 		(pts
-			(xy 186.69 115.57) (xy 193.04 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5ac99206-7b1d-4c39-86cb-dc50c9b71223")
-	)
-	(wire
-		(pts
 			(xy 533.4 161.29) (xy 538.48 161.29)
 		)
 		(stroke
@@ -17766,16 +17640,6 @@
 			(type default)
 		)
 		(uuid "5b088089-8d6a-46fd-b76d-59d23e915312")
-	)
-	(wire
-		(pts
-			(xy 161.29 161.29) (xy 160.02 161.29)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5be04dd8-22d4-4965-ad24-dd14415b3c7b")
 	)
 	(wire
 		(pts
@@ -17939,16 +17803,6 @@
 	)
 	(wire
 		(pts
-			(xy 181.61 116.84) (xy 181.61 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "62f4179e-0cc0-4aa7-af38-81096b79755e")
-	)
-	(wire
-		(pts
 			(xy 488.95 133.35) (xy 494.03 133.35)
 		)
 		(stroke
@@ -18109,23 +17963,13 @@
 	)
 	(wire
 		(pts
-			(xy 179.07 -48.26) (xy 179.07 -46.99)
+			(xy 160.02 111.76) (xy 160.02 113.03)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "6898ea67-9708-451c-938f-6c1fd7b7b47d")
-	)
-	(wire
-		(pts
-			(xy 160.02 156.21) (xy 161.29 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "689d45b9-944b-4405-86df-ec3fa6016009")
 	)
 	(wire
 		(pts
@@ -18299,7 +18143,7 @@
 	)
 	(wire
 		(pts
-			(xy 179.07 -25.4) (xy 179.07 -17.78)
+			(xy 160.02 134.62) (xy 160.02 142.24)
 		)
 		(stroke
 			(width 0)
@@ -18379,7 +18223,7 @@
 	)
 	(wire
 		(pts
-			(xy 135.89 104.14) (xy 142.24 104.14)
+			(xy 181.61 105.41) (xy 187.96 105.41)
 		)
 		(stroke
 			(width 0)
@@ -18446,26 +18290,6 @@
 			(type default)
 		)
 		(uuid "736f6ff2-2d85-4b87-9c31-1be3d6e53c63")
-	)
-	(wire
-		(pts
-			(xy 193.04 115.57) (xy 194.31 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "73763554-e819-4322-bc49-69fa61c1f397")
-	)
-	(wire
-		(pts
-			(xy 133.35 144.78) (xy 133.35 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7381ec03-f346-4d63-86a1-6d9c71576a31")
 	)
 	(wire
 		(pts
@@ -18539,7 +18363,7 @@
 	)
 	(wire
 		(pts
-			(xy 130.81 104.14) (xy 135.89 104.14)
+			(xy 176.53 105.41) (xy 181.61 105.41)
 		)
 		(stroke
 			(width 0)
@@ -18749,17 +18573,7 @@
 	)
 	(wire
 		(pts
-			(xy 170.18 114.3) (xy 170.18 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8153325d-1860-4abb-9e70-acb2e274c87f")
-	)
-	(wire
-		(pts
-			(xy 179.07 -38.1) (xy 179.07 -36.83)
+			(xy 160.02 121.92) (xy 160.02 123.19)
 		)
 		(stroke
 			(width 0)
@@ -18979,7 +18793,7 @@
 	)
 	(wire
 		(pts
-			(xy 179.07 -16.51) (xy 179.07 -17.78)
+			(xy 160.02 143.51) (xy 160.02 142.24)
 		)
 		(stroke
 			(width 0)
@@ -19019,7 +18833,7 @@
 	)
 	(wire
 		(pts
-			(xy 156.21 104.14) (xy 156.21 111.76)
+			(xy 201.93 105.41) (xy 201.93 113.03)
 		)
 		(stroke
 			(width 0)
@@ -19246,16 +19060,6 @@
 			(type default)
 		)
 		(uuid "8f6f314f-d2f1-4a38-912d-c5975949effe")
-	)
-	(wire
-		(pts
-			(xy 156.21 156.21) (xy 160.02 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8fc49f23-3e76-4293-9aed-2fc8276a9cce")
 	)
 	(wire
 		(pts
@@ -19509,7 +19313,7 @@
 	)
 	(wire
 		(pts
-			(xy 152.4 111.76) (xy 156.21 111.76)
+			(xy 198.12 113.03) (xy 201.93 113.03)
 		)
 		(stroke
 			(width 0)
@@ -19719,16 +19523,6 @@
 	)
 	(wire
 		(pts
-			(xy 170.18 156.21) (xy 168.91 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9b2d443e-ff6c-4b02-b91a-bdf1aa84b3f1")
-	)
-	(wire
-		(pts
 			(xy 102.87 200.66) (xy 105.41 200.66)
 		)
 		(stroke
@@ -19786,16 +19580,6 @@
 			(type default)
 		)
 		(uuid "9ccc5dfb-10d7-46e4-aa85-0973ef6a1e88")
-	)
-	(wire
-		(pts
-			(xy 140.97 133.35) (xy 140.97 142.24)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9d5fd926-e352-4a02-ba94-9167f625fd8b")
 	)
 	(wire
 		(pts
@@ -20076,16 +19860,6 @@
 			(type default)
 		)
 		(uuid "a60f108d-09e6-401b-be6a-8bc942062bd6")
-	)
-	(wire
-		(pts
-			(xy 170.18 115.57) (xy 181.61 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a68e616f-6dcd-469d-addb-c2745a2bdc1d")
 	)
 	(wire
 		(pts
@@ -20519,16 +20293,6 @@
 	)
 	(wire
 		(pts
-			(xy 123.19 233.68) (xy 133.35 233.68)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b6282b30-677f-47c1-81bd-dbae4849dbf7")
-	)
-	(wire
-		(pts
 			(xy 142.24 349.25) (xy 142.24 351.79)
 		)
 		(stroke
@@ -20596,16 +20360,6 @@
 			(type default)
 		)
 		(uuid "b8c581af-e024-44cf-a922-3ac5620c692d")
-	)
-	(wire
-		(pts
-			(xy 170.18 161.29) (xy 168.91 161.29)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b8cb316a-e45e-4b4b-8616-4329d17ea1c4")
 	)
 	(wire
 		(pts
@@ -20706,6 +20460,16 @@
 			(type default)
 		)
 		(uuid "bbe1bcba-6f85-4b49-b8f6-aed454fa0c81")
+	)
+	(wire
+		(pts
+			(xy 115.57 231.14) (xy 130.81 231.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bc3d5038-5309-4a54-ba99-008b1c7243c2")
 	)
 	(wire
 		(pts
@@ -20959,7 +20723,7 @@
 	)
 	(wire
 		(pts
-			(xy 168.91 -17.78) (xy 179.07 -17.78)
+			(xy 149.86 142.24) (xy 160.02 142.24)
 		)
 		(stroke
 			(width 0)
@@ -21079,6 +20843,16 @@
 	)
 	(wire
 		(pts
+			(xy 181.61 110.49) (xy 181.61 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cf171439-fb03-4ded-8f48-8bb4f344391e")
+	)
+	(wire
+		(pts
 			(xy 543.56 143.51) (xy 558.8 143.51)
 		)
 		(stroke
@@ -21089,7 +20863,7 @@
 	)
 	(wire
 		(pts
-			(xy 167.64 -30.48) (xy 168.91 -30.48)
+			(xy 148.59 129.54) (xy 149.86 129.54)
 		)
 		(stroke
 			(width 0)
@@ -21249,16 +21023,6 @@
 	)
 	(wire
 		(pts
-			(xy 135.89 116.84) (xy 135.89 109.22)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d4945959-8102-4934-9198-8339e6ee878f")
-	)
-	(wire
-		(pts
 			(xy 303.53 299.72) (xy 303.53 304.8)
 		)
 		(stroke
@@ -21289,16 +21053,6 @@
 	)
 	(wire
 		(pts
-			(xy 160.02 161.29) (xy 160.02 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d60a4d11-979f-4fe5-9838-dee04a221cb2")
-	)
-	(wire
-		(pts
 			(xy 471.17 91.44) (xy 473.71 91.44)
 		)
 		(stroke
@@ -21319,17 +21073,7 @@
 	)
 	(wire
 		(pts
-			(xy 156.21 144.78) (xy 156.21 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d6e8f6ff-d94c-4647-b4c2-9cbe9289a530")
-	)
-	(wire
-		(pts
-			(xy 179.07 -35.56) (xy 179.07 -36.83)
+			(xy 160.02 124.46) (xy 160.02 123.19)
 		)
 		(stroke
 			(width 0)
@@ -21609,7 +21353,7 @@
 	)
 	(wire
 		(pts
-			(xy 156.21 111.76) (xy 156.21 113.03)
+			(xy 201.93 113.03) (xy 201.93 114.3)
 		)
 		(stroke
 			(width 0)
@@ -21659,7 +21403,7 @@
 	)
 	(wire
 		(pts
-			(xy 142.24 104.14) (xy 142.24 111.76)
+			(xy 187.96 105.41) (xy 187.96 113.03)
 		)
 		(stroke
 			(width 0)
@@ -21939,7 +21683,7 @@
 	)
 	(wire
 		(pts
-			(xy 168.91 -29.21) (xy 168.91 -30.48)
+			(xy 149.86 130.81) (xy 149.86 129.54)
 		)
 		(stroke
 			(width 0)
@@ -21989,7 +21733,7 @@
 	)
 	(wire
 		(pts
-			(xy 168.91 -39.37) (xy 168.91 -46.99)
+			(xy 149.86 120.65) (xy 149.86 113.03)
 		)
 		(stroke
 			(width 0)
@@ -22046,16 +21790,6 @@
 			(type default)
 		)
 		(uuid "eeeaffed-31f6-424f-af0d-7930e6ca19ed")
-	)
-	(wire
-		(pts
-			(xy 170.18 124.46) (xy 181.61 124.46)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "eef6346b-6af6-41b2-9f6f-77bad87b162b")
 	)
 	(wire
 		(pts
@@ -22409,7 +22143,7 @@
 	)
 	(wire
 		(pts
-			(xy 142.24 104.14) (xy 143.51 104.14)
+			(xy 187.96 105.41) (xy 189.23 105.41)
 		)
 		(stroke
 			(width 0)
@@ -22476,16 +22210,6 @@
 			(type default)
 		)
 		(uuid "fc77bc2b-8ba6-4f76-867b-d2619f2876f3")
-	)
-	(wire
-		(pts
-			(xy 190.5 105.41) (xy 194.31 105.41)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fccb8616-4608-4adc-8fa6-90aaedff2ae1")
 	)
 	(wire
 		(pts
@@ -22606,16 +22330,6 @@
 			(type default)
 		)
 		(uuid "ff3114ea-69cd-4e9b-8304-615f886bdd04")
-	)
-	(wire
-		(pts
-			(xy 146.05 156.21) (xy 149.86 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ffdc3e3e-22b7-497f-b671-678186371023")
 	)
 	(wire
 		(pts
@@ -22858,7 +22572,7 @@
 		(uuid "17b31d36-d116-46eb-ae1d-5acf416b85e6")
 	)
 	(label "USB_DTR"
-		(at 135.89 116.84 90)
+		(at 181.61 128.27 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -22938,7 +22652,7 @@
 		(uuid "1b7ab756-2801-48d7-bfbe-2d9b26d8c272")
 	)
 	(label "USB_RTS"
-		(at 151.13 -30.48 0)
+		(at 132.08 129.54 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -23056,16 +22770,6 @@
 			(justify left bottom)
 		)
 		(uuid "33f27f64-cf65-47d8-92d7-396ecdee18e2")
-	)
-	(label "MGMT_BOOT"
-		(at 156.21 144.78 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "34124e42-599b-4d93-875d-100e530d672d")
 	)
 	(label "USB_CC1_DETECT"
 		(at 48.26 106.68 0)
@@ -23327,16 +23031,6 @@
 		)
 		(uuid "5f852a10-702c-4f37-b6a0-ae1316c42de7")
 	)
-	(label "USB_RTS"
-		(at 140.97 133.35 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "5fd31385-3a9d-4127-ae71-05daba727c28")
-	)
 	(label "I2S_DACLRC"
 		(at 416.56 101.6 0)
 		(effects
@@ -23368,7 +23062,7 @@
 		(uuid "633aba2c-d3ee-4327-88c7-68cf824b0481")
 	)
 	(label "USB_DTR"
-		(at 133.35 231.14 180)
+		(at 130.81 231.14 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -23698,7 +23392,7 @@
 		(uuid "8f31a49f-9285-425f-b4ee-61e59e2d6441")
 	)
 	(label "MGMT_NRST"
-		(at 130.81 104.14 0)
+		(at 176.53 105.41 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -23858,7 +23552,7 @@
 		(uuid "9f5a85e7-b6ff-47bd-a20a-a51a907ac4da")
 	)
 	(label "USB_RTS"
-		(at 133.35 233.68 180)
+		(at 130.81 233.68 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -24146,16 +23840,6 @@
 			(justify right bottom)
 		)
 		(uuid "c74f54cc-c646-4de6-ba8a-9170038cbe2e")
-	)
-	(label "USB_RTS"
-		(at 190.5 105.41 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "ca0f80fd-4b1e-48ad-a34e-15273a073893")
 	)
 	(label "VOLUME-"
 		(at 556.26 153.67 180)
@@ -24498,7 +24182,7 @@
 		(uuid "fd98ab69-ceb9-4fd1-b136-a8bcca58b616")
 	)
 	(label "MGMT_BOOT"
-		(at 195.58 -36.83 180)
+		(at 171.45 123.19 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -24864,7 +24548,7 @@
 	)
 	(symbol
 		(lib_id "Device:R_US")
-		(at 168.91 -35.56 180)
+		(at 149.86 124.46 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -24872,7 +24556,7 @@
 		(dnp no)
 		(uuid "0558ba3b-a8f2-45cf-a1ca-fed1aecc7fda")
 		(property "Reference" "R75"
-			(at 170.942 -38.608 0)
+			(at 151.892 121.412 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -24880,7 +24564,7 @@
 			)
 		)
 		(property "Value" "100k"
-			(at 171.45 -33.02 0)
+			(at 152.4 127 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -24888,7 +24572,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 170.688 -35.56 90)
+			(at 151.638 124.46 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -24897,7 +24581,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 168.91 -35.56 0)
+			(at 149.86 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -24906,7 +24590,7 @@
 			)
 		)
 		(property "Description" "Resistor, US symbol"
-			(at 168.91 -35.56 0)
+			(at 149.86 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -24915,7 +24599,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C25741"
-			(at 168.91 -35.56 0)
+			(at 149.86 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -24924,7 +24608,7 @@
 			)
 		)
 		(property "Availability" ""
-			(at 168.91 -35.56 0)
+			(at 149.86 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -24932,7 +24616,7 @@
 			)
 		)
 		(property "Sim.Device" ""
-			(at 168.91 -35.56 0)
+			(at 149.86 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -24940,7 +24624,7 @@
 			)
 		)
 		(property "JLCPCB Position Offset" ""
-			(at 168.91 -35.56 0)
+			(at 149.86 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -24949,7 +24633,7 @@
 			)
 		)
 		(property "Sim.Type" ""
-			(at 168.91 -35.56 0)
+			(at 149.86 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -26158,6 +25842,116 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R_US")
+		(at 144.78 129.54 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "145a9b91-600e-413d-8c31-b80af3f9e9d2")
+		(property "Reference" "R51"
+			(at 144.78 124.968 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "4k7"
+			(at 144.78 127 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 144.78 131.318 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 144.78 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor, US symbol"
+			(at 144.78 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C25900"
+			(at 144.78 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 144.78 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Device" ""
+			(at 144.78 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB Position Offset" ""
+			(at 144.78 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Type" ""
+			(at 144.78 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ef84dfbd-3ea7-4c3c-83b5-c32d072f619a")
+		)
+		(pin "2"
+			(uuid "b7bf6d3c-98b8-4f51-8545-821732529c02")
+		)
+		(instances
+			(project "ev16"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "R51")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:+3.3V")
 		(at 521.97 109.22 0)
 		(unit 1)
@@ -26540,8 +26334,8 @@
 	)
 	(symbol
 		(lib_id "Device:R_US")
-		(at 119.38 231.14 270)
-		(mirror x)
+		(at 181.61 115.57 0)
+		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -26549,7 +26343,7 @@
 		(dnp no)
 		(uuid "1a494f78-9522-4900-8a6f-cf21a47062c7")
 		(property "Reference" "R40"
-			(at 119.634 229.362 90)
+			(at 179.832 115.316 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -26557,7 +26351,7 @@
 			)
 		)
 		(property "Value" "1k0"
-			(at 119.888 227.33 90)
+			(at 177.8 115.062 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -26565,7 +26359,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 119.38 232.918 90)
+			(at 183.388 115.57 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -26574,7 +26368,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 119.38 231.14 0)
+			(at 181.61 115.57 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -26583,7 +26377,7 @@
 			)
 		)
 		(property "Description" "Resistor, US symbol"
-			(at 119.38 231.14 0)
+			(at 181.61 115.57 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -26592,7 +26386,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C11702"
-			(at 119.38 231.14 0)
+			(at 181.61 115.57 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -26601,7 +26395,7 @@
 			)
 		)
 		(property "Availability" ""
-			(at 119.38 231.14 0)
+			(at 181.61 115.57 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -26609,7 +26403,7 @@
 			)
 		)
 		(property "Sim.Device" ""
-			(at 119.38 231.14 0)
+			(at 181.61 115.57 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -26617,7 +26411,7 @@
 			)
 		)
 		(property "JLCPCB Position Offset" ""
-			(at 119.38 231.14 90)
+			(at 181.61 115.57 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -26626,7 +26420,7 @@
 			)
 		)
 		(property "Sim.Type" ""
-			(at 119.38 231.14 90)
+			(at 181.61 115.57 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27274,7 +27068,7 @@
 	)
 	(symbol
 		(lib_id "Device:C")
-		(at 148.59 111.76 90)
+		(at 194.31 113.03 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -27282,7 +27076,7 @@
 		(dnp no)
 		(uuid "2021655a-04e6-4a72-a537-525c54912a8e")
 		(property "Reference" "C17"
-			(at 147.574 110.998 90)
+			(at 193.294 112.268 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27291,7 +27085,7 @@
 			)
 		)
 		(property "Value" "100n"
-			(at 154.432 110.998 90)
+			(at 200.152 112.268 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27300,7 +27094,7 @@
 			)
 		)
 		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 152.4 110.7948 0)
+			(at 198.12 112.0648 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27309,7 +27103,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 148.59 111.76 0)
+			(at 194.31 113.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27318,7 +27112,7 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
-			(at 148.59 111.76 0)
+			(at 194.31 113.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27327,7 +27121,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C1525"
-			(at 148.59 111.76 0)
+			(at 194.31 113.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27336,7 +27130,7 @@
 			)
 		)
 		(property "Availability" ""
-			(at 148.59 111.76 0)
+			(at 194.31 113.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27344,7 +27138,7 @@
 			)
 		)
 		(property "Sim.Device" ""
-			(at 148.59 111.76 0)
+			(at 194.31 113.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27352,7 +27146,7 @@
 			)
 		)
 		(property "JLCPCB Position Offset" ""
-			(at 148.59 111.76 90)
+			(at 194.31 113.03 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27361,7 +27155,7 @@
 			)
 		)
 		(property "Sim.Type" ""
-			(at 148.59 111.76 90)
+			(at 194.31 113.03 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28151,7 +27945,7 @@
 	)
 	(symbol
 		(lib_id "Hactar_Symbols:SW_Push_4C")
-		(at 148.59 104.14 0)
+		(at 194.31 105.41 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -28159,7 +27953,7 @@
 		(dnp no)
 		(uuid "2c6d03f5-4f3e-4b43-814a-b01cbcdbf454")
 		(property "Reference" "SW3"
-			(at 150.622 101.854 0)
+			(at 196.342 103.124 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28167,7 +27961,7 @@
 			)
 		)
 		(property "Value" "SW_Push"
-			(at 148.59 105.41 0)
+			(at 194.31 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28175,7 +27969,7 @@
 			)
 		)
 		(property "Footprint" "Hactar_Footprints:KEY-SMD_4P-L4.2-W3.2-P2.20-LS4.6"
-			(at 148.59 104.14 0)
+			(at 194.31 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28184,7 +27978,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 148.59 104.14 0)
+			(at 194.31 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28193,7 +27987,7 @@
 			)
 		)
 		(property "Description" "Push button switch, generic, two pins"
-			(at 148.59 104.14 0)
+			(at 194.31 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28202,7 +27996,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C139797"
-			(at 148.59 104.14 0)
+			(at 194.31 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28211,7 +28005,7 @@
 			)
 		)
 		(property "Sim.Device" ""
-			(at 148.59 104.14 0)
+			(at 194.31 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28219,7 +28013,7 @@
 			)
 		)
 		(property "JLCPCB Position Offset" ""
-			(at 148.59 104.14 0)
+			(at 194.31 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28228,7 +28022,7 @@
 			)
 		)
 		(property "Sim.Type" ""
-			(at 148.59 104.14 0)
+			(at 194.31 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28883,7 +28677,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 179.07 -16.51 0)
+		(at 160.02 143.51 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -28891,7 +28685,7 @@
 		(dnp no)
 		(uuid "31e06eb2-92c0-48ae-8c85-205043896860")
 		(property "Reference" "#PWR088"
-			(at 179.07 -10.16 0)
+			(at 160.02 149.86 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28900,7 +28694,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 179.07 -12.7 0)
+			(at 160.02 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28908,7 +28702,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 179.07 -16.51 0)
+			(at 160.02 143.51 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28917,7 +28711,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 179.07 -16.51 0)
+			(at 160.02 143.51 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28926,7 +28720,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 179.07 -16.51 0)
+			(at 160.02 143.51 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -30571,116 +30365,6 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R14")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R_Small_US")
-		(at 181.61 119.38 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "452f13f5-bf40-4833-93a4-91ab5533a22a")
-		(property "Reference" "R51"
-			(at 184.912 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "4k7"
-			(at 184.912 121.412 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 181.61 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 181.61 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, small US symbol"
-			(at 181.61 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C25900"
-			(at 181.61 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 181.61 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 181.61 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 181.61 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" ""
-			(at 181.61 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "74cc1a99-ac60-44cf-b506-fc9a8f1cb63f")
-		)
-		(pin "2"
-			(uuid "4f8e5f6d-9d56-4333-bf92-96d7b23fb652")
-		)
-		(instances
-			(project "ev16"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "R51")
 					(unit 1)
 				)
 			)
@@ -33233,7 +32917,7 @@
 	)
 	(symbol
 		(lib_id "power:+3.3V")
-		(at 179.07 -48.26 0)
+		(at 160.02 111.76 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -33241,7 +32925,7 @@
 		(dnp no)
 		(uuid "56342b67-0354-4c0d-930f-2d94ba8057de")
 		(property "Reference" "#PWR089"
-			(at 179.07 -44.45 0)
+			(at 160.02 115.57 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -33250,7 +32934,7 @@
 			)
 		)
 		(property "Value" "+3.3V"
-			(at 179.07 -51.816 0)
+			(at 160.02 108.204 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -33258,7 +32942,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 179.07 -48.26 0)
+			(at 160.02 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -33267,7 +32951,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 179.07 -48.26 0)
+			(at 160.02 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -33276,7 +32960,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
-			(at 179.07 -48.26 0)
+			(at 160.02 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -33964,117 +33648,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_US")
-		(at 119.38 233.68 270)
-		(mirror x)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "5ec4fe10-2047-4314-b8c0-2f6b9bda40db")
-		(property "Reference" "R48"
-			(at 119.634 235.458 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1k0"
-			(at 119.634 236.982 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 119.38 235.458 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 119.38 233.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, US symbol"
-			(at 119.38 233.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C11702"
-			(at 119.38 233.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 119.38 233.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 119.38 233.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 119.38 233.68 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" ""
-			(at 119.38 233.68 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "07234523-a542-4d5d-ac08-3c4e9aa8c5de")
-		)
-		(pin "1"
-			(uuid "b05006f5-983b-43cd-b951-bb0cf1888923")
-		)
-		(instances
-			(project "ev16"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "R48")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:+3.3V")
 		(at 149.86 196.85 0)
 		(unit 1)
@@ -34246,118 +33819,6 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "C40")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
-		(at 165.1 161.29 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "62712054-c7fb-4f19-a05f-58914569c644")
-		(property "Reference" "C18"
-			(at 159.766 163.068 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "100n"
-			(at 159.512 164.846 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 161.29 162.2552 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 165.1 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor"
-			(at 165.1 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C1525"
-			(at 165.1 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 165.1 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 165.1 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 165.1 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" ""
-			(at 165.1 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "804ec686-5ed2-47b4-abd3-86a6a7d09a06")
-		)
-		(pin "2"
-			(uuid "61033c33-d92e-4995-a3d5-4b2fc08b026f")
-		)
-		(instances
-			(project "EV11 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "C18")
 					(unit 1)
 				)
 			)
@@ -36167,7 +35628,7 @@
 	)
 	(symbol
 		(lib_id "Device:NetTie_2")
-		(at 135.89 106.68 90)
+		(at 181.61 107.95 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
@@ -36175,7 +35636,7 @@
 		(dnp no)
 		(uuid "7b00fd3a-f668-446c-8788-51f76693f259")
 		(property "Reference" "NT3"
-			(at 130.81 106.68 0)
+			(at 176.53 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -36184,7 +35645,7 @@
 			)
 		)
 		(property "Value" "NetTie_2"
-			(at 137.414 105.664 0)
+			(at 183.134 106.934 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -36194,7 +35655,7 @@
 			)
 		)
 		(property "Footprint" "NetTie:NetTie-2_SMD_Pad0.5mm"
-			(at 135.89 106.68 0)
+			(at 181.61 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -36203,7 +35664,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 135.89 106.68 0)
+			(at 181.61 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -36212,7 +35673,7 @@
 			)
 		)
 		(property "Description" "Net tie, 2 pins"
-			(at 135.89 106.68 0)
+			(at 181.61 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -37302,71 +36763,6 @@
 			(project "Buckboost converter"
 				(path "/e24f98db-dd9d-44b5-9774-c601a7625859"
 					(reference "C16")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+3.3V")
-		(at 133.35 144.78 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "85091fa7-db45-4134-8529-43543c39ab5e")
-		(property "Reference" "#PWR024"
-			(at 133.35 148.59 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+3.3V"
-			(at 133.35 141.478 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 133.35 144.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 133.35 144.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
-			(at 133.35 144.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "b1590294-b35e-4713-ac7e-74456cdd0201")
-		)
-		(instances
-			(project "EV11 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "#PWR024")
 					(unit 1)
 				)
 			)
@@ -40047,180 +39443,6 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "C21")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Hactar_Symbols:SW_Push_4C")
-		(at 187.96 115.57 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "9ace4fa3-ce89-4c1c-b145-aa86861820d2")
-		(property "Reference" "SW2"
-			(at 184.404 113.03 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "SW_Push"
-			(at 187.706 117.094 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Footprint" "Hactar_Footprints:KEY-SMD_4P-L4.2-W3.2-P2.20-LS4.6"
-			(at 187.96 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 187.96 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Push button switch, generic, two pins"
-			(at 187.96 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C139797"
-			(at 187.96 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 187.96 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 187.96 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" ""
-			(at 187.96 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "07374246-9e67-4511-9913-e3065e524168")
-		)
-		(pin "2"
-			(uuid "ddd8822c-469e-42cf-a9e1-386fd7ffc14a")
-		)
-		(pin "4"
-			(uuid "e9f46e80-37fa-4318-8569-c5a022c73b14")
-		)
-		(pin "3"
-			(uuid "b2e5a244-91e3-4210-b0a0-4fb93a1a8789")
-		)
-		(instances
-			(project "ev16"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "SW2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+3.3V")
-		(at 170.18 114.3 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "9cb1d0c3-cb9f-4e7d-b8de-4b05436cf246")
-		(property "Reference" "#PWR085"
-			(at 170.18 118.11 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+3.3V"
-			(at 170.18 110.998 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 170.18 114.3 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 170.18 114.3 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
-			(at 170.18 114.3 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "70e03065-679f-4a36-91d2-9422f06dc24c")
-		)
-		(instances
-			(project "ev16"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "#PWR085")
 					(unit 1)
 				)
 			)
@@ -43124,116 +42346,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_US")
-		(at 163.83 -30.48 90)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "bd293a83-2613-4f51-b762-bb28760fb739")
-		(property "Reference" "R53"
-			(at 163.83 -35.052 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "4k7"
-			(at 163.83 -33.02 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 163.83 -28.702 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 163.83 -30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, US symbol"
-			(at 163.83 -30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C25900"
-			(at 163.83 -30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 163.83 -30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 163.83 -30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 163.83 -30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" ""
-			(at 163.83 -30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "77e71bb0-75d9-499c-beb1-8632139b5819")
-		)
-		(pin "2"
-			(uuid "5f3d3fda-6c46-46ab-84c3-10946727d83c")
-		)
-		(instances
-			(project "ev16"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "R53")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:GND")
 		(at 406.4 151.13 0)
 		(unit 1)
@@ -44191,15 +43303,15 @@
 	)
 	(symbol
 		(lib_id "Hactar_Symbols:SW_Push_4C")
-		(at 168.91 -24.13 90)
+		(at 149.86 135.89 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(uuid "cc1d5eea-e347-48b6-9a65-d16e8e081cc4")
-		(property "Reference" "SW8"
-			(at 163.322 -24.13 90)
+		(property "Reference" "SW2"
+			(at 144.272 135.89 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -44207,7 +43319,7 @@
 			)
 		)
 		(property "Value" "SW_Push"
-			(at 170.434 -23.876 90)
+			(at 151.384 136.144 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -44216,7 +43328,7 @@
 			)
 		)
 		(property "Footprint" "Hactar_Footprints:KEY-SMD_4P-L4.2-W3.2-P2.20-LS4.6"
-			(at 168.91 -24.13 0)
+			(at 149.86 135.89 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -44225,7 +43337,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 168.91 -24.13 0)
+			(at 149.86 135.89 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -44234,7 +43346,7 @@
 			)
 		)
 		(property "Description" "Push button switch, generic, two pins"
-			(at 168.91 -24.13 0)
+			(at 149.86 135.89 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -44243,7 +43355,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C139797"
-			(at 168.91 -24.13 0)
+			(at 149.86 135.89 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -44252,7 +43364,7 @@
 			)
 		)
 		(property "Sim.Device" ""
-			(at 168.91 -24.13 0)
+			(at 149.86 135.89 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -44260,7 +43372,7 @@
 			)
 		)
 		(property "JLCPCB Position Offset" ""
-			(at 168.91 -24.13 0)
+			(at 149.86 135.89 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -44269,7 +43381,7 @@
 			)
 		)
 		(property "Sim.Type" ""
-			(at 168.91 -24.13 0)
+			(at 149.86 135.89 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -44292,7 +43404,7 @@
 		(instances
 			(project "ev16"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "SW8")
+					(reference "SW2")
 					(unit 1)
 				)
 			)
@@ -46006,7 +45118,7 @@
 	)
 	(symbol
 		(lib_id "Transistor_FET:2N7002")
-		(at 176.53 -30.48 0)
+		(at 157.48 129.54 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -46014,7 +45126,7 @@
 		(dnp no)
 		(uuid "dcdbabc4-8a40-449e-ad35-1e1f589b364b")
 		(property "Reference" "Q3"
-			(at 171.704 -27.432 0)
+			(at 152.654 132.588 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -46023,7 +45135,7 @@
 			)
 		)
 		(property "Value" "2N7002"
-			(at 170.18 -25.146 0)
+			(at 151.13 134.874 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -46032,7 +45144,7 @@
 			)
 		)
 		(property "Footprint" "Package_TO_SOT_SMD:SOT-23"
-			(at 181.61 -28.575 0)
+			(at 162.56 131.445 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -46043,7 +45155,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.onsemi.com/pub/Collateral/NDS7002A-D.PDF"
-			(at 181.61 -26.67 0)
+			(at 162.56 133.35 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -46053,7 +45165,7 @@
 			)
 		)
 		(property "Description" "0.115A Id, 60V Vds, N-Channel MOSFET, SOT-23"
-			(at 176.53 -30.48 0)
+			(at 157.48 129.54 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -46062,7 +45174,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C8545"
-			(at 176.53 -30.48 0)
+			(at 157.48 129.54 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -46071,7 +45183,7 @@
 			)
 		)
 		(property "JLCPCB Position Offset" ""
-			(at 176.53 -30.48 90)
+			(at 157.48 129.54 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -46080,7 +45192,7 @@
 			)
 		)
 		(property "Sim.Type" ""
-			(at 176.53 -30.48 90)
+			(at 157.48 129.54 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -47034,114 +46146,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Hactar_Symbols:SW_Push_4C")
-		(at 140.97 156.21 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "e6cc39ec-0184-4a0c-a49c-f3c9db375ee8")
-		(property "Reference" "SW2"
-			(at 143.002 153.924 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "SW_Push"
-			(at 140.97 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Hactar_Footprints:KEY-SMD_4P-L4.2-W3.2-P2.20-LS4.6"
-			(at 140.97 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 140.97 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Push button switch, generic, two pins"
-			(at 140.97 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C139797"
-			(at 140.97 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 140.97 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 140.97 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" ""
-			(at 140.97 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "3628a3fb-05d6-4031-a7f0-9667733486b7")
-		)
-		(pin "2"
-			(uuid "5895a6a2-72b2-4f42-bfcb-28be822332a5")
-		)
-		(pin "4"
-			(uuid "ae1845f4-6c73-4828-8a98-3b491e392df5")
-		)
-		(pin "3"
-			(uuid "c6e40643-1aa8-4f90-839e-0e6280c091b1")
-		)
-		(instances
-			(project "EV13 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "SW2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R_US")
 		(at 36.83 118.11 0)
 		(mirror x)
@@ -47619,71 +46623,6 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "C39")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 170.18 161.29 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "eb7ef7df-b6fd-4aae-af16-4142a9a702ff")
-		(property "Reference" "#PWR026"
-			(at 170.18 167.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 170.18 165.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 170.18 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 170.18 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 170.18 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "ff55b5c6-68fb-4766-ac9c-1b94f249b97f")
-		)
-		(instances
-			(project "ev16"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "#PWR026")
 					(unit 1)
 				)
 			)
@@ -49059,116 +47998,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_US")
-		(at 165.1 156.21 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "f645fafb-1e2c-4fb5-aa83-c8d70c2830b2")
-		(property "Reference" "R22"
-			(at 159.766 153.67 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "4k7"
-			(at 167.894 154.432 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 165.1 154.432 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 165.1 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, US symbol"
-			(at 165.1 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C25900"
-			(at 165.1 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 165.1 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 165.1 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 165.1 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" ""
-			(at 165.1 156.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "baf49a9d-a2e2-44dd-a0e5-8321eb23f555")
-		)
-		(pin "2"
-			(uuid "a02cd8ff-ec12-47b7-980f-26e856128571")
-		)
-		(instances
-			(project "EV11 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "R22")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:GND")
 		(at 494.03 133.35 0)
 		(unit 1)
@@ -49235,15 +48064,15 @@
 	)
 	(symbol
 		(lib_id "Device:R_US")
-		(at 179.07 -41.91 180)
+		(at 160.02 118.11 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(uuid "f6a3a98c-44ef-440e-8cb5-b9775813d885")
-		(property "Reference" "R63"
-			(at 182.372 -41.148 0)
+		(property "Reference" "R22"
+			(at 163.322 118.872 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49251,7 +48080,7 @@
 			)
 		)
 		(property "Value" "4k7"
-			(at 182.626 -42.926 0)
+			(at 163.576 117.094 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49259,7 +48088,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 180.848 -41.91 90)
+			(at 161.798 118.11 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49268,7 +48097,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 179.07 -41.91 0)
+			(at 160.02 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49277,7 +48106,7 @@
 			)
 		)
 		(property "Description" "Resistor, US symbol"
-			(at 179.07 -41.91 0)
+			(at 160.02 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49286,7 +48115,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C25900"
-			(at 179.07 -41.91 0)
+			(at 160.02 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49295,7 +48124,7 @@
 			)
 		)
 		(property "Availability" ""
-			(at 179.07 -41.91 0)
+			(at 160.02 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49303,7 +48132,7 @@
 			)
 		)
 		(property "Sim.Device" ""
-			(at 179.07 -41.91 0)
+			(at 160.02 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49311,7 +48140,7 @@
 			)
 		)
 		(property "JLCPCB Position Offset" ""
-			(at 179.07 -41.91 0)
+			(at 160.02 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49320,7 +48149,7 @@
 			)
 		)
 		(property "Sim.Type" ""
-			(at 179.07 -41.91 0)
+			(at 160.02 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49337,7 +48166,7 @@
 		(instances
 			(project "ev16"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "R63")
+					(reference "R22")
 					(unit 1)
 				)
 			)
@@ -49449,116 +48278,6 @@
 			(project "ev14"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R71")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R_US")
-		(at 194.31 110.49 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "f7bbb888-3ae1-4c22-b673-292425c7a0fb")
-		(property "Reference" "R52"
-			(at 197.866 107.188 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "4k7"
-			(at 197.612 108.966 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 192.532 110.49 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 194.31 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, US symbol"
-			(at 194.31 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C25900"
-			(at 194.31 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 194.31 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 194.31 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 194.31 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" ""
-			(at 194.31 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "a2b378bd-fff6-4103-85e8-0c86088f87ba")
-		)
-		(pin "2"
-			(uuid "f3a741e2-3831-4e69-91fe-8fe4f0231106")
-		)
-		(instances
-			(project "ev16"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "R52")
 					(unit 1)
 				)
 			)
@@ -49974,7 +48693,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 156.21 113.03 0)
+		(at 201.93 114.3 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -49982,7 +48701,7 @@
 		(dnp no)
 		(uuid "fa0c0a43-bbb3-4104-bb15-1767921c735c")
 		(property "Reference" "#PWR027"
-			(at 156.21 119.38 0)
+			(at 201.93 120.65 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49991,7 +48710,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 156.21 116.84 0)
+			(at 201.93 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -49999,7 +48718,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 156.21 113.03 0)
+			(at 201.93 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -50008,7 +48727,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 156.21 113.03 0)
+			(at 201.93 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -50017,7 +48736,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 156.21 113.03 0)
+			(at 201.93 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
