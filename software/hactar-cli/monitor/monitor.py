@@ -51,19 +51,15 @@ class Monitor:
                     time.sleep(0.05)
                     continue
 
-                if readline and data != None and data != "":
-                    saved_input = readline.get_line_buffer()
-                    # return to start of line and clear current line
-                    sys.stdout.write("\r\033[K")
-                    # print log (adds newline)
-                    if data[-1] != "\n":
-                        data += "\n"
-                    print(f"{data}", end="")
-                    # reprint prompt + saved user text
-                    sys.stdout.write(f"> {saved_input}")
-                    sys.stdout.flush()
-                else:
-                    print(data)
+                sys.stdout.write(f"\r\033[K{data}")
+                sys.stdout.flush()
+
+                current_input = readline.get_line_buffer()
+                if current_input and '\n' in current_input:
+                    current_input = ""
+
+                sys.stdout.write(f"\r\033[K> {current_input}")
+                sys.stdout.flush()
             except:
                 pass
 
@@ -190,7 +186,11 @@ def main(args):
 
     readline.set_completer(hactar_command_completer)
     readline.set_completion_display_matches_hook(hactar_command_print_matches)
-    readline.parse_and_bind("tab: complete")
+
+    if sys.platform == "darwin":
+        readline.parse_and_bind("bind ^I rl_complete")
+    else:
+        readline.parse_and_bind("tab: complete")
 
     monitor = Monitor(port, uart_config)
 
