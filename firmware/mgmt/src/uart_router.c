@@ -129,7 +129,7 @@ static uint16_t get_distance(transmit_t* tx)
         return tx->write - tx->read;
     }
 
-    // the read head is a head of the write head, so we read until the end of the buffer
+    // the read head is ahead of the write head, so we read until the end of the buffer
     // and wrap around on the isr
     return tx->size - tx->read;
 }
@@ -262,6 +262,11 @@ void uart_router_copy_to_tx(transmit_t* tx, const uint8_t* buff, const uint16_t 
             tx->write = 0;
         }
     }
+}
+
+void uart_router_copy_byte_to_tx(transmit_t* tx, const uint8_t byte)
+{
+    uart_router_copy_to_tx(tx, &byte, 1);
 }
 
 void uart_router_copy_string_to_tx(transmit_t* tx, const char* str)

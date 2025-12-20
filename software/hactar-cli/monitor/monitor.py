@@ -40,14 +40,32 @@ class Monitor:
 
         self.WriteSerial()
 
+    def GetLine(self):
+        if self.uart.in_waiting == 0:
+            return ""
+
+        data = bytes()
+        while self.uart.in_waiting:
+            char = self.uart.read()
+            if char == b"\x82":
+                return ""
+
+            data += char
+            if char == b"\n":
+                return data.decode()
+
+        # If we got here then that means we didn't get an endline
+        data += b"\n"
+        data = data.decode()
+
+        return data
+
     def ReadSerial(self, threaded=False):
-        data = None
         while self.running and threaded:
             try:
-                if self.uart.in_waiting:
-                    data = self.uart.readline().decode()
-                else:
-                    data = None
+                data = self.GetLine()
+
+                if data == "":
                     time.sleep(0.05)
                     continue
 
@@ -55,13 +73,13 @@ class Monitor:
                 sys.stdout.flush()
 
                 current_input = readline.get_line_buffer()
-                if current_input and '\n' in current_input:
+                if current_input and "\n" in current_input:
                     current_input = ""
 
                 sys.stdout.write(f"\r\033[K> {current_input}")
                 sys.stdout.flush()
-            except:
-                pass
+            except Exception as ex:
+                print(ex)
 
     def WriteSerial(self):
         while self.running:
@@ -102,15 +120,11 @@ class Monitor:
         command_id = chip_commands[command]["id"]
 
         if len(split) - 2 < num_params:
-            print(
-                f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}"
-            )
+            print(f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}")
             return
 
         if len(split) - 2 > num_params:
-            print(
-                f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}"
-            )
+            print(f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}")
             return
 
         Header_Bytes = 5  # 1 type, 4 length

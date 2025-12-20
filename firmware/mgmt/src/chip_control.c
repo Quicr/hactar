@@ -39,7 +39,7 @@ void chip_control_normal_mode()
 
 void chip_control_ui_bootloader_mode()
 {
-    // Normal boot mode (boot0 = 1 and boot1 = 0)
+    // Bootloader mode (boot0 = 1 and boot1 = 0)
     HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, GPIO_PIN_RESET);
 
