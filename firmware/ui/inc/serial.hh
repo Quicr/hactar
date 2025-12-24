@@ -1,8 +1,5 @@
 #pragma once
 
-#include "app_main.hh"
-#include "link_packet_t.hh"
-#include "ring_buffer.hh"
 #include "serial_handler/serial_handler.hh"
 
 class Serial : public SerialHandler

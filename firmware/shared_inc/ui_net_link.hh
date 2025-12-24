@@ -2,6 +2,7 @@
 
 #include "constants.hh"
 #include "link_packet_t.hh"
+#include <cstdint>
 #include <cstring>
 
 namespace ui_net_link
