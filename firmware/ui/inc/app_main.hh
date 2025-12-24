@@ -6,7 +6,6 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
 #include "stm32.h"
 
 enum Timer_Flags
@@ -30,17 +29,9 @@ inline void LowPowerMode();
 inline void WakeUp();
 inline void CheckFlags();
 inline void HandleNetLinkPackets();
-inline void ProcessText(uint16_t len);
-inline void InitScreen();
 inline void WaitForNetReady();
 inline void AudioCallback();
 void Error(const char* who, const char* why);
-
-void SlowSendTest(int delay, int num);
-void InterHactarSerialRoundTripTest(int delay, int num);
-void InterHactarFullRoundTripTest(int delay, int num);
-void DumpRxBuff();
-void FakeChangeChannelPacket();
 
 inline void LedROn();
 inline void LedROff();

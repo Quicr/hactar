@@ -3,9 +3,12 @@
 #include "audio_codec.hh"
 #include "config_storage.hh"
 #include "keyboard.hh"
+#include "keyboard_display.hh"
+#include "led_control.hh"
 #include "link_packet_t.hh"
 #include "logger.hh"
 #include "main.h"
+#include "protect.hh"
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
@@ -27,105 +30,12 @@ inline void SendAudio(const ui_net_link::Channel_Id channel_id,
                       bool last);
 inline void HandleMedia(link_packet_t* packet);
 inline void HandleAiResponse(link_packet_t* packet);
-inline void HandleChat(link_packet_t* packet);
-inline void HandleKeypress();
-inline bool TryProtect(link_packet_t* link_packet);
-inline bool TryUnprotect(link_packet_t* link_packet);
 inline void HandleMgmtLinkPackets(ConfigStorage& storage);
 
 inline void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx);
 
 sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
 uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
-
-#define HIGH GPIO_PIN_SET
-#define LOW GPIO_PIN_RESET
-
-void reverse(char* str, int length)
-{
-    int start = 0;
-    int end = length - 1;
-    while (start < end)
-    {
-        char temp = str[start];
-        str[start] = str[end];
-        str[end] = temp;
-        start++;
-        end--;
-    }
-}
-
-char* itoa(int value, char* str, int base)
-{
-    if (base < 2 || base > 36)
-    { // Base check: only supports bases 2-36
-        *str = '\0';
-        return str;
-    }
-
-    bool isNegative = false;
-    if (value < 0 && base == 10)
-    { // Handle negative numbers in base 10
-        isNegative = true;
-        value = -value;
-    }
-
-    int i = 0;
-    do
-    {
-        int digit = value % base;
-        str[i++] = (digit > 9) ? (digit - 10 + 'a') : (digit + '0');
-        value /= base;
-    } while (value != 0);
-
-    if (isNegative)
-    {
-        str[i++] = '-';
-    }
-
-    str[i] = '\0'; // Null-terminate the string
-
-    reverse(str, i); // Reverse the string to correct order
-
-    return str;
-}
-
-char* itoa(int value, char* str, int& len, int base)
-{
-    if (base < 2 || base > 36)
-    { // Base check: only supports bases 2-36
-        *str = '\0';
-        len = 0;
-        return str;
-    }
-
-    bool isNegative = false;
-    if (value < 0 && base == 10)
-    { // Handle negative numbers in base 10
-        isNegative = true;
-        value = -value;
-    }
-
-    int i = 0;
-    do
-    {
-        int digit = value % base;
-        str[i++] = (digit > 9) ? (digit - 10 + 'a') : (digit + '0');
-        value /= base;
-    } while (value != 0);
-
-    if (isNegative)
-    {
-        str[i++] = '-';
-    }
-
-    len = i;
-    str[i] = '\0'; // Null-terminate the string
-
-    reverse(str, i); // Reverse the string to correct order
-
-    return str;
-}
 
 cmox_init_retval_t cmox_ll_init(void* pArg)
 {
@@ -272,15 +182,12 @@ int app_main()
     // Test in case the audio chip settings change and something looks suspicious
     // CountNumAudioInterrupts(audio_chip, sleeping);
 
-    InitScreen();
-    LEDS(HIGH, HIGH, HIGH);
+    InitScreen(screen);
+    Leds(HIGH, HIGH, HIGH);
     net_serial.StartReceive();
     mgmt_serial.StartReceive();
 
-    uint32_t redraw = uwTick;
-
     uint32_t blinky = 0;
-    uint32_t next_print = 0;
 
     // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
@@ -298,12 +205,6 @@ int app_main()
             done_booting = true;
         }
 
-        // if (HAL_GetTick() > next_print)
-        // {
-        //     UI_LOG_INFO("Alive!");
-        //     next_print = HAL_GetTick() + 1000;
-        // }
-
         while (sleeping)
         {
             // LowPowerMode();
@@ -318,7 +219,7 @@ int app_main()
         CheckPTT();
         CheckPTTAI();
 
-        HandleKeypress();
+        HandleKeypress(screen, keyboard, net_serial, mls_ctx);
 
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
@@ -333,28 +234,6 @@ int app_main()
     }
 
     return 0;
-}
-
-inline void LEDR(GPIO_PinState state)
-{
-    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, state);
-}
-
-inline void LEDG(GPIO_PinState state)
-{
-    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, state);
-}
-
-inline void LEDB(GPIO_PinState state)
-{
-    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, state);
-}
-
-inline void LEDS(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b)
-{
-    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, r);
-    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, g);
-    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, b);
 }
 
 inline void RaiseFlag(Timer_Flags flag)
@@ -424,7 +303,7 @@ void HandleNetLinkPackets()
         case ui_net_link::Packet_Type::Message:
         case ui_net_link::Packet_Type::AiResponse:
         {
-            if (!TryUnprotect(link_packet))
+            if (!TryUnprotect(mls_ctx, link_packet))
             {
                 UI_LOG_ERROR("Failed to decrypt ptt object");
                 continue;
@@ -457,7 +336,7 @@ void HandleNetLinkPackets()
             case ui_net_link::MessageType::Chat:
             {
                 // Text/translated text
-                HandleChat(link_packet);
+                HandleChatMessages(screen, link_packet);
                 break;
             }
             }
@@ -584,43 +463,6 @@ void HandleMgmtLinkPackets(ConfigStorage& storage)
     }
 }
 
-// inline void ProcessText(uint16_t len)
-// {
-//     // Get the room
-//     uint8_t room[QMessage_Room_Length];
-//     serial.Read(room, QMessage_Room_Length, QMessage_Room_Length);
-//     len -= Serial_Header_Sz;
-
-//     uint8_t* serial_data = nullptr;
-//     size_t num_bytes = len;
-
-//     while (len > 0)
-//     {
-//         // Get the text
-//         serial.Read(&serial_data, num_bytes);
-
-//         // Now we have the text data
-//         screen.AppendText((const char*)serial_data, num_bytes);
-
-//         len -= num_bytes;
-//     }
-
-//     // Commit the text
-//     screen.CommitText();
-// }
-
-void InitScreen()
-{
-    screen.Init();
-    // Do the first draw
-    screen.FillRectangle(0, WIDTH, 0, HEIGHT, Colour::Black);
-    for (int i = 0; i < 320; i += Screen::Num_Rows)
-    {
-        screen.Draw(0xFFFF);
-    }
-    screen.EnableBacklight();
-}
-
 inline void AudioCallback()
 {
     audio_chip.ISRCallback();
@@ -707,7 +549,7 @@ void SendAudio(const ui_net_link::Channel_Id channel_id,
     talk_frame.channel_id = channel_id;
     ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
 
-    if (!TryProtect(&message_packet))
+    if (!TryProtect(mls_ctx, &message_packet))
     {
         UI_LOG_ERROR("Failed to encrypt audio packet");
         return;
@@ -762,92 +604,6 @@ void HandleAiResponse(link_packet_t* packet)
         break;
     }
     }
-}
-
-void HandleChat(link_packet_t* packet)
-{
-    UI_LOG_INFO("Got text message");
-
-    // Ignore the first bytes, which are just header information
-    // +1 channel id, +1 message type, +4 length
-    constexpr uint8_t payload_offset = 6;
-    char* text = (char*)(link_packet->payload + payload_offset);
-
-    screen.CommitText(text, link_packet->length - payload_offset);
-}
-
-void HandleKeypress()
-{
-    while (keyboard.NumAvailable() > 0)
-    {
-        const uint8_t ch = keyboard.Read();
-
-        HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
-
-        switch (ch)
-        {
-        case Keyboard::Ent:
-        {
-            ui_net_link::Serialize(ui_net_link::Channel_Id::Chat, screen.UserText(),
-                                   screen.UserTextLength(), message_packet);
-
-            if (!TryProtect(&message_packet))
-            {
-                UI_LOG_ERROR("Failed to encrypt text packet");
-                return;
-            }
-
-            UI_LOG_INFO("Transmit text message");
-            net_serial.Write(message_packet);
-            ++num_packets_tx;
-
-            screen.CommitText(screen.UserText(), screen.UserTextLength());
-            screen.ClearUserText();
-            break;
-        }
-        case Keyboard::Bak:
-        {
-            screen.BackspaceUserText();
-            break;
-        }
-        default:
-        {
-            screen.AppendUserText(ch);
-            break;
-        }
-        }
-    }
-}
-
-bool TryProtect(link_packet_t* packet)
-try
-{
-    uint8_t ct[link_packet_t::Payload_Size];
-    auto payload = mls_ctx.protect(
-        0, 0, ct, sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
-
-    std::memcpy(packet->payload + 1, payload.data(), payload.size());
-    packet->length = payload.size() + 1;
-    return true;
-}
-catch (const std::exception& e)
-{
-    return false;
-}
-
-bool TryUnprotect(link_packet_t* packet)
-try
-{
-    auto payload = mls_ctx.unprotect(
-        sframe::output_bytes{packet->payload, link_packet_t::Payload_Size}.subspan(1),
-        sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
-    packet->length = payload.size() + 1;
-    return true;
-}
-catch (const std::exception& e)
-{
-    UI_LOG_ERROR("%s", e.what());
-    return false;
 }
 
 void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx)
@@ -996,295 +752,4 @@ inline void Error(const char* who, const char* why)
         HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
         HAL_Delay(1000);
     }
-}
-
-void SlowSendTest(int delay, int num)
-{
-    link_packet_t packet;
-    ui_net_link::AudioObject talk_frame = {.channel_id = ui_net_link::Channel_Id::Ptt, 0};
-    // Fill the tmp audio buffer with random
-    for (int i = 0; i < constants::Audio_Buffer_Sz; ++i)
-    {
-        talk_frame.data[i] = i;
-    }
-
-    ui_net_link::Serialize(talk_frame, ui_net_link::Packet_Type::Message, false, packet);
-
-    int i = 0;
-    while (i++ != num)
-    {
-        HAL_Delay(delay);
-        net_serial.Write(packet);
-    }
-}
-
-void InterHactarSerialRoundTripTest(int delay, int num)
-{
-    HAL_Delay(1000);
-    UI_LOG_INFO("Start");
-
-    const size_t buff_sz = 321;
-    link_packet_t tmp;
-    // Fill the tmp audio buffer with random
-    tmp.type = (uint8_t)ui_net_link::Packet_Type::Message;
-    tmp.length = buff_sz;
-    for (size_t i = 0; i < buff_sz; ++i)
-    {
-        tmp.payload[i] = rand() % 0xFF;
-    }
-
-    uint64_t num_good = 0;
-    uint64_t total_packets = 0;
-
-    link_packet_t* recv = nullptr;
-    int idx = 0;
-    uint32_t err_timeout = 0;
-    uint32_t timeout = 0;
-    uint32_t total_elapsed = 0;
-    uint32_t start = 0;
-    uint32_t end = 0;
-    while (true)
-    {
-        start = HAL_GetTick();
-        net_serial.Write(tmp);
-        err_timeout = HAL_GetTick() + 1000;
-        HAL_Delay(delay);
-
-        while (true)
-        {
-            recv = net_serial.Read();
-            if (recv != nullptr)
-            {
-                if (HAL_GetTick() > err_timeout)
-                {
-                    Error("InterHactarSerialRoundTripTest", "Never received loopback");
-                }
-                break;
-            }
-        }
-        end = HAL_GetTick();
-
-        // Compare the two
-        for (size_t i = 0; i < buff_sz; ++i)
-        {
-            if (tmp.payload[i] != recv->payload[i])
-            {
-                while (true)
-                {
-                    Error("InterHactarSerialRoundTripTest", "Send didn't match received");
-                }
-            }
-        }
-        ++num_good;
-
-        for (size_t i = 0; i < buff_sz; ++i)
-        {
-            tmp.payload[i] = rand() % 0xFF;
-        }
-
-        total_elapsed += end - start;
-        if (num_good >= 100)
-        {
-            total_packets += num_good;
-            UI_LOG_INFO("t %ld r %lld ", total_elapsed / 100, total_packets);
-
-            total_elapsed = 0;
-            num_good = 0;
-        }
-
-        if (idx++ == num)
-        {
-            break;
-        }
-
-        if (HAL_GetTick() > timeout)
-        {
-            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            timeout = HAL_GetTick() + 2000;
-        }
-    }
-}
-
-void InterHactarFullRoundTripTest(int delay, int num)
-{
-    HAL_Delay(20000);
-    UI_LOG_INFO("Start");
-
-    const size_t buff_sz = 321;
-    link_packet_t tmp;
-    // Fill the tmp audio buffer with random
-    tmp.type = (uint8_t)ui_net_link::Packet_Type::Message;
-    tmp.length = buff_sz;
-    for (size_t i = 0; i < buff_sz; ++i)
-    {
-        tmp.payload[i] = rand() % 0xFF;
-    }
-
-    for (int i = 0; i < 20; ++i)
-    {
-        net_serial.Write(tmp);
-        HAL_Delay(delay);
-    }
-    UI_LOG_WARN("Sent");
-
-    uint64_t num_recv = 0;
-
-    link_packet_t* recv = nullptr;
-    int idx = 0;
-    uint32_t timeout = 0;
-    uint32_t total_elapsed = 0;
-    uint32_t total_sent = 0;
-    while (true)
-    {
-        HAL_Delay(delay);
-        net_serial.Write(tmp);
-        uint32_t start = HAL_GetTick();
-        while (true)
-        {
-            recv = net_serial.Read();
-            if (recv != nullptr)
-            {
-                break;
-            }
-        }
-
-        ++num_recv;
-
-        uint32_t end = HAL_GetTick();
-        total_elapsed += (end - start);
-        if (num_recv >= 10)
-        {
-            total_sent += num_recv;
-            UI_LOG_INFO("t %ld s %ld", total_elapsed / 10, total_sent);
-
-            total_elapsed = 0;
-            num_recv = 0;
-        }
-
-        if (idx++ == num)
-        {
-            break;
-        }
-
-        if (HAL_GetTick() > timeout)
-        {
-            HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-            timeout = HAL_GetTick() + 2000;
-        }
-    }
-}
-
-void DumpRxBuff()
-{
-    char dmp[256];
-    UI_LOG_INFO("rx w idx %u, rx r idx %u", net_serial.RxBuffWriteIdx(),
-                net_serial.RxBuffReadIdx());
-    // Dump the rx buff slowly
-    for (int i = 0; i < net_ui_serial_rx_buff_sz; ++i)
-    {
-        itoa(i, dmp, 10);
-        HAL_UART_Transmit(&huart1, (uint8_t*)dmp, strlen(dmp), HAL_MAX_DELAY);
-
-        HAL_UART_Transmit(&huart1, (uint8_t*)": ", 2, HAL_MAX_DELAY);
-        itoa(net_ui_serial_rx_buff[i], dmp, 10);
-        HAL_UART_Transmit(&huart1, (uint8_t*)dmp, strlen(dmp), HAL_MAX_DELAY);
-
-        HAL_UART_Transmit(&huart1, (uint8_t*)"\n", 1, HAL_MAX_DELAY);
-        HAL_Delay(2);
-    }
-    Error("Main loop", "rx stopped receiving data, dumping");
-}
-
-void FakeChangeChannelPacket()
-{
-    link_packet_t packet;
-    packet.type = (uint8_t)ui_net_link::Packet_Type::AiResponse;
-    packet.length = 237;
-    uint8_t fake_data[] = {
-        0,   3,   0,   0,   0,   0,   1,   1,   225, 0,   0,   0,   123, 34,  99,  104, 97,
-        110, 110, 101, 108, 67,  111, 110, 102, 105, 103, 34,  58,  34,  49,  34,  44,  34,
-        99,  104, 97,  110, 110, 101, 108, 95,  110, 97,  109, 101, 34,  58,  34,  112, 108,
-        117, 109, 98,  105, 110, 103, 34,  44,  34,  99,  111, 100, 101, 99,  34,  58,  34,
-        112, 99,  109, 34,  44,  34,  108, 97,  110, 103, 117, 97,  103, 101, 34,  58,  34,
-        101, 110, 45,  85,  83,  34,  44,  34,  115, 97,  109, 112, 108, 101, 114, 97,  116,
-        101, 34,  58,  56,  48,  48,  48,  44,  34,  116, 114, 97,  99,  107, 110, 97,  109,
-        101, 34,  58,  34,  112, 99,  109, 95,  101, 110, 95,  56,  107, 104, 122, 95,  109,
-        111, 110, 111, 95,  105, 49,  54,  34,  44,  34,  116, 114, 97,  99,  107, 110, 97,
-        109, 101, 115, 112, 97,  99,  101, 34,  58,  91,  34,  109, 111, 113, 58,  47,  47,
-        109, 111, 113, 46,  112, 116, 116, 46,  97,  114, 112, 97,  47,  118, 49,  34,  44,
-        34,  111, 114, 103, 47,  97,  99,  109, 101, 34,  44,  34,  115, 116, 111, 114, 101,
-        47,  49,  50,  51,  52,  34,  44,  34,  99,  104, 97,  110, 110, 101, 108, 47,  112,
-        108, 117, 109, 98,  105, 110, 103, 34,  44,  34,  112, 116, 116, 34,  93,  125};
-    for (int i = 0; i < packet.length; ++i)
-    {
-        packet.payload[i] = fake_data[i];
-    }
-
-    net_serial.Write(packet);
-}
-
-void LedROn()
-{
-    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, LOW);
-}
-
-void LedROff()
-{
-    HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, HIGH);
-}
-
-void LedRToggle()
-{
-    HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
-}
-
-void LedBOn()
-{
-    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, LOW);
-}
-
-void LedBOff()
-{
-    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, HIGH);
-}
-
-void LedBToggle()
-{
-    HAL_GPIO_TogglePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin);
-}
-
-void LedGOn()
-{
-    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, LOW);
-}
-
-void LedGOff()
-{
-    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, HIGH);
-}
-
-void LedGToggle()
-{
-    HAL_GPIO_TogglePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin);
-}
-
-void LedsOn()
-{
-    LedROn();
-    LedBOn();
-    LedGOn();
-}
-
-void LedsOff()
-{
-    LedROff();
-    LedBOff();
-    LedGOff();
-}
-
-void LedsToggle()
-{
-    LedRToggle();
-    LedBToggle();
-    LedGToggle();
 }
