@@ -402,7 +402,7 @@ bool AudioChip::SetBit(uint8_t address, uint8_t bit, uint8_t set)
     return WriteRegister(address) == HAL_OK;
 }
 
-bool AudioChip::SetBits(const uint8_t address, const uint16_t bits, const uint16_t set)
+bool AudioChip::SetBits(const uint8_t address, const uint16_t mask, const uint16_t values)
 {
     if (address > Max_Address)
     {
@@ -412,14 +412,14 @@ bool AudioChip::SetBits(const uint8_t address, const uint16_t bits, const uint16
     // ex bits = 0x71F1, set = 0x00F2;
     // Bits < 0x1FF
     // masked bits = 0x01F1
-    const uint16_t masked_bits = bits & 0x01FF;
+    const uint16_t masked_bits = mask & 0x01FF;
 
     // reset bits = 0xFE0E
     const uint16_t reset_bits = ~masked_bits;
 
     // Only use the bits that we said we would be using in bits.
     // masked set = 0x00F2 & 0x1FF = 0x00F2 & 0x01F1 = 0x00F0
-    const uint16_t masked_set = masked_bits & (set & 0x1FF);
+    const uint16_t masked_set = masked_bits & (values & 0x1FF);
 
     registers[address].bytes[0] &= uint8_t(reset_bits >> 8);
     registers[address].bytes[1] &= uint8_t(reset_bits & 0x00FF);
@@ -548,6 +548,31 @@ uint16_t* AudioChip::TxBuffer()
 const uint16_t* AudioChip::RxBuffer()
 {
     return rx_ptr;
+}
+
+void AudioChip::SetLeftMixerSource(const OutputMixerSource source)
+{
+    switch (source)
+    {
+    case OutputMixerSource::Input_3:
+    {
+        SetBits(0x22, 0b1'1000'0000, 0b0'1000'0000);
+        SetBits(0x2D, 0b0'1000'0000, 0b0'0000'0000);
+        break;
+    }
+    case OutputMixerSource::Boost_Mixer:
+    {
+        SetBits(0x22, 0b1'1000'0000, 0b0'0000'0000);
+        SetBits(0x2D, 0b0'1000'0000, 0b0'1000'0000);
+        break;
+    }
+    case OutputMixerSource::DAC_Mixer:
+    {
+        SetBits(0x22, 0b1'1000'0000, 0b1'0000'0000);
+        SetBits(0x2D, 0b0'1000'0000, 0b0'0000'0000);
+        break;
+    }
+    }
 }
 
 void AudioChip::ISRCallback()

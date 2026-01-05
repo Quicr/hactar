@@ -23,6 +23,7 @@
 #include <random>
 
 // Forward declare
+inline void Loopback(const bool compress);
 inline void CheckPTT();
 inline void CheckPTTAI();
 inline void SendAudio(const ui_net_link::Channel_Id channel_id,
@@ -195,6 +196,8 @@ int app_main()
 
     UI_LOG_INFO("Starting main loop");
 
+    audio_chip.SetLeftMixerSource(AudioChip::OutputMixerSource::Boost_Mixer);
+
     while (1)
     {
         Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
@@ -216,6 +219,8 @@ int app_main()
             // Error("Main loop", "Flags did not match expected");
         }
 
+        const bool compress = false;
+        Loopback(compress);
         CheckPTT();
         CheckPTTAI();
 
@@ -560,9 +565,30 @@ void SendAudio(const ui_net_link::Channel_Id channel_id,
     ++num_packets_tx;
 }
 
+void Loopback(const bool compress)
+{
+    if (compress)
+    {
+        ui_net_link::AudioObject frame;
+        AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, frame.data,
+                                constants::Audio_Phonic_Sz, true, constants::Stereo);
+        AudioCodec::ALawExpand(frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
+                               constants::Audio_Buffer_Sz, constants::Stereo, true);
+    }
+    else
+    {
+        uint16_t* tx_ptr = audio_chip.TxBuffer();
+        const uint16_t* rx_ptr = audio_chip.RxBuffer();
+        for (int i = 0; i < constants::Audio_Buffer_Sz; ++i)
+        {
+            tx_ptr[i] = rx_ptr[i];
+        }
+    }
+}
+
 void HandleMedia(link_packet_t* packet)
 {
-    ui_net_link::Deserialize(*link_packet, play_frame);
+    ui_net_link::Deserialize(*packet, play_frame);
     AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
                            constants::Audio_Buffer_Sz, constants::Stereo, true);
 }

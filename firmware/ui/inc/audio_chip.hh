@@ -72,6 +72,15 @@ public:
     uint16_t* TxBuffer();
     const uint16_t* RxBuffer();
 
+    enum OutputMixerSource
+    {
+        Input_3,
+        Boost_Mixer,
+        DAC_Mixer
+    };
+
+    void SetLeftMixerSource(const OutputMixerSource source);
+
     // TODO use.
     enum AudioFlag
     {
@@ -89,7 +98,7 @@ private:
     bool OrRegister(uint8_t address, uint16_t data);
     bool XorRegister(uint8_t address, uint16_t data);
     bool SetBit(uint8_t address, uint8_t bit, uint8_t set);
-    bool SetBits(const uint8_t address, const uint16_t bits, const uint16_t set);
+    bool SetBits(const uint8_t address, const uint16_t mask, const uint16_t values);
 
     void RaiseFlag(AudioFlag flag);
     void LowerFlag(AudioFlag flag);
