@@ -5,10 +5,12 @@
 #include "keyboard.hh"
 #include "keyboard_display.hh"
 #include "led_control.hh"
+#include "link_packet_handler.hh"
 #include "link_packet_t.hh"
 #include "logger.hh"
 #include "main.h"
 #include "protect.hh"
+#include "protector.hh"
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
@@ -23,35 +25,16 @@
 #include <random>
 
 // Forward declare
-inline void CheckPTT();
-inline void CheckPTTAI();
-inline void SendAudio(const ui_net_link::Channel_Id channel_id,
+inline void CheckPTT(Protector& protector);
+inline void CheckPTTAI(Protector& protector);
+inline void SendAudio(Protector& protector,
+                      const ui_net_link::Channel_Id channel_id,
                       const ui_net_link::Packet_Type packet_type,
                       bool last);
 inline void HandleMedia(link_packet_t* packet);
 inline void HandleAiResponse(link_packet_t* packet);
-inline void HandleMgmtLinkPackets(ConfigStorage& storage);
 
-inline void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx);
-
-sframe::MLSContext mls_ctx(sframe::CipherSuite::AES_GCM_128_SHA256, 1);
-uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
-
-cmox_init_retval_t cmox_ll_init(void* pArg)
-{
-    (void)pArg;
-    /* Ensure CRC is enabled for cryptographic processing */
-    __HAL_RCC_CRC_RELEASE_RESET();
-    __HAL_RCC_CRC_CLK_ENABLE();
-    return CMOX_INIT_SUCCESS;
-}
-
-cmox_init_retval_t cmox_ll_deInit(void* pArg)
-{
-    (void)pArg;
-    /* Do not turn off CRC to avoid side effect on other SW parts using it */
-    return CMOX_INIT_SUCCESS;
-}
+// uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
 
 // Handlers
 extern UART_HandleTypeDef huart1;
@@ -173,7 +156,7 @@ int app_main()
 
     ConfigStorage config_storage(hi2c1);
 
-    InitialzeMLS(config_storage, mls_ctx);
+    Protector protector(config_storage);
 
     Renderer renderer(screen, keyboard);
     audio_chip.Init();
@@ -216,16 +199,16 @@ int app_main()
             // Error("Main loop", "Flags did not match expected");
         }
 
-        CheckPTT();
-        CheckPTTAI();
+        CheckPTT(protector);
+        CheckPTTAI(protector);
 
-        HandleKeypress(screen, keyboard, net_serial, mls_ctx);
+        HandleKeypress(screen, keyboard, net_serial, protector);
 
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
-        HandleNetLinkPackets();
-        HandleMgmtLinkPackets(config_storage);
+        HandleNetLinkPackets(net_serial, protector, audio_chip);
+        HandleMgmtLinkPackets(mgmt_serial, config_storage);
 
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
@@ -275,194 +258,6 @@ inline void CheckFlags()
     }
 }
 
-void HandleNetLinkPackets()
-{
-    // If there are bytes available read them
-    while (true)
-    {
-        link_packet = net_serial.Read();
-        if (!link_packet)
-        {
-            return;
-        }
-
-        // UI_LOG_INFO("Got a packet, type %d, first byte %d", (int)link_packet->type,
-        //             (int)link_packet->payload[0]);
-        ++num_packets_rx;
-        switch ((ui_net_link::Packet_Type)link_packet->type)
-        {
-        case ui_net_link::Packet_Type::PowerOnReady:
-        {
-            // TODO: Stop loading screen?
-            break;
-        }
-        case ui_net_link::Packet_Type::GetAudioLinkPacket:
-        {
-            break;
-        }
-        case ui_net_link::Packet_Type::Message:
-        case ui_net_link::Packet_Type::AiResponse:
-        {
-            if (!TryUnprotect(mls_ctx, link_packet))
-            {
-                UI_LOG_ERROR("Failed to decrypt ptt object");
-                continue;
-            }
-
-            // Get the second byte of the data which is the message type
-            // Since the first byte is channel id
-            const auto message_type =
-                static_cast<ui_net_link::MessageType>(link_packet->payload[1]);
-
-            switch (message_type)
-            {
-            case ui_net_link::MessageType::Media:
-            {
-                // Ptt audio/translated audio
-                HandleMedia(link_packet);
-                break;
-            }
-            case ui_net_link::MessageType::AIRequest:
-            {
-                // Do nothing.
-                break;
-            }
-            case ui_net_link::MessageType::AIResponse:
-            {
-                // Json, text, or ai audio
-                HandleAiResponse(link_packet);
-                break;
-            }
-            case ui_net_link::MessageType::Chat:
-            {
-                // Text/translated text
-                HandleChatMessages(screen, link_packet);
-                break;
-            }
-            }
-            break;
-        }
-        case ui_net_link::Packet_Type::MoQStatus:
-        {
-            break;
-        }
-        case ui_net_link::Packet_Type::WifiConnect:
-        {
-            break;
-        }
-        case ui_net_link::Packet_Type::WifiStatus:
-        {
-            UI_LOG_INFO("got a wifi packet, status %d", (int)link_packet->payload[0]);
-
-            break;
-        }
-        default:
-        {
-            UI_LOG_ERROR("Unhandled packet type %d, %u, %lu, %lu", (int)link_packet->type,
-                         link_packet->length, num_audio_req_packets, num_packets_rx);
-            break;
-        }
-        }
-    }
-}
-
-void HandleMgmtLinkPackets(ConfigStorage& storage)
-{
-    while (true)
-    {
-        link_packet = mgmt_serial.Read();
-        if (!link_packet)
-        {
-            break;
-        }
-
-        switch (link_packet->type)
-        {
-        case Configuration::Version:
-        {
-            UI_LOG_INFO("VERSION TODO");
-            break;
-        }
-        case Configuration::Clear:
-        {
-            // NOTE, the storage clear WILL brick your hactar for some amount of time until
-            // the eeprom fixes itself
-            UI_LOG_INFO("OK! Clearing configurations");
-            storage.Clear();
-            UI_LOG_INFO("OK! Cleared all configurations");
-            break;
-        }
-        case Configuration::Set_Sframe:
-        {
-            if (link_packet->length != 16)
-            {
-                mgmt_serial.ReplyNack();
-                UI_LOG_ERROR("ERR. Sframe key is too short!");
-                break;
-            }
-
-            if (storage.Save(ConfigStorage::Config_Id::Sframe_Key, link_packet->payload,
-                             link_packet->length))
-            {
-                mgmt_serial.ReplyAck();
-                UI_LOG_INFO("OK! Saved SFrame Key configuration");
-            }
-            else
-            {
-                mgmt_serial.ReplyNack();
-                UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
-            }
-
-            break;
-        }
-        case Configuration::Get_Sframe:
-        {
-            ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
-            if (config.loaded && config.len == 16)
-            {
-
-                // Copy to a buff and print it.
-                char buff[config.len + 1] = {0};
-                for (int i = 0; i < config.len; ++i)
-                {
-                    buff[i] = config.buff[i];
-                }
-
-                mgmt_serial.Write(config.buff, config.len);
-            }
-            else
-            {
-                UI_LOG_INFO("ERR. No sframe key in storage");
-            }
-            break;
-        }
-        case Configuration::Toggle_Logs:
-        {
-            mgmt_serial.ReplyAck();
-            Logger::Toggle();
-            break;
-        }
-        case Configuration::Disable_Logs:
-        {
-            mgmt_serial.ReplyAck();
-            Logger::Disable();
-            break;
-        }
-        case Configuration::Enable_Logs:
-        {
-            mgmt_serial.ReplyAck();
-            Logger::Enable();
-            break;
-        }
-        default:
-        {
-            UI_LOG_ERROR("ERR. No handler for received packet type");
-            break;
-        }
-        }
-    }
-}
-
 inline void AudioCallback()
 {
     audio_chip.ISRCallback();
@@ -478,7 +273,7 @@ inline void AudioCallback()
     RaiseFlag(Audio_Interrupt);
 }
 
-void CheckPTT()
+void CheckPTT(Protector& protector)
 {
     // Send talk start and sot packets
     if ((HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET
@@ -499,17 +294,18 @@ void CheckPTT()
 
     if (ptt_state == Ptt_Btn_State::Pressed || ptt_state == Ptt_Btn_State::Releasing)
     {
-        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, false);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message,
+                  false);
     }
 
     if (ptt_state == Ptt_Btn_State::Last_Send)
     {
-        SendAudio(ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, true);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, true);
         ptt_state = Ptt_Btn_State::Released;
     }
 }
 
-void CheckPTTAI()
+void CheckPTTAI(Protector& protector)
 {
 
     // Send talk start and sot packets
@@ -529,17 +325,20 @@ void CheckPTTAI()
 
     if (ptt_ai_state == Ptt_Btn_State::Pressed || ptt_ai_state == Ptt_Btn_State::Releasing)
     {
-        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, false);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message,
+                  false);
     }
 
     if (ptt_ai_state == Ptt_Btn_State::Last_Send)
     {
-        SendAudio(ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message, true);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message,
+                  true);
         ptt_ai_state = Ptt_Btn_State::Released;
     }
 }
 
-void SendAudio(const ui_net_link::Channel_Id channel_id,
+void SendAudio(Protector& protector,
+               const ui_net_link::Channel_Id channel_id,
                const ui_net_link::Packet_Type packet_type,
                bool last)
 {
@@ -549,7 +348,7 @@ void SendAudio(const ui_net_link::Channel_Id channel_id,
     talk_frame.channel_id = channel_id;
     ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
 
-    if (!TryProtect(mls_ctx, &message_packet))
+    if (!protector.TryProtect(&message_packet))
     {
         UI_LOG_ERROR("Failed to encrypt audio packet");
         return;
@@ -604,37 +403,6 @@ void HandleAiResponse(link_packet_t* packet)
         break;
     }
     }
-}
-
-void InitialzeMLS(ConfigStorage& storage, sframe::MLSContext& mls_ctx)
-{
-    if (cmox_initialize(nullptr) != CMOX_INIT_SUCCESS)
-    {
-        Error("main", "cmox failed to initialise");
-    }
-
-// Not currently in use.
-#if 0
-    ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
-    if (config.loaded && config.len == 16)
-    {
-        UI_LOG_INFO("Using stored MLS key!");
-        mls_ctx.add_epoch(
-            0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(config.buff), config.len});
-
-        return;
-    }
-    else if (config.len != 16)
-    {
-        UI_LOG_ERROR("MLS key len malformed %d", (int)config.len);
-        Error_Handler("Initialize MLS", "MLS key len malformed");
-        return;
-    }
-#endif
-
-    UI_LOG_WARN("No MLS key stored, using default");
-    constexpr const char* mls_key = "sixteen byte key";
-    mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(mls_key), 16});
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)

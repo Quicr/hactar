@@ -28,7 +28,7 @@ void HandleChatMessages(Screen& screen, link_packet_t* packet)
     screen.CommitText(text, packet->length - payload_offset);
 }
 
-void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, sframe::MLSContext& mls_ctx)
+void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, Protector& protector)
 {
     while (keyboard.NumAvailable() > 0)
     {
@@ -44,7 +44,7 @@ void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, sframe::
             ui_net_link::Serialize(ui_net_link::Channel_Id::Chat, screen.UserText(),
                                    screen.UserTextLength(), packet);
 
-            if (!TryProtect(mls_ctx, &packet))
+            if (!protector.TryProtect(&packet))
             {
                 UI_LOG_ERROR("Failed to encrypt text packet");
                 return;

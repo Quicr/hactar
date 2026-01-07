@@ -28,7 +28,6 @@ inline void LowerFlag(enum Timer_Flags flag);
 inline void LowPowerMode();
 inline void WakeUp();
 inline void CheckFlags();
-inline void HandleNetLinkPackets();
 inline void WaitForNetReady();
 inline void AudioCallback();
 void Error(const char* who, const char* why);
