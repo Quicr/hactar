@@ -36,6 +36,41 @@ Protector::Protector(ConfigStorage& storage) :
     mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(mls_key), 16});
 }
 
+Protector::~Protector()
+{
+}
+
+bool Protector::TryProtect(link_packet_t* packet)
+try
+{
+    uint8_t ct[link_packet_t::Payload_Size];
+    auto payload = mls_ctx.protect(
+        0, 0, ct, sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
+
+    std::memcpy(packet->payload + 1, payload.data(), payload.size());
+    packet->length = payload.size() + 1;
+    return true;
+}
+catch (const std::exception& e)
+{
+    return false;
+}
+
+bool Protector::TryUnprotect(link_packet_t* packet)
+try
+{
+    auto payload = mls_ctx.unprotect(
+        sframe::output_bytes{packet->payload, link_packet_t::Payload_Size}.subspan(1),
+        sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
+    packet->length = payload.size() + 1;
+    return true;
+}
+catch (const std::exception& e)
+{
+    UI_LOG_ERROR("%s", e.what());
+    return false;
+}
+
 cmox_init_retval_t cmox_ll_init(void* pArg)
 {
     (void)pArg;

@@ -1,9 +1,58 @@
 #include "link_packet_handler.hh"
+#include "audio_chip.hh"
 #include "audio_codec.hh"
+#include "keyboard_display.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 
-void HandleNetLinkPackets(Serial& serial, Protector protector, AudioChip& audio)
+static void HandleMedia(link_packet_t* packet, AudioChip& audio)
+{
+    ui_net_link::AudioObject play_frame;
+    ui_net_link::Deserialize(*packet, play_frame);
+    AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz, audio.TxBuffer(),
+                           constants::Audio_Buffer_Sz, constants::Stereo, true);
+}
+
+static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Serial& serial)
+{
+
+    auto* response =
+        static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
+
+    switch (response->content_type)
+    {
+    case ui_net_link::ContentType::Audio:
+    {
+        const uint16_t len = constants::Audio_Phonic_Sz < response->chunk_length
+                               ? constants::Audio_Phonic_Sz
+                               : response->chunk_length;
+
+        AudioCodec::ALawExpand(response->chunk_data, len, audio.TxBuffer(),
+                               constants::Audio_Buffer_Sz, constants::Stereo, true);
+        break;
+    }
+    case ui_net_link::ContentType::Json:
+    {
+        if (response->chunk_data[0] == '{'
+            && response->chunk_data[response->chunk_length - 1] == '}')
+        {
+            UI_LOG_INFO("ai response len %d", packet->length);
+            UI_LOG_INFO("IS JSON");
+            packet->type = static_cast<uint8_t>(ui_net_link::Packet_Type::AiResponse);
+            serial.Write(*packet);
+        }
+        else
+        {
+            // This is a text.
+            response->chunk_data[response->chunk_length] = 0;
+            UI_LOG_INFO("[AI] %s", response->chunk_data);
+        }
+        break;
+    }
+    }
+}
+
+void HandleNetLinkPackets(Serial& serial, Protector& protector, AudioChip& audio, Screen& screen)
 {
     // If there are bytes available read them
     while (true)
@@ -42,13 +91,7 @@ void HandleNetLinkPackets(Serial& serial, Protector protector, AudioChip& audio)
             {
             case ui_net_link::MessageType::Media:
             {
-                ui_net_link::AudioObject play_frame;
-
-                // Ptt audio/translated audio
-                ui_net_link::Deserialize(*packet, play_frame);
-                AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz,
-                                       audio.TxBuffer(), constants::Audio_Buffer_Sz,
-                                       constants::Stereo, true);
+                HandleMedia(packet, audio);
                 break;
             }
             case ui_net_link::MessageType::AIRequest:
@@ -59,7 +102,7 @@ void HandleNetLinkPackets(Serial& serial, Protector protector, AudioChip& audio)
             case ui_net_link::MessageType::AIResponse:
             {
                 // Json, text, or ai audio
-                HandleAiResponse(packet);
+                HandleAiResponse(packet, audio, serial);
                 break;
             }
             case ui_net_link::MessageType::Chat:
@@ -88,7 +131,7 @@ void HandleNetLinkPackets(Serial& serial, Protector protector, AudioChip& audio)
         default:
         {
             UI_LOG_ERROR("Unhandled packet type %d, %u, %lu, %lu", (int)packet->type,
-                         packet->length, num_audio_req_packets, num_packets_rx);
+                         packet->length);
             break;
         }
         }
@@ -148,7 +191,6 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
             if (config.loaded && config.len == 16)
             {
-
                 // Copy to a buff and print it.
                 char buff[config.len + 1] = {0};
                 for (int i = 0; i < config.len; ++i)

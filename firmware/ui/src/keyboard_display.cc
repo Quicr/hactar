@@ -1,6 +1,5 @@
 #include "keyboard_display.hh"
 #include "main.h"
-#include "protect.hh"
 #include "ui_net_link.hh"
 #include <cstring>
 
