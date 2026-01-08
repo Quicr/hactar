@@ -9,13 +9,11 @@
 #include "link_packet_t.hh"
 #include "logger.hh"
 #include "main.h"
-#include "protect.hh"
 #include "protector.hh"
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
 #include "tools.hh"
-#include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 #include <cmox_crypto.h>
 #include <cmox_init.h>
@@ -34,8 +32,6 @@ inline void SendAudio(Protector& protector,
 inline void HandleMedia(link_packet_t* packet);
 inline void HandleAiResponse(link_packet_t* packet);
 
-// uint8_t dummy_ciphertext[link_packet_t::Payload_Size];
-
 // Handlers
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
@@ -49,7 +45,8 @@ extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim5;
 extern RNG_HandleTypeDef hrng;
 
-// Buffer declarations
+// Global variables that need to exist for hardware callbacks
+// Buffer allocations
 static constexpr uint16_t net_ui_serial_tx_buff_sz = 2048;
 uint8_t net_ui_serial_tx_buff[net_ui_serial_tx_buff_sz] = {0};
 static constexpr uint16_t net_ui_serial_rx_buff_sz = 2048;
@@ -90,26 +87,11 @@ Screen screen(hspi1,
               DISP_BL_Pin,
               Screen::Orientation::flipped_portrait);
 
-link_packet_t message_packet;
-link_packet_t* link_packet = nullptr;
-
 volatile bool sleeping = true;
 volatile bool error = false;
 
 constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1;
 uint32_t flags = Expected_Flags;
-
-uint32_t est_time_ms = 0;
-uint32_t ticks_ms = 0;
-uint32_t num_audio_req_packets = 0;
-
-ui_net_link::AudioObject play_frame;
-
-uint32_t num_req_sent = 0;
-uint32_t num_packets_rx = 0;
-uint32_t num_packets_tx = 0;
-
-ui_net_link::AudioObject talk_frame = {.channel_id = ui_net_link::Channel_Id::Ptt, .data = {0}};
 
 GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
@@ -133,12 +115,6 @@ RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
 
 Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
 
-uint32_t timeout = 0;
-
-// For some reason... probably due to interrupts, this tick rate is half the speed.
-// probably a better solution would be use a timer.
-static constexpr uint32_t Releasing_Timeout_ms = 500;
-
 enum class Ptt_Btn_State
 {
     Released = 0,
@@ -154,11 +130,11 @@ int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
 
+    uint32_t ticks_ms = 0;
     ConfigStorage config_storage(hi2c1);
-
     Protector protector(config_storage);
-
     Renderer renderer(screen, keyboard);
+
     audio_chip.Init();
     audio_chip.StartI2S();
 
@@ -169,8 +145,6 @@ int app_main()
     Leds(HIGH, HIGH, HIGH);
     net_serial.StartReceive();
     mgmt_serial.StartReceive();
-
-    uint32_t blinky = 0;
 
     // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
@@ -194,6 +168,8 @@ int app_main()
             __NOP();
         }
 
+        ticks_ms = HAL_GetTick();
+
         if (error)
         {
             // Error("Main loop", "Flags did not match expected");
@@ -207,7 +183,7 @@ int app_main()
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
-        HandleNetLinkPackets(net_serial, protector, audio_chip);
+        HandleNetLinkPackets(net_serial, protector, audio_chip, screen);
         HandleMgmtLinkPackets(mgmt_serial, config_storage);
 
         renderer.Render(ticks_ms);
@@ -261,15 +237,12 @@ inline void CheckFlags()
 inline void AudioCallback()
 {
     audio_chip.ISRCallback();
-    est_time_ms += 20;
-    ticks_ms = HAL_GetTick();
     CheckFlags();
     WakeUp();
 
     HAL_GPIO_WritePin(UI_READY_GPIO_Port, UI_READY_Pin, HIGH);
     HAL_TIM_Base_Start_IT(&htim3);
 
-    ++num_audio_req_packets;
     RaiseFlag(Audio_Interrupt);
 }
 
@@ -342,10 +315,13 @@ void SendAudio(Protector& protector,
                const ui_net_link::Packet_Type packet_type,
                bool last)
 {
+    ui_net_link::AudioObject talk_frame;
+    talk_frame.channel_id = channel_id;
+
     AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, talk_frame.data,
                             constants::Audio_Phonic_Sz, true, constants::Stereo);
 
-    talk_frame.channel_id = channel_id;
+    link_packet_t message_packet;
     ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
 
     if (!protector.TryProtect(&message_packet))
@@ -356,53 +332,6 @@ void SendAudio(Protector& protector,
 
     // LedRToggle();
     net_serial.Write(message_packet);
-    ++num_packets_tx;
-}
-
-void HandleMedia(link_packet_t* packet)
-{
-    ui_net_link::Deserialize(*link_packet, play_frame);
-    AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
-                           constants::Audio_Buffer_Sz, constants::Stereo, true);
-}
-
-void HandleAiResponse(link_packet_t* packet)
-{
-
-    auto* response =
-        static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
-
-    switch (response->content_type)
-    {
-    case ui_net_link::ContentType::Audio:
-    {
-        const uint16_t len = constants::Audio_Phonic_Sz < response->chunk_length
-                               ? constants::Audio_Phonic_Sz
-                               : response->chunk_length;
-
-        AudioCodec::ALawExpand(response->chunk_data, len, audio_chip.TxBuffer(),
-                               constants::Audio_Buffer_Sz, constants::Stereo, true);
-        break;
-    }
-    case ui_net_link::ContentType::Json:
-    {
-        if (response->chunk_data[0] == '{'
-            && response->chunk_data[response->chunk_length - 1] == '}')
-        {
-            UI_LOG_INFO("ai response len %d", packet->length);
-            UI_LOG_INFO("IS JSON");
-            packet->type = static_cast<uint8_t>(ui_net_link::Packet_Type::AiResponse);
-            net_serial.Write(*packet);
-        }
-        else
-        {
-            // This is a text.
-            response->chunk_data[response->chunk_length] = 0;
-            UI_LOG_INFO("[AI] %s", response->chunk_data);
-        }
-        break;
-    }
-    }
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)

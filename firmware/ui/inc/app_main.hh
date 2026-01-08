@@ -19,31 +19,14 @@ enum Timer_Flags
 
 int app_main();
 
-inline void LEDR(GPIO_PinState r);
-inline void LEDG(GPIO_PinState g);
-inline void LEDB(GPIO_PinState b);
-inline void LEDS(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);
-inline void RaiseFlag(enum Timer_Flags flag);
-inline void LowerFlag(enum Timer_Flags flag);
-inline void LowPowerMode();
-inline void WakeUp();
-inline void CheckFlags();
-inline void WaitForNetReady();
-inline void AudioCallback();
+void RaiseFlag(enum Timer_Flags flag);
+void LowerFlag(enum Timer_Flags flag);
+void LowPowerMode();
+void WakeUp();
+void CheckFlags();
+void WaitForNetReady();
+void AudioCallback();
 void Error(const char* who, const char* why);
-
-inline void LedROn();
-inline void LedROff();
-inline void LedRToggle();
-inline void LedBOn();
-inline void LedBOff();
-inline void LedBToggle();
-inline void LedGOn();
-inline void LedGOff();
-inline void LedGToggle();
-inline void LedsOn();
-inline void LedsOff();
-inline void LedsToggle();
 
 #ifdef __cplusplus
 }
