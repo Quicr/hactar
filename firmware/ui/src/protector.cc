@@ -1,4 +1,5 @@
 #include "protector.hh"
+#include "app_main.hh"
 #include <cmox_crypto.h>
 #include <cmox_init.h>
 #include <cmox_low_level.h>
@@ -68,6 +69,20 @@ try
 catch (const std::exception& e)
 {
     UI_LOG_ERROR("%s", e.what());
+    return false;
+}
+
+bool Protector::SaveMLSKey()
+{
+    // TODO future functions that we have not discussed fully yet.
+    Error("Protector::SaveMLSKey", "Not implemented");
+    return false;
+}
+
+bool Protector::LoadMLSKey()
+{
+    // TODO future functions that we have not discussed fully yet.
+    Error("Protector::LoadMLSKey", "Not implemented");
     return false;
 }
 
