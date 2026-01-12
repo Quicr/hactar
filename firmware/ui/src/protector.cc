@@ -41,7 +41,7 @@ Protector::~Protector()
 {
 }
 
-bool Protector::TryProtect(link_packet_t* packet)
+bool Protector::TryProtect(link_packet_t* packet) noexcept
 try
 {
     uint8_t ct[link_packet_t::Payload_Size];
@@ -54,10 +54,11 @@ try
 }
 catch (const std::exception& e)
 {
+    UI_LOG_ERROR("%s", e.what());
     return false;
 }
 
-bool Protector::TryUnprotect(link_packet_t* packet)
+bool Protector::TryUnprotect(link_packet_t* packet) noexcept
 try
 {
     auto payload = mls_ctx.unprotect(
