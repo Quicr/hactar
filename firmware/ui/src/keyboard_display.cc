@@ -32,7 +32,6 @@ void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, Protecto
     while (keyboard.NumAvailable() > 0)
     {
         const uint8_t ch = keyboard.Read();
-        link_packet_t packet;
 
         HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
 
@@ -40,6 +39,7 @@ void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, Protecto
         {
         case Keyboard::Ent:
         {
+            link_packet_t packet;
             ui_net_link::Serialize(ui_net_link::Channel_Id::Chat, screen.UserText(),
                                    screen.UserTextLength(), packet);
 

@@ -10,8 +10,8 @@ public:
     Protector(ConfigStorage& storage);
     ~Protector();
 
-    bool TryProtect(link_packet_t* link_packet);
-    bool TryUnprotect(link_packet_t* link_packet);
+    bool TryProtect(link_packet_t* link_packet) noexcept;
+    bool TryUnprotect(link_packet_t* link_packet) noexcept;
 
     bool SaveMLSKey();
     bool LoadMLSKey();
