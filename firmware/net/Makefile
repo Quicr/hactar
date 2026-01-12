@@ -28,16 +28,12 @@ upload: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/partition_table/partition-table.bin ${PARITIONS_ADDR} verify exit"
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ./build/net.bin 0x10000 verify exit"
 
-# TODO use my monitor to reset it.
-# python3 ../../software/tools/command_sender.py ${CONSOLE_PORT} 115200 debug
-
-upload_py: compile
+upload_serial: compile
 	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" -bin=${BUILD_PATH}
 
 upload_esptool:
 	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" --use_external_flasher=true
 	esptool.py ${ESP_TOOL_ARGS}
-
 
 docker: docker-build
 	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \

@@ -226,11 +226,11 @@ ${BUILD_DIR}:
 	@mkdir -p $@
 
 upload: compile
-	python3 ../../software/hactar-cli/main.py flash --chip="mgmt" --port=${PORT} \
-								 -bin=${BUILD_DIR}/${TARGET}.bin
-
-upload_stflash: compile
 	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
+
+upload_serial: compile
+	python3 ../../software/hactar-cli/main.py flash --chip="mgmt" --port=${PORT} \
+		-bin=${BUILD_DIR}/${TARGET}.bin
 
 upload_cube_uart: compile
 	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_USART_ARGS}

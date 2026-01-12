@@ -60,7 +60,7 @@ compile: CMakeLists.txt
 upload: compile
 	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
 
-upload_py: compile
+upload_serial: compile
 	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="ui" \
 								 -bin=${BUILD_DIR}/${TARGET}.bin
 
