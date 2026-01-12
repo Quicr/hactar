@@ -2,7 +2,7 @@ SHELL := /bin/bash
 .ONESHELL:
 
 BAUD 				= 115200
-PORT 				=
+port 				=
 BUILD_PATH			= ./build
 TARGET				= net
 
@@ -13,7 +13,7 @@ PROG_ADDR			= 0x10000
 DOCKER_IMAGE 		= build-hactar-net
 mft					= compile
 
-ESP_TOOL_ARGS 		= --trace --no-stub --port=${PORT} --baud=${BAUD} write_flash --no-compress \
+ESP_TOOL_ARGS 		= --trace --no-stub --port=${port} --baud=${BAUD} write_flash --no-compress \
 	${BOOTLOADER_ADDR} ${BUILD_PATH}/bootloader/bootloader.bin \
 	${PARITIONS_ADDR} ${BUILD_PATH}/partition_table/partition-table.bin \
 	${PROG_ADDR} ${BUILD_PATH}/${TARGET}.bin
@@ -24,15 +24,15 @@ compile:
 	idf.py -B $(BUILD_PATH) build -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 upload: compile
+	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="net" -bin=${BUILD_PATH}
+
+upload_debugger: compile
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/bootloader/bootloader.bin ${BOOTLOADER_ADDR} verify exit"
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/partition_table/partition-table.bin ${PARITIONS_ADDR} verify exit"
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ./build/net.bin 0x10000 verify exit"
 
-upload_serial: compile
-	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" -bin=${BUILD_PATH}
-
 upload_esptool:
-	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" --use_external_flasher=true
+	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="net" --use_external_flasher=true
 	esptool.py ${ESP_TOOL_ARGS}
 
 docker: docker-build
@@ -48,14 +48,14 @@ docker: docker-build
 		-it ${DOCKER_IMAGE}
 
 burn_jtag_efuse:
-	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" --use_external_flasher=true
+	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="net" --use_external_flasher=true
 	idf.py efuse-burn DIS_USB_JTAG
 
 monitor:
-	python3 ../../software/hactar-cli/main.py monitor --port=${PORT}
+	python3 ../../software/hactar-cli/main.py monitor --port=${port}
 
 idf_monitor:
-	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="net" --use_external_flasher=true
+	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="net" --use_external_flasher=true
 	idf.py monitor
 
 format:
