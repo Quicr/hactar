@@ -37,10 +37,10 @@ BUILD_DIR = ./build
 # programming
 #######################################
 WRITE_START = 0x08000000
-PORT =
+port =
 BAUD = 115200
 CUBE_PROGRAMMER_ARGS_SWD = -c port=swd freq=2400 mode=normal ap=0 speed=Reliable -w ${BUILD_DIR}/${TARGET}.hex ${WRITE_START} -v -g
-CUBE_PROGRAMMER_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
+CUBE_PROGRAMMER_ARGS = -c port=${port} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${TARGET}.bin ${WRITE_START} -v -g
 
 DOCKER_IMAGE = build-hactar-ui
 mft=compile
@@ -58,14 +58,14 @@ compile: CMakeLists.txt
 	cmake --build $(BUILD_DIR) -j
 
 upload: compile
-	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
-
-upload_serial: compile
-	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="ui" \
+	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="ui" \
 								 -bin=${BUILD_DIR}/${TARGET}.bin
 
+upload_debugger: compile
+	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
+
 upload_cube_serial: compile
-	python3 ../../software/hactar-cli/main.py flash --port=${PORT} --chip="ui" --use_external_flasher=true
+	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="ui" --use_external_flasher=true
 	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS}
 
 upload_cube_swd: compile
@@ -93,7 +93,7 @@ openocd:
 	openocd $(OCDFLAGS)
 
 monitor:
-	python3 ../../software/hactar-cli/main.py monitor --port=${PORT}
+	python3 ../../software/hactar-cli/main.py monitor --port=${port}
 
 format:
 	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i

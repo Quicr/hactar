@@ -35,12 +35,12 @@ endif
 #######################################
 # programming
 #######################################
-PORT =
+port =
 BAUD = 115200
 WRITE_START = 0x08000000
 PROGRAMMER = CUBE
 CUBE_PROGRAMMER_SWD_ARGS = -c port=swd freq=2400 mode=Normal ap=0 speed=Reliable -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
-CUBE_PROGRAMMER_USART_ARGS = -c port=${PORT} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
+CUBE_PROGRAMMER_USART_ARGS = -c port=${port} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${FIRMWARE} ${WRITE_START} -v -g
 
 DOCKER_IMAGE = build-hactar-mgmt
 mft=compile
@@ -226,11 +226,11 @@ ${BUILD_DIR}:
 	@mkdir -p $@
 
 upload: compile
-	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
+	python3 ../../software/hactar-cli/main.py flash --chip="mgmt" --port=${port} \
+								 -bin=${BUILD_DIR}/${TARGET}.bin
 
-upload_serial: compile
-	python3 ../../software/hactar-cli/main.py flash --chip="mgmt" --port=${PORT} \
-		-bin=${BUILD_DIR}/${TARGET}.bin
+upload_debugger: compile
+	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
 
 upload_cube_uart: compile
 	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_USART_ARGS}
@@ -251,7 +251,7 @@ docker:
 		-it ${DOCKER_IMAGE}
 
 monitor:
-	python3 ../../software/hactar-cli/main.py monitor --port=${PORT}
+	python3 ../../software/hactar-cli/main.py monitor --port=${port}
 
 format:
 	find inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
