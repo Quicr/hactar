@@ -1,12 +1,14 @@
 .vscode
 
+.cache
+.clangd
 build
 
 net/shared_inc
-
-
 
 node_modules
 package-lock.json
 
 __pycache__
+
+
