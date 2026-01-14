@@ -2,6 +2,7 @@
 #include "audio_chip.hh"
 #include "audio_codec.hh"
 #include "keyboard_display.hh"
+#include "led_control.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 
@@ -150,6 +151,12 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
 
         switch (packet->type)
         {
+        case Configuration::Sensor_Info:
+        {
+            UI_LOG_INFO("Received a command");
+            SensorConsumer(*packet);
+            break;
+        }
         case Configuration::Version:
         {
             UI_LOG_INFO("VERSION TODO");
@@ -230,5 +237,33 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             break;
         }
         }
+    }
+}
+
+void SensorConsumer(link_packet_t& packet)
+{
+    if (packet.length == 0)
+    {
+        UI_LOG_INFO("Received a snesor info packet with no data");
+        return;
+    }
+
+    SensorInfo info = static_cast<SensorInfo>(packet.payload[0]);
+
+    switch (info)
+    {
+    case SensorInfo::Battery_Level:
+    {
+
+        break;
+    }
+    case SensorInfo::Charging:
+    {
+        break;
+    }
+    case SensorInfo::Usb_Detect:
+    {
+        break;
+    }
     }
 }

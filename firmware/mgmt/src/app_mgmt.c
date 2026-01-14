@@ -3,6 +3,7 @@
 #include "io_control.h"
 #include "main.h"
 #include "stm32f0xx_hal_def.h"
+#include "stm32f0xx_hal_gpio.h"
 #include "uart_router.h"
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +59,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin)
 
 int app_main(void)
 {
+    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
     state = default_state;
 
     uart_stream_t* usb_stream = uart_router_get_usb_stream();
