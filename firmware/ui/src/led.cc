@@ -1,32 +1,30 @@
 #include "led.hh"
+#include "stm32f4xx_hal_gpio.h"
 
 LED::LED(GPIO_TypeDef* port, int pin, LED_Polarity polarity) :
     port(port),
     pin(pin),
     polarity(polarity)
 {
-}
-
-void LED::On()
-{
+    Off();
 }
 
 void LED::Off()
 {
+    port->BSRR |= BSSROffValue();
 }
 
-void LED::Breathe()
+void LED::On()
 {
+    port->BSRR |= BSSROnValue();
 }
 
-void LED::Flash()
+uint32_t LED::BSSROnValue()
 {
+    return pin << ((1 - (int)polarity) * 16);
 }
 
-void LED::Set(int pwm_value)
+uint32_t LED::BSSROffValue()
 {
-}
-
-void Callback(LED& led)
-{
+    return pin << ((int)polarity * 16);
 }

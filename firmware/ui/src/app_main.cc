@@ -4,6 +4,7 @@
 #include "config_storage.hh"
 #include "keyboard.hh"
 #include "keyboard_display.hh"
+#include "led.hh"
 #include "led_control.hh"
 #include "link_packet_handler.hh"
 #include "link_packet_t.hh"
@@ -13,6 +14,8 @@
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
+#include "stm32f4xx_hal_dma.h"
+#include "stm32f4xx_hal_tim.h"
 #include "tools.hh"
 #include "ui_net_link.hh"
 #include <cmox_crypto.h>
@@ -20,6 +23,7 @@
 #include <cmox_low_level.h>
 #include <sframe/sframe.h>
 #include <stm32f4xx_hal.h>
+#include <cstdint>
 #include <random>
 
 // Forward declare
@@ -39,11 +43,14 @@ extern UART_HandleTypeDef huart2;
 extern SPI_HandleTypeDef hspi1;
 extern I2C_HandleTypeDef hi2c1;
 extern I2S_HandleTypeDef hi2s3;
+extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim5;
 extern RNG_HandleTypeDef hrng;
+
+extern DMA_HandleTypeDef hdma_tim1_up;
 
 // Global variables that need to exist for hardware callbacks
 // Buffer allocations
@@ -125,6 +132,40 @@ enum class Ptt_Btn_State
 
 Ptt_Btn_State ptt_state;
 Ptt_Btn_State ptt_ai_state;
+void HAL_DMA_XferCpltCallback(DMA_HandleTypeDef* hdma)
+{
+    LedBToggle();
+    // if (hdma == &hdma_tim6_up)
+    // {
+    //     LedGOn();
+    // }
+    // LedGOn();
+}
+
+uint32_t bsrr_pattern[] = {
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin << 16)), // Reset PA5 LOW (bit 5+16 = bit 21)
+    ((UI_LED_R_Pin << 16)), // Reset PA5 LOW (bit 5+16 = bit 21)
+};
+
+uint32_t transfer_out[4] = {0};
 
 int app_main()
 {
@@ -152,9 +193,39 @@ int app_main()
 
     UI_LOG_INFO("Starting main loop");
 
+    // HAL_DMA_RegisterCallback(&hdma_tim3_ch4_up, HAL_DMA_XFER_CPLT_CB_ID,
+    // HAL_DMA_XferCpltCallback);
+    LED red(UI_LED_R_GPIO_Port, UI_LED_R_Pin, htim1, hdma_tim1_up, LED_Polarity::Low);
+    red.On();
+    //
+    // if (HAL_DMA_Start(&hdma_tim3_ch4_up, (uint32_t)bsrr_pattern, (uint32_t)transfer_out,
+    //                   sizeof(bsrr_pattern) / sizeof(uint32_t))
+    //     != HAL_OK)
+    // {
+    //     Error("init dma", "transfer did not start");
+    // };
+    //
+    // if (transfer_out[0] == (1 << (UI_LED_R_Pin + 16)))
+    // {
+    //     UI_LOG_INFO("It worked?");
+    // }
+    // GPIO_PIN_0;
+    // GPIO_PIN_1;
+    // GPIO_PIN_2;
+    // UI_LED_R_GPIO_Port->BSRR = UI_LED_R_Pin << 16;
+    if (HAL_DMA_Start(&hdma_tim1_up, (uint32_t)bsrr_pattern, (uint32_t)&UI_LED_R_GPIO_Port->BSRR,
+                      sizeof(bsrr_pattern) / sizeof(bsrr_pattern[0]))
+        != HAL_OK)
+    {
+        Error("init dma", "transfer did not start");
+    }
+    __HAL_TIM_ENABLE_DMA(&htim1, TIM_DMA_UPDATE);
+    HAL_TIM_Base_Start(&htim1);
+
+    UI_LOG_INFO("Started");
     while (1)
     {
-        Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+        // Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
@@ -395,13 +466,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        keyboard.Scan(HAL_GetTick());
+        // keyboard.Scan(HAL_GetTick());
     }
     else if (htim->Instance == TIM3)
     {
         // LedBToggle();
-        HAL_GPIO_WritePin(UI_READY_GPIO_Port, UI_READY_Pin, LOW);
-        HAL_TIM_Base_Stop_IT(&htim3);
+        // HAL_GPIO_WritePin(UI_READY_GPIO_Port, UI_READY_Pin, LOW);
+        // HAL_TIM_Base_Stop_IT(&htim3);
     }
     else if (htim->Instance == TIM4)
     {
