@@ -25,20 +25,36 @@ public:
         Flash,
     };
 
+    enum class FlashStatus
+    {
+        Off,
+        On
+    };
+
+    enum class Period
+    {
+        Slow,
+        Medium,
+        Fast
+    };
+
     void On(const Colour colour, uint8_t brightness);
     void Off(const Colour colour);
-    void Blink(const Colour colour);
-    void Strobe(const Colour colour);
     void Breathe(const Colour colour);
+    void Flash(const Colour colour, const Period rate);
 
     static void Callback(DMA_HandleTypeDef* hdma);
 
 private:
     void StartUpdater(const Colour colour);
     LED& SelectLED(const Colour colour);
-    void BreatheUpdate();
+    void BreatheUpdate(const Colour colour);
+    void FlashUpdate(const Colour colour);
+    void CalculateBrightness(const Colour colour, uint8_t brightness);
+    void ChangePeriod(const Period colour);
 
     static constexpr uint32_t Pwm_Size = 20;
+    static constexpr int8_t Step_Size = 3;
 
     LED red;
     LED green;
@@ -49,5 +65,7 @@ private:
     Mode mode;
 
     uint32_t pwm_pattern[Pwm_Size];
-    uint8_t breathe_step = 0;
+    int8_t breathe_current_step;
+    int8_t breathe_step;
+    FlashStatus flash_status;
 };

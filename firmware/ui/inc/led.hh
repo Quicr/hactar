@@ -17,10 +17,10 @@ public:
     void Off();
     void On();
 
-    uint32_t BSSROnValue();
-    uint32_t BSSROffValue();
+    uint32_t BSRROnValue();
+    uint32_t BSRROffValue();
 
-    uint32_t* BSSRAddr();
+    volatile uint32_t* BSRRAddr();
 
 private:
     GPIO_TypeDef* port;

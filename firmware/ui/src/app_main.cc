@@ -12,6 +12,7 @@
 #include "main.h"
 #include "protector.hh"
 #include "renderer.hh"
+#include "rgb_led.hh"
 #include "screen.hh"
 #include "serial.hh"
 #include "stm32f4xx_hal_dma.h"
@@ -193,34 +194,11 @@ int app_main()
 
     UI_LOG_INFO("Starting main loop");
 
-    // HAL_DMA_RegisterCallback(&hdma_tim3_ch4_up, HAL_DMA_XFER_CPLT_CB_ID,
-    // HAL_DMA_XferCpltCallback);
-    LED red(UI_LED_R_GPIO_Port, UI_LED_R_Pin, htim1, hdma_tim1_up, LED_Polarity::Low);
-    red.On();
-    //
-    // if (HAL_DMA_Start(&hdma_tim3_ch4_up, (uint32_t)bsrr_pattern, (uint32_t)transfer_out,
-    //                   sizeof(bsrr_pattern) / sizeof(uint32_t))
-    //     != HAL_OK)
-    // {
-    //     Error("init dma", "transfer did not start");
-    // };
-    //
-    // if (transfer_out[0] == (1 << (UI_LED_R_Pin + 16)))
-    // {
-    //     UI_LOG_INFO("It worked?");
-    // }
-    // GPIO_PIN_0;
-    // GPIO_PIN_1;
-    // GPIO_PIN_2;
-    // UI_LED_R_GPIO_Port->BSRR = UI_LED_R_Pin << 16;
-    if (HAL_DMA_Start(&hdma_tim1_up, (uint32_t)bsrr_pattern, (uint32_t)&UI_LED_R_GPIO_Port->BSRR,
-                      sizeof(bsrr_pattern) / sizeof(bsrr_pattern[0]))
-        != HAL_OK)
-    {
-        Error("init dma", "transfer did not start");
-    }
-    __HAL_TIM_ENABLE_DMA(&htim1, TIM_DMA_UPDATE);
-    HAL_TIM_Base_Start(&htim1);
+    LED red(UI_LED_R_GPIO_Port, UI_LED_R_Pin, LED_Polarity::Low);
+    LED green(UI_LED_G_GPIO_Port, UI_LED_G_Pin, LED_Polarity::Low);
+    LED blue(UI_LED_B_GPIO_Port, UI_LED_B_Pin, LED_Polarity::Low);
+    RGBLED rgb(red, green, blue, htim1, hdma_tim1_up);
+    rgb.Breathe(RGBLED::Colour::Blue);
 
     UI_LOG_INFO("Started");
     while (1)
