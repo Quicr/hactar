@@ -46,6 +46,7 @@ typedef enum
 int app_main(void);
 
 void app_mgmt_reset(const Reset_Type reset_type);
+void send_usb_detect_to_ui(const uint8_t detect);
 
 void CheckTimeout();
 void LEDA(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b);

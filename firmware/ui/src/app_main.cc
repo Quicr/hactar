@@ -5,7 +5,6 @@
 #include "keyboard.hh"
 #include "keyboard_display.hh"
 #include "led.hh"
-#include "led_control.hh"
 #include "link_packet_handler.hh"
 #include "link_packet_t.hh"
 #include "logger.hh"
@@ -133,40 +132,6 @@ enum class Ptt_Btn_State
 
 Ptt_Btn_State ptt_state;
 Ptt_Btn_State ptt_ai_state;
-void HAL_DMA_XferCpltCallback(DMA_HandleTypeDef* hdma)
-{
-    LedBToggle();
-    // if (hdma == &hdma_tim6_up)
-    // {
-    //     LedGOn();
-    // }
-    // LedGOn();
-}
-
-uint32_t bsrr_pattern[] = {
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin)),       // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin << 16)), // Reset PA5 LOW (bit 5+16 = bit 21)
-    ((UI_LED_R_Pin << 16)), // Reset PA5 LOW (bit 5+16 = bit 21)
-};
-
-uint32_t transfer_out[4] = {0};
 
 int app_main()
 {
@@ -184,7 +149,6 @@ int app_main()
     // CountNumAudioInterrupts(audio_chip, sleeping);
 
     InitScreen(screen);
-    Leds(HIGH, HIGH, HIGH);
     net_serial.StartReceive();
     mgmt_serial.StartReceive();
 
@@ -198,7 +162,6 @@ int app_main()
     LED green(UI_LED_G_GPIO_Port, UI_LED_G_Pin, LED_Polarity::Low);
     LED blue(UI_LED_B_GPIO_Port, UI_LED_B_Pin, LED_Polarity::Low);
     RGBLED rgb(red, green, blue, htim1, hdma_tim1_up);
-    rgb.Breathe(RGBLED::Colour::Blue);
 
     UI_LOG_INFO("Started");
     while (1)
@@ -233,7 +196,7 @@ int app_main()
         RaiseFlag(Rx_Audio_Transmitted);
 
         HandleNetLinkPackets(net_serial, protector, audio_chip, screen);
-        HandleMgmtLinkPackets(mgmt_serial, config_storage);
+        HandleMgmtLinkPackets(mgmt_serial, config_storage, rgb);
 
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
@@ -289,7 +252,7 @@ inline void AudioCallback()
     CheckFlags();
     WakeUp();
 
-    HAL_GPIO_WritePin(UI_READY_GPIO_Port, UI_READY_Pin, HIGH);
+    HAL_GPIO_WritePin(UI_READY_GPIO_Port, UI_READY_Pin, GPIO_PIN_SET);
     HAL_TIM_Base_Start_IT(&htim3);
 
     RaiseFlag(Audio_Interrupt);
@@ -304,7 +267,6 @@ void CheckPTT(Protector& protector)
     {
         HAL_TIM_Base_Stop(&htim4);
         ptt_state = Ptt_Btn_State::Pressed;
-        LedGOn();
     }
     else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET
              && HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_SET
@@ -336,7 +298,6 @@ void CheckPTTAI(Protector& protector)
     {
         HAL_TIM_Base_Stop(&htim5);
         ptt_ai_state = Ptt_Btn_State::Pressed;
-        LedBOn();
     }
     else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET
              && ptt_ai_state == Ptt_Btn_State::Pressed)
@@ -457,13 +418,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
         // Turn off ptt
         HAL_TIM_Base_Stop(&htim4);
         ptt_state = Ptt_Btn_State::Last_Send;
-        LedGOff();
     }
     else if (htim->Instance == TIM5)
     {
         HAL_TIM_Base_Stop(&htim5);
         ptt_ai_state = Ptt_Btn_State::Last_Send;
-        LedBOff();
     }
 }
 
@@ -491,8 +450,8 @@ inline void Error(const char* who, const char* why)
     audio_chip.StopI2S();
     net_serial.Stop();
 
-    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, HIGH);
-    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, HIGH);
+    HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_SET);
     while (1)
     {
         HAL_GPIO_TogglePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin);

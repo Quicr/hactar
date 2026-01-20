@@ -38,6 +38,11 @@ public:
         Fast
     };
 
+    void SimpleOn(const Colour colour);
+    void SimpleOff(const Colour colour);
+    void Yellow();
+    void AllOff();
+
     void On(const Colour colour, uint8_t brightness);
     void Off(const Colour colour);
     void Breathe(const Colour colour);

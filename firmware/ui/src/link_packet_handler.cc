@@ -2,7 +2,7 @@
 #include "audio_chip.hh"
 #include "audio_codec.hh"
 #include "keyboard_display.hh"
-#include "led_control.hh"
+#include "rgb_led.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 
@@ -139,7 +139,7 @@ void HandleNetLinkPackets(Serial& serial, Protector& protector, AudioChip& audio
     }
 }
 
-void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
+void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage, RGBLED& rgb)
 {
     while (true)
     {
@@ -154,7 +154,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         case Configuration::Sensor_Info:
         {
             UI_LOG_INFO("Received a command");
-            SensorConsumer(*packet);
+            SensorConsumer(*packet, rgb);
             break;
         }
         case Configuration::Version:
@@ -240,11 +240,11 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
     }
 }
 
-void SensorConsumer(link_packet_t& packet)
+void SensorConsumer(link_packet_t& packet, RGBLED& rgb)
 {
     if (packet.length == 0)
     {
-        UI_LOG_INFO("Received a snesor info packet with no data");
+        UI_LOG_INFO("Received a sensor info packet with no data");
         return;
     }
 
@@ -254,15 +254,42 @@ void SensorConsumer(link_packet_t& packet)
     {
     case SensorInfo::Battery_Level:
     {
+        if (packet.length < 2)
+        {
+            UI_LOG_INFO("Received battery level packet that is too short");
+            return;
+        }
+
+        uint8_t level = packet.payload[1];
+
+        if (level <= 10)
+        {
+            rgb.Flash(RGBLED::Colour::Red, RGBLED::Period::Medium);
+        }
+        else if (level > 10 && level <= 33)
+        {
+            rgb.SimpleOn(RGBLED::Colour::Red);
+        }
+        else if (level > 33 && level <= 66)
+        {
+            rgb.Yellow();
+        }
+        else if (level > 66)
+        {
+            rgb.SimpleOn(RGBLED::Colour::Blue);
+        }
 
         break;
     }
     case SensorInfo::Charging:
     {
+
         break;
     }
     case SensorInfo::Usb_Detect:
     {
+        // TODO do we want to
+        rgb.Breathe(RGBLED::Colour::Blue);
         break;
     }
     }

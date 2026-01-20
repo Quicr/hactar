@@ -20,6 +20,31 @@ RGBLED::RGBLED(LED red, LED green, LED blue, TIM_HandleTypeDef& htim, DMA_Handle
     rgb = this;
 }
 
+void RGBLED::SimpleOn(const Colour colour)
+{
+    LED& led = SelectLED(colour);
+    led.On();
+}
+
+void RGBLED::SimpleOff(const Colour colour)
+{
+    LED& led = SelectLED(colour);
+    led.Off();
+}
+
+void RGBLED::Yellow()
+{
+    red.On();
+    green.On();
+}
+
+void RGBLED::AllOff()
+{
+    red.Off();
+    green.Off();
+    blue.Off();
+}
+
 void RGBLED::On(const Colour colour, uint8_t brightness)
 {
     CalculateBrightness(colour, brightness);

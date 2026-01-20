@@ -2,9 +2,11 @@
 #include "chip_control.h"
 #include "io_control.h"
 #include "main.h"
+#include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_def.h"
 #include "stm32f0xx_hal_gpio.h"
 #include "uart_router.h"
+#include "ui_mgmt_link.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -55,6 +57,30 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin)
             HAL_GPIO_WritePin(NET_STAT_GPIO_Port, NET_STAT_Pin, GPIO_PIN_RESET);
         }
     }
+    else if (pin == USB_CC1_DETECT_Pin)
+    {
+        const uint8_t detect = HAL_GPIO_ReadPin(USB_CC1_DETECT_GPIO_Port, USB_CC1_DETECT_Pin);
+        send_usb_detect_to_ui(detect);
+    }
+    else if (pin == USB_CC2_DETECT_Pin)
+    {
+        // Write to the ui that the usb was detected
+        const uint8_t detect = HAL_GPIO_ReadPin(USB_CC2_DETECT_GPIO_Port, USB_CC2_DETECT_Pin);
+        send_usb_detect_to_ui(detect);
+    }
+}
+
+void send_usb_detect_to_ui(const uint8_t detect)
+{
+    uart_stream_t* usb_stream = uart_router_get_usb_stream();
+    // Write to the ui that the usb was detected
+    uart_router_copy_byte_to_tx(&usb_stream->tx, Sensor_Info);
+    uart_router_copy_byte_to_tx(&usb_stream->tx, 2);
+    uart_router_copy_byte_to_tx(&usb_stream->tx, 0);
+    uart_router_copy_byte_to_tx(&usb_stream->tx, 0);
+    uart_router_copy_byte_to_tx(&usb_stream->tx, 0);
+    uart_router_copy_byte_to_tx(&usb_stream->tx, Usb_Detect);
+    uart_router_copy_byte_to_tx(&usb_stream->tx, detect);
 }
 
 int app_main(void)
@@ -65,6 +91,8 @@ int app_main(void)
     uart_stream_t* usb_stream = uart_router_get_usb_stream();
     uart_stream_t* net_stream = uart_router_get_net_stream();
     uart_stream_t* ui_stream = uart_router_get_ui_stream();
+
+    uint32_t test = 0;
 
     while (1)
     {
@@ -86,6 +114,12 @@ int app_main(void)
         state = next_state;
         while (state == Running)
         {
+            if (HAL_GetTick() - test > 1000)
+            {
+                send_usb_detect_to_ui(1);
+                test = HAL_GetTick();
+            }
+
             if (!uploader)
             {
                 uart_router_parse_internal(command_map);
