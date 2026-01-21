@@ -79,6 +79,8 @@ void Error_Handler(void);
 #define LEDA_B_GPIO_Port GPIOA
 #define LEDB_R_Pin GPIO_PIN_0
 #define LEDB_R_GPIO_Port GPIOB
+#define BATTERY_MON_Pin GPIO_PIN_1
+#define BATTERY_MON_GPIO_Port GPIOB
 #define USB_DTR_MGMT_Pin GPIO_PIN_2
 #define USB_DTR_MGMT_GPIO_Port GPIOB
 #define NET_RX1_MGMT_Pin GPIO_PIN_10

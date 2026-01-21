@@ -611,6 +611,10 @@ extern "C" void app_main(void)
 
     NET_LOG_INFO("Starting Net Main");
 
+    gpio_set_level(NET_LED_R, 0);
+    gpio_set_level(NET_LED_G, 1);
+    gpio_set_level(NET_LED_B, 1);
+
     wifi.Begin();
 
     wifi.Connect("quicr.io", "noPassword");
@@ -699,9 +703,6 @@ extern "C" void app_main(void)
         CreateWriteTrack(publications[i]);
     }
 
-    int next = 0;
-    int64_t heartbeat = 0;
-    bool ready_to_connect_moq = false;
     moq::Session::Status prev_status = moq::Session::Status::kReady;
     Wifi::State prev_wifi_state = Wifi::State::Connected;
     while (true)
@@ -714,7 +715,6 @@ extern "C" void app_main(void)
         if (prev_wifi_state != wifi_state)
         {
             prev_wifi_state = wifi_state;
-            gpio_set_level(NET_LED_G, 1);
 
             link_packet_t packet;
             packet.type = (uint8_t)ui_net_link::Packet_Type::WifiStatus;
@@ -729,6 +729,9 @@ extern "C" void app_main(void)
                     || status == moq::Session::Status::kPendingServerSetup
                     || status == moq::Session::Status::kReady)
                 {
+                    gpio_set_level(NET_LED_R, 0);
+                    gpio_set_level(NET_LED_G, 1);
+                    gpio_set_level(NET_LED_B, 1);
                     RestartMoqSession(moq_session, config, readers, writers);
                 }
                 break;
@@ -739,7 +742,9 @@ extern "C" void app_main(void)
             }
             case Wifi::State::Connected:
             {
+                gpio_set_level(NET_LED_R, 0);
                 gpio_set_level(NET_LED_G, 0);
+                gpio_set_level(NET_LED_B, 1);
                 break;
             }
             default:
@@ -776,6 +781,8 @@ extern "C" void app_main(void)
 
                 // TODO
                 // Tell ui chip we are ready
+                gpio_set_level(NET_LED_R, 1);
+                gpio_set_level(NET_LED_G, 1);
                 gpio_set_level(NET_LED_B, 0);
                 break;
             }
