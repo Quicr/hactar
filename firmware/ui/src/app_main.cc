@@ -2,6 +2,7 @@
 #include "audio_chip.hh"
 #include "audio_codec.hh"
 #include "config_storage.hh"
+#include "constants.hh"
 #include "keyboard.hh"
 #include "keyboard_display.hh"
 #include "led_control.hh"
@@ -196,7 +197,7 @@ int app_main()
 
     UI_LOG_INFO("Starting main loop");
 
-    audio_chip.SetLeftMixerSource(AudioChip::OutputMixerSource::Boost_Mixer);
+    audio_chip.SetLeftMixerSource(AudioChip::OutputMixerSource::DAC_Mixer);
 
     while (1)
     {
@@ -219,7 +220,7 @@ int app_main()
             // Error("Main loop", "Flags did not match expected");
         }
 
-        const bool compress = false;
+        const bool compress = true;
         Loopback(compress);
         CheckPTT();
         CheckPTTAI();
@@ -548,8 +549,8 @@ void SendAudio(const ui_net_link::Channel_Id channel_id,
                const ui_net_link::Packet_Type packet_type,
                bool last)
 {
-    AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, talk_frame.data,
-                            constants::Audio_Phonic_Sz, true, constants::Stereo);
+    // AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, talk_frame.data,
+    //                         constants::Audio_Phonic_Sz, true, constants::Stereo);
 
     talk_frame.channel_id = channel_id;
     ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
@@ -567,11 +568,25 @@ void SendAudio(const ui_net_link::Channel_Id channel_id,
 
 void Loopback(const bool compress)
 {
+    static stats_t stats = {0x7FFF, 0, 0, 0, 0};
     if (compress)
     {
         ui_net_link::AudioObject frame;
+
+        if (stats.data_points >= 16'000)
+        {
+            UI_LOG_INFO("min %d, max %d, mean %lf, stdev %lf", stats.min, stats.max, stats.mean,
+                        stats.stdev);
+
+            stats.min = 0x7FFF;
+            stats.max = 0;
+            stats.mean = 0;
+            stats.stdev = 0;
+            stats.data_points = 0;
+        }
+
         AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, frame.data,
-                                constants::Audio_Phonic_Sz, true, constants::Stereo);
+                                constants::Audio_Phonic_Sz, true, constants::Stereo, stats);
         AudioCodec::ALawExpand(frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
                                constants::Audio_Buffer_Sz, constants::Stereo, true);
     }
@@ -588,9 +603,9 @@ void Loopback(const bool compress)
 
 void HandleMedia(link_packet_t* packet)
 {
-    ui_net_link::Deserialize(*packet, play_frame);
-    AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
-                           constants::Audio_Buffer_Sz, constants::Stereo, true);
+    // ui_net_link::Deserialize(*packet, play_frame);
+    // AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
+    //                        constants::Audio_Buffer_Sz, constants::Stereo, true);
 }
 
 void HandleAiResponse(link_packet_t* packet)

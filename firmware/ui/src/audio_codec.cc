@@ -1,13 +1,37 @@
 #include "audio_codec.hh"
+#include "logger.hh"
 #include <math.h>
+
+void compute_stats(stats_t& stats, const int16_t sample)
+{
+    double m1 = 0;
+    double m2 = 0;
+    double dsample = sample;
+    if (sample > stats.max)
+    {
+        stats.max = sample;
+    }
+    if (sample < stats.min)
+    {
+        stats.min = sample;
+    }
+
+    m1 += dsample / stats.data_points;
+    m2 += (dsample * dsample) / stats.data_points;
+    stats.mean = m1;
+    stats.stdev = sqrt(m2 - (m1 * m1));
+}
 
 void AudioCodec::ALawCompand(const uint16_t* input,
                              const size_t input_len,
                              uint8_t* output,
                              const size_t output_len,
                              const bool input_stereo,
-                             const bool output_stereo)
+                             const bool output_stereo,
+                             stats_t& stats)
 {
+    stats.data_points += input_len;
+
     if ((input_stereo && output_stereo) || (!input_stereo && !output_stereo))
     {
         const size_t min_len = input_len < output_len ? input_len : output_len;
@@ -23,6 +47,8 @@ void AudioCodec::ALawCompand(const uint16_t* input,
         size_t j = 0;
         while (i < input_len && j < output_len)
         {
+            compute_stats(stats, input[i]);
+
             companded = ALawCompand(input[i] + input[i + 1]);
             output[j] = companded;
 

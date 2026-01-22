@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app_main.hh"
 #include <cstdint>
 #include <iostream>
 #include <map>
@@ -15,7 +16,8 @@ public:
                             uint8_t* output,
                             const size_t output_len,
                             const bool input_stereo,
-                            const bool output_stereo);
+                            const bool output_stereo,
+                            stats_t& stats);
 
     static void ALawExpand(const uint8_t* input,
                            const size_t input_len,

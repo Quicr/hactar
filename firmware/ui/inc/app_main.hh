@@ -18,6 +18,15 @@ enum Timer_Flags
 };
 
 int app_main();
+// TODO remove
+struct stats_t
+{
+    int16_t min;
+    int16_t max;
+    double mean;
+    double stdev;
+    uint16_t data_points;
+};
 
 inline void LEDR(GPIO_PinState r);
 inline void LEDG(GPIO_PinState g);
