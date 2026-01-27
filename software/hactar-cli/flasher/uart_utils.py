@@ -1,7 +1,7 @@
-import serial
 import time
 
-from ansi_colours import BG, NW, BR, BB
+import serial
+from ansi_colours import BB, BG, BR, NW
 
 ACK = 0x79
 OK = 0x80

@@ -1,9 +1,19 @@
-from hactar_commands import command_map, hactar_send_command
-from ansi_codes import *
+import glob
+import sys
+import time
+
 import serial
 import serial.tools.list_ports
-import sys
-import glob
+from ansi_codes import *
+from hactar_commands import command_map, hactar_send_command
+
+
+def ResetDevice(uart: serial.Serial, usermode=True):
+    print(f"Resetting {uart.port}")
+    uart.rts = not usermode
+    uart.dtr = True
+    uart.dtr = False
+    time.sleep(0.1)
 
 
 def HactarScanning(uart_config):
@@ -28,6 +38,8 @@ def HactarScanning(uart_config):
         try:
             uart = serial.Serial(**uart_config, port=port)
             uart.timeout = 0.1
+
+            ResetDevice(uart, True)
 
             # Silence the chattering chips (I'M LOOKING AT YOU ESP32!)
             # Also read and ignore the ok
@@ -91,7 +103,7 @@ def SilentLogs(uart):
 
     # Scan bytes until we get no reply meaning the disable logs completed
     while True:
-        byte = s.read(1)
+        byte = uart.read(1)
 
         if byte == bytes(0):
             break

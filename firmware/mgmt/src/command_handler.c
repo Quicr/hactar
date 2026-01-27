@@ -41,6 +41,16 @@ void command_reset_net(void* arg)
     chip_control_net_normal_mode();
 }
 
+void command_stop_ui(void* arg)
+{
+    chip_control_ui_hold_in_reset();
+}
+
+void command_stop_net(void* arg)
+{
+    chip_control_net_hold_in_reset();
+}
+
 void command_flash_ui(void* arg)
 {
     chip_control_net_hold_in_reset();

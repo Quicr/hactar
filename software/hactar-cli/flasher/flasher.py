@@ -1,19 +1,17 @@
 import argparse
-import sys
-import os
 import glob
+import os
+import sys
 import time
-from ansi_colours import BB, BG, BR, BW, BY, NW
 
-import uart_utils
-import stm32_uploader
 import esp32s3_uploader
-
 import serial
 import serial.tools.list_ports
-from hactar_scanning import HactarScanning
+import stm32_uploader
+import uart_utils
+from ansi_colours import BB, BG, BR, BW, BY, NW
 from hactar_commands import command_map, hactar_send_command
-
+from hactar_scanning import HactarScanning, ResetDevice
 
 # TODO only allow .bin files
 
@@ -54,12 +52,15 @@ def main(args):
                 i += 1
                 try:
                     uart = serial.Serial(port=port, **uart_config)
+                    ResetDevice(uart, True)
 
                     print(f"Opened port: {BB}{port}{NW} " f"baudrate: {BG}{115200}{NW}")
 
                     ack = hactar_send_command(uart, command_map["disable logs"], 1)
                     if not ack:
-                        print(f"{BY}[WARN]{BW} didn't get a reply on disable logs, but will try anyways")
+                        print(
+                            f"{BY}[WARN]{BW} didn't get a reply on disable logs, but will try anyways"
+                        )
 
                     if args.use_external_flasher:
                         uploader.FlashSelect(uart)
@@ -108,7 +109,9 @@ def RecoverableEraseMemory(flasher, sectors, chip, recover):
     finished_erasing = False
     while not finished_erasing:
         try:
-            finished_erasing = flasher.SendExtendedEraseMemory(sectors, False, True, True)
+            finished_erasing = flasher.SendExtendedEraseMemory(
+                sectors, False, True, True
+            )
         except Exception as ex:
             if not recover:
                 raise ex
@@ -123,7 +126,9 @@ def RecoverableFlashMemory(flasher, firmware, chip, recover):
     while not finished_writing:
         try:
             # TODO add a function for getting the start of the address?
-            finished_writing = flasher.SendWriteMemory(firmware, flasher.chip_config["usr_start_addr"], recover)
+            finished_writing = flasher.SendWriteMemory(
+                firmware, flasher.chip_config["usr_start_addr"], recover
+            )
         except Exception as ex:
             if not recover:
                 raise ex

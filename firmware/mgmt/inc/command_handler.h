@@ -12,6 +12,8 @@ typedef enum
     Cmd_Reset,
     Cmd_Reset_Ui,
     Cmd_Reset_Net,
+    Cmd_Stop_Ui,
+    Cmd_Stop_Net,
     Cmd_Flash_Ui,
     Cmd_Flash_Net,
     Cmd_Enable_Logs,
@@ -43,6 +45,9 @@ void command_hard_reset(void* arg);
 void command_reset(void* arg);
 void command_reset_ui(void* arg);
 void command_reset_net(void* arg);
+
+void command_stop_ui(void* arg);
+void command_stop_net(void* arg);
 
 void command_flash_ui(void* arg);
 void command_flash_net(void* arg);

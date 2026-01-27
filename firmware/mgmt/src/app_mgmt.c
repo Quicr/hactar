@@ -28,6 +28,8 @@ const command_map_t command_map[Cmd_Count] = {
     {Cmd_Reset, command_reset, NULL},
     {Cmd_Reset_Ui, command_reset_ui, NULL},
     {Cmd_Reset_Net, command_reset_net, NULL},
+    {Cmd_Stop_Ui, command_stop_ui, NULL},
+    {Cmd_Stop_Net, command_stop_net, NULL},
     {Cmd_Flash_Ui, command_flash_ui, (void*)&uploader},
     {Cmd_Flash_Net, command_flash_net, (void*)&uploader},
     {Cmd_Enable_Logs, command_enable_logs, NULL},
@@ -122,8 +124,7 @@ void CheckTimeout()
 
 void TurnOffLEDs()
 {
-    LEDA(HIGH, HIGH, HIGH);
-    LEDB(HIGH, HIGH, HIGH);
+    LEDA(LOW, HIGH, HIGH);
 }
 
 /**

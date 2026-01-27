@@ -1,5 +1,6 @@
 import readline
 import sys
+
 import serial
 
 command_map = {
@@ -9,15 +10,17 @@ command_map = {
     "reset": bytes([3] + [0] * 4),
     "reset ui": bytes([4] + [0] * 4),
     "reset net": bytes([5] + [0] * 4),
-    "flash ui": bytes([6] + [0] * 4),
-    "flash net": bytes([7] + [0] * 4),
-    "enable logs": bytes([8] + [0] * 4),
-    "enable ui logs": bytes([9] + [0] * 4),
-    "enable net logs": bytes([10] + [0] * 4),
-    "disable logs": bytes([11] + [0] * 4),
-    "disable ui logs": bytes([12] + [0] * 4),
-    "disable net logs": bytes([13] + [0] * 4),
-    "default logging": bytes([14] + [0] * 4),
+    "stop ui": bytes([6] + [0] * 4),
+    "stop net": bytes([7] + [0] * 4),
+    "flash ui": bytes([8] + [0] * 4),
+    "flash net": bytes([9] + [0] * 4),
+    "enable logs": bytes([10] + [0] * 4),
+    "enable ui logs": bytes([11] + [0] * 4),
+    "enable net logs": bytes([12] + [0] * 4),
+    "disable logs": bytes([13] + [0] * 4),
+    "disable ui logs": bytes([14] + [0] * 4),
+    "disable net logs": bytes([15] + [0] * 4),
+    "default logging": bytes([16] + [0] * 4),
 }
 
 
@@ -97,7 +100,11 @@ def hactar_command_completer(text, state):
 
     if len(tokens) == 0 or (len(tokens) == 1 and not buffer.endswith(" ")):
         # complete from command_map and bypass_map keys
-        options = [cmd for cmd in list(command_map.keys()) + list(bypass_map.keys()) if cmd.startswith(text)]
+        options = [
+            cmd
+            for cmd in list(command_map.keys()) + list(bypass_map.keys())
+            if cmd.startswith(text)
+        ]
     elif tokens[0] == "ui":
         options = [cmd for cmd in ui_command_map if cmd.startswith(text)]
     elif tokens[0] == "net":

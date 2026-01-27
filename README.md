@@ -116,20 +116,13 @@ On the first flash you'll need to figure out what device port your hactar is on.
 
     `In WSL check dmesg to find which serial port your device binded to`
 
-To flash the management chip you'll need to press the boot and reset buttons on the board in the following manner:
-
-<i id="button_press_order">Button press order</i>
-- Press and hold boot button (left).
-- Press and release reset button (right).
-- Release boot button.
-
 <i>First flash</i>
 
-- In hactar/firmware/mgmt, enter make upload PORT=\<path/to/device\>
+- In hactar/firmware/mgmt, enter make upload port=\<path/to/device\>
 
 ##### <h5>After flashing:</h5>
 
-After flashing the management chip you can run `make upload` without specifying the port, and it will be automatically found by the flasher and an attempt to upload will occur, when you see the attempt return to [Button press order](#button_press_order)
+After flashing the management chip you can run `make upload` without specifying the port, and it will be automatically found by the flasher and an attempt to upload will occur.
 
 #### <h4 id="management_commands">Commands</h4>
 

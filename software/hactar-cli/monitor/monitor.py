@@ -1,10 +1,10 @@
-import sys
+import numbers
 import os
+import shlex
+import signal
+import sys
 import threading
 import time
-import signal
-import numbers
-import shlex
 
 # No support on windows
 try:
@@ -13,20 +13,21 @@ except Exception:
     readline = None
 
 import serial
-from hactar_scanning import HactarScanning, SelectHactarPort
 from hactar_commands import (
-    command_map,
     bypass_map,
-    ui_command_map,
-    net_command_map,
+    command_map,
     hactar_command_completer,
     hactar_command_print_matches,
+    net_command_map,
+    ui_command_map,
 )
+from hactar_scanning import HactarScanning, ResetDevice, SelectHactarPort
 
 
 class Monitor:
     def __init__(self, port, uart_args, threaded_reading=True):
         self.uart = serial.Serial(port, **uart_args)
+        ResetDevice(self.uart, True)
         print(f"\033[92mOpened port: {port}, baudrate={uart_args['baudrate']}\033[0m")
 
         self.running = True
