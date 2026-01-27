@@ -1,19 +1,21 @@
-import serial
-import time
 import functools
+import json
 import os
 import sys
-import json
+import time
 from types import SimpleNamespace
+
+import serial
 import uart_utils
-from ansi_colours import BW, BC, BG, BR, BB, BY, BM, NW, NY
-
-# https://www.st.com/resource/en/application_note/an3155-usart-protocol-used-in-the-stm32-bootloader-stmicroelectronics.pdf
-
+from ansi_colours import BB, BC, BG, BM, BR, BW, BY, NW, NY
+from hactar_commands import command_map
+from hactar_scanning import ResetDevice
 # TODO Put the sector verify code somewhere
 # TODO clean up full verify and write flash
 from uploader import Uploader
-from hactar_commands import command_map
+
+# https://www.st.com/resource/en/application_note/an3155-usart-protocol-used-in-the-stm32-bootloader-stmicroelectronics.pdf
+
 
 # TODO fundamental issue with checking if we are synced.
 # If we fail, we need to invalid the sync and do it again.
@@ -52,10 +54,14 @@ class STM32Uploader(Uploader):
 
         self.binary_path = binary_path
 
-        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stm32_configurations.json")
+        config_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "stm32_configurations.json"
+        )
 
         if not os.path.isfile(config_path):
-            raise Exception(f"Failed to find configuration ${config_path} in program directory")
+            raise Exception(
+                f"Failed to find configuration ${config_path} in program directory"
+            )
 
         self.configs_file = json.load(open(f"{config_path}"))
 
@@ -102,8 +108,9 @@ class STM32Uploader(Uploader):
         if self.chip == "mgmt":
             uart.parity = serial.PARITY_EVEN
             print(f"Updated uart to parity: {BB}EVEN{NW}")
-            print(f"User, put Hactar into bootloader mode!!")
-            input("Press enter once it is done...")
+
+            ResetDevice(uart, False)
+
             uart.reset_input_buffer()
         elif self.chip == "ui":
             uart.write(command_map["flash ui"])
@@ -289,7 +296,9 @@ class STM32Uploader(Uploader):
                 if val == cmd:
                     available_commands.append(key)
 
-        self.HandleReply(reply, "Get Commands Receive", "Failed to get available commands", False)
+        self.HandleReply(
+            reply, "Get Commands Receive", "Failed to get available commands", False
+        )
 
         print(f"Bootloader version: {BM}{bootloader_verison}{NW}")
 
@@ -302,7 +311,9 @@ class STM32Uploader(Uploader):
 
         return available_commands
 
-    def SendReadMemory(self, uart: serial.Serial, address: bytes, num_bytes: int, retry_num: int = 5):
+    def SendReadMemory(
+        self, uart: serial.Serial, address: bytes, num_bytes: int, retry_num: int = 5
+    ):
         """Sends the Read Memory command and it's compliment.
         Command = 0x11
         Compliment = 0xEE = 0x11 ^ 0xFF
@@ -312,9 +323,13 @@ class STM32Uploader(Uploader):
         """
         self.CheckInit(uart)
 
-        reply = uart_utils.WriteByteWaitForACK(uart, self.Commands.read_memory, retry_num)
+        reply = uart_utils.WriteByteWaitForACK(
+            uart, self.Commands.read_memory, retry_num
+        )
 
-        self.HandleReply(reply, "Read memory command", "Failed to read memory command", False)
+        self.HandleReply(
+            reply, "Read memory command", "Failed to read memory command", False
+        )
 
         memory_addr = address + self.CalculateChecksum(address)
 
@@ -341,7 +356,13 @@ class STM32Uploader(Uploader):
 
         return recv_data
 
-    def SendExtendedEraseMemory(self, uart: serial.Serial, sectors_to_delete: [int], special: bool, fast_verify: bool):
+    def SendExtendedEraseMemory(
+        self,
+        uart: serial.Serial,
+        sectors_to_delete: [int],
+        special: bool,
+        fast_verify: bool,
+    ):
         """Sends the Erase memory command and it's compliment.
         Command = 0x44
         Compliment = 0xBB = 0x44 ^ 0xFF
@@ -364,7 +385,9 @@ class STM32Uploader(Uploader):
         while self.sectors_deleted != sectors_to_delete:
             sector = sectors_to_delete[self.sector_idx]
 
-            reply = uart_utils.WriteByteWaitForACK(uart, self.Commands.extended_erase, 1)
+            reply = uart_utils.WriteByteWaitForACK(
+                uart, self.Commands.extended_erase, 1
+            )
 
             self.HandleReply(reply, "\nExtended Erase", "Extended erase failed")
 
@@ -413,12 +436,16 @@ class STM32Uploader(Uploader):
             data = bytes([255] * total_bytes)
             for verify_status in self.FullVerify(uart, data):
                 print(
-                    f"Verifying erase: {BG}{verify_status['percent']:.2f}" f"{NW}% verified",
+                    f"Verifying erase: {BG}{verify_status['percent']:.2f}"
+                    f"{NW}% verified",
                     end="\r",
                 )
 
                 if verify_status["failed"]:
-                    print(f"\nVerifying Erase: {BR}Failed to verify address " f"{hex(verify_status['addr'])}{NW}")
+                    print(
+                        f"\nVerifying Erase: {BR}Failed to verify address "
+                        f"{hex(verify_status['addr'])}{NW}"
+                    )
                     return False
 
             print(f"Verifying erase: {BG}100{NW}% verified")
@@ -464,7 +491,9 @@ class STM32Uploader(Uploader):
         for sector in sectors:
             # Print how much has been verified
             percent_verified = int((num_sectors_verified / num_sectors) * 100)
-            print(f"Verifying erase: {BG}{percent_verified:2}" f"{NW}% verified", end="\r")
+            print(
+                f"Verifying erase: {BG}{percent_verified:2}" f"{NW}% verified", end="\r"
+            )
 
             # Get the next address to verify
             addr = self.chip_config["sectors"][sector]["addr"]
@@ -554,7 +583,9 @@ class STM32Uploader(Uploader):
             print(f"\rFlashing: {BG}{percent_flashed:2.2f}{NW}%", end="")
 
             reply = uart_utils.WriteByteWaitForACK(uart, self.Commands.write_memory, 1)
-            self.HandleReply(reply, "Write Command", "Failed to send Write command", False)
+            self.HandleReply(
+                reply, "Write Command", "Failed to send Write command", False
+            )
 
             # Send the address and the checksum
             address = flash_address + flash_addr_offset
@@ -614,7 +645,9 @@ class STM32Uploader(Uploader):
             chunk = data[verify_data_addr : verify_data_addr + Max_Num_Bytes]
             address = self.chip_config["usr_start_addr"] + verify_mem_addr
             if not (self.FlashCompare(uart, chunk, address)):
-                raise Exception(f"\nFailed to verify at memory address {hex(verify_data_addr)}")
+                raise Exception(
+                    f"\nFailed to verify at memory address {hex(verify_data_addr)}"
+                )
 
             self.last_verify_data_addr = verify_data_addr
             self.last_verify_addr = verify_mem_addr
