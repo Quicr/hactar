@@ -13,14 +13,9 @@ except Exception:
     readline = None
 
 import serial
-from hactar_commands import (
-    bypass_map,
-    command_map,
-    hactar_command_completer,
-    hactar_command_print_matches,
-    net_command_map,
-    ui_command_map,
-)
+from hactar_commands import (bypass_map, command_map, hactar_command_completer,
+                             hactar_command_print_matches, net_command_map,
+                             ui_command_map)
 from hactar_scanning import HactarScanning, ResetDevice, SelectHactarPort
 
 
@@ -49,6 +44,10 @@ class Monitor:
         while self.uart.in_waiting:
             char = self.uart.read()
             if char == b"\x82":
+                # print("Got an ack!")
+                return ""
+            if char == b"\x82":
+                # print("Got a nack!")
                 return ""
 
             data += char
@@ -121,11 +120,15 @@ class Monitor:
         command_id = chip_commands[command]["id"]
 
         if len(split) - 2 < num_params:
-            print(f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}")
+            print(
+                f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}"
+            )
             return
 
         if len(split) - 2 > num_params:
-            print(f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}")
+            print(
+                f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}"
+            )
             return
 
         Header_Bytes = 5  # 1 type, 4 length

@@ -4,12 +4,14 @@
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "driver/uart.h"
+#include "efuse_burner.hh"
 #include "esp_event.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_pthread.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/projdefs.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "logger.hh"
@@ -455,6 +457,19 @@ static void MgmtLinkPacketTask(void* args)
                 mgmt_layer.ReplyAck();
                 break;
             }
+            case Configuration::Burn_Disable_USB_JTag_Efuse:
+            {
+                const bool res = BurnDisableUSBJTagEFuse();
+                if (res)
+                {
+                    mgmt_layer.ReplyAck();
+                }
+                else
+                {
+                    mgmt_layer.ReplyNack();
+                }
+                break;
+            }
             default:
             {
                 NET_LOG_ERROR("Unknown packet type from mgmt");
@@ -604,12 +619,12 @@ extern "C" void app_main(void)
     IntitializeLEDs();
     InitializeUIReadyISR(GpioIsrRisingHandler);
 
+    NET_LOG_INFO("Starting Net Main");
+
     CreateMgmtLinkPacketTask();
     mgmt_layer.BeginEventTask();
 
     CreateUILinkPacketTask();
-
-    NET_LOG_INFO("Starting Net Main");
 
     wifi.Begin();
 
