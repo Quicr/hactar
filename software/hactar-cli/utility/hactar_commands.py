@@ -25,9 +25,9 @@ command_map = {
 
 
 bypass_map = {
-    "ui": 15,
-    "net": 16,
-    "loopback": 17,
+    "ui": 17,
+    "net": 18,
+    "loopback": 19,
 }
 
 ui_command_map = {
