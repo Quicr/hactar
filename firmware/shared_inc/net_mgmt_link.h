@@ -16,4 +16,5 @@ enum Configuration
     Disable_Loopback,
     Enable_Loopback,
     Set_Frontline_Config,
+    Burn_Disable_USB_JTag_Efuse,
 };
