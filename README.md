@@ -118,7 +118,11 @@ On the first flash you'll need to figure out what device port your hactar is on.
 
 <i>First flash</i>
 
-- In hactar/firmware/mgmt, enter make upload port=\<path/to/device\>
+- In hactar/firmware/mgmt, enter:
+
+```bash 
+make upload port=<path/to/device>
+```
 
 ##### <h5>After flashing:</h5>
 
