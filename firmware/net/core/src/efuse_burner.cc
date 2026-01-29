@@ -6,14 +6,12 @@
 
 bool BurnDisableUSBJTagEFuse()
 {
-    const bool is_set = esp_efuse_read_field_bit(ESP_EFUSE_DIS_USB_JTAG);
-
-    if (is_set)
+    if (esp_efuse_read_field_bit(ESP_EFUSE_DIS_USB_JTAG))
     {
         NET_LOG_INFO("Efuse for DIS_USB_JTAG is already burned");
         return true;
     }
-    // TODO check efuse and skip if done
+
     NET_LOG_INFO("Starting efuse burning process to disable usb jtag debugger");
 
     esp_err_t err = esp_efuse_batch_write_begin();
