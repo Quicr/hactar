@@ -46,7 +46,7 @@ class Monitor:
             if char == b"\x82":
                 # print("Got an ack!")
                 return ""
-            if char == b"\x82":
+            if char == b"\x83":
                 # print("Got a nack!")
                 return ""
 
