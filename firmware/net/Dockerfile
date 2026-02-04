@@ -7,4 +7,4 @@ WORKDIR /project/net
 
 ENV target=compile
 
-CMD ["sh", "-c", "make -j $target"]
+CMD ["sh", "-c", "make -j $target WHO=docker"]

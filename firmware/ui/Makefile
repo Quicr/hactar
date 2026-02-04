@@ -44,6 +44,8 @@ CUBE_PROGRAMMER_ARGS = -c port=${port} br=${BAUD} P=even db=8 -w ${BUILD_DIR}/${
 
 DOCKER_IMAGE = build-hactar-ui
 mft=compile
+CHECK_FILE 			= $(BUILD_DIR)/$(TARGET)_who.txt
+WHO 				= local
 
 OCD_DIR    = /usr/share/openocd/scripts
 OCDFLAGS   = -f interface/stlink.cfg -f target/stm32f4x.cfg
@@ -53,7 +55,7 @@ OCDFLAGS   = -f interface/stlink.cfg -f target/stm32f4x.cfg
 # default action: build all
 all: info compile
 
-compile: CMakeLists.txt
+compile: check_who_compiled CMakeLists.txt
 	cmake -B $(BUILD_DIR)
 	cmake --build $(BUILD_DIR) -j
 
@@ -79,10 +81,26 @@ docker:
 		echo "Docker image already built - skipping"
 	fi
 
-	@docker run --rm -e target=${mft} --privileged \
-		-v ${PWD}/..:/src \
+	@docker run --user $(shell id -u):$(shell id -g) --rm -e target=${mft} --privileged \
+		-v ${PWD}/..:/project \
 		-v /dev:/dev \
 		-it ${DOCKER_IMAGE}
+
+check_who_compiled:
+	@if [ -f "${CHECK_FILE}" ]; then \
+		who=$$(head  -n 1 ${CHECK_FILE});  \
+		if [ "$$who" != ${WHO} ]; then  \
+			rm -rf ${BUILD_DIR}; \
+			mkdir -p ${BUILD_DIR};   \
+			touch ${CHECK_FILE};   \
+			echo  ${WHO} > ${CHECK_FILE};   \
+		fi    \
+	else    \
+		rm -rf ${BUILD_DIR}; \
+		mkdir -p ${BUILD_DIR};   \
+		touch ${CHECK_FILE};   \
+		echo  ${WHO} > ${CHECK_FILE};   \
+	fi
 
 dirs: ${BUILD_DIR}
 ${BUILD_DIR}:
