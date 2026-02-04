@@ -4,7 +4,7 @@ FROM ubuntu:22.04
 LABEL description="Docker image for ui"
 
 RUN apt-get update
-RUN apt-get install -y build-essential git gcc-arm-none-eabi binutils-arm-none-eabi \
+RUN apt-get install -y cmake build-essential git gcc-arm-none-eabi binutils-arm-none-eabi \
     libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib stlink-tools python3 pip
 
 RUN pip install pyserial
@@ -14,8 +14,8 @@ RUN addgroup --gid 1000 compile_user && \
 
 USER compile_user
 
-WORKDIR /src/ui
+WORKDIR /project/ui
 
 ENV target=compile
 
-CMD ["sh", "-c", "make -j $target"]
+CMD ["sh", "-c", "make -j $target WHO=docker"]

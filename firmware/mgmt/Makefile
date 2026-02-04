@@ -44,6 +44,8 @@ CUBE_PROGRAMMER_USART_ARGS = -c port=${port} br=${BAUD} P=even db=8 -w ${BUILD_D
 
 DOCKER_IMAGE = build-hactar-mgmt
 mft=compile
+CHECK_FILE 			= $(BUILD_DIR)/$(TARGET)_who.txt
+WHO 				= local
 
 ifeq (${PROGRAMMER}, CUBE)
 	ifeq (${OS}, WINDOWS_NT)
@@ -245,7 +247,7 @@ docker:
 		echo "Docker image already built - skipping"
 	fi
 
-	@docker run --rm -e target=${mft} --privileged \
+	@docker run --user $(shell id -u):$(shell id -g) --rm -e target=${mft} --privileged \
 		-v ${PWD}/..:/project \
 		-v /dev:/dev \
 		-it ${DOCKER_IMAGE}

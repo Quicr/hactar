@@ -13,6 +13,9 @@ PROG_ADDR			= 0x10000
 DOCKER_IMAGE 		= build-hactar-net
 mft					= compile
 
+CHECK_FILE 			= $(BUILD_PATH)/$(TARGET)_who.txt
+WHO 				= local
+
 ESP_TOOL_ARGS 		= --trace --no-stub --port=${port} --baud=${BAUD} write_flash --no-compress \
 	${BOOTLOADER_ADDR} ${BUILD_PATH}/bootloader/bootloader.bin \
 	${PARITIONS_ADDR} ${BUILD_PATH}/partition_table/partition-table.bin \
@@ -20,7 +23,7 @@ ESP_TOOL_ARGS 		= --trace --no-stub --port=${port} --baud=${BAUD} write_flash --
 
 all: compile
 
-compile:
+compile: check_who_compiled
 	idf.py -B $(BUILD_PATH) build -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 upload: compile
@@ -35,14 +38,14 @@ upload_esptool:
 	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="net" --use_external_flasher=true
 	esptool.py ${ESP_TOOL_ARGS}
 
-docker: docker-build
+docker:
 	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
 		docker build -t ${DOCKER_IMAGE} .; \
 	else
 		echo "Docker image already built - skipping"
 	fi
 
-	@docker run --rm -e target=${mft} --privileged \
+	@docker run --user $(shell id -u):$(shell id -g) --rm -e target=${mft} --privileged \
 		-v ${PWD}/..:/project \
 		-v /dev:/dev \
 		-it ${DOCKER_IMAGE}
@@ -65,6 +68,22 @@ format:
 	find components -path components/quicr -prune -or -path components/nlohmann_json -prune -or -iname "*.h*" -print | xargs clang-format -i
 	find ../shared -iname "*.c" -or -iname "*.cc" | xargs clang-format -i
 	find ../shared_inc -iname "*.h" -or -iname "*.hh" | xargs clang-format -i
+
+check_who_compiled:
+	@if [ -f "${CHECK_FILE}" ]; then \
+		who=$$(head  -n 1 ${CHECK_FILE});  \
+		if [ "$$who" != ${WHO} ]; then  \
+			rm -rf ${BUILD_PATH}; \
+			mkdir -p ${BUILD_PATH};   \
+			touch ${CHECK_FILE};   \
+			echo  ${WHO} > ${CHECK_FILE};   \
+		fi    \
+	else    \
+		rm -rf ${BUILD_PATH}; \
+		mkdir -p ${BUILD_PATH};   \
+		touch ${CHECK_FILE};   \
+		echo  ${WHO} > ${CHECK_FILE};   \
+	fi
 
 clean:
 	rm -rf ${BUILD_PATH}
