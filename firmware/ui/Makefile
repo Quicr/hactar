@@ -79,10 +79,17 @@ docker:
 		docker build -t ${DOCKER_IMAGE} .; \
 	fi
 
-	@docker run --user $(shell id -u):$(shell id -g) --rm -e target=${mft} --privileged \
-		-v ${PWD}/..:/project \
-		-v /dev:/dev \
-		-it ${DOCKER_IMAGE}
+	@if [ "$(shell uname -s)" = "Darwin" ]; then \
+		docker run --rm -e target=${mft} --privileged \
+			-v ${PWD}/..:/project \
+			-v /dev:/dev \
+			-it ${DOCKER_IMAGE}; \
+	else \
+		docker run --user $(shell id -u):$(shell id -g) --rm -e target=${mft} --privileged \
+			-v ${PWD}/..:/project \
+			-v /dev:/dev \
+			-it ${DOCKER_IMAGE}; \
+	fi
 
 check_who_compiled:
 	@if [ -f "${CHECK_FILE}" ]; then \

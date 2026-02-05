@@ -43,10 +43,17 @@ docker:
 		docker build -t ${DOCKER_IMAGE} .; \
 	fi
 
-	@docker run --user $(shell id -u):$(shell id -g) --rm -e target=${mft} --privileged \
-		-v ${PWD}/..:/project \
-		-v /dev:/dev \
-		-it ${DOCKER_IMAGE}
+	@if [ "$(shell uname -s)" = "Darwin" ]; then \
+		docker run --rm -e target=${mft} --privileged \
+			-v ${PWD}/..:/project \
+			-v /dev:/dev \
+			-it ${DOCKER_IMAGE}; \
+	else \
+		docker run --user $(shell id -u):$(shell id -g) --rm -e target=${mft} --privileged \
+			-v ${PWD}/..:/project \
+			-v /dev:/dev \
+			-it ${DOCKER_IMAGE}; \
+	fi
 
 burn_jtag_efuse:
 	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="net" --use_external_flasher=true
