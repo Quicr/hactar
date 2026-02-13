@@ -13,6 +13,7 @@
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
+#include "spi.hh"
 #include "tools.hh"
 #include "ui_net_link.hh"
 #include <cmox_crypto.h>

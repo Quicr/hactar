@@ -10,13 +10,23 @@ template <typename T>
 class RingBuffer
 {
 public:
-    // TODO constructor that takes a bucket space of type T
+    RingBuffer(T* buff, const uint16_t size) :
+        size(size),
+        read_idx(0),
+        write_idx(0),
+        buffer(buff),
+        busy(false),
+        owner(false)
+    {
+    }
+
     RingBuffer(const uint16_t size = DEFAULT_BUFFER_SIZE) :
         size(size),
         read_idx(0),
         write_idx(0),
         buffer(nullptr),
-        busy(false)
+        busy(false),
+        owner(true)
     {
         // Don't allow a zero for buffer size
         if (this->size == 0)
@@ -29,7 +39,10 @@ public:
 
     ~RingBuffer()
     {
-        delete[] buffer;
+        if (owner)
+        {
+            delete[] buffer;
+        }
     }
 
     T& Write() noexcept
@@ -57,29 +70,33 @@ public:
         BusyReset();
     }
 
-    void Write(T* input, const uint16_t count)
+    void Write(const T* input, const uint16_t count)
     {
         BusySet();
 
-        size_t input_off = 0;
+        size_t input_idx = 0;
+        size_t remaining = count;
 
-        // Buffer is nearly full so we need to wrap around to the front
-        if (write_idx + count >= size)
+        while (remaining)
         {
-            const uint16_t write_space = size - write_idx;
-            const uint16_t remaining = write_space < count ? write_space : count;
-
-            while (input_off < remaining)
+            uint16_t to_copy = remaining;
+            if (write_idx + to_copy > size)
             {
-                buffer[write_idx++] = std::move(input[input_off++]);
+                to_copy = size - write_idx;
             }
 
-            write_idx = 0;
-        }
+            for (size_t i = 0; i < to_copy; ++i)
+            {
+                buffer[write_idx++] = std::move(input[input_idx++]);
+            }
 
-        for (uint16_t i = input_off; i < count; ++i)
-        {
-            buffer[write_idx++] = std::move(input[i]);
+            remaining -= to_copy;
+            input_idx += to_copy;
+
+            if (write_idx >= size)
+            {
+                write_idx = 0;
+            }
         }
 
         BusyReset();
@@ -128,6 +145,32 @@ public:
 
         is_end = read_idx == write_idx;
         BusyReset();
+    }
+
+    void Read(T* to, const size_t len)
+    {
+        size_t remaining = len;
+        size_t out_idx = 0;
+        while (remaining)
+        {
+            size_t to_copy = remaining;
+            if (remaining + read_idx > size)
+            {
+                to_copy = size - read_idx;
+            }
+
+            remaining -= to_copy;
+            while (to_copy)
+            {
+                to[out_idx++] = buffer[read_idx++];
+                --to_copy;
+            }
+
+            if (read_idx >= size)
+            {
+                read_idx = 0;
+            }
+        }
     }
 
     const T& Peek() const
@@ -189,4 +232,5 @@ private:
     uint16_t write_idx; // end
     T* buffer;
     bool busy;
+    bool owner;
 };
