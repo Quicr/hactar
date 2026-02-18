@@ -14708,12 +14708,6 @@
 		(uuid "79c7427b-ed3c-4bd0-8efa-cc2a4cb29925")
 	)
 	(junction
-		(at 204.47 369.57)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "7ac461cc-1603-4a89-8553-f092b4ba5bad")
-	)
-	(junction
 		(at 34.29 76.2)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -14838,12 +14832,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "97a1c51d-d559-450c-aeaa-3e5910ecf180")
-	)
-	(junction
-		(at 204.47 387.35)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "97d40bf9-7535-43dc-8ed4-38014b58c16d")
 	)
 	(junction
 		(at 176.53 387.35)
@@ -15180,12 +15168,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ee9ca47f-a284-47b0-b2c0-11c463196daa")
-	)
-	(junction
-		(at 166.37 387.35)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "efd4c250-91a1-43c4-8d10-928254225c71")
 	)
 	(junction
 		(at 105.41 265.43)
@@ -17219,16 +17201,6 @@
 	)
 	(wire
 		(pts
-			(xy 204.47 387.35) (xy 227.33 387.35)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "34d934a6-efd6-4194-8a9d-76e7ecfee2ec")
-	)
-	(wire
-		(pts
 			(xy 203.2 320.04) (xy 205.74 320.04)
 		)
 		(stroke
@@ -17716,16 +17688,6 @@
 			(type default)
 		)
 		(uuid "45871a09-7ebe-469d-b71b-a53cffb5e284")
-	)
-	(wire
-		(pts
-			(xy 166.37 369.57) (xy 166.37 372.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "459a588f-0ddd-4019-80e4-3734097783dc")
 	)
 	(wire
 		(pts
@@ -18439,16 +18401,6 @@
 	)
 	(wire
 		(pts
-			(xy 204.47 369.57) (xy 204.47 379.73)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5fc3f8e0-c87b-45cd-b8d6-93e03aa1e835")
-	)
-	(wire
-		(pts
 			(xy 171.45 382.27) (xy 171.45 387.35)
 		)
 		(stroke
@@ -18519,7 +18471,7 @@
 	)
 	(wire
 		(pts
-			(xy 199.39 387.35) (xy 204.47 387.35)
+			(xy 199.39 387.35) (xy 227.33 387.35)
 		)
 		(stroke
 			(width 0)
@@ -18749,16 +18701,6 @@
 	)
 	(wire
 		(pts
-			(xy 204.47 369.57) (xy 207.01 369.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6a050e87-716a-4bf7-ba0c-fea34d3564c8")
-	)
-	(wire
-		(pts
 			(xy 453.39 55.88) (xy 455.93 55.88)
 		)
 		(stroke
@@ -18949,7 +18891,7 @@
 	)
 	(wire
 		(pts
-			(xy 199.39 369.57) (xy 204.47 369.57)
+			(xy 199.39 369.57) (xy 207.01 369.57)
 		)
 		(stroke
 			(width 0)
@@ -20696,16 +20638,6 @@
 			(type default)
 		)
 		(uuid "a81ffadb-bac6-4265-a951-25652949eebf")
-	)
-	(wire
-		(pts
-			(xy 166.37 377.19) (xy 166.37 387.35)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a8814568-2dae-44e5-8048-f3d4dafa0155")
 	)
 	(wire
 		(pts
@@ -23016,16 +22948,6 @@
 			(type default)
 		)
 		(uuid "f66e50b0-0687-4ead-9e96-cce4b725c14f")
-	)
-	(wire
-		(pts
-			(xy 204.47 384.81) (xy 204.47 387.35)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f6960a8b-dc6b-4137-8bcc-c640cf1e3b47")
 	)
 	(polyline
 		(pts
@@ -45805,118 +45727,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:C_Small")
-		(at 166.37 374.65 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "cc935340-7c72-4165-ac30-395e3c8d5bb6")
-		(property "Reference" "C52"
-			(at 166.37 372.872 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "100n"
-			(at 166.37 376.682 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 166.37 374.65 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 166.37 374.65 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor, small symbol"
-			(at 166.37 374.65 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C85866"
-			(at 166.37 374.65 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 166.37 374.65 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 166.37 374.65 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 166.37 374.65 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" ""
-			(at 166.37 374.65 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "05931196-e2a4-46f8-955e-6a6476dbf99b")
-		)
-		(pin "2"
-			(uuid "830daeb0-df6b-496a-8696-8637b696898b")
-		)
-		(instances
-			(project "ev16"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "C52")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Hactar_Symbols:SW_Push_4C")
 		(at 537.21 80.01 0)
 		(unit 1)
@@ -46768,118 +46578,6 @@
 			(project "ev16"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR073")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C_Small")
-		(at 204.47 382.27 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "d8fb1496-bd02-4610-acd7-3f5c9504b364")
-		(property "Reference" "C11"
-			(at 204.47 380.492 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "100n"
-			(at 204.47 384.302 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metri"
-			(at 204.47 382.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 204.47 382.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor, small symbol"
-			(at 204.47 382.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Part #" "C85866"
-			(at 204.47 382.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Availability" ""
-			(at 204.47 382.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Sim.Device" ""
-			(at 204.47 382.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 204.47 382.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" ""
-			(at 204.47 382.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "76f4388c-42cb-40b5-840f-ca745779ce3b")
-		)
-		(pin "2"
-			(uuid "0c800aa4-b947-4ae2-a4f9-d471abb05110")
-		)
-		(instances
-			(project "EV11 Board Design"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "C11")
 					(unit 1)
 				)
 			)
