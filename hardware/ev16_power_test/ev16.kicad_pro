@@ -199,7 +199,8 @@
         0.0,
         0.127,
         0.254,
-        0.381
+        0.381,
+        0.65
       ],
       "tuning_pattern_settings": {
         "diff_pair_defaults": {
@@ -635,7 +636,7 @@
           "show": false
         }
       ],
-      "filter_string": "Tp",
+      "filter_string": "3.3",
       "group_symbols": true,
       "include_excluded_from_bom": false,
       "name": "",
