@@ -584,23 +584,25 @@
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
-			(property "Reference" "J"
-				(at 0 22.225 0)
+			(property "Reference" "J1"
+				(at 10.414 18.796 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify right)
 				)
 			)
-			(property "Value" "USB_C_Receptacle_USB2.0_16P"
-				(at 0 19.685 0)
+			(property "Value" "USB_C_Receptacle"
+				(at 17.526 -19.05 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify right)
 				)
 			)
-			(property "Footprint" ""
+			(property "Footprint" "Hactar_Footprints:USB-C_SMD-TYPE-C-31-M-12"
 				(at 3.81 0 0)
 				(effects
 					(font
@@ -619,6 +621,33 @@
 				)
 			)
 			(property "Description" "USB 2.0-only 16P Type-C Receptacle connector"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "JLCPCB Part #" "C165948"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "JLCPCB Position Offset" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Sim.Type" ""
 				(at 0 0 0)
 				(effects
 					(font
@@ -38015,7 +38044,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x01_P2.00mm_Vertical"
 			(at 326.39 304.8 0)
 			(effects
 				(font
@@ -38034,6 +38063,15 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 326.39 304.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C2882984"
 			(at 326.39 304.8 0)
 			(effects
 				(font
@@ -38719,7 +38757,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x01_P2.00mm_Vertical"
 			(at 124.46 342.9 0)
 			(effects
 				(font
@@ -38738,6 +38776,15 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 124.46 342.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C2882984"
 			(at 124.46 342.9 0)
 			(effects
 				(font
@@ -38786,7 +38833,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x01_P2.00mm_Vertical"
 			(at 363.22 306.07 0)
 			(effects
 				(font
@@ -38806,6 +38853,15 @@
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 363.22 306.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C2882984"
+			(at 363.22 306.07 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -40927,6 +40983,15 @@
 				(hide yes)
 			)
 		)
+		(property "JLCPCB Part #" "C431535"
+			(at 328.93 231.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "S"
 			(uuid "41c0634e-f5aa-4f74-8c1f-c71b7c7437c1")
 		)
@@ -42630,7 +42695,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x01_P2.00mm_Vertical"
 			(at 175.26 309.88 0)
 			(effects
 				(font
@@ -42650,6 +42715,15 @@
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 175.26 309.88 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C2882984"
+			(at 175.26 309.88 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -51944,7 +52018,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x01_P2.00mm_Vertical"
 			(at 354.33 306.07 0)
 			(effects
 				(font
@@ -51964,6 +52038,15 @@
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 354.33 306.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C2882984"
+			(at 354.33 306.07 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52364,7 +52447,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x01_P2.00mm_Vertical"
 			(at 372.11 306.07 0)
 			(effects
 				(font
@@ -52384,6 +52467,15 @@
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 372.11 306.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C2882984"
+			(at 372.11 306.07 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52543,7 +52635,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x01_P2.00mm_Vertical"
 			(at 227.33 364.49 0)
 			(effects
 				(font
@@ -52563,6 +52655,15 @@
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 227.33 364.49 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C2882984"
+			(at 227.33 364.49 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -55011,7 +55112,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x01_P2.00mm_Vertical"
 			(at 217.17 364.49 0)
 			(effects
 				(font
@@ -55031,6 +55132,15 @@
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 217.17 364.49 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C2882984"
+			(at 217.17 364.49 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -55634,7 +55744,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x01_P2.00mm_Vertical"
 			(at 165.1 309.88 0)
 			(effects
 				(font
@@ -55654,6 +55764,15 @@
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 165.1 309.88 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C2882984"
+			(at 165.1 309.88 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -56100,7 +56219,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x01_P2.00mm_Vertical"
 			(at 326.39 312.42 0)
 			(effects
 				(font
@@ -56119,6 +56238,15 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 326.39 312.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C2882984"
 			(at 326.39 312.42 0)
 			(effects
 				(font
@@ -63900,6 +64028,15 @@
 			)
 		)
 		(property "Sim.Type" ""
+			(at 328.93 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C431536"
 			(at 328.93 213.36 0)
 			(effects
 				(font

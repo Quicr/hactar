@@ -64,7 +64,88 @@
           "width": 0.13
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        [
+          "annular_width|51627500|76740000|8b224b83-d0cc-46d9-b384-3d0ef2e77e3f|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "annular_width|51627500|79040000|b7047064-8d04-4a86-ba1b-6314e57993fe|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "annular_width|51627500|85640000|49dcde1b-10f1-4943-ba11-f39cb706aa21|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "annular_width|51627500|87940000|21e989c5-2365-4b46-9e3b-3defb007adb1|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "courtyards_overlap|98526846|30355000|0a8cfb01-6d47-4062-a9fe-84da913e81f3|2b9fae04-5808-4535-9bda-0028f8afefe8",
+          ""
+        ],
+        [
+          "footprint_type_mismatch|51987500|77890000|70fa26ee-f575-4198-8529-5fa46563d31f|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "footprint_type_mismatch|51987500|86790000|57d53176-fb0d-48f4-8aed-2ff93d0438a0|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "footprint_type_mismatch|59250000|94575000|12c0b78d-f7a7-41cb-b9af-5c8426711a01|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "footprint_type_mismatch|75625000|106000000|0d564e52-779a-4755-9057-22252f5e344b|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "footprint_type_mismatch|77366000|35235000|ebc2799e-84e4-4edc-b1cf-7b77f8766d6d|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "hole_to_hole|58750000|95075000|72efc3c2-c099-459d-a783-c17ba60a2c0e|72efc3c2-c099-459d-a783-c17ba60a2c0e",
+          ""
+        ],
+        [
+          "hole_to_hole|59250000|94575000|72efc3c2-c099-459d-a783-c17ba60a2c0e|72efc3c2-c099-459d-a783-c17ba60a2c0e",
+          ""
+        ],
+        [
+          "hole_to_hole|59750000|95075000|72efc3c2-c099-459d-a783-c17ba60a2c0e|72efc3c2-c099-459d-a783-c17ba60a2c0e",
+          ""
+        ],
+        [
+          "items_not_allowed|98000000|33250000|2b0eb945-e16c-4aaa-b659-a76bd213ad9a|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "items_not_allowed|98000000|33250000|2b9fae04-5808-4535-9bda-0028f8afefe8|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "npth_inside_courtyard|98000000|33250000|2b0eb945-e16c-4aaa-b659-a76bd213ad9a|0a8cfb01-6d47-4062-a9fe-84da913e81f3",
+          ""
+        ],
+        [
+          "padstack|51627500|76740000|8b224b83-d0cc-46d9-b384-3d0ef2e77e3f|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "padstack|51627500|79040000|b7047064-8d04-4a86-ba1b-6314e57993fe|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "padstack|51627500|85640000|49dcde1b-10f1-4943-ba11-f39cb706aa21|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "padstack|51627500|87940000|21e989c5-2365-4b46-9e3b-3defb007adb1|00000000-0000-0000-0000-000000000000",
+          ""
+        ]
+      ],
       "meta": {
         "version": 2
       },
@@ -483,7 +564,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "ev16.kicad_pro",
+    "filename": "ev16_power_test.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -552,7 +633,7 @@
           "show": true
         },
         {
-          "group_by": false,
+          "group_by": true,
           "label": "Value",
           "name": "Value",
           "show": true
@@ -606,7 +687,7 @@
           "show": false
         },
         {
-          "group_by": true,
+          "group_by": false,
           "label": "JLCPCB Part #",
           "name": "JLCPCB Part #",
           "show": true
@@ -636,12 +717,12 @@
           "show": false
         }
       ],
-      "filter_string": "3.3",
+      "filter_string": "J",
       "group_symbols": true,
       "include_excluded_from_bom": false,
       "name": "",
-      "sort_asc": false,
-      "sort_field": "Reference"
+      "sort_asc": true,
+      "sort_field": "Value"
     },
     "connection_grid_size": 50.0,
     "drawing": {
