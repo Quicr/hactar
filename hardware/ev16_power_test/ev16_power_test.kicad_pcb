@@ -47551,19 +47551,6 @@
 			(justify left bottom)
 		)
 	)
-	(gr_text "Made in Canada"
-		(at 64 61.04 0)
-		(layer "F.SilkS")
-		(uuid "99554956-659a-403b-86ed-9b97937684b7")
-		(effects
-			(font
-				(size 0.6 0.6)
-				(thickness 0.15)
-				(bold yes)
-			)
-			(justify left bottom)
-		)
-	)
 	(gr_text "UI_SDA"
 		(at 109.2975 88.7 0)
 		(layer "F.SilkS")
@@ -47967,6 +47954,19 @@
 			(font
 				(size 1 1)
 				(thickness 0.25)
+				(bold yes)
+			)
+			(justify left bottom mirror)
+		)
+	)
+	(gr_text "Designed in Canada"
+		(at 72.5 61.04 -0)
+		(layer "B.SilkS")
+		(uuid "99554956-659a-403b-86ed-9b97937684b7")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.15)
 				(bold yes)
 			)
 			(justify left bottom mirror)
