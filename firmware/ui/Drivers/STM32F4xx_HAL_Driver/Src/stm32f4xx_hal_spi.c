@@ -198,6 +198,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_dma.h"
 
 /** @addtogroup STM32F4xx_HAL_Driver
   * @{
@@ -1953,6 +1954,9 @@ HAL_StatusTypeDef HAL_SPI_TransmitReceive_DMA(SPI_HandleTypeDef *hspi, const uin
   hspi->hdmatx->XferCpltCallback     = NULL;
   hspi->hdmatx->XferErrorCallback    = NULL;
   hspi->hdmatx->XferAbortCallback    = NULL;
+  
+    hspi->hdmatx->XferHalfCpltCallback = SPI_DMAHalfTransmitReceiveCplt;
+    hspi->hdmatx->XferCpltCallback     = SPI_DMATransmitReceiveCplt;
 
   /* Enable the Tx DMA Stream/Channel  */
   if (HAL_OK != HAL_DMA_Start_IT(hspi->hdmatx, (uint32_t)hspi->pTxBuffPtr, (uint32_t)&hspi->Instance->DR,
@@ -2892,6 +2896,7 @@ static void SPI_DMATransmitReceiveCplt(DMA_HandleTypeDef *hdma)
 #if (USE_HAL_SPI_REGISTER_CALLBACKS == 1U)
   hspi->TxRxCpltCallback(hspi);
 #else
+if (hspi->hdmarx->State == HAL_DMA_STATE_READY && hspi->hdmatx->State == HAL_DMA_STATE_READY)
   HAL_SPI_TxRxCpltCallback(hspi);
 #endif /* USE_HAL_SPI_REGISTER_CALLBACKS */
 }

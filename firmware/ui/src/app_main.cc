@@ -14,6 +14,7 @@
 #include "screen.hh"
 #include "serial.hh"
 #include "spi.hh"
+#include "stm32f4xx_hal_spi.h"
 #include "tools.hh"
 #include "ui_net_link.hh"
 #include <cmox_crypto.h>
@@ -77,16 +78,23 @@ static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_rx_buff_sz,
                           false);
 
-Screen screen(hspi1,
-              DISP_CS_GPIO_Port,
-              DISP_CS_Pin,
-              DISP_DC_GPIO_Port,
-              DISP_DC_Pin,
-              DISP_RST_GPIO_Port,
-              DISP_RST_Pin,
-              DISP_BL_GPIO_Port,
-              DISP_BL_Pin,
-              Screen::Orientation::flipped_portrait);
+static constexpr uint16_t net_spi_tx_buff_sz = 2048;
+uint8_t net_spi_tx_buff[net_spi_tx_buff_sz];
+static constexpr uint16_t net_spi_rx_buff_sz = 2048;
+uint8_t net_spi_rx_buff[net_spi_rx_buff_sz];
+
+static SPI net_spi(hspi1, net_spi_tx_buff, net_spi_tx_buff_sz, net_spi_rx_buff, net_spi_rx_buff_sz);
+
+// Screen screen(hspi1,
+//               DISP_CS_GPIO_Port,
+//               DISP_CS_Pin,
+//               DISP_DC_GPIO_Port,
+//               DISP_DC_Pin,
+//               DISP_RST_GPIO_Port,
+//               DISP_RST_Pin,
+//               DISP_BL_GPIO_Port,
+//               DISP_BL_Pin,
+//               Screen::Orientation::flipped_portrait);
 
 volatile bool sleeping = true;
 volatile bool error = false;
@@ -134,15 +142,15 @@ int app_main()
     uint32_t ticks_ms = 0;
     ConfigStorage config_storage(hi2c1);
     Protector protector(config_storage);
-    Renderer renderer(screen, keyboard);
+    // Renderer renderer(screen, keyboard);
 
-    audio_chip.Init();
-    audio_chip.StartI2S();
+    // audio_chip.Init();
+    // audio_chip.StartI2S();
 
     // Test in case the audio chip settings change and something looks suspicious
     // CountNumAudioInterrupts(audio_chip, sleeping);
 
-    InitScreen(screen);
+    // InitScreen(screen);
     Leds(HIGH, HIGH, HIGH);
     net_serial.StartReceive();
     mgmt_serial.StartReceive();
@@ -153,23 +161,43 @@ int app_main()
 
     UI_LOG_INFO("Starting main loop");
 
+    uint32_t next_send = 0;
+    uint32_t on = 0;
     while (1)
     {
+        if (HAL_GetTick() - on < 20)
+        {
+            continue;
+        }
         Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
-            renderer.ChangeView(Renderer::View::Chat);
-            done_booting = true;
+            // renderer.ChangeView(Renderer::View::Chat);
+            // done_booting = true;
         }
 
-        while (sleeping)
-        {
-            // LowPowerMode();
-            __NOP();
-        }
+        // while (sleeping)
+        // {
+        //     // LowPowerMode();
+        //     __NOP();
+        // }
 
         ticks_ms = HAL_GetTick();
+
+        if (HAL_GetTick() - next_send >= 2000)
+        {
+            link_packet_t packet;
+            packet.type = (uint8_t)ui_net_link::Packet_Type::PowerOnReady;
+            packet.length = 255;
+            for (int i = 0; i < 255; ++i)
+            {
+                packet.payload[i] = i;
+            }
+
+            net_spi.Transmit(packet);
+            next_send = HAL_GetTick();
+        }
 
         if (error)
         {
@@ -179,15 +207,15 @@ int app_main()
         CheckPTT(protector);
         CheckPTTAI(protector);
 
-        HandleKeypress(screen, keyboard, net_serial, protector);
+        // HandleKeypress(screen, keyboard, net_serial, protector);
 
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
-        HandleNetLinkPackets(net_serial, protector, audio_chip, screen);
+        // HandleNetLinkPackets(net_serial, protector, audio_chip, screen);
         HandleMgmtLinkPackets(mgmt_serial, config_storage);
 
-        renderer.Render(ticks_ms);
+        // renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
 
         sleeping = true;
@@ -386,7 +414,17 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
     AudioCallback();
 }
 
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi)
+{
+    net_spi.TransactionCallback();
+}
+
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
+{
+    UNUSED(hspi);
+}
+
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi)
 {
     UNUSED(hspi);
 }

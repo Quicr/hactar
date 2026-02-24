@@ -1,8 +1,6 @@
 #pragma once
 
-#include <cstdint>
-#include <iostream>
-#include <map>
+#include "stm32.h"
 
 class AudioCodec
 {

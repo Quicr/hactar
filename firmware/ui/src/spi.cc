@@ -1,5 +1,6 @@
 #include "spi.hh"
 #include "link_packet_t.hh"
+#include "stm32f4xx_hal_dma.h"
 #include "stm32f4xx_hal_spi.h"
 #include <cstring>
 
@@ -9,23 +10,17 @@ SPI::SPI(SPI_HandleTypeDef& hspi,
          uint8_t* rx_buff,
          uint16_t rx_buff_sz) :
     hspi(hspi),
-    tx_buff(tx_buff),
-    tx_buff_sz(tx_buff_sz),
-    rx_buff(rx_buff),
-    rx_buff_sz(rx_buff_sz),
-    tx_read(0),
-    tx_write(0),
-    rx_read(0),
-    rx_write(0),
+    tx_ring(tx_buff, tx_buff_sz),
+    rx_ring(rx_buff, rx_buff_sz),
+    out_slice(nullptr),
+    in_slice(nullptr),
+    transactions(),
     tr_ring(transactions, Num_Rx_Transactions),
     state(State::Idle),
-    unread(0),
     outgoing_len(0),
     incoming_len(0),
-    transaction_len(0),
-    rx_packets(_link_packet_buff, Rx_Packet_Sz),
-    packet(&rx_packets.Write()),
-    bytes_read(0)
+    _link_packet_buff(),
+    rx_packets(_link_packet_buff, Rx_Packet_Sz)
 {
 }
 
@@ -56,47 +51,65 @@ void SPI::Transmit(const link_packet_t& packet)
 
 const link_packet_t* SPI::Receive()
 {
-    uint16_t total_bytes_read = 0;
+    static uint16_t packet_bytes_read = 0;
+    static link_packet_t* packet = &rx_packets.Write();
+
+    uint16_t total_packet_bytes_read = 0;
 
     while (tr_ring.Unread())
     {
         transaction_t& transaction = tr_ring.Read();
-        total_bytes_read = 0;
-        while (total_bytes_read < transaction.incoming_len)
+        total_packet_bytes_read = 0;
+        while (total_packet_bytes_read < transaction.incoming_len)
         {
-            if (bytes_read < link_packet_t::Header_Size)
+            if (packet_bytes_read < link_packet_t::Header_Size)
             {
-                packet->data[bytes_read++] = rx_ring.Read();
-                ++total_bytes_read;
+                packet->data[packet_bytes_read++] = rx_ring.Read();
+                ++total_packet_bytes_read;
                 continue;
             }
 
-            if (bytes_read >= packet->length + link_packet_t::Header_Size)
+            if (packet_bytes_read >= packet->length + link_packet_t::Header_Size)
             {
-                bytes_read = 0;
+                packet_bytes_read = 0;
                 packet->is_ready = true;
                 packet = &rx_packets.Write();
             }
-            else if (bytes_read >= link_packet_t::Packet_Size)
+            else if (packet_bytes_read >= link_packet_t::Packet_Size)
             {
                 Logger::Log(Logger::Level::Info, "TLV frame size error");
 
                 packet->is_ready = false;
-                bytes_read = 0;
+                packet_bytes_read = 0;
             }
             else
             {
-                const size_t to_copy = packet->length < transaction.incoming_len - total_bytes_read
-                                         ? packet->length
-                                         : transaction.incoming_len - total_bytes_read;
-                rx_ring.Read(packet->data + bytes_read, to_copy);
-                total_bytes_read += to_copy;
+                const size_t to_copy =
+                    packet->length < transaction.incoming_len - total_packet_bytes_read
+                        ? packet->length
+                        : transaction.incoming_len - total_packet_bytes_read;
+                rx_ring.Read(packet->data + packet_bytes_read, to_copy);
+                total_packet_bytes_read += to_copy;
             }
         }
 
         // Move the read head the distance to the write head, according to our transaction
         rx_ring.MoveReadHead(transaction.incoming_len - transaction.outgoing_len);
     }
+
+    return GetReadyPacket();
+}
+
+const link_packet_t* SPI::GetReadyPacket()
+{
+    if (!rx_packets.Peek().is_ready)
+    {
+        return nullptr;
+    }
+
+    link_packet_t* p = &rx_packets.Read();
+    p->is_ready = false;
+    return p;
 }
 
 void SPI::Transaction()
@@ -105,39 +118,49 @@ void SPI::Transaction()
     {
         return;
     }
+
     state = State::Start;
 
-    out_slice = tx_ring.Read(outgoing_len);
-    in_slice = rx_ring.Write(outgoing_len);
+    // I really don't like this, ring buffer should be changed to use size_t or at least fix write
+    // to use something else
+    uint16_t tmp_outgoing_len = tx_ring.Unread();
+
+    out_slice = tx_ring.Read(tmp_outgoing_len);
+    in_slice = rx_ring.Write(tmp_outgoing_len);
+
+    outgoing_len = tmp_outgoing_len;
+
+    transaction_t& transaction = tr_ring.Write();
+    transaction.outgoing_len = outgoing_len;
+    transaction.incoming_len = incoming_len;
+    transaction.rx_read_idx = rx_ring.ReadIdx();
+    transaction.rx_write_idx = rx_ring.WriteIdx();
 
     // Transmit the length
     HAL_SPI_TransmitReceive_DMA(&hspi, (const uint8_t*)&outgoing_len, (uint8_t*)&incoming_len,
                                 sizeof(outgoing_len));
 }
 
-void SPI::TransactionCallback(SPI* spi)
+void SPI::TransactionCallback()
 {
+    while (hspi.hdmatx->State != HAL_DMA_STATE_READY)
+    {
+        continue;
+    }
+
     switch (state)
     {
     case State::Start:
     {
         state = State::Transacting;
-        HAL_SPI_TransmitReceive_DMA(&hspi, spi->out_slice, spi->in_slice, spi->outgoing_len);
+        HAL_SPI_TransmitReceive_DMA(&hspi, out_slice, in_slice, outgoing_len);
         break;
     }
     case State::Transacting:
     {
         state = State::Idle;
 
-        transaction_t& transaction = spi->tr_ring.Write();
-        transaction.outgoing_len = spi->outgoing_len;
-        transaction.incoming_len = spi->incoming_len;
-        transaction.rx_read_idx = spi->rx_ring.ReadIdx();
-        transaction.rx_write_idx = spi->rx_ring.WriteIdx();
-
-        spi->unread += spi->incoming_len;
-
-        spi->Transaction();
+        Transaction();
         break;
     }
     default:

@@ -13,6 +13,13 @@ public:
         Transacting
     };
 
+    enum class CallbackType
+    {
+        Rx,
+        Tx,
+        TxRx
+    };
+
     struct transaction_t
     {
         uint16_t outgoing_len;
@@ -32,10 +39,11 @@ public:
     void Transmit(const uint8_t* data, const uint16_t len);
     void Transmit(const link_packet_t& packet);
     const link_packet_t* Receive();
-    void Transaction();
-    void TransactionCallback(SPI* spi);
+    void TransactionCallback();
+    const link_packet_t* GetReadyPacket();
 
 private:
+    void Transaction();
     static constexpr size_t Linear_Buff_Size = link_packet_t::Packet_Size * 2;
     static constexpr size_t Num_Rx_Transactions = 10;
     static constexpr size_t Rx_Packet_Sz = 5;
@@ -50,34 +58,14 @@ private:
     uint8_t* out_slice;
     uint8_t* in_slice;
 
-    uint8_t* tx_buff;
-    uint16_t tx_buff_sz;
-
-    uint8_t* rx_buff;
-    uint16_t rx_buff_sz;
-
-    uint16_t tx_read;
-    uint16_t tx_write;
-
-    uint16_t rx_read;
-    uint16_t rx_write;
-
-    // Okay maybe this should be a ring buffer
     transaction_t transactions[Num_Rx_Transactions];
     RingBuffer<transaction_t> tr_ring;
 
     State state;
 
-    uint16_t unread;
-
     uint32_t outgoing_len;
     uint32_t incoming_len;
 
-    uint32_t transaction_len;
-
     link_packet_t _link_packet_buff[Rx_Packet_Sz];
     RingBuffer<link_packet_t> rx_packets;
-
-    link_packet_t* packet;
-    uint16_t bytes_read;
 };

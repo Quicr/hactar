@@ -108,7 +108,7 @@ void HandleNetLinkPackets(Serial& serial, Protector& protector, AudioChip& audio
             case ui_net_link::MessageType::Chat:
             {
                 // Text/translated text
-                HandleChatMessages(screen, packet);
+                // HandleChatMessages(screen, packet);
                 break;
             }
             }
