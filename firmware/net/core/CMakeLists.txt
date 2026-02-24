@@ -1,4 +1,4 @@
-set(SOURCE ./src/net.cc ./src/peripherals.cc ./src/efuse_burner.cc)
+set(SOURCE ./src/net.cc ./src/peripherals.cc ./src/efuse_burner.cc ./src/spi.cc)
 
 #idf_component_register(SRCS ${SOURCE}
 #    INCLUDE_DIRS inc ../../shared_inc/

@@ -14,7 +14,6 @@
 #include "freertos/projdefs.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
-#include "hal/spi_types.h"
 #include "logger.hh"
 #include "macros.hh"
 #include "net_mgmt_link.h"
@@ -24,7 +23,6 @@
 #include "sdkconfig.h"
 #include "serial.hh"
 #include "spdlog/logger.h"
-#include "spi.hh"
 #include "storage.hh"
 #include "stored_value.hh"
 #include "ui_net_link.hh"
@@ -636,8 +634,6 @@ extern "C" void app_main(void)
 #if defined(my_ssid) && defined(my_ssid_pwd)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
-    SPISlave ui_spi(SPI2_HOST, 11, 13, 12, NET_READY);
-    ui_spi.start(1024);
 
     ui_layer.BeginEventTask();
 

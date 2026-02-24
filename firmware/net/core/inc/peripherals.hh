@@ -30,6 +30,7 @@
 #define NET_DEBUG_MASK 1ULL << NET_DEBUG_1 | 1ULL << NET_DEBUG_2 | 1ULL << NET_DEBUG_3
 
 #define UI_READY_MASK 1ULL << UI_READY
+#define NET_READY_MASK 1ULL << NET_READY;
 
 void InitializeGPIO();
 void IntitializeLEDs();

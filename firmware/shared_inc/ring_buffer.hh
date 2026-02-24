@@ -191,9 +191,9 @@ public:
         }
     }
 
-    T* Read(size_t& len)
+    T* Read(uint16_t& len)
     {
-        size_t idx = read_idx;
+        uint16_t idx = read_idx;
         if (read_idx + len > size)
         {
             len = size - read_idx;
