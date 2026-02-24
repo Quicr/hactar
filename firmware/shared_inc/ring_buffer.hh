@@ -45,6 +45,24 @@ public:
         }
     }
 
+    T* Write(uint16_t& len) noexcept
+    {
+        const uint16_t idx = write_idx;
+        if (write_idx + len > size)
+        {
+            len = size - write_idx;
+        }
+
+        write_idx += len;
+
+        if (write_idx >= size)
+        {
+            write_idx = 0;
+        }
+
+        return buffer + idx;
+    }
+
     T& Write() noexcept
     {
         BusySet();
@@ -173,6 +191,24 @@ public:
         }
     }
 
+    T* Read(size_t& len)
+    {
+        size_t idx = read_idx;
+        if (read_idx + len > size)
+        {
+            len = size - read_idx;
+        }
+
+        read_idx += len;
+
+        if (read_idx >= size)
+        {
+            read_idx = 0;
+        }
+
+        return buffer + idx;
+    }
+
     const T& Peek() const
     {
         return buffer[read_idx];
@@ -190,6 +226,16 @@ public:
         }
     }
 
+    uint16_t NumContiguousRead() const
+    {
+        const uint16_t num_read = Unread();
+        if (read_idx + num_read > size)
+        {
+            return size - read_idx;
+        }
+        return num_read;
+    }
+
     bool IsFull() const
     {
         return size == Unread();
@@ -205,9 +251,39 @@ public:
         return write_idx;
     }
 
+    uint16_t ReadIdx() const
+    {
+        return read_idx;
+    }
+
     inline uint16_t Size() const
     {
         return size;
+    }
+
+    void MoveWriteHead(const uint16_t idx)
+    {
+        if (idx >= size)
+        {
+            return;
+        }
+
+        write_idx = idx;
+    }
+
+    void MoveReadHead(const uint16_t amt)
+    {
+        if (read_idx + amt >= size)
+        {
+            read_idx = size - (read_idx + amt);
+        }
+
+        read_idx += amt;
+    }
+
+    void SyncReadToWrite()
+    {
+        read_idx = write_idx;
     }
 
 private:
