@@ -15508,7 +15508,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" "C318884"
+		(property "JLCPCB Part #" "C318886"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -15572,7 +15572,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "c4467b35-441d-425a-bcd4-16bf001c7675")
+			(uuid "f4429b3a-28a7-4e95-9df8-ab0befb39b17")
 		)
 		(fp_line
 			(start -2.17 1.66)
@@ -15582,7 +15582,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "fb59a2a5-2e1e-4fb3-8be5-cec42cee3ff4")
+			(uuid "92b78615-b5be-41c3-887c-be52a12dcdb0")
 		)
 		(fp_line
 			(start -1.8 -1)
@@ -15592,7 +15592,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "6662942c-38b0-4f43-af2c-ee2c48407b21")
+			(uuid "15244c0c-688a-444b-b69b-ca6f0b4ce46d")
 		)
 		(fp_line
 			(start -1.8 1)
@@ -15602,7 +15602,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "4def878c-96af-4f42-b167-6fb3de1fb04a")
+			(uuid "093f9f9e-e57e-4fe0-b69b-719524099667")
 		)
 		(fp_line
 			(start -1.28 -2.55)
@@ -15612,7 +15612,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "114443ff-44ca-4535-b953-b68759a90400")
+			(uuid "0cedd3f0-6cbc-49e9-befc-4663d7692f68")
 		)
 		(fp_line
 			(start -1.28 -2.55)
@@ -15622,7 +15622,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "1115ed88-aa05-498a-a2b6-8558d3e78d1f")
+			(uuid "89852894-9d34-4578-aaad-4b452c09e61a")
 		)
 		(fp_line
 			(start -1.28 2.55)
@@ -15632,7 +15632,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "2864b45c-d51a-4a06-bd1d-63d797fe1bc9")
+			(uuid "93a0615f-83c9-49ee-bfeb-7b0024a6b6d6")
 		)
 		(fp_line
 			(start -1 -1.8)
@@ -15642,7 +15642,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "0dba5ab7-f05b-438b-b2d3-030889dbce7e")
+			(uuid "24e6f288-bc2b-4acc-94a7-b9c4727a3aab")
 		)
 		(fp_line
 			(start -0.9 1.9)
@@ -15652,7 +15652,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "b2ebd4c2-bac9-4ef1-a3ef-9d0fb52302f6")
+			(uuid "c6f14dae-9981-4e8c-8713-cd1b5b279bc0")
 		)
 		(fp_line
 			(start 0.8 1.9)
@@ -15662,7 +15662,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "88c3d8e4-b9e8-469e-a8a4-60ece7a915a7")
+			(uuid "9410e257-6772-4b99-9e04-38a665599fe1")
 		)
 		(fp_line
 			(start 0.9 -1.8)
@@ -15672,7 +15672,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "cbcf9d14-56f8-4cfc-b25a-292f39aaa715")
+			(uuid "7db500f2-38f0-4ab8-8a33-5d0bc777e851")
 		)
 		(fp_line
 			(start 1.28 -2.55)
@@ -15682,7 +15682,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "48f31d50-cb92-41dd-98d7-be22ea9d73ce")
+			(uuid "e7d2a00a-4bea-45da-a2b1-875ba9ec119b")
 		)
 		(fp_line
 			(start 1.8 -0.9)
@@ -15692,7 +15692,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "3fff4880-64f4-4dcb-b3eb-e9cbcbd5f0da")
+			(uuid "dc25141b-abcc-41c3-94aa-d59d763d0cdd")
 		)
 		(fp_line
 			(start 1.8 0.9)
@@ -15702,7 +15702,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "f75dea4d-7dc4-4ef7-a346-b7193da38551")
+			(uuid "ddf59c95-7d2c-43ca-9551-5c3f96d57edf")
 		)
 		(fp_line
 			(start 2.17 1.66)
@@ -15712,7 +15712,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "5e5cec35-3876-4d12-9cc6-3bc1bfaef768")
+			(uuid "7a44208f-b5a3-4152-bbbe-f689d810591a")
 		)
 		(fp_line
 			(start 2.55 -1.17)
@@ -15722,7 +15722,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "d34ab5c4-e2f0-4b5c-a2ef-cdbfc2f9a61f")
+			(uuid "b384b51d-95d6-4052-9ea2-27ecddb7ff5a")
 		)
 		(fp_circle
 			(center 0 0)
@@ -15733,7 +15733,7 @@
 			)
 			(fill no)
 			(layer "F.SilkS")
-			(uuid "277b6f94-aed3-48db-a0f7-b82ba7763b8e")
+			(uuid "2286c191-b5fd-426f-a437-55ca4ffeec98")
 		)
 		(fp_rect
 			(start -3.5 -2.82116)
@@ -15744,7 +15744,7 @@
 			)
 			(fill no)
 			(layer "F.CrtYd")
-			(uuid "12e5bb73-07d1-490c-962e-1833a137d991")
+			(uuid "8c164e34-f08a-48f8-bdf1-2d1072fda129")
 		)
 		(fp_circle
 			(center -3.25 -2.55)
@@ -15755,7 +15755,7 @@
 			)
 			(fill no)
 			(layer "F.Fab")
-			(uuid "1ff8c0a8-4e3b-4c7e-86ab-8444fb2b10a6")
+			(uuid "76926edd-dcb9-4017-8036-af0a3a983122")
 		)
 		(fp_text user "${REFERENCE}"
 			(at 0 0 0)
@@ -30025,7 +30025,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" "C318884"
+		(property "JLCPCB Part #" "C318886"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -30089,7 +30089,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "99e2190b-b8fb-46d8-b487-03e16e7ae79a")
+			(uuid "bdf71e8e-0b83-4727-8323-035b9e3073dd")
 		)
 		(fp_line
 			(start -2.17 1.66)
@@ -30099,7 +30099,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "50bef611-efee-4530-abbe-1f7c0da27532")
+			(uuid "fd92a854-5522-4bbc-a01c-6959124c61e0")
 		)
 		(fp_line
 			(start -1.8 -1)
@@ -30109,7 +30109,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "d6483eb4-a105-433f-94f1-0a32e77cdf3c")
+			(uuid "2b6d3bbc-bbe4-434f-957a-8857535bae9a")
 		)
 		(fp_line
 			(start -1.8 1)
@@ -30119,7 +30119,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "5f86e754-14c7-4729-8e26-f4d8443c79da")
+			(uuid "4cf3027e-f132-4f14-b1d9-dc2921df7f8d")
 		)
 		(fp_line
 			(start -1.28 -2.55)
@@ -30129,7 +30129,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "658996b6-298f-4753-abd1-5012ba2c13d2")
+			(uuid "4bd70c9d-3299-4992-83a2-e1720fa3d95b")
 		)
 		(fp_line
 			(start -1.28 -2.55)
@@ -30139,7 +30139,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "cf69ae55-7951-4939-a0a3-fb091b366ebb")
+			(uuid "195c1361-abb1-4d02-82f7-c32fe4ad5ee8")
 		)
 		(fp_line
 			(start -1.28 2.55)
@@ -30149,7 +30149,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "1be5f5be-134b-493e-ba0d-a9a6924d8cf4")
+			(uuid "305c3c42-dc85-4ff8-bb7c-491b9a063702")
 		)
 		(fp_line
 			(start -1 -1.8)
@@ -30159,7 +30159,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "11f421ed-e971-460c-b170-3a6376fa3a1f")
+			(uuid "fb13bf41-df0e-41e5-9601-fc136c7b0726")
 		)
 		(fp_line
 			(start -0.9 1.9)
@@ -30169,7 +30169,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "0fc5a231-2645-45e1-9637-985ae871a93a")
+			(uuid "3a0bf41d-07bf-4ed0-b1cf-dcdcb459e050")
 		)
 		(fp_line
 			(start 0.8 1.9)
@@ -30179,7 +30179,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "4f2b696f-3657-48c2-8c66-822329326c52")
+			(uuid "e9e0d8c2-3234-4160-ab20-b2281b11bfed")
 		)
 		(fp_line
 			(start 0.9 -1.8)
@@ -30189,7 +30189,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "0be4f660-afb8-4233-8d6b-84c448c3b184")
+			(uuid "ffbe69d4-d04c-47b0-be10-fe985fdbbfe1")
 		)
 		(fp_line
 			(start 1.28 -2.55)
@@ -30199,7 +30199,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "c8057fb7-aaf2-4fca-9e4e-9d22afd40a98")
+			(uuid "c9ec6f2e-9649-43f4-9ea4-090688b3fdc7")
 		)
 		(fp_line
 			(start 1.8 -0.9)
@@ -30209,7 +30209,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "89ecd5f2-4514-4871-940f-1203d7d67c6f")
+			(uuid "bce83320-f8d4-4768-90f9-8348648f93d1")
 		)
 		(fp_line
 			(start 1.8 0.9)
@@ -30219,7 +30219,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "3c7e4078-182a-4e9e-8330-9d03451d518e")
+			(uuid "db896029-80a8-468a-b2ff-881d78849efc")
 		)
 		(fp_line
 			(start 2.17 1.66)
@@ -30229,7 +30229,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "55ff03fd-2500-4cc8-aa09-36c7258f6beb")
+			(uuid "316c0877-ccd9-45c6-9960-bc4843699015")
 		)
 		(fp_line
 			(start 2.55 -1.17)
@@ -30239,7 +30239,7 @@
 				(type solid)
 			)
 			(layer "F.SilkS")
-			(uuid "a5f9570d-419e-4d55-b683-a56ea5125daf")
+			(uuid "88d93b65-f3d8-4d4f-be9c-7e6e35b86ae0")
 		)
 		(fp_circle
 			(center 0 0)
@@ -30250,7 +30250,7 @@
 			)
 			(fill no)
 			(layer "F.SilkS")
-			(uuid "6d072ed0-f702-4728-8791-bc584e406806")
+			(uuid "505e6aa2-3307-45a9-8ca1-dfb0e0c9794e")
 		)
 		(fp_rect
 			(start -3.5 -2.82116)
@@ -30261,7 +30261,7 @@
 			)
 			(fill no)
 			(layer "F.CrtYd")
-			(uuid "17a6d5a5-03c8-4c4e-80cf-469fa0dfef89")
+			(uuid "561a740e-4c5a-4beb-bacd-a7a7a5d7688f")
 		)
 		(fp_circle
 			(center -3.25 -2.55)
@@ -30272,7 +30272,7 @@
 			)
 			(fill no)
 			(layer "F.Fab")
-			(uuid "2da9c1d8-d5e1-4a08-b88a-07371afedd9c")
+			(uuid "510b7825-8521-47b2-b2dc-fc0133393c71")
 		)
 		(fp_text user "${REFERENCE}"
 			(at 0 0 0)
