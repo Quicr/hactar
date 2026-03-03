@@ -25802,6 +25802,16 @@
 		)
 		(uuid "41db16eb-5f09-4802-8d12-c7e913314f42")
 	)
+	(text "DISP_BL (NC)"
+		(exclude_from_sim no)
+		(at 422.91 83.058 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "429fa3d6-e8b2-49cb-8a2d-1182c1e46914")
+	)
 	(text "PTT to AI"
 		(exclude_from_sim no)
 		(at 515.366 104.14 0)
