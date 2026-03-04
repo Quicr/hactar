@@ -60,7 +60,8 @@ void SerialHandler::Write(const uint8_t data, const bool end_frame)
 
 void SerialHandler::Write(const link_packet_t& packet, const bool end_frame)
 {
-    Write(packet.data, packet.length + link_packet_t::Header_Size, end_frame);
+    auto packet_data = packet.Data();
+    Write(packet_data.data(), packet_data.size(), end_frame);
 }
 
 void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool end_frame)
@@ -226,18 +227,18 @@ link_packet_t* SerialHandler::SlipRead()
         {
             if (byte == ESC_END)
             {
-                packet->data[bytes_read++] = END;
+                packet->Data()[bytes_read++] = END;
             }
             else if (byte == ESC_ESC)
             {
-                packet->data[bytes_read++] = ESC;
+                packet->Data()[bytes_read++] = ESC;
             }
 
             escaped = false;
         }
         else
         {
-            packet->data[bytes_read++] = byte;
+            packet->Data()[bytes_read++] = byte;
         }
     }
 
@@ -257,7 +258,7 @@ link_packet_t* SerialHandler::TLVRead()
     while (total_bytes_read + update_cache < unread)
     {
         uint8_t byte = ReadFromRxBuff();
-        packet->data[bytes_read++] = byte;
+        packet->Data()[bytes_read++] = byte;
         ++total_bytes_read;
 
         if (bytes_read < link_packet_t::Header_Size)

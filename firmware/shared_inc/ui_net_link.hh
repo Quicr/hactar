@@ -76,7 +76,7 @@ struct TextObject
 struct WifiStatus
 {
     const uint8_t type = static_cast<uint8_t>(Packet_Type::WifiStatus);
-    const PACKET_LENGTH_TYPE len = 1;
+    const uint32_t len = 1;
     uint8_t status;
 };
 
@@ -203,7 +203,7 @@ struct __attribute__((packed)) AIResponseChunk
         packet.payload[offset] = static_cast<uint8_t>(is_last);
         offset += sizeof(bool);
 
-        memcpy(packet.payload + offset, &audio_size, sizeof(uint32_t));
+        memcpy(packet.payload.data() + offset, &audio_size, sizeof(uint32_t));
         offset += sizeof(uint32_t);
     }
     else if (talk_frame.channel_id == Channel_Id::Ptt_Ai)
@@ -213,19 +213,19 @@ struct __attribute__((packed)) AIResponseChunk
 
         // TODO: We don't use this now but in future we should have this provided from somewhere.
         uint32_t request_id = 0;
-        memcpy(packet.payload + offset, &request_id, sizeof(uint32_t));
+        memcpy(packet.payload.data() + offset, &request_id, sizeof(uint32_t));
         offset += sizeof(uint32_t);
 
         packet.payload[offset] = static_cast<uint8_t>(is_last);
         offset += sizeof(bool);
 
-        memcpy(packet.payload + offset, &audio_size, sizeof(uint32_t));
+        memcpy(packet.payload.data() + offset, &audio_size, sizeof(uint32_t));
         offset += sizeof(uint32_t);
     }
 
     packet.length = offset + constants::Audio_Phonic_Sz;
 
-    memcpy(packet.payload + offset, talk_frame.data, constants::Audio_Phonic_Sz);
+    memcpy(packet.payload.data() + offset, talk_frame.data, constants::Audio_Phonic_Sz);
 
     packet.is_ready = true;
 }
@@ -240,10 +240,10 @@ Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, lin
     packet.payload[offset] = static_cast<uint8_t>(MessageType::Chat);
     offset += sizeof(MessageType);
 
-    memcpy(packet.payload + offset, &len, sizeof(uint32_t));
+    memcpy(packet.payload.data() + offset, &len, sizeof(uint32_t));
     offset += sizeof(uint32_t);
 
-    memcpy(packet.payload + offset, text, len);
+    memcpy(packet.payload.data() + offset, text, len);
 
     packet.length = offset + len;
     packet.is_ready = true;
@@ -259,15 +259,15 @@ Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, lin
     packet.type = (uint8_t)Packet_Type::MoQChangeNamespace;
     packet.length = num_extra_bytes + change_moq_namespace_frame.trackname_len;
 
-    memcpy(packet.payload, &change_moq_namespace_frame.channel_id,
+    memcpy(packet.payload.data(), &change_moq_namespace_frame.channel_id,
            sizeof(change_moq_namespace_frame.channel_id));
     payload_offset += sizeof(change_moq_namespace_frame.channel_id);
 
-    memcpy(packet.payload + payload_offset, &change_moq_namespace_frame.trackname_len,
+    memcpy(packet.payload.data() + payload_offset, &change_moq_namespace_frame.trackname_len,
            sizeof(change_moq_namespace_frame.trackname_len));
     payload_offset += sizeof(change_moq_namespace_frame.trackname_len);
 
-    memcpy(packet.payload + payload_offset, change_moq_namespace_frame.trackname,
+    memcpy(packet.payload.data() + payload_offset, change_moq_namespace_frame.trackname,
            change_moq_namespace_frame.trackname_len);
 
     packet.is_ready = true;
@@ -285,14 +285,14 @@ Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, lin
     packet.type = (uint8_t)Packet_Type::WifiConnect;
     packet.length = ssid_len + pwd_len + num_extra_bytes;
 
-    memcpy(packet.payload, &ssid_len, sizeof(ssid_len));
+    memcpy(packet.payload.data(), &ssid_len, sizeof(ssid_len));
     payload_offset += sizeof(ssid_len);
-    memcpy(packet.payload + payload_offset, ssid, ssid_len);
+    memcpy(packet.payload.data() + payload_offset, ssid, ssid_len);
     payload_offset += ssid_len;
 
-    memcpy(packet.payload + payload_offset, &pwd_len, sizeof(pwd_len));
+    memcpy(packet.payload.data() + payload_offset, &pwd_len, sizeof(pwd_len));
     payload_offset += sizeof(pwd_len);
-    memcpy(packet.payload + payload_offset, pwd, pwd_len);
+    memcpy(packet.payload.data() + payload_offset, pwd, pwd_len);
     payload_offset += pwd_len;
 
     packet.is_ready = true;
@@ -328,21 +328,23 @@ Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, lin
         payload_offset = 1 + sizeof(AIResponseChunk) - constants::Audio_Phonic_Sz;
     }
 
-    memcpy(audio_object.data, packet.payload + payload_offset, constants::Audio_Phonic_Sz);
+    memcpy(audio_object.data, packet.payload.data() + payload_offset, constants::Audio_Phonic_Sz);
 }
 
 [[maybe_unused]] static void Deserialize(const link_packet_t& packet,
                                          ChangeNamespace& change_moq_namespace_frame)
 {
-    memcpy(&change_moq_namespace_frame.channel_id, packet.payload,
+    std::span<const uint8_t> payload{packet.payload};
+
+    memcpy(&change_moq_namespace_frame.channel_id, payload.data(),
            sizeof(change_moq_namespace_frame.channel_id));
-    uint32_t payload_offset = sizeof(change_moq_namespace_frame.channel_id);
+    payload = payload.subspan(sizeof(change_moq_namespace_frame.channel_id));
 
-    memcpy(&change_moq_namespace_frame.trackname_len, packet.payload + payload_offset,
+    memcpy(&change_moq_namespace_frame.trackname_len, packet.payload.data(),
            sizeof(change_moq_namespace_frame.trackname_len));
-    payload_offset += sizeof(change_moq_namespace_frame.trackname_len);
+    payload = payload.subspan(sizeof(change_moq_namespace_frame.trackname_len));
 
-    memcpy(change_moq_namespace_frame.trackname, packet.payload + payload_offset,
+    memcpy(change_moq_namespace_frame.trackname, packet.payload.data(),
            change_moq_namespace_frame.trackname_len);
 }
 
@@ -354,17 +356,21 @@ Deserialize(const link_packet_t& packet, std::string& ssid, std::string& pwd)
     uint16_t ssid_len = 0;
     uint16_t pwd_len = 0;
 
-    memcpy(&ssid_len, packet.payload + payload_offset, sizeof(ssid_len));
-    payload_offset += sizeof(ssid_len);
-    ssid.resize(ssid_len);
-    memcpy(ssid.data(), packet.payload, ssid_len);
-    payload_offset += ssid_len;
+    std::span<const uint8_t> payload{packet.payload};
 
-    memcpy(&pwd_len, packet.payload + payload_offset, sizeof(pwd_len));
-    payload_offset += sizeof(pwd_len);
+    memcpy(&ssid_len, packet.payload.data(), sizeof(ssid_len));
+    ssid.resize(ssid_len);
+    payload = payload.subspan(sizeof(ssid_len));
+
+    memcpy(ssid.data(), packet.payload.data(), ssid_len);
+    payload = payload.subspan(ssid_len);
+
+    memcpy(&pwd_len, packet.payload.data(), sizeof(pwd_len));
     pwd.resize(pwd_len);
-    memcpy(pwd.data(), packet.payload + payload_offset, pwd_len);
-    payload_offset += pwd_len;
+    payload = payload.subspan(sizeof(pwd_len));
+
+    memcpy(pwd.data(), packet.payload.data(), pwd_len);
+    payload = payload.subspan(pwd_len);
 }
 
 // TODO serialize and deserialize for audioobjectS

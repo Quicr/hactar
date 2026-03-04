@@ -218,7 +218,7 @@ static void UILinkPacketTask(void* args)
                 // Check if json for sure
                 uint8_t channel_id = packet->payload[0];
                 auto* response = static_cast<ui_net_link::AIResponseChunk*>(
-                    static_cast<void*>(packet->payload + 1));
+                    static_cast<void*>(packet->payload.data() + 1));
 
                 if (!json::accept(response->chunk_data))
                 {
@@ -254,7 +254,7 @@ static void UILinkPacketTask(void* args)
                 {
                     if (auto& writer = writers[channel_id])
                     {
-                        writers[channel_id]->PushObject(packet->payload + 1, length,
+                        writers[channel_id]->PushObject(packet->payload.data() + 1, length,
                                                         curr_audio_isr_time);
                     }
                 }
@@ -320,19 +320,21 @@ static void MgmtLinkPacketTask(void* args)
                 uint32_t ssid_name_len = 0;
                 uint32_t ssid_password_len = 0;
 
-                uint32_t offset = 0;
+                std::span<uint8_t> payload{packet->payload};
 
-                packet->Get(&ssid_name_len, sizeof(ssid_name_len), offset);
-                offset += sizeof(ssid_name_len);
+                std::memcpy(&ssid_name_len, payload.data(), sizeof(ssid_name_len));
+                payload = payload.subspan(sizeof(ssid_name_len));
 
-                std::string ssid_name((char*)packet->payload + offset, ssid_name_len);
-                offset += ssid_name_len;
+                std::string ssid_name(reinterpret_cast<char*>(packet->payload.data()),
+                                      ssid_name_len);
+                payload = payload.subspan(ssid_name_len);
 
-                packet->Get(&ssid_password_len, sizeof(ssid_password_len), offset);
-                offset += sizeof(ssid_password_len);
+                std::memcpy(&ssid_password_len, payload.data(), sizeof(ssid_password_len));
+                payload = payload.subspan(sizeof(ssid_password_len));
 
-                std::string ssid_password((char*)packet->payload + offset, ssid_password_len);
-                offset += ssid_password_len;
+                std::string ssid_password(reinterpret_cast<char*>(packet->payload.data()),
+                                          ssid_password_len);
+                payload = payload.subspan(ssid_password_len);
 
                 NET_LOG_INFO("Got ssid name len %lu %s", ssid_name_len, ssid_name.c_str());
                 NET_LOG_INFO("Got ssid password len %lu %s", ssid_password_len,
@@ -376,7 +378,7 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Set_Moq_Url:
             {
-                std::string moq_url((char*)packet->payload, packet->length);
+                std::string moq_url((char*)packet->payload.data(), packet->length);
                 NET_LOG_INFO("Got moq url %d - %s", moq_url.length(), moq_url.c_str());
 
                 if (moq_url.length() == 0)
@@ -442,17 +444,26 @@ static void MgmtLinkPacketTask(void* args)
 
                 uint32_t offset = 0;
 
-                packet->Get(&language_len, sizeof(language_len), offset);
-                offset += sizeof(language_len);
+                std::span<uint8_t> payload = std::span{packet->payload};
 
-                language = std::string{(char*)packet->payload + offset, language_len};
-                offset += language_len;
+                if (payload.size() < sizeof(language_len) + sizeof(channel_len))
+                {
+                    NET_LOG_ERROR("Packet did not contain enough bytes to parse frontline config");
+                    mgmt_layer.ReplyAck();
+                    break;
+                }
 
-                packet->Get(&channel_len, sizeof(channel_len), offset);
-                offset += sizeof(channel_len);
+                std::memcpy(&language_len, payload.data(), sizeof(language_len));
+                payload.subspan(sizeof(language_len));
 
-                default_channel = std::string{(char*)packet->payload + offset, channel_len};
-                offset += channel_len;
+                language = std::string{reinterpret_cast<char*>(payload.data()), language_len};
+                payload = payload.subspan(language_len);
+
+                std::memcpy(&channel_len, payload.data(), sizeof(channel_len));
+                payload = payload.subspan(sizeof(channel_len));
+
+                default_channel = std::string{reinterpret_cast<char*>(payload.data()), channel_len};
+                payload = payload.subspan(channel_len);
 
                 mgmt_layer.ReplyAck();
                 break;
