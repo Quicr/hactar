@@ -5,6 +5,11 @@
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 
+static uint16_t htons(uint16_t v)
+{
+    return ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8);
+}
+
 static void HandleMedia(link_packet_t* packet, AudioChip& audio)
 {
     ui_net_link::AudioObject play_frame;
@@ -17,7 +22,7 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Serial& se
 {
 
     auto* response =
-        static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
+        static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload.data() + 1));
 
     switch (response->content_type)
     {
@@ -38,7 +43,8 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Serial& se
         {
             UI_LOG_INFO("ai response len %d", packet->length);
             UI_LOG_INFO("IS JSON");
-            packet->type = static_cast<uint8_t>(ui_net_link::Packet_Type::AiResponse);
+            packet->type = htons(static_cast<uint8_t>(ui_net_link::Packet_Type::AiResponse));
+            packet->length = htons(packet->length);
             serial.Write(*packet);
         }
         else
@@ -173,7 +179,8 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
                 break;
             }
 
-            if (storage.Save(ConfigStorage::Config_Id::Sframe_Key, packet->payload, packet->length))
+            if (storage.Save(ConfigStorage::Config_Id::Sframe_Key, packet->payload.data(),
+                             packet->length))
             {
                 serial.ReplyAck();
                 UI_LOG_INFO("OK! Saved SFrame Key configuration");

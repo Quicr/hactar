@@ -4,10 +4,11 @@
 #include "link_packet_t.hh"
 #include <cstdint>
 #include <cstring>
+#include <span>
 
 namespace ui_net_link
 {
-enum struct Packet_Type : uint8_t
+enum struct Packet_Type : uint16_t
 {
     PowerOnReady,
     GetAudioLinkPacket,
