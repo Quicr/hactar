@@ -46,9 +46,9 @@ try
 {
     uint8_t ct[link_packet_t::Payload_Size];
     auto payload = mls_ctx.protect(
-        0, 0, ct, sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
+        0, 0, ct, sframe::input_bytes{packet->payload.data(), packet->length}.subspan(1), {});
 
-    std::memcpy(packet->payload + 1, payload.data(), payload.size());
+    std::memcpy(packet->payload.data() + 1, payload.data(), payload.size());
     packet->length = payload.size() + 1;
     return true;
 }
@@ -62,8 +62,8 @@ bool Protector::TryUnprotect(link_packet_t* packet) noexcept
 try
 {
     auto payload = mls_ctx.unprotect(
-        sframe::output_bytes{packet->payload, link_packet_t::Payload_Size}.subspan(1),
-        sframe::input_bytes{packet->payload, packet->length}.subspan(1), {});
+        sframe::output_bytes{packet->payload.data(), link_packet_t::Payload_Size}.subspan(1),
+        sframe::input_bytes{packet->payload.data(), packet->length}.subspan(1), {});
     packet->length = payload.size() + 1;
     return true;
 }

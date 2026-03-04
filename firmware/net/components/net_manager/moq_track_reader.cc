@@ -278,9 +278,9 @@ void TrackReader::TransmitText()
 void TrackReader::WriteToSerial(std::optional<quicr::Bytes> data)
 {
     link_packet_t link_packet{};
-    link_packet.type = (uint8_t)ui_net_link::Packet_Type::Message;
-    link_packet.payload[0] = 0; // TODO channel id
-    link_packet.length = data->size() + 1;
+    link_packet.type = htons(static_cast<uint16_t>(ui_net_link::Packet_Type::Message));
+    link_packet.length = htons(data->size() + 1);
+    link_packet.payload[0] = 0; // TODO Use actual channel id.
 
     memcpy(link_packet.payload.data() + 1, data->data(), data->size());
 

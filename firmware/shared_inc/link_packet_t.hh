@@ -16,7 +16,7 @@ struct link_packet_t
     static constexpr size_t Length_Size = sizeof(uint32_t);
     static constexpr size_t Header_Size = Length_Size + Type_Size + SyncWord_Size;
     static constexpr size_t Crypto_Overhead = 33;
-    static constexpr size_t Extra_Padding = 107;
+    static constexpr size_t Extra_Padding = 447;
     static constexpr size_t Payload_Size =
         constants::Audio_Phonic_Sz + Crypto_Overhead + Extra_Padding;
     static constexpr size_t Packet_Size = Header_Size + Payload_Size;
@@ -67,5 +67,6 @@ struct link_packet_t
 } __attribute__((packed));
 
 static_assert(sizeof(link_packet_t) == link_packet_t::Packet_Size + sizeof(bool));
+static_assert(link_packet_t::Packet_Size == 650 /* sync + header + 640 value */);
 
 #endif
