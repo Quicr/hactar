@@ -26699,6 +26699,12 @@
 		(uuid "48729c0c-ff54-4fea-ad55-56095580b211")
 	)
 	(junction
+		(at 236.22 78.74)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4c0d5554-5d8d-4251-bb0b-023d098ae84b")
+	)
+	(junction
 		(at 59.69 217.17)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -27351,6 +27357,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ea8304c3-e8c5-4490-a80e-c3fcb574b449")
+	)
+	(junction
+		(at 229.87 68.58)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "ecc4d5bc-71f4-4ba0-81e0-1fd5a7108e91")
 	)
 	(junction
 		(at 544.83 80.01)
@@ -28185,6 +28197,16 @@
 			(type default)
 		)
 		(uuid "0fd086c8-12c9-48bc-b9d5-2aa025817095")
+	)
+	(wire
+		(pts
+			(xy 236.22 78.74) (xy 236.22 77.47)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "100adcbc-86ba-4021-8b08-6b361aa2349a")
 	)
 	(wire
 		(pts
@@ -29688,6 +29710,16 @@
 	)
 	(wire
 		(pts
+			(xy 229.87 77.47) (xy 229.87 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "40600b17-7c3e-4ef0-90dd-8b0679cd080a")
+	)
+	(wire
+		(pts
 			(xy 166.37 87.63) (xy 160.02 87.63)
 		)
 		(stroke
@@ -29825,6 +29857,16 @@
 			(type default)
 		)
 		(uuid "43a2ce36-f857-48e9-a7a6-7774e824d705")
+	)
+	(wire
+		(pts
+			(xy 229.87 68.58) (xy 236.22 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "43d97463-a318-43a4-95a9-9df241c6f4a0")
 	)
 	(wire
 		(pts
@@ -32278,6 +32320,16 @@
 	)
 	(wire
 		(pts
+			(xy 229.87 78.74) (xy 236.22 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "97c5d80d-55e7-4f10-bdc4-324d5add7832")
+	)
+	(wire
+		(pts
 			(xy 187.96 344.17) (xy 195.58 344.17)
 		)
 		(stroke
@@ -34118,6 +34170,16 @@
 	)
 	(wire
 		(pts
+			(xy 236.22 68.58) (xy 236.22 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "da261f4c-eb1d-4262-9474-32fcd3fce5be")
+	)
+	(wire
+		(pts
 			(xy 105.41 318.77) (xy 109.22 318.77)
 		)
 		(stroke
@@ -35185,6 +35247,16 @@
 			(type default)
 		)
 		(uuid "f634bde8-b5f2-4fac-937e-c2eda5517652")
+	)
+	(wire
+		(pts
+			(xy 229.87 69.85) (xy 229.87 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f64c7da7-e535-44d6-ad9a-5fb796ca8e67")
 	)
 	(wire
 		(pts
@@ -45086,6 +45158,118 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:C")
+		(at 236.22 73.66 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "48a50198-90ce-4dc0-bd18-24a0870543bb")
+		(property "Reference" "C52"
+			(at 236.22 71.882 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100n"
+			(at 236.474 75.692 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+			(at 237.1852 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 236.22 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 236.22 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C1525"
+			(at 236.22 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 236.22 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Device" ""
+			(at 236.22 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB Position Offset" ""
+			(at 236.22 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Type" ""
+			(at 236.22 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "928e6fdc-b43e-4514-aa97-23a597f36eae")
+		)
+		(pin "2"
+			(uuid "05770dda-7aea-4575-ae28-7ec0d54ede0e")
+		)
+		(instances
+			(project "ev17"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "C52")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R_US")
 		(at 78.74 334.01 270)
 		(mirror x)
@@ -45939,6 +46123,71 @@
 			(project "EV11 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R60")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3.3V")
+		(at 229.87 68.58 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "5027ec76-1387-47b9-add0-c7c676d67503")
+		(property "Reference" "#PWR070"
+			(at 229.87 72.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3.3V"
+			(at 229.87 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 229.87 68.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 229.87 68.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
+			(at 229.87 68.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "a423fa54-6491-481d-8043-aaa620b4a7cc")
+		)
+		(instances
+			(project "ev17"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "#PWR070")
 					(unit 1)
 				)
 			)
@@ -48154,6 +48403,118 @@
 			(project "ev16"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "C50")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 229.87 73.66 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "69e5fd17-349a-4bae-9067-9d3f2ce584c1")
+		(property "Reference" "C51"
+			(at 229.87 71.882 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10u"
+			(at 229.87 75.692 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric"
+			(at 230.8352 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 229.87 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 229.87 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C17024"
+			(at 229.87 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 229.87 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Device" ""
+			(at 229.87 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB Position Offset" ""
+			(at 229.87 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Type" ""
+			(at 229.87 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ca5259cd-434f-4a7c-89be-db0937063517")
+		)
+		(pin "2"
+			(uuid "9588da98-4706-4bb1-8e50-0e14e576facf")
+		)
+		(instances
+			(project "ev17"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "C51")
 					(unit 1)
 				)
 			)
@@ -64025,6 +64386,71 @@
 			(project "EV13 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R50")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 236.22 78.74 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "fd58cab5-cf63-4ca4-8de4-86d22b53dbe2")
+		(property "Reference" "#PWR019"
+			(at 236.22 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 236.22 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 236.22 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 236.22 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 236.22 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "867a4f92-5df3-476a-85e5-e3c35d766ef7")
+		)
+		(instances
+			(project "ev17"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "#PWR019")
 					(unit 1)
 				)
 			)
