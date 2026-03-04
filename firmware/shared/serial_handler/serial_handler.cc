@@ -2,6 +2,11 @@
 #include "logger.hh"
 #include <memory.h>
 
+static uint16_t ntohs(uint16_t v)
+{
+    return ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8);
+}
+
 SerialHandler::SerialHandler(const uint16_t num_rx_packets,
                              uint8_t& tx_buff,
                              const uint32_t tx_buff_sz,
@@ -266,9 +271,13 @@ link_packet_t* SerialHandler::TLVRead()
             continue;
         }
 
-        if (bytes_read >= packet->length + link_packet_t::Header_Size)
+        if (bytes_read >= ntohs(packet->length) + link_packet_t::Header_Size)
         {
             bytes_read = 0;
+
+            packet->length = ntohs(packet->length);
+            packet->type = ntohs(packet->type);
+
             packet->is_ready = true;
             packet = &rx_packets.Write();
             continue;
