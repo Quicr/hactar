@@ -27732,6 +27732,15 @@
 		(at 115.57 220.98)
 		(uuid "fcaa6fc2-2287-4c88-98fd-c3d0d9f2013f")
 	)
+	(bus_entry
+		(at 21.59 332.74)
+		(size 2.54 2.54)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9f8c0ae9-4071-47b0-8dcd-6da1def122ae")
+	)
 	(wire
 		(pts
 			(xy 327.66 241.3) (xy 341.63 241.3)
@@ -31124,7 +31133,7 @@
 	)
 	(wire
 		(pts
-			(xy 62.23 247.65) (xy 62.23 256.54)
+			(xy 62.23 247.65) (xy 62.23 255.27)
 		)
 		(stroke
 			(width 0)
@@ -31504,7 +31513,7 @@
 	)
 	(wire
 		(pts
-			(xy 62.23 264.16) (xy 62.23 265.43)
+			(xy 62.23 262.89) (xy 62.23 265.43)
 		)
 		(stroke
 			(width 0)
@@ -52590,7 +52599,7 @@
 	)
 	(symbol
 		(lib_id "Device:R_US")
-		(at 62.23 260.35 180)
+		(at 62.23 259.08 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -52598,7 +52607,7 @@
 		(dnp no)
 		(uuid "88d9069e-8152-46f5-af3e-206ab6bf4dac")
 		(property "Reference" "R7"
-			(at 64.77 257.302 0)
+			(at 64.77 256.032 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52607,7 +52616,7 @@
 			)
 		)
 		(property "Value" "5k1"
-			(at 65.786 263.398 0)
+			(at 65.786 262.128 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52616,7 +52625,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 64.008 260.35 90)
+			(at 64.008 259.08 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52625,7 +52634,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 62.23 260.35 0)
+			(at 62.23 259.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52634,7 +52643,7 @@
 			)
 		)
 		(property "Description" "Resistor, US symbol"
-			(at 62.23 260.35 0)
+			(at 62.23 259.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52643,7 +52652,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C25905"
-			(at 62.23 260.35 0)
+			(at 62.23 259.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52652,7 +52661,7 @@
 			)
 		)
 		(property "Availability" ""
-			(at 62.23 260.35 0)
+			(at 62.23 259.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52660,7 +52669,7 @@
 			)
 		)
 		(property "Sim.Device" ""
-			(at 62.23 260.35 0)
+			(at 62.23 259.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52668,7 +52677,7 @@
 			)
 		)
 		(property "JLCPCB Position Offset" ""
-			(at 62.23 260.35 0)
+			(at 62.23 259.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52677,7 +52686,7 @@
 			)
 		)
 		(property "Sim.Type" ""
-			(at 62.23 260.35 0)
+			(at 62.23 259.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
