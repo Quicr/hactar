@@ -1,26 +1,36 @@
 import readline
+import struct
 import sys
 
 import serial
 
+# Link TLV sync word: "LINK" in ASCII
+LINK_SYNC_WORD = bytes([0x4C, 0x49, 0x4E, 0x4B])
+
+
+def make_tlv(type_id: int, payload: bytes = b"") -> bytes:
+    """Create a Link TLV packet: sync_word (4) + type (2) + length (4) + payload"""
+    return LINK_SYNC_WORD + struct.pack("<H", type_id) + struct.pack("<I", len(payload)) + payload
+
+
 command_map = {
-    "version": bytes([0] + [0] * 4),
-    "who are you": bytes([1] + [0] * 4),
-    "hard reset": bytes([2] + [0] * 4),
-    "reset": bytes([3] + [0] * 4),
-    "reset ui": bytes([4] + [0] * 4),
-    "reset net": bytes([5] + [0] * 4),
-    "stop ui": bytes([6] + [0] * 4),
-    "stop net": bytes([7] + [0] * 4),
-    "flash ui": bytes([8] + [0] * 4),
-    "flash net": bytes([9] + [0] * 4),
-    "enable logs": bytes([10] + [0] * 4),
-    "enable ui logs": bytes([11] + [0] * 4),
-    "enable net logs": bytes([12] + [0] * 4),
-    "disable logs": bytes([13] + [0] * 4),
-    "disable ui logs": bytes([14] + [0] * 4),
-    "disable net logs": bytes([15] + [0] * 4),
-    "default logging": bytes([16] + [0] * 4),
+    "version": make_tlv(0),
+    "who are you": make_tlv(1),
+    "hard reset": make_tlv(2),
+    "reset": make_tlv(3),
+    "reset ui": make_tlv(4),
+    "reset net": make_tlv(5),
+    "stop ui": make_tlv(6),
+    "stop net": make_tlv(7),
+    "flash ui": make_tlv(8),
+    "flash net": make_tlv(9),
+    "enable logs": make_tlv(10),
+    "enable ui logs": make_tlv(11),
+    "enable net logs": make_tlv(12),
+    "disable logs": make_tlv(13),
+    "disable ui logs": make_tlv(14),
+    "disable net logs": make_tlv(15),
+    "default logging": make_tlv(16),
 }
 
 

@@ -6,16 +6,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define PACKET_TYPE_TYPE uint8_t
+#define PACKET_TYPE_TYPE uint16_t
 #define PACKET_LENGTH_TYPE uint32_t
 #define PACKET_READY_TYPE uint8_t
+
+// Link TLV sync word: "LINK" in ASCII
+static constexpr uint8_t LINK_SYNC_WORD[4] = {0x4C, 0x49, 0x4E, 0x4B};
 
 // TODO change data to be a pointer to a memory location.
 struct link_packet_t
 {
+    static constexpr size_t Sync_Word_Size = sizeof(LINK_SYNC_WORD);
     static constexpr size_t Type_Size = sizeof(PACKET_TYPE_TYPE);
     static constexpr size_t Length_Size = sizeof(PACKET_LENGTH_TYPE);
-    static constexpr size_t Header_Size = Length_Size + Type_Size;
+    static constexpr size_t Header_Size = Sync_Word_Size + Type_Size + Length_Size;
     static constexpr size_t Crypto_Overhead = 33;
     static constexpr size_t Extra_Padding = 107;
     static constexpr size_t Payload_Size =
@@ -25,6 +29,7 @@ struct link_packet_t
     {
         struct
         {
+            uint8_t sync_word[Sync_Word_Size];
             PACKET_TYPE_TYPE type;
             PACKET_LENGTH_TYPE length;
             uint8_t payload[Payload_Size];

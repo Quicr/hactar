@@ -106,6 +106,9 @@ static uint8_t Ok_Ascii[3] = "Ok\n";
 static uint8_t Ack = 0x82;
 static uint8_t Nack = 0x83;
 
+// Link TLV sync word: "LINK" in ASCII
+static const uint8_t LINK_SYNC_WORD[4] = {0x4C, 0x49, 0x4E, 0x4B};
+
 uint32_t last_receive_tick = 0;
 
 // Assumes unsent > 0
@@ -316,12 +319,14 @@ void uart_router_perform_transmit(uart_stream_t* stream)
 
 void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 {
-    // Parse our internal, if it is a zero length TLV then we can just assume it is a command
-    // otherwise... I dunno right now.
+    // Parse Link TLV format: sync_word (4) + type (2) + length (4) + value
+    const uint32_t Sync_Word_Size = 4;
+    const uint32_t Type_Size = 2;
+    const uint32_t Length_Size = 4;
+    const uint32_t Header_Bytes = Sync_Word_Size + Type_Size + Length_Size;  // 10 bytes
 
-    const uint32_t Header_Bytes = 5;
-
-    static Command command = 0;
+    static uint8_t sync_matched = 0;
+    static uint16_t command = 0;  // Changed from Command to uint16_t for 2-byte type
     static uint32_t len = 0;
 
     static uint32_t packet_idx = 0;
@@ -332,6 +337,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
     {
         num_read = 0;
         packet_idx = 0;
+        sync_matched = 0;
         uart_router_send_string(&usb_uart, "[Error] command timeout\n");
     }
 
@@ -344,21 +350,48 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
         // Reset
         num_read = 0;
         packet_idx = 0;
+        sync_matched = 0;
     }
 
     while (internal_tx.read != internal_tx.write)
     {
         const uint16_t distance = get_distance(&internal_tx);
 
-        // If we don't have enough bytes for the length and the command
-        if (distance < Header_Bytes && num_read == 0)
+        // Scan for sync word first
+        if (sync_matched < Sync_Word_Size)
+        {
+            if (distance < 1)
+            {
+                break;
+            }
+            uint8_t byte = read_from_tx(&internal_tx, &num_read);
+            if (byte == LINK_SYNC_WORD[sync_matched])
+            {
+                sync_matched++;
+            }
+            else
+            {
+                // Reset, but check if this byte starts a new sync word
+                sync_matched = (byte == LINK_SYNC_WORD[0]) ? 1 : 0;
+                num_read = 0;
+            }
+            continue;
+        }
+
+        // Sync word matched, now read type + length
+        // If we don't have enough bytes for type + length
+        if (distance < (Type_Size + Length_Size) && num_read == Sync_Word_Size)
         {
             break;
         }
 
-        if (num_read == 0)
+        if (num_read == Sync_Word_Size)
         {
-            command = read_from_tx(&internal_tx, &num_read);
+            // Read 2-byte type (little-endian)
+            command = (uint16_t)(read_from_tx(&internal_tx, &num_read));
+            command |= (uint16_t)(read_from_tx(&internal_tx, &num_read) << 8);
+
+            // Read 4-byte length (little-endian)
             len = (uint32_t)(read_from_tx(&internal_tx, &num_read));
             len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 8);
             len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 16);
@@ -367,8 +400,9 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 
         if (command >= Cmd_Count)
         {
-            // bad data continue
+            // bad data, reset and rescan for sync word
             num_read = 0;
+            sync_matched = 0;
             continue;
         }
 
@@ -383,6 +417,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
             {
                 // Bad data continue;
                 num_read = 0;
+                sync_matched = 0;
                 break;
             }
             default:
@@ -404,6 +439,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 
             num_read = 0;
             packet_idx = 0;
+            sync_matched = 0;
             continue;
         }
         else
@@ -412,6 +448,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
             {
                 packet_idx = 0;
                 num_read = 0;
+                sync_matched = 0;
                 continue;
             }
 
@@ -445,6 +482,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 
             num_read = 0;
             packet_idx = 0;
+            sync_matched = 0;
             continue;
         }
     }

@@ -29,7 +29,8 @@ SerialHandler::SerialHandler(const uint16_t num_rx_packets,
     use_slip(use_slip),
     packet(&rx_packets.Write()),
     bytes_read(0),
-    escaped(false)
+    escaped(false),
+    sync_matched(0)
 {
 }
 
@@ -60,7 +61,10 @@ void SerialHandler::Write(const uint8_t data, const bool end_frame)
 
 void SerialHandler::Write(const link_packet_t& packet, const bool end_frame)
 {
-    Write(packet.data, packet.length + link_packet_t::Header_Size, end_frame);
+    // Skip sync_word in struct (TLVWrite prepends the constant), write type+length+payload
+    const uint16_t data_size =
+        packet.length + link_packet_t::Header_Size - link_packet_t::Sync_Word_Size;
+    Write(packet.data + link_packet_t::Sync_Word_Size, data_size, end_frame);
 }
 
 void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool end_frame)
@@ -252,32 +256,55 @@ link_packet_t* SerialHandler::SlipRead()
 link_packet_t* SerialHandler::TLVRead()
 {
     uint16_t total_bytes_read = 0;
-    uint8_t byte = 0;
 
     while (total_bytes_read + update_cache < unread)
     {
         uint8_t byte = ReadFromRxBuff();
-        packet->data[bytes_read++] = byte;
         ++total_bytes_read;
 
-        if (bytes_read < link_packet_t::Header_Size)
+        // Scan for sync word
+        if (sync_matched < sizeof(LINK_SYNC_WORD))
+        {
+            if (byte == LINK_SYNC_WORD[sync_matched])
+            {
+                sync_matched++;
+            }
+            else
+            {
+                // Reset, but check if this byte starts a new sync word
+                sync_matched = (byte == LINK_SYNC_WORD[0]) ? 1 : 0;
+            }
+            continue;
+        }
+
+        // Sync word matched, now read type + length + payload
+        // Read into data starting after sync_word so type/length/payload align
+        packet->data[link_packet_t::Sync_Word_Size + bytes_read++] = byte;
+
+        // Need at least type + length before checking packet length
+        constexpr size_t type_length_size =
+            link_packet_t::Header_Size - link_packet_t::Sync_Word_Size;
+        if (bytes_read < type_length_size)
         {
             continue;
         }
 
-        if (bytes_read >= packet->length + link_packet_t::Header_Size)
+        // Check if we have the full packet
+        if (bytes_read >= packet->length + type_length_size)
         {
             bytes_read = 0;
+            sync_matched = 0;
             packet->is_ready = true;
             packet = &rx_packets.Write();
             continue;
         }
-        else if (bytes_read >= link_packet_t::Packet_Size)
+        else if (bytes_read >= link_packet_t::Packet_Size - link_packet_t::Sync_Word_Size)
         {
             Logger::Log(Logger::Level::Info, "TLV frame size error");
 
             packet->is_ready = false;
             bytes_read = 0;
+            sync_matched = 0;
             continue;
         }
     }
@@ -335,11 +362,18 @@ void SerialHandler::SlipWrite(const uint8_t* data, const uint16_t size, const bo
 
 void SerialHandler::TLVWrite(const uint8_t* data, const uint16_t size)
 {
+    // Write sync word first
+    for (uint8_t i = 0; i < sizeof(LINK_SYNC_WORD); ++i)
+    {
+        WriteToTxBuff(LINK_SYNC_WORD[i]);
+    }
+    unsent += sizeof(LINK_SYNC_WORD);
+
+    // Write the rest (type + length + payload)
     for (uint16_t i = 0; i < size; ++i)
     {
         WriteToTxBuff(data[i]);
     }
-
     unsent += size;
 }
 

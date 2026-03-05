@@ -16,6 +16,7 @@ from hactar_commands import (
     net_command_map,
     Reply_Ack,
     Reply_Nack,
+    LINK_SYNC_WORD,
 )
 
 running = True
@@ -61,10 +62,11 @@ def SendCommand(uart, to_whom, command, message="", wait_for_ack=True):
             print(f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)}")
             continue
 
-        Header_Bytes = 5  # 1 type, 4 length
+        # Link TLV format: sync_word (4) + type (2) + length (4) = 10 bytes header
+        Inner_Header_Bytes = 10  # sync_word 4 + type 2 + length 4
 
         # Create the length of the mgmt TLV and ui TLV
-        to_whom_len = Header_Bytes
+        to_whom_len = Inner_Header_Bytes
         command_len = 0
 
         for param in split[0:]:
@@ -78,16 +80,22 @@ def SendCommand(uart, to_whom, command, message="", wait_for_ack=True):
                 command_len += 4
 
         data = []
-        # MGMT - T
-        data += bypass_map[to_whom].to_bytes(1, byteorder="little")
+        # MGMT - Sync word
+        data += LINK_SYNC_WORD
 
-        # MGMT - L
+        # MGMT - T (2 bytes)
+        data += bypass_map[to_whom].to_bytes(2, byteorder="little")
+
+        # MGMT - L (4 bytes)
         data += to_whom_len.to_bytes(4, byteorder="little")
 
-        # MGMT - V and also UI/NET - T
-        data += command_id.to_bytes(1, byteorder="little")
+        # Inner TLV: UI/NET - Sync word
+        data += LINK_SYNC_WORD
 
-        # UI/NET - L
+        # UI/NET - T (2 bytes)
+        data += command_id.to_bytes(2, byteorder="little")
+
+        # UI/NET - L (4 bytes)
         data += command_len.to_bytes(4, byteorder="little")
 
         # UI/NET - V

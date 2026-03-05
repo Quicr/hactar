@@ -93,6 +93,7 @@ protected:
     link_packet_t* packet;
     uint32_t bytes_read;
     bool escaped;
+    uint8_t sync_matched;  // Number of sync word bytes matched
 
 #ifdef PLATFORM_ESP
     std::mutex write_mux;
