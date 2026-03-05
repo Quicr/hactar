@@ -325,14 +325,13 @@ static void MgmtLinkPacketTask(void* args)
                 std::memcpy(&ssid_name_len, payload.data(), sizeof(ssid_name_len));
                 payload = payload.subspan(sizeof(ssid_name_len));
 
-                std::string ssid_name(reinterpret_cast<char*>(packet->payload.data()),
-                                      ssid_name_len);
+                std::string ssid_name(reinterpret_cast<char*>(payload.data()), ssid_name_len);
                 payload = payload.subspan(ssid_name_len);
 
                 std::memcpy(&ssid_password_len, payload.data(), sizeof(ssid_password_len));
                 payload = payload.subspan(sizeof(ssid_password_len));
 
-                std::string ssid_password(reinterpret_cast<char*>(packet->payload.data()),
+                std::string ssid_password(reinterpret_cast<char*>(payload.data()),
                                           ssid_password_len);
                 payload = payload.subspan(ssid_password_len);
 
@@ -454,7 +453,7 @@ static void MgmtLinkPacketTask(void* args)
                 }
 
                 std::memcpy(&language_len, payload.data(), sizeof(language_len));
-                payload.subspan(sizeof(language_len));
+                payload = payload.subspan(sizeof(language_len));
 
                 language = std::string{reinterpret_cast<char*>(payload.data()), language_len};
                 payload = payload.subspan(language_len);

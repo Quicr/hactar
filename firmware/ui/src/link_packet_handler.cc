@@ -39,7 +39,6 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Serial& se
             UI_LOG_INFO("ai response len %d", packet->length);
             UI_LOG_INFO("IS JSON");
             packet->type = static_cast<uint8_t>(ui_net_link::Packet_Type::AiResponse);
-            packet->length = packet->length;
             serial.Write(*packet);
         }
         else

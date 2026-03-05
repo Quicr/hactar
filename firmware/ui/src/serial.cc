@@ -11,8 +11,7 @@ Serial::Serial(UART_HandleTypeDef* uart,
                uint8_t& rx_buff,
                const uint32_t rx_buff_sz,
                const bool use_slip) :
-    SerialHandler(
-        num_rx_packets, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this, use_slip),
+    SerialHandler(num_rx_packets, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this),
     uart(uart)
 {
 }
