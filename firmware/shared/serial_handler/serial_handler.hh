@@ -32,6 +32,7 @@ public:
 
     void Write(const uint8_t data, const bool end_frame = true);
     void Write(const link_packet_t& packet, const bool end_frame = true);
+    void Write(std::span<const uint8_t> data, const bool end_frame = true);
     void Write(const uint8_t* data, const uint16_t size, const bool end_frame = true);
 
     void ReplyAck();

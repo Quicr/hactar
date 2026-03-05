@@ -2,11 +2,6 @@
 #include "logger.hh"
 #include <memory.h>
 
-static uint16_t ntohs(uint16_t v)
-{
-    return ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8);
-}
-
 SerialHandler::SerialHandler(const uint16_t num_rx_packets,
                              uint8_t& tx_buff,
                              const uint32_t tx_buff_sz,
@@ -65,8 +60,12 @@ void SerialHandler::Write(const uint8_t data, const bool end_frame)
 
 void SerialHandler::Write(const link_packet_t& packet, const bool end_frame)
 {
-    auto packet_data = packet.Data();
-    Write(packet_data.data(), packet_data.size(), end_frame);
+    Write(packet.PacketData(), end_frame);
+}
+
+void SerialHandler::Write(std::span<const uint8_t> data, const bool end_frame)
+{
+    Write(data.data(), data.size(), end_frame);
 }
 
 void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool end_frame)
@@ -186,6 +185,8 @@ link_packet_t* SerialHandler::SlipRead()
     // by offsetting the total bytes read
     uint16_t total_bytes_read = 0;
     uint8_t byte = 0;
+    auto packet_data = packet->Data();
+
     while (total_bytes_read + update_cache < unread)
     {
         // Get a byte
@@ -232,11 +233,11 @@ link_packet_t* SerialHandler::SlipRead()
         {
             if (byte == ESC_END)
             {
-                packet->Data()[bytes_read++] = END;
+                packet_data[bytes_read++] = END;
             }
             else if (byte == ESC_ESC)
             {
-                packet->Data()[bytes_read++] = ESC;
+                packet_data[bytes_read++] = ESC;
             }
 
             escaped = false;
@@ -258,12 +259,12 @@ link_packet_t* SerialHandler::SlipRead()
 link_packet_t* SerialHandler::TLVRead()
 {
     uint16_t total_bytes_read = 0;
-    uint8_t byte = 0;
+    auto packet_data = packet->Data();
 
     while (total_bytes_read + update_cache < unread)
     {
         uint8_t byte = ReadFromRxBuff();
-        packet->Data()[bytes_read++] = byte;
+        packet_data[bytes_read++] = byte;
         ++total_bytes_read;
 
         if (bytes_read < link_packet_t::Header_Size)
@@ -271,12 +272,9 @@ link_packet_t* SerialHandler::TLVRead()
             continue;
         }
 
-        if (bytes_read >= ntohs(packet->length) + link_packet_t::Header_Size)
+        if (bytes_read >= packet->length + link_packet_t::Header_Size)
         {
             bytes_read = 0;
-
-            packet->length = ntohs(packet->length);
-            packet->type = ntohs(packet->type);
 
             packet->is_ready = true;
             packet = &rx_packets.Write();

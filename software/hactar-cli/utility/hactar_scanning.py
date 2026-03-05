@@ -43,7 +43,7 @@ def HactarScanning(uart_config):
 
             # Silence the chattering chips (I'M LOOKING AT YOU ESP32!)
             # Also read and ignore the ok
-            hactar_send_command(uart, command_map["disable logs"], 1)
+            # hactar_send_command(uart, command_map["disable logs"], 1)
 
             # Send a message to the serial port
             # If it responds with I AM A HACTAR DEVICE
