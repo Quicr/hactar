@@ -21,7 +21,7 @@ struct link_packet_t
         constants::Audio_Phonic_Sz + Crypto_Overhead + Extra_Padding;
     static constexpr size_t Packet_Size = Header_Size + Payload_Size;
 
-    const uint32_t sync_word = 0x4C494E4B;
+    const uint32_t sync_word = 0x4B4C494E;
     uint16_t type;
     uint32_t length;
     std::array<uint8_t, Payload_Size> payload;
@@ -37,6 +37,12 @@ struct link_packet_t
     {
         return std::span<const uint8_t, Packet_Size>{reinterpret_cast<const uint8_t*>(this),
                                                      Packet_Size};
+    }
+
+    std::span<const uint8_t> PacketData() const noexcept
+    {
+        return std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(this),
+                                        length + Header_Size};
     }
 
     // DO NOTE- This function is not intended to be safe
