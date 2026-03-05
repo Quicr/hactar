@@ -363,14 +363,14 @@ Deserialize(const link_packet_t& packet, std::string& ssid, std::string& pwd)
     ssid.resize(ssid_len);
     payload = payload.subspan(sizeof(ssid_len));
 
-    memcpy(ssid.data(), packet.payload.data(), ssid_len);
+    memcpy(ssid.data(), payload.data(), ssid_len);
     payload = payload.subspan(ssid_len);
 
-    memcpy(&pwd_len, packet.payload.data(), sizeof(pwd_len));
+    memcpy(&pwd_len, payload.data(), sizeof(pwd_len));
     pwd.resize(pwd_len);
     payload = payload.subspan(sizeof(pwd_len));
 
-    memcpy(pwd.data(), packet.payload.data(), pwd_len);
+    memcpy(pwd.data(), payload.data(), pwd_len);
     payload = payload.subspan(pwd_len);
 }
 

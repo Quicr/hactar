@@ -11,17 +11,18 @@
 // TODO change data to be a pointer to a memory location.
 struct link_packet_t
 {
-    static constexpr size_t SyncWord_Size = sizeof(uint32_t);
+    static constexpr uint32_t Sync_Word = 0x4B4E494C;
+    static constexpr size_t Sync_Word_Size = sizeof(uint32_t);
     static constexpr size_t Type_Size = sizeof(uint16_t);
     static constexpr size_t Length_Size = sizeof(uint32_t);
-    static constexpr size_t Header_Size = Length_Size + Type_Size + SyncWord_Size;
+    static constexpr size_t Header_Size = Length_Size + Type_Size + Sync_Word_Size;
     static constexpr size_t Crypto_Overhead = 33;
     static constexpr size_t Extra_Padding = 447;
     static constexpr size_t Payload_Size =
         constants::Audio_Phonic_Sz + Crypto_Overhead + Extra_Padding;
     static constexpr size_t Packet_Size = Header_Size + Payload_Size;
 
-    const uint32_t sync_word = 0x4B4C494E;
+    const uint32_t sync_word = Sync_Word;
     uint16_t type;
     uint32_t length;
     std::array<uint8_t, Payload_Size> payload;

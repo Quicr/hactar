@@ -25,7 +25,7 @@ Serial::Serial(const uart_port_t port,
                const uint32_t driver_queue_size,
                const bool use_queue_task,
                const bool use_slip) :
-    SerialHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this, use_slip),
+    SerialHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this),
     port(port),
     uart(uart),
     read_handle(read_handle),
