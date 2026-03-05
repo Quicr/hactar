@@ -27732,15 +27732,6 @@
 		(at 115.57 220.98)
 		(uuid "fcaa6fc2-2287-4c88-98fd-c3d0d9f2013f")
 	)
-	(bus_entry
-		(at 21.59 332.74)
-		(size 2.54 2.54)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9f8c0ae9-4071-47b0-8dcd-6da1def122ae")
-	)
 	(wire
 		(pts
 			(xy 327.66 241.3) (xy 341.63 241.3)
