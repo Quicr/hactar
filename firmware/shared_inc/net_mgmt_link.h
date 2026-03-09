@@ -15,6 +15,14 @@ enum Configuration
     Enable_Logs,
     Disable_Loopback,
     Enable_Loopback,
-    Set_Frontline_Config,
+    Set_Language,
+    Get_Language,
+    Set_Channel,
+    Get_Channel,
+    Set_AI,
+    Get_AI,
     Burn_Disable_USB_JTag_Efuse,
 };
+
+// Supported language tags for Set_Language validation
+// en-US, es-ES, de-DE, hi-IN, nb-NO

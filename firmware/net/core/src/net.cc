@@ -38,6 +38,10 @@
 
 using json = nlohmann::json;
 
+// Forward declarations
+std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial);
+std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& publication);
+
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
@@ -127,8 +131,19 @@ Serial mgmt_layer(UART_NUM_0,
 Storage storage;
 Wifi wifi(storage);
 StoredValue<std::string> moq_server_url(storage, "moq", "server_url");
-StoredValue<std::string> language(storage, "frontline", "language");
-StoredValue<std::string> default_channel(storage, "frontline", "channel");
+StoredValue<std::string> language(storage, "config", "language");
+// Channel namespace (JSON-encoded array of strings)
+StoredValue<std::string> channel_ns_json(storage, "config", "channel_ns");
+// AI namespaces (JSON-encoded arrays of strings)
+StoredValue<std::string> ai_query_ns_json(storage, "config", "ai_query_ns");
+StoredValue<std::string> ai_audio_response_ns_json(storage, "config", "ai_audio_ns");
+StoredValue<std::string> ai_cmd_response_ns_json(storage, "config", "ai_cmd_ns");
+
+// In-memory namespace caches (decoded from JSON)
+std::vector<std::string> channel_ns;
+std::vector<std::string> ai_query_ns;
+std::vector<std::string> ai_audio_response_ns;
+std::vector<std::string> ai_cmd_response_ns;
 
 uint64_t curr_audio_isr_time = esp_timer_get_time();
 uint64_t last_audio_isr_time = esp_timer_get_time();
@@ -176,6 +191,107 @@ static void EnableLogging()
 
     debug_printf_resume();
     logs_disabled = false;
+}
+
+// Load namespaces from storage into memory
+static void LoadNamespacesFromStorage()
+{
+    channel_ns = JsonToNamespace(channel_ns_json.Load());
+    ai_query_ns = JsonToNamespace(ai_query_ns_json.Load());
+    ai_audio_response_ns = JsonToNamespace(ai_audio_response_ns_json.Load());
+    ai_cmd_response_ns = JsonToNamespace(ai_cmd_response_ns_json.Load());
+}
+
+// Update AI tracks when AI namespaces or language changes
+// AI Query: publish to {ai_query_ns, language}
+// AI Audio Response: subscribe to {ai_audio_response_ns, device_id}
+// AI Command Response: subscribe to {ai_cmd_response_ns, device_id}
+static void UpdateAITracks()
+{
+    const std::string lang = language.Load();
+    const std::string device_id_str = std::to_string(device_id);
+
+    // AI Query publication track
+    if (!ai_query_ns.empty() && !lang.empty())
+    {
+        json pub_config;
+        pub_config["channel_name"] = "ai_audio";
+        pub_config["tracknamespace"] = ai_query_ns;
+        pub_config["trackname"] = lang;
+        pub_config["codec"] = "pcm";
+
+        if (auto writer = CreateWriteTrack(pub_config))
+        {
+            writer->Start();
+        }
+    }
+
+    // AI Audio Response subscription track
+    if (!ai_audio_response_ns.empty())
+    {
+        json sub_config;
+        sub_config["channel_name"] = "self_ai_audio";
+        sub_config["tracknamespace"] = ai_audio_response_ns;
+        sub_config["trackname"] = device_id_str;
+        sub_config["codec"] = "pcm";
+
+        if (auto reader = CreateReadTrack(sub_config, ui_layer))
+        {
+            reader->Start();
+        }
+    }
+
+    // AI Command Response subscription track
+    if (!ai_cmd_response_ns.empty())
+    {
+        json sub_config;
+        sub_config["channel_name"] = "self_ai_text";
+        sub_config["tracknamespace"] = ai_cmd_response_ns;
+        sub_config["trackname"] = device_id_str;
+        sub_config["codec"] = "ai_cmd_response:json";
+
+        if (auto reader = CreateReadTrack(sub_config, ui_layer))
+        {
+            reader->Start();
+        }
+    }
+}
+
+// Update channel tracks when channel namespace or language changes
+// Channel: both publish and subscribe to {channel_ns, language}
+static void UpdateChannelTracks()
+{
+    const std::string lang = language.Load();
+
+    if (channel_ns.empty() || lang.empty())
+    {
+        NET_LOG_WARN("Cannot update channel tracks: namespace or language empty");
+        return;
+    }
+
+    // Channel publication track
+    json pub_config;
+    pub_config["channel_name"] = "channel";
+    pub_config["tracknamespace"] = channel_ns;
+    pub_config["trackname"] = lang;
+    pub_config["codec"] = "pcm";
+
+    if (auto writer = CreateWriteTrack(pub_config))
+    {
+        writer->Start();
+    }
+
+    // Channel subscription track
+    json sub_config;
+    sub_config["channel_name"] = "channel";
+    sub_config["tracknamespace"] = channel_ns;
+    sub_config["trackname"] = lang;
+    sub_config["codec"] = "pcm";
+
+    if (auto reader = CreateReadTrack(sub_config, ui_layer))
+    {
+        reader->Start();
+    }
 }
 
 static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
@@ -226,17 +342,38 @@ static void UILinkPacketTask(void* args)
                     break;
                 }
 
-                json change_channel = json::parse(response->chunk_data);
-                NET_LOG_INFO("start track write for new channel");
-                if (auto writer = CreateWriteTrack(change_channel))
+                // Parse the JSON as an array of strings (the new channel namespace)
+                json cmd_json = json::parse(response->chunk_data);
+
+                if (!cmd_json.is_array())
                 {
-                    writer->Start();
+                    NET_LOG_ERROR("Command response is not a JSON array");
+                    break;
                 }
 
-                NET_LOG_INFO("start track read for new channel");
-                if (auto reader = CreateReadTrack(change_channel, ui_layer))
+                try
                 {
-                    reader->Start();
+                    std::vector<std::string> new_channel_ns =
+                        cmd_json.get<std::vector<std::string>>();
+
+                    if (new_channel_ns.empty())
+                    {
+                        NET_LOG_WARN("Received empty channel namespace");
+                        break;
+                    }
+
+                    // Update the channel namespace
+                    channel_ns = new_channel_ns;
+                    channel_ns_json = NamespaceToJson(channel_ns);
+
+                    NET_LOG_INFO("Updated channel namespace from command response");
+
+                    // Update channel pub/sub tracks
+                    UpdateChannelTracks();
+                }
+                catch (const std::exception& ex)
+                {
+                    NET_LOG_ERROR("Failed to parse command response: %s", ex.what());
                 }
                 break;
             }
@@ -435,26 +572,120 @@ static void MgmtLinkPacketTask(void* args)
                 mgmt_layer.ReplyAck();
                 break;
             }
-            case Configuration::Set_Frontline_Config:
+            case Configuration::Set_Language:
             {
-                uint32_t language_len = 0;
-                uint32_t channel_len = 0;
+                std::string new_lang((char*)packet->payload, packet->length);
+                if (!IsValidLanguage(new_lang))
+                {
+                    NET_LOG_ERROR("Invalid language: %s", new_lang.c_str());
+                    mgmt_layer.ReplyNack();
+                    break;
+                }
+                language = new_lang;
+                NET_LOG_INFO("Language set to: %s", new_lang.c_str());
 
-                uint32_t offset = 0;
-
-                packet->Get(&language_len, sizeof(language_len), offset);
-                offset += sizeof(language_len);
-
-                language = std::string{(char*)packet->payload + offset, language_len};
-                offset += language_len;
-
-                packet->Get(&channel_len, sizeof(channel_len), offset);
-                offset += sizeof(channel_len);
-
-                default_channel = std::string{(char*)packet->payload + offset, channel_len};
-                offset += channel_len;
+                // Update tracks that depend on language
+                UpdateAITracks();
+                UpdateChannelTracks();
 
                 mgmt_layer.ReplyAck();
+                break;
+            }
+            case Configuration::Get_Language:
+            {
+                std::string lang = language.Load();
+                mgmt_layer.Write((uint8_t*)lang.data(), lang.length());
+                break;
+            }
+            case Configuration::Set_Channel:
+            {
+                std::vector<std::string> new_ns;
+                size_t consumed = DecodeNamespace(packet->payload, packet->length, new_ns);
+                if (consumed == 0 || new_ns.empty())
+                {
+                    NET_LOG_ERROR("Failed to decode channel namespace");
+                    mgmt_layer.ReplyNack();
+                    break;
+                }
+
+                channel_ns = new_ns;
+                channel_ns_json = NamespaceToJson(channel_ns);
+                NET_LOG_INFO("Channel namespace set (%zu parts)", channel_ns.size());
+
+                UpdateChannelTracks();
+
+                mgmt_layer.ReplyAck();
+                break;
+            }
+            case Configuration::Get_Channel:
+            {
+                std::vector<uint8_t> encoded = EncodeNamespace(channel_ns);
+                mgmt_layer.Write(encoded.data(), encoded.size());
+                break;
+            }
+            case Configuration::Set_AI:
+            {
+                size_t offset = 0;
+                std::vector<std::string> query_ns, audio_ns, cmd_ns;
+
+                size_t consumed = DecodeNamespace(packet->payload + offset,
+                                                  packet->length - offset, query_ns);
+                if (consumed == 0)
+                {
+                    NET_LOG_ERROR("Failed to decode AI query namespace");
+                    mgmt_layer.ReplyNack();
+                    break;
+                }
+                offset += consumed;
+
+                consumed = DecodeNamespace(packet->payload + offset,
+                                           packet->length - offset, audio_ns);
+                if (consumed == 0)
+                {
+                    NET_LOG_ERROR("Failed to decode AI audio response namespace");
+                    mgmt_layer.ReplyNack();
+                    break;
+                }
+                offset += consumed;
+
+                consumed = DecodeNamespace(packet->payload + offset,
+                                           packet->length - offset, cmd_ns);
+                if (consumed == 0)
+                {
+                    NET_LOG_ERROR("Failed to decode AI command response namespace");
+                    mgmt_layer.ReplyNack();
+                    break;
+                }
+
+                ai_query_ns = query_ns;
+                ai_audio_response_ns = audio_ns;
+                ai_cmd_response_ns = cmd_ns;
+
+                ai_query_ns_json = NamespaceToJson(ai_query_ns);
+                ai_audio_response_ns_json = NamespaceToJson(ai_audio_response_ns);
+                ai_cmd_response_ns_json = NamespaceToJson(ai_cmd_response_ns);
+
+                NET_LOG_INFO("AI namespaces set (query=%zu, audio=%zu, cmd=%zu parts)",
+                             ai_query_ns.size(), ai_audio_response_ns.size(),
+                             ai_cmd_response_ns.size());
+
+                UpdateAITracks();
+
+                mgmt_layer.ReplyAck();
+                break;
+            }
+            case Configuration::Get_AI:
+            {
+                std::vector<uint8_t> query_enc = EncodeNamespace(ai_query_ns);
+                std::vector<uint8_t> audio_enc = EncodeNamespace(ai_audio_response_ns);
+                std::vector<uint8_t> cmd_enc = EncodeNamespace(ai_cmd_response_ns);
+
+                std::vector<uint8_t> result;
+                result.insert(result.end(), query_enc.begin(), query_enc.end());
+                result.insert(result.end(), audio_enc.begin(), audio_enc.end());
+                result.insert(result.end(), cmd_enc.begin(), cmd_enc.end());
+
+                mgmt_layer.Write(result.data(), result.size());
                 break;
             }
             case Configuration::Burn_Disable_USB_JTag_Efuse:
@@ -649,14 +880,46 @@ extern "C" void app_main(void)
     NET_LOG_WARN("Using moq server url of %s len %u", moq_server_url->c_str(),
                  moq_server_url->length());
 
+    // Set default language if not configured
     if (language->empty())
     {
         language = "en-US";
     }
 
-    if (default_channel->empty())
+    // Load namespaces from storage
+    LoadNamespacesFromStorage();
+
+    // Set default namespaces if not configured
+    const std::vector<std::string> default_ns_prefix = {
+        "moq://moq.ptt.arpa/v1", "org/acme", "store/1234"};
+
+    if (ai_query_ns.empty())
     {
-        default_channel = "gardening";
+        ai_query_ns = default_ns_prefix;
+        ai_query_ns.push_back("ai/audio");
+        ai_query_ns_json = NamespaceToJson(ai_query_ns);
+    }
+
+    if (ai_audio_response_ns.empty())
+    {
+        ai_audio_response_ns = default_ns_prefix;
+        ai_audio_response_ns.push_back("ai/audio");
+        ai_audio_response_ns_json = NamespaceToJson(ai_audio_response_ns);
+    }
+
+    if (ai_cmd_response_ns.empty())
+    {
+        ai_cmd_response_ns = default_ns_prefix;
+        ai_cmd_response_ns.push_back("ai/text");
+        ai_cmd_response_ns_json = NamespaceToJson(ai_cmd_response_ns);
+    }
+
+    if (channel_ns.empty())
+    {
+        channel_ns = default_ns_prefix;
+        channel_ns.push_back("channel/gardening");
+        channel_ns.push_back("ptt");
+        channel_ns_json = NamespaceToJson(channel_ns);
     }
 
     // setup moq transport
@@ -679,40 +942,19 @@ extern "C" void app_main(void)
 
     NET_LOG_ERROR("mac addr %llu", mac);
 
+    // Initialize reader/writer vectors
+    readers.resize((uint32_t)ui_net_link::Channel_Id::Count);
+    writers.resize((uint32_t)ui_net_link::Channel_Id::Count - 1);
+
     moq_session.reset(new moq::Session(config, readers, writers));
 
     PrintRAM();
 
     NET_LOG_INFO("Components ready");
 
-    ChannelBuilder channel_builder({"moq://moq.ptt.arpa/v1", "org/acme", "store/1234"}, device_id);
-
-    const std::string lang = language.Load();
-    const std::string channel = default_channel.Load();
-
-    channel_builder.AddAIAudioPublicationChannel(lang);
-    channel_builder.AddPublicationChannel(channel, lang, "pcm");
-    channel_builder.AddSubscriptionChannel(channel, lang, "pcm");
-
-    json config_j = channel_builder.GetConfig();
-
-    json subscriptions = config_j.at("subscriptions");
-    readers.resize((uint32_t)ui_net_link::Channel_Id::Count);
-    NET_LOG_ERROR("Readers size %d", readers.size());
-    for (int i = 0; i < subscriptions.size(); ++i)
-    {
-        CreateReadTrack(subscriptions[i], ui_layer);
-    }
-    NET_LOG_ERROR("Readers size %d", readers.size());
-
-    json publications = config_j.at("publications");
-    // Kinda odd, but we only have 3 writers.
-    writers.resize((uint32_t)ui_net_link::Channel_Id::Count - 1);
-    NET_LOG_ERROR("Writers size %d", writers.size());
-    for (int i = 0; i < publications.size(); ++i)
-    {
-        CreateWriteTrack(publications[i]);
-    }
+    // Set up initial tracks based on stored configuration
+    UpdateAITracks();
+    UpdateChannelTracks();
 
     int next = 0;
     int64_t heartbeat = 0;
