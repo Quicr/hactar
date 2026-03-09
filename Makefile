@@ -1,4 +1,4 @@
-.PHONY: all clean flash flash-mgmt flash-ui flash-net run-ctl
+.PHONY: all clean flash flash-mgmt flash-ui flash-net run-ctl FORCE
 
 CTL_BIN := link/ctl/target/release/ctl
 MGMT_BIN := link/mgmt/target/thumbv6m-none-eabi/release/mgmt.bin
@@ -14,10 +14,12 @@ $(CTL_BIN):
 $(MGMT_BIN):
 	cd link/mgmt && cargo objcopy --release -- -O binary target/thumbv6m-none-eabi/release/mgmt.bin
 
-$(UI_BIN):
+$(UI_BIN): FORCE
 	$(MAKE) -C firmware/ui compile
 
-$(NET_ELF):
+FORCE:
+
+$(NET_ELF): FORCE
 	$(MAKE) -C firmware/net compile
 
 flash: flash-mgmt flash-ui flash-net

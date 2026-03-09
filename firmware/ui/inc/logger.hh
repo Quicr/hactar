@@ -21,31 +21,31 @@
 
 #define UI_LOG(level, format, ...) Logger::Log(level, format __VA_OPT__(, ) __VA_ARGS__)
 
-#if LOGGER_ACTIVE_LEVEL >= LOGGING_ERROR
+#if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_ERROR
 #define UI_LOG_ERROR(format, ...) UI_LOG(Logger::Level::Error, format, __VA_ARGS__)
 #else
 #define UI_LOG_ERROR(...)
 #endif
 
-#if LOGGER_ACTIVE_LEVEL >= LOGGING_WARN
+#if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_WARN
 #define UI_LOG_WARN(format, ...) UI_LOG(Logger::Level::Warn, format, __VA_ARGS__)
 #else
 #define UI_LOG_WARN(...)
 #endif
 
-#if LOGGER_ACTIVE_LEVEL >= LOGGING_INFO
+#if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_INFO
 #define UI_LOG_INFO(format, ...) UI_LOG(Logger::Level::Info, format, __VA_ARGS__)
 #else
 #define UI_LOG_INFO(...)
 #endif
 
-#if LOGGER_ACTIVE_LEVEL >= LOGGING_DEBUG
+#if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_DEBUG
 #define UI_LOG_DEBUG(format, ...) UI_LOG(Logger::Level::Debug, format, __VA_ARGS__)
 #else
 #define UI_LOG_DEBUG(...)
 #endif
 
-#if LOGGER_ACTIVE_LEVEL >= LOGGING_DEBUG
+#if UI_LOGGER_ACTIVE_LEVEL >= UI_LOGGING_DEBUG
 #define UI_LOG_RAW(format, ...) UI_LOG(Logger::Level::Raw, format, __VA_ARGS__)
 #else
 #define UI_LOG_RAW(...)
