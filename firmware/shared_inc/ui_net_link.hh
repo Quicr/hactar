@@ -76,7 +76,7 @@ struct TextObject
 
 struct WifiStatus
 {
-    const uint8_t type = static_cast<uint8_t>(Packet_Type::WifiStatus);
+    const uint16_t type = static_cast<uint16_t>(Packet_Type::WifiStatus);
     const uint32_t len = 1;
     uint8_t status;
 };
@@ -190,7 +190,7 @@ struct __attribute__((packed)) AIResponseChunk
         packet_type = Packet_Type::Message;
     }
 
-    packet.type = (uint8_t)packet_type;
+    packet.type = (uint16_t)packet_type;
     packet.payload[0] = (uint8_t)talk_frame.channel_id;
 
     uint32_t offset = 1;
@@ -234,7 +234,7 @@ struct __attribute__((packed)) AIResponseChunk
 [[maybe_unused]] static void
 Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, link_packet_t& packet)
 {
-    packet.type = (uint8_t)Packet_Type::Message;
+    packet.type = (uint16_t)Packet_Type::Message;
     packet.payload[0] = (uint8_t)channel_id;
 
     uint32_t offset = 1;

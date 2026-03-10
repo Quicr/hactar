@@ -50,7 +50,7 @@ def HactarScanning(uart_config):
             # append it.
             hactar_send_command(uart, command_map["who are you"], 1)
 
-            # Read and ignore the ok reponse and ignore it
+            # Read and ignore the ok reponse
             resp = uart.read(len(HELLO_RES))
 
             hactar_send_command(uart, command_map["default logging"], 1)

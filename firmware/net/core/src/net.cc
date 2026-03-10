@@ -14,6 +14,7 @@
 #include "freertos/projdefs.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
+#include "link_packet_t.hh"
 #include "logger.hh"
 #include "macros.hh"
 #include "net_mgmt_link.h"
@@ -242,12 +243,11 @@ static void UILinkPacketTask(void* args)
             }
             case ui_net_link::Packet_Type::Message:
             {
-                // Channel id is always zero, so, gotta fix that.
                 uint8_t channel_id = packet->payload[0];
                 uint32_t ext_bytes = 1;
                 uint32_t length = packet->length;
 
-                // Remove the bytes already read from the payload length
+                // Remove the bytes already read from the payload length (channel_id)
                 length -= ext_bytes;
 
                 if (channel_id < (uint8_t)ui_net_link::Channel_Id::Count - 1)
@@ -742,7 +742,7 @@ extern "C" void app_main(void)
             gpio_set_level(NET_LED_G, 1);
 
             link_packet_t packet;
-            packet.type = (uint8_t)ui_net_link::Packet_Type::WifiStatus;
+            packet.type = (uint16_t)ui_net_link::Packet_Type::WifiStatus;
             packet.payload[0] = (uint8_t)wifi_state;
             ui_layer.Write(packet);
 

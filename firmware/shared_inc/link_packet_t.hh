@@ -11,30 +11,30 @@
 // TODO change data to be a pointer to a memory location.
 struct link_packet_t
 {
-    static constexpr uint32_t Sync_Word = 0x4B4E494C;
-    static constexpr size_t Sync_Word_Size = sizeof(uint32_t);
+    static constexpr size_t Sync_Word_Size = 4;
     static constexpr size_t Type_Size = sizeof(uint16_t);
     static constexpr size_t Length_Size = sizeof(uint32_t);
-    static constexpr size_t Header_Size = Length_Size + Type_Size + Sync_Word_Size;
+    static constexpr size_t Header_Size = Length_Size + Type_Size;
     static constexpr size_t Crypto_Overhead = 33;
     static constexpr size_t Extra_Padding = 447;
     static constexpr size_t Payload_Size =
         constants::Audio_Phonic_Sz + Crypto_Overhead + Extra_Padding;
-    static constexpr size_t Packet_Size = Header_Size + Payload_Size;
+    static constexpr size_t Packet_Size = Header_Size + Payload_Size + Sync_Word_Size;
 
-    const uint32_t sync_word = Sync_Word;
+    const uint8_t sync_word[Sync_Word_Size] = {0x4C, 0x49, 0x4E, 0x4B};
     uint16_t type = 0;
     uint32_t length = 0;
-    std::array<uint8_t, Payload_Size> payload;
+    std::array<uint8_t, Payload_Size> payload{0};
 
     bool is_ready = false;
 
-    std::span<uint8_t, Packet_Size> Data() noexcept
+    std::span<uint8_t, Packet_Size> WriteableData() noexcept
     {
-        return std::span<uint8_t, Packet_Size>{reinterpret_cast<uint8_t*>(this), Packet_Size};
+        return std::span<uint8_t, Packet_Size>{reinterpret_cast<uint8_t*>(this) + Sync_Word_Size,
+                                               Packet_Size - Sync_Word_Size};
     }
 
-    std::span<const uint8_t, Packet_Size> Data() const noexcept
+    std::span<const uint8_t, Packet_Size> ReadableData() const noexcept
     {
         return std::span<const uint8_t, Packet_Size>{reinterpret_cast<const uint8_t*>(this),
                                                      Packet_Size};
@@ -43,7 +43,7 @@ struct link_packet_t
     std::span<const uint8_t> PacketData() const noexcept
     {
         return std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(this),
-                                        length + Header_Size};
+                                        length + Header_Size + Sync_Word_Size};
     }
 
     // DO NOTE- This function is not intended to be safe

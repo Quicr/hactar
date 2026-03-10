@@ -65,5 +65,6 @@ static void Heartbeat(GPIO_TypeDef* port, const uint16_t pin)
     {
         HAL_GPIO_TogglePin(port, pin);
         blinky = HAL_GetTick() + 2000;
+        UI_LOG_INFO("Heartbeat");
     }
 }
