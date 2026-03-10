@@ -2,6 +2,7 @@
 #include "audio_chip.hh"
 #include "audio_codec.hh"
 #include "keyboard_display.hh"
+#include "logger.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 
@@ -109,6 +110,11 @@ void HandleNetLinkPackets(Serial& serial, Protector& protector, AudioChip& audio
             {
                 // Text/translated text
                 HandleChatMessages(screen, packet);
+                break;
+            }
+            default:
+            {
+                UI_LOG_INFO("Got an unknown message type %d", (int)message_type);
                 break;
             }
             }

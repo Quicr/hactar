@@ -15,7 +15,7 @@ except Exception:
 import serial
 from hactar_commands import (bypass_map, command_map, hactar_command_completer,
                              hactar_command_print_matches, net_command_map,
-                             ui_command_map)
+                             ui_command_map, Link_Sync_Word)
 from hactar_scanning import HactarScanning, ResetDevice, SelectHactarPort
 
 
@@ -131,11 +131,11 @@ class Monitor:
             )
             return
 
-        Header_Bytes = 5  # 1 type, 4 length
+        Header_Bytes = 6 + len(Link_Sync_Word)  # 2 type, 4 length
 
         # Create the length of the mgmt TLV and ui TLV
         to_whom_len = Header_Bytes
-        command_len = 0
+        command_len = len(Link_Sync_Word)
 
         for param in split[2:]:
             # Get the total sizes before we can continue
@@ -148,14 +148,18 @@ class Monitor:
                 command_len += 4
 
         data = []
+        # Sync word 
+        data += Link_Sync_Word;
+       
         # MGMT - T
-        data += bypass_map[to_whom].to_bytes(1, byteorder="little")
+        data += bypass_map[to_whom].to_bytes(2, byteorder="little")
 
         # MGMT - L
         data += to_whom_len.to_bytes(4, byteorder="little")
 
-        # MGMT - V and also UI/NET - T
-        data += command_id.to_bytes(1, byteorder="little")
+        # MGMT - V and also UI/NET - STLV
+        data += Link_Sync_Word
+        data += command_id.to_bytes(2, byteorder="little")
 
         # UI/NET - L
         data += command_len.to_bytes(4, byteorder="little")
@@ -170,6 +174,7 @@ class Monitor:
             data += param.encode("utf-8")
 
         # transmit the TLV
+        print(data);
         self.uart.write(bytes(data))
 
     def Close(self):

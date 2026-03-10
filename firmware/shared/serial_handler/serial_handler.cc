@@ -164,35 +164,33 @@ bool SerialHandler::PrepTransmit()
 link_packet_t* SerialHandler::TLVRead()
 {
     uint16_t total_bytes_read = 0;
-    auto packet_data = packet->Data();
+    auto packet_data = packet->WriteableData();
 
-    size_t sync_matched = 0;
-    const std::span<const uint8_t, 4> sync_word_bytes{
-        reinterpret_cast<const uint8_t*>(&link_packet_t::Sync_Word), 4};
+    static size_t sync_matched = 0;
 
     while (total_bytes_read + update_cache < unread)
     {
         uint8_t byte = ReadFromRxBuff();
-        packet_data[bytes_read++] = byte;
         ++total_bytes_read;
 
         if (sync_matched < link_packet_t::Sync_Word_Size)
         {
-            if (byte == sync_word_bytes[sync_matched])
+            if (byte == packet->sync_word[sync_matched])
             {
                 ++sync_matched;
             }
             else
             {
-                sync_matched = bytes_read = 0;
+                sync_matched = byte == packet->sync_word[0];
                 packet->is_ready = false;
 
-                continue;
+                Logger::Log(Logger::Level::Info, "TLV error in sync word");
             }
 
             continue;
         }
 
+        packet_data[bytes_read++] = byte;
         if (bytes_read < link_packet_t::Header_Size)
         {
             continue;
@@ -201,6 +199,7 @@ link_packet_t* SerialHandler::TLVRead()
         if (bytes_read >= packet->length + link_packet_t::Header_Size)
         {
             bytes_read = 0;
+            sync_matched = 0;
 
             packet->is_ready = true;
             packet = &rx_packets.Write();
@@ -212,6 +211,7 @@ link_packet_t* SerialHandler::TLVRead()
 
             packet->is_ready = false;
             bytes_read = 0;
+            sync_matched = 0;
             continue;
         }
     }
