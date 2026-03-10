@@ -23,8 +23,8 @@ struct link_packet_t
     static constexpr size_t Packet_Size = Header_Size + Payload_Size;
 
     const uint32_t sync_word = Sync_Word;
-    uint16_t type;
-    uint32_t length;
+    uint16_t type = 0;
+    uint32_t length = 0;
     std::array<uint8_t, Payload_Size> payload;
 
     bool is_ready = false;
