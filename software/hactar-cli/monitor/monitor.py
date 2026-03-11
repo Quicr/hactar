@@ -135,7 +135,7 @@ class Monitor:
 
         # Create the length of the mgmt TLV and ui TLV
         to_whom_len = Header_Bytes
-        command_len = len(Link_Sync_Word)
+        command_len = 0
 
         for param in split[2:]:
             # Get the total sizes before we can continue
@@ -174,7 +174,7 @@ class Monitor:
             data += param.encode("utf-8")
 
         # transmit the TLV
-        print(data);
+        # print(data);
         self.uart.write(bytes(data))
 
     def Close(self):
