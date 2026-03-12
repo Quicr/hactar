@@ -29548,7 +29548,7 @@
 	)
 	(wire
 		(pts
-			(xy 321.31 304.8) (xy 331.47 304.8)
+			(xy 321.31 304.8) (xy 328.93 304.8)
 		)
 		(stroke
 			(width 0)
@@ -32218,7 +32218,7 @@
 	)
 	(wire
 		(pts
-			(xy 331.47 304.8) (xy 331.47 322.58)
+			(xy 328.93 304.8) (xy 328.93 322.58)
 		)
 		(stroke
 			(width 0)
@@ -33928,7 +33928,7 @@
 	)
 	(wire
 		(pts
-			(xy 331.47 322.58) (xy 344.17 322.58)
+			(xy 328.93 322.58) (xy 344.17 322.58)
 		)
 		(stroke
 			(width 0)
@@ -43758,7 +43758,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.00mm:PinHeader_1x01_P1.00mm_Vertical"
+		(property "Footprint" "Hactar_Footprints:PinHole_1.00mm"
 			(at 468.63 334.01 0)
 			(effects
 				(font
@@ -44936,7 +44936,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.00mm:PinHeader_1x01_P1.00mm_Vertical"
+		(property "Footprint" "Hactar_Footprints:PinHole_1.00mm"
 			(at 486.41 334.01 0)
 			(effects
 				(font
@@ -46150,7 +46150,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.00mm:PinHeader_1x01_P1.00mm_Vertical"
+		(property "Footprint" "Hactar_Footprints:PinHole_1.00mm"
 			(at 495.3 334.01 0)
 			(effects
 				(font
@@ -50808,7 +50808,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.00mm:PinHeader_1x01_P1.00mm_Vertical"
+		(property "Footprint" "Hactar_Footprints:PinHole_1.00mm"
 			(at 495.3 320.04 0)
 			(effects
 				(font
@@ -51732,7 +51732,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.00mm:PinHeader_1x01_P1.00mm_Vertical"
+		(property "Footprint" "Hactar_Footprints:PinHole_1.00mm"
 			(at 477.52 320.04 0)
 			(effects
 				(font
@@ -52157,7 +52157,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.00mm:PinHeader_1x01_P1.00mm_Vertical"
+		(property "Footprint" "Hactar_Footprints:PinHole_1.00mm"
 			(at 486.41 320.04 0)
 			(effects
 				(font
@@ -54188,7 +54188,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.00mm:PinHeader_1x01_P1.00mm_Vertical"
+		(property "Footprint" "Hactar_Footprints:PinHole_1.00mm"
 			(at 468.63 320.04 0)
 			(effects
 				(font
@@ -57207,7 +57207,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.00mm:PinHeader_1x01_P1.00mm_Vertical"
+		(property "Footprint" "Hactar_Footprints:PinHole_1.00mm"
 			(at 477.52 334.01 0)
 			(effects
 				(font
@@ -60006,7 +60006,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.00mm:PinHeader_1x01_P1.00mm_Vertical"
+		(property "Footprint" "Hactar_Footprints:PinHole_1.00mm"
 			(at 495.3 346.71 0)
 			(effects
 				(font
