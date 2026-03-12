@@ -205,7 +205,7 @@ def main(args):
     readline.set_completer(hactar_command_completer)
     readline.set_completion_display_matches_hook(hactar_command_print_matches)
 
-    if sys.platform == "darwin":
+    if "libedit" in (readline.__doc__ or ""):
         readline.parse_and_bind("bind ^I rl_complete")
     else:
         readline.parse_and_bind("tab: complete")
