@@ -628,8 +628,8 @@ static void MgmtLinkPacketTask(void* args)
                 size_t offset = 0;
                 std::vector<std::string> query_ns, audio_ns, cmd_ns;
 
-                size_t consumed = DecodeNamespace(packet->payload + offset,
-                                                  packet->length - offset, query_ns);
+                size_t consumed =
+                    DecodeNamespace(packet->payload + offset, packet->length - offset, query_ns);
                 if (consumed == 0)
                 {
                     NET_LOG_ERROR("Failed to decode AI query namespace");
@@ -638,8 +638,8 @@ static void MgmtLinkPacketTask(void* args)
                 }
                 offset += consumed;
 
-                consumed = DecodeNamespace(packet->payload + offset,
-                                           packet->length - offset, audio_ns);
+                consumed =
+                    DecodeNamespace(packet->payload + offset, packet->length - offset, audio_ns);
                 if (consumed == 0)
                 {
                     NET_LOG_ERROR("Failed to decode AI audio response namespace");
@@ -648,8 +648,8 @@ static void MgmtLinkPacketTask(void* args)
                 }
                 offset += consumed;
 
-                consumed = DecodeNamespace(packet->payload + offset,
-                                           packet->length - offset, cmd_ns);
+                consumed =
+                    DecodeNamespace(packet->payload + offset, packet->length - offset, cmd_ns);
                 if (consumed == 0)
                 {
                     NET_LOG_ERROR("Failed to decode AI command response namespace");
@@ -890,8 +890,8 @@ extern "C" void app_main(void)
     LoadNamespacesFromStorage();
 
     // Set default namespaces if not configured
-    const std::vector<std::string> default_ns_prefix = {
-        "moq://moq.ptt.arpa/v1", "org/acme", "store/1234"};
+    const std::vector<std::string> default_ns_prefix = {"moq://moq.ptt.arpa/v1", "org/acme",
+                                                        "store/1234"};
 
     if (ai_query_ns.empty())
     {

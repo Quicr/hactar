@@ -12,17 +12,13 @@ using json = nlohmann::json;
 
 // Supported language tags
 inline constexpr std::array<const char*, 5> kSupportedLanguages = {
-    "en-US",
-    "es-ES",
-    "de-DE",
-    "hi-IN",
-    "nb-NO",
+    "en-US", "es-ES", "de-DE", "hi-IN", "nb-NO",
 };
 
 inline bool IsValidLanguage(const std::string& lang)
 {
     return std::find(kSupportedLanguages.begin(), kSupportedLanguages.end(), lang)
-           != kSupportedLanguages.end();
+        != kSupportedLanguages.end();
 }
 
 // Encode a namespace (vector of strings) to wire format:
