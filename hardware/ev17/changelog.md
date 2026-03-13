@@ -1,0 +1,35 @@
+# MGMT 
+
+- PA4 - LEDA_R -> CHG_FB
+- PA5 - MGMT_DEBUG_1 -> NC (reserved for DAC) 
+- PA6 - LEDA_G -> USB_CC1_DETECT 
+- PA7 - LEDA_B -> USB_CC2_DETECT  
+
+- PB1 - CHG_FB -> LEDA_B
+- PB4 - NET_NRST -> LEDA_G 
+- PB5 - NET_BOOT -> LEDA_R 
+- PB6 - NC -> NET_BOOT 
+- PB13 - NET_CTS1_MGMT -> NET_RTS1_MGMT
+- PB14 - NET_RTS1_MGMT -> NET_CTS1_MGMT
+
+- PC13 - NC -> NET_NRST
+- PC14 - USB_CC2_DETECT -> PC14 
+- PC15 - USB_CC1_DETECT -> NC
+
+
+# UI
+- PB3 - UI_LED_B -> NC 
+- PC5 - UI_LED_G -> NC 
+- PC6 - NC -> UI_LED_R
+- PC7 - NC -> UI_LED_G 
+- PC8 - NC -> UI_LED_B 
+- PC12 - UI_LED_R -> NC
+
+
+# NET 
+- IO1 - NC -> NET_LED_B
+- IO2 - NC -> NET_LED_G
+- IO3 - NC -> NET_LED_R 
+- IO36 - NET_LED_B -> NC 
+- IO37 - NET_LED_G -> NC 
+- IO38 - NET_LED_R -> NC 
