@@ -14,7 +14,7 @@
 			)
 		)
 	)
-	(property "Value" "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5"
+	(property "Value" "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL"
 		(at 0 5.85 0)
 		(layer "F.Fab")
 		(uuid "5cbba146-8f16-4c4a-809f-aef669e281b8")
