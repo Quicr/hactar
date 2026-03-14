@@ -22,6 +22,8 @@ class StoredValue
         std::conditional_t<ContiguousRange<T>, T&, std::optional<std::reference_wrapper<T>>>;
 
 public:
+    static constexpr size_t NVS_KEY_MAX_LEN = 15;
+
     StoredValue(Storage& storage, const std::string ns, const std::string key) :
         storage(storage),
         ns(ns),
@@ -29,6 +31,18 @@ public:
         loaded(false),
         stored()
     {
+        // Validate key length (must fit "_size" suffix for ContiguousRange types)
+        if constexpr (ContiguousRange<T>)
+        {
+            if (key.length() + 5 > NVS_KEY_MAX_LEN)  // 5 = strlen("_size")
+            {
+                NET_LOG_ERROR("NVS key '%s_size' exceeds %zu char limit", key.c_str(), NVS_KEY_MAX_LEN);
+            }
+        }
+        else if (key.length() > NVS_KEY_MAX_LEN)
+        {
+            NET_LOG_ERROR("NVS key '%s' exceeds %zu char limit", key.c_str(), NVS_KEY_MAX_LEN);
+        }
         Load();
     }
 
@@ -103,15 +117,17 @@ public:
         if constexpr (ContiguousRange<T>)
         {
             const size_t size = new_value.size() * sizeof(typename T::value_type);
-            if (ESP_OK
-                != storage.Saveu32(ns, std::string(std::string{key} + "_size").c_str(), size))
+            const std::string size_key = std::string{key} + "_size";
+            if (ESP_OK != storage.Saveu32(ns, size_key.c_str(), size))
             {
+                NET_LOG_ERROR("StoredValue: failed to save size for key '%s'", size_key.c_str());
                 return false;
             }
 
             if (ESP_OK
                 != storage.Save(ns, key, reinterpret_cast<const void*>(new_value.data()), size))
             {
+                NET_LOG_ERROR("StoredValue: failed to save data for key '%s'", key.c_str());
                 return false;
             }
         }
@@ -119,6 +135,7 @@ public:
         {
             if (ESP_OK != storage.Save(ns, key, &new_value, sizeof(T)))
             {
+                NET_LOG_ERROR("StoredValue: failed to save key '%s'", key.c_str());
                 return false;
             }
         }
@@ -150,14 +167,20 @@ public:
 
     StoredValue& operator=(const T& new_value)
     {
-        Save(new_value);
+        if (!Save(new_value))
+        {
+            NET_LOG_ERROR("StoredValue: failed to save key '%s'", key.c_str());
+        }
         return *this;
     }
 
     StoredValue& operator=(T&& new_value)
     {
-        stored = std::move(new_value);
-        Save();
+        T temp = std::move(new_value);
+        if (!Save(temp))
+        {
+            NET_LOG_ERROR("StoredValue: failed to save key '%s'", key.c_str());
+        }
         return *this;
     }
 
