@@ -36990,16 +36990,6 @@
 		)
 		(uuid "1eade441-6386-44d8-bb65-bbd52d3e09cb")
 	)
-	(label "UD_P"
-		(at 106.68 203.2 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "1f9a7307-be95-479f-af32-943707bc4cdc")
-	)
 	(label "UI_SWDIO"
 		(at 490.22 224.79 180)
 		(effects
@@ -37680,16 +37670,6 @@
 		)
 		(uuid "70563a3e-f485-421c-bfad-0a9e72ec7c70")
 	)
-	(label "UD_N"
-		(at 106.68 200.66 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "73c45a5f-9e13-43a2-8b8c-9a911357cd04")
-	)
 	(label "UI_SDA1"
 		(at 392.43 199.39 0)
 		(effects
@@ -37829,6 +37809,16 @@
 			(justify left bottom)
 		)
 		(uuid "7f102585-1572-4367-9d08-3f4f26944ca8")
+	)
+	(label "UD_N"
+		(at 106.68 203.2 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8060e603-25fe-4906-957f-a52326bc2932")
 	)
 	(label "UI_TX2_NET"
 		(at 520.7 198.12 0)
@@ -38729,6 +38719,16 @@
 			(justify right bottom)
 		)
 		(uuid "f5fab1df-de66-48ed-9009-c53e9b73888c")
+	)
+	(label "UD_P"
+		(at 106.68 200.66 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f7fd5721-0c65-4af1-b94d-0a6027c5c80b")
 	)
 	(label "NET_READY"
 		(at 491.49 93.98 180)
@@ -45985,9 +45985,9 @@
 		(at 143.51 285.75 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
+		(in_bom no)
+		(on_board no)
+		(dnp yes)
 		(uuid "3de9eb71-6af3-48c1-aff0-0e0f93002cb1")
 		(property "Reference" "R65"
 			(at 146.304 282.702 0)
@@ -46589,9 +46589,9 @@
 		(at 139.7 285.75 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
+		(in_bom no)
+		(on_board no)
+		(dnp yes)
 		(uuid "41db3517-d430-4228-ba1f-cd4546faff16")
 		(property "Reference" "R2"
 			(at 142.24 282.702 0)
@@ -46701,9 +46701,9 @@
 		(at 121.92 259.08 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
+		(in_bom no)
+		(on_board no)
+		(dnp yes)
 		(uuid "4316cb93-a3f8-4ad4-adec-18c1dd66a8cc")
 		(property "Reference" "J22"
 			(at 132.334 240.284 0)
@@ -49922,9 +49922,9 @@
 		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
+		(in_bom no)
+		(on_board no)
+		(dnp yes)
 		(uuid "58cd61e5-8e4a-4ed8-8319-c9a81301db07")
 		(property "Reference" "U11"
 			(at 157.226 251.206 0)
@@ -52248,9 +52248,9 @@
 		(at 105.41 248.92 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
+		(in_bom no)
+		(on_board no)
+		(dnp yes)
 		(uuid "7178e5d6-d566-45b4-96a0-8141aef4fb1d")
 		(property "Reference" "C56"
 			(at 105.41 247.142 0)
