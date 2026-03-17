@@ -543,7 +543,7 @@
       "plot": "~/cisco/code/hactar/hardware/ev16/ev16_pcb.pdf",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "ev14.step",
+      "step": "ev17.stl",
       "svg": "~/cisco/ev12.svg",
       "vrml": "ev14.wrl"
     },
