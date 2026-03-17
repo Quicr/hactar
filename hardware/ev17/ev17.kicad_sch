@@ -19396,6 +19396,265 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Jumper:SolderJumper_3_Bridged12"
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom no)
+			(on_board yes)
+			(property "Reference" "JP"
+				(at -2.54 -2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "SolderJumper_3_Bridged12"
+				(at 0 2.794 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "3-pole Solder Jumper, pins 1+2 closed/bridged"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "Solder Jumper SPDT"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "SolderJumper*Bridged12*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "SolderJumper_3_Bridged12_0_1"
+				(polyline
+					(pts
+						(xy -2.54 0) (xy -2.032 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.016 1.016) (xy -1.016 -1.016)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.016 0.508)
+					(end -0.508 -0.508)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(arc
+					(start -1.016 -1.016)
+					(mid -2.0276 0)
+					(end -1.016 1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start -1.016 -1.016)
+					(mid -2.0276 0)
+					(end -1.016 1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(rectangle
+					(start -0.508 1.016)
+					(end 0.508 -1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 -1.27) (xy 0 -1.016)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start 1.016 1.016)
+					(mid 2.0276 0)
+					(end 1.016 -1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start 1.016 1.016)
+					(mid 2.0276 0)
+					(end 1.016 -1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.016 1.016) (xy 1.016 -1.016)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 2.54 0) (xy 2.032 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "SolderJumper_3_Bridged12_1_1"
+				(pin passive line
+					(at -5.08 0 0)
+					(length 2.54)
+					(name "A"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -3.81 90)
+					(length 2.54)
+					(name "C"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 5.08 0 180)
+					(length 2.54)
+					(name "B"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "MCU_ST_STM32F0:STM32F072C8Tx"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -27543,12 +27802,6 @@
 		(uuid "d0e01cc0-140a-413c-ada2-2425b2f256a5")
 	)
 	(junction
-		(at 158.75 377.19)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "d3899608-1ca0-4c84-b532-1ef86a5f1100")
-	)
-	(junction
 		(at 63.5 217.17)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -27697,12 +27950,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f2cf4a93-8a92-4553-9e6a-89b551d261e8")
-	)
-	(junction
-		(at 139.7 243.84)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "f2da8061-999e-4e34-ba55-1ca8a46bad60")
 	)
 	(junction
 		(at 558.8 233.68)
@@ -28709,16 +28956,6 @@
 			(type default)
 		)
 		(uuid "16016760-c78a-411d-a538-24a8aae496e0")
-	)
-	(wire
-		(pts
-			(xy 139.7 243.84) (xy 168.91 243.84)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "16250339-bc50-4846-b4bc-5ec5908ad07b")
 	)
 	(wire
 		(pts
@@ -30469,16 +30706,6 @@
 			(type default)
 		)
 		(uuid "489abcd1-144f-49ab-9298-4348eab20461")
-	)
-	(wire
-		(pts
-			(xy 156.21 377.19) (xy 158.75 377.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "48e3a4cd-e718-4eec-9ed4-097fd668a30c")
 	)
 	(wire
 		(pts
@@ -32612,16 +32839,6 @@
 	)
 	(wire
 		(pts
-			(xy 158.75 375.92) (xy 158.75 377.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8cdedffe-aff0-4ff5-9d02-73c5a76000fc")
-	)
-	(wire
-		(pts
 			(xy 494.03 68.58) (xy 495.3 68.58)
 		)
 		(stroke
@@ -34502,7 +34719,7 @@
 	)
 	(wire
 		(pts
-			(xy 487.68 340.36) (xy 487.68 341.63)
+			(xy 487.68 341.63) (xy 487.68 342.9)
 		)
 		(stroke
 			(width 0)
@@ -34712,7 +34929,7 @@
 	)
 	(wire
 		(pts
-			(xy 138.43 243.84) (xy 139.7 243.84)
+			(xy 138.43 243.84) (xy 168.91 243.84)
 		)
 		(stroke
 			(width 0)
@@ -37261,7 +37478,7 @@
 		(uuid "405f6840-f058-47ad-9347-743025a79141")
 	)
 	(label "Analog_Sense"
-		(at 487.68 340.36 0)
+		(at 487.68 341.63 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -38420,6 +38637,16 @@
 		)
 		(uuid "cde3b521-fc64-42eb-a8b0-26743291671e")
 	)
+	(label "VAIN"
+		(at 160.02 377.19 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "ce097445-3630-45be-a29b-1b99ddbe6b9c")
+	)
 	(label "UI_TX2_NET"
 		(at 293.37 68.58 180)
 		(effects
@@ -39146,73 +39373,6 @@
 			(project ""
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "U1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:PWR_FLAG")
-		(at 156.21 377.19 90)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "02a4cda1-067d-4507-a8a2-9276e726b058")
-		(property "Reference" "#FLG06"
-			(at 154.305 377.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "PWR_FLAG"
-			(at 151.13 377.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Footprint" ""
-			(at 156.21 377.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 156.21 377.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Special symbol for telling ERC where power comes from"
-			(at 156.21 377.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "97d68db1-6840-4420-a9c7-2cfd68da011b")
-		)
-		(instances
-			(project "ev16"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "#FLG06")
 					(unit 1)
 				)
 			)
@@ -40468,6 +40628,72 @@
 		)
 	)
 	(symbol
+		(lib_id "power:VBUS")
+		(at 105.41 245.11 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "0f9d5b24-c228-4b16-a77a-ba6e30ccab75")
+		(property "Reference" "#PWR0109"
+			(at 105.41 248.92 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "VBUS"
+			(at 105.41 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 105.41 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 105.41 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VBUS\""
+			(at 105.41 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "fe231840-b6a0-4a7d-bd7d-f8848e0b1864")
+		)
+		(instances
+			(project "ev17"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "#PWR0109")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C_Small")
 		(at 401.32 49.53 0)
 		(unit 1)
@@ -41078,71 +41304,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:VBUS")
-		(at 105.41 245.11 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "14b8d2e8-f80e-47e2-a887-8f2fdd0c9fd1")
-		(property "Reference" "#PWR025"
-			(at 105.41 248.92 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "VTEST"
-			(at 105.41 241.808 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 105.41 245.11 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 105.41 245.11 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"VBUS\""
-			(at 105.41 245.11 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "703a9028-ea19-40e6-8724-aadea78b44e9")
-		)
-		(instances
-			(project "ev17"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "#PWR025")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:+3.3V")
 		(at 518.16 109.22 0)
 		(unit 1)
@@ -41715,6 +41876,78 @@
 			(project "ev16"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR059")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Jumper:SolderJumper_3_Bridged12")
+		(at 158.75 373.38 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "1a0861cd-a0d4-42c9-84c0-f537b3bb4dd1")
+		(property "Reference" "JP3"
+			(at 158.75 369.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "SolderJumper_3_Bridged12"
+			(at 158.75 369.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm"
+			(at 158.75 373.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 158.75 373.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "3-pole Solder Jumper, pins 1+2 closed/bridged"
+			(at 158.75 373.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "3"
+			(uuid "a813a20c-0b87-4852-bc27-b84b83e415e1")
+		)
+		(pin "2"
+			(uuid "7118c583-0cec-4cc5-8a2a-a2ae25aedb2b")
+		)
+		(pin "1"
+			(uuid "490fa241-fc7c-45b1-90bb-8a523c80fc6c")
+		)
+		(instances
+			(project ""
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "JP3")
 					(unit 1)
 				)
 			)
@@ -43872,71 +44105,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:VBUS")
-		(at 138.43 240.03 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "2f653033-458f-4b16-bd81-cbeefcf2c715")
-		(property "Reference" "#PWR0109"
-			(at 138.43 243.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "VTEST"
-			(at 138.43 235.966 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 138.43 240.03 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 138.43 240.03 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"VBUS\""
-			(at 138.43 240.03 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "97301f1b-37ca-415a-874b-d4a12ef181df")
-		)
-		(instances
-			(project "ev17"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "#PWR0109")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R_US")
 		(at 350.52 53.34 270)
 		(unit 1)
@@ -44230,7 +44398,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "3254e831-9274-466c-84c4-7f4899ce9090")
 		(property "Reference" "J16"
@@ -45407,7 +45575,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "3a9b597a-ed00-4a27-a460-fd6981fa22a8")
 		(property "Reference" "J19"
@@ -46017,9 +46185,9 @@
 		(at 143.51 285.75 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(dnp yes)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(uuid "3de9eb71-6af3-48c1-aff0-0e0f93002cb1")
 		(property "Reference" "R65"
 			(at 146.304 282.702 0)
@@ -46621,9 +46789,9 @@
 		(at 139.7 285.75 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(dnp yes)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(uuid "41db3517-d430-4228-ba1f-cd4546faff16")
 		(property "Reference" "R2"
 			(at 142.24 282.702 0)
@@ -46733,9 +46901,9 @@
 		(at 121.92 259.08 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(dnp yes)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(uuid "4316cb93-a3f8-4ad4-adec-18c1dd66a8cc")
 		(property "Reference" "J22"
 			(at 132.334 240.284 0)
@@ -46986,7 +47154,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "43c91936-7880-4ebf-8207-359f0bfd0b7e")
 		(property "Reference" "J21"
@@ -48942,6 +49110,72 @@
 		)
 	)
 	(symbol
+		(lib_id "power:VBUS")
+		(at 138.43 240.03 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "50e60bbc-fdf5-4aa6-bb92-538e7c30387c")
+		(property "Reference" "#PWR025"
+			(at 138.43 243.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "VBUS"
+			(at 138.43 234.95 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 138.43 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 138.43 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VBUS\""
+			(at 138.43 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "33b541d5-3550-4ee2-b7d4-ce60a74e9b67")
+		)
+		(instances
+			(project "ev17"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "#PWR025")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R_US")
 		(at 287.02 101.6 90)
 		(unit 1)
@@ -49954,9 +50188,9 @@
 		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(dnp yes)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(uuid "58cd61e5-8e4a-4ed8-8319-c9a81301db07")
 		(property "Reference" "U11"
 			(at 157.226 251.206 0)
@@ -51227,7 +51461,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C17024"
+		(property "JLCPCB Part #" "C87157"
 			(at 229.87 50.8 0)
 			(effects
 				(font
@@ -51711,7 +51945,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "6f4d7b72-7d93-4f59-b35b-6d58a182fef1")
 		(property "Reference" "J14"
@@ -52280,9 +52514,9 @@
 		(at 105.41 248.92 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(dnp yes)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(uuid "7178e5d6-d566-45b4-96a0-8141aef4fb1d")
 		(property "Reference" "C56"
 			(at 105.41 247.142 0)
@@ -52747,7 +52981,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "76fb1fbe-cab5-4fd3-ad28-e9a1a7044992")
 		(property "Reference" "J12"
@@ -53172,7 +53406,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "7cd4f06a-7546-4673-a090-b2e45e1b9e6a")
 		(property "Reference" "J13"
@@ -54721,7 +54955,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C17024"
+		(property "JLCPCB Part #" "C87157"
 			(at 180.34 336.55 0)
 			(effects
 				(font
@@ -55268,7 +55502,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "8848e645-daf3-43b7-97ee-56c6788a3871")
 		(property "Reference" "J17"
@@ -55677,73 +55911,6 @@
 			(project "EV13 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR076")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:PWR_FLAG")
-		(at 139.7 243.84 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "8c478ac1-0147-46ee-a6d4-56b306baefa9")
-		(property "Reference" "#FLG07"
-			(at 139.7 241.935 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "PWR_FLAG"
-			(at 139.7 238.76 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Footprint" ""
-			(at 139.7 243.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 139.7 243.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Special symbol for telling ERC where power comes from"
-			(at 139.7 243.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "b8f6d779-1f71-4430-9bc6-f4616307e068")
-		)
-		(instances
-			(project "ev17"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "#FLG07")
 					(unit 1)
 				)
 			)
@@ -58354,7 +58521,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "a4db4de5-4155-4c6e-8ab4-a84dc39b907e")
 		(property "Reference" "J18"
@@ -59974,7 +60141,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C17024"
+		(property "JLCPCB Part #" "C87157"
 			(at 187.96 345.44 0)
 			(effects
 				(font
@@ -61214,16 +61381,16 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_01x01")
-		(at 487.68 346.71 270)
+		(at 487.68 347.98 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "be6c1458-725f-443d-8f88-53f43613832d")
 		(property "Reference" "J15"
-			(at 490.22 345.4399 90)
+			(at 490.22 346.7099 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -61232,7 +61399,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 490.22 347.9799 90)
+			(at 490.22 349.2499 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -61242,7 +61409,7 @@
 			)
 		)
 		(property "Footprint" "Hactar_Footprints:PinHole_1.00mm"
-			(at 487.68 346.71 0)
+			(at 487.68 347.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -61251,7 +61418,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 487.68 346.71 0)
+			(at 487.68 347.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -61260,7 +61427,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 487.68 346.71 0)
+			(at 487.68 347.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -65032,7 +65199,7 @@
 	)
 	(symbol
 		(lib_id "power:+3.3V")
-		(at 158.75 375.92 0)
+		(at 153.67 373.38 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -65040,7 +65207,7 @@
 		(dnp no)
 		(uuid "dfdca977-0323-4057-8c48-f6c2e7588cba")
 		(property "Reference" "#PWR085"
-			(at 158.75 379.73 0)
+			(at 153.67 377.19 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -65049,7 +65216,7 @@
 			)
 		)
 		(property "Value" "+3.3V"
-			(at 157.988 372.364 0)
+			(at 152.908 369.824 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -65057,7 +65224,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 158.75 375.92 0)
+			(at 153.67 373.38 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -65066,7 +65233,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 158.75 375.92 0)
+			(at 153.67 373.38 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -65075,7 +65242,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
-			(at 158.75 375.92 0)
+			(at 153.67 373.38 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -65087,7 +65254,7 @@
 			(uuid "83105400-f087-4edf-a41d-7072cf30df46")
 		)
 		(instances
-			(project "ev16"
+			(project "ev17"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR085")
 					(unit 1)
@@ -65664,6 +65831,71 @@
 			(project "EV13 Board Design"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "R39")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VDC")
+		(at 163.83 373.38 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "e58c9f8b-99f0-4249-aeb2-1985e3aad3da")
+		(property "Reference" "#PWR0111"
+			(at 163.83 377.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "VSYS"
+			(at 163.83 369.824 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 163.83 373.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 163.83 373.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power selection from VBUS or VBAT"
+			(at 163.83 373.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "f67ee97f-e23e-44a4-a059-9a3c501b2783")
+		)
+		(instances
+			(project "ev17"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "#PWR0111")
 					(unit 1)
 				)
 			)
@@ -66468,7 +66700,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "ec6f1fde-a0fa-4f09-a493-95a287834845")
 		(property "Reference" "J23"
