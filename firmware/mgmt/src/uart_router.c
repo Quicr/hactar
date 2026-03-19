@@ -223,8 +223,8 @@ static void uart_router_process_net_byte(uint8_t byte)
     if (byte == '\n')
     {
         // Check if line starts with "LINK"
-        if (net_line_idx >= 5 && net_line_buff[0] == 'L' && net_line_buff[1] == 'I' &&
-            net_line_buff[2] == 'N' && net_line_buff[3] == 'K')
+        if (net_line_idx >= 5 && net_line_buff[0] == 'L' && net_line_buff[1] == 'I'
+            && net_line_buff[2] == 'N' && net_line_buff[3] == 'K')
         {
             // Forward LINK lines to USB (without the "LINK" prefix)
             uart_router_copy_to_tx(&usb_stream.tx, net_line_buff + 4, net_line_idx - 4);

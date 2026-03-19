@@ -34,9 +34,10 @@ public:
         // Validate key length (must fit "_size" suffix for ContiguousRange types)
         if constexpr (ContiguousRange<T>)
         {
-            if (key.length() + 5 > NVS_KEY_MAX_LEN)  // 5 = strlen("_size")
+            if (key.length() + 5 > NVS_KEY_MAX_LEN) // 5 = strlen("_size")
             {
-                NET_LOG_ERROR("NVS key '%s_size' exceeds %zu char limit", key.c_str(), NVS_KEY_MAX_LEN);
+                NET_LOG_ERROR("NVS key '%s_size' exceeds %zu char limit", key.c_str(),
+                              NVS_KEY_MAX_LEN);
             }
         }
         else if (key.length() > NVS_KEY_MAX_LEN)
