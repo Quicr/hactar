@@ -2,6 +2,7 @@
 #include "audio_chip.hh"
 #include "audio_codec.hh"
 #include "keyboard_display.hh"
+#include "logger.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 
@@ -17,7 +18,7 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Serial& se
 {
 
     auto* response =
-        static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
+        static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload.data() + 1));
 
     switch (response->content_type)
     {
@@ -111,6 +112,11 @@ void HandleNetLinkPackets(Serial& serial, Protector& protector, AudioChip& audio
                 HandleChatMessages(screen, packet);
                 break;
             }
+            default:
+            {
+                UI_LOG_INFO("Got an unknown message type %d", (int)message_type);
+                break;
+            }
             }
             break;
         }
@@ -173,7 +179,8 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
                 break;
             }
 
-            if (storage.Save(ConfigStorage::Config_Id::Sframe_Key, packet->payload, packet->length))
+            if (storage.Save(ConfigStorage::Config_Id::Sframe_Key, packet->payload.data(),
+                             packet->length))
             {
                 serial.ReplyAck();
                 UI_LOG_INFO("OK! Saved SFrame Key configuration");

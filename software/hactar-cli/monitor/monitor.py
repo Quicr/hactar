@@ -18,7 +18,7 @@ import serial
 from hactar_commands import (bypass_map, command_map, hactar_command_completer,
                              hactar_command_print_matches, net_command_map,
                              ui_command_map, SUPPORTED_LANGUAGES, is_valid_language,
-                             encode_namespace)
+                             encode_namespace, Link_Sync_Word)
 from hactar_scanning import HactarScanning, ResetDevice, SelectHactarPort
 
 
@@ -181,19 +181,23 @@ class Monitor:
                     payload += len(param).to_bytes(4, byteorder="little")
                 payload += param.encode("utf-8")
 
-        Header_Bytes = 5  # 1 type, 4 length
+        Header_Bytes = 6 + len(Link_Sync_Word)  # 2 type, 4 length
         to_whom_len = Header_Bytes + len(payload)
         command_len = len(payload)
 
         data = []
+        # Sync word 
+        data += Link_Sync_Word;
+       
         # MGMT - T
-        data += bypass_map[to_whom].to_bytes(1, byteorder="little")
+        data += bypass_map[to_whom].to_bytes(2, byteorder="little")
 
         # MGMT - L
         data += to_whom_len.to_bytes(4, byteorder="little")
 
-        # MGMT - V and also UI/NET - T
-        data += command_id.to_bytes(1, byteorder="little")
+        # MGMT - V and also UI/NET - STLV
+        data += Link_Sync_Word
+        data += command_id.to_bytes(2, byteorder="little")
 
         # UI/NET - L
         data += command_len.to_bytes(4, byteorder="little")
@@ -202,6 +206,7 @@ class Monitor:
         data += payload
 
         # transmit the TLV
+        # print(data);
         self.uart.write(bytes(data))
 
     def Close(self):

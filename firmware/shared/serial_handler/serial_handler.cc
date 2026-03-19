@@ -8,8 +8,7 @@ SerialHandler::SerialHandler(const uint16_t num_rx_packets,
                              uint8_t& rx_buff,
                              const uint32_t rx_buff_sz,
                              void (*Transmit)(void* arg),
-                             void* transmit_arg,
-                             const bool use_slip) :
+                             void* transmit_arg) :
     rx_packets(num_rx_packets),
     tx_buff(&tx_buff),
     tx_buff_sz(tx_buff_sz),
@@ -26,7 +25,6 @@ SerialHandler::SerialHandler(const uint16_t num_rx_packets,
     update_cache(0),
     Transmit(Transmit),
     transmit_arg(transmit_arg),
-    use_slip(use_slip),
     packet(&rx_packets.Write()),
     bytes_read(0),
     escaped(false)
@@ -43,14 +41,7 @@ SerialHandler::~SerialHandler()
 
 link_packet_t* SerialHandler::Read()
 {
-    if (use_slip)
-    {
-        return SlipRead();
-    }
-    else
-    {
-        return TLVRead();
-    }
+    return TLVRead();
 }
 
 void SerialHandler::Write(const uint8_t data, const bool end_frame)
@@ -60,7 +51,12 @@ void SerialHandler::Write(const uint8_t data, const bool end_frame)
 
 void SerialHandler::Write(const link_packet_t& packet, const bool end_frame)
 {
-    Write(packet.data, packet.length + link_packet_t::Header_Size, end_frame);
+    Write(packet.PacketData(), end_frame);
+}
+
+void SerialHandler::Write(std::span<const uint8_t> data, const bool end_frame)
+{
+    Write(data.data(), data.size(), end_frame);
 }
 
 void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool end_frame)
@@ -69,14 +65,7 @@ void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool e
     std::lock_guard<std::mutex> _(write_mux);
 #endif
 
-    if (use_slip)
-    {
-        SlipWrite(data, size, end_frame);
-    }
-    else
-    {
-        TLVWrite(data, size);
-    }
+    TLVWrite(data, size);
 
     if (unsent > tx_buff_sz)
     {
@@ -172,94 +161,36 @@ bool SerialHandler::PrepTransmit()
     return true;
 }
 
-link_packet_t* SerialHandler::SlipRead()
-{
-    // TODO for some reason when the semaphore can't be taken
-    // we get a lot of frame errors
-    // even though our update cache should be handling that
-    // by offsetting the total bytes read
-    uint16_t total_bytes_read = 0;
-    uint8_t byte = 0;
-    while (total_bytes_read + update_cache < unread)
-    {
-        // Get a byte
-        byte = ReadFromRxBuff();
-        ++total_bytes_read;
-
-        // Note if we don't cast everything, esp32 freaks out
-        if (byte == END
-            && uint16_t(bytes_read) == uint16_t(packet->length + link_packet_t::Header_Size))
-        {
-            packet->is_ready = true;
-
-            // Null out our packet pointer
-            packet = &rx_packets.Write();
-            bytes_read = 0;
-            continue;
-        }
-        else if (byte == END)
-        {
-            Logger::Log(Logger::Level::Info, "Frame len error");
-
-            packet->is_ready = false;
-            bytes_read = 0;
-            continue;
-        }
-
-        if (bytes_read >= link_packet_t::Packet_Size)
-        {
-            Logger::Log(Logger::Level::Info, "Frame overflow error");
-            // Hit maximum size and didn't get an end packet
-
-            packet->is_ready = false;
-            bytes_read = 0;
-            continue;
-        }
-
-        if (byte == ESC)
-        {
-            escaped = true;
-            continue;
-        }
-
-        if (escaped)
-        {
-            if (byte == ESC_END)
-            {
-                packet->data[bytes_read++] = END;
-            }
-            else if (byte == ESC_ESC)
-            {
-                packet->data[bytes_read++] = ESC;
-            }
-
-            escaped = false;
-        }
-        else
-        {
-            packet->data[bytes_read++] = byte;
-        }
-    }
-
-    if (total_bytes_read > 0 || update_cache > 0)
-    {
-        UpdateUnread(total_bytes_read);
-    }
-
-    return GetReadyPacket();
-}
-
 link_packet_t* SerialHandler::TLVRead()
 {
     uint16_t total_bytes_read = 0;
-    uint8_t byte = 0;
+    auto packet_data = packet->WriteableData();
+
+    static size_t sync_matched = 0;
 
     while (total_bytes_read + update_cache < unread)
     {
         uint8_t byte = ReadFromRxBuff();
-        packet->data[bytes_read++] = byte;
         ++total_bytes_read;
 
+        if (sync_matched < link_packet_t::Sync_Word_Size)
+        {
+            if (byte == packet->sync_word[sync_matched])
+            {
+                ++sync_matched;
+            }
+            else
+            {
+                sync_matched = byte == packet->sync_word[0];
+                packet->is_ready = false;
+
+                Logger::Log(Logger::Level::Info, "TLV error in sync word");
+            }
+
+            continue;
+        }
+
+        packet_data[bytes_read++] = byte;
         if (bytes_read < link_packet_t::Header_Size)
         {
             continue;
@@ -268,6 +199,8 @@ link_packet_t* SerialHandler::TLVRead()
         if (bytes_read >= packet->length + link_packet_t::Header_Size)
         {
             bytes_read = 0;
+            sync_matched = 0;
+
             packet->is_ready = true;
             packet = &rx_packets.Write();
             continue;
@@ -278,6 +211,7 @@ link_packet_t* SerialHandler::TLVRead()
 
             packet->is_ready = false;
             bytes_read = 0;
+            sync_matched = 0;
             continue;
         }
     }
@@ -300,37 +234,6 @@ link_packet_t* SerialHandler::GetReadyPacket()
     link_packet_t* p = &rx_packets.Read();
     p->is_ready = false;
     return p;
-}
-
-void SerialHandler::SlipWrite(const uint8_t* data, const uint16_t size, const bool end_frame)
-{
-    for (uint16_t i = 0; i < size; ++i)
-    {
-        if (data[i] == END)
-        {
-            unsent += 1;
-            WriteToTxBuff(ESC);
-            WriteToTxBuff(ESC_END);
-        }
-        else if (data[i] == ESC)
-        {
-            unsent += 1;
-            WriteToTxBuff(ESC);
-            WriteToTxBuff(ESC_ESC);
-        }
-        else
-        {
-            WriteToTxBuff(data[i]);
-        }
-    }
-
-    unsent += size;
-    // End frame
-    if (end_frame)
-    {
-        WriteToTxBuff(END);
-        unsent += 1;
-    }
 }
 
 void SerialHandler::TLVWrite(const uint8_t* data, const uint16_t size)

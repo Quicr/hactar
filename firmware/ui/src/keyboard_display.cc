@@ -22,7 +22,7 @@ void HandleChatMessages(Screen& screen, link_packet_t* packet)
     // Ignore the first bytes, which are just header information
     // +1 channel id, +1 message type, +4 length
     constexpr uint8_t payload_offset = 6;
-    char* text = (char*)(packet->payload + payload_offset);
+    char* text = (char*)(packet->payload.data() + payload_offset);
 
     screen.CommitText(text, packet->length - payload_offset);
 }

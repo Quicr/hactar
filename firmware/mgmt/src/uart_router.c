@@ -1,5 +1,6 @@
 #include "uart_router.h"
 #include "main.h"
+#include <stdint.h>
 #include <string.h>
 
 // https://stackoverflow.com/questions/3437404/min-and-max-in-c
@@ -102,13 +103,13 @@ static transmit_t internal_tx = {
     .free = 1,
 };
 
-static uint32_t num_read = 0;
-
 static uint8_t Ok_Byte[] = {0x80};
 static uint8_t Ready_Byte[] = {0x81};
 static uint8_t Ok_Ascii[3] = "Ok\n";
 static uint8_t Ack = 0x82;
 static uint8_t Nack = 0x83;
+
+static const uint8_t Link_Sync_Word[4] = {0x4C, 0x49, 0x4E, 0x4B};
 
 uint32_t last_receive_tick = 0;
 
@@ -362,22 +363,27 @@ void uart_router_perform_transmit(uart_stream_t* stream)
 
 void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 {
-    // Parse our internal, if it is a zero length TLV then we can just assume it is a command
-    // otherwise... I dunno right now.
+    const uint32_t Link_Sync_Word_Size = 4;
+    const uint32_t Type_Size = 2;
+    const uint32_t Length_Size = 4;
 
-    const uint32_t Header_Bytes = 5;
+    // Note, sync word is not part of the header.
+    const uint32_t Header_Bytes = Type_Size + Length_Size;
 
     static Command command = 0;
     static uint32_t len = 0;
 
+    static uint32_t num_read = 0;
     static uint32_t packet_idx = 0;
+    static uint8_t sync_matched = 0;
     static uint8_t packet[PACKET_SZ] = {0};
 
     // Time out internal data
     if (HAL_GetTick() - last_receive_tick >= 2000 && num_read > 0)
     {
-        num_read = 0;
         packet_idx = 0;
+        num_read = 0;
+        sync_matched = 0;
         uart_router_send_string(&usb_uart, "[Error] command timeout\n");
     }
 
@@ -388,23 +394,40 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
         internal_tx.read = internal_tx.write;
 
         // Reset
-        num_read = 0;
         packet_idx = 0;
+        num_read = 0;
+        sync_matched = 0;
     }
 
     while (internal_tx.read != internal_tx.write)
     {
+        if (sync_matched < Link_Sync_Word_Size)
+        {
+            const uint8_t byte = read_from_tx(&internal_tx, &num_read);
+            if (byte == Link_Sync_Word[sync_matched])
+            {
+                ++sync_matched;
+            }
+            else
+            {
+                sync_matched = byte == Link_Sync_Word[0];
+                num_read = 0;
+            }
+            continue;
+        }
+
         const uint16_t distance = get_distance(&internal_tx);
 
         // If we don't have enough bytes for the length and the command
-        if (distance < Header_Bytes && num_read == 0)
+        if (distance < Header_Bytes && num_read == Link_Sync_Word_Size)
         {
             break;
         }
 
-        if (num_read == 0)
+        if (num_read == Link_Sync_Word_Size)
         {
             command = read_from_tx(&internal_tx, &num_read);
+            command |= read_from_tx(&internal_tx, &num_read);
             len = (uint32_t)(read_from_tx(&internal_tx, &num_read));
             len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 8);
             len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 16);
@@ -415,6 +438,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
         {
             // bad data continue
             num_read = 0;
+            sync_matched = 0;
             continue;
         }
 
@@ -429,6 +453,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
             {
                 // Bad data continue;
                 num_read = 0;
+                sync_matched = 0;
                 break;
             }
             default:
@@ -448,8 +473,9 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
             }
             }
 
-            num_read = 0;
             packet_idx = 0;
+            num_read = 0;
+            sync_matched = 0;
             continue;
         }
         else
@@ -458,6 +484,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
             {
                 packet_idx = 0;
                 num_read = 0;
+                sync_matched = 0;
                 continue;
             }
 
@@ -465,7 +492,8 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
             packet[packet_idx++] = read_from_tx(&internal_tx, &num_read);
         }
 
-        if (num_read - Header_Bytes >= len && num_read >= 0)
+        // Should this num_read be > Header+sync_size
+        if (num_read - (Header_Bytes + Link_Sync_Word_Size) >= len && num_read >= 0)
         {
             // Send the packet to ui or net
             switch (command)
@@ -491,6 +519,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 
             num_read = 0;
             packet_idx = 0;
+            sync_matched = 0;
             continue;
         }
     }

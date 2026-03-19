@@ -14,6 +14,7 @@
 #include "freertos/projdefs.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
+#include "link_packet_t.hh"
 #include "logger.hh"
 #include "macros.hh"
 #include "net_mgmt_link.h"
@@ -351,7 +352,7 @@ static void UILinkPacketTask(void* args)
                 // Check if json for sure
                 uint8_t channel_id = packet->payload[0];
                 auto* response = static_cast<ui_net_link::AIResponseChunk*>(
-                    static_cast<void*>(packet->payload + 1));
+                    static_cast<void*>(packet->payload.data() + 1));
 
                 if (!json::accept(response->chunk_data))
                 {
@@ -396,19 +397,18 @@ static void UILinkPacketTask(void* args)
             }
             case ui_net_link::Packet_Type::Message:
             {
-                // Channel id is always zero, so, gotta fix that.
                 uint8_t channel_id = packet->payload[0];
                 uint32_t ext_bytes = 1;
                 uint32_t length = packet->length;
 
-                // Remove the bytes already read from the payload length
+                // Remove the bytes already read from the payload length (channel_id)
                 length -= ext_bytes;
 
                 if (channel_id < (uint8_t)ui_net_link::Channel_Id::Count - 1)
                 {
                     if (auto& writer = writers[channel_id])
                     {
-                        writers[channel_id]->PushObject(packet->payload + 1, length,
+                        writers[channel_id]->PushObject(packet->payload.data() + 1, length,
                                                         curr_audio_isr_time);
                     }
                 }
@@ -475,19 +475,20 @@ static void MgmtLinkPacketTask(void* args)
                 uint32_t ssid_name_len = 0;
                 uint32_t ssid_password_len = 0;
 
-                uint32_t offset = 0;
+                std::span<uint8_t> payload{packet->payload};
 
-                packet->Get(&ssid_name_len, sizeof(ssid_name_len), offset);
-                offset += sizeof(ssid_name_len);
+                std::memcpy(&ssid_name_len, payload.data(), sizeof(ssid_name_len));
+                payload = payload.subspan(sizeof(ssid_name_len));
 
-                std::string ssid_name((char*)packet->payload + offset, ssid_name_len);
-                offset += ssid_name_len;
+                std::string ssid_name(reinterpret_cast<char*>(payload.data()), ssid_name_len);
+                payload = payload.subspan(ssid_name_len);
 
-                packet->Get(&ssid_password_len, sizeof(ssid_password_len), offset);
-                offset += sizeof(ssid_password_len);
+                std::memcpy(&ssid_password_len, payload.data(), sizeof(ssid_password_len));
+                payload = payload.subspan(sizeof(ssid_password_len));
 
-                std::string ssid_password((char*)packet->payload + offset, ssid_password_len);
-                offset += ssid_password_len;
+                std::string ssid_password(reinterpret_cast<char*>(payload.data()),
+                                          ssid_password_len);
+                payload = payload.subspan(ssid_password_len);
 
                 NET_LOG_INFO("Got ssid name len %lu %s", ssid_name_len, ssid_name.c_str());
                 NET_LOG_INFO("Got ssid password len %lu %s", ssid_password_len,
@@ -531,7 +532,7 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Set_Moq_Url:
             {
-                std::string moq_url((char*)packet->payload, packet->length);
+                std::string moq_url((char*)packet->payload.data(), packet->length);
                 NET_LOG_INFO("Got moq url %d - %s", moq_url.length(), moq_url.c_str());
 
                 if (moq_url.length() == 0)
@@ -965,7 +966,7 @@ extern "C" void app_main(void)
             gpio_set_level(NET_LED_G, 1);
 
             link_packet_t packet;
-            packet.type = (uint8_t)ui_net_link::Packet_Type::WifiStatus;
+            packet.type = (uint16_t)ui_net_link::Packet_Type::WifiStatus;
             packet.payload[0] = (uint8_t)wifi_state;
             ui_layer.Write(packet);
 
