@@ -8,3 +8,6 @@
 [submodule "firmware/ui/dependencies/sframe"]
 	path = firmware/ui/dependencies/sframe
 	url = https://github.com/GhostofCookie/sframe.git
+[submodule "link"]
+	path = link
+	url = https://github.com/link-rs/link
