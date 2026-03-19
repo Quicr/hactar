@@ -7,7 +7,7 @@
 #include "serial.hh"
 #include <nlohmann/json.hpp>
 #include <quicr/client.h>
-#include <quicr/detail/defer.h>
+#include <quicr/defer.h>
 #include <map>
 
 namespace moq
