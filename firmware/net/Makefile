@@ -21,6 +21,8 @@ ESP_TOOL_ARGS 		= --trace --no-stub --port=${port} --baud=${BAUD} write_flash --
 	${PARITIONS_ADDR} ${BUILD_PATH}/partition_table/partition-table.bin \
 	${PROG_ADDR} ${BUILD_PATH}/${TARGET}.bin
 
+.PHONY compile upload upload_debugger upload_esptool docker monitor
+
 all: compile
 
 compile: check_who_compiled
