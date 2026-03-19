@@ -124,6 +124,11 @@ Reply_Ready = 0x81
 Reply_Ack = bytes([0x82])
 Reply_Nack = bytes([0x83])
 
+# TLV Response types (matching net_mgmt_link.h)
+Response_Ack = 0x8000
+Response_Nack = 0x8001
+Response_Data = 0x8002
+
 
 def hactar_send_command(uart: serial.Serial, command: bytes, max_attempts: int = 5):
     uart.write(command)

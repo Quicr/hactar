@@ -194,21 +194,33 @@ static void EnableLogging()
     logs_disabled = false;
 }
 
-// Send a response line prefixed with "LINK" so MGMT can distinguish it from logs
+// Send a TLV response packet to MGMT
+static void SendLinkResponse(uint16_t type, const uint8_t* data, uint32_t length)
+{
+    link_packet_t packet;
+    packet.type = type;
+    packet.length = length;
+    if (data && length > 0)
+    {
+        std::memcpy(packet.payload.data(), data, std::min(length, (uint32_t)packet.payload.size()));
+    }
+    mgmt_layer.Write(packet);
+}
+
 static void SendLinkResponse(const std::string& response)
 {
-    std::string line = "LINK" + response + "\n";
-    mgmt_layer.Write((uint8_t*)line.data(), line.length());
+    SendLinkResponse(Configuration::Response_Data, (const uint8_t*)response.data(),
+                     response.length());
 }
 
 static void SendLinkAck()
 {
-    SendLinkResponse("ACK");
+    SendLinkResponse(Configuration::Response_Ack, nullptr, 0);
 }
 
 static void SendLinkNack()
 {
-    SendLinkResponse("NACK");
+    SendLinkResponse(Configuration::Response_Nack, nullptr, 0);
 }
 
 // Load namespaces from storage into memory
@@ -505,7 +517,8 @@ static void MgmtLinkPacketTask(void* args)
                 const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
                 for (size_t i = 0; i < creds.size(); ++i)
                 {
-                    if (i > 0) str.append(",");
+                    if (i > 0)
+                        str.append(",");
                     str.append(creds[i].name, creds[i].name_len);
                 }
 
@@ -518,7 +531,8 @@ static void MgmtLinkPacketTask(void* args)
                 const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
                 for (size_t i = 0; i < creds.size(); ++i)
                 {
-                    if (i > 0) str.append(",");
+                    if (i > 0)
+                        str.append(",");
                     str.append(creds[i].pwd, creds[i].pwd_len);
                 }
                 SendLinkResponse(str);
@@ -594,7 +608,7 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Set_Language:
             {
-                std::string new_lang((char*)packet->payload, packet->length);
+                std::string new_lang((char*)packet->payload.data(), packet->length);
                 if (!IsValidLanguage(new_lang))
                 {
                     NET_LOG_ERROR("Invalid language: %s", new_lang.c_str());
@@ -620,7 +634,7 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Set_Channel:
             {
                 std::vector<std::string> new_ns;
-                size_t consumed = DecodeNamespace(packet->payload, packet->length, new_ns);
+                size_t consumed = DecodeNamespace(packet->payload.data(), packet->length, new_ns);
                 if (consumed == 0 || new_ns.empty())
                 {
                     NET_LOG_ERROR("Failed to decode channel namespace");
@@ -648,8 +662,8 @@ static void MgmtLinkPacketTask(void* args)
                 size_t offset = 0;
                 std::vector<std::string> query_ns, audio_ns, cmd_ns;
 
-                size_t consumed =
-                    DecodeNamespace(packet->payload + offset, packet->length - offset, query_ns);
+                size_t consumed = DecodeNamespace(packet->payload.data() + offset,
+                                                  packet->length - offset, query_ns);
                 if (consumed == 0)
                 {
                     NET_LOG_ERROR("Failed to decode AI query namespace");
@@ -658,8 +672,8 @@ static void MgmtLinkPacketTask(void* args)
                 }
                 offset += consumed;
 
-                consumed =
-                    DecodeNamespace(packet->payload + offset, packet->length - offset, audio_ns);
+                consumed = DecodeNamespace(packet->payload.data() + offset, packet->length - offset,
+                                           audio_ns);
                 if (consumed == 0)
                 {
                     NET_LOG_ERROR("Failed to decode AI audio response namespace");
@@ -668,8 +682,8 @@ static void MgmtLinkPacketTask(void* args)
                 }
                 offset += consumed;
 
-                consumed =
-                    DecodeNamespace(packet->payload + offset, packet->length - offset, cmd_ns);
+                consumed = DecodeNamespace(packet->payload.data() + offset, packet->length - offset,
+                                           cmd_ns);
                 if (consumed == 0)
                 {
                     NET_LOG_ERROR("Failed to decode AI command response namespace");
@@ -697,9 +711,9 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Get_AI:
             {
                 // Return JSON representation for readability
-                std::string response = "{\"query\":" + ai_query_ns_json.Load() +
-                                       ",\"audio\":" + ai_audio_response_ns_json.Load() +
-                                       ",\"cmd\":" + ai_cmd_response_ns_json.Load() + "}";
+                std::string response = "{\"query\":" + ai_query_ns_json.Load()
+                                     + ",\"audio\":" + ai_audio_response_ns_json.Load()
+                                     + ",\"cmd\":" + ai_cmd_response_ns_json.Load() + "}";
                 SendLinkResponse(response);
                 break;
             }
@@ -904,7 +918,8 @@ extern "C" void app_main(void)
     // Load namespaces from storage
     LoadNamespacesFromStorage();
 
-    // Log warnings if namespaces are not configured (no defaults - must be configured via fl-identity)
+    // Log warnings if namespaces are not configured (no defaults - must be configured via
+    // fl-identity)
     if (channel_ns.empty())
     {
         NET_LOG_WARN("Channel namespace not configured - device needs configuration");

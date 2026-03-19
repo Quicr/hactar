@@ -22,6 +22,11 @@ enum Configuration
     Set_AI,
     Get_AI,
     Burn_Disable_USB_JTag_Efuse,
+
+    // Response types (high values to distinguish from commands)
+    Response_Ack = 0x8000,
+    Response_Nack = 0x8001,
+    Response_Data = 0x8002,
 };
 
 // Supported language tags for Set_Language validation

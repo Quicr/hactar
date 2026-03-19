@@ -15,10 +15,12 @@ except Exception:
 import json
 
 import serial
+import struct
 from hactar_commands import (bypass_map, command_map, hactar_command_completer,
                              hactar_command_print_matches, net_command_map,
                              ui_command_map, SUPPORTED_LANGUAGES, is_valid_language,
-                             encode_namespace, Link_Sync_Word)
+                             encode_namespace, Link_Sync_Word,
+                             Response_Ack, Response_Nack, Response_Data)
 from hactar_scanning import HactarScanning, ResetDevice, SelectHactarPort
 
 
@@ -54,6 +56,11 @@ class Monitor:
                 return ""
 
             data += char
+
+            # Check for TLV sync word
+            if data[-4:] == Link_Sync_Word:
+                return self.ParseTLVResponse(data[:-4])
+
             if char == b"\n":
                 return data.decode()
 
@@ -62,6 +69,41 @@ class Monitor:
         data = data.decode()
 
         return data
+
+    def ParseTLVResponse(self, prefix_data):
+        """Parse a TLV response packet after sync word detected."""
+        # Print any prefix data (logs before the response)
+        if prefix_data:
+            try:
+                sys.stdout.write(f"\r\033[K{prefix_data.decode()}")
+                sys.stdout.flush()
+            except Exception:
+                pass
+
+        # Read header: type (2 bytes) + length (4 bytes)
+        header = self.uart.read(6)
+        if len(header) < 6:
+            return "[TLV] Incomplete header\n"
+
+        msg_type, msg_len = struct.unpack("<HI", header)
+
+        # Read payload
+        payload = bytes()
+        if msg_len > 0:
+            payload = self.uart.read(msg_len)
+
+        # Format response based on type
+        if msg_type == Response_Ack:
+            return "\033[92m[ACK]\033[0m\n"
+        elif msg_type == Response_Nack:
+            return "\033[91m[NACK]\033[0m\n"
+        elif msg_type == Response_Data:
+            try:
+                return f"\033[94m[DATA]\033[0m {payload.decode('utf-8')}\n"
+            except Exception:
+                return f"\033[94m[DATA]\033[0m {payload.hex()}\n"
+        else:
+            return f"[TLV type=0x{msg_type:04x} len={msg_len}] {payload.hex()}\n"
 
     def ReadSerial(self, threaded=False):
         while self.running and threaded:
