@@ -91,7 +91,7 @@ Any and all instructions for Debian will work on WSL and is recommended you foll
 
 ### Firmware Technologies
 - [GNU arm-none-eabi](https://developer.arm.com/downloads/-/gnu-rm)
-- [ESP-IDF v5.4.3](https://docs.espressif.com/projects/esp-idf/en/v5.4.3/esp32/get-started/index.html)
+- [ESP-IDF v5.4.2](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32/get-started/index.html)
 - [STM32 CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html)
 
 
