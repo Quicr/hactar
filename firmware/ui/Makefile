@@ -50,7 +50,7 @@ WHO 				= local
 OCD_DIR    = /usr/share/openocd/scripts
 OCDFLAGS   = -f interface/stlink.cfg -f target/stm32f4x.cfg
 
-.PHONY: all
+.PHONY: all compile upload upload_debugger upload_cube_uart upload_cube_swd docker monitor format
 
 # default action: build all
 all: info compile
@@ -66,7 +66,7 @@ upload: compile
 upload_debugger: compile
 	st-flash --reset --format ihex write ${BUILD_DIR}/${TARGET}.hex
 
-upload_cube_serial: compile
+upload_cube_uart: compile
 	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="ui" --use_external_flasher=true
 	STM32_Programmer_CLI${EXT} ${CUBE_PROGRAMMER_ARGS}
 
@@ -107,11 +107,6 @@ check_who_compiled:
 		echo  ${WHO} > ${CHECK_FILE};   \
 	fi
 
-dirs: ${BUILD_DIR}
-${BUILD_DIR}:
-	@echo "[MKDIR]		$@"
-	@mkdir -p $@
-
 openocd:
 	openocd $(OCDFLAGS)
 
@@ -132,12 +127,5 @@ docker-clean:
 
 clean:
 	-rm -fR $(BUILD_DIR)
-
-info:
-	@echo "[Build path]		${BUILD_DIR}"
-	@echo "[Includes] 		${INCS}"
-	@echo "[Objects] 		${OBJECTS}"
-	@echo "[Dependencies]	${DEPS}"
-	@echo "[vpath] 			${VPATH}"
 
 # *** EOF ***
