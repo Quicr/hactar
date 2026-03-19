@@ -903,37 +903,14 @@ extern "C" void app_main(void)
     // Load namespaces from storage
     LoadNamespacesFromStorage();
 
-    // Set default namespaces if not configured
-    const std::vector<std::string> default_ns_prefix = {"moq://moq.ptt.arpa/v1", "org/acme",
-                                                        "store/1234"};
-
-    if (ai_query_ns.empty())
-    {
-        ai_query_ns = default_ns_prefix;
-        ai_query_ns.push_back("ai/audio");
-        ai_query_ns_json = NamespaceToJson(ai_query_ns);
-    }
-
-    if (ai_audio_response_ns.empty())
-    {
-        ai_audio_response_ns = default_ns_prefix;
-        ai_audio_response_ns.push_back("ai/audio");
-        ai_audio_response_ns_json = NamespaceToJson(ai_audio_response_ns);
-    }
-
-    if (ai_cmd_response_ns.empty())
-    {
-        ai_cmd_response_ns = default_ns_prefix;
-        ai_cmd_response_ns.push_back("ai/text");
-        ai_cmd_response_ns_json = NamespaceToJson(ai_cmd_response_ns);
-    }
-
+    // Log warnings if namespaces are not configured (no defaults - must be configured via fl-identity)
     if (channel_ns.empty())
     {
-        channel_ns = default_ns_prefix;
-        channel_ns.push_back("channel/gardening");
-        channel_ns.push_back("ptt");
-        channel_ns_json = NamespaceToJson(channel_ns);
+        NET_LOG_WARN("Channel namespace not configured - device needs configuration");
+    }
+    if (ai_query_ns.empty() || ai_audio_response_ns.empty() || ai_cmd_response_ns.empty())
+    {
+        NET_LOG_WARN("AI namespaces not configured - device needs configuration");
     }
 
     // setup moq transport
