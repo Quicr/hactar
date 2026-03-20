@@ -24,7 +24,7 @@ ESP_TOOL_ARGS 		= --trace --no-stub --port=${port} --baud=${BAUD} write_flash --
 all: compile
 
 compile: check_who_compiled
-	idf.py -B $(BUILD_PATH) build -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+	idf.py -B $(BUILD_PATH) build -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_SKIP_INSTALL_RULES=ON
 
 upload: compile
 	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="net" -bin=${BUILD_PATH}

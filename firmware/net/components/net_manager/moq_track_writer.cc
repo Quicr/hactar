@@ -120,8 +120,9 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
     obj.headers.group_id = device_id;
     obj.headers.object_id = object_id++;
     obj.headers.payload_length = len;
-    obj.headers.extensions = quicr::Extensions{};
-    obj.headers.extensions.value()[2].assign(time_bytes.begin(), time_bytes.end());
+    obj.headers.immutable_extensions = quicr::Extensions{};
+    obj.headers.immutable_extensions.value()[2].emplace_back().assign(time_bytes.begin(),
+                                                                      time_bytes.end());
 
     obj.data.assign(bytes, bytes + len);
 }
