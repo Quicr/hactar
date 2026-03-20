@@ -20,10 +20,7 @@ extern SemaphoreHandle_t audio_req_smpr;
 TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
                          Serial& serial,
                          const std::string& codec) :
-    SubscribeTrackHandler(full_track_name,
-                          3,
-                          quicr::messages::GroupOrder::kAscending,
-                          quicr::messages::FilterType::kLargestObject),
+    SubscribeTrackHandler(full_track_name, 3, quicr::messages::GroupOrder::kAscending),
     serial(serial),
     codec(codec),
     track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end())
