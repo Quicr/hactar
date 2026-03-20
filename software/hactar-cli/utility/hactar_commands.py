@@ -63,15 +63,71 @@ net_command_map = {
     "enable_logs": {"id": 10, "num_params": 0},
     "disable_loopback": {"id": 11, "num_params": 0},
     "enable_loopback": {"id": 12, "num_params": 0},
-    "set_fl_config": {"id": 13, "num_params": 2},
-    "burn_efuse": {"id": 14, "num_params": 0},
+    "set_language": {"id": 13, "num_params": 1, "encoder": "language"},
+    "get_language": {"id": 14, "num_params": 0},
+    "set_channel": {"id": 15, "num_params": 1, "encoder": "namespace"},
+    "get_channel": {"id": 16, "num_params": 0},
+    "set_ai": {"id": 17, "num_params": 3, "encoder": "ai_namespaces"},
+    "get_ai": {"id": 18, "num_params": 0},
+    "burn_efuse": {"id": 19, "num_params": 0},
 }
+
+# Supported language tags
+SUPPORTED_LANGUAGES = ["en-US", "es-ES", "de-DE", "hi-IN", "nb-NO"]
+
+
+def is_valid_language(lang: str) -> bool:
+    return lang in SUPPORTED_LANGUAGES
+
+
+def encode_namespace(ns_parts: list[str]) -> bytes:
+    """Encode a namespace (list of strings) to wire format.
+    Format: [4 bytes: num_parts] [for each part: 4 bytes length + UTF-8 string]
+    """
+    import struct
+
+    result = struct.pack("<I", len(ns_parts))
+    for part in ns_parts:
+        part_bytes = part.encode("utf-8")
+        result += struct.pack("<I", len(part_bytes)) + part_bytes
+    return result
+
+
+def decode_namespace(data: bytes, offset: int = 0) -> tuple[list[str], int]:
+    """Decode a namespace from wire format.
+    Returns (namespace_parts, bytes_consumed).
+    """
+    import struct
+
+    if len(data) - offset < 4:
+        return [], 0
+
+    num_parts = struct.unpack_from("<I", data, offset)[0]
+    offset += 4
+    parts = []
+
+    for _ in range(num_parts):
+        if len(data) - offset < 4:
+            break
+        part_len = struct.unpack_from("<I", data, offset)[0]
+        offset += 4
+        if len(data) - offset < part_len:
+            break
+        parts.append(data[offset : offset + part_len].decode("utf-8"))
+        offset += part_len
+
+    return parts, offset
 
 ST_Ack = 0x79
 Reply_Ok = 0x80
 Reply_Ready = 0x81
 Reply_Ack = bytes([0x82])
 Reply_Nack = bytes([0x83])
+
+# TLV Response types (matching net_mgmt_link.h)
+Response_Ack = 0x8000
+Response_Nack = 0x8001
+Response_Data = 0x8002
 
 
 def hactar_send_command(uart: serial.Serial, command: bytes, max_attempts: int = 5):

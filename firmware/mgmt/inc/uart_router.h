@@ -8,9 +8,10 @@
 #define NET_UART_BUFF_SZ 2048
 #define USB_UART_BUFF_SZ 2048
 #define UI_UART_BUFF_SZ 1024
-#define INTERNAL_BUFF_SZ 64
-#define PACKET_SZ 64
+#define INTERNAL_BUFF_SZ 512
+#define PACKET_SZ 512
 #define COMMAND_TIMEOUT 1000
+#define NET_LINE_BUFF_SZ 256
 
 typedef enum
 {

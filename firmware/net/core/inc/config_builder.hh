@@ -1,129 +1,99 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include <algorithm>
+#include <array>
 #include <cstdint>
-#include <format>
+#include <cstring>
 #include <string>
 #include <vector>
 
 using json = nlohmann::json;
 
-class ChannelBuilder
-{
-public:
-    ChannelBuilder(const std::vector<std::string>& track_ns_prefix, std::uint64_t endpoint_id) :
-        _track_ns_prefix(track_ns_prefix)
-    {
-        _config = json{
-            {
-                "endpoint_info",
-                {
-                    {"id", "c637ae2a-b3d7-4574-bac7-8c7b5ee44f3e"},
-                    {"owner", "alice@acme.com"},
-                    {"lang-preference", ""},
-                },
-            },
-        };
-
-        _config["publications"] = json::array();
-        _config["subscriptions"] = json::array();
-
-        json ai_audio_channel{
-            {"channel_name", "self_ai_audio"},
-            {"tracknamespace",
-             [&] {
-                 std::vector<std::string> ns = _track_ns_prefix;
-                 ns.push_back("ai/audio");
-                 return ns;
-             }()},
-            {"trackname", std::to_string(endpoint_id)},
-            {"codec", "pcm"},
-            {"samplerate", 8000},
-        };
-
-        json ai_text_channel{
-            {"channel_name", "self_ai_text"},
-            {"tracknamespace",
-             [&] {
-                 std::vector<std::string> ns = _track_ns_prefix;
-                 ns.push_back("ai/text");
-                 return ns;
-             }()},
-            {"trackname", std::to_string(endpoint_id)},
-            {"codec", "ai_cmd_response:json"},
-        };
-
-        _config["subscriptions"].push_back(ai_audio_channel);
-        _config["subscriptions"].push_back(ai_text_channel);
-    }
-
-    ChannelBuilder& AddPublicationChannel(const std::string& name,
-                                          const std::string& language,
-                                          const std::string& codec)
-    {
-        std::vector<std::string> track_ns = _track_ns_prefix;
-        track_ns.push_back(std::format("channel/{}", name));
-        track_ns.push_back("ptt");
-
-        _config["publications"].push_back(BuildChannel(track_ns, name, language, codec));
-
-        return *this;
-    }
-
-    ChannelBuilder& AddSubscriptionChannel(const std::string& name,
-                                           const std::string& language,
-                                           const std::string& codec)
-    {
-        std::vector<std::string> track_ns = _track_ns_prefix;
-        track_ns.push_back(std::format("channel/{}", name));
-        track_ns.push_back("ptt");
-
-        _config["subscriptions"].push_back(BuildChannel(track_ns, name, language, codec));
-
-        return *this;
-    }
-
-    ChannelBuilder& AddAIAudioPublicationChannel(const std::string& language)
-    {
-        std::vector<std::string> track_ns = _track_ns_prefix;
-        track_ns.push_back("ai/audio");
-
-        _config["publications"].push_back(BuildChannel(track_ns, "ai_audio", language, "pcm"));
-
-        return *this;
-    }
-
-    const json& GetConfig() const
-    {
-        return _config;
-    }
-
-protected:
-    json BuildChannel(const std::vector<std::string>& track_ns,
-                      const std::string& name,
-                      const std::string& language,
-                      const std::string& codec)
-    {
-        json channel;
-        channel["channel_name"] = name;
-        channel["language"] = language;
-        channel["tracknamespace"] = track_ns;
-        channel["codec"] = codec;
-
-        if (codec == "pcm")
-        {
-            channel["trackname"] = std::format("pcm_{}_8khz_mono_i16", language.substr(0, 2));
-            channel["samplerate"] = 8000;
-        }
-        else
-        {
-            channel["trackname"] = std::format("chat_{}", language.substr(0, 2));
-        }
-
-        return channel;
-    }
-
-private:
-    const std::vector<std::string> _track_ns_prefix;
-    json _config;
+// Supported language tags
+inline constexpr std::array<const char*, 5> kSupportedLanguages = {
+    "en-US", "es-ES", "de-DE", "hi-IN", "nb-NO",
 };
+
+inline bool IsValidLanguage(const std::string& lang)
+{
+    return std::find(kSupportedLanguages.begin(), kSupportedLanguages.end(), lang)
+        != kSupportedLanguages.end();
+}
+
+// Encode a namespace (vector of strings) to wire format:
+// [4 bytes: num_parts] [for each part: 4 bytes length + UTF-8 string]
+inline std::vector<uint8_t> EncodeNamespace(const std::vector<std::string>& ns)
+{
+    std::vector<uint8_t> result;
+    uint32_t num_parts = static_cast<uint32_t>(ns.size());
+    result.insert(result.end(), reinterpret_cast<uint8_t*>(&num_parts),
+                  reinterpret_cast<uint8_t*>(&num_parts) + sizeof(num_parts));
+
+    for (const auto& part : ns)
+    {
+        uint32_t len = static_cast<uint32_t>(part.size());
+        result.insert(result.end(), reinterpret_cast<uint8_t*>(&len),
+                      reinterpret_cast<uint8_t*>(&len) + sizeof(len));
+        result.insert(result.end(), part.begin(), part.end());
+    }
+    return result;
+}
+
+// Decode a namespace from wire format, returns bytes consumed
+inline size_t DecodeNamespace(const uint8_t* data, size_t max_len, std::vector<std::string>& ns)
+{
+    ns.clear();
+    if (max_len < sizeof(uint32_t))
+    {
+        return 0;
+    }
+
+    size_t offset = 0;
+    uint32_t num_parts = 0;
+    memcpy(&num_parts, data + offset, sizeof(num_parts));
+    offset += sizeof(num_parts);
+
+    for (uint32_t i = 0; i < num_parts && offset < max_len; ++i)
+    {
+        if (offset + sizeof(uint32_t) > max_len)
+        {
+            break;
+        }
+        uint32_t len = 0;
+        memcpy(&len, data + offset, sizeof(len));
+        offset += sizeof(len);
+
+        if (offset + len > max_len)
+        {
+            break;
+        }
+        ns.emplace_back(reinterpret_cast<const char*>(data + offset), len);
+        offset += len;
+    }
+    return offset;
+}
+
+// Convert namespace to/from JSON for storage
+inline std::string NamespaceToJson(const std::vector<std::string>& ns)
+{
+    json j = ns;
+    return j.dump();
+}
+
+inline std::vector<std::string> JsonToNamespace(const std::string& json_str)
+{
+    if (json_str.empty())
+    {
+        return {};
+    }
+    try
+    {
+        json j = json::parse(json_str);
+        return j.get<std::vector<std::string>>();
+    }
+    catch (...)
+    {
+        return {};
+    }
+}

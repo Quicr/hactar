@@ -30,6 +30,10 @@ static uint8_t usb_tx_buff[USB_UART_BUFF_SZ] = {0};
 
 static uint8_t internal_buff[INTERNAL_BUFF_SZ] = {0};
 
+// Line buffer for NET input to scan for LINK prefix
+static uint8_t net_line_buff[NET_LINE_BUFF_SZ] = {0};
+static uint16_t net_line_idx = 0;
+
 uart_stream_t usb_stream = {
     .uart = &usb_uart,
     .rx =
@@ -205,10 +209,52 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
     __enable_irq();
 }
 
+// Process a byte from NET, buffering into lines and checking for LINK prefix
+// Only called when path == Tx_Path_None (logs disabled but still want LINK responses)
+static void uart_router_process_net_byte(uint8_t byte)
+{
+    // Add byte to line buffer
+    if (net_line_idx < NET_LINE_BUFF_SZ - 1)
+    {
+        net_line_buff[net_line_idx++] = byte;
+    }
+
+    // Check for end of line
+    if (byte == '\n')
+    {
+        // Check if line starts with "LINK"
+        if (net_line_idx >= 5 && net_line_buff[0] == 'L' && net_line_buff[1] == 'I'
+            && net_line_buff[2] == 'N' && net_line_buff[3] == 'K')
+        {
+            // Forward LINK lines to USB (without the "LINK" prefix)
+            uart_router_copy_to_tx(&usb_stream.tx, net_line_buff + 4, net_line_idx - 4);
+        }
+        // Non-LINK lines are discarded when path is None
+        // Reset line buffer
+        net_line_idx = 0;
+    }
+}
+
 void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received)
 {
     // Calculate the number of bytes have occurred since the last event
     const uint16_t num_bytes = num_received - stream->rx.idx;
+
+    // Special handling for NET stream when logs are disabled (path == None)
+    // to still forward LINK response lines
+    if (stream == &net_stream && stream->path == Tx_Path_None)
+    {
+        for (uint16_t i = 0; i < num_bytes; ++i)
+        {
+            uart_router_process_net_byte(stream->rx.buff[stream->rx.idx + i]);
+        }
+        stream->rx.idx += num_bytes;
+        if (stream->rx.idx >= stream->rx.size)
+        {
+            stream->rx.idx = 0;
+        }
+        return;
+    }
 
     // Faster than putting a check inside of the copy loop since this is only
     // checked once per rx event.
@@ -250,8 +296,8 @@ void uart_router_copy_to_tx(transmit_t* tx, const uint8_t* buff, const uint16_t 
     uint16_t read_idx = 0;
     while (read_idx < bytes)
     {
-        // Get the amount we can copy
-        const uint16_t to_copy = min(tx->size - tx->write, bytes);
+        // Get the amount we can copy (remaining bytes, limited by space until end of buffer)
+        const uint16_t to_copy = min(tx->size - tx->write, bytes - read_idx);
 
         memcpy(tx->buff + tx->write, buff + read_idx, to_copy);
 

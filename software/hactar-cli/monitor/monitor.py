@@ -12,10 +12,15 @@ try:
 except Exception:
     readline = None
 
+import json
+
 import serial
+import struct
 from hactar_commands import (bypass_map, command_map, hactar_command_completer,
                              hactar_command_print_matches, net_command_map,
-                             ui_command_map, Link_Sync_Word)
+                             ui_command_map, SUPPORTED_LANGUAGES, is_valid_language,
+                             encode_namespace, Link_Sync_Word,
+                             Response_Ack, Response_Nack, Response_Data)
 from hactar_scanning import HactarScanning, ResetDevice, SelectHactarPort
 
 
@@ -51,6 +56,11 @@ class Monitor:
                 return ""
 
             data += char
+
+            # Check for TLV sync word
+            if data[-4:] == Link_Sync_Word:
+                return self.ParseTLVResponse(data[:-4])
+
             if char == b"\n":
                 return data.decode()
 
@@ -59,6 +69,41 @@ class Monitor:
         data = data.decode()
 
         return data
+
+    def ParseTLVResponse(self, prefix_data):
+        """Parse a TLV response packet after sync word detected."""
+        # Print any prefix data (logs before the response)
+        if prefix_data:
+            try:
+                sys.stdout.write(f"\r\033[K{prefix_data.decode()}")
+                sys.stdout.flush()
+            except Exception:
+                pass
+
+        # Read header: type (2 bytes) + length (4 bytes)
+        header = self.uart.read(6)
+        if len(header) < 6:
+            return "[TLV] Incomplete header\n"
+
+        msg_type, msg_len = struct.unpack("<HI", header)
+
+        # Read payload
+        payload = bytes()
+        if msg_len > 0:
+            payload = self.uart.read(msg_len)
+
+        # Format response based on type
+        if msg_type == Response_Ack:
+            return "\033[92m[ACK]\033[0m\n"
+        elif msg_type == Response_Nack:
+            return "\033[91m[NACK]\033[0m\n"
+        elif msg_type == Response_Data:
+            try:
+                return f"\033[94m[DATA]\033[0m {payload.decode('utf-8')}\n"
+            except Exception:
+                return f"\033[94m[DATA]\033[0m {payload.hex()}\n"
+        else:
+            return f"[TLV type=0x{msg_type:04x} len={msg_len}] {payload.hex()}\n"
 
     def ReadSerial(self, threaded=False):
         while self.running and threaded:
@@ -118,6 +163,7 @@ class Monitor:
 
         num_params = chip_commands[command]["num_params"]
         command_id = chip_commands[command]["id"]
+        encoder = chip_commands[command].get("encoder", None)
 
         if len(split) - 2 < num_params:
             print(
@@ -131,21 +177,55 @@ class Monitor:
             )
             return
 
+        # Encode the payload based on the encoder type
+        payload = bytes()
+
+        if encoder == "language":
+            # Validate language
+            lang = split[2]
+            if not is_valid_language(lang):
+                print(f"[ERROR] Invalid language '{lang}'. Supported: {', '.join(SUPPORTED_LANGUAGES)}")
+                return
+            payload = lang.encode("utf-8")
+
+        elif encoder == "namespace":
+            # Parse JSON array and encode as namespace
+            try:
+                ns_parts = json.loads(split[2])
+                if not isinstance(ns_parts, list):
+                    print("[ERROR] Namespace must be a JSON array of strings")
+                    return
+                payload = encode_namespace(ns_parts)
+            except json.JSONDecodeError as e:
+                print(f"[ERROR] Invalid JSON: {e}")
+                return
+
+        elif encoder == "ai_namespaces":
+            # Parse 3 JSON arrays (query, audio_response, cmd_response)
+            try:
+                query_ns = json.loads(split[2])
+                audio_ns = json.loads(split[3])
+                cmd_ns = json.loads(split[4])
+
+                if not all(isinstance(ns, list) for ns in [query_ns, audio_ns, cmd_ns]):
+                    print("[ERROR] All AI namespaces must be JSON arrays of strings")
+                    return
+
+                payload = encode_namespace(query_ns) + encode_namespace(audio_ns) + encode_namespace(cmd_ns)
+            except json.JSONDecodeError as e:
+                print(f"[ERROR] Invalid JSON: {e}")
+                return
+
+        else:
+            # Default encoding: length-prefixed strings if multiple params
+            for param in split[2:]:
+                if num_params > 1:
+                    payload += len(param).to_bytes(4, byteorder="little")
+                payload += param.encode("utf-8")
+
         Header_Bytes = 6 + len(Link_Sync_Word)  # 2 type, 4 length
-
-        # Create the length of the mgmt TLV and ui TLV
-        to_whom_len = Header_Bytes
-        command_len = 0
-
-        for param in split[2:]:
-            # Get the total sizes before we can continue
-            to_whom_len += len(param)
-            command_len += len(param)
-
-            if num_params > 1:
-                # Less than two params, we don't need to add data lens for each param
-                to_whom_len += 4
-                command_len += 4
+        to_whom_len = Header_Bytes + len(payload)
+        command_len = len(payload)
 
         data = []
         # Sync word 
@@ -164,14 +244,8 @@ class Monitor:
         # UI/NET - L
         data += command_len.to_bytes(4, byteorder="little")
 
-        # UI/NET - V
-        for param in split[2:]:
-            # If there is > 1 params then we add the size of the param first
-            if num_params > 1:
-                data += len(param).to_bytes(4, byteorder="little")
-                pass
-
-            data += param.encode("utf-8")
+        # UI/NET - V (payload)
+        data += payload
 
         # transmit the TLV
         # print(data);
@@ -210,7 +284,7 @@ def main(args):
     readline.set_completer(hactar_command_completer)
     readline.set_completion_display_matches_hook(hactar_command_print_matches)
 
-    if sys.platform == "darwin":
+    if "libedit" in (readline.__doc__ or ""):
         readline.parse_and_bind("bind ^I rl_complete")
     else:
         readline.parse_and_bind("tab: complete")
