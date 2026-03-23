@@ -65,7 +65,7 @@ uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = {0};
 uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = {0};
 
 uart_config_t net_ui_uart_config = {
-    .baud_rate = 460800,
+    .baud_rate = 921600,
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_2,
