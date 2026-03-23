@@ -51,21 +51,20 @@ public:
         _config["subscriptions"].push_back(ai_text_channel);
     }
 
-    ChannelBuilder&
-    AddPublicationChannel(const std::string&, const std::string& language, const std::string& codec)
+    ChannelBuilder& AddPublicationChannel(const std::string& name,
+                                          const std::string& language,
+                                          const std::string& codec)
     {
-        _config["publications"].push_back(
-            BuildChannel(_track_ns_prefix, language, language, codec));
+        _config["publications"].push_back(BuildChannel(_track_ns_prefix, name, language, codec));
 
         return *this;
     }
 
-    ChannelBuilder& AddSubscriptionChannel(const std::string&,
+    ChannelBuilder& AddSubscriptionChannel(const std::string& name,
                                            const std::string& language,
                                            const std::string& codec)
     {
-        _config["subscriptions"].push_back(
-            BuildChannel(_track_ns_prefix, language, language, codec));
+        _config["subscriptions"].push_back(BuildChannel(_track_ns_prefix, name, language, codec));
 
         return *this;
     }
@@ -74,7 +73,7 @@ public:
     {
         _config["publications"].push_back(
             BuildChannel({"cisco.com", "q_ai", "5ea0fe26-01b7-4852-a833-75f3868f139f", "questions"},
-                         language, language, "pcm"));
+                         "ai_audio", language, "pcm"));
 
         return *this;
     }
