@@ -695,14 +695,16 @@ extern "C" void app_main(void)
 
     NET_LOG_INFO("Components ready");
 
-    ChannelBuilder channel_builder({"moq://moq.ptt.arpa/v1", "org/acme", "store/1234"}, device_id);
+    ChannelBuilder channel_builder({"cisco.com", "ff68267e-62cf-42c9-83ad-cadbae78fb02",
+                                    "e222442a-6d0e-4b21-a935-de87f3d75bdb", "ptt"},
+                                   device_id);
 
     const std::string lang = language.Load();
     const std::string channel = default_channel.Load();
 
     channel_builder.AddAIAudioPublicationChannel(lang);
-    channel_builder.AddPublicationChannel(channel, lang, "pcm");
-    channel_builder.AddSubscriptionChannel(channel, lang, "pcm");
+    channel_builder.AddPublicationChannel("", lang, "pcm");
+    channel_builder.AddSubscriptionChannel("", lang, "pcm");
 
     json config_j = channel_builder.GetConfig();
 

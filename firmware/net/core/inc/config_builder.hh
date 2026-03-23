@@ -31,11 +31,8 @@ public:
         json ai_audio_channel{
             {"channel_name", "self_ai_audio"},
             {"tracknamespace",
-             [&] {
-                 std::vector<std::string> ns = _track_ns_prefix;
-                 ns.push_back("ai/audio");
-                 return ns;
-             }()},
+             std::vector<std::string>{"cisco.com", "q_ai", "5ea0fe26-01b7-4852-a833-75f3868f139f",
+                                      "responses"}},
             {"trackname", std::to_string(endpoint_id)},
             {"codec", "pcm"},
             {"samplerate", 8000},
@@ -44,11 +41,8 @@ public:
         json ai_text_channel{
             {"channel_name", "self_ai_text"},
             {"tracknamespace",
-             [&] {
-                 std::vector<std::string> ns = _track_ns_prefix;
-                 ns.push_back("ai/text");
-                 return ns;
-             }()},
+             std::vector<std::string>{"cisco.com", "q_ai", "5ea0fe26-01b7-4852-a833-75f3868f139f",
+                                      "response_command"}},
             {"trackname", std::to_string(endpoint_id)},
             {"codec", "ai_cmd_response:json"},
         };
@@ -57,38 +51,30 @@ public:
         _config["subscriptions"].push_back(ai_text_channel);
     }
 
-    ChannelBuilder& AddPublicationChannel(const std::string& name,
-                                          const std::string& language,
-                                          const std::string& codec)
+    ChannelBuilder&
+    AddPublicationChannel(const std::string&, const std::string& language, const std::string& codec)
     {
-        std::vector<std::string> track_ns = _track_ns_prefix;
-        track_ns.push_back(std::format("channel/{}", name));
-        track_ns.push_back("ptt");
-
-        _config["publications"].push_back(BuildChannel(track_ns, name, language, codec));
+        _config["publications"].push_back(
+            BuildChannel(_track_ns_prefix, language, language, codec));
 
         return *this;
     }
 
-    ChannelBuilder& AddSubscriptionChannel(const std::string& name,
+    ChannelBuilder& AddSubscriptionChannel(const std::string&,
                                            const std::string& language,
                                            const std::string& codec)
     {
-        std::vector<std::string> track_ns = _track_ns_prefix;
-        track_ns.push_back(std::format("channel/{}", name));
-        track_ns.push_back("ptt");
-
-        _config["subscriptions"].push_back(BuildChannel(track_ns, name, language, codec));
+        _config["subscriptions"].push_back(
+            BuildChannel(_track_ns_prefix, language, language, codec));
 
         return *this;
     }
 
     ChannelBuilder& AddAIAudioPublicationChannel(const std::string& language)
     {
-        std::vector<std::string> track_ns = _track_ns_prefix;
-        track_ns.push_back("ai/audio");
-
-        _config["publications"].push_back(BuildChannel(track_ns, "ai_audio", language, "pcm"));
+        _config["publications"].push_back(
+            BuildChannel({"cisco.com", "q_ai", "5ea0fe26-01b7-4852-a833-75f3868f139f", "questions"},
+                         language, language, "pcm"));
 
         return *this;
     }
@@ -112,7 +98,7 @@ protected:
 
         if (codec == "pcm")
         {
-            channel["trackname"] = std::format("pcm_{}_8khz_mono_i16", language.substr(0, 2));
+            channel["trackname"] = language;
             channel["samplerate"] = 8000;
         }
         else
