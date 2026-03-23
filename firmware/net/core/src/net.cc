@@ -224,12 +224,23 @@ static void SendLinkNack()
 }
 
 // Load namespaces from storage into memory
+// Initialize empty entries to "[]" so storage always contains valid JSON
 static void LoadNamespacesFromStorage()
 {
-    channel_ns = JsonToNamespace(channel_ns_json.Load());
-    ai_query_ns = JsonToNamespace(ai_query_ns_json.Load());
-    ai_audio_response_ns = JsonToNamespace(ai_audio_response_ns_json.Load());
-    ai_cmd_response_ns = JsonToNamespace(ai_cmd_response_ns_json.Load());
+    auto load_ns = [](StoredValue<std::string>& stored, std::vector<std::string>& ns) {
+        std::string json = stored.Load();
+        if (json.empty())
+        {
+            stored = "[]";
+            json = "[]";
+        }
+        ns = JsonToNamespace(json);
+    };
+
+    load_ns(channel_ns_json, channel_ns);
+    load_ns(ai_query_ns_json, ai_query_ns);
+    load_ns(ai_audio_response_ns_json, ai_audio_response_ns);
+    load_ns(ai_cmd_response_ns_json, ai_cmd_response_ns);
 }
 
 // Update AI tracks when AI namespaces or language changes

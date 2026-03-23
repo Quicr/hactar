@@ -93,31 +93,6 @@ def encode_namespace(ns_parts: list[str]) -> bytes:
     return result
 
 
-def decode_namespace(data: bytes, offset: int = 0) -> tuple[list[str], int]:
-    """Decode a namespace from wire format.
-    Returns (namespace_parts, bytes_consumed).
-    """
-    import struct
-
-    if len(data) - offset < 4:
-        return [], 0
-
-    num_parts = struct.unpack_from("<I", data, offset)[0]
-    offset += 4
-    parts = []
-
-    for _ in range(num_parts):
-        if len(data) - offset < 4:
-            break
-        part_len = struct.unpack_from("<I", data, offset)[0]
-        offset += 4
-        if len(data) - offset < part_len:
-            break
-        parts.append(data[offset : offset + part_len].decode("utf-8"))
-        offset += part_len
-
-    return parts, offset
-
 ST_Ack = 0x79
 Reply_Ok = 0x80
 Reply_Ready = 0x81
