@@ -195,32 +195,34 @@ static void EnableLogging()
 }
 
 // Send a TLV response packet to MGMT
-static void SendLinkResponse(uint16_t type, const uint8_t* data, uint32_t length)
+static void SendMgmtResponse(uint16_t type, std::span<const uint8_t> data)
 {
     link_packet_t packet;
     packet.type = type;
-    packet.length = length;
-    if (data && length > 0)
+    packet.length = data.size();
+    if (!data.empty())
     {
-        std::memcpy(packet.payload.data(), data, std::min(length, (uint32_t)packet.payload.size()));
+        std::memcpy(packet.payload.data(), data.data(),
+                    std::min(data.size(), packet.payload.size()));
     }
     mgmt_layer.Write(packet);
 }
 
-static void SendLinkResponse(const std::string& response)
+static void SendMgmtResponse(const std::string& response)
 {
-    SendLinkResponse(Configuration::Response_Data, (const uint8_t*)response.data(),
-                     response.length());
+    SendMgmtResponse(Configuration::Response_Data,
+                     std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(response.data()),
+                                              response.length()));
 }
 
-static void SendLinkAck()
+static void SendMgmtAck()
 {
-    SendLinkResponse(Configuration::Response_Ack, nullptr, 0);
+    SendMgmtResponse(Configuration::Response_Ack, std::span<const uint8_t>{});
 }
 
-static void SendLinkNack()
+static void SendMgmtNack()
 {
-    SendLinkResponse(Configuration::Response_Nack, nullptr, 0);
+    SendMgmtResponse(Configuration::Response_Nack, std::span<const uint8_t>{});
 }
 
 // Load namespaces from storage into memory
@@ -407,7 +409,7 @@ static void UILinkPacketTask(void* args)
 
                     // Update the channel namespace
                     channel_ns = new_channel_ns;
-                    channel_ns_json = NamespaceToJson(channel_ns);
+                    channel_ns_json = json(channel_ns).dump();
 
                     NET_LOG_INFO("Updated channel namespace from command response");
 
@@ -486,11 +488,11 @@ static void MgmtLinkPacketTask(void* args)
             {
                 if (ESP_OK != storage.Clear())
                 {
-                    SendLinkNack();
+                    SendMgmtNack();
                     break;
                 }
 
-                SendLinkAck();
+                SendMgmtAck();
                 break;
             }
             case Configuration::Set_Ssid:
@@ -521,7 +523,7 @@ static void MgmtLinkPacketTask(void* args)
 
                 wifi.Connect(ssid_name, ssid_password);
 
-                SendLinkAck();
+                SendMgmtAck();
                 break;
             }
             case Configuration::Get_Ssid_Names:
@@ -531,11 +533,13 @@ static void MgmtLinkPacketTask(void* args)
                 for (size_t i = 0; i < creds.size(); ++i)
                 {
                     if (i > 0)
+                    {
                         str.append(",");
+                    }
                     str.append(creds[i].name, creds[i].name_len);
                 }
 
-                SendLinkResponse(str);
+                SendMgmtResponse(str);
                 break;
             }
             case Configuration::Get_Ssid_Passwords:
@@ -545,16 +549,18 @@ static void MgmtLinkPacketTask(void* args)
                 for (size_t i = 0; i < creds.size(); ++i)
                 {
                     if (i > 0)
+                    {
                         str.append(",");
+                    }
                     str.append(creds[i].pwd, creds[i].pwd_len);
                 }
-                SendLinkResponse(str);
+                SendMgmtResponse(str);
                 break;
             }
             case Configuration::Clear_Ssids:
             {
                 wifi.ClearSavedSSIDs();
-                SendLinkAck();
+                SendMgmtAck();
                 break;
             }
             case Configuration::Set_Moq_Url:
@@ -567,17 +573,17 @@ static void MgmtLinkPacketTask(void* args)
                     // MOQ url will be cleared.
                     NET_LOG_INFO("Cleaning moq url because length is zero");
                     moq_server_url.Clear();
-                    SendLinkAck();
+                    SendMgmtAck();
                     break;
                 }
                 moq_server_url = moq_url;
-                SendLinkAck();
+                SendMgmtAck();
                 break;
             }
             case Configuration::Get_Moq_Url:
             {
                 std::string moq_url = moq_server_url.Load();
-                SendLinkResponse(moq_url);
+                SendMgmtResponse(moq_url);
                 break;
             }
             case Configuration::Toggle_Logs:
@@ -592,31 +598,31 @@ static void MgmtLinkPacketTask(void* args)
                 }
 
                 // Reply with an ack before the logs begin again.
-                SendLinkAck();
+                SendMgmtAck();
                 break;
             }
             case Configuration::Disable_Logs:
             {
-                SendLinkAck();
+                SendMgmtAck();
                 DisableLogging();
                 break;
             }
             case Configuration::Enable_Logs:
             {
-                SendLinkAck();
+                SendMgmtAck();
                 EnableLogging();
                 break;
             }
             case Configuration::Disable_Loopback:
             {
                 loopback = false;
-                SendLinkAck();
+                SendMgmtAck();
                 break;
             }
             case Configuration::Enable_Loopback:
             {
                 loopback = true;
-                SendLinkAck();
+                SendMgmtAck();
                 break;
             }
             case Configuration::Set_Language:
@@ -625,14 +631,14 @@ static void MgmtLinkPacketTask(void* args)
                 if (!IsValidLanguage(new_lang))
                 {
                     NET_LOG_ERROR("Invalid language: %s", new_lang.c_str());
-                    SendLinkNack();
+                    SendMgmtNack();
                     break;
                 }
                 language = new_lang;
                 NET_LOG_INFO("Language set to: %s", new_lang.c_str());
 
                 // Send ACK before track updates to avoid interleaving with log output
-                SendLinkAck();
+                SendMgmtAck();
 
                 // Update tracks that depend on language
                 UpdateAITracks();
@@ -642,7 +648,7 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Get_Language:
             {
                 std::string lang = language.Load();
-                SendLinkResponse(lang);
+                SendMgmtResponse(lang);
                 break;
             }
             case Configuration::Set_Channel:
@@ -652,7 +658,7 @@ static void MgmtLinkPacketTask(void* args)
                 if (!parsed.has_value())
                 {
                     NET_LOG_ERROR("Failed to parse channel namespace JSON");
-                    SendLinkNack();
+                    SendMgmtNack();
                     break;
                 }
 
@@ -661,14 +667,14 @@ static void MgmtLinkPacketTask(void* args)
                 NET_LOG_INFO("Channel namespace set (%zu parts)", channel_ns.size());
 
                 // Send ACK before track updates to avoid interleaving with log output
-                SendLinkAck();
+                SendMgmtAck();
                 UpdateChannelTracks();
                 break;
             }
             case Configuration::Get_Channel:
             {
                 // Return JSON representation for readability
-                SendLinkResponse(channel_ns_json.Load());
+                SendMgmtResponse(channel_ns_json.Load());
                 break;
             }
             case Configuration::Set_AI:
@@ -681,7 +687,7 @@ static void MgmtLinkPacketTask(void* args)
                         || !ai_config.contains("audio") || !ai_config.contains("cmd"))
                     {
                         NET_LOG_ERROR("AI config must be object with query, audio, cmd fields");
-                        SendLinkNack();
+                        SendMgmtNack();
                         break;
                     }
 
@@ -692,7 +698,7 @@ static void MgmtLinkPacketTask(void* args)
                     if (!query_parsed || !audio_parsed || !cmd_parsed)
                     {
                         NET_LOG_ERROR("Failed to parse AI namespace arrays");
-                        SendLinkNack();
+                        SendMgmtNack();
                         break;
                     }
 
@@ -709,24 +715,24 @@ static void MgmtLinkPacketTask(void* args)
                                  ai_cmd_response_ns.size());
 
                     // Send ACK before track updates to avoid interleaving with log output
-                    SendLinkAck();
+                    SendMgmtAck();
 
                     UpdateAITracks();
                 }
                 catch (const std::exception& ex)
                 {
                     NET_LOG_ERROR("Failed to parse AI config JSON: %s", ex.what());
-                    SendLinkNack();
+                    SendMgmtNack();
                 }
                 break;
             }
             case Configuration::Get_AI:
             {
-                // Return JSON representation for readability
-                std::string response = "{\"query\":" + ai_query_ns_json.Load()
-                                     + ",\"audio\":" + ai_audio_response_ns_json.Load()
-                                     + ",\"cmd\":" + ai_cmd_response_ns_json.Load() + "}";
-                SendLinkResponse(response);
+                json response;
+                response["query"] = ai_query_ns;
+                response["audio"] = ai_audio_response_ns;
+                response["cmd"] = ai_cmd_response_ns;
+                SendMgmtResponse(response.dump());
                 break;
             }
             case Configuration::Burn_Disable_USB_JTag_Efuse:
@@ -734,11 +740,11 @@ static void MgmtLinkPacketTask(void* args)
                 const bool res = BurnDisableUSBJTagEFuse();
                 if (res)
                 {
-                    SendLinkAck();
+                    SendMgmtAck();
                 }
                 else
                 {
-                    SendLinkNack();
+                    SendMgmtNack();
                 }
                 break;
             }
@@ -806,7 +812,8 @@ try
     {
         // If track already exists with same name, return it
         auto existing_ftn = readers[offset]->GetFullTrackName();
-        if (existing_ftn.name_space == desired_ftn.name_space && existing_ftn.name == desired_ftn.name)
+        if (existing_ftn.name_space == desired_ftn.name_space
+            && existing_ftn.name == desired_ftn.name)
         {
             NET_LOG_INFO("Reader on %d already exists with same track, reusing", offset);
             return readers[offset];
@@ -875,7 +882,8 @@ try
     {
         // If track already exists with same name, return it
         auto existing_ftn = writers[offset]->GetFullTrackName();
-        if (existing_ftn.name_space == desired_ftn.name_space && existing_ftn.name == desired_ftn.name)
+        if (existing_ftn.name_space == desired_ftn.name_space
+            && existing_ftn.name == desired_ftn.name)
         {
             NET_LOG_INFO("Writer on %d already exists with same track, reusing", offset);
             return writers[offset];
@@ -1161,7 +1169,7 @@ bool CreateMgmtLinkPacketTask()
 {
     NET_LOG_INFO("Creating mgmt link packet task");
 
-    constexpr size_t stack_size = 8192;  // Increased for JSON parsing
+    constexpr size_t stack_size = 8192; // Increased for JSON parsing
     net_mgmt_serial_read_stack =
         (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_INTERNAL);
     if (net_mgmt_serial_read_stack == NULL)

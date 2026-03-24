@@ -32,7 +32,6 @@ command_map = {
     "default logging": make_tlv(16),
 }
 
-
 bypass_map = {
     "ui": 17,
     "net": 18,

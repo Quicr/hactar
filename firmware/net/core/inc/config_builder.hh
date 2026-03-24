@@ -20,12 +20,6 @@ inline bool IsValidLanguage(const std::string& lang)
         != kSupportedLanguages.end();
 }
 
-// Convert namespace to JSON string
-inline std::string NamespaceToJson(const std::vector<std::string>& ns)
-{
-    return json(ns).dump();
-}
-
 // Parse namespace from JSON string
 // Returns std::nullopt if parsing fails or string is empty
 inline std::optional<std::vector<std::string>> JsonToNamespace(const std::string& json_str)
