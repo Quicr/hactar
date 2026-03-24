@@ -1017,7 +1017,6 @@ extern "C" void app_main(void)
         if (prev_wifi_state != wifi_state)
         {
             prev_wifi_state = wifi_state;
-            gpio_set_level(NET_LED_G, 1);
 
             link_packet_t packet;
             packet.type = (uint16_t)ui_net_link::Packet_Type::WifiStatus;
@@ -1028,6 +1027,11 @@ extern "C" void app_main(void)
             {
             case Wifi::State::Disconnected:
             {
+                // Back to yellow
+                gpio_set_level(NET_LED_R, 0);
+                gpio_set_level(NET_LED_G, 0);
+                gpio_set_level(NET_LED_B, 1);
+
                 if (status == moq::Session::Status::kConnecting
                     || status == moq::Session::Status::kPendingServerSetup
                     || status == moq::Session::Status::kReady)
@@ -1042,6 +1046,7 @@ extern "C" void app_main(void)
             }
             case Wifi::State::Connected:
             {
+                gpio_set_level(NET_LED_R, 1);
                 gpio_set_level(NET_LED_G, 0);
                 break;
             }
@@ -1081,9 +1086,6 @@ extern "C" void app_main(void)
                     }
                 }
 
-                // TODO
-                // Tell ui chip we are ready
-                gpio_set_level(NET_LED_B, 0);
                 break;
             }
             case moq::Session::Status::kNotConnected:
@@ -1101,7 +1103,6 @@ extern "C" void app_main(void)
                 {
                     NET_LOG_ERROR("MOQ Transport Session Connection Failure");
                 }
-                gpio_set_level(NET_LED_B, 1);
 
                 break;
             }

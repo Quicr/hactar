@@ -1,7 +1,9 @@
 #include "moq_session.hh"
 #include "logger.hh"
+#include "peripherals.hh"
 #include "task_helpers.hh"
 #include "utils.hh"
+#include <driver/gpio.h>
 
 using namespace moq;
 
@@ -60,6 +62,8 @@ void Session::StatusChanged(Status status)
     {
     case Status::kReady:
         Logger::Log(Logger::Level::Info, "MOQ Connection ready");
+        gpio_set_level(NET_LED_G, 1);
+        gpio_set_level(NET_LED_B, 0);
         break;
     case Status::kConnecting:
         break;
