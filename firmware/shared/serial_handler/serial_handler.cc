@@ -1,6 +1,7 @@
 #include "serial_handler.hh"
 #include "logger.hh"
-#include <memory.h>
+#include <algorithm>
+#include <cstring>
 
 SerialHandler::SerialHandler(const uint16_t num_rx_packets,
                              uint8_t& tx_buff,
