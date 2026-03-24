@@ -6,7 +6,6 @@ import serial
 
 Link_Sync_Word = bytes([0x4C, 0x49, 0x4E, 0x4B])
 
-
 def make_tlv(type_id: int) -> bytes:
     """Create a Link TLV packet: sync_word (4) + type (2) + length (4) + payload"""
 
@@ -74,10 +73,8 @@ net_command_map = {
 # Supported language tags
 SUPPORTED_LANGUAGES = ["en-US", "es-ES", "de-DE", "hi-IN", "nb-NO"]
 
-
 def is_valid_language(lang: str) -> bool:
     return lang in SUPPORTED_LANGUAGES
-
 
 def encode_command_payload(encoder: str | None, params: list[str]) -> tuple[bytes, str | None]:
     """Encode command parameters based on encoder type.
@@ -110,7 +107,6 @@ def encode_command_payload(encoder: str | None, params: list[str]) -> tuple[byte
             payload += param.encode("utf-8")
         return payload, None
 
-
 ST_Ack = 0x79
 Reply_Ok = 0x80
 Reply_Ready = 0x81
@@ -122,12 +118,10 @@ Response_Ack = 0x8000
 Response_Nack = 0x8001
 Response_Data = 0x8002
 
-
 def hactar_send_command(uart: serial.Serial, command: bytes, max_attempts: int = 5):
     uart.write(command)
 
     return hactar_get_ack(uart, max_attempts)
-
 
 def hactar_get_ack(uart: serial.Serial, max_attempts: int = 5):
     got_ack = False
@@ -149,7 +143,6 @@ def hactar_get_ack(uart: serial.Serial, max_attempts: int = 5):
             break
 
     return got_ack
-
 
 def hactar_command_completer(text, state):
     buffer = readline.get_line_buffer()
@@ -176,7 +169,6 @@ def hactar_command_completer(text, state):
     if state < len(options):
         return options[state]
     return None
-
 
 def hactar_command_print_matches(substitution, matches, longest_match_length):
     print()
