@@ -40150,7 +40150,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "RF_Module:ESP32-S3-WROOM-1"
+		(property "Footprint" "Hactar_Footprints:ESP32-S3-WROOM-1"
 			(at 262.89 81.28 0)
 			(effects
 				(font
