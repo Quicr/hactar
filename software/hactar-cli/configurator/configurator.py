@@ -17,9 +17,7 @@ from hactar_commands import (
     net_command_map,
     Reply_Ack,
     Reply_Nack,
-    SUPPORTED_LANGUAGES,
-    is_valid_language,
-    encode_namespace,
+    encode_command_payload,
 )
 
 running = True
@@ -67,51 +65,11 @@ def SendCommand(uart, to_whom, command, message="", wait_for_ack=True):
             print(f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)}")
             continue
 
-        # Encode the payload based on the encoder type
-        payload = bytes()
-
-        if encoder == "language":
-            # Validate language
-            lang = split[0]
-            if not is_valid_language(lang):
-                print(f"[ERROR] Invalid language '{lang}'. Supported: {', '.join(SUPPORTED_LANGUAGES)}")
-                continue
-            payload = lang.encode("utf-8")
-
-        elif encoder == "namespace":
-            # Parse JSON array and encode as namespace
-            try:
-                ns_parts = json.loads(split[0])
-                if not isinstance(ns_parts, list):
-                    print("[ERROR] Namespace must be a JSON array of strings")
-                    continue
-                payload = encode_namespace(ns_parts)
-            except json.JSONDecodeError as e:
-                print(f"[ERROR] Invalid JSON: {e}")
-                continue
-
-        elif encoder == "ai_namespaces":
-            # Parse 3 JSON arrays (query, audio_response, cmd_response)
-            try:
-                query_ns = json.loads(split[0])
-                audio_ns = json.loads(split[1])
-                cmd_ns = json.loads(split[2])
-
-                if not all(isinstance(ns, list) for ns in [query_ns, audio_ns, cmd_ns]):
-                    print("[ERROR] All AI namespaces must be JSON arrays of strings")
-                    continue
-
-                payload = encode_namespace(query_ns) + encode_namespace(audio_ns) + encode_namespace(cmd_ns)
-            except json.JSONDecodeError as e:
-                print(f"[ERROR] Invalid JSON: {e}")
-                continue
-
-        else:
-            # Default encoding: length-prefixed strings if multiple params
-            for param in split:
-                if num_params > 1:
-                    payload += len(param).to_bytes(4, byteorder="little")
-                payload += param.encode("utf-8")
+        # Encode the payload using shared function
+        payload, error = encode_command_payload(encoder, split)
+        if error:
+            print(f"[ERROR] {error}")
+            continue
 
         Header_Bytes = 5  # 1 type, 4 length
         to_whom_len = Header_Bytes + len(payload)

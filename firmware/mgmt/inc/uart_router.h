@@ -11,7 +11,6 @@
 #define INTERNAL_BUFF_SZ 512
 #define PACKET_SZ 512
 #define COMMAND_TIMEOUT 1000
-#define NET_LINE_BUFF_SZ 256
 
 typedef enum
 {

@@ -65,9 +65,9 @@ net_command_map = {
     "enable_loopback": {"id": 12, "num_params": 0},
     "set_language": {"id": 13, "num_params": 1, "encoder": "language"},
     "get_language": {"id": 14, "num_params": 0},
-    "set_channel": {"id": 15, "num_params": 1, "encoder": "namespace"},
+    "set_channel": {"id": 15, "num_params": 1, "encoder": "json"},
     "get_channel": {"id": 16, "num_params": 0},
-    "set_ai": {"id": 17, "num_params": 3, "encoder": "ai_namespaces"},
+    "set_ai": {"id": 17, "num_params": 1, "encoder": "json"},
     "get_ai": {"id": 18, "num_params": 0},
     "burn_efuse": {"id": 19, "num_params": 0},
 }
@@ -80,17 +80,36 @@ def is_valid_language(lang: str) -> bool:
     return lang in SUPPORTED_LANGUAGES
 
 
-def encode_namespace(ns_parts: list[str]) -> bytes:
-    """Encode a namespace (list of strings) to wire format.
-    Format: [4 bytes: num_parts] [for each part: 4 bytes length + UTF-8 string]
-    """
-    import struct
+def encode_command_payload(encoder: str | None, params: list[str]) -> tuple[bytes, str | None]:
+    """Encode command parameters based on encoder type.
 
-    result = struct.pack("<I", len(ns_parts))
-    for part in ns_parts:
-        part_bytes = part.encode("utf-8")
-        result += struct.pack("<I", len(part_bytes)) + part_bytes
-    return result
+    Returns (payload_bytes, error_message).
+    If error_message is not None, encoding failed.
+    """
+    import json
+
+    if encoder == "language":
+        lang = params[0]
+        if not is_valid_language(lang):
+            return bytes(), f"Invalid language '{lang}'. Supported: {', '.join(SUPPORTED_LANGUAGES)}"
+        return lang.encode("utf-8"), None
+
+    elif encoder == "json":
+        # Send JSON string as-is (validate it parses)
+        try:
+            json.loads(params[0])  # Validate JSON
+            return params[0].encode("utf-8"), None
+        except json.JSONDecodeError as e:
+            return bytes(), f"Invalid JSON: {e}"
+
+    else:
+        # Default encoding: length-prefixed strings if multiple params
+        payload = bytes()
+        for param in params:
+            if len(params) > 1:
+                payload += len(param).to_bytes(4, byteorder="little")
+            payload += param.encode("utf-8")
+        return payload, None
 
 
 ST_Ack = 0x79

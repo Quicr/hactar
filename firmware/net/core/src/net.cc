@@ -228,13 +228,15 @@ static void SendLinkNack()
 static void LoadNamespacesFromStorage()
 {
     auto load_ns = [](StoredValue<std::string>& stored, std::vector<std::string>& ns) {
-        std::string json = stored.Load();
-        if (json.empty())
+        std::string json_str = stored.Load();
+        if (json_str.empty())
         {
             stored = "[]";
-            json = "[]";
+            ns.clear();
+            return;
         }
-        ns = JsonToNamespace(json);
+        auto parsed = JsonToNamespace(json_str);
+        ns = parsed.value_or(std::vector<std::string>{});
     };
 
     load_ns(channel_ns_json, channel_ns);
@@ -644,17 +646,17 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Set_Channel:
             {
-                std::vector<std::string> new_ns;
-                size_t consumed = DecodeNamespace(packet->payload.data(), packet->length, new_ns);
-                if (consumed == 0 || new_ns.empty())
+                std::string json_str((char*)packet->payload.data(), packet->length);
+                auto parsed = JsonToNamespace(json_str);
+                if (!parsed.has_value())
                 {
-                    NET_LOG_ERROR("Failed to decode channel namespace");
+                    NET_LOG_ERROR("Failed to parse channel namespace JSON");
                     SendLinkNack();
                     break;
                 }
 
-                channel_ns = new_ns;
-                channel_ns_json = NamespaceToJson(channel_ns);
+                channel_ns = parsed.value();
+                channel_ns_json = json_str;
                 NET_LOG_INFO("Channel namespace set (%zu parts)", channel_ns.size());
 
                 UpdateChannelTracks();
@@ -670,53 +672,50 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Set_AI:
             {
-                size_t offset = 0;
-                std::vector<std::string> query_ns, audio_ns, cmd_ns;
-
-                size_t consumed = DecodeNamespace(packet->payload.data() + offset,
-                                                  packet->length - offset, query_ns);
-                if (consumed == 0)
+                std::string json_str((char*)packet->payload.data(), packet->length);
+                try
                 {
-                    NET_LOG_ERROR("Failed to decode AI query namespace");
-                    SendLinkNack();
-                    break;
-                }
-                offset += consumed;
+                    json ai_config = json::parse(json_str);
+                    if (!ai_config.is_object() || !ai_config.contains("query")
+                        || !ai_config.contains("audio") || !ai_config.contains("cmd"))
+                    {
+                        NET_LOG_ERROR("AI config must be object with query, audio, cmd fields");
+                        SendLinkNack();
+                        break;
+                    }
 
-                consumed = DecodeNamespace(packet->payload.data() + offset, packet->length - offset,
-                                           audio_ns);
-                if (consumed == 0)
+                    auto query_parsed = JsonToNamespace(ai_config["query"].dump());
+                    auto audio_parsed = JsonToNamespace(ai_config["audio"].dump());
+                    auto cmd_parsed = JsonToNamespace(ai_config["cmd"].dump());
+
+                    if (!query_parsed || !audio_parsed || !cmd_parsed)
+                    {
+                        NET_LOG_ERROR("Failed to parse AI namespace arrays");
+                        SendLinkNack();
+                        break;
+                    }
+
+                    ai_query_ns = query_parsed.value();
+                    ai_audio_response_ns = audio_parsed.value();
+                    ai_cmd_response_ns = cmd_parsed.value();
+
+                    ai_query_ns_json = ai_config["query"].dump();
+                    ai_audio_response_ns_json = ai_config["audio"].dump();
+                    ai_cmd_response_ns_json = ai_config["cmd"].dump();
+
+                    NET_LOG_INFO("AI namespaces set (query=%zu, audio=%zu, cmd=%zu parts)",
+                                 ai_query_ns.size(), ai_audio_response_ns.size(),
+                                 ai_cmd_response_ns.size());
+
+                    UpdateAITracks();
+
+                    SendLinkAck();
+                }
+                catch (const std::exception& ex)
                 {
-                    NET_LOG_ERROR("Failed to decode AI audio response namespace");
+                    NET_LOG_ERROR("Failed to parse AI config JSON: %s", ex.what());
                     SendLinkNack();
-                    break;
                 }
-                offset += consumed;
-
-                consumed = DecodeNamespace(packet->payload.data() + offset, packet->length - offset,
-                                           cmd_ns);
-                if (consumed == 0)
-                {
-                    NET_LOG_ERROR("Failed to decode AI command response namespace");
-                    SendLinkNack();
-                    break;
-                }
-
-                ai_query_ns = query_ns;
-                ai_audio_response_ns = audio_ns;
-                ai_cmd_response_ns = cmd_ns;
-
-                ai_query_ns_json = NamespaceToJson(ai_query_ns);
-                ai_audio_response_ns_json = NamespaceToJson(ai_audio_response_ns);
-                ai_cmd_response_ns_json = NamespaceToJson(ai_cmd_response_ns);
-
-                NET_LOG_INFO("AI namespaces set (query=%zu, audio=%zu, cmd=%zu parts)",
-                             ai_query_ns.size(), ai_audio_response_ns.size(),
-                             ai_cmd_response_ns.size());
-
-                UpdateAITracks();
-
-                SendLinkAck();
                 break;
             }
             case Configuration::Get_AI:
