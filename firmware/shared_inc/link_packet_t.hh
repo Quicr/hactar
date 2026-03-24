@@ -28,10 +28,12 @@ struct link_packet_t
 
     bool is_ready = false;
 
-    std::span<uint8_t, Packet_Size> WriteableData() noexcept
+    static constexpr size_t Writeable_Size = Packet_Size - Sync_Word_Size;
+
+    std::span<uint8_t, Writeable_Size> WriteableData() noexcept
     {
-        return std::span<uint8_t, Packet_Size>{reinterpret_cast<uint8_t*>(this) + Sync_Word_Size,
-                                               Packet_Size - Sync_Word_Size};
+        return std::span<uint8_t, Writeable_Size>{reinterpret_cast<uint8_t*>(this) + Sync_Word_Size,
+                                                  Writeable_Size};
     }
 
     std::span<const uint8_t, Packet_Size> ReadableData() const noexcept
