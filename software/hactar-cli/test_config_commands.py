@@ -16,8 +16,9 @@ import time
 
 import serial
 
-# Add utility to path
+# Add utility and monitor to path
 sys.path.insert(0, "utility")
+sys.path.insert(0, "monitor")
 from hactar_commands import (
     Link_Sync_Word,
     Response_Ack,
@@ -25,6 +26,7 @@ from hactar_commands import (
     Response_Data,
     bypass_map,
     net_command_map,
+    command_map,
     encode_command_payload,
 )
 from hactar_scanning import SelectHactarPort, ResetDevice
@@ -38,17 +40,107 @@ class ConfigTester:
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
-            timeout=2.0,
+            timeout=0.1,  # Short timeout for polling
         )
         ResetDevice(self.uart, True)
-        time.sleep(0.5)
+        # Wait for device to fully boot (Components ready appears at ~1.5s)
+        print("Waiting for device to boot...")
+        self.wait_for_ready(timeout=5.0)
+        # Enable NET logs so responses get forwarded to USB
+        self.enable_net_logs()
+        time.sleep(0.3)
         self.passed = 0
         self.failed = 0
+
+    def wait_for_ready(self, timeout: float = 5.0):
+        """Wait for device to finish booting by looking for 'Components ready' message."""
+        start_time = time.time()
+        buffer = bytes()
+        while time.time() - start_time < timeout:
+            if self.uart.in_waiting:
+                buffer += self.uart.read(self.uart.in_waiting)
+                if b"Components ready" in buffer:
+                    print("Device ready!")
+                    time.sleep(0.1)  # Small delay after ready
+                    self.uart.reset_input_buffer()
+                    return
+            time.sleep(0.05)
+        print("Warning: Timeout waiting for device ready, proceeding anyway...")
+        self.uart.reset_input_buffer()
+
+    def enable_net_logs(self):
+        """Enable NET logs so TLV responses are forwarded through MGMT to USB."""
+        print("Enabling NET logs...")
+        self.uart.write(command_map["enable net logs"])
+        time.sleep(0.3)
+        # Drain any response
+        self.uart.reset_input_buffer()
 
     def close(self):
         self.uart.close()
 
-    def send_command(self, command: str, params: list[str] = None) -> tuple[int, bytes]:
+    def read_until_tlv_response(self, timeout: float = 2.0, debug: bool = False) -> tuple[int | None, bytes]:
+        """Read from serial until we get a TLV response. Uses same approach as monitor.py."""
+        start_time = time.time()
+        data = bytes()
+
+        while time.time() - start_time < timeout:
+            if self.uart.in_waiting == 0:
+                time.sleep(0.01)
+                continue
+
+            # Read one byte at a time, like monitor.py does
+            char = self.uart.read(1)
+            if not char:
+                continue
+
+            data += char
+
+            # Check for TLV sync word at end of accumulated data
+            if len(data) >= 4 and data[-4:] == Link_Sync_Word:
+                if debug:
+                    print(f"  DEBUG: Found sync word after {len(data)} bytes")
+
+                # Found sync word - now read header: type (2 bytes) + length (4 bytes)
+                # Wait for header with extended timeout
+                header = bytes()
+                while len(header) < 6 and time.time() - start_time < timeout:
+                    chunk = self.uart.read(6 - len(header))
+                    if chunk:
+                        header += chunk
+                    else:
+                        time.sleep(0.01)
+
+                if len(header) < 6:
+                    if debug:
+                        print(f"  DEBUG: Incomplete header: {header.hex()}")
+                    continue  # Incomplete header, keep trying
+
+                msg_type, msg_len = struct.unpack("<HI", header)
+                if debug:
+                    print(f"  DEBUG: msg_type=0x{msg_type:04x}, msg_len={msg_len}")
+
+                # Read payload
+                payload = bytes()
+                while len(payload) < msg_len and time.time() - start_time < timeout:
+                    chunk = self.uart.read(msg_len - len(payload))
+                    if chunk:
+                        payload += chunk
+                    else:
+                        time.sleep(0.01)
+
+                return msg_type, payload
+
+        if debug:
+            print(f"  DEBUG: Timeout. Total data received: {len(data)} bytes")
+            if data:
+                try:
+                    print(f"  DEBUG: Data: {data.decode('utf-8', errors='replace')}")
+                except:
+                    print(f"  DEBUG: Data (hex): {data.hex()}")
+        return None, bytes()
+
+    def send_command(self, command: str, params: list[str] = None) -> tuple[int | None, bytes]:
         """Send a NET command and return (response_type, response_data)."""
         params = params or []
         cmd_info = net_command_map[command]
@@ -59,7 +151,7 @@ class ConfigTester:
         if error:
             raise ValueError(f"Encoding error: {error}")
 
-        # Build TLV packet for NET
+        # Build TLV packet for NET (same as monitor.py ProcessBypassCommand)
         Header_Bytes = 6 + len(Link_Sync_Word)  # 2 type, 4 length
         to_whom_len = Header_Bytes + len(payload)
         command_len = len(payload)
@@ -85,41 +177,8 @@ class ConfigTester:
         # Send
         self.uart.write(bytes(data))
 
-        # Read response - look for LINK sync word
-        response_data = bytes()
-        start_time = time.time()
-        buffer = bytes()
-
-        while time.time() - start_time < 2.0:
-            if self.uart.in_waiting:
-                buffer += self.uart.read(self.uart.in_waiting)
-
-                # Look for LINK sync word in buffer
-                sync_pos = buffer.find(Link_Sync_Word)
-                if sync_pos >= 0:
-                    # Need at least sync(4) + type(2) + length(4) = 10 bytes
-                    if len(buffer) >= sync_pos + 10:
-                        header_start = sync_pos + 4
-                        msg_type, msg_len = struct.unpack(
-                            "<HI", buffer[header_start : header_start + 6]
-                        )
-
-                        # Wait for full payload
-                        total_needed = sync_pos + 10 + msg_len
-                        while len(buffer) < total_needed and time.time() - start_time < 2.0:
-                            if self.uart.in_waiting:
-                                buffer += self.uart.read(self.uart.in_waiting)
-                            else:
-                                time.sleep(0.01)
-
-                        if len(buffer) >= total_needed:
-                            payload_start = header_start + 6
-                            response_data = buffer[payload_start : payload_start + msg_len]
-                            return msg_type, response_data
-            else:
-                time.sleep(0.01)
-
-        return None, bytes()
+        # Read response using same approach as monitor
+        return self.read_until_tlv_response()
 
     def test_language(self) -> bool:
         """Test set_language and get_language commands."""

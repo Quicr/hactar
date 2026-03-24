@@ -30,17 +30,19 @@ inline std::string NamespaceToJson(const std::vector<std::string>& ns)
 // Returns std::nullopt if parsing fails or string is empty
 inline std::optional<std::vector<std::string>> JsonToNamespace(const std::string& json_str)
 {
-    if (json_str.empty())
+    if (json_str.empty() || !json::accept(json_str))
     {
         return std::nullopt;
     }
+
+    json j = json::parse(json_str, nullptr, false);
+    if (j.is_discarded() || !j.is_array())
+    {
+        return std::nullopt;
+    }
+
     try
     {
-        json j = json::parse(json_str);
-        if (!j.is_array())
-        {
-            return std::nullopt;
-        }
         return j.get<std::vector<std::string>>();
     }
     catch (...)

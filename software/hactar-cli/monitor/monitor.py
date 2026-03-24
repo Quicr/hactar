@@ -207,7 +207,6 @@ class Monitor:
         data += payload
 
         # transmit the TLV
-        # print(data);
         self.uart.write(bytes(data))
 
     def Close(self):

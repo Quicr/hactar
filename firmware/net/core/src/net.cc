@@ -631,11 +631,12 @@ static void MgmtLinkPacketTask(void* args)
                 language = new_lang;
                 NET_LOG_INFO("Language set to: %s", new_lang.c_str());
 
+                // Send ACK before track updates to avoid interleaving with log output
+                SendLinkAck();
+
                 // Update tracks that depend on language
                 UpdateAITracks();
                 UpdateChannelTracks();
-
-                SendLinkAck();
                 break;
             }
             case Configuration::Get_Language:
@@ -659,9 +660,9 @@ static void MgmtLinkPacketTask(void* args)
                 channel_ns_json = json_str;
                 NET_LOG_INFO("Channel namespace set (%zu parts)", channel_ns.size());
 
-                UpdateChannelTracks();
-
+                // Send ACK before track updates to avoid interleaving with log output
                 SendLinkAck();
+                UpdateChannelTracks();
                 break;
             }
             case Configuration::Get_Channel:
@@ -707,9 +708,10 @@ static void MgmtLinkPacketTask(void* args)
                                  ai_query_ns.size(), ai_audio_response_ns.size(),
                                  ai_cmd_response_ns.size());
 
-                    UpdateAITracks();
-
+                    // Send ACK before track updates to avoid interleaving with log output
                     SendLinkAck();
+
+                    UpdateAITracks();
                 }
                 catch (const std::exception& ex)
                 {
@@ -791,10 +793,25 @@ try
         return nullptr;
     }
 
+    if (!moq_session)
+    {
+        NET_LOG_WARN("MoQ session not ready, cannot create reader");
+        return nullptr;
+    }
+
+    auto desired_ftn = moq::MakeFullTrackName(track_namespace, trackname);
+
     std::unique_lock<std::mutex> lock = moq_session->GetReaderLock();
     if (readers[offset] != nullptr)
     {
-        NET_LOG_WARN("Reader on %d already exists", offset);
+        // If track already exists with same name, return it
+        auto existing_ftn = readers[offset]->GetFullTrackName();
+        if (existing_ftn.name_space == desired_ftn.name_space && existing_ftn.name == desired_ftn.name)
+        {
+            NET_LOG_INFO("Reader on %d already exists with same track, reusing", offset);
+            return readers[offset];
+        }
+        NET_LOG_WARN("Reader on %d already exists with different track, replacing", offset);
         readers[offset]->Stop();
         moq_session->UnsubscribeTrack(readers[offset]);
     }
@@ -845,10 +862,25 @@ try
         return nullptr;
     }
 
+    if (!moq_session)
+    {
+        NET_LOG_WARN("MoQ session not ready, cannot create writer");
+        return nullptr;
+    }
+
+    auto desired_ftn = moq::MakeFullTrackName(track_namespace, trackname);
+
     std::unique_lock<std::mutex> lock = moq_session->GetWriterLock();
     if (writers[offset] != nullptr)
     {
-        NET_LOG_WARN("Writer on %d already exists", offset);
+        // If track already exists with same name, return it
+        auto existing_ftn = writers[offset]->GetFullTrackName();
+        if (existing_ftn.name_space == desired_ftn.name_space && existing_ftn.name == desired_ftn.name)
+        {
+            NET_LOG_INFO("Writer on %d already exists with same track, reusing", offset);
+            return writers[offset];
+        }
+        NET_LOG_WARN("Writer on %d already exists with different track, replacing", offset);
         writers[offset]->Stop();
         moq_session->UnpublishTrack(writers[offset]);
     }
@@ -1031,6 +1063,10 @@ extern "C" void app_main(void)
             {
             case moq::Session::Status::kReady:
             {
+                // Create tracks from stored config (may have been set before session was ready)
+                UpdateChannelTracks();
+                UpdateAITracks();
+
                 for (const auto& reader : readers)
                 {
                     NET_LOG_INFO("Starting reader");
@@ -1127,7 +1163,7 @@ bool CreateMgmtLinkPacketTask()
 {
     NET_LOG_INFO("Creating mgmt link packet task");
 
-    constexpr size_t stack_size = 4096;
+    constexpr size_t stack_size = 8192;  // Increased for JSON parsing
     net_mgmt_serial_read_stack =
         (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_INTERNAL);
     if (net_mgmt_serial_read_stack == NULL)
