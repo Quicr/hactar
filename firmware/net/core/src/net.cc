@@ -201,37 +201,6 @@ static void EnableLogging()
     logs_disabled = false;
 }
 
-// Send a TLV response packet to MGMT
-static void SendMgmtResponse(uint16_t type, std::span<const uint8_t> data)
-{
-    link_packet_t packet;
-    packet.type = type;
-    packet.length = data.size();
-    if (!data.empty())
-    {
-        std::memcpy(packet.payload.data(), data.data(),
-                    std::min(data.size(), packet.payload.size()));
-    }
-    mgmt_layer.Write(packet);
-}
-
-static void SendMgmtResponse(const std::string& response)
-{
-    SendMgmtResponse(Configuration::Response_Data,
-                     std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(response.data()),
-                                              response.length()));
-}
-
-static void SendMgmtAck()
-{
-    SendMgmtResponse(Configuration::Response_Ack, std::span<const uint8_t>{});
-}
-
-static void SendMgmtNack()
-{
-    SendMgmtResponse(Configuration::Response_Nack, std::span<const uint8_t>{});
-}
-
 // Load namespaces from storage into memory
 // Initialize empty entries to "[]" so storage always contains valid JSON
 static void LoadNamespacesFromStorage()
@@ -467,11 +436,11 @@ static void MgmtLinkPacketTask(void* args)
             {
                 if (ESP_OK != storage.Clear())
                 {
-                    SendMgmtNack();
+                    mgmt_layer.ReplyNack();
                     break;
                 }
 
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Set_Ssid:
@@ -502,7 +471,7 @@ static void MgmtLinkPacketTask(void* args)
 
                 wifi.Connect(ssid_name, ssid_password);
 
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Get_Ssid_Names:
@@ -518,7 +487,7 @@ static void MgmtLinkPacketTask(void* args)
                     str.append(creds[i].name, creds[i].name_len);
                 }
 
-                SendMgmtResponse(str);
+                mgmt_layer.ReplyData(str);
                 break;
             }
             case Configuration::Get_Ssid_Passwords:
@@ -533,13 +502,13 @@ static void MgmtLinkPacketTask(void* args)
                     }
                     str.append(creds[i].pwd, creds[i].pwd_len);
                 }
-                SendMgmtResponse(str);
+                mgmt_layer.ReplyData(str);
                 break;
             }
             case Configuration::Clear_Ssids:
             {
                 wifi.ClearSavedSSIDs();
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Set_Moq_Url:
@@ -552,17 +521,17 @@ static void MgmtLinkPacketTask(void* args)
                     // MOQ url will be cleared.
                     NET_LOG_INFO("Cleaning moq url because length is zero");
                     moq_server_url.Clear();
-                    SendMgmtAck();
+                    mgmt_layer.ReplyAck();
                     break;
                 }
                 moq_server_url = moq_url;
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Get_Moq_Url:
             {
                 std::string moq_url = moq_server_url.Load();
-                SendMgmtResponse(moq_url);
+                mgmt_layer.ReplyData(moq_url);
                 break;
             }
             case Configuration::Toggle_Logs:
@@ -577,31 +546,31 @@ static void MgmtLinkPacketTask(void* args)
                 }
 
                 // Reply with an ack before the logs begin again.
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Disable_Logs:
             {
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
                 DisableLogging();
                 break;
             }
             case Configuration::Enable_Logs:
             {
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
                 EnableLogging();
                 break;
             }
             case Configuration::Disable_Loopback:
             {
                 loopback = false;
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Enable_Loopback:
             {
                 loopback = true;
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Set_Language:
@@ -610,14 +579,14 @@ static void MgmtLinkPacketTask(void* args)
                 if (!IsValidLanguage(new_lang))
                 {
                     NET_LOG_ERROR("Invalid language: %s", new_lang.c_str());
-                    SendMgmtNack();
+                    mgmt_layer.ReplyNack();
                     break;
                 }
                 language = new_lang;
                 NET_LOG_INFO("Language set to: %s", new_lang.c_str());
 
                 // Send ACK before track updates to avoid interleaving with log output
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
 
                 // Update tracks that depend on language
                 UpdateAITracks();
@@ -627,7 +596,7 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Get_Language:
             {
                 std::string lang = language.Load();
-                SendMgmtResponse(lang);
+                mgmt_layer.ReplyData(lang);
                 break;
             }
             case Configuration::Set_Channel:
@@ -637,7 +606,7 @@ static void MgmtLinkPacketTask(void* args)
                 if (!parsed.has_value())
                 {
                     NET_LOG_ERROR("Failed to parse channel namespace JSON");
-                    SendMgmtNack();
+                    mgmt_layer.ReplyNack();
                     break;
                 }
 
@@ -646,14 +615,14 @@ static void MgmtLinkPacketTask(void* args)
                 NET_LOG_INFO("Channel namespace set (%zu parts)", channel_ns.size());
 
                 // Send ACK before track updates to avoid interleaving with log output
-                SendMgmtAck();
+                mgmt_layer.ReplyAck();
                 UpdateChannelTracks();
                 break;
             }
             case Configuration::Get_Channel:
             {
                 // Return JSON representation for readability
-                SendMgmtResponse(channel_ns_json.Load());
+                mgmt_layer.ReplyData(channel_ns_json.Load());
                 break;
             }
             case Configuration::Set_AI:
@@ -666,7 +635,7 @@ static void MgmtLinkPacketTask(void* args)
                         || !ai_config.contains("audio") || !ai_config.contains("cmd"))
                     {
                         NET_LOG_ERROR("AI config must be object with query, audio, cmd fields");
-                        SendMgmtNack();
+                        mgmt_layer.ReplyNack();
                         break;
                     }
 
@@ -677,7 +646,7 @@ static void MgmtLinkPacketTask(void* args)
                     if (!query_parsed || !audio_parsed || !cmd_parsed)
                     {
                         NET_LOG_ERROR("Failed to parse AI namespace arrays");
-                        SendMgmtNack();
+                        mgmt_layer.ReplyNack();
                         break;
                     }
 
@@ -694,14 +663,14 @@ static void MgmtLinkPacketTask(void* args)
                                  ai_cmd_response_ns.size());
 
                     // Send ACK before track updates to avoid interleaving with log output
-                    SendMgmtAck();
+                    mgmt_layer.ReplyAck();
 
                     UpdateAITracks();
                 }
                 catch (const std::exception& ex)
                 {
                     NET_LOG_ERROR("Failed to parse AI config JSON: %s", ex.what());
-                    SendMgmtNack();
+                    mgmt_layer.ReplyNack();
                 }
                 break;
             }
@@ -711,7 +680,7 @@ static void MgmtLinkPacketTask(void* args)
                 response["query"] = ai_query_ns;
                 response["audio"] = ai_audio_response_ns;
                 response["cmd"] = ai_cmd_response_ns;
-                SendMgmtResponse(response.dump());
+                mgmt_layer.ReplyData(response.dump());
                 break;
             }
             case Configuration::Burn_Disable_USB_JTag_Efuse:
@@ -719,11 +688,11 @@ static void MgmtLinkPacketTask(void* args)
                 const bool res = BurnDisableUSBJTagEFuse();
                 if (res)
                 {
-                    SendMgmtAck();
+                    mgmt_layer.ReplyAck();
                 }
                 else
                 {
-                    SendMgmtNack();
+                    mgmt_layer.ReplyNack();
                 }
                 break;
             }
