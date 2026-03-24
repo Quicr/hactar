@@ -1005,7 +1005,7 @@ extern "C" void app_main(void)
     int next = 0;
     int64_t heartbeat = 0;
     bool ready_to_connect_moq = false;
-    moq::Session::Status prev_status = moq::Session::Status::kReady;
+    moq::Session::Status prev_status = moq::Session::Status::kNotConnected;
     Wifi::State prev_wifi_state = Wifi::State::Connected;
     while (true)
     {
