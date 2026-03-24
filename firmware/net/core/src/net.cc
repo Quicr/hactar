@@ -621,7 +621,6 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Get_Channel:
             {
-                // Return JSON representation for readability
                 mgmt_layer.ReplyData(channel_ns_json.Load());
                 break;
             }
