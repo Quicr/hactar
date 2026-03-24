@@ -40,8 +40,15 @@
 using json = nlohmann::json;
 
 // Forward declarations
-std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial);
-std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& publication);
+std::shared_ptr<moq::TrackReader> CreateReadTrack(const std::string& channel_name,
+                                                  const std::vector<std::string>& track_namespace,
+                                                  const std::string& trackname,
+                                                  const std::string& codec,
+                                                  Serial& serial);
+std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const std::string& channel_name,
+                                                   const std::vector<std::string>& track_namespace,
+                                                   const std::string& trackname,
+                                                   const std::string& codec);
 
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
@@ -259,13 +266,7 @@ static void UpdateAITracks()
     // AI Query publication track
     if (!ai_query_ns.empty() && !lang.empty())
     {
-        json pub_config;
-        pub_config["channel_name"] = "ai_audio";
-        pub_config["tracknamespace"] = ai_query_ns;
-        pub_config["trackname"] = lang;
-        pub_config["codec"] = "pcm";
-
-        if (auto writer = CreateWriteTrack(pub_config))
+        if (auto writer = CreateWriteTrack("ai_audio", ai_query_ns, lang, "pcm"))
         {
             writer->Start();
         }
@@ -274,13 +275,8 @@ static void UpdateAITracks()
     // AI Audio Response subscription track
     if (!ai_audio_response_ns.empty())
     {
-        json sub_config;
-        sub_config["channel_name"] = "self_ai_audio";
-        sub_config["tracknamespace"] = ai_audio_response_ns;
-        sub_config["trackname"] = device_id_str;
-        sub_config["codec"] = "pcm";
-
-        if (auto reader = CreateReadTrack(sub_config, ui_layer))
+        if (auto reader = CreateReadTrack("self_ai_audio", ai_audio_response_ns, device_id_str,
+                                          "pcm", ui_layer))
         {
             reader->Start();
         }
@@ -289,13 +285,8 @@ static void UpdateAITracks()
     // AI Command Response subscription track
     if (!ai_cmd_response_ns.empty())
     {
-        json sub_config;
-        sub_config["channel_name"] = "self_ai_text";
-        sub_config["tracknamespace"] = ai_cmd_response_ns;
-        sub_config["trackname"] = device_id_str;
-        sub_config["codec"] = "ai_cmd_response:json";
-
-        if (auto reader = CreateReadTrack(sub_config, ui_layer))
+        if (auto reader = CreateReadTrack("self_ai_text", ai_cmd_response_ns, device_id_str,
+                                          "ai_cmd_response:json", ui_layer))
         {
             reader->Start();
         }
@@ -315,25 +306,13 @@ static void UpdateChannelTracks()
     }
 
     // Channel publication track
-    json pub_config;
-    pub_config["channel_name"] = "channel";
-    pub_config["tracknamespace"] = channel_ns;
-    pub_config["trackname"] = lang;
-    pub_config["codec"] = "pcm";
-
-    if (auto writer = CreateWriteTrack(pub_config))
+    if (auto writer = CreateWriteTrack("channel", channel_ns, lang, "pcm"))
     {
         writer->Start();
     }
 
     // Channel subscription track
-    json sub_config;
-    sub_config["channel_name"] = "channel";
-    sub_config["tracknamespace"] = channel_ns;
-    sub_config["trackname"] = lang;
-    sub_config["codec"] = "pcm";
-
-    if (auto reader = CreateReadTrack(sub_config, ui_layer))
+    if (auto reader = CreateReadTrack("channel", channel_ns, lang, "pcm", ui_layer))
     {
         reader->Start();
     }
@@ -758,20 +737,13 @@ static void MgmtLinkPacketTask(void* args)
     }
 }
 
-std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial)
+std::shared_ptr<moq::TrackReader> CreateReadTrack(const std::string& channel_name,
+                                                  const std::vector<std::string>& track_namespace,
+                                                  const std::string& trackname,
+                                                  const std::string& codec,
+                                                  Serial& serial)
 try
 {
-    std::vector<std::string> track_namespace =
-        subscription.at("tracknamespace").get<std::vector<std::string>>();
-    std::string trackname = subscription.at("trackname").get<std::string>();
-    if (trackname.empty())
-    {
-        trackname = std::to_string(device_id);
-    }
-
-    std::string codec = subscription.at("codec").get<std::string>();
-    std::string channel_name = subscription.at("channel_name").get<std::string>();
-
     uint32_t offset = 0;
     if (codec == "pcm")
     {
@@ -836,16 +808,12 @@ catch (const std::exception& ex)
     return nullptr;
 }
 
-std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& publication)
+std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const std::string& channel_name,
+                                                   const std::vector<std::string>& track_namespace,
+                                                   const std::string& trackname,
+                                                   const std::string& codec)
 try
 {
-    std::vector<std::string> track_namespace =
-        publication.at("tracknamespace").get<std::vector<std::string>>();
-    std::string trackname = publication.at("trackname").get<std::string>();
-
-    std::string codec = publication.at("codec").get<std::string>();
-    std::string channel_name = publication.at("channel_name").get<std::string>();
-
     uint32_t offset = 0;
     if (codec == "pcm")
     {
