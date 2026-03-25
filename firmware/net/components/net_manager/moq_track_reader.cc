@@ -257,18 +257,16 @@ void TrackReader::TransmitText()
 
     while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
-        // TODO use notifies and then drain the entire moq objs
-        vTaskDelay(2 / portTICK_PERIOD_MS);
-
-        if (byte_buffer.empty())
+        // Drain all available packets
+        while (!byte_buffer.empty())
         {
-            continue;
+            std::optional<std::vector<uint8_t>> data = std::move(byte_buffer.front());
+            byte_buffer.pop();
+            WriteToSerial(data);
         }
 
-        std::optional<std::vector<uint8_t>> data = std::move(byte_buffer.front());
-        byte_buffer.pop();
-
-        WriteToSerial(data);
+        // Only delay when buffer is empty
+        vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 }
 
