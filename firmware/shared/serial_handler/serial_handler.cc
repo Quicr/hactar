@@ -94,15 +94,6 @@ uint16_t SerialHandler::Unsent()
     return unsent;
 }
 
-void SerialHandler::ResetParserState()
-{
-    sync_matched = 0;
-    bytes_read = 0;
-    unread = 0;
-    rx_write_idx = 0;
-    rx_read_idx = 0;
-}
-
 void SerialHandler::WriteToTxBuff(const uint8_t data)
 {
     if (tx_write_idx >= tx_buff_sz)

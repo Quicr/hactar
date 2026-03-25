@@ -49,8 +49,6 @@ public:
     uint16_t Unread();
     uint16_t Unsent();
 
-    void ResetParserState();
-
     // TODO DELETEME
     uint16_t RxBuffWriteIdx()
     {
