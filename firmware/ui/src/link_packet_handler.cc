@@ -14,9 +14,8 @@ static void HandleMedia(link_packet_t* packet, AudioChip& audio)
                            constants::Audio_Buffer_Sz, constants::Stereo, true);
 }
 
-static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Serial& serial)
+static void HandleAiResponse(link_packet_t* packet, AudioChip& audio)
 {
-
     auto* response =
         static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload.data() + 1));
 
@@ -34,20 +33,9 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Serial& se
     }
     case ui_net_link::ContentType::Json:
     {
-        if (response->chunk_data[0] == '{'
-            && response->chunk_data[response->chunk_length - 1] == '}')
-        {
-            UI_LOG_INFO("ai response len %d", packet->length);
-            UI_LOG_INFO("IS JSON");
-            packet->type = static_cast<uint8_t>(ui_net_link::Packet_Type::AiResponse);
-            serial.Write(*packet);
-        }
-        else
-        {
-            // This is a text.
-            response->chunk_data[response->chunk_length] = 0;
-            UI_LOG_INFO("[AI] %s", response->chunk_data);
-        }
+        // This is a text.
+        response->chunk_data[response->chunk_length] = 0;
+        UI_LOG_INFO("[AI] %s", response->chunk_data);
         break;
     }
     }
@@ -64,80 +52,49 @@ void HandleNetLinkPackets(Serial& serial, Protector& protector, AudioChip& audio
             return;
         }
 
-        switch ((ui_net_link::Packet_Type)packet->type)
+        if ((ui_net_link::Packet_Type)packet->type != ui_net_link::Packet_Type::Message)
         {
-        case ui_net_link::Packet_Type::PowerOnReady:
-        {
-            // TODO: Stop loading screen?
-            break;
+            UI_LOG_ERROR("Unhandled packet type %d", (int)packet->type);
+            continue;
         }
-        case ui_net_link::Packet_Type::GetAudioLinkPacket:
-        {
-            break;
-        }
-        case ui_net_link::Packet_Type::Message:
-        case ui_net_link::Packet_Type::AiResponse:
-        {
-            if (!protector.TryUnprotect(packet))
-            {
-                UI_LOG_ERROR("Failed to decrypt ptt object");
-                continue;
-            }
 
-            // Get the second byte of the data which is the message type
-            // Since the first byte is channel id
-            const auto message_type = static_cast<ui_net_link::MessageType>(packet->payload[1]);
+        if (!protector.TryUnprotect(packet))
+        {
+            UI_LOG_ERROR("Failed to decrypt ptt object");
+            continue;
+        }
 
-            switch (message_type)
-            {
-            case ui_net_link::MessageType::Media:
-            {
-                HandleMedia(packet, audio);
-                break;
-            }
-            case ui_net_link::MessageType::AIRequest:
-            {
-                // Do nothing.
-                break;
-            }
-            case ui_net_link::MessageType::AIResponse:
-            {
-                // Json, text, or ai audio
-                HandleAiResponse(packet, audio, serial);
-                break;
-            }
-            case ui_net_link::MessageType::Chat:
-            {
-                // Text/translated text
-                HandleChatMessages(screen, packet);
-                break;
-            }
-            default:
-            {
-                UI_LOG_INFO("Got an unknown message type %d", (int)message_type);
-                break;
-            }
-            }
-            break;
-        }
-        case ui_net_link::Packet_Type::MoQStatus:
-        {
-            break;
-        }
-        case ui_net_link::Packet_Type::WifiConnect:
-        {
-            break;
-        }
-        case ui_net_link::Packet_Type::WifiStatus:
-        {
-            UI_LOG_INFO("got a wifi packet, status %d", (int)packet->payload[0]);
+        // Get the second byte of the data which is the message type
+        // Since the first byte is channel id
+        const auto message_type = static_cast<ui_net_link::MessageType>(packet->payload[1]);
 
+        switch (message_type)
+        {
+        case ui_net_link::MessageType::Media:
+        {
+            HandleMedia(packet, audio);
+            break;
+        }
+        case ui_net_link::MessageType::AIRequest:
+        {
+            // Do nothing.
+            break;
+        }
+        case ui_net_link::MessageType::AIResponse:
+        {
+            // Json, text, or ai audio
+            HandleAiResponse(packet, audio);
+            break;
+        }
+        case ui_net_link::MessageType::Chat:
+        {
+            // Text/translated text
+            HandleChatMessages(screen, packet);
             break;
         }
         default:
         {
-            UI_LOG_ERROR("Unhandled packet type %d, %u, %lu, %lu", (int)packet->type,
-                         packet->length);
+            UI_LOG_INFO("Got an unknown message type %d", (int)message_type);
             break;
         }
         }
