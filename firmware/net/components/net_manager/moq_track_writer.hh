@@ -40,6 +40,7 @@ public:
             3000 /* ttl */,
             std::nullopt,
             std::nullopt,
+            std::nullopt,
         };
         std::vector<uint8_t> data;
     };

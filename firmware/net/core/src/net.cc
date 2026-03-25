@@ -67,7 +67,8 @@ uart_config_t net_ui_uart_config = {
     .stop_bits = UART_STOP_BITS_2,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = UART_HW_FLOWCTRL_DISABLE,
-    .source_clk = UART_SCLK_DEFAULT // UART_SCLK_DEFAULT
+    .source_clk = UART_SCLK_DEFAULT,
+    .flags = {},
 };
 
 Serial ui_layer(NET_UI_UART_PORT,
@@ -103,6 +104,9 @@ uart_config_t net_mgmt_uart_config = {
     .parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .rx_flow_ctrl_thresh = 0,
+    .source_clk = UART_SCLK_DEFAULT,
+    .flags = {},
 };
 
 Serial mgmt_layer(UART_NUM_0,
@@ -217,7 +221,6 @@ static void UILinkPacketTask(void* args)
             {
                 NET_LOG_INFO("got ai response from ui");
                 // Check if json for sure
-                uint8_t channel_id = packet->payload[0];
                 auto* response = static_cast<ui_net_link::AIResponseChunk*>(
                     static_cast<void*>(packet->payload.data() + 1));
 
@@ -252,7 +255,7 @@ static void UILinkPacketTask(void* args)
 
                 if (channel_id < (uint8_t)ui_net_link::Channel_Id::Count - 1)
                 {
-                    if (auto& writer = writers[channel_id])
+                    if (writers[channel_id])
                     {
                         writers[channel_id]->PushObject(packet->payload.data() + 1, length,
                                                         curr_audio_isr_time);
@@ -440,8 +443,6 @@ static void MgmtLinkPacketTask(void* args)
             {
                 uint32_t language_len = 0;
                 uint32_t channel_len = 0;
-
-                uint32_t offset = 0;
 
                 std::span<uint8_t> payload = std::span{packet->payload};
 
@@ -724,9 +725,6 @@ extern "C" void app_main(void)
         CreateWriteTrack(publications[i]);
     }
 
-    int next = 0;
-    int64_t heartbeat = 0;
-    bool ready_to_connect_moq = false;
     moq::Session::Status prev_status = moq::Session::Status::kReady;
     Wifi::State prev_wifi_state = Wifi::State::Connected;
     while (true)

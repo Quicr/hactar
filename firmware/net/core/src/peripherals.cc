@@ -60,7 +60,8 @@ void IntitializePWM()
                                         .duty_resolution = ledc_duty_res,
                                         .timer_num = ledc_timer,
                                         .freq_hz = ledc_freq, // Set output frequency at 4 kHz
-                                        .clk_cfg = LEDC_AUTO_CLK};
+                                        .clk_cfg = LEDC_AUTO_CLK,
+                                        .deconfigure = false};
     ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer_c));
 
     // Prepare and then apply the LEDC PWM channel configuration
@@ -70,7 +71,9 @@ void IntitializePWM()
                                             .intr_type = LEDC_INTR_DISABLE,
                                             .timer_sel = ledc_timer,
                                             .duty = 0, // Set duty to 0%
-                                            .hpoint = 0};
+                                            .hpoint = 0,
+                                            .sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
+                                            .flags = {.output_invert = 0}};
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_c));
     // Set duty to 50%
     ESP_ERROR_CHECK(ledc_set_duty(ledc_mode, ledc_channel, ledc_duty));
