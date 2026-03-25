@@ -49,6 +49,8 @@ public:
     uint16_t Unread();
     uint16_t Unsent();
 
+    void ResetParserState();
+
     // TODO DELETEME
     uint16_t RxBuffWriteIdx()
     {
@@ -97,6 +99,7 @@ protected:
 
     link_packet_t* packet;
     uint32_t bytes_read;
+    size_t sync_matched;
     bool escaped;
 
 #ifdef PLATFORM_ESP

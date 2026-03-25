@@ -28,6 +28,7 @@ SerialHandler::SerialHandler(const uint16_t num_rx_packets,
     transmit_arg(transmit_arg),
     packet(&rx_packets.Write()),
     bytes_read(0),
+    sync_matched(0),
     escaped(false)
 {
 }
@@ -91,6 +92,15 @@ uint16_t SerialHandler::Unread()
 uint16_t SerialHandler::Unsent()
 {
     return unsent;
+}
+
+void SerialHandler::ResetParserState()
+{
+    sync_matched = 0;
+    bytes_read = 0;
+    unread = 0;
+    rx_write_idx = 0;
+    rx_read_idx = 0;
 }
 
 void SerialHandler::WriteToTxBuff(const uint8_t data)
@@ -166,8 +176,6 @@ link_packet_t* SerialHandler::TLVRead()
 {
     uint16_t total_bytes_read = 0;
     auto packet_data = packet->WriteableData();
-
-    static size_t sync_matched = 0;
 
     while (total_bytes_read + update_cache < unread)
     {
