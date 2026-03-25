@@ -3,7 +3,10 @@
 
 #include "moq_track_writer.hh"
 #include "chunk.hh"
+#include "freertos/idf_additions.h"
+#include "freertos/projdefs.h"
 #include "macros.hh"
+#include "portmacro.h"
 #include "task_helpers.hh"
 #include "utils.hh"
 
@@ -25,7 +28,8 @@ TrackWriter::TrackWriter(const quicr::FullTrackName& full_track_name,
     obj_mux(),
     task_handle(nullptr),
     task_buffer(),
-    task_stack(nullptr)
+    task_stack(nullptr),
+    notify_sem(nullptr)
 {
 }
 
@@ -47,6 +51,9 @@ void TrackWriter::Start()
         return;
     }
 
+    // Create our semaphore
+    notify_sem = xSemaphoreCreateCounting(0xFFFF, 0x00);
+
     task_helpers::Start_PSRAM_Task(PublishTask, this, track_name, task_handle, task_buffer,
                                    &task_stack, 16384, 10);
 }
@@ -67,6 +74,12 @@ void TrackWriter::Stop()
     {
         heap_caps_free(task_stack);
         task_stack = nullptr;
+    }
+
+    if (notify_sem)
+    {
+        vSemaphoreDelete(notify_sem);
+        notify_sem = nullptr;
     }
 
     NET_LOG_WARN("Stopped writer");
@@ -125,6 +138,9 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
                                                                       time_bytes.end());
 
     obj.data.assign(bytes, bytes + len);
+
+    // Notify task
+    xSemaphoreGive(notify_sem);
 }
 
 const std::string& TrackWriter::GetTrackName() const noexcept
@@ -166,9 +182,12 @@ void TrackWriter::PublishTask(void* params)
         // TODO changing pub
         while (can_publish() && writer->is_running)
         {
-            // TODO use notifies and then drain the entire moq objs
-            vTaskDelay(2 / portTICK_PERIOD_MS);
+            if (xSemaphoreTake(writer->notify_sem, portMAX_DELAY) == pdFALSE)
+            {
+                continue;
+            }
 
+            // This is redundant since the size will be tied to the semaphore
             if (writer->moq_objs.size() == 0)
             {
                 continue;

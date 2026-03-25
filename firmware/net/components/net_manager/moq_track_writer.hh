@@ -60,6 +60,7 @@ private:
     TaskHandle_t task_handle;
     StaticTask_t task_buffer;
     StackType_t* task_stack;
+    SemaphoreHandle_t notify_sem;
 };
 } // namespace moq
 
