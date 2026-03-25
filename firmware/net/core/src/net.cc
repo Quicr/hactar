@@ -202,85 +202,26 @@ static void UILinkPacketTask(void* args)
 
         while (auto packet = ui_layer.Read())
         {
-            switch ((ui_net_link::Packet_Type)packet->type)
+            if ((ui_net_link::Packet_Type)packet->type != ui_net_link::Packet_Type::Message)
             {
-            case ui_net_link::Packet_Type::GetAudioLinkPacket:
-            {
-                // TODO NOTE might be a dead type
-                break;
+                NET_LOG_ERROR("Got unexpected packet type %d", (int)packet->type);
+                continue;
             }
-            case ui_net_link::Packet_Type::MoQChangeNamespace:
-            {
-                break;
-            }
-            case ui_net_link::Packet_Type::AiResponse:
-            {
-                NET_LOG_INFO("got ai response from ui");
-                // Check if json for sure
-                uint8_t channel_id = packet->payload[0];
-                auto* response = static_cast<ui_net_link::AIResponseChunk*>(
-                    static_cast<void*>(packet->payload.data() + 1));
 
-                if (!json::accept(response->chunk_data))
+            uint8_t channel_id = packet->payload[0];
+            uint32_t ext_bytes = 1;
+            uint32_t length = packet->length;
+
+            // Remove the bytes already read from the payload length (channel_id)
+            length -= ext_bytes;
+
+            if (channel_id < (uint8_t)ui_net_link::Channel_Id::Count - 1)
+            {
+                if (writers[channel_id])
                 {
-                    NET_LOG_ERROR("Received invalid json");
-                    break;
+                    writers[channel_id]->PushObject(packet->payload.data() + 1, length,
+                                                    curr_audio_isr_time);
                 }
-
-                json change_channel = json::parse(response->chunk_data);
-                NET_LOG_INFO("start track write for new channel");
-                if (auto writer = CreateWriteTrack(change_channel))
-                {
-                    writer->Start();
-                }
-
-                NET_LOG_INFO("start track read for new channel");
-                if (auto reader = CreateReadTrack(change_channel, ui_layer))
-                {
-                    reader->Start();
-                }
-                break;
-            }
-            case ui_net_link::Packet_Type::Message:
-            {
-                uint8_t channel_id = packet->payload[0];
-                uint32_t ext_bytes = 1;
-                uint32_t length = packet->length;
-
-                // Remove the bytes already read from the payload length (channel_id)
-                length -= ext_bytes;
-
-                if (channel_id < (uint8_t)ui_net_link::Channel_Id::Count - 1)
-                {
-                    if (auto& writer = writers[channel_id])
-                    {
-                        writers[channel_id]->PushObject(packet->payload.data() + 1, length,
-                                                        curr_audio_isr_time);
-                    }
-                }
-
-                // TODO use notifies, currently it doesn't notify fast enough?
-                // xTaskNotifyGive(rtos_pub_handle);
-
-                break;
-            }
-            case ui_net_link::Packet_Type::WifiConnect:
-            {
-                NET_LOG_INFO("Got a wifi connect packet");
-                // Get the SSID and password from the packet.
-
-                std::string ssid;
-                std::string pwd;
-
-                ui_net_link::Deserialize(*packet, ssid, pwd);
-
-                wifi.Connect(ssid, pwd);
-
-                break;
-            }
-            default:
-                NET_LOG_ERROR("Got a packet without a handler %d", (int)packet->type);
-                break;
             }
         }
     }
@@ -735,16 +676,10 @@ extern "C" void app_main(void)
 
         Wifi::State wifi_state = wifi.GetState();
 
-        // TODO cleanup
         if (prev_wifi_state != wifi_state)
         {
             prev_wifi_state = wifi_state;
             gpio_set_level(NET_LED_G, 1);
-
-            link_packet_t packet;
-            packet.type = (uint16_t)ui_net_link::Packet_Type::WifiStatus;
-            packet.payload[0] = (uint8_t)wifi_state;
-            ui_layer.Write(packet);
 
             switch (wifi_state)
             {

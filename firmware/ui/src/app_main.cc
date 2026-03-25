@@ -27,7 +27,6 @@ inline void CheckPTT(Protector& protector);
 inline void CheckPTTAI(Protector& protector);
 inline void SendAudio(Protector& protector,
                       const ui_net_link::Channel_Id channel_id,
-                      const ui_net_link::Packet_Type packet_type,
                       bool last);
 inline void HandleMedia(link_packet_t* packet);
 inline void HandleAiResponse(link_packet_t* packet);
@@ -267,13 +266,12 @@ void CheckPTT(Protector& protector)
 
     if (ptt_state == Ptt_Btn_State::Pressed || ptt_state == Ptt_Btn_State::Releasing)
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message,
-                  false);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt, false);
     }
 
     if (ptt_state == Ptt_Btn_State::Last_Send)
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, true);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt, true);
         ptt_state = Ptt_Btn_State::Released;
     }
 }
@@ -298,21 +296,18 @@ void CheckPTTAI(Protector& protector)
 
     if (ptt_ai_state == Ptt_Btn_State::Pressed || ptt_ai_state == Ptt_Btn_State::Releasing)
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message,
-                  false);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, false);
     }
 
     if (ptt_ai_state == Ptt_Btn_State::Last_Send)
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message,
-                  true);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, true);
         ptt_ai_state = Ptt_Btn_State::Released;
     }
 }
 
 void SendAudio(Protector& protector,
                const ui_net_link::Channel_Id channel_id,
-               const ui_net_link::Packet_Type packet_type,
                bool last)
 {
     ui_net_link::AudioObject talk_frame;
@@ -322,7 +317,7 @@ void SendAudio(Protector& protector,
                             constants::Audio_Phonic_Sz, true, constants::Stereo);
 
     link_packet_t message_packet;
-    ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
+    ui_net_link::Serialize(talk_frame, last, message_packet);
 
     if (!protector.TryProtect(&message_packet))
     {

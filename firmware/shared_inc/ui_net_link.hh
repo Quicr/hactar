@@ -10,18 +10,7 @@ namespace ui_net_link
 {
 enum struct Packet_Type : uint16_t
 {
-    PowerOnReady,
-    GetAudioLinkPacket,
-    GetTextLinkPacket,
-    PlayStart,
-    PlayStop,
-    MoQStatus,
-    MoQChangeNamespace,
-    Message,
-    AiResponse,
-    SSIDRequest,
-    WifiConnect,
-    WifiStatus
+    Message = 0,
 };
 
 enum class Channel_Id : uint8_t
@@ -33,52 +22,10 @@ enum class Channel_Id : uint8_t
     Count
 };
 
-struct ChangeNamespace
-{
-
-    Channel_Id channel_id;
-    uint16_t trackname_len;
-    char trackname[128]; // Todo get actual max size of a trackname
-};
-
-struct TalkStart
-{
-    Channel_Id channel_id;
-};
-
-struct TalkStop
-{
-    Channel_Id channel_id;
-};
-
-struct PlayStart
-{
-    Channel_Id channel_id;
-};
-
-struct PlayStop
-{
-    Channel_Id channel_id;
-};
-
 struct AudioObject
 {
     Channel_Id channel_id;
     uint8_t data[constants::Audio_Phonic_Sz];
-};
-
-struct TextObject
-{
-    Channel_Id channel_id;
-    uint16_t length;
-    uint8_t data[48]; // TODO get from screen? Or constants fil
-};
-
-struct WifiStatus
-{
-    const uint16_t type = static_cast<uint16_t>(Packet_Type::WifiStatus);
-    const uint32_t len = 1;
-    uint8_t status;
 };
 
 enum class MessageType : uint8_t
@@ -136,61 +83,11 @@ struct __attribute__((packed)) AIResponseChunk
     std::uint8_t chunk_data[Chunk_Size];
 };
 
-// example
-// auto* response =
-// static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload + 1));
-
-[[maybe_unused]] static void BuildGetLinkPacket(uint8_t* buff)
-{
-    buff[0] = (uint8_t)Packet_Type::GetAudioLinkPacket;
-    buff[1] = 0;
-    buff[2] = 0;
-}
-
-[[maybe_unused]] static void Serialize(const WifiStatus& wifi_status, link_packet_t& packet)
-{
-    packet.type = wifi_status.type;
-    packet.length = wifi_status.len;
-    packet.payload[0] = (uint8_t)wifi_status.status;
-    packet.is_ready = true;
-}
-
-[[maybe_unused]] static void Serialize(const PlayStart& play_start, link_packet_t& packet)
-{
-    packet.type = (uint8_t)Packet_Type::PlayStart;
-    packet.length = 1;
-
-    // Channel id
-    packet.payload[0] = (uint8_t)play_start.channel_id;
-
-    packet.is_ready = true;
-}
-
-[[maybe_unused]] static void Serialize(const PlayStop& play_stop, link_packet_t& packet)
-{
-    packet.type = (uint8_t)Packet_Type::PlayStop;
-    packet.length = 1;
-
-    // Channel id
-    packet.payload[0] = (uint8_t)play_stop.channel_id;
-
-    packet.is_ready = true;
-}
-
 [[maybe_unused]] static void Serialize(const AudioObject& talk_frame,
-                                       Packet_Type packet_type,
                                        bool is_last,
                                        link_packet_t& packet)
 {
-    if (packet_type != Packet_Type::Message)
-    {
-        // This should maybe be an error instead?
-        Logger::Log(Logger::Level::Error, "audio object packet type is a wrong type %d",
-                    (int)packet_type);
-        packet_type = Packet_Type::Message;
-    }
-
-    packet.type = (uint16_t)packet_type;
+    packet.type = (uint16_t)Packet_Type::Message;
     packet.payload[0] = (uint8_t)talk_frame.channel_id;
 
     uint32_t offset = 1;
@@ -250,75 +147,6 @@ Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, lin
     packet.is_ready = true;
 }
 
-[[maybe_unused]] static void Serialize(const ChangeNamespace& change_moq_namespace_frame,
-                                       link_packet_t& packet)
-{
-    const uint16_t num_extra_bytes = sizeof(change_moq_namespace_frame.channel_id)
-                                   + sizeof(change_moq_namespace_frame.trackname_len);
-    uint32_t payload_offset = 0;
-
-    packet.type = (uint8_t)Packet_Type::MoQChangeNamespace;
-    packet.length = num_extra_bytes + change_moq_namespace_frame.trackname_len;
-
-    memcpy(packet.payload.data(), &change_moq_namespace_frame.channel_id,
-           sizeof(change_moq_namespace_frame.channel_id));
-    payload_offset += sizeof(change_moq_namespace_frame.channel_id);
-
-    memcpy(packet.payload.data() + payload_offset, &change_moq_namespace_frame.trackname_len,
-           sizeof(change_moq_namespace_frame.trackname_len));
-    payload_offset += sizeof(change_moq_namespace_frame.trackname_len);
-
-    memcpy(packet.payload.data() + payload_offset, change_moq_namespace_frame.trackname,
-           change_moq_namespace_frame.trackname_len);
-
-    packet.is_ready = true;
-}
-
-[[maybe_unused]] static void Serialize(const uint8_t* ssid,
-                                       const uint16_t ssid_len,
-                                       const uint8_t* pwd,
-                                       const uint16_t pwd_len,
-                                       link_packet_t& packet)
-{
-    const uint16_t num_extra_bytes = sizeof(ssid_len) + sizeof(pwd_len);
-    size_t payload_offset = 0;
-
-    packet.type = (uint8_t)Packet_Type::WifiConnect;
-    packet.length = ssid_len + pwd_len + num_extra_bytes;
-
-    memcpy(packet.payload.data(), &ssid_len, sizeof(ssid_len));
-    payload_offset += sizeof(ssid_len);
-    memcpy(packet.payload.data() + payload_offset, ssid, ssid_len);
-    payload_offset += ssid_len;
-
-    memcpy(packet.payload.data() + payload_offset, &pwd_len, sizeof(pwd_len));
-    payload_offset += sizeof(pwd_len);
-    memcpy(packet.payload.data() + payload_offset, pwd, pwd_len);
-    payload_offset += pwd_len;
-
-    packet.is_ready = true;
-}
-
-[[maybe_unused]] static void Deserialize(const link_packet_t& packet, TalkStart& talk_start)
-{
-    talk_start.channel_id = (Channel_Id)packet.payload[0];
-}
-
-[[maybe_unused]] static void Deserialize(const link_packet_t& packet, TalkStop& talk_stop)
-{
-    talk_stop.channel_id = (Channel_Id)packet.payload[0];
-}
-
-[[maybe_unused]] static void Deserialize(const link_packet_t& packet, PlayStart& play_start)
-{
-    play_start.channel_id = (Channel_Id)packet.payload[0];
-}
-
-[[maybe_unused]] static void Deserialize(const link_packet_t& packet, PlayStop& play_stop)
-{
-    play_stop.channel_id = (Channel_Id)packet.payload[0];
-}
-
 [[maybe_unused]] static void Deserialize(const link_packet_t& packet, AudioObject& audio_object)
 {
     audio_object.channel_id = (Channel_Id)packet.payload[0];
@@ -332,47 +160,4 @@ Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, lin
     memcpy(audio_object.data, packet.payload.data() + payload_offset, constants::Audio_Phonic_Sz);
 }
 
-[[maybe_unused]] static void Deserialize(const link_packet_t& packet,
-                                         ChangeNamespace& change_moq_namespace_frame)
-{
-    std::span<const uint8_t> payload{packet.payload};
-
-    memcpy(&change_moq_namespace_frame.channel_id, payload.data(),
-           sizeof(change_moq_namespace_frame.channel_id));
-    payload = payload.subspan(sizeof(change_moq_namespace_frame.channel_id));
-
-    memcpy(&change_moq_namespace_frame.trackname_len, packet.payload.data(),
-           sizeof(change_moq_namespace_frame.trackname_len));
-    payload = payload.subspan(sizeof(change_moq_namespace_frame.trackname_len));
-
-    memcpy(change_moq_namespace_frame.trackname, packet.payload.data(),
-           change_moq_namespace_frame.trackname_len);
-}
-
-[[maybe_unused]] static void
-Deserialize(const link_packet_t& packet, std::string& ssid, std::string& pwd)
-{
-    size_t payload_offset = 0;
-
-    uint16_t ssid_len = 0;
-    uint16_t pwd_len = 0;
-
-    std::span<const uint8_t> payload{packet.payload};
-
-    memcpy(&ssid_len, packet.payload.data(), sizeof(ssid_len));
-    ssid.resize(ssid_len);
-    payload = payload.subspan(sizeof(ssid_len));
-
-    memcpy(ssid.data(), payload.data(), ssid_len);
-    payload = payload.subspan(ssid_len);
-
-    memcpy(&pwd_len, payload.data(), sizeof(pwd_len));
-    pwd.resize(pwd_len);
-    payload = payload.subspan(sizeof(pwd_len));
-
-    memcpy(pwd.data(), payload.data(), pwd_len);
-    payload = payload.subspan(pwd_len);
-}
-
-// TODO serialize and deserialize for audioobjectS
 } // namespace ui_net_link
