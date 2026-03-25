@@ -20,8 +20,10 @@ struct link_packet_t
     static constexpr size_t Payload_Size =
         constants::Audio_Phonic_Sz + Crypto_Overhead + Extra_Padding;
     static constexpr size_t Packet_Size = Header_Size + Payload_Size + Sync_Word_Size;
+    static constexpr uint8_t Sync_Word[Sync_Word_Size] = {0x4C, 0x49, 0x4E, 0x4B};
 
-    const uint8_t sync_word[Sync_Word_Size] = {0x4C, 0x49, 0x4E, 0x4B};
+    const uint8_t sync_word[Sync_Word_Size] = {Sync_Word[0], Sync_Word[1], Sync_Word[2],
+                                               Sync_Word[3]};
     uint16_t type = 0;
     uint32_t length = 0;
     std::array<uint8_t, Payload_Size> payload{0};
