@@ -171,15 +171,16 @@ void Serial::QueueReadTask(void* arg)
                 // Limit to contiguous space available
                 int space_available = (space_to_end < free_space) ? space_to_end : free_space;
                 // Don't read more than remaining bytes in event
-                int bytes_to_read = (space_available < bytes_remaining) ? space_available : bytes_remaining;
+                int bytes_to_read =
+                    (space_available < bytes_remaining) ? space_available : bytes_remaining;
 
                 if (bytes_to_read <= 0)
                 {
                     break;
                 }
 
-                int num_bytes = uart_read_bytes(serial->port, serial->rx_buff + serial->rx_write_idx,
-                                                bytes_to_read, 0);
+                int num_bytes = uart_read_bytes(
+                    serial->port, serial->rx_buff + serial->rx_write_idx, bytes_to_read, 0);
 
                 if (num_bytes <= 0)
                 {

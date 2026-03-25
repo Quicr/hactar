@@ -352,8 +352,6 @@ Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, lin
 [[maybe_unused]] static void
 Deserialize(const link_packet_t& packet, std::string& ssid, std::string& pwd)
 {
-    size_t payload_offset = 0;
-
     uint16_t ssid_len = 0;
     uint16_t pwd_len = 0;
 
