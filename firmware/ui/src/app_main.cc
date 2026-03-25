@@ -25,9 +25,7 @@
 // Forward declare
 inline void CheckPTT(Protector& protector);
 inline void CheckPTTAI(Protector& protector);
-inline void SendAudio(Protector& protector,
-                      const ui_net_link::Channel_Id channel_id,
-                      bool last);
+inline void SendAudio(Protector& protector, const ui_net_link::Channel_Id channel_id, bool last);
 inline void HandleMedia(link_packet_t* packet);
 inline void HandleAiResponse(link_packet_t* packet);
 
@@ -306,9 +304,7 @@ void CheckPTTAI(Protector& protector)
     }
 }
 
-void SendAudio(Protector& protector,
-               const ui_net_link::Channel_Id channel_id,
-               bool last)
+void SendAudio(Protector& protector, const ui_net_link::Channel_Id channel_id, bool last)
 {
     ui_net_link::AudioObject talk_frame;
     talk_frame.channel_id = channel_id;
