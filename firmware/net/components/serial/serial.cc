@@ -52,13 +52,13 @@ void Serial::BeginEventTask()
     {
         ESP_ERROR_CHECK(uart_driver_install(port, driver_rx_size, driver_tx_size, driver_queue_size,
                                             &queue, 0));
-        xTaskCreate(QueueReadTask, "UART Queue Event Task", 4096, this, 10, &uart_task_handle);
+        xTaskCreate(QueueReadTask, "UART Queue Event Task", 4096, this, 20, &uart_task_handle);
     }
     else
     {
         ESP_ERROR_CHECK(uart_driver_install(port, driver_rx_size, driver_tx_size, driver_queue_size,
                                             nullptr, 0));
-        xTaskCreate(ReadTask, "UART Read Event Task", 4096, this, 10, &uart_task_handle);
+        xTaskCreate(ReadTask, "UART Read Event Task", 4096, this, 20, &uart_task_handle);
     }
 }
 
@@ -93,16 +93,32 @@ void Serial::ReadTask(void* arg)
 {
     Serial* serial = static_cast<Serial*>(arg);
 
-    int space_remaining = 0;
-    int num_bytes = 0;
     while (true)
     {
-        space_remaining = serial->rx_buff_sz - serial->rx_write_idx;
+        // Check if buffer is full
+        if (serial->unread >= serial->rx_buff_sz)
+        {
+            vTaskDelay(1);
+            continue;
+        }
 
-        num_bytes = uart_read_bytes(serial->port, serial->rx_buff + serial->rx_write_idx,
-                                    space_remaining, 20 / portTICK_PERIOD_MS);
+        // Calculate space to end of buffer (for contiguous write)
+        int space_to_end = serial->rx_buff_sz - serial->rx_write_idx;
+        // Calculate total free space in circular buffer
+        int free_space = serial->rx_buff_sz - serial->unread;
+        // Limit to contiguous space available
+        int bytes_to_read = (space_to_end < free_space) ? space_to_end : free_space;
 
-        if (num_bytes == -1 || num_bytes == 0)
+        if (bytes_to_read <= 0)
+        {
+            vTaskDelay(1);
+            continue;
+        }
+
+        int num_bytes = uart_read_bytes(serial->port, serial->rx_buff + serial->rx_write_idx,
+                                        bytes_to_read, 20 / portTICK_PERIOD_MS);
+
+        if (num_bytes <= 0)
         {
             continue;
         }
@@ -135,25 +151,45 @@ void Serial::QueueReadTask(void* arg)
         {
         case UART_DATA:
         {
-            int space_remaining;
-            int bytes_to_read;
-            int num_bytes = 0;
+            int bytes_remaining = event.size;
             int total_read = 0;
-            while (total_read < event.size)
+
+            while (bytes_remaining > 0)
             {
-                space_remaining = serial->rx_buff_sz - serial->rx_write_idx;
-
-                bytes_to_read = space_remaining < event.size ? space_remaining : event.size;
-
-                num_bytes = uart_read_bytes(serial->port, serial->rx_buff + serial->rx_write_idx,
-                                            bytes_to_read, 0);
-
-                if (num_bytes == -1)
+                // Check if buffer is full
+                if (serial->unread >= serial->rx_buff_sz)
                 {
-                    continue;
+                    ESP_LOGW("SerialPort", "RX buffer full, dropping %d bytes", bytes_remaining);
+                    uart_flush_input(serial->port);
+                    break;
+                }
+
+                // Calculate space to end of buffer (for contiguous write)
+                int space_to_end = serial->rx_buff_sz - serial->rx_write_idx;
+                // Calculate total free space in circular buffer
+                int free_space = serial->rx_buff_sz - serial->unread;
+                // Limit to contiguous space available
+                int space_available = (space_to_end < free_space) ? space_to_end : free_space;
+                // Don't read more than remaining bytes in event
+                int bytes_to_read =
+                    (space_available < bytes_remaining) ? space_available : bytes_remaining;
+
+                if (bytes_to_read <= 0)
+                {
+                    break;
+                }
+
+                int num_bytes = uart_read_bytes(
+                    serial->port, serial->rx_buff + serial->rx_write_idx, bytes_to_read, 0);
+
+                if (num_bytes <= 0)
+                {
+                    break;
                 }
 
                 total_read += num_bytes;
+                bytes_remaining -= num_bytes;
+                serial->unread += num_bytes;
 
                 serial->rx_write_idx += num_bytes;
                 if (serial->rx_write_idx >= serial->rx_buff_sz)
@@ -161,9 +197,11 @@ void Serial::QueueReadTask(void* arg)
                     serial->rx_write_idx = 0;
                 }
             }
-            serial->unread += total_read;
 
-            xTaskNotifyGive(serial->read_handle);
+            if (total_read > 0)
+            {
+                xTaskNotifyGive(serial->read_handle);
+            }
 
             break;
         }

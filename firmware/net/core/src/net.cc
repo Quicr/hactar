@@ -39,6 +39,17 @@
 
 using json = nlohmann::json;
 
+// Forward declarations
+std::shared_ptr<moq::TrackReader> CreateReadTrack(const std::string& channel_name,
+                                                  const std::vector<std::string>& track_namespace,
+                                                  const std::string& trackname,
+                                                  const std::string& codec,
+                                                  Serial& serial);
+std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const std::string& channel_name,
+                                                   const std::vector<std::string>& track_namespace,
+                                                   const std::string& trackname,
+                                                   const std::string& codec);
+
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
 uint64_t device_id = 0;
@@ -61,7 +72,7 @@ uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = {0};
 uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = {0};
 
 uart_config_t net_ui_uart_config = {
-    .baud_rate = 921600,
+    .baud_rate = 460800,
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_2,
@@ -85,8 +96,8 @@ Serial ui_layer(NET_UI_UART_PORT,
                 *net_ui_uart_rx_buff,
                 NET_UI_UART_RX_BUFF_SIZE,
                 NET_UI_UART_RING_RX_NUM,
-                2048,
-                4096,
+                8192,
+                8192,
                 20,
                 true,
                 false);
@@ -132,8 +143,19 @@ Serial mgmt_layer(UART_NUM_0,
 Storage storage;
 Wifi wifi(storage);
 StoredValue<std::string> moq_server_url(storage, "moq", "server_url");
-StoredValue<std::string> language(storage, "frontline", "language");
-StoredValue<std::string> default_channel(storage, "frontline", "channel");
+StoredValue<std::string> language(storage, "config", "language");
+// Channel namespace (JSON-encoded array of strings)
+StoredValue<std::string> channel_ns_json(storage, "config", "channel_ns");
+// AI namespaces (JSON-encoded arrays of strings)
+StoredValue<std::string> ai_query_ns_json(storage, "config", "ai_qry_ns");
+StoredValue<std::string> ai_audio_response_ns_json(storage, "config", "ai_aud_ns");
+StoredValue<std::string> ai_cmd_response_ns_json(storage, "config", "ai_cmd_ns");
+
+// In-memory namespace caches (decoded from JSON)
+std::vector<std::string> channel_ns;
+std::vector<std::string> ai_query_ns;
+std::vector<std::string> ai_audio_response_ns;
+std::vector<std::string> ai_cmd_response_ns;
 
 uint64_t curr_audio_isr_time = esp_timer_get_time();
 uint64_t last_audio_isr_time = esp_timer_get_time();
@@ -181,6 +203,92 @@ static void EnableLogging()
 
     debug_printf_resume();
     logs_disabled = false;
+}
+
+// Load namespaces from storage into memory
+// Initialize empty entries to "[]" so storage always contains valid JSON
+static void LoadNamespacesFromStorage()
+{
+    auto load_ns = [](StoredValue<std::string>& stored, std::vector<std::string>& ns) {
+        std::string json_str = stored.Load();
+        if (json_str.empty())
+        {
+            stored = "[]";
+            ns.clear();
+            return;
+        }
+        auto parsed = JsonToNamespace(json_str);
+        ns = parsed.value_or(std::vector<std::string>{});
+    };
+
+    load_ns(channel_ns_json, channel_ns);
+    load_ns(ai_query_ns_json, ai_query_ns);
+    load_ns(ai_audio_response_ns_json, ai_audio_response_ns);
+    load_ns(ai_cmd_response_ns_json, ai_cmd_response_ns);
+}
+
+// Update AI tracks when AI namespaces or language changes
+// AI Query: publish to {ai_query_ns, language}
+// AI Audio Response: subscribe to {ai_audio_response_ns, device_id}
+// AI Command Response: subscribe to {ai_cmd_response_ns, device_id}
+static void UpdateAITracks()
+{
+    const std::string lang = language.Load();
+    const std::string device_id_str = std::to_string(device_id);
+
+    // AI Query publication track
+    if (!ai_query_ns.empty() && !lang.empty())
+    {
+        if (auto writer = CreateWriteTrack("ai_audio", ai_query_ns, lang, "pcm"))
+        {
+            writer->Start();
+        }
+    }
+
+    // AI Audio Response subscription track
+    if (!ai_audio_response_ns.empty())
+    {
+        if (auto reader = CreateReadTrack("self_ai_audio", ai_audio_response_ns, device_id_str,
+                                          "pcm", ui_layer))
+        {
+            reader->Start();
+        }
+    }
+
+    // AI Command Response subscription track
+    if (!ai_cmd_response_ns.empty())
+    {
+        if (auto reader = CreateReadTrack("self_ai_text", ai_cmd_response_ns, device_id_str,
+                                          "ai_cmd_response:json", ui_layer))
+        {
+            reader->Start();
+        }
+    }
+}
+
+// Update channel tracks when channel namespace or language changes
+// Channel: both publish and subscribe to {channel_ns, language}
+static void UpdateChannelTracks()
+{
+    const std::string lang = language.Load();
+
+    if (channel_ns.empty() || lang.empty())
+    {
+        NET_LOG_WARN("Cannot update channel tracks: namespace or language empty");
+        return;
+    }
+
+    // Channel publication track
+    if (auto writer = CreateWriteTrack("channel", channel_ns, lang, "pcm"))
+    {
+        writer->Start();
+    }
+
+    // Channel subscription track
+    if (auto reader = CreateReadTrack("channel", channel_ns, lang, "pcm", ui_layer))
+    {
+        reader->Start();
+    }
 }
 
 static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
@@ -253,6 +361,7 @@ static void MgmtLinkPacketTask(void* args)
                 if (ESP_OK != storage.Clear())
                 {
                     mgmt_layer.ReplyNack();
+                    break;
                 }
 
                 mgmt_layer.ReplyAck();
@@ -295,11 +404,14 @@ static void MgmtLinkPacketTask(void* args)
                 const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
                 for (size_t i = 0; i < creds.size(); ++i)
                 {
+                    if (i > 0)
+                    {
+                        str.append(",");
+                    }
                     str.append(creds[i].name, creds[i].name_len);
-                    str.append("\n");
                 }
 
-                mgmt_layer.Write((uint8_t*)str.data(), str.length());
+                mgmt_layer.ReplyData(str);
                 break;
             }
             case Configuration::Get_Ssid_Passwords:
@@ -308,10 +420,13 @@ static void MgmtLinkPacketTask(void* args)
                 const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
                 for (size_t i = 0; i < creds.size(); ++i)
                 {
+                    if (i > 0)
+                    {
+                        str.append(",");
+                    }
                     str.append(creds[i].pwd, creds[i].pwd_len);
-                    str.append("\n");
                 }
-                mgmt_layer.Write((uint8_t*)str.data(), str.length());
+                mgmt_layer.ReplyData(str);
                 break;
             }
             case Configuration::Clear_Ssids:
@@ -330,6 +445,7 @@ static void MgmtLinkPacketTask(void* args)
                     // MOQ url will be cleared.
                     NET_LOG_INFO("Cleaning moq url because length is zero");
                     moq_server_url.Clear();
+                    mgmt_layer.ReplyAck();
                     break;
                 }
                 moq_server_url = moq_url;
@@ -339,7 +455,7 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Get_Moq_Url:
             {
                 std::string moq_url = moq_server_url.Load();
-                mgmt_layer.Write((uint8_t*)moq_url.data(), moq_url.length());
+                mgmt_layer.ReplyData(moq_url);
                 break;
             }
             case Configuration::Toggle_Logs:
@@ -381,33 +497,113 @@ static void MgmtLinkPacketTask(void* args)
                 mgmt_layer.ReplyAck();
                 break;
             }
-            case Configuration::Set_Frontline_Config:
+            case Configuration::Set_Language:
             {
-                uint32_t language_len = 0;
-                uint32_t channel_len = 0;
-
-                std::span<uint8_t> payload = std::span{packet->payload};
-
-                if (payload.size() < sizeof(language_len) + sizeof(channel_len))
+                std::string new_lang((char*)packet->payload.data(), packet->length);
+                if (!IsValidLanguage(new_lang))
                 {
-                    NET_LOG_ERROR("Packet did not contain enough bytes to parse frontline config");
-                    mgmt_layer.ReplyAck();
+                    NET_LOG_ERROR("Invalid language: %s", new_lang.c_str());
+                    mgmt_layer.ReplyNack();
+                    break;
+                }
+                language = new_lang;
+                NET_LOG_INFO("Language set to: %s", new_lang.c_str());
+
+                // Send ACK before track updates to avoid interleaving with log output
+                mgmt_layer.ReplyAck();
+
+                // Update tracks that depend on language
+                UpdateAITracks();
+                UpdateChannelTracks();
+                break;
+            }
+            case Configuration::Get_Language:
+            {
+                std::string lang = language.Load();
+                mgmt_layer.ReplyData(lang);
+                break;
+            }
+            case Configuration::Set_Channel:
+            {
+                std::string json_str((char*)packet->payload.data(), packet->length);
+                auto parsed = JsonToNamespace(json_str);
+                if (!parsed.has_value())
+                {
+                    NET_LOG_ERROR("Failed to parse channel namespace JSON");
+                    mgmt_layer.ReplyNack();
                     break;
                 }
 
-                std::memcpy(&language_len, payload.data(), sizeof(language_len));
-                payload = payload.subspan(sizeof(language_len));
+                channel_ns = parsed.value();
+                channel_ns_json = json_str;
+                NET_LOG_INFO("Channel namespace set (%zu parts)", channel_ns.size());
 
-                language = std::string{reinterpret_cast<char*>(payload.data()), language_len};
-                payload = payload.subspan(language_len);
-
-                std::memcpy(&channel_len, payload.data(), sizeof(channel_len));
-                payload = payload.subspan(sizeof(channel_len));
-
-                default_channel = std::string{reinterpret_cast<char*>(payload.data()), channel_len};
-                payload = payload.subspan(channel_len);
-
+                // Send ACK before track updates to avoid interleaving with log output
                 mgmt_layer.ReplyAck();
+                UpdateChannelTracks();
+                break;
+            }
+            case Configuration::Get_Channel:
+            {
+                mgmt_layer.ReplyData(channel_ns_json.Load());
+                break;
+            }
+            case Configuration::Set_AI:
+            {
+                std::string json_str((char*)packet->payload.data(), packet->length);
+                try
+                {
+                    json ai_config = json::parse(json_str);
+                    if (!ai_config.is_object() || !ai_config.contains("query")
+                        || !ai_config.contains("audio") || !ai_config.contains("cmd"))
+                    {
+                        NET_LOG_ERROR("AI config must be object with query, audio, cmd fields");
+                        mgmt_layer.ReplyNack();
+                        break;
+                    }
+
+                    auto query_parsed = JsonToNamespace(ai_config["query"].dump());
+                    auto audio_parsed = JsonToNamespace(ai_config["audio"].dump());
+                    auto cmd_parsed = JsonToNamespace(ai_config["cmd"].dump());
+
+                    if (!query_parsed || !audio_parsed || !cmd_parsed)
+                    {
+                        NET_LOG_ERROR("Failed to parse AI namespace arrays");
+                        mgmt_layer.ReplyNack();
+                        break;
+                    }
+
+                    ai_query_ns = query_parsed.value();
+                    ai_audio_response_ns = audio_parsed.value();
+                    ai_cmd_response_ns = cmd_parsed.value();
+
+                    ai_query_ns_json = ai_config["query"].dump();
+                    ai_audio_response_ns_json = ai_config["audio"].dump();
+                    ai_cmd_response_ns_json = ai_config["cmd"].dump();
+
+                    NET_LOG_INFO("AI namespaces set (query=%zu, audio=%zu, cmd=%zu parts)",
+                                 ai_query_ns.size(), ai_audio_response_ns.size(),
+                                 ai_cmd_response_ns.size());
+
+                    // Send ACK before track updates to avoid interleaving with log output
+                    mgmt_layer.ReplyAck();
+
+                    UpdateAITracks();
+                }
+                catch (const std::exception& ex)
+                {
+                    NET_LOG_ERROR("Failed to parse AI config JSON: %s", ex.what());
+                    mgmt_layer.ReplyNack();
+                }
+                break;
+            }
+            case Configuration::Get_AI:
+            {
+                json response;
+                response["query"] = ai_query_ns;
+                response["audio"] = ai_audio_response_ns;
+                response["cmd"] = ai_cmd_response_ns;
+                mgmt_layer.ReplyData(response.dump());
                 break;
             }
             case Configuration::Burn_Disable_USB_JTag_Efuse:
@@ -433,20 +629,13 @@ static void MgmtLinkPacketTask(void* args)
     }
 }
 
-std::shared_ptr<moq::TrackReader> CreateReadTrack(const json& subscription, Serial& serial)
+std::shared_ptr<moq::TrackReader> CreateReadTrack(const std::string& channel_name,
+                                                  const std::vector<std::string>& track_namespace,
+                                                  const std::string& trackname,
+                                                  const std::string& codec,
+                                                  Serial& serial)
 try
 {
-    std::vector<std::string> track_namespace =
-        subscription.at("tracknamespace").get<std::vector<std::string>>();
-    std::string trackname = subscription.at("trackname").get<std::string>();
-    if (trackname.empty())
-    {
-        trackname = std::to_string(device_id);
-    }
-
-    std::string codec = subscription.at("codec").get<std::string>();
-    std::string channel_name = subscription.at("channel_name").get<std::string>();
-
     uint32_t offset = 0;
     if (codec == "pcm")
     {
@@ -474,10 +663,26 @@ try
         return nullptr;
     }
 
+    if (!moq_session)
+    {
+        NET_LOG_WARN("MoQ session not ready, cannot create reader");
+        return nullptr;
+    }
+
+    auto desired_ftn = moq::MakeFullTrackName(track_namespace, trackname);
+
     std::unique_lock<std::mutex> lock = moq_session->GetReaderLock();
     if (readers[offset] != nullptr)
     {
-        NET_LOG_WARN("Reader on %d already exists", offset);
+        // If track already exists with same name, return it
+        auto existing_ftn = readers[offset]->GetFullTrackName();
+        if (existing_ftn.name_space == desired_ftn.name_space
+            && existing_ftn.name == desired_ftn.name)
+        {
+            NET_LOG_INFO("Reader on %d already exists with same track, reusing", offset);
+            return readers[offset];
+        }
+        NET_LOG_WARN("Reader on %d already exists with different track, replacing", offset);
         readers[offset]->Stop();
         moq_session->UnsubscribeTrack(readers[offset]);
     }
@@ -495,16 +700,12 @@ catch (const std::exception& ex)
     return nullptr;
 }
 
-std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const json& publication)
+std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const std::string& channel_name,
+                                                   const std::vector<std::string>& track_namespace,
+                                                   const std::string& trackname,
+                                                   const std::string& codec)
 try
 {
-    std::vector<std::string> track_namespace =
-        publication.at("tracknamespace").get<std::vector<std::string>>();
-    std::string trackname = publication.at("trackname").get<std::string>();
-
-    std::string codec = publication.at("codec").get<std::string>();
-    std::string channel_name = publication.at("channel_name").get<std::string>();
-
     uint32_t offset = 0;
     if (codec == "pcm")
     {
@@ -528,10 +729,26 @@ try
         return nullptr;
     }
 
+    if (!moq_session)
+    {
+        NET_LOG_WARN("MoQ session not ready, cannot create writer");
+        return nullptr;
+    }
+
+    auto desired_ftn = moq::MakeFullTrackName(track_namespace, trackname);
+
     std::unique_lock<std::mutex> lock = moq_session->GetWriterLock();
     if (writers[offset] != nullptr)
     {
-        NET_LOG_WARN("Writer on %d already exists", offset);
+        // If track already exists with same name, return it
+        auto existing_ftn = writers[offset]->GetFullTrackName();
+        if (existing_ftn.name_space == desired_ftn.name_space
+            && existing_ftn.name == desired_ftn.name)
+        {
+            NET_LOG_INFO("Writer on %d already exists with same track, reusing", offset);
+            return writers[offset];
+        }
+        NET_LOG_WARN("Writer on %d already exists with different track, replacing", offset);
         writers[offset]->Stop();
         moq_session->UnpublishTrack(writers[offset]);
     }
@@ -581,9 +798,6 @@ extern "C" void app_main(void)
 
     wifi.Begin();
 
-    wifi.Connect("quicr.io", "noPassword");
-    wifi.Connect("m10x-interference", "goodlife");
-
 #if defined(my_ssid) && defined(my_ssid_pwd)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
@@ -602,14 +816,24 @@ extern "C" void app_main(void)
     NET_LOG_WARN("Using moq server url of %s len %u", moq_server_url->c_str(),
                  moq_server_url->length());
 
+    // Set default language if not configured
     if (language->empty())
     {
         language = "en-US";
     }
 
-    if (default_channel->empty())
+    // Load namespaces from storage
+    LoadNamespacesFromStorage();
+
+    // Log warnings if namespaces are not configured (no defaults - must be configured via
+    // fl-identity)
+    if (channel_ns.empty())
     {
-        default_channel = "gardening";
+        NET_LOG_WARN("Channel namespace not configured - device needs configuration");
+    }
+    if (ai_query_ns.empty() || ai_audio_response_ns.empty() || ai_cmd_response_ns.empty())
+    {
+        NET_LOG_WARN("AI namespaces not configured - device needs configuration");
     }
 
     // setup moq transport
@@ -632,42 +856,24 @@ extern "C" void app_main(void)
 
     NET_LOG_ERROR("mac addr %llu", mac);
 
+    // Initialize reader/writer vectors
+    readers.resize((uint32_t)ui_net_link::Channel_Id::Count);
+    writers.resize((uint32_t)ui_net_link::Channel_Id::Count - 1);
+
     moq_session.reset(new moq::Session(config, readers, writers));
 
     PrintRAM();
 
     NET_LOG_INFO("Components ready");
 
-    ChannelBuilder channel_builder({"moq://moq.ptt.arpa/v1", "org/acme", "store/1234"}, device_id);
+    // Set up initial tracks based on stored configuration
+    UpdateAITracks();
+    UpdateChannelTracks();
 
-    const std::string lang = language.Load();
-    const std::string channel = default_channel.Load();
-
-    channel_builder.AddAIAudioPublicationChannel(lang);
-    channel_builder.AddPublicationChannel(channel, lang, "pcm");
-    channel_builder.AddSubscriptionChannel(channel, lang, "pcm");
-
-    json config_j = channel_builder.GetConfig();
-
-    json subscriptions = config_j.at("subscriptions");
-    readers.resize((uint32_t)ui_net_link::Channel_Id::Count);
-    NET_LOG_ERROR("Readers size %d", readers.size());
-    for (int i = 0; i < subscriptions.size(); ++i)
-    {
-        CreateReadTrack(subscriptions[i], ui_layer);
-    }
-    NET_LOG_ERROR("Readers size %d", readers.size());
-
-    json publications = config_j.at("publications");
-    // Kinda odd, but we only have 3 writers.
-    writers.resize((uint32_t)ui_net_link::Channel_Id::Count - 1);
-    NET_LOG_ERROR("Writers size %d", writers.size());
-    for (int i = 0; i < publications.size(); ++i)
-    {
-        CreateWriteTrack(publications[i]);
-    }
-
-    moq::Session::Status prev_status = moq::Session::Status::kReady;
+    int next = 0;
+    int64_t heartbeat = 0;
+    bool ready_to_connect_moq = false;
+    moq::Session::Status prev_status = moq::Session::Status::kNotConnected;
     Wifi::State prev_wifi_state = Wifi::State::Connected;
     while (true)
     {
@@ -678,12 +884,16 @@ extern "C" void app_main(void)
         if (prev_wifi_state != wifi_state)
         {
             prev_wifi_state = wifi_state;
-            gpio_set_level(NET_LED_G, 1);
 
             switch (wifi_state)
             {
             case Wifi::State::Disconnected:
             {
+                // Back to yellow
+                gpio_set_level(NET_LED_R, 0);
+                gpio_set_level(NET_LED_G, 0);
+                gpio_set_level(NET_LED_B, 1);
+
                 if (status == moq::Session::Status::kConnecting
                     || status == moq::Session::Status::kPendingServerSetup
                     || status == moq::Session::Status::kReady)
@@ -698,6 +908,7 @@ extern "C" void app_main(void)
             }
             case Wifi::State::Connected:
             {
+                gpio_set_level(NET_LED_R, 1);
                 gpio_set_level(NET_LED_G, 0);
                 break;
             }
@@ -716,6 +927,10 @@ extern "C" void app_main(void)
             {
             case moq::Session::Status::kReady:
             {
+                // Create tracks from stored config (may have been set before session was ready)
+                UpdateChannelTracks();
+                UpdateAITracks();
+
                 for (const auto& reader : readers)
                 {
                     NET_LOG_INFO("Starting reader");
@@ -733,9 +948,6 @@ extern "C" void app_main(void)
                     }
                 }
 
-                // TODO
-                // Tell ui chip we are ready
-                gpio_set_level(NET_LED_B, 0);
                 break;
             }
             case moq::Session::Status::kNotConnected:
@@ -753,7 +965,6 @@ extern "C" void app_main(void)
                 {
                     NET_LOG_ERROR("MOQ Transport Session Connection Failure");
                 }
-                gpio_set_level(NET_LED_B, 1);
 
                 break;
             }
@@ -812,7 +1023,7 @@ bool CreateMgmtLinkPacketTask()
 {
     NET_LOG_INFO("Creating mgmt link packet task");
 
-    constexpr size_t stack_size = 4096;
+    constexpr size_t stack_size = 8192; // Increased for JSON parsing
     net_mgmt_serial_read_stack =
         (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_INTERNAL);
     if (net_mgmt_serial_read_stack == NULL)

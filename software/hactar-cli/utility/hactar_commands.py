@@ -6,7 +6,6 @@ import serial
 
 Link_Sync_Word = bytes([0x4C, 0x49, 0x4E, 0x4B])
 
-
 def make_tlv(type_id: int) -> bytes:
     """Create a Link TLV packet: sync_word (4) + type (2) + length (4) + payload"""
 
@@ -31,7 +30,6 @@ command_map = {
     "disable net logs": make_tlv(15),
     "default logging": make_tlv(16),
 }
-
 
 bypass_map = {
     "ui": 17,
@@ -63,9 +61,51 @@ net_command_map = {
     "enable_logs": {"id": 10, "num_params": 0},
     "disable_loopback": {"id": 11, "num_params": 0},
     "enable_loopback": {"id": 12, "num_params": 0},
-    "set_fl_config": {"id": 13, "num_params": 2},
-    "burn_efuse": {"id": 14, "num_params": 0},
+    "set_language": {"id": 13, "num_params": 1, "encoder": "language"},
+    "get_language": {"id": 14, "num_params": 0},
+    "set_channel": {"id": 15, "num_params": 1, "encoder": "json"},
+    "get_channel": {"id": 16, "num_params": 0},
+    "set_ai": {"id": 17, "num_params": 1, "encoder": "json"},
+    "get_ai": {"id": 18, "num_params": 0},
+    "burn_efuse": {"id": 19, "num_params": 0},
 }
+
+# Supported language tags
+SUPPORTED_LANGUAGES = ["en-US", "es-ES", "de-DE", "hi-IN", "nb-NO"]
+
+def is_valid_language(lang: str) -> bool:
+    return lang in SUPPORTED_LANGUAGES
+
+def encode_command_payload(encoder: str | None, params: list[str]) -> tuple[bytes, str | None]:
+    """Encode command parameters based on encoder type.
+
+    Returns (payload_bytes, error_message).
+    If error_message is not None, encoding failed.
+    """
+    import json
+
+    if encoder == "language":
+        lang = params[0]
+        if not is_valid_language(lang):
+            return bytes(), f"Invalid language '{lang}'. Supported: {', '.join(SUPPORTED_LANGUAGES)}"
+        return lang.encode("utf-8"), None
+
+    elif encoder == "json":
+        # Send JSON string as-is (validate it parses)
+        try:
+            json.loads(params[0])  # Validate JSON
+            return params[0].encode("utf-8"), None
+        except json.JSONDecodeError as e:
+            return bytes(), f"Invalid JSON: {e}"
+
+    else:
+        # Default encoding: length-prefixed strings if multiple params
+        payload = bytes()
+        for param in params:
+            if len(params) > 1:
+                payload += len(param).to_bytes(4, byteorder="little")
+            payload += param.encode("utf-8")
+        return payload, None
 
 ST_Ack = 0x79
 Reply_Ok = 0x80
@@ -73,12 +113,15 @@ Reply_Ready = 0x81
 Reply_Ack = bytes([0x82])
 Reply_Nack = bytes([0x83])
 
+# TLV Response types (matching net_mgmt_link.h)
+Response_Ack = 0x8000
+Response_Nack = 0x8001
+Response_Data = 0x8002
 
 def hactar_send_command(uart: serial.Serial, command: bytes, max_attempts: int = 5):
     uart.write(command)
 
     return hactar_get_ack(uart, max_attempts)
-
 
 def hactar_get_ack(uart: serial.Serial, max_attempts: int = 5):
     got_ack = False
@@ -100,7 +143,6 @@ def hactar_get_ack(uart: serial.Serial, max_attempts: int = 5):
             break
 
     return got_ack
-
 
 def hactar_command_completer(text, state):
     buffer = readline.get_line_buffer()
@@ -127,7 +169,6 @@ def hactar_command_completer(text, state):
     if state < len(options):
         return options[state]
     return None
-
 
 def hactar_command_print_matches(substitution, matches, longest_match_length):
     print()

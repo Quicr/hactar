@@ -1,6 +1,7 @@
 #include "serial_handler.hh"
 #include "logger.hh"
-#include <memory.h>
+#include <algorithm>
+#include <cstring>
 
 SerialHandler::SerialHandler(const uint16_t num_rx_packets,
                              uint8_t& tx_buff,
@@ -27,6 +28,7 @@ SerialHandler::SerialHandler(const uint16_t num_rx_packets,
     transmit_arg(transmit_arg),
     packet(&rx_packets.Write()),
     bytes_read(0),
+    sync_matched(0),
     escaped(false)
 {
 }
@@ -166,8 +168,6 @@ link_packet_t* SerialHandler::TLVRead()
     uint16_t total_bytes_read = 0;
     auto packet_data = packet->WriteableData();
 
-    static size_t sync_matched = 0;
-
     while (total_bytes_read + update_cache < unread)
     {
         uint8_t byte = ReadFromRxBuff();
@@ -248,10 +248,34 @@ void SerialHandler::TLVWrite(const uint8_t* data, const uint16_t size)
 
 void SerialHandler::ReplyAck()
 {
-    Write(const_cast<uint8_t*>(&Ack), 1);
+    link_packet_t packet;
+    packet.type = Response_Ack;
+    packet.length = 0;
+    Write(packet);
 }
 
 void SerialHandler::ReplyNack()
 {
-    Write(const_cast<uint8_t*>(&Nack), 1);
+    link_packet_t packet;
+    packet.type = Response_Nack;
+    packet.length = 0;
+    Write(packet);
+}
+
+void SerialHandler::ReplyData(std::span<const uint8_t> data)
+{
+    link_packet_t packet;
+    packet.type = Response_Data;
+    packet.length = data.size();
+    if (!data.empty())
+    {
+        std::memcpy(packet.payload.data(), data.data(),
+                    std::min(data.size(), packet.payload.size()));
+    }
+    Write(packet);
+}
+
+void SerialHandler::ReplyData(const std::string& data)
+{
+    ReplyData(std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(data.data()), data.size()));
 }

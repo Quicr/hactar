@@ -83,9 +83,8 @@ struct __attribute__((packed)) AIResponseChunk
     std::uint8_t chunk_data[Chunk_Size];
 };
 
-[[maybe_unused]] static void Serialize(const AudioObject& talk_frame,
-                                       bool is_last,
-                                       link_packet_t& packet)
+[[maybe_unused]] static void
+Serialize(const AudioObject& talk_frame, bool is_last, link_packet_t& packet)
 {
     packet.type = (uint16_t)Packet_Type::Message;
     packet.payload[0] = (uint8_t)talk_frame.channel_id;

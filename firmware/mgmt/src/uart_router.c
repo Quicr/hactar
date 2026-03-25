@@ -251,7 +251,7 @@ void uart_router_copy_to_tx(transmit_t* tx, const uint8_t* buff, const uint16_t 
     while (read_idx < bytes)
     {
         // Get the amount we can copy
-        const uint16_t to_copy = min(tx->size - tx->write, bytes);
+        const uint16_t to_copy = min(tx->size - tx->write, bytes - read_idx);
 
         memcpy(tx->buff + tx->write, buff + read_idx, to_copy);
 

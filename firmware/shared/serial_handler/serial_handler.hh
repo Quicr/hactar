@@ -2,6 +2,7 @@
 
 #include "../../shared_inc/link_packet_t.hh"
 #include "../../shared_inc/ring_buffer.hh"
+#include <string>
 
 #ifdef PLATFORM_ESP
 #include <mutex>
@@ -10,8 +11,14 @@
 class SerialHandler
 {
 public:
+    // Legacy single-byte responses (deprecated)
     static constexpr uint8_t Ack = 0x82;
     static constexpr uint8_t Nack = 0x83;
+
+    // TLV response types
+    static constexpr uint16_t Response_Ack = 0x8000;
+    static constexpr uint16_t Response_Nack = 0x8001;
+    static constexpr uint16_t Response_Data = 0x8002;
 
     static constexpr uint8_t END = 0xC0;
     static constexpr uint8_t ESC = 0xDB;
@@ -36,6 +43,8 @@ public:
 
     void ReplyAck();
     void ReplyNack();
+    void ReplyData(std::span<const uint8_t> data);
+    void ReplyData(const std::string& data);
 
     uint16_t Unread();
     uint16_t Unsent();
@@ -88,6 +97,7 @@ protected:
 
     link_packet_t* packet;
     uint32_t bytes_read;
+    size_t sync_matched;
     bool escaped;
 
 #ifdef PLATFORM_ESP
