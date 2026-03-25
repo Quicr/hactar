@@ -94,7 +94,6 @@ void Serial::ReadTask(void* arg)
     Serial* serial = static_cast<Serial*>(arg);
 
     int space_remaining = 0;
-    int bytes_to_read = 0;
     int num_bytes = 0;
     while (true)
     {
