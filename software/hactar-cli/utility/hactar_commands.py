@@ -38,7 +38,7 @@ bypass_map = {
 }
 
 ui_command_map = {
-    "version": {"id": 0, "num_params": 0},
+    "ping": {"id": 0, "num_params": 0},  # Replaces version stub - echoes payload
     "clear_config": {"id": 1, "num_params": 0},
     "set_sframe": {"id": 2, "num_params": 1},
     "get_sframe": {"id": 3, "num_params": 0},
