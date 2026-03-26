@@ -47,6 +47,8 @@ ui_command_map = {
     "enable_logs": {"id": 6, "num_params": 0},
     "get_stack_info": {"id": 7, "num_params": 0},
     "repaint_stack": {"id": 8, "num_params": 0},
+    "get_loopback": {"id": 9, "num_params": 0},
+    "set_loopback": {"id": 10, "num_params": 1, "encoder": "ui_loopback"},  # off/raw/alaw/sframe
 }
 
 net_command_map = {
@@ -75,6 +77,9 @@ SUPPORTED_LANGUAGES = ["en-US", "es-ES", "de-DE", "hi-IN", "nb-NO"]
 
 # NET loopback modes (matches NetLoopbackMode enum)
 NET_LOOPBACK_MODES = {"off": 0, "raw": 1, "moq": 2}
+
+# UI loopback modes (matches UiLoopbackMode enum)
+UI_LOOPBACK_MODES = {"off": 0, "raw": 1, "alaw": 2, "sframe": 3}
 
 def is_valid_language(lang: str) -> bool:
     return lang in SUPPORTED_LANGUAGES
@@ -109,11 +114,18 @@ def encode_command_payload(encoder: str | None, params: list[str]) -> tuple[byte
             return bytes(), f"Invalid hex: {e}"
 
     elif encoder == "loopback":
-        # Loopback mode: off/raw/moq -> 0/1/2
+        # NET loopback mode: off/raw/moq -> 0/1/2
         mode = params[0].lower()
         if mode not in NET_LOOPBACK_MODES:
             return bytes(), f"Invalid loopback mode '{mode}'. Use: off, raw, moq"
         return bytes([NET_LOOPBACK_MODES[mode]]), None
+
+    elif encoder == "ui_loopback":
+        # UI loopback mode: off/raw/alaw/sframe -> 0/1/2/3
+        mode = params[0].lower()
+        if mode not in UI_LOOPBACK_MODES:
+            return bytes(), f"Invalid loopback mode '{mode}'. Use: off, raw, alaw, sframe"
+        return bytes([UI_LOOPBACK_MODES[mode]]), None
 
     else:
         # Default encoding: length-prefixed strings if multiple params

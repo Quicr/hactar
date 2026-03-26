@@ -209,6 +209,34 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             serial.ReplyAck();
             break;
         }
+        case Configuration::Get_Loopback:
+        {
+            // Return current loopback mode (always Off - not implemented)
+            uint8_t mode = static_cast<uint8_t>(UiLoopbackMode::Off);
+            serial.Write(&mode, 1);
+            break;
+        }
+        case Configuration::Set_Loopback:
+        {
+            if (packet->length < 1)
+            {
+                serial.ReplyNack();
+                break;
+            }
+            auto mode = static_cast<UiLoopbackMode>(packet->payload[0]);
+            if (mode == UiLoopbackMode::Off)
+            {
+                // Off is the only supported mode (loopback not implemented)
+                serial.ReplyAck();
+            }
+            else
+            {
+                // Raw, Alaw, Sframe not implemented
+                UI_LOG_WARN("Loopback mode %d not supported", static_cast<int>(mode));
+                serial.ReplyNack();
+            }
+            break;
+        }
         default:
         {
             UI_LOG_ERROR("ERR. No handler for received packet type");
