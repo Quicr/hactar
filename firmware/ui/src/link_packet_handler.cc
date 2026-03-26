@@ -237,6 +237,32 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             }
             break;
         }
+        case Configuration::Get_Logs_Enabled:
+        {
+            uint8_t enabled = Logger::enabled ? 1 : 0;
+            serial.Write(&enabled, 1);
+            break;
+        }
+        case Configuration::Set_Logs_Enabled:
+        {
+            if (packet->length < 1)
+            {
+                serial.ReplyNack();
+                break;
+            }
+            uint8_t enabled = packet->payload[0];
+            if (enabled)
+            {
+                serial.ReplyAck();
+                Logger::Enable();
+            }
+            else
+            {
+                serial.ReplyAck();
+                Logger::Disable();
+            }
+            break;
+        }
         default:
         {
             UI_LOG_ERROR("ERR. No handler for received packet type");

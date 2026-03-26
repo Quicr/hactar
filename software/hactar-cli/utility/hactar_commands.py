@@ -49,6 +49,8 @@ ui_command_map = {
     "repaint_stack": {"id": 8, "num_params": 0},
     "get_loopback": {"id": 9, "num_params": 0},
     "set_loopback": {"id": 10, "num_params": 1, "encoder": "ui_loopback"},  # off/raw/alaw/sframe
+    "get_logs_enabled": {"id": 11, "num_params": 0},
+    "set_logs_enabled": {"id": 12, "num_params": 1, "encoder": "bool"},  # 0=disabled, 1=enabled
 }
 
 net_command_map = {

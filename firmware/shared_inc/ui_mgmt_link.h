@@ -15,6 +15,8 @@ enum Configuration
     Repaint_Stack,
     Get_Loopback,
     Set_Loopback,
+    Get_Logs_Enabled,
+    Set_Logs_Enabled,
 };
 
 // Loopback modes for UI chip (matches Rust UiLoopbackMode)
