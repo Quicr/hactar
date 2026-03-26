@@ -45,6 +45,9 @@ public:
     void ReplyNack();
     void ReplyData(std::span<const uint8_t> data);
     void ReplyData(const std::string& data);
+    void Reply(uint16_t type);
+    void Reply(uint16_t type, const std::string& data);
+    void Reply(uint16_t type, std::span<const uint8_t> data);
 
     uint16_t Unread();
     uint16_t Unsent();

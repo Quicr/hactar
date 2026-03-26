@@ -26,7 +26,15 @@ enum Configuration
     // Response types (high values to distinguish from commands)
     Response_Ack = 0x8000,
     Response_Nack = 0x8001,
-    Response_Data = 0x8002,
+    Response_Data = 0x8002, // Deprecated: use typed responses below
+
+    // Typed responses (self-describing payloads)
+    Response_Ssid_Names = 0x8003,     // Comma-separated SSID names
+    Response_Ssid_Passwords = 0x8004, // Comma-separated passwords
+    Response_Moq_Url = 0x8005,        // UTF-8 URL string
+    Response_Language = 0x8006,       // UTF-8 language tag (e.g. "en-US")
+    Response_Channel = 0x8007,        // JSON array of namespace parts
+    Response_AI_Config = 0x8008,      // JSON: {"query":[...],"audio":[...],"cmd":[...]}
 };
 
 // Supported language tags for Set_Language validation

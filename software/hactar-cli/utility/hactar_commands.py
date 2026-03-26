@@ -116,7 +116,40 @@ Reply_Nack = bytes([0x83])
 # TLV Response types (matching net_mgmt_link.h)
 Response_Ack = 0x8000
 Response_Nack = 0x8001
-Response_Data = 0x8002
+Response_Data = 0x8002  # Deprecated: use typed responses
+
+# Typed responses (self-describing payloads)
+Response_Ssid_Names = 0x8003
+Response_Ssid_Passwords = 0x8004
+Response_Moq_Url = 0x8005
+Response_Language = 0x8006
+Response_Channel = 0x8007
+Response_AI_Config = 0x8008
+
+# Map response types to human-readable names
+RESPONSE_TYPE_NAMES = {
+    Response_Ack: "ACK",
+    Response_Nack: "NACK",
+    Response_Data: "DATA",
+    Response_Ssid_Names: "SSID_NAMES",
+    Response_Ssid_Passwords: "SSID_PASSWORDS",
+    Response_Moq_Url: "MOQ_URL",
+    Response_Language: "LANGUAGE",
+    Response_Channel: "CHANNEL",
+    Response_AI_Config: "AI_CONFIG",
+}
+
+def is_data_response(response_type: int) -> bool:
+    """Check if response type carries data payload."""
+    return response_type in (
+        Response_Data,
+        Response_Ssid_Names,
+        Response_Ssid_Passwords,
+        Response_Moq_Url,
+        Response_Language,
+        Response_Channel,
+        Response_AI_Config,
+    )
 
 def hactar_send_command(uart: serial.Serial, command: bytes, max_attempts: int = 5):
     uart.write(command)

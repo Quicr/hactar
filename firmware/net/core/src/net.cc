@@ -411,7 +411,7 @@ static void MgmtLinkPacketTask(void* args)
                     str.append(creds[i].name, creds[i].name_len);
                 }
 
-                mgmt_layer.ReplyData(str);
+                mgmt_layer.Reply(Configuration::Response_Ssid_Names, str);
                 break;
             }
             case Configuration::Get_Ssid_Passwords:
@@ -426,7 +426,7 @@ static void MgmtLinkPacketTask(void* args)
                     }
                     str.append(creds[i].pwd, creds[i].pwd_len);
                 }
-                mgmt_layer.ReplyData(str);
+                mgmt_layer.Reply(Configuration::Response_Ssid_Passwords, str);
                 break;
             }
             case Configuration::Clear_Ssids:
@@ -455,7 +455,7 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Get_Moq_Url:
             {
                 std::string moq_url = moq_server_url.Load();
-                mgmt_layer.ReplyData(moq_url);
+                mgmt_layer.Reply(Configuration::Response_Moq_Url, moq_url);
                 break;
             }
             case Configuration::Toggle_Logs:
@@ -520,7 +520,7 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Get_Language:
             {
                 std::string lang = language.Load();
-                mgmt_layer.ReplyData(lang);
+                mgmt_layer.Reply(Configuration::Response_Language, lang);
                 break;
             }
             case Configuration::Set_Channel:
@@ -545,7 +545,7 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Get_Channel:
             {
-                mgmt_layer.ReplyData(channel_ns_json.Load());
+                mgmt_layer.Reply(Configuration::Response_Channel, channel_ns_json.Load());
                 break;
             }
             case Configuration::Set_AI:
@@ -603,7 +603,7 @@ static void MgmtLinkPacketTask(void* args)
                 response["query"] = ai_query_ns;
                 response["audio"] = ai_audio_response_ns;
                 response["cmd"] = ai_cmd_response_ns;
-                mgmt_layer.ReplyData(response.dump());
+                mgmt_layer.Reply(Configuration::Response_AI_Config, response.dump());
                 break;
             }
             case Configuration::Burn_Disable_USB_JTag_Efuse:

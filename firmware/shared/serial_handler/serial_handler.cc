@@ -279,3 +279,30 @@ void SerialHandler::ReplyData(const std::string& data)
 {
     ReplyData(std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(data.data()), data.size()));
 }
+
+void SerialHandler::Reply(uint16_t type)
+{
+    link_packet_t packet;
+    packet.type = type;
+    packet.length = 0;
+    Write(packet);
+}
+
+void SerialHandler::Reply(uint16_t type, const std::string& data)
+{
+    Reply(type,
+          std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(data.data()), data.size()));
+}
+
+void SerialHandler::Reply(uint16_t type, std::span<const uint8_t> data)
+{
+    link_packet_t packet;
+    packet.type = type;
+    packet.length = data.size();
+    if (!data.empty())
+    {
+        std::memcpy(packet.payload.data(), data.data(),
+                    std::min(data.size(), packet.payload.size()));
+    }
+    Write(packet);
+}
