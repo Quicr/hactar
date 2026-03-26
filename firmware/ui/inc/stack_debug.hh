@@ -4,7 +4,7 @@
 
 // Linker-defined symbols
 extern "C" uint32_t _estack; // Top of stack (end of RAM)
-extern "C" uint32_t _ebss;   // End of BSS (approximate stack bottom)
+extern "C" uint32_t _end;    // End of heap reservation (start of free stack area)
 
 namespace stack_debug
 {
@@ -31,10 +31,10 @@ inline uint32_t GetSP()
 // Paint unused stack memory with pattern for high water mark detection
 inline void RepaintStack()
 {
-    uint32_t* ptr = &_ebss;
+    uint32_t* ptr = &_end;
     uint32_t sp = GetSP();
 
-    // Paint from end of BSS up to current SP (leaving some margin)
+    // Paint from end of heap reservation up to current SP (leaving some margin)
     while ((uint32_t)ptr < (sp - 64))
     {
         *ptr++ = Paint_Pattern;
@@ -44,7 +44,7 @@ inline void RepaintStack()
 // Find high water mark by scanning for first non-painted word
 inline uint32_t GetHighWaterMark()
 {
-    uint32_t* ptr = &_ebss;
+    uint32_t* ptr = &_end;
 
     while (*ptr == Paint_Pattern && (uint32_t)ptr < (uint32_t)&_estack)
     {
@@ -58,7 +58,7 @@ inline uint32_t GetHighWaterMark()
 inline StackInfo GetStackInfo()
 {
     StackInfo info;
-    info.stack_base = (uint32_t)&_ebss;
+    info.stack_base = (uint32_t)&_end;
     info.stack_top = (uint32_t)&_estack;
     info.stack_size = info.stack_top - info.stack_base;
 
