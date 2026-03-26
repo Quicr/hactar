@@ -56,11 +56,10 @@ net_command_map = {
     "clear_ssids": {"id": 5, "num_params": 0},
     "set_moq_url": {"id": 6, "num_params": 1},
     "get_moq_url": {"id": 7, "num_params": 0},
-    "toggle_logs": {"id": 8, "num_params": 0},
-    "disable_logs": {"id": 9, "num_params": 0},
-    "enable_logs": {"id": 10, "num_params": 0},
-    "disable_loopback": {"id": 11, "num_params": 0},
-    "enable_loopback": {"id": 12, "num_params": 0},
+    "get_loopback": {"id": 20, "num_params": 0},
+    "set_loopback": {"id": 21, "num_params": 1},  # 0=off, 1=raw
+    "get_logs_enabled": {"id": 22, "num_params": 0},
+    "set_logs_enabled": {"id": 23, "num_params": 1},  # 0=disabled, 1=enabled
     "set_language": {"id": 13, "num_params": 1, "encoder": "language"},
     "get_language": {"id": 14, "num_params": 0},
     "set_channel": {"id": 15, "num_params": 1, "encoder": "json"},

@@ -22,6 +22,10 @@ enum Configuration
     Set_AI = 17,
     Get_AI = 18,
     Burn_Disable_USB_JTag_Efuse = 19,
+    Get_Loopback = 20,
+    Set_Loopback = 21,
+    Get_Logs_Enabled = 22,
+    Set_Logs_Enabled = 23,
 
     // Response types (high values to distinguish from commands)
     Response_Ack = 0x8000,

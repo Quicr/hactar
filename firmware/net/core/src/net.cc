@@ -458,43 +458,51 @@ static void MgmtLinkPacketTask(void* args)
                 mgmt_layer.ReplyData(moq_url);
                 break;
             }
-            case Configuration::Toggle_Logs:
+            case Configuration::Get_Loopback:
             {
-                if (logs_disabled)
+                // Return loopback mode: 0=off, 1=raw (local bypass)
+                uint8_t mode = loopback ? 1 : 0;
+                mgmt_layer.ReplyData(std::string(1, static_cast<char>(mode)));
+                break;
+            }
+            case Configuration::Set_Loopback:
+            {
+                if (packet->length < 1)
                 {
+                    mgmt_layer.ReplyNack();
+                    break;
+                }
+                uint8_t mode = packet->payload[0];
+                loopback = (mode != 0);
+                NET_LOG_INFO("Loopback set to: %s", loopback ? "on" : "off");
+                mgmt_layer.ReplyAck();
+                break;
+            }
+            case Configuration::Get_Logs_Enabled:
+            {
+                // Return logs state: 0=disabled, 1=enabled
+                uint8_t enabled = logs_disabled ? 0 : 1;
+                mgmt_layer.ReplyData(std::string(1, static_cast<char>(enabled)));
+                break;
+            }
+            case Configuration::Set_Logs_Enabled:
+            {
+                if (packet->length < 1)
+                {
+                    mgmt_layer.ReplyNack();
+                    break;
+                }
+                uint8_t enabled = packet->payload[0];
+                if (enabled)
+                {
+                    mgmt_layer.ReplyAck();
                     EnableLogging();
                 }
                 else
                 {
+                    mgmt_layer.ReplyAck();
                     DisableLogging();
                 }
-
-                // Reply with an ack before the logs begin again.
-                mgmt_layer.ReplyAck();
-                break;
-            }
-            case Configuration::Disable_Logs:
-            {
-                mgmt_layer.ReplyAck();
-                DisableLogging();
-                break;
-            }
-            case Configuration::Enable_Logs:
-            {
-                mgmt_layer.ReplyAck();
-                EnableLogging();
-                break;
-            }
-            case Configuration::Disable_Loopback:
-            {
-                loopback = false;
-                mgmt_layer.ReplyAck();
-                break;
-            }
-            case Configuration::Enable_Loopback:
-            {
-                loopback = true;
-                mgmt_layer.ReplyAck();
                 break;
             }
             case Configuration::Set_Language:
