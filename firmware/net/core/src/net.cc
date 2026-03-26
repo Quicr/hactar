@@ -367,69 +367,51 @@ static void MgmtLinkPacketTask(void* args)
                 mgmt_layer.ReplyAck();
                 break;
             }
-            case Configuration::Set_Ssid:
+            case Configuration::Add_Wifi:
             {
-                // Parse ssid from packet, first four bytes of payload will be
-                // the ssid name length and so on
-                uint32_t ssid_name_len = 0;
-                uint32_t ssid_password_len = 0;
-
-                std::span<uint8_t> payload{packet->payload};
-
-                std::memcpy(&ssid_name_len, payload.data(), sizeof(ssid_name_len));
-                payload = payload.subspan(sizeof(ssid_name_len));
-
-                std::string ssid_name(reinterpret_cast<char*>(payload.data()), ssid_name_len);
-                payload = payload.subspan(ssid_name_len);
-
-                std::memcpy(&ssid_password_len, payload.data(), sizeof(ssid_password_len));
-                payload = payload.subspan(sizeof(ssid_password_len));
-
-                std::string ssid_password(reinterpret_cast<char*>(payload.data()),
-                                          ssid_password_len);
-                payload = payload.subspan(ssid_password_len);
-
-                NET_LOG_INFO("Got ssid name len %lu %s", ssid_name_len, ssid_name.c_str());
-                NET_LOG_INFO("Got ssid password len %lu %s", ssid_password_len,
-                             ssid_password.c_str());
-
-                wifi.Connect(ssid_name, ssid_password);
-
-                mgmt_layer.ReplyAck();
-                break;
-            }
-            case Configuration::Get_Ssid_Names:
-            {
-                std::string str = "";
-                const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
-                for (size_t i = 0; i < creds.size(); ++i)
+                // Parse JSON: {"ssid":"...","password":"..."}
+                try
                 {
-                    if (i > 0)
-                    {
-                        str.append(",");
-                    }
-                    str.append(creds[i].name, creds[i].name_len);
-                }
+                    std::string json_str((char*)packet->payload.data(), packet->length);
+                    json wifi_json = json::parse(json_str);
 
-                mgmt_layer.ReplyData(str);
-                break;
-            }
-            case Configuration::Get_Ssid_Passwords:
-            {
-                std::string str = "";
-                const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
-                for (size_t i = 0; i < creds.size(); ++i)
-                {
-                    if (i > 0)
+                    if (!wifi_json.contains("ssid") || !wifi_json.contains("password"))
                     {
-                        str.append(",");
+                        NET_LOG_ERROR("Add_Wifi: missing ssid or password field");
+                        mgmt_layer.ReplyNack();
+                        break;
                     }
-                    str.append(creds[i].pwd, creds[i].pwd_len);
+
+                    std::string ssid = wifi_json["ssid"].get<std::string>();
+                    std::string password = wifi_json["password"].get<std::string>();
+
+                    NET_LOG_INFO("Add_Wifi: ssid=%s", ssid.c_str());
+                    wifi.Connect(ssid, password);
+                    mgmt_layer.ReplyAck();
                 }
-                mgmt_layer.ReplyData(str);
+                catch (const std::exception& ex)
+                {
+                    NET_LOG_ERROR("Add_Wifi: JSON parse error: %s", ex.what());
+                    mgmt_layer.ReplyNack();
+                }
                 break;
             }
-            case Configuration::Clear_Ssids:
+            case Configuration::Get_Wifi:
+            {
+                // Return JSON array: [{"ssid":"...","password":"..."},...]
+                json wifi_array = json::array();
+                const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
+                for (const auto& cred : creds)
+                {
+                    json entry;
+                    entry["ssid"] = std::string(cred.name, cred.name_len);
+                    entry["password"] = std::string(cred.pwd, cred.pwd_len);
+                    wifi_array.push_back(entry);
+                }
+                mgmt_layer.ReplyData(wifi_array.dump());
+                break;
+            }
+            case Configuration::Clear_Wifi:
             {
                 wifi.ClearSavedSSIDs();
                 mgmt_layer.ReplyAck();
