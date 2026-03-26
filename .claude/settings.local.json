@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo build 2>&1)",
+      "Bash(git fetch:*)",
+      "Bash(grep:*)",
+      "Bash(clang-format)",
+      "Bash(make)",
+      "Bash(clang-format:*)",
+      "Bash(gh pr:*)",
+      "Bash(git checkout:*)",
+      "Read(//Users/richbarn/Projects/link/**)",
+      "Bash(2)",
+      "Bash(git pull:*)",
+      "Bash(make:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(source ~/Projects/hactar/esp-idf/export.sh)",
+      "Bash(idf.py build:*)",
+      "Bash(gh api:*)",
+      "Bash(curl -sL https://raw.githubusercontent.com/OpenDevicePartnership/cortex-m-stack/main/src/lib.rs)"
+    ]
+  }
+}

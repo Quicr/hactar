@@ -7,21 +7,20 @@ enum Configuration
     Add_Wifi = 2,   // JSON: {"ssid":"...","password":"..."}
     Get_Wifi = 3,   // Returns JSON array of wifi credentials
     Clear_Wifi = 4, // Clears all saved WiFi credentials
-    // ID 5 reserved (was Clear_Ssids)
-    Set_Moq_Url = 6,
-    Get_Moq_Url = 7,
-    Toggle_Logs = 8,
-    Disable_Logs = 9,
-    Enable_Logs = 10,
-    Disable_Loopback = 11,
-    Enable_Loopback = 12,
-    Set_Language = 13,
-    Get_Language = 14,
-    Set_Channel = 15,
-    Get_Channel = 16,
-    Set_AI = 17,
-    Get_AI = 18,
-    Burn_Disable_USB_JTag_Efuse = 19,
+    Set_Relay_Url = 5,
+    Get_Relay_Url = 6,
+    Toggle_Logs = 7,
+    Disable_Logs = 8,
+    Enable_Logs = 9,
+    Disable_Loopback = 10,
+    Enable_Loopback = 11,
+    Set_Language = 12,
+    Get_Language = 13,
+    Set_Channel = 14,
+    Get_Channel = 15,
+    Set_AI = 16,
+    Get_AI = 17,
+    Burn_Disable_USB_JTag_Efuse = 18,
 
     // Response types (high values to distinguish from commands)
     Response_Ack = 0x8000,

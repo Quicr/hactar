@@ -417,7 +417,7 @@ static void MgmtLinkPacketTask(void* args)
                 mgmt_layer.ReplyAck();
                 break;
             }
-            case Configuration::Set_Moq_Url:
+            case Configuration::Set_Relay_Url:
             {
                 std::string moq_url((char*)packet->payload.data(), packet->length);
                 NET_LOG_INFO("Got moq url %d - %s", moq_url.length(), moq_url.c_str());
@@ -434,7 +434,7 @@ static void MgmtLinkPacketTask(void* args)
                 mgmt_layer.ReplyAck();
                 break;
             }
-            case Configuration::Get_Moq_Url:
+            case Configuration::Get_Relay_Url:
             {
                 std::string moq_url = moq_server_url.Load();
                 mgmt_layer.ReplyData(moq_url);

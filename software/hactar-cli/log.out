@@ -1,0 +1,400 @@
+% python3 test_config_commands.py            
+Ports available: 1 [['/dev/cu.usbserial-110']]
+Resetting /dev/cu.usbserial-110
+b'HELLO, I AM A HACTAR DEVICE'
+Device on port /dev/cu.usbserial-110 is a Hactar!
+Hactars found: 1
+Select a port [0-0]
+0. /dev/cu.usbserial-110
+> 0
+Using port: /dev/cu.usbserial-110
+Resetting /dev/cu.usbserial-110
+Enabling NET logs...
+==================================================
+Configuration Commands Test Suite
+==================================================
+
+--- Testing Language Commands ---
+  Setting language to 'es-ES'...
+  DEBUG: Timeout. Total data received: 5115 bytes
+  DEBUG: Data: eap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (1008) heap_init: At 600FE01C len 00001FCC (7 KiB): RTCRAM
+I (1014) esp_psram: Adding pool of 2048K of PSRAM memory to heap allocator
+I (1023) spi_flash: detected chip: generic
+I (1027) spi_flash: flash io: dio
+W (1047) [NET]: Loaded size of 216 at namespace wifi key creds
+W (1066) [NET]: Loaded size of 44 at namespace moq key server_url
+W (1067) [NET]: Loaded size of 5 at namespace config key language
+W (1069) [NET]: Loaded size of 2 at namespace config key channel_ns
+W (1076) [NET]: Loaded size of 2 at namespace config key ai_qry_ns
+W (1083) [NET]: Loaded size of 2 at namespace config key ai_aud_ns
+W (1090) [NET]: Loaded size of 2 at namespace config key ai_cmd_ns
+I (1097) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (1103) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (1111) main_task: Started on CPU0
+I (1115) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (1124) main_task: Calling app_main()
+E (1128) [NET]: Internal SRAM available: 283211 bytes
+E (1134) [NET]: PSRAM available: 2074984 bytes
+I (1139) gpio: GPIO[5]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1148) gpio: GPIO[6]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1158) gpio: GPIO[7]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1167) gpio: GPIO[36]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1176) gpio: GPIO[37]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1186) gpio: GPIO[38]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1195) gpio: GPIO[9]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:1 
+I (1205) [NET]: Starting Net Main
+I (1�I (1226) uart: queue free spaces: 2
+I (1229) [NET]: Start ui link packet task
+I (1229) [NET]: Created ui link packet handler PSRAM left 2056532
+I (1231) [NET]: Begin initialization:
+I (1235) [NET]: Init the nvs
+I (1239) [NET]: Init netif
+I (1244) pp: pp rom version: e7ae62f
+I (1247) net80211: net80211 rom version: e7ae62f
+I (1253) wifi:wifi driver task: 3fcc31c0, prio:23, stack:6656, core=0
+I (1261) wifi:wifi firmware version: bea31f3
+I (1262) wifi:wifi certification version: v7.0
+I (1266) wifi:config NVS flash: enabled
+I (1270) wifi:config nano formatting: disabled
+I (1274) wifi:Init data frame dynamic rx buffer num: 32
+I (1279) wifi:Init static rx mgmt buffer num: 5
+I (1283) wifi:Init management short buffer num: 32
+I (1288) wifi:Init dynamic tx buffer num: 32
+I (1292) wifi:Init static tx FG buffer num: 2
+I (1296) wifi:Init static rx buffer size: 1600
+I (1300) wifi:Init static rx buffer num: 10
+I (1304) wifi:Init dynamic rx buffer num: 32
+W (1308) [NET]: SSID quicr.io already exists in storage
+I (1309) wifi_init: rx ba win: 6
+I (1318) wifi_init: accept mbox: 6
+I (1322) wifi_init: tcpip mbox: 32
+I (1326) wifi_init: udp mbox: 6
+I (1330) wifi_init: tcp mbox: 6
+I (1333) wifi_init: tcp tx win: 5744
+I (1338) wifi_init: tcp rx win: 5744
+I (1342) wifi_init: tcp mss: 1440
+I (1346) wifi_init: WiFi IRAM OP enabled
+I (1350) wifi_init: WiFi RX IRAM OP enabled
+I (1355) [NET]: Init complete, status 0
+I (1361) [NET]: Start wifi
+W (1361) [NET]: SSID m10x-interference already exists in storage
+I (1363) phy_init: phy_version 701,f4f1da3a,Mar  3 2025,15:50:10
+I (1412) wifi:mode : sta (28:37:2f:e3:c6:a4)
+I (1413) wifi:enable tsf
+I (1414) [NET]: Wifi Event -- event 43
+I (1414) [NET]: Unhandled wifi event
+I (1418) [NET]: Wifi Event -- event 2
+I (1421) [NET]: Wifi Event - Initialized
+I (1426) uart: queue free spaces: 20
+W (1430) [NET]: Using moq server url of moq://relay.us-west-2.quicr.ctgpoc.com:33435 len 44
+W (1440) [NET]: Channel namespace not configured - device needs configuration
+W (1447) [NET]: AI namespaces not configured - device needs configuration
+E (1454) [NET]: mac addr 181174122002216
+W (1466) [NET]: Created psram task Publish Tracks task PSRAM left 2008056
+W (1467) [NET]: Created psram task Subscribe Tracks task PSRAM left 1999860
+E (1474) [NET]: Internal SRAM available: 210999 bytes
+E (1479) [NET]: PSRAM available: 1999860 bytes
+I (1485) [NET]: Components ready
+W (1489) [NET]: Cannot update channel tracks: namespace or language empty
+
+  FAIL: set_language returned None, expected ACK (32768)
+
+--- Testing Channel Commands ---
+  Setting channel namespace...
+  DEBUG: Timeout. Total data received: 8192 bytes
+  DEBUG: Data: Guru Meditation Error: Core  0 panic'ed (LoadProhibited). Exception was unhandled.
+
+Core  0 register dump:
+PC      : 0x420c4aa8  PS      : 0x00060e33  A0      : 0x820c4f49  A1      : 0x3fcb1ae0  
+A2      : 0x00000000  A3      : 0x3fcb1b10  A4      : 0x00060e23  A5      : 0x3fcb1a30  
+A6      : 0x00060023  A7      : 0x0000cdcd  A8      : 0x0000000c  A9      : 0x00060e20  
+A10     : 0x3fcb1db4  A11     : 0x00000000  A12     : 0xb33fffff  A13     : 0x02069ed0  
+A14     : 0x60023000  A15     : 0x00000000  SAR     : 0x00000000  EXCCAUSE: 0x0000001c  
+EXCVADDR: 0x00000010  LBEG    : 0x00000000  LEND    : 0x00000000  LCOUNT  : 0x00000000  
+
+
+Backtrace: 0x420c4aa5:0x3fcb1ae0 0x420c4f46:0x3fcb1b00 0x420c4f9b:0x3fcb1b40 0x42003ee1:0x3fcb1b60 0x4037ecb1:0x3fcb1b80 0x4037d9ad:0x3fcb1ba0
+
+
+
+
+ELF file SHA256: f5a74de5690618c8
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40375735
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2810,len:0x187c
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xd24
+load:0x403cb700,len:0x2ed4
+entry 0x403c8928
+I (31) boot: ESP-IDF v5.4.2 2nd stage bootloader
+I (31) boot: compile time Mar 23 2026 13:46:11
+I (31) boot: Multicore bootloader
+I (34) boot: chip revision: v0.2
+I (38) boot: efuse block revision: v1.3
+I (43) boot.esp32s3: Boot SPI Speed : 80MHz
+I (47) boot.esp32s3: SPI Mode       : DIO
+I (52) boot.esp32s3: SPI Flash Size : 8MB
+I (57) boot: Enabling RNG early entropy source...
+I (62) boot: Partition Table:
+I (66) boot: ## Label            Usage          Type ST Offset   Length
+I (73) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (81) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (88) boot:  2 factory          factory app      00 00 00010000 002ee000
+I (96) boot: End of partition table
+I (100) esp_image: segment 0: paddr=00010020 vaddr=3c180020 size=676b0h (423600) map
+I (183) esp_image: segment 1: paddr=000776d8 vaddr=3fc9a100 size=05bdch ( 23516) load
+I (188) esp_image: segment 2: paddr=0007d2bc vaddr=40374000 size=02d5ch ( 11612) load
+I (191) esp_image: segment 3: paddr=00080020 vaddr=42000020 size=17e9e4h (1567204) map
+I (473) esp_image: segment 4: paddr=001fea0c vaddr=40376d5c size=132c0h ( 78528) load
+I (491) esp_image: segment 5: paddr=00211cd4 vaddr=600fe000 size=0001ch (    28) load
+I (500) boot: Loaded app from partition at offset 0x10000
+I (500) boot: Disabling RNG early entropy source...
+I (512) esp_psram: Found 2MB PSRAM device
+I (512) esp_psram: Speed: 40MHz
+I (512) cpu_start: Multicore app
+I (932) esp_psram: SPI SRAM memory test OK
+I (941) cpu_start: Pro cpu start user code
+I (941) cpu_start: cpu freq: 160000000 Hz
+I (941) app_init: Application information:
+I (944) app_init: Project name:     net
+I (949) app_init: App version:      archive-2025-11-18-141-g7aa7b09
+I (955) app_init: Compile time:     Mar 23 2026 13:46:03
+I (961) app_init: ELF file SHA256:  f5a74de5690618c8...
+I (967) app_init: ESP-IDF:          v5.4.2
+I (972) efuse_init: Min chip rev:     v0.0
+I (977) efuse_init: Max chip rev:     v0.99 
+I (982) efuse_init: Chip rev:         v0.2
+I (987) heap_init: Initializing. RAM available for dynamic allocation:
+I (994) heap_init: At 3FCAAEA0 len 0003E870 (250 KiB): RAM
+I (1000) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (1006) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (1012) heap_init: At 600FE01C len 00001FCC (7 KiB): RTCRAM
+I (1019) esp_psram: Adding pool of 2048K of PSRAM memory to heap allocator
+I (1027) spi_flash: detected chip: generic
+I (1031) spi_flash: flash io: dio
+W (1051) [NET]: Loaded size of 216 at namespace wifi key creds
+W (1070) [NET]: Loaded size of 44 at namespace moq key server_url
+W (1071) [NET]: Loaded size of 5 at namespace config key language
+W (1074) [NET]: Loaded size of 2 at namespace config key channel_ns
+W (1081) [NET]: Loaded size of 2 at namespace config key ai_qry_ns
+W (1087) [NET]: Loaded size of 2 at namespace config key ai_aud_ns
+W (1094) [NET]: Loaded size of 2 at namespace config key ai_cmd_ns
+I (1101) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (1108) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (1116) main_task: Started on CPU0
+I (1120) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (1129) main_task: Calling app_main()
+E (1133) [NET]: Internal SRAM available: 283211 bytes
+E (1139) [NET]: PSRAM available: 2074984 bytes
+�I (1231) uart: queue free spaces: 2
+I (1234) [NET]: Start ui link packet task
+I (1234) [NET]: Created ui link packet handler PSRAM left 2056532
+I (1236) [NET]: Begin initialization:
+I (1240) [NET]: Init the nvs
+I (1244) [NET]: Init netif
+I (1249) pp: pp rom version: e7ae62f
+I (1252) net80211: net80211 rom version: e7ae62f
+I (1258) wifi:wifi driver task: 3fcc31c0, prio:23, stack:6656, core=0
+I (1266) wifi:wifi firmware version: bea31f3
+I (1267) wifi:wifi certification version: v7.0
+I (1271) wifi:config NVS flash: enabled
+I (1275) wifi:config nano formatting: disabled
+I (1279) wifi:Init data frame dynamic rx buffer num: 32
+I (1284) wifi:Init static rx mgmt buffer num: 5
+I (1288) wifi:Init management short buffer num: 32
+I (1293) wifi:Init dynamic tx buffer num: 32
+I (1297) wifi:Init static tx FG buffer num: 2
+I (1301) wifi:Init static rx buffer size: 1600
+I (1305) wifi:Init static rx buffer num: 10
+I (1309) wifi:Init dynamic rx buffer num: 32
+W (1313) [NET]: SSID quicr.io already exists in storage
+I (1314) wifi_init: rx ba win: 6
+I (1323) wifi_init: accept mbox: 6
+I (1327) wifi_init: tcpip mbox: 32
+I (1331) wifi_init: udp mbox: 6
+I (1335) wifi_init: tcp mbox: 6
+I (1338) wifi_init: tcp tx win: 5744
+I (1343) wifi_init: tcp rx win: 5744
+I (1347) wifi_init: tcp mss: 1440
+I (1351) wifi_init: WiFi IRAM OP enabled
+I (1355) wifi_init: WiFi RX IRAM OP enabled
+I (1360) [NET]: Init complete, status 0
+I (1366) [NET]: Start wifi
+W (1366) [NET]: SSID m10x-interference already exists in storage
+I (1368) phy_init: phy_version 701,f4f1da3a,Mar  3 2025,15:50:10
+I (1418) wifi:mode : sta (28:37:2f:e3:c6:a4)
+I (1419) wifi:enable tsf
+I (1419) [NET]: Wifi Event -- event 43
+I (1420) [NET]: Unhandled wifi event
+I (1424) [NET]: Wifi Event -- event 2
+I (1427) [NET]: Wifi Event - Initialized
+I (1432) uart: queue free spaces: 20
+W (1436) [NET]: Using moq server url of moq://relay.us-west-2.quicr.ctgpoc.com:33435 len 44
+W (1445) [NET]: Channel namespace not configured - device needs configuration
+W (1452) [NET]: AI namespaces not configured - device needs configuration
+E (1460) [NET]: mac addr 181174122002216
+W (1471) [NET]: Created psram task Publish Tracks task PSRAM left 2008056
+W (1473) [NET]: Created psram task Subscribe Tracks task PSRAM left 1999860
+E (1480) [NET]: Internal SRAM available: 210999 bytes
+E (1485) [NET]: PSRAM available: 1999860 bytes
+I (1490) [NET]: Components ready
+W (1494) [NET]: Cannot update channel tracks: namespace or language empty
+
+  FAIL: set_channel returned None, expected ACK (32768)
+
+--- Testing AI Commands ---
+  Setting AI namespaces...
+  DEBUG: Timeout. Total data received: 8193 bytes
+  DEBUG: Data: 
+abort() was called at PC 0x4212bd5f on core 1
+
+
+Backtrace: 0x403757f5:0x3fcbb0b0 0x4037d179:0x3fcbb0d0 0x40384ae5:0x3fcbb0��ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x4037a71a
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2810,len:0x187c
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xd24
+load:0x403cb700,len:0x2ed4
+entry 0x403c8928
+I (31) boot: ESP-IDF v5.4.2 2nd stage bootloader
+I (31) boot: compile time Mar 23 2026 13:46:11
+I (31) boot: Multicore bootloader
+I (34) boot: chip revision: v0.2
+I (38) boot: efuse block revision: v1.3
+I (43) boot.esp32s3: Boot SPI Speed : 80MHz
+I (47) boot.esp32s3: SPI Mode       : DIO
+I (52) boot.esp32s3: SPI Flash Size : 8MB
+I (57) boot: Enabling RNG early entropy source...
+I (62) boot: Partition Table:
+I (66) boot: ## Label            Usage          Type ST Offset   Length
+I (73) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (81) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (88) boot:  2 factory          factory app      00 00 00010000 002ee000
+I (96) boot: End of partition table
+I (100) esp_image: segment 0: paddr=00010020 vaddr=3c180020 size=676b0h (423600) map
+I (183) esp_image: segment 1: paddr=000776d8 vaddr=3fc9a100 size=05bdch ( 23516) load
+I (188) esp_image: segment 2: paddr=0007d2bc vaddr=40374000 size=02d5ch ( 11612) load
+I (192) esp_image: segment 3: paddr=00080020 vaddr=42000020 size=17e9e4h (1567204) map
+I (475) esp_image: segment 4: paddr=001fea0c vaddr=40376d5c size=132c0h ( 78528) load
+I (493) esp_image: segment 5: paddr=00211cd4 vaddr=600fe000 size=0001ch (    28) load
+I (502) boot: Loaded app from partition at offset 0x10000
+I (502) boot: Disabling RNG early entropy source...
+I (514) esp_psram: Found 2MB PSRAM device
+I (514) esp_psram: Speed: 40MHz
+I (514) cpu_start: Multicore app
+I (934) esp_psram: SPI SRAM memory test OK
+I (943) cpu_start: Pro cpu start user code
+I (943) cpu_start: cpu freq: 160000000 Hz
+I (943) app_init: Application information:
+I (946) app_init: Project name:     net
+I (950) app_init: App version:      archive-2025-11-18-141-g7aa7b09
+I (957) app_init: Compile time:     Mar 23 2026 13:46:03
+I (963) app_init: ELF file SHA256:  f5a74de5690618c8...
+I (969) app_init: ESP-IDF:          v5.4.2
+I (974) efuse_init: Min chip rev:     v0.0
+I (979) efuse_init: Max chip rev:     v0.99 
+I (984) efuse_init: Chip rev:         v0.2
+I (989) heap_init: Initializing. RAM available for dynamic allocation:
+I (996) heap_init: At 3FCAAEA0 len 0003E870 (250 KiB): RAM
+I (1002) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (1008) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (1014) heap_init: At 600FE01C len 00001FCC (7 KiB): RTCRAM
+I (1021) esp_psram: Adding pool of 2048K of PSRAM memory to heap allocator
+I (1029) spi_flash: detected chip: generic
+I (1033) spi_flash: flash io: dio
+W (1053) [NET]: Loaded size of 216 at namespace wifi key creds
+W (1072) [NET]: Loaded size of 44 at namespace moq key server_url
+W (1073) [NET]: Loaded size of 5 at namespace config key language
+W (1075) [NET]: Loaded size of 2 at namespace config key channel_ns
+W (1082) [NET]: Loaded size of 2 at namespace config key ai_qry_ns
+W (1089) [NET]: Loaded size of 2 at namespace config key ai_aud_ns
+W (1096) [NET]: Loaded size of 2 at namespace config key ai_cmd_ns
+I (1103) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (1109) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (1117) main_task: Started on CPU0
+I (1121) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (1130) main_task: Calling app_main()
+E (1134) [NET]: Internal SRAM available: 283211 bytes
+E (1140) [NET]: PSRAM available: 2074984 bytes
+I (1145) gpio: GPIO[5]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1154) gpio: GPIO[6]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1164) gpio: GPIO[7]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1173) gpio: GPIO[36]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1182) gpio: GPIO[37]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1192) gpio: GPIO[38]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (1201) gpio: GPIO[9]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: �I (1232) uart: queue free spaces: 2
+I (1235) [NET]: Start ui link packet task
+I (1235) [NET]: Created ui link packet handler PSRAM left 2056532
+I (1237) [NET]: Begin initialization:
+I (1241) [NET]: Init the nvs
+I (1245) [NET]: Init netif
+I (1250) pp: pp rom version: e7ae62f
+I (1253) net80211: net80211 rom version: e7ae62f
+I (1259) wifi:wifi driver task: 3fcc31c0, prio:23, stack:6656, core=0
+I (1267) wifi:wifi firmware version: bea31f3
+I (1268) wifi:wifi certification version: v7.0
+I (1272) wifi:config NVS flash: enabled
+I (1276) wifi:config nano formatting: disabled
+I (1280) wifi:Init data frame dynamic rx buffer num: 32
+I (1285) wifi:Init static rx mgmt buffer num: 5
+I (1289) wifi:Init management short buffer num: 32
+I (1294) wifi:Init dynamic tx buffer num: 32
+I (1298) wifi:Init static tx FG buffer num: 2
+I (1302) wifi:Init static rx buffer size: 1600
+I (1306) wifi:Init static rx buffer num: 10
+I (1310) wifi:Init dynamic rx buffer num: 32
+W (1314) [NET]: SSID quicr.io already exists in storage
+I (1315) wifi_init: rx ba win: 6
+I (1324) wifi_init: accept mbox: 6
+I (1328) wifi_init: tcpip mbox: 32
+I (1332) wifi_init: udp mbox: 6
+I (1336) wifi_init: tcp mbox: 6
+I (1339) wifi_init: tcp tx win: 5744
+I (1344) wifi_init: tcp rx win: 5744
+I (1348) wifi_init: tcp mss: 1440
+I (1352) wifi_init: WiFi IRAM OP enabled
+I (1356) wifi_init: WiFi RX IRAM OP enabled
+I (1361) [NET]: Init complete, status 0
+I (1367) [NET]: Start wifi
+W (1367) [NET]: SSID m10x-interference already exists in storage
+I (1369) phy_init: phy_version 701,f4f1da3a,Mar  3 2025,15:50:10
+I (1418) wifi:mode : sta (28:37:2f:e3:c6:a4)
+I (1419) wifi:enable tsf
+I (1419) [NET]: Wifi Event -- event 43
+I (1420) [NET]: Unhandled wifi event
+I (1424) [NET]: Wifi Event -- event 2
+I (1427) [NET]: Wifi Event - Initialized
+I (1432) uart: queue free spaces: 20
+W (1436) [NET]: Using moq server url of moq://relay.us-west-2.quicr.ctgpoc.com:33435 len 44
+W (1445) [NET]: Channel namespace not configured - device needs configuration
+W (1452) [NET]: AI namespaces not configured - device needs configuration
+E (1460) [NET]: mac addr 181174122002216
+W (1471) [NET]: Created psram task Publish Tracks task PSRAM left 2008056
+W (1473) [NET]: Created psram task Subscribe Tracks task PSRAM left 1999860
+E (1479) [NET]: Internal SRAM available: 210999 bytes
+E (1485) [NET]: PSRAM available: 1999860 bytes
+I (1490) [NET]: Components ready
+W (1494) [NET]: Cannot update channel tracks: namespace or language empty
+
+  FAIL: set_ai returned None, expected ACK (32768)
+
+--- Testing Invalid Language Rejection ---
+  Invalid language correctly rejected: Invalid language 'invalid-lang'. Supported: en-US, es-ES, de-DE, hi-IN, nb-NO - PASS
+
+--- Testing Invalid JSON Rejection ---
+  Invalid JSON correctly rejected: Invalid JSON: Expecting value: line 1 column 1 (char 0) - PASS
+
+==================================================
+Results: 2 passed, 3 failed
+==================================================

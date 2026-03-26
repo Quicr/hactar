@@ -1,0 +1,8 @@
+Ports available: 1 [['/dev/cu.usbserial-110']]
+Resetting /dev/cu.usbserial-110
+b'HELLO, I AM A HACTAR DEVICE'
+Device on port [1;33m/dev/cu.usbserial-110[0;37m [1;32mis[0;37m a Hactar!
+Hactars found: 1
+Select a port [0-0]
+0. /dev/cu.usbserial-110
+> 

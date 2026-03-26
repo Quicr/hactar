@@ -345,6 +345,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
         Serial::TxISR(&net_serial);
         RaiseFlag(Rx_Audio_Transmitted);
     }
+    else if (huart->Instance == Serial::UART(&mgmt_serial)->Instance)
+    {
+        Serial::TxISR(&mgmt_serial);
+    }
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
