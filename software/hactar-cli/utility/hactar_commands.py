@@ -38,13 +38,15 @@ bypass_map = {
 }
 
 ui_command_map = {
-    "version": {"id": 0, "num_params": 0},
+    "ping": {"id": 0, "num_params": 0},  # Replaces version stub - echoes payload
     "clear_config": {"id": 1, "num_params": 0},
     "set_sframe_key": {"id": 2, "num_params": 1, "encoder": "hex"},
     "get_sframe_key": {"id": 3, "num_params": 0},
     "toggle_logs": {"id": 4, "num_params": 0},
     "disable_logs": {"id": 5, "num_params": 0},
     "enable_logs": {"id": 6, "num_params": 0},
+    "get_stack_info": {"id": 7, "num_params": 0},
+    "repaint_stack": {"id": 8, "num_params": 0},
 }
 
 net_command_map = {

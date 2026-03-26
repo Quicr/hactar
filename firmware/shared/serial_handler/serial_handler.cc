@@ -203,6 +203,7 @@ link_packet_t* SerialHandler::TLVRead()
 
             packet->is_ready = true;
             packet = &rx_packets.Write();
+            packet_data = packet->WriteableData();
             continue;
         }
         else if (bytes_read >= link_packet_t::Packet_Size)

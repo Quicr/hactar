@@ -3,8 +3,10 @@
 #include "audio_codec.hh"
 #include "keyboard_display.hh"
 #include "logger.hh"
+#include "stack_debug.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
+#include <cstdio>
 #include <span>
 
 static void HandleMedia(link_packet_t* packet, AudioChip& audio)
@@ -114,9 +116,17 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
 
         switch (packet->type)
         {
-        case Configuration::Version:
+        case Configuration::Ping:
         {
-            UI_LOG_INFO("VERSION TODO");
+            // Echo the payload back (pong)
+            if (packet->length > 0)
+            {
+                serial.Write(packet->payload.data(), packet->length);
+            }
+            else
+            {
+                serial.ReplyAck();
+            }
             break;
         }
         case Configuration::Clear:
@@ -180,6 +190,23 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         {
             serial.ReplyAck();
             Logger::Enable();
+            break;
+        }
+        case Configuration::Get_Stack_Info:
+        {
+            stack_debug::StackInfo info = stack_debug::GetStackInfo();
+            char json[128];
+            int len = snprintf(
+                json, sizeof(json),
+                "{\"stack_base\":%lu,\"stack_top\":%lu,\"stack_size\":%lu,\"stack_used\":%lu}",
+                info.stack_base, info.stack_top, info.stack_size, info.stack_used);
+            serial.Write((const uint8_t*)json, len);
+            break;
+        }
+        case Configuration::Repaint_Stack:
+        {
+            stack_debug::RepaintStack();
+            serial.ReplyAck();
             break;
         }
         default:
