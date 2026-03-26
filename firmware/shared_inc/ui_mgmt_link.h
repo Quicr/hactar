@@ -2,7 +2,7 @@
 
 enum Configuration
 {
-    Ping,  // Replaces Version stub - echoes payload back
+    Ping, // Replaces Version stub - echoes payload back
     Clear,
     Set_Sframe,
     Get_Sframe,
