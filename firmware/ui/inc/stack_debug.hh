@@ -29,16 +29,23 @@ inline uint32_t GetSP()
 }
 
 // Paint unused stack memory with pattern for high water mark detection
+// Must run with interrupts disabled to prevent ISRs from using stack we're painting
 inline void RepaintStack()
 {
+    __disable_irq();
+
     uint32_t* ptr = &_end;
     uint32_t sp = GetSP();
 
     // Paint from end of heap reservation up to current SP (leaving some margin)
-    while ((uint32_t)ptr < (sp - 64))
+    // Guard against underflow if SP is very close to _end
+    uint32_t limit = (sp > (uint32_t)&_end + 128) ? (sp - 64) : (uint32_t)&_end;
+    while ((uint32_t)ptr < limit)
     {
         *ptr++ = Paint_Pattern;
     }
+
+    __enable_irq();
 }
 
 // Find high water mark by scanning for first non-painted word
