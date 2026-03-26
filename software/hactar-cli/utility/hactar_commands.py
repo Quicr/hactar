@@ -40,7 +40,7 @@ bypass_map = {
 ui_command_map = {
     "version": {"id": 0, "num_params": 0},
     "clear_config": {"id": 1, "num_params": 0},
-    "set_sframe_key": {"id": 2, "num_params": 1},
+    "set_sframe_key": {"id": 2, "num_params": 1, "encoder": "hex"},
     "get_sframe_key": {"id": 3, "num_params": 0},
     "toggle_logs": {"id": 4, "num_params": 0},
     "disable_logs": {"id": 5, "num_params": 0},
@@ -97,6 +97,13 @@ def encode_command_payload(encoder: str | None, params: list[str]) -> tuple[byte
             return params[0].encode("utf-8"), None
         except json.JSONDecodeError as e:
             return bytes(), f"Invalid JSON: {e}"
+
+    elif encoder == "hex":
+        # Decode hex string to bytes
+        try:
+            return bytes.fromhex(params[0]), None
+        except ValueError as e:
+            return bytes(), f"Invalid hex: {e}"
 
     else:
         # Default encoding: length-prefixed strings if multiple params

@@ -121,7 +121,9 @@ public:
         // Get the address
         uint8_t address = addresses[static_cast<size_t>(config)];
 
-        eeprom.Write(address, data, size);
+        // Write length byte first, then data
+        eeprom.WriteByte(address, static_cast<uint8_t>(size));
+        eeprom.Write(address + 1, data, size);
 
         return true;
     }
