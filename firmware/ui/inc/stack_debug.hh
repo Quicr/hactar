@@ -1,27 +1,23 @@
 #pragma once
 
 #include <cstdint>
-#include <unistd.h> // for sbrk
+#include <unistd.h>
 
-// Linker-defined symbols
-extern "C" uint32_t _estack; // Top of stack (end of RAM)
-extern "C" uint32_t _end;    // End of static data (heap starts here)
+extern "C" uint32_t _estack;
 
 namespace stack_debug
 {
 
-// Paint pattern used to detect stack high water mark
 constexpr uint32_t Paint_Pattern = 0xC0C0C0C0;
 
 struct StackInfo
 {
-    uint32_t stack_base; // Bottom of stack region
-    uint32_t stack_top;  // Top of stack (highest address)
-    uint32_t stack_size; // Total stack size
-    uint32_t stack_used; // High water mark (deepest usage)
+    uint32_t stack_base;
+    uint32_t stack_top;
+    uint32_t stack_size;
+    uint32_t stack_used;
 };
 
-// Get current stack pointer
 inline uint32_t GetSP()
 {
     uint32_t sp;
@@ -29,26 +25,20 @@ inline uint32_t GetSP()
     return sp;
 }
 
-// Get current heap end (top of heap)
 inline uint32_t GetHeapEnd()
 {
     return (uint32_t)sbrk(0);
 }
 
-// Paint unused stack memory with pattern for high water mark detection
-// Must run with interrupts disabled to prevent ISRs from using stack we're painting
 inline void RepaintStack()
 {
     __disable_irq();
 
-    // Start painting ABOVE the heap, not at _end
     uint32_t heap_end = GetHeapEnd();
     uint32_t* ptr = (uint32_t*)heap_end;
     uint32_t sp = GetSP();
-
-    // Paint from end of heap up to current SP (leaving some margin)
-    // Guard against underflow if SP is very close to heap_end
     uint32_t limit = (sp > heap_end + 128) ? (sp - 64) : heap_end;
+
     while ((uint32_t)ptr < limit)
     {
         *ptr++ = Paint_Pattern;
@@ -57,7 +47,6 @@ inline void RepaintStack()
     __enable_irq();
 }
 
-// Find high water mark by scanning for first non-painted word
 inline uint32_t GetHighWaterMark()
 {
     uint32_t heap_end = GetHeapEnd();
@@ -71,11 +60,10 @@ inline uint32_t GetHighWaterMark()
     return (uint32_t)ptr;
 }
 
-// Get stack usage information
 inline StackInfo GetStackInfo()
 {
     StackInfo info;
-    info.stack_base = GetHeapEnd(); // Free memory starts after heap
+    info.stack_base = GetHeapEnd();
     info.stack_top = (uint32_t)&_estack;
     info.stack_size = info.stack_top - info.stack_base;
 
