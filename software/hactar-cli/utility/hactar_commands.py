@@ -45,6 +45,8 @@ ui_command_map = {
     "toggle_logs": {"id": 4, "num_params": 0},
     "disable_logs": {"id": 5, "num_params": 0},
     "enable_logs": {"id": 6, "num_params": 0},
+    "get_stack_info": {"id": 7, "num_params": 0},
+    "repaint_stack": {"id": 8, "num_params": 0},
 }
 
 net_command_map = {

@@ -9,4 +9,6 @@ enum Configuration
     Toggle_Logs,
     Disable_Logs,
     Enable_Logs,
+    Get_Stack_Info,
+    Repaint_Stack,
 };
