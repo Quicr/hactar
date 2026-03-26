@@ -12,7 +12,7 @@ enum Configuration
     Set_Relay_Url = 5,
     Get_Relay_Url = 6,
     Get_Loopback = 7,
-    Set_Loopback = 8,      // NetLoopbackMode value
+    Set_Loopback = 8, // NetLoopbackMode value
     Get_Logs_Enabled = 9,
     Set_Logs_Enabled = 10, // 0=disabled, 1=enabled
     Set_Language = 11,
