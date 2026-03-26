@@ -4,9 +4,9 @@ enum Configuration
 {
     Version = 0,
     Clear_Storage = 1,
-    Add_Wifi = 2,      // JSON: {"ssid":"...","password":"..."}
-    Get_Wifi = 3,      // Returns JSON array of wifi credentials
-    Clear_Wifi = 4,    // Clears all saved WiFi credentials
+    Add_Wifi = 2,   // JSON: {"ssid":"...","password":"..."}
+    Get_Wifi = 3,   // Returns JSON array of wifi credentials
+    Clear_Wifi = 4, // Clears all saved WiFi credentials
     // ID 5 reserved (was Clear_Ssids)
     Set_Moq_Url = 6,
     Get_Moq_Url = 7,
