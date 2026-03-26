@@ -50,10 +50,9 @@ ui_command_map = {
 net_command_map = {
     "version": {"id": 0, "num_params": 0},
     "clear_storage": {"id": 1, "num_params": 0},
-    "set_ssid": {"id": 2, "num_params": 2},
-    "get_ssid_names": {"id": 3, "num_params": 0},
-    "get_ssid_passwords": {"id": 4, "num_params": 0},
-    "clear_ssids": {"id": 5, "num_params": 0},
+    "add_wifi": {"id": 2, "num_params": 1, "encoder": "json"},  # JSON: {"ssid":"...","password":"..."}
+    "get_wifi": {"id": 3, "num_params": 0},  # Returns JSON array
+    "clear_wifi": {"id": 4, "num_params": 0},
     "set_moq_url": {"id": 6, "num_params": 1},
     "get_moq_url": {"id": 7, "num_params": 0},
     "toggle_logs": {"id": 8, "num_params": 0},
