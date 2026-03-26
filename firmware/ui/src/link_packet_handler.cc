@@ -115,9 +115,17 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
 
         switch (packet->type)
         {
-        case Configuration::Version:
+        case Configuration::Ping:
         {
-            UI_LOG_INFO("VERSION TODO");
+            // Echo the payload back (pong)
+            if (packet->length > 0)
+            {
+                serial.Write(packet->payload.data(), packet->length);
+            }
+            else
+            {
+                serial.ReplyAck();
+            }
             break;
         }
         case Configuration::Clear:
