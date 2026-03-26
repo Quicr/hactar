@@ -213,7 +213,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         {
             // Return current loopback mode (always Off - not implemented)
             uint8_t mode = static_cast<uint8_t>(UiLoopbackMode::Off);
-            serial.Write(&mode, 1);
+            serial.ReplyData(std::span<const uint8_t>(&mode, 1));
             break;
         }
         case Configuration::Set_Loopback:
@@ -240,7 +240,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         case Configuration::Get_Logs_Enabled:
         {
             uint8_t enabled = Logger::enabled ? 1 : 0;
-            serial.Write(&enabled, 1);
+            serial.ReplyData(std::span<const uint8_t>(&enabled, 1));
             break;
         }
         case Configuration::Set_Logs_Enabled:
