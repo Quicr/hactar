@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdint>
 #include <unistd.h>
+#include <cstdint>
 
 extern "C" uint32_t _estack;
 
