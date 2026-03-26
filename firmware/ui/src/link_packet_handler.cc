@@ -127,7 +127,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             UI_LOG_INFO("OK! Cleared all configurations");
             break;
         }
-        case Configuration::Set_Sframe:
+        case Configuration::Set_Sframe_Key:
         {
             if (packet->length != 16)
             {
@@ -150,7 +150,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
 
             break;
         }
-        case Configuration::Get_Sframe:
+        case Configuration::Get_Sframe_Key:
         {
             ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
             if (config.loaded && config.len == 16)
