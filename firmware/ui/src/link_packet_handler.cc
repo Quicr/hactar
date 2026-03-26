@@ -5,6 +5,7 @@
 #include "logger.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
+#include <span>
 
 static void HandleMedia(link_packet_t* packet, AudioChip& audio)
 {
@@ -131,21 +132,21 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         {
             if (packet->length != 16)
             {
-                serial.ReplyNack();
                 UI_LOG_ERROR("ERR. Sframe key is too short!");
+                serial.ReplyNack();
                 break;
             }
 
             if (storage.Save(ConfigStorage::Config_Id::Sframe_Key, packet->payload.data(),
                              packet->length))
             {
-                serial.ReplyAck();
                 UI_LOG_INFO("OK! Saved SFrame Key configuration");
+                serial.ReplyAck();
             }
             else
             {
-                serial.ReplyNack();
                 UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
+                serial.ReplyNack();
             }
 
             break;
@@ -155,18 +156,11 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
             if (config.loaded && config.len == 16)
             {
-                // Copy to a buff and print it.
-                char buff[config.len + 1] = {0};
-                for (int i = 0; i < config.len; ++i)
-                {
-                    buff[i] = config.buff[i];
-                }
-
-                serial.Write(config.buff, config.len);
+                serial.ReplyData(std::span<const uint8_t>(config.buff, config.len));
             }
             else
             {
-                UI_LOG_INFO("ERR. No sframe key in storage");
+                serial.ReplyNack();
             }
             break;
         }
