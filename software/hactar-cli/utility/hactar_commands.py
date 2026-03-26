@@ -62,7 +62,7 @@ net_command_map = {
     "get_loopback": {"id": 7, "num_params": 0},
     "set_loopback": {"id": 8, "num_params": 1, "encoder": "loopback"},  # off/raw/moq
     "get_logs_enabled": {"id": 9, "num_params": 0},
-    "set_logs_enabled": {"id": 10, "num_params": 1},  # 0=disabled, 1=enabled
+    "set_logs_enabled": {"id": 10, "num_params": 1, "encoder": "bool"},  # 0=disabled, 1=enabled
     "set_language": {"id": 11, "num_params": 1, "encoder": "language"},
     "get_language": {"id": 12, "num_params": 0},
     "set_channel": {"id": 13, "num_params": 1, "encoder": "json"},
@@ -126,6 +126,16 @@ def encode_command_payload(encoder: str | None, params: list[str]) -> tuple[byte
         if mode not in UI_LOOPBACK_MODES:
             return bytes(), f"Invalid loopback mode '{mode}'. Use: off, raw, alaw, sframe"
         return bytes([UI_LOOPBACK_MODES[mode]]), None
+
+    elif encoder == "bool":
+        # Boolean: 0/1/false/true -> 0x00/0x01
+        val = params[0].lower()
+        if val in ("0", "false", "off", "no"):
+            return bytes([0]), None
+        elif val in ("1", "true", "on", "yes"):
+            return bytes([1]), None
+        else:
+            return bytes(), f"Invalid boolean '{val}'. Use: 0, 1, true, false"
 
     else:
         # Default encoding: length-prefixed strings if multiple params
