@@ -40,8 +40,8 @@ bypass_map = {
 ui_command_map = {
     "ping": {"id": 0, "num_params": 0},  # Replaces version stub - echoes payload
     "clear_config": {"id": 1, "num_params": 0},
-    "set_sframe": {"id": 2, "num_params": 1},
-    "get_sframe": {"id": 3, "num_params": 0},
+    "set_sframe_key": {"id": 2, "num_params": 1, "encoder": "hex"},
+    "get_sframe_key": {"id": 3, "num_params": 0},
     "toggle_logs": {"id": 4, "num_params": 0},
     "disable_logs": {"id": 5, "num_params": 0},
     "enable_logs": {"id": 6, "num_params": 0},
@@ -56,8 +56,8 @@ net_command_map = {
     "get_ssid_names": {"id": 3, "num_params": 0},
     "get_ssid_passwords": {"id": 4, "num_params": 0},
     "clear_ssids": {"id": 5, "num_params": 0},
-    "set_moq_url": {"id": 6, "num_params": 1},
-    "get_moq_url": {"id": 7, "num_params": 0},
+    "set_relay_url": {"id": 6, "num_params": 1},
+    "get_relay_url": {"id": 7, "num_params": 0},
     "toggle_logs": {"id": 8, "num_params": 0},
     "disable_logs": {"id": 9, "num_params": 0},
     "enable_logs": {"id": 10, "num_params": 0},
@@ -99,6 +99,13 @@ def encode_command_payload(encoder: str | None, params: list[str]) -> tuple[byte
             return params[0].encode("utf-8"), None
         except json.JSONDecodeError as e:
             return bytes(), f"Invalid JSON: {e}"
+
+    elif encoder == "hex":
+        # Decode hex string to bytes
+        try:
+            return bytes.fromhex(params[0]), None
+        except ValueError as e:
+            return bytes(), f"Invalid hex: {e}"
 
     else:
         # Default encoding: length-prefixed strings if multiple params

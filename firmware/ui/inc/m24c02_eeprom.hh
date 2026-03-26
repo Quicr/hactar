@@ -141,27 +141,12 @@ private:
             return HAL_ERROR;
         }
 
-        // Copy to_write to a new array
         uint8_t write_bytes[2];
+        HAL_StatusTypeDef write_res = HAL_OK;
 
-        // Write the length
-        write_bytes[0] = address;
-        write_bytes[1] = data_size;
-        HAL_StatusTypeDef len_write_res =
-            HAL_I2C_Master_Transmit(i2c, Device_Addr, write_bytes, 2, HAL_MAX_DELAY);
-        HAL_Delay(write_operation_timeout_ms);
-
-        if (len_write_res != HAL_OK)
+        for (uint16_t i = 0; i < data_size; ++i)
         {
-            return len_write_res;
-        }
-
-        // Write data
-        HAL_StatusTypeDef write_res = HAL_ERROR;
-        uint8_t data_addr = address + 1;
-        for (int16_t i = 0; i < data_size; ++i)
-        {
-            write_bytes[0] = address + 1 + i;
+            write_bytes[0] = address + i;
             write_bytes[1] = data[i];
             write_res = HAL_I2C_Master_Transmit(i2c, Device_Addr, write_bytes, 2, HAL_MAX_DELAY);
 
