@@ -158,44 +158,49 @@ Reply_Nack = bytes([0x83])
 Response_Ack = 0x8000
 Response_Error = 0x8001
 
-# NET typed responses (matching Link's NetToCtl)
-Response_WifiSsids = 0x8002    # JSON array: [{"ssid":"...","password":"..."},...]
-Response_RelayUrl = 0x8003    # UTF-8 URL string
-Response_Loopback = 0x8004    # 1 byte: loopback mode enum
-Response_LogsEnabled = 0x8005  # 1 byte: 0=disabled, 1=enabled
-Response_Language = 0x8006    # UTF-8 language tag (e.g. "en-US")
-Response_Channel = 0x8007     # JSON array of namespace parts
-Response_AiConfig = 0x8008    # JSON: {"query":[...],"audio":[...],"cmd":[...]}
+# NET typed responses (matching net_mgmt_link.h)
+Response_WifiSsids = 0x8002      # JSON array: [{"ssid":"...","password":"..."},...]
+Response_RelayUrl = 0x8003      # UTF-8 URL string
+Net_Response_Loopback = 0x8004  # 1 byte: loopback mode enum
+Net_Response_LogsEnabled = 0x8005  # 1 byte: 0=disabled, 1=enabled
+Response_Language = 0x8006      # UTF-8 language tag (e.g. "en-US")
+Response_Channel = 0x8007       # JSON array of namespace parts
+Response_AiConfig = 0x8008      # JSON: {"query":[...],"audio":[...],"cmd":[...]}
 
-# UI typed responses (matching Link's UiToCtl)
-Response_SframeKey = 0x8002   # 16 bytes: SFrame encryption key (UI uses same slot as NET's WifiSsids)
-Response_StackInfo = 0x8005   # JSON: {"stack_base":...,"stack_top":...,"stack_size":...,"stack_used":...}
-# Note: UI's Response_Loopback (0x8003), Response_LogsEnabled (0x8004) overlap with NET
+# UI typed responses (matching ui_mgmt_link.h)
+Response_SframeKey = 0x8002        # 16 bytes: SFrame encryption key
+Ui_Response_Loopback = 0x8003     # 1 byte: UiLoopbackMode
+Ui_Response_LogsEnabled = 0x8004  # 1 byte: 0=disabled, 1=enabled
+Response_StackInfo = 0x8005       # JSON: {"stack_base":...,"stack_top":...,"stack_size":...,"stack_used":...}
 
-# Map response types to human-readable names (shared codes)
-RESPONSE_TYPE_NAMES = {
+# Aliases for backwards compatibility
+Response_Loopback = Net_Response_Loopback
+Response_LogsEnabled = Net_Response_LogsEnabled
+
+# Chip-specific response names
+NET_RESPONSE_NAMES = {
     Response_Ack: "ACK",
     Response_Error: "ERROR",
-    Response_Loopback: "LOOPBACK",
+    Response_WifiSsids: "WIFI",
+    Response_RelayUrl: "RELAY_URL",
+    Net_Response_Loopback: "LOOPBACK",
+    Net_Response_LogsEnabled: "LOGS_ENABLED",
     Response_Language: "LANGUAGE",
     Response_Channel: "CHANNEL",
     Response_AiConfig: "AI_CONFIG",
 }
 
-# Chip-specific response names (for codes that overlap between NET and UI)
-NET_RESPONSE_NAMES = {
-    **RESPONSE_TYPE_NAMES,
-    Response_WifiSsids: "WIFI",
-    Response_RelayUrl: "RELAY_URL",
-    Response_LogsEnabled: "LOGS_ENABLED",
-}
-
 UI_RESPONSE_NAMES = {
-    **RESPONSE_TYPE_NAMES,
+    Response_Ack: "ACK",
+    Response_Error: "ERROR",
     Response_SframeKey: "SFRAME_KEY",
-    Response_LogsEnabled: "LOGS_ENABLED",
+    Ui_Response_Loopback: "LOOPBACK",
+    Ui_Response_LogsEnabled: "LOGS_ENABLED",
     Response_StackInfo: "STACK_INFO",
 }
+
+# Generic mapping (uses NET codes, for backwards compatibility)
+RESPONSE_TYPE_NAMES = NET_RESPONSE_NAMES
 
 def is_data_response(response_type: int) -> bool:
     """Check if response type carries data payload (anything except Ack/Error)."""
