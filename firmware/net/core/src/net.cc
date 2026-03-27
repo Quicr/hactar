@@ -408,7 +408,7 @@ static void MgmtLinkPacketTask(void* args)
                     entry["password"] = std::string(cred.pwd, cred.pwd_len);
                     wifi_array.push_back(entry);
                 }
-                mgmt_layer.ReplyData(wifi_array.dump());
+                mgmt_layer.Reply(Configuration::Response_WifiSsids, wifi_array.dump());
                 break;
             }
             case Configuration::Clear_Wifi:
@@ -437,14 +437,16 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Get_Relay_Url:
             {
                 std::string moq_url = moq_server_url.Load();
-                mgmt_layer.ReplyData(moq_url);
+                mgmt_layer.Reply(Configuration::Response_RelayUrl, moq_url);
                 break;
             }
             case Configuration::Get_Loopback:
             {
                 // Return loopback mode using NetLoopbackMode enum
-                auto mode = loopback ? NetLoopbackMode::Moq : NetLoopbackMode::Off;
-                mgmt_layer.ReplyData(std::string(1, static_cast<char>(mode)));
+                uint8_t mode =
+                    static_cast<uint8_t>(loopback ? NetLoopbackMode::Moq : NetLoopbackMode::Off);
+                mgmt_layer.Reply(Configuration::Response_Loopback,
+                                 std::span<const uint8_t>(&mode, 1));
                 break;
             }
             case Configuration::Set_Loopback:
@@ -483,7 +485,8 @@ static void MgmtLinkPacketTask(void* args)
             {
                 // Return logs state: 0=disabled, 1=enabled
                 uint8_t enabled = logs_disabled ? 0 : 1;
-                mgmt_layer.ReplyData(std::string(1, static_cast<char>(enabled)));
+                mgmt_layer.Reply(Configuration::Response_LogsEnabled,
+                                 std::span<const uint8_t>(&enabled, 1));
                 break;
             }
             case Configuration::Set_Logs_Enabled:
@@ -529,7 +532,7 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Get_Language:
             {
                 std::string lang = language.Load();
-                mgmt_layer.ReplyData(lang);
+                mgmt_layer.Reply(Configuration::Response_Language, lang);
                 break;
             }
             case Configuration::Set_Channel:
@@ -554,7 +557,7 @@ static void MgmtLinkPacketTask(void* args)
             }
             case Configuration::Get_Channel:
             {
-                mgmt_layer.ReplyData(channel_ns_json.Load());
+                mgmt_layer.Reply(Configuration::Response_Channel, channel_ns_json.Load());
                 break;
             }
             case Configuration::Set_AI:
@@ -612,7 +615,7 @@ static void MgmtLinkPacketTask(void* args)
                 response["query"] = ai_query_ns;
                 response["audio"] = ai_audio_response_ns;
                 response["cmd"] = ai_cmd_response_ns;
-                mgmt_layer.ReplyData(response.dump());
+                mgmt_layer.Reply(Configuration::Response_AiConfig, response.dump());
                 break;
             }
             case Configuration::Burn_Disable_USB_JTag_Efuse:

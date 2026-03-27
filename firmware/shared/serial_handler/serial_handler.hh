@@ -15,10 +15,9 @@ public:
     static constexpr uint8_t Ack = 0x82;
     static constexpr uint8_t Nack = 0x83;
 
-    // TLV response types
+    // TLV response types (only Ack/Error are generic; data uses typed responses)
     static constexpr uint16_t Response_Ack = 0x8000;
-    static constexpr uint16_t Response_Nack = 0x8001;
-    static constexpr uint16_t Response_Data = 0x8002;
+    static constexpr uint16_t Response_Error = 0x8001;
 
     static constexpr uint8_t END = 0xC0;
     static constexpr uint8_t ESC = 0xDB;
@@ -42,9 +41,14 @@ public:
     void Write(const uint8_t* data, const uint16_t size, const bool end_frame = true);
 
     void ReplyAck();
-    void ReplyNack();
-    void ReplyData(std::span<const uint8_t> data);
-    void ReplyData(const std::string& data);
+    void ReplyError();
+    void ReplyNack()
+    {
+        ReplyError();
+    } // Deprecated alias
+    void Reply(uint16_t type);
+    void Reply(uint16_t type, const std::string& data);
+    void Reply(uint16_t type, std::span<const uint8_t> data);
 
     uint16_t Unread();
     uint16_t Unsent();

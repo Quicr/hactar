@@ -166,11 +166,12 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
             if (config.loaded && config.len == 16)
             {
-                serial.ReplyData(std::span<const uint8_t>(config.buff, config.len));
+                serial.Reply(Configuration::Response_SframeKey,
+                             std::span<const uint8_t>(config.buff, config.len));
             }
             else
             {
-                serial.ReplyNack();
+                serial.ReplyError();
             }
             break;
         }
@@ -200,7 +201,8 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
                 json, sizeof(json),
                 "{\"stack_base\":%lu,\"stack_top\":%lu,\"stack_size\":%lu,\"stack_used\":%lu}",
                 info.stack_base, info.stack_top, info.stack_size, info.stack_used);
-            serial.Write((const uint8_t*)json, len);
+            serial.Reply(Configuration::Response_StackInfo,
+                         std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(json), len));
             break;
         }
         case Configuration::Repaint_Stack:
@@ -213,7 +215,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         {
             // Return current loopback mode (always Off - not implemented)
             uint8_t mode = static_cast<uint8_t>(UiLoopbackMode::Off);
-            serial.ReplyData(std::span<const uint8_t>(&mode, 1));
+            serial.Reply(Configuration::Response_Loopback, std::span<const uint8_t>(&mode, 1));
             break;
         }
         case Configuration::Set_Loopback:
@@ -240,7 +242,8 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         case Configuration::Get_Logs_Enabled:
         {
             uint8_t enabled = Logger::enabled ? 1 : 0;
-            serial.ReplyData(std::span<const uint8_t>(&enabled, 1));
+            serial.Reply(Configuration::Response_LogsEnabled,
+                         std::span<const uint8_t>(&enabled, 1));
             break;
         }
         case Configuration::Set_Logs_Enabled:

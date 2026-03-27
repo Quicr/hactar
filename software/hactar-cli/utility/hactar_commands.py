@@ -154,10 +154,157 @@ Reply_Ready = 0x81
 Reply_Ack = bytes([0x82])
 Reply_Nack = bytes([0x83])
 
-# TLV Response types (matching net_mgmt_link.h)
+# TLV Response types (matching net_mgmt_link.h / ui_mgmt_link.h)
 Response_Ack = 0x8000
-Response_Nack = 0x8001
-Response_Data = 0x8002
+Response_Error = 0x8001
+
+# NET typed responses (matching net_mgmt_link.h)
+Response_WifiSsids = 0x8002      # JSON array: [{"ssid":"...","password":"..."},...]
+Response_RelayUrl = 0x8003      # UTF-8 URL string
+Net_Response_Loopback = 0x8004  # 1 byte: loopback mode enum
+Net_Response_LogsEnabled = 0x8005  # 1 byte: 0=disabled, 1=enabled
+Response_Language = 0x8006      # UTF-8 language tag (e.g. "en-US")
+Response_Channel = 0x8007       # JSON array of namespace parts
+Response_AiConfig = 0x8008      # JSON: {"query":[...],"audio":[...],"cmd":[...]}
+
+# UI typed responses (matching ui_mgmt_link.h)
+Response_SframeKey = 0x8002        # 16 bytes: SFrame encryption key
+Ui_Response_Loopback = 0x8003     # 1 byte: UiLoopbackMode
+Ui_Response_LogsEnabled = 0x8004  # 1 byte: 0=disabled, 1=enabled
+Response_StackInfo = 0x8005       # JSON: {"stack_base":...,"stack_top":...,"stack_size":...,"stack_used":...}
+
+# Aliases for backwards compatibility
+Response_Loopback = Net_Response_Loopback
+Response_LogsEnabled = Net_Response_LogsEnabled
+
+# Chip-specific response names
+NET_RESPONSE_NAMES = {
+    Response_Ack: "ACK",
+    Response_Error: "ERROR",
+    Response_WifiSsids: "WIFI",
+    Response_RelayUrl: "RELAY_URL",
+    Net_Response_Loopback: "LOOPBACK",
+    Net_Response_LogsEnabled: "LOGS_ENABLED",
+    Response_Language: "LANGUAGE",
+    Response_Channel: "CHANNEL",
+    Response_AiConfig: "AI_CONFIG",
+}
+
+UI_RESPONSE_NAMES = {
+    Response_Ack: "ACK",
+    Response_Error: "ERROR",
+    Response_SframeKey: "SFRAME_KEY",
+    Ui_Response_Loopback: "LOOPBACK",
+    Ui_Response_LogsEnabled: "LOGS_ENABLED",
+    Response_StackInfo: "STACK_INFO",
+}
+
+# Generic mapping (uses NET codes, for backwards compatibility)
+RESPONSE_TYPE_NAMES = NET_RESPONSE_NAMES
+
+def is_data_response(response_type: int) -> bool:
+    """Check if response type carries data payload (anything except Ack/Error)."""
+    return response_type >= 0x8002
+
+
+def build_chip_command(chip: str, command: str, params: list[str] = None) -> tuple[bytes, str | None]:
+    """Build a TLV command packet for NET or UI chip.
+
+    Args:
+        chip: "net" or "ui"
+        command: Command name (e.g., "get_wifi", "get_loopback")
+        params: Optional list of string parameters
+
+    Returns:
+        (packet_bytes, error_message). If error_message is not None, building failed.
+    """
+    if params is None:
+        params = []
+
+    chip_commands = net_command_map if chip == "net" else ui_command_map
+
+    if command not in chip_commands:
+        return b"", f"Unknown command '{command}' for {chip}"
+
+    cmd_info = chip_commands[command]
+    command_id = cmd_info["id"]
+    num_params = cmd_info["num_params"]
+    encoder = cmd_info.get("encoder")
+
+    if len(params) < num_params:
+        return b"", f"Not enough parameters for {command}: expected {num_params}, got {len(params)}"
+    if len(params) > num_params:
+        return b"", f"Too many parameters for {command}: expected {num_params}, got {len(params)}"
+
+    # Encode payload
+    payload, error = encode_command_payload(encoder, params)
+    if error:
+        return b"", error
+
+    # Build inner TLV (to chip)
+    inner = Link_Sync_Word
+    inner += struct.pack("<H", command_id)
+    inner += struct.pack("<I", len(payload))
+    inner += payload
+
+    # Build outer TLV (to MGMT, routing to chip)
+    outer = Link_Sync_Word
+    outer += struct.pack("<H", bypass_map[chip])
+    outer += struct.pack("<I", len(inner))
+    outer += inner
+
+    return bytes(outer), None
+
+
+def read_tlv_response(uart: serial.Serial, timeout: float = 2.0) -> tuple[int | None, bytes]:
+    """Read a TLV response from the device.
+
+    Scans for sync word, then reads type and payload.
+
+    Args:
+        uart: Serial port
+        timeout: Read timeout in seconds
+
+    Returns:
+        (response_type, payload) or (None, b"") on timeout/error.
+    """
+    import time
+
+    original_timeout = uart.timeout
+    uart.timeout = timeout
+    start = time.time()
+
+    try:
+        # Scan for sync word
+        sync_buffer = b""
+        while time.time() - start < timeout:
+            byte = uart.read(1)
+            if not byte:
+                continue
+            sync_buffer += byte
+            if len(sync_buffer) > 4:
+                sync_buffer = sync_buffer[-4:]
+            if sync_buffer == Link_Sync_Word:
+                break
+        else:
+            return None, b""
+
+        # Read header: type (2 bytes) + length (4 bytes)
+        header = uart.read(6)
+        if len(header) < 6:
+            return None, b""
+
+        msg_type, msg_len = struct.unpack("<HI", header)
+
+        # Read payload
+        payload = b""
+        if msg_len > 0:
+            payload = uart.read(msg_len)
+
+        return msg_type, payload
+    finally:
+        uart.timeout = original_timeout
+
 
 def hactar_send_command(uart: serial.Serial, command: bytes, max_attempts: int = 5):
     uart.write(command)

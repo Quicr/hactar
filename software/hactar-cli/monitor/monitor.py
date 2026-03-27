@@ -18,8 +18,9 @@ import serial
 import struct
 from hactar_commands import (bypass_map, command_map, hactar_command_completer,
                              hactar_command_print_matches, net_command_map,
-                             ui_command_map, encode_command_payload, Link_Sync_Word,
-                             Response_Ack, Response_Nack, Response_Data)
+                             ui_command_map, build_chip_command, Link_Sync_Word,
+                             Response_Ack, Response_Error, is_data_response,
+                             NET_RESPONSE_NAMES)
 from hactar_scanning import HactarScanning, ResetDevice, SelectHactarPort
 
 
@@ -94,16 +95,17 @@ class Monitor:
         # Format response based on type
         if msg_type == Response_Ack:
             return "\033[92m[ACK]\033[0m\n"
-        elif msg_type == Response_Nack:
-            return "\033[91m[NACK]\033[0m\n"
-        elif msg_type == Response_Data:
+        elif msg_type == Response_Error:
+            return "\033[91m[ERROR]\033[0m\n"
+        elif is_data_response(msg_type):
+            type_name = NET_RESPONSE_NAMES.get(msg_type, f"0x{msg_type:04x}")
             # Small payloads (1-2 bytes) are likely numeric, show as hex
             if len(payload) <= 2:
-                return f"\033[94m[DATA]\033[0m {payload.hex()}\n"
+                return f"\033[94m[{type_name}]\033[0m {payload.hex()}\n"
             try:
-                return f"\033[94m[DATA]\033[0m {payload.decode('utf-8')}\n"
+                return f"\033[94m[{type_name}]\033[0m {payload.decode('utf-8')}\n"
             except Exception:
-                return f"\033[94m[DATA]\033[0m {payload.hex()}\n"
+                return f"\033[94m[{type_name}]\033[0m {payload.hex()}\n"
         else:
             return f"[TLV type=0x{msg_type:04x} len={msg_len}] {payload.hex()}\n"
 
@@ -151,66 +153,16 @@ class Monitor:
             print("[ERROR] Not enough parameters to determine sub command")
             return
 
-        to_whom = split[0].lower()
+        chip = split[0].lower()
         command = split[1].lower()
+        params = split[2:]
 
-        if to_whom == "ui":
-            chip_commands = ui_command_map
-        else:
-            chip_commands = net_command_map
-
-        if not (command in chip_commands):
-            print(f"[ERROR] subcommand {command} is unknown")
-            return
-
-        num_params = chip_commands[command]["num_params"]
-        command_id = chip_commands[command]["id"]
-        encoder = chip_commands[command].get("encoder", None)
-
-        if len(split) - 2 < num_params:
-            print(
-                f"[ERROR] Not enough parameters for command{command} expected {num_params} got {len(split)-2}"
-            )
-            return
-
-        if len(split) - 2 > num_params:
-            print(
-                f"[ERROR] Too many parameters for command {command} expected {num_params} got {len(split)-2}"
-            )
-            return
-
-        # Encode the payload using shared function
-        payload, error = encode_command_payload(encoder, split[2:])
+        packet, error = build_chip_command(chip, command, params)
         if error:
             print(f"[ERROR] {error}")
             return
 
-        Header_Bytes = 6 + len(Link_Sync_Word)  # 2 type, 4 length
-        to_whom_len = Header_Bytes + len(payload)
-        command_len = len(payload)
-
-        data = []
-        # Sync word 
-        data += Link_Sync_Word;
-       
-        # MGMT - T
-        data += bypass_map[to_whom].to_bytes(2, byteorder="little")
-
-        # MGMT - L
-        data += to_whom_len.to_bytes(4, byteorder="little")
-
-        # MGMT - V and also UI/NET - STLV
-        data += Link_Sync_Word
-        data += command_id.to_bytes(2, byteorder="little")
-
-        # UI/NET - L
-        data += command_len.to_bytes(4, byteorder="little")
-
-        # UI/NET - V (payload)
-        data += payload
-
-        # transmit the TLV
-        self.uart.write(bytes(data))
+        self.uart.write(packet)
 
     def Close(self):
         self.running = False
