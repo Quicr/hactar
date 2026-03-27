@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 enum Configuration
 {
     Version = 0,
@@ -9,23 +11,30 @@ enum Configuration
     Clear_Wifi = 4, // Clears all saved WiFi credentials
     Set_Relay_Url = 5,
     Get_Relay_Url = 6,
-    Toggle_Logs = 7,
-    Disable_Logs = 8,
-    Enable_Logs = 9,
-    Disable_Loopback = 10,
-    Enable_Loopback = 11,
-    Set_Language = 12,
-    Get_Language = 13,
-    Set_Channel = 14,
-    Get_Channel = 15,
-    Set_AI = 16,
-    Get_AI = 17,
-    Burn_Disable_USB_JTag_Efuse = 18,
+    Get_Loopback = 7,
+    Set_Loopback = 8, // NetLoopbackMode value
+    Get_Logs_Enabled = 9,
+    Set_Logs_Enabled = 10, // 0=disabled, 1=enabled
+    Set_Language = 11,
+    Get_Language = 12,
+    Set_Channel = 13,
+    Get_Channel = 14,
+    Set_AI = 15,
+    Get_AI = 16,
+    Burn_Disable_USB_JTag_Efuse = 17,
 
     // Response types (high values to distinguish from commands)
     Response_Ack = 0x8000,
     Response_Nack = 0x8001,
     Response_Data = 0x8002,
+};
+
+// Loopback modes for NET chip (matches Rust NetLoopbackMode)
+enum struct NetLoopbackMode : uint8_t
+{
+    Off = 0, // Normal operation - audio to MoQ, filter self-echo
+    Raw = 1, // Local bypass - audio directly back to UI (no MoQ)
+    Moq = 2, // MoQ loopback - audio to MoQ, DON'T filter self-echo
 };
 
 // Supported language tags for Set_Language validation
