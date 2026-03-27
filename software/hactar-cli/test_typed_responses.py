@@ -7,7 +7,6 @@ response types match the expected typed response codes.
 """
 
 import argparse
-import struct
 import sys
 import time
 
@@ -18,72 +17,13 @@ sys.path.insert(0, "utility")
 sys.path.insert(0, "monitor")
 
 from hactar_commands import (
-    bypass_map, net_command_map, ui_command_map, Link_Sync_Word,
+    build_chip_command, read_tlv_response,
     Response_Ack, Response_Error, Response_WifiSsids, Response_RelayUrl,
     Response_Loopback, Response_LogsEnabled, Response_Language,
     Response_Channel, Response_AiConfig, Response_SframeKey, Response_StackInfo,
     RESPONSE_TYPE_NAMES, is_data_response
 )
 from hactar_scanning import ResetDevice
-
-
-def build_command(chip: str, command: str, payload: bytes = b"") -> bytes:
-    """Build a TLV command packet for NET or UI chip."""
-    chip_commands = net_command_map if chip == "net" else ui_command_map
-    command_id = chip_commands[command]["id"]
-
-    # Inner TLV (to chip)
-    inner = Link_Sync_Word
-    inner += command_id.to_bytes(2, byteorder="little")
-    inner += len(payload).to_bytes(4, byteorder="little")
-    inner += payload
-
-    # Outer TLV (to MGMT, routing to chip)
-    outer = Link_Sync_Word
-    outer += bypass_map[chip].to_bytes(2, byteorder="little")
-    outer += len(inner).to_bytes(4, byteorder="little")
-    outer += inner
-
-    return bytes(outer)
-
-
-def read_tlv_response(uart: serial.Serial, timeout: float = 2.0) -> tuple[int, bytes]:
-    """
-    Read a TLV response from the device.
-
-    Returns (response_type, payload) or (None, None) on timeout/error.
-    Skips any log data before the sync word.
-    """
-    uart.timeout = timeout
-    start = time.time()
-
-    # Scan for sync word
-    sync_buffer = b""
-    while time.time() - start < timeout:
-        byte = uart.read(1)
-        if not byte:
-            continue
-        sync_buffer += byte
-        if len(sync_buffer) > 4:
-            sync_buffer = sync_buffer[-4:]
-        if sync_buffer == Link_Sync_Word:
-            break
-    else:
-        return None, None
-
-    # Read header: type (2 bytes) + length (4 bytes)
-    header = uart.read(6)
-    if len(header) < 6:
-        return None, None
-
-    msg_type, msg_len = struct.unpack("<HI", header)
-
-    # Read payload
-    payload = b""
-    if msg_len > 0:
-        payload = uart.read(msg_len)
-
-    return msg_type, payload
 
 
 def run_test(uart: serial.Serial, chip: str, command: str, expected_type: int) -> bool:
@@ -99,7 +39,10 @@ def run_test(uart: serial.Serial, chip: str, command: str, expected_type: int) -
     uart.reset_input_buffer()
 
     # Send command
-    cmd = build_command(chip, command)
+    cmd, error = build_chip_command(chip, command)
+    if error:
+        print(f"\033[91mBUILD ERROR: {error}\033[0m")
+        return False
     uart.write(cmd)
 
     # Read response
@@ -186,7 +129,8 @@ def main():
         if cmd == "get_sframe_key":
             print(f"  ui {cmd} -> expecting {RESPONSE_TYPE_NAMES.get(expected)}...", end=" ", flush=True)
             uart.reset_input_buffer()
-            uart.write(build_command("ui", cmd))
+            packet, _ = build_chip_command("ui", cmd)
+            uart.write(packet)
             resp_type, payload = read_tlv_response(uart)
             if resp_type == expected:
                 print(f"\033[92mPASS\033[0m [SFRAME_KEY] {payload.hex()}")

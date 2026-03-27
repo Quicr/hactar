@@ -191,6 +191,106 @@ def is_data_response(response_type: int) -> bool:
     """Check if response type carries data payload (anything except Ack/Error)."""
     return response_type >= 0x8002
 
+
+def build_chip_command(chip: str, command: str, params: list[str] = None) -> tuple[bytes, str | None]:
+    """Build a TLV command packet for NET or UI chip.
+
+    Args:
+        chip: "net" or "ui"
+        command: Command name (e.g., "get_wifi", "get_loopback")
+        params: Optional list of string parameters
+
+    Returns:
+        (packet_bytes, error_message). If error_message is not None, building failed.
+    """
+    if params is None:
+        params = []
+
+    chip_commands = net_command_map if chip == "net" else ui_command_map
+
+    if command not in chip_commands:
+        return b"", f"Unknown command '{command}' for {chip}"
+
+    cmd_info = chip_commands[command]
+    command_id = cmd_info["id"]
+    num_params = cmd_info["num_params"]
+    encoder = cmd_info.get("encoder")
+
+    if len(params) < num_params:
+        return b"", f"Not enough parameters for {command}: expected {num_params}, got {len(params)}"
+    if len(params) > num_params:
+        return b"", f"Too many parameters for {command}: expected {num_params}, got {len(params)}"
+
+    # Encode payload
+    payload, error = encode_command_payload(encoder, params)
+    if error:
+        return b"", error
+
+    # Build inner TLV (to chip)
+    inner = Link_Sync_Word
+    inner += struct.pack("<H", command_id)
+    inner += struct.pack("<I", len(payload))
+    inner += payload
+
+    # Build outer TLV (to MGMT, routing to chip)
+    outer = Link_Sync_Word
+    outer += struct.pack("<H", bypass_map[chip])
+    outer += struct.pack("<I", len(inner))
+    outer += inner
+
+    return bytes(outer), None
+
+
+def read_tlv_response(uart: serial.Serial, timeout: float = 2.0) -> tuple[int | None, bytes]:
+    """Read a TLV response from the device.
+
+    Scans for sync word, then reads type and payload.
+
+    Args:
+        uart: Serial port
+        timeout: Read timeout in seconds
+
+    Returns:
+        (response_type, payload) or (None, b"") on timeout/error.
+    """
+    import time
+
+    original_timeout = uart.timeout
+    uart.timeout = timeout
+    start = time.time()
+
+    try:
+        # Scan for sync word
+        sync_buffer = b""
+        while time.time() - start < timeout:
+            byte = uart.read(1)
+            if not byte:
+                continue
+            sync_buffer += byte
+            if len(sync_buffer) > 4:
+                sync_buffer = sync_buffer[-4:]
+            if sync_buffer == Link_Sync_Word:
+                break
+        else:
+            return None, b""
+
+        # Read header: type (2 bytes) + length (4 bytes)
+        header = uart.read(6)
+        if len(header) < 6:
+            return None, b""
+
+        msg_type, msg_len = struct.unpack("<HI", header)
+
+        # Read payload
+        payload = b""
+        if msg_len > 0:
+            payload = uart.read(msg_len)
+
+        return msg_type, payload
+    finally:
+        uart.timeout = original_timeout
+
+
 def hactar_send_command(uart: serial.Serial, command: bytes, max_attempts: int = 5):
     uart.write(command)
 
