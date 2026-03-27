@@ -19,7 +19,8 @@ import struct
 from hactar_commands import (bypass_map, command_map, hactar_command_completer,
                              hactar_command_print_matches, net_command_map,
                              ui_command_map, encode_command_payload, Link_Sync_Word,
-                             Response_Ack, Response_Nack, Response_Data)
+                             Response_Ack, Response_Error, is_data_response,
+                             RESPONSE_TYPE_NAMES)
 from hactar_scanning import HactarScanning, ResetDevice, SelectHactarPort
 
 
@@ -94,16 +95,17 @@ class Monitor:
         # Format response based on type
         if msg_type == Response_Ack:
             return "\033[92m[ACK]\033[0m\n"
-        elif msg_type == Response_Nack:
-            return "\033[91m[NACK]\033[0m\n"
-        elif msg_type == Response_Data:
+        elif msg_type == Response_Error:
+            return "\033[91m[ERROR]\033[0m\n"
+        elif is_data_response(msg_type):
+            type_name = RESPONSE_TYPE_NAMES.get(msg_type, f"0x{msg_type:04x}")
             # Small payloads (1-2 bytes) are likely numeric, show as hex
             if len(payload) <= 2:
-                return f"\033[94m[DATA]\033[0m {payload.hex()}\n"
+                return f"\033[94m[{type_name}]\033[0m {payload.hex()}\n"
             try:
-                return f"\033[94m[DATA]\033[0m {payload.decode('utf-8')}\n"
+                return f"\033[94m[{type_name}]\033[0m {payload.decode('utf-8')}\n"
             except Exception:
-                return f"\033[94m[DATA]\033[0m {payload.hex()}\n"
+                return f"\033[94m[{type_name}]\033[0m {payload.hex()}\n"
         else:
             return f"[TLV type=0x{msg_type:04x} len={msg_len}] {payload.hex()}\n"
 

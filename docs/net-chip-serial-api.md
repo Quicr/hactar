@@ -97,36 +97,34 @@ To send a command to the NET chip, construct a nested TLV:
 +--------------------------------------------------+
 ```
 
-### Wire Format Example
-
-To send `disable_logs` (type 9, no payload) to NET:
-
-```
-Outer TLV:
-  4C 49 4E 4B        # Sync word "LINK"
-  12 00              # Type 18 (ToNet), little-endian
-  0A 00 00 00        # Length 10 (inner TLV size), little-endian
-
-Inner TLV:
-  4C 49 4E 4B        # Sync word "LINK"
-  09 00              # Type 9 (disable_logs), little-endian
-  00 00 00 00        # Length 0 (no payload), little-endian
-```
-
-Total: 20 bytes
-
 ---
 
 ## Response Format
 
-The NET chip responds with single-byte status codes:
+The NET chip responds with **TLV-formatted responses** using high type values:
 
-| Code | Name | Description |
+### Response Types
+
+| Type | Name | Description |
 |------|------|-------------|
-| `0x82` | ACK | Command succeeded |
-| `0x83` | NACK | Command failed |
+| `0x8000` | ACK | Command succeeded (no data) |
+| `0x8001` | ERROR | Command failed |
+| `0x8002` | WIFI_SSIDS | JSON array of WiFi credentials |
+| `0x8003` | RELAY_URL | UTF-8 URL string |
+| `0x8004` | LOOPBACK | 1 byte: loopback mode (0=Off, 1=Raw, 2=Moq) |
+| `0x8005` | LOGS_ENABLED | 1 byte: 0=disabled, 1=enabled |
+| `0x8006` | LANGUAGE | UTF-8 language tag (e.g., "en-US") |
+| `0x8007` | CHANNEL | JSON array of namespace parts |
+| `0x8008` | AI_CONFIG | JSON object with query/audio/cmd arrays |
 
-For commands that return data (e.g., `get_moq_url`), the data is sent as raw bytes after the command is processed. The host should read until timeout or a known delimiter.
+### Response TLV Format
+
+```
+[4 bytes: Sync Word "LINK"]
+[2 bytes: Response Type (little-endian)]
+[4 bytes: Payload Length (little-endian)]
+[N bytes: Payload (if any)]
+```
 
 ---
 
@@ -134,27 +132,30 @@ For commands that return data (e.g., `get_moq_url`), the data is sent as raw byt
 
 ### Command Summary
 
-| ID | Name | Parameters | Description |
-|----|------|------------|-------------|
-| 0 | Version | None | Get firmware version |
-| 1 | Clear_Storage | None | Clear all stored configuration |
-| 2 | Set_Ssid | ssid, password | Add WiFi credentials |
-| 3 | Get_Ssid_Names | None | Get stored SSID names |
-| 4 | Get_Ssid_Passwords | None | Get stored SSID passwords |
-| 5 | Clear_Ssids | None | Clear all stored WiFi credentials |
-| 6 | Set_Moq_Url | url | Set MOQ relay server URL |
-| 7 | Get_Moq_Url | None | Get current MOQ relay URL |
-| 8 | Toggle_Logs | None | Toggle debug logging |
-| 9 | Disable_Logs | None | Disable debug logging |
-| 10 | Enable_Logs | None | Enable debug logging |
-| 11 | Disable_Loopback | None | Disable audio loopback mode |
-| 12 | Enable_Loopback | None | Enable audio loopback mode |
-| 13 | Set_Frontline_Config | language, channel | Set language and channel |
-| 14 | Burn_Disable_USB_JTag_Efuse | None | Permanently disable USB JTAG |
+| ID | Name | Parameters | Response Type |
+|----|------|------------|---------------|
+| 0 | version | None | ACK + version string |
+| 1 | clear_storage | None | ACK/ERROR |
+| 2 | add_wifi | JSON: `{"ssid":"...","password":"..."}` | ACK/ERROR |
+| 3 | get_wifi | None | WIFI_SSIDS |
+| 4 | clear_wifi | None | ACK |
+| 5 | set_relay_url | UTF-8 URL | ACK |
+| 6 | get_relay_url | None | RELAY_URL |
+| 7 | get_loopback | None | LOOPBACK |
+| 8 | set_loopback | 1 byte: mode | ACK/ERROR |
+| 9 | get_logs_enabled | None | LOGS_ENABLED |
+| 10 | set_logs_enabled | 1 byte: 0/1 | ACK |
+| 11 | set_language | UTF-8 language tag | ACK/ERROR |
+| 12 | get_language | None | LANGUAGE |
+| 13 | set_channel | JSON array | ACK/ERROR |
+| 14 | get_channel | None | CHANNEL |
+| 15 | set_ai | JSON config | ACK/ERROR |
+| 16 | get_ai | None | AI_CONFIG |
+| 17 | burn_efuse | None | ACK/ERROR |
 
 ### Command Details
 
-#### 0 - Version
+#### 0 - version
 
 Get the firmware version.
 
@@ -163,298 +164,272 @@ Get the firmware version.
 
 ---
 
-#### 1 - Clear_Storage
+#### 1 - clear_storage
 
 Clear all stored configuration from NVS (non-volatile storage).
 
 - **Payload**: None
-- **Response**: ACK on success, NACK on failure
+- **Response**: ACK on success, ERROR on failure
 
 ---
 
-#### 2 - Set_Ssid
+#### 2 - add_wifi
 
-Add WiFi credentials to stored list. The device will attempt to connect.
+Add WiFi credentials. The device will attempt to connect.
 
-- **Parameters**: 2 (ssid_name, ssid_password)
-- **Payload Format**:
+- **Payload**: JSON object
+  ```json
+  {"ssid": "MyNetwork", "password": "secret123"}
   ```
-  [4 bytes: ssid_name_length (u32 LE)]
-  [N bytes: ssid_name (UTF-8)]
-  [4 bytes: ssid_password_length (u32 LE)]
-  [M bytes: ssid_password (UTF-8)]
-  ```
-- **Response**: ACK on success
+- **Response**: ACK on success, ERROR on invalid JSON or missing fields
 
 ---
 
-#### 3 - Get_Ssid_Names
+#### 3 - get_wifi
 
-Get list of stored WiFi SSID names.
+Get list of stored WiFi credentials.
 
 - **Payload**: None
-- **Response**: Newline-separated list of SSID names (UTF-8)
+- **Response**: WIFI_SSIDS - JSON array
+  ```json
+  [{"ssid": "Network1", "password": "pass1"}, {"ssid": "Network2", "password": "pass2"}]
+  ```
 
 ---
 
-#### 4 - Get_Ssid_Passwords
-
-Get list of stored WiFi passwords.
-
-- **Payload**: None
-- **Response**: Newline-separated list of passwords (UTF-8)
-
----
-
-#### 5 - Clear_Ssids
+#### 4 - clear_wifi
 
 Clear all stored WiFi credentials.
 
 - **Payload**: None
-- **Response**: ACK on success
+- **Response**: ACK
 
 ---
 
-#### 6 - Set_Moq_Url
+#### 5 - set_relay_url
 
 Set the MOQ relay server URL.
 
-- **Parameters**: 1 (url)
-- **Payload Format**:
-  ```
-  [N bytes: url (UTF-8)]
-  ```
-- **Response**: ACK on success
+- **Payload**: UTF-8 URL string (e.g., `moq://relay.example.com:33435`)
+- **Response**: ACK
 - **Note**: An empty URL clears the stored value
 
 ---
 
-#### 7 - Get_Moq_Url
+#### 6 - get_relay_url
 
 Get the current MOQ relay server URL.
 
 - **Payload**: None
-- **Response**: URL string (UTF-8)
+- **Response**: RELAY_URL - UTF-8 string
 
 ---
 
-#### 8 - Toggle_Logs
+#### 7 - get_loopback
 
-Toggle debug logging on/off.
+Get current loopback mode.
 
 - **Payload**: None
+- **Response**: LOOPBACK - 1 byte
+  - `0x00` = Off (normal operation)
+  - `0x01` = Raw (not supported)
+  - `0x02` = Moq (self-echo via relay)
+
+---
+
+#### 8 - set_loopback
+
+Set loopback mode.
+
+- **Payload**: 1 byte - NetLoopbackMode
+  - `0x00` = Off
+  - `0x02` = Moq
+- **Response**: ACK on success, ERROR if mode not supported
+- **Note**: Raw mode (0x01) is not supported on NET
+
+---
+
+#### 9 - get_logs_enabled
+
+Get debug logging state.
+
+- **Payload**: None
+- **Response**: LOGS_ENABLED - 1 byte
+  - `0x00` = disabled
+  - `0x01` = enabled
+
+---
+
+#### 10 - set_logs_enabled
+
+Enable or disable debug logging.
+
+- **Payload**: 1 byte
+  - `0x00` = disable
+  - `0x01` = enable
 - **Response**: ACK
 
 ---
 
-#### 9 - Disable_Logs
+#### 11 - set_language
 
-Disable all debug logging output.
+Set language preference for AI features.
 
-- **Payload**: None
-- **Response**: ACK
-
----
-
-#### 10 - Enable_Logs
-
-Enable debug logging output.
-
-- **Payload**: None
-- **Response**: ACK
+- **Payload**: UTF-8 language tag
+- **Supported**: `en-US`, `es-ES`, `de-DE`, `hi-IN`, `nb-NO`
+- **Response**: ACK on success, ERROR on invalid language
 
 ---
 
-#### 11 - Disable_Loopback
+#### 12 - get_language
 
-Disable audio loopback mode. Audio is sent to the MOQ relay.
+Get current language setting.
 
 - **Payload**: None
-- **Response**: ACK
+- **Response**: LANGUAGE - UTF-8 string (e.g., "en-US")
 
 ---
 
-#### 12 - Enable_Loopback
+#### 13 - set_channel
 
-Enable audio loopback mode. Audio is echoed locally without network transmission.
+Set the channel namespace configuration.
 
-- **Payload**: None
-- **Response**: ACK
-
----
-
-#### 13 - Set_Frontline_Config
-
-Set the language preference and default channel.
-
-- **Parameters**: 2 (language, channel)
-- **Payload Format**:
+- **Payload**: JSON array of namespace parts
+  ```json
+  ["relay.example.com", "org", "channel", "ptt"]
   ```
-  [4 bytes: language_length (u32 LE)]
-  [N bytes: language (UTF-8, e.g., "en-US")]
-  [4 bytes: channel_length (u32 LE)]
-  [M bytes: channel (UTF-8, e.g., "gardening")]
-  ```
-- **Response**: ACK on success
+- **Response**: ACK on success, ERROR on invalid JSON
 
 ---
 
-#### 14 - Burn_Disable_USB_JTag_Efuse
+#### 14 - get_channel
+
+Get current channel configuration.
+
+- **Payload**: None
+- **Response**: CHANNEL - JSON array
+
+---
+
+#### 15 - set_ai
+
+Set AI service configuration.
+
+- **Payload**: JSON object
+  ```json
+  {
+    "query": ["relay.example.com", "ai", "query"],
+    "audio": ["relay.example.com", "ai", "audio"],
+    "cmd": ["relay.example.com", "ai", "cmd"]
+  }
+  ```
+- **Response**: ACK on success, ERROR on invalid JSON
+
+---
+
+#### 16 - get_ai
+
+Get current AI configuration.
+
+- **Payload**: None
+- **Response**: AI_CONFIG - JSON object
+
+---
+
+#### 17 - burn_efuse
 
 **WARNING: This operation is IRREVERSIBLE.**
 
 Permanently disable USB JTAG debugging by burning an eFuse.
 
 - **Payload**: None
-- **Response**: ACK on success, NACK on failure
+- **Response**: ACK on success, ERROR on failure
 
 ---
 
 ## Payload Encoding
 
-### Single Parameter Commands
+### JSON Commands
 
-For commands with a single string parameter (e.g., `Set_Moq_Url`), the payload is the raw UTF-8 encoded string:
+Commands using JSON (add_wifi, set_channel, set_ai) send the JSON as raw UTF-8:
+
+```
+Payload: [UTF-8 JSON string bytes]
+```
+
+### Boolean/Enum Commands
+
+Commands with single-byte values (set_loopback, set_logs_enabled) send the raw byte:
+
+```
+Payload: [1 byte value]
+```
+
+### String Commands
+
+Commands with string values (set_relay_url, set_language) send raw UTF-8:
 
 ```
 Payload: [UTF-8 string bytes]
 ```
 
-### Multi-Parameter Commands
-
-For commands with multiple parameters (e.g., `Set_Ssid`, `Set_Frontline_Config`), each parameter is length-prefixed:
-
-```
-Payload:
-  [4 bytes: param1_length (u32 LE)]
-  [param1_length bytes: param1 (UTF-8)]
-  [4 bytes: param2_length (u32 LE)]
-  [param2_length bytes: param2 (UTF-8)]
-  ...
-```
-
-### Integer Encoding
-
-All integers are encoded as **little-endian**.
-
 ---
 
 ## Examples
 
-### Example 1: Disable Logs
+### Example 1: Get Logs Enabled
 
-Disable debug logging on the NET chip.
+Check if debug logging is enabled.
 
-**Command**: `disable_logs` (ID: 9, no payload)
+**Command**: `get_logs_enabled` (ID: 9, no payload)
 
 **Wire bytes** (hex):
 ```
 4C 49 4E 4B 12 00 0A 00 00 00 4C 49 4E 4B 09 00 00 00 00 00
 ```
 
-**Breakdown**:
+**Expected Response** (logs enabled):
 ```
-4C 49 4E 4B     # Outer sync "LINK"
-12 00           # Outer type 18 (ToNet)
-0A 00 00 00     # Outer length 10
-
-4C 49 4E 4B     # Inner sync "LINK"
-09 00           # Inner type 9 (disable_logs)
-00 00 00 00     # Inner length 0
+4C 49 4E 4B     # Sync "LINK"
+05 80           # Type 0x8005 (LOGS_ENABLED)
+01 00 00 00     # Length 1
+01              # Value: enabled
 ```
-
-**Expected Response**: `0x82` (ACK)
 
 ---
 
-### Example 2: Set MOQ URL
+### Example 2: Add WiFi
 
-Set the MOQ relay URL to `moq://relay.example.com:33435`.
+Add WiFi credentials.
 
-**Command**: `set_moq_url` (ID: 6)
-**Payload**: `moq://relay.example.com:33435` (30 bytes)
+**Command**: `add_wifi` (ID: 2)
+**Payload**: `{"ssid":"MyNetwork","password":"secret123"}` (42 bytes)
 
-**Wire bytes** (hex):
-```
-4C 49 4E 4B                         # Outer sync "LINK"
-12 00                               # Outer type 18 (ToNet)
-28 00 00 00                         # Outer length 40 (10 + 30)
-
-4C 49 4E 4B                         # Inner sync "LINK"
-06 00                               # Inner type 6 (set_moq_url)
-1E 00 00 00                         # Inner length 30
-
-6D 6F 71 3A 2F 2F 72 65 6C 61 79    # "moq://relay"
-2E 65 78 61 6D 70 6C 65 2E 63 6F    # ".example.co"
-6D 3A 33 33 34 33 35                # "m:33435"
-```
-
-**Expected Response**: `0x82` (ACK)
+**Expected Response**: ACK (type 0x8000, length 0)
 
 ---
 
-### Example 3: Set WiFi Credentials
+### Example 3: Get WiFi
 
-Add WiFi credentials: SSID = "MyNetwork", Password = "secret123".
+Retrieve stored WiFi credentials.
 
-**Command**: `set_ssid` (ID: 2)
-**Parameters**:
-- ssid_name: "MyNetwork" (9 bytes)
-- ssid_password: "secret123" (9 bytes)
+**Command**: `get_wifi` (ID: 3, no payload)
 
-**Payload**:
+**Expected Response** (type 0x8002 WIFI_SSIDS):
+```json
+[{"ssid":"MyNetwork","password":"secret123"}]
 ```
-09 00 00 00                         # ssid_name_length = 9
-4D 79 4E 65 74 77 6F 72 6B          # "MyNetwork"
-09 00 00 00                         # ssid_password_length = 9
-73 65 63 72 65 74 31 32 33          # "secret123"
-```
-
-**Total payload**: 26 bytes
-
-**Wire bytes** (hex):
-```
-4C 49 4E 4B                         # Outer sync "LINK"
-12 00                               # Outer type 18 (ToNet)
-24 00 00 00                         # Outer length 36 (10 + 26)
-
-4C 49 4E 4B                         # Inner sync "LINK"
-02 00                               # Inner type 2 (set_ssid)
-1A 00 00 00                         # Inner length 26
-
-09 00 00 00                         # ssid_name_length
-4D 79 4E 65 74 77 6F 72 6B          # "MyNetwork"
-09 00 00 00                         # ssid_password_length
-73 65 63 72 65 74 31 32 33          # "secret123"
-```
-
-**Expected Response**: `0x82` (ACK)
-
----
-
-### Example 4: Get MOQ URL
-
-Retrieve the currently configured MOQ URL.
-
-**Command**: `get_moq_url` (ID: 7, no payload)
-
-**Wire bytes** (hex):
-```
-4C 49 4E 4B 12 00 0A 00 00 00 4C 49 4E 4B 07 00 00 00 00 00
-```
-
-**Expected Response**: Raw UTF-8 string of the URL (no framing)
 
 ---
 
 ## Implementation Notes
 
-1. **Sync Word Scanning**: Receivers should scan for the sync word to recover framing after unexpected data (e.g., boot messages).
+1. **Typed Responses**: All data responses use specific type codes for self-describing payloads.
 
-2. **Timeout Handling**: Use a read timeout (e.g., 100ms) when waiting for responses. Retry if no response is received.
+2. **Sync Word Scanning**: Receivers should scan for the sync word to recover framing after unexpected data.
 
-3. **Logging Interference**: Debug logs from the NET chip may be interleaved with responses. Consider disabling logs before sending configuration commands.
+3. **Timeout Handling**: Use a read timeout (e.g., 100ms) when waiting for responses.
 
-4. **Connection Order**: The MGMT chip must be programmed and running before commands can be routed to the NET chip.
+4. **Logging Interference**: Debug logs may be interleaved with responses. Consider disabling logs during configuration.
 
 5. **Endianness**: All multi-byte integers use **little-endian** encoding.

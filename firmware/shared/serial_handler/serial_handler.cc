@@ -255,30 +255,12 @@ void SerialHandler::ReplyAck()
     Write(packet);
 }
 
-void SerialHandler::ReplyNack()
+void SerialHandler::ReplyError()
 {
     link_packet_t packet;
-    packet.type = Response_Nack;
+    packet.type = Response_Error;
     packet.length = 0;
     Write(packet);
-}
-
-void SerialHandler::ReplyData(std::span<const uint8_t> data)
-{
-    link_packet_t packet;
-    packet.type = Response_Data;
-    packet.length = data.size();
-    if (!data.empty())
-    {
-        std::memcpy(packet.payload.data(), data.data(),
-                    std::min(data.size(), packet.payload.size()));
-    }
-    Write(packet);
-}
-
-void SerialHandler::ReplyData(const std::string& data)
-{
-    ReplyData(std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(data.data()), data.size()));
 }
 
 void SerialHandler::Reply(uint16_t type)

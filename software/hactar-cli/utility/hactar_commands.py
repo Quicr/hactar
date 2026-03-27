@@ -154,43 +154,42 @@ Reply_Ready = 0x81
 Reply_Ack = bytes([0x82])
 Reply_Nack = bytes([0x83])
 
-# TLV Response types (matching net_mgmt_link.h)
+# TLV Response types (matching net_mgmt_link.h / ui_mgmt_link.h)
 Response_Ack = 0x8000
-Response_Nack = 0x8001
-Response_Data = 0x8002  # Deprecated: use typed responses
+Response_Error = 0x8001
 
-# Typed responses (self-describing payloads)
-Response_Ssid_Names = 0x8003
-Response_Ssid_Passwords = 0x8004
-Response_Moq_Url = 0x8005
-Response_Language = 0x8006
-Response_Channel = 0x8007
-Response_AI_Config = 0x8008
+# NET typed responses (matching Link's NetToCtl)
+Response_WifiSsids = 0x8002    # JSON array: [{"ssid":"...","password":"..."},...]
+Response_RelayUrl = 0x8003    # UTF-8 URL string
+Response_Loopback = 0x8004    # 1 byte: loopback mode enum
+Response_LogsEnabled = 0x8005  # 1 byte: 0=disabled, 1=enabled
+Response_Language = 0x8006    # UTF-8 language tag (e.g. "en-US")
+Response_Channel = 0x8007     # JSON array of namespace parts
+Response_AiConfig = 0x8008    # JSON: {"query":[...],"audio":[...],"cmd":[...]}
+
+# UI typed responses (matching Link's UiToCtl)
+Response_SframeKey = 0x8002   # 16 bytes: SFrame encryption key (UI uses same slot as NET's WifiSsids)
+Response_StackInfo = 0x8005   # JSON: {"stack_base":...,"stack_top":...,"stack_size":...,"stack_used":...}
+# Note: UI's Response_Loopback (0x8003), Response_LogsEnabled (0x8004) overlap with NET
 
 # Map response types to human-readable names
 RESPONSE_TYPE_NAMES = {
     Response_Ack: "ACK",
-    Response_Nack: "NACK",
-    Response_Data: "DATA",
-    Response_Ssid_Names: "SSID_NAMES",
-    Response_Ssid_Passwords: "SSID_PASSWORDS",
-    Response_Moq_Url: "MOQ_URL",
+    Response_Error: "ERROR",
+    Response_WifiSsids: "WIFI",
+    Response_RelayUrl: "RELAY_URL",
+    Response_Loopback: "LOOPBACK",
+    Response_LogsEnabled: "LOGS_ENABLED",
     Response_Language: "LANGUAGE",
     Response_Channel: "CHANNEL",
-    Response_AI_Config: "AI_CONFIG",
+    Response_AiConfig: "AI_CONFIG",
+    Response_SframeKey: "SFRAME_KEY",
+    Response_StackInfo: "STACK_INFO",
 }
 
 def is_data_response(response_type: int) -> bool:
-    """Check if response type carries data payload."""
-    return response_type in (
-        Response_Data,
-        Response_Ssid_Names,
-        Response_Ssid_Passwords,
-        Response_Moq_Url,
-        Response_Language,
-        Response_Channel,
-        Response_AI_Config,
-    )
+    """Check if response type carries data payload (anything except Ack/Error)."""
+    return response_type >= 0x8002
 
 def hactar_send_command(uart: serial.Serial, command: bytes, max_attempts: int = 5):
     uart.write(command)
