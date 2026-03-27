@@ -23,7 +23,7 @@ from hactar_commands import (
     Response_Ack, Response_Error, Response_WifiSsids, Response_RelayUrl,
     Response_Loopback, Response_LogsEnabled, Response_Language,
     Response_Channel, Response_AiConfig, Response_SframeKey, Response_StackInfo,
-    RESPONSE_TYPE_NAMES, is_data_response
+    NET_RESPONSE_NAMES, UI_RESPONSE_NAMES, is_data_response
 )
 from hactar_scanning import ResetDevice
 
@@ -34,7 +34,8 @@ def run_test(uart: serial.Serial, chip: str, command: str, expected_type: int) -
 
     Returns True if response type matches expected, False otherwise.
     """
-    type_name = RESPONSE_TYPE_NAMES.get(expected_type, f"0x{expected_type:04x}")
+    response_names = NET_RESPONSE_NAMES if chip == "net" else UI_RESPONSE_NAMES
+    type_name = response_names.get(expected_type, f"0x{expected_type:04x}")
     print(f"  {chip} {command} -> expecting {type_name}...", end=" ", flush=True)
 
     # Flush any pending data
@@ -54,7 +55,7 @@ def run_test(uart: serial.Serial, chip: str, command: str, expected_type: int) -
         print("\033[91mTIMEOUT\033[0m")
         return False
 
-    actual_name = RESPONSE_TYPE_NAMES.get(resp_type, f"0x{resp_type:04x}")
+    actual_name = response_names.get(resp_type, f"0x{resp_type:04x}")
 
     if resp_type == expected_type:
         # Show payload summary for data responses
@@ -129,7 +130,7 @@ def main():
     for cmd, expected in ui_tests:
         # get_sframe_key may return ERROR if no key is set - that's OK
         if cmd == "get_sframe_key":
-            print(f"  ui {cmd} -> expecting {RESPONSE_TYPE_NAMES.get(expected)}...", end=" ", flush=True)
+            print(f"  ui {cmd} -> expecting {UI_RESPONSE_NAMES.get(expected)}...", end=" ", flush=True)
             uart.reset_input_buffer()
             packet, _ = build_chip_command("ui", cmd)
             uart.write(packet)

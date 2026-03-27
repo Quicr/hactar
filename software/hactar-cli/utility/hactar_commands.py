@@ -172,18 +172,28 @@ Response_SframeKey = 0x8002   # 16 bytes: SFrame encryption key (UI uses same sl
 Response_StackInfo = 0x8005   # JSON: {"stack_base":...,"stack_top":...,"stack_size":...,"stack_used":...}
 # Note: UI's Response_Loopback (0x8003), Response_LogsEnabled (0x8004) overlap with NET
 
-# Map response types to human-readable names
+# Map response types to human-readable names (shared codes)
 RESPONSE_TYPE_NAMES = {
     Response_Ack: "ACK",
     Response_Error: "ERROR",
-    Response_WifiSsids: "WIFI",
-    Response_RelayUrl: "RELAY_URL",
     Response_Loopback: "LOOPBACK",
-    Response_LogsEnabled: "LOGS_ENABLED",
     Response_Language: "LANGUAGE",
     Response_Channel: "CHANNEL",
     Response_AiConfig: "AI_CONFIG",
+}
+
+# Chip-specific response names (for codes that overlap between NET and UI)
+NET_RESPONSE_NAMES = {
+    **RESPONSE_TYPE_NAMES,
+    Response_WifiSsids: "WIFI",
+    Response_RelayUrl: "RELAY_URL",
+    Response_LogsEnabled: "LOGS_ENABLED",
+}
+
+UI_RESPONSE_NAMES = {
+    **RESPONSE_TYPE_NAMES,
     Response_SframeKey: "SFRAME_KEY",
+    Response_LogsEnabled: "LOGS_ENABLED",
     Response_StackInfo: "STACK_INFO",
 }
 
