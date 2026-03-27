@@ -7,14 +7,16 @@ response types match the expected typed response codes.
 """
 
 import argparse
+import os
 import sys
 import time
 
-import serial
+# Add directories to path (same as main.py)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "utility"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "monitor"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "vendor"))
 
-# Add utility directory to path
-sys.path.insert(0, "utility")
-sys.path.insert(0, "monitor")
+import serial
 
 from hactar_commands import (
     build_chip_command, read_tlv_response,
