@@ -28,15 +28,15 @@ public:
     static constexpr uint32_t Version_Size = 1;
     static constexpr uint32_t Sframe_Key_Size = 16;
 
+    // Each config stores: [1 byte length][N bytes data]
     static constexpr uint32_t Version_Address = 0;
-
-    static constexpr uint32_t Sframe_Key_Address = Version_Address + Version_Size;
+    static constexpr uint32_t Sframe_Key_Address = Version_Address + 1 + Version_Size;
 
     static constexpr uint32_t Largest_Size = std::max({Version_Size, Sframe_Key_Size});
 
     static constexpr uint32_t Config_Len_Size = 1;
     static constexpr uint32_t Total_Usage =
-        Version_Size + Sframe_Key_Size + ((uint32_t)Config_Id::NumConfig - 1) * Config_Len_Size;
+        (Config_Len_Size + Version_Size) + (Config_Len_Size + Sframe_Key_Size);
     static_assert(Total_Usage < 256);
 
     static constexpr uint8_t sizes[(size_t)Config_Id::NumConfig] = {
@@ -118,10 +118,9 @@ public:
             return false;
         }
 
-        // Get the address
         uint8_t address = addresses[static_cast<size_t>(config)];
-
-        eeprom.Write(address, data, size);
+        eeprom.WriteByte(address, static_cast<uint8_t>(size));
+        eeprom.Write(address + 1, data, size);
 
         return true;
     }

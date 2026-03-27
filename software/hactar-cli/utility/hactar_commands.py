@@ -38,40 +38,50 @@ bypass_map = {
 }
 
 ui_command_map = {
-    "version": {"id": 0, "num_params": 0},
+    "ping": {"id": 0, "num_params": 0},  # Replaces version stub - echoes payload
     "clear_config": {"id": 1, "num_params": 0},
-    "set_sframe": {"id": 2, "num_params": 1},
-    "get_sframe": {"id": 3, "num_params": 0},
+    "set_sframe_key": {"id": 2, "num_params": 1, "encoder": "hex"},
+    "get_sframe_key": {"id": 3, "num_params": 0},
     "toggle_logs": {"id": 4, "num_params": 0},
     "disable_logs": {"id": 5, "num_params": 0},
     "enable_logs": {"id": 6, "num_params": 0},
+    "get_stack_info": {"id": 7, "num_params": 0},
+    "repaint_stack": {"id": 8, "num_params": 0},
+    "get_loopback": {"id": 9, "num_params": 0},
+    "set_loopback": {"id": 10, "num_params": 1, "encoder": "ui_loopback"},  # off/raw/alaw/sframe
+    "get_logs_enabled": {"id": 11, "num_params": 0},
+    "set_logs_enabled": {"id": 12, "num_params": 1, "encoder": "bool"},  # 0=disabled, 1=enabled
 }
 
 net_command_map = {
     "version": {"id": 0, "num_params": 0},
     "clear_storage": {"id": 1, "num_params": 0},
-    "set_ssid": {"id": 2, "num_params": 2},
-    "get_ssid_names": {"id": 3, "num_params": 0},
-    "get_ssid_passwords": {"id": 4, "num_params": 0},
-    "clear_ssids": {"id": 5, "num_params": 0},
-    "set_moq_url": {"id": 6, "num_params": 1},
-    "get_moq_url": {"id": 7, "num_params": 0},
-    "toggle_logs": {"id": 8, "num_params": 0},
-    "disable_logs": {"id": 9, "num_params": 0},
-    "enable_logs": {"id": 10, "num_params": 0},
-    "disable_loopback": {"id": 11, "num_params": 0},
-    "enable_loopback": {"id": 12, "num_params": 0},
-    "set_language": {"id": 13, "num_params": 1, "encoder": "language"},
-    "get_language": {"id": 14, "num_params": 0},
-    "set_channel": {"id": 15, "num_params": 1, "encoder": "json"},
-    "get_channel": {"id": 16, "num_params": 0},
-    "set_ai": {"id": 17, "num_params": 1, "encoder": "json"},
-    "get_ai": {"id": 18, "num_params": 0},
-    "burn_efuse": {"id": 19, "num_params": 0},
+    "add_wifi": {"id": 2, "num_params": 1, "encoder": "json"},  # JSON: {"ssid":"...","password":"..."}
+    "get_wifi": {"id": 3, "num_params": 0},  # Returns JSON array
+    "clear_wifi": {"id": 4, "num_params": 0},
+    "set_relay_url": {"id": 5, "num_params": 1},
+    "get_relay_url": {"id": 6, "num_params": 0},
+    "get_loopback": {"id": 7, "num_params": 0},
+    "set_loopback": {"id": 8, "num_params": 1, "encoder": "loopback"},  # off/raw/moq
+    "get_logs_enabled": {"id": 9, "num_params": 0},
+    "set_logs_enabled": {"id": 10, "num_params": 1, "encoder": "bool"},  # 0=disabled, 1=enabled
+    "set_language": {"id": 11, "num_params": 1, "encoder": "language"},
+    "get_language": {"id": 12, "num_params": 0},
+    "set_channel": {"id": 13, "num_params": 1, "encoder": "json"},
+    "get_channel": {"id": 14, "num_params": 0},
+    "set_ai": {"id": 15, "num_params": 1, "encoder": "json"},
+    "get_ai": {"id": 16, "num_params": 0},
+    "burn_efuse": {"id": 17, "num_params": 0},
 }
 
 # Supported language tags
 SUPPORTED_LANGUAGES = ["en-US", "es-ES", "de-DE", "hi-IN", "nb-NO"]
+
+# NET loopback modes (matches NetLoopbackMode enum)
+NET_LOOPBACK_MODES = {"off": 0, "raw": 1, "moq": 2}
+
+# UI loopback modes (matches UiLoopbackMode enum)
+UI_LOOPBACK_MODES = {"off": 0, "raw": 1, "alaw": 2, "sframe": 3}
 
 def is_valid_language(lang: str) -> bool:
     return lang in SUPPORTED_LANGUAGES
@@ -97,6 +107,37 @@ def encode_command_payload(encoder: str | None, params: list[str]) -> tuple[byte
             return params[0].encode("utf-8"), None
         except json.JSONDecodeError as e:
             return bytes(), f"Invalid JSON: {e}"
+
+    elif encoder == "hex":
+        # Decode hex string to bytes
+        try:
+            return bytes.fromhex(params[0]), None
+        except ValueError as e:
+            return bytes(), f"Invalid hex: {e}"
+
+    elif encoder == "loopback":
+        # NET loopback mode: off/raw/moq -> 0/1/2
+        mode = params[0].lower()
+        if mode not in NET_LOOPBACK_MODES:
+            return bytes(), f"Invalid loopback mode '{mode}'. Use: off, raw, moq"
+        return bytes([NET_LOOPBACK_MODES[mode]]), None
+
+    elif encoder == "ui_loopback":
+        # UI loopback mode: off/raw/alaw/sframe -> 0/1/2/3
+        mode = params[0].lower()
+        if mode not in UI_LOOPBACK_MODES:
+            return bytes(), f"Invalid loopback mode '{mode}'. Use: off, raw, alaw, sframe"
+        return bytes([UI_LOOPBACK_MODES[mode]]), None
+
+    elif encoder == "bool":
+        # Boolean: 0/1/false/true -> 0x00/0x01
+        val = params[0].lower()
+        if val in ("0", "false", "off", "no"):
+            return bytes([0]), None
+        elif val in ("1", "true", "on", "yes"):
+            return bytes([1]), None
+        else:
+            return bytes(), f"Invalid boolean '{val}'. Use: 0, 1, true, false"
 
     else:
         # Default encoding: length-prefixed strings if multiple params

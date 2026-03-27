@@ -97,6 +97,9 @@ class Monitor:
         elif msg_type == Response_Nack:
             return "\033[91m[NACK]\033[0m\n"
         elif msg_type == Response_Data:
+            # Small payloads (1-2 bytes) are likely numeric, show as hex
+            if len(payload) <= 2:
+                return f"\033[94m[DATA]\033[0m {payload.hex()}\n"
             try:
                 return f"\033[94m[DATA]\033[0m {payload.decode('utf-8')}\n"
             except Exception:

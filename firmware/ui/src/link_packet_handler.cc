@@ -3,8 +3,11 @@
 #include "audio_codec.hh"
 #include "keyboard_display.hh"
 #include "logger.hh"
+#include "stack_debug.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
+#include <cstdio>
+#include <span>
 
 static void HandleMedia(link_packet_t* packet, AudioChip& audio)
 {
@@ -113,9 +116,17 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
 
         switch (packet->type)
         {
-        case Configuration::Version:
+        case Configuration::Ping:
         {
-            UI_LOG_INFO("VERSION TODO");
+            // Echo the payload back (pong)
+            if (packet->length > 0)
+            {
+                serial.Write(packet->payload.data(), packet->length);
+            }
+            else
+            {
+                serial.ReplyAck();
+            }
             break;
         }
         case Configuration::Clear:
@@ -127,46 +138,39 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             UI_LOG_INFO("OK! Cleared all configurations");
             break;
         }
-        case Configuration::Set_Sframe:
+        case Configuration::Set_Sframe_Key:
         {
             if (packet->length != 16)
             {
-                serial.ReplyNack();
                 UI_LOG_ERROR("ERR. Sframe key is too short!");
+                serial.ReplyNack();
                 break;
             }
 
             if (storage.Save(ConfigStorage::Config_Id::Sframe_Key, packet->payload.data(),
                              packet->length))
             {
-                serial.ReplyAck();
                 UI_LOG_INFO("OK! Saved SFrame Key configuration");
+                serial.ReplyAck();
             }
             else
             {
-                serial.ReplyNack();
                 UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
+                serial.ReplyNack();
             }
 
             break;
         }
-        case Configuration::Get_Sframe:
+        case Configuration::Get_Sframe_Key:
         {
             ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
             if (config.loaded && config.len == 16)
             {
-                // Copy to a buff and print it.
-                char buff[config.len + 1] = {0};
-                for (int i = 0; i < config.len; ++i)
-                {
-                    buff[i] = config.buff[i];
-                }
-
-                serial.Write(config.buff, config.len);
+                serial.ReplyData(std::span<const uint8_t>(config.buff, config.len));
             }
             else
             {
-                UI_LOG_INFO("ERR. No sframe key in storage");
+                serial.ReplyNack();
             }
             break;
         }
@@ -186,6 +190,77 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         {
             serial.ReplyAck();
             Logger::Enable();
+            break;
+        }
+        case Configuration::Get_Stack_Info:
+        {
+            stack_debug::StackInfo info = stack_debug::GetStackInfo();
+            char json[128];
+            int len = snprintf(
+                json, sizeof(json),
+                "{\"stack_base\":%lu,\"stack_top\":%lu,\"stack_size\":%lu,\"stack_used\":%lu}",
+                info.stack_base, info.stack_top, info.stack_size, info.stack_used);
+            serial.Write((const uint8_t*)json, len);
+            break;
+        }
+        case Configuration::Repaint_Stack:
+        {
+            stack_debug::RepaintStack();
+            serial.ReplyAck();
+            break;
+        }
+        case Configuration::Get_Loopback:
+        {
+            // Return current loopback mode (always Off - not implemented)
+            uint8_t mode = static_cast<uint8_t>(UiLoopbackMode::Off);
+            serial.ReplyData(std::span<const uint8_t>(&mode, 1));
+            break;
+        }
+        case Configuration::Set_Loopback:
+        {
+            if (packet->length < 1)
+            {
+                serial.ReplyNack();
+                break;
+            }
+            auto mode = static_cast<UiLoopbackMode>(packet->payload[0]);
+            if (mode == UiLoopbackMode::Off)
+            {
+                // Off is the only supported mode (loopback not implemented)
+                serial.ReplyAck();
+            }
+            else
+            {
+                // Raw, Alaw, Sframe not implemented
+                UI_LOG_WARN("Loopback mode %d not supported", static_cast<int>(mode));
+                serial.ReplyNack();
+            }
+            break;
+        }
+        case Configuration::Get_Logs_Enabled:
+        {
+            uint8_t enabled = Logger::enabled ? 1 : 0;
+            serial.ReplyData(std::span<const uint8_t>(&enabled, 1));
+            break;
+        }
+        case Configuration::Set_Logs_Enabled:
+        {
+            if (packet->length < 1)
+            {
+                serial.ReplyNack();
+                break;
+            }
+            uint8_t enabled = packet->payload[0];
+            if (enabled)
+            {
+                serial.ReplyAck();
+                Logger::Enable();
+            }
+            else
+            {
+                serial.ReplyAck();
+                Logger::Disable();
+            }
             break;
         }
         default:
