@@ -443,7 +443,8 @@ static void MgmtLinkPacketTask(void* args)
             case Configuration::Get_Loopback:
             {
                 // Return loopback mode using NetLoopbackMode enum
-                uint8_t mode = static_cast<uint8_t>(loopback ? NetLoopbackMode::Moq : NetLoopbackMode::Off);
+                uint8_t mode =
+                    static_cast<uint8_t>(loopback ? NetLoopbackMode::Moq : NetLoopbackMode::Off);
                 mgmt_layer.Reply(Configuration::Response_Loopback,
                                  std::span<const uint8_t>(&mode, 1));
                 break;

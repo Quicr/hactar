@@ -42,7 +42,10 @@ public:
 
     void ReplyAck();
     void ReplyError();
-    void ReplyNack() { ReplyError(); } // Deprecated alias
+    void ReplyNack()
+    {
+        ReplyError();
+    } // Deprecated alias
     void Reply(uint16_t type);
     void Reply(uint16_t type, const std::string& data);
     void Reply(uint16_t type, std::span<const uint8_t> data);

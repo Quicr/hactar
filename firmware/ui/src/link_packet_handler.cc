@@ -215,8 +215,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         {
             // Return current loopback mode (always Off - not implemented)
             uint8_t mode = static_cast<uint8_t>(UiLoopbackMode::Off);
-            serial.Reply(Configuration::Response_Loopback,
-                         std::span<const uint8_t>(&mode, 1));
+            serial.Reply(Configuration::Response_Loopback, std::span<const uint8_t>(&mode, 1));
             break;
         }
         case Configuration::Set_Loopback:

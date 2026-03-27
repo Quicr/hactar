@@ -26,7 +26,8 @@ enum Configuration
     Response_SframeKey = 0x8002,   // 16 bytes: SFrame encryption key
     Response_Loopback = 0x8003,    // 1 byte: UiLoopbackMode
     Response_LogsEnabled = 0x8004, // 1 byte: 0=disabled, 1=enabled
-    Response_StackInfo = 0x8005,   // JSON: {"stack_base":...,"stack_top":...,"stack_size":...,"stack_used":...}
+    Response_StackInfo =
+        0x8005, // JSON: {"stack_base":...,"stack_top":...,"stack_size":...,"stack_used":...}
 };
 
 // Loopback modes for UI chip (matches Rust UiLoopbackMode)
