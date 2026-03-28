@@ -2,39 +2,43 @@
 
 #include <cstdint>
 
-enum Configuration
+// UI Chip Commands (MGMT to UI)
+enum struct CtlToUi : uint16_t
 {
-    Ping, // Replaces Version stub - echoes payload back
-    Clear,
-    Set_Sframe_Key,
-    Get_Sframe_Key,
-    Toggle_Logs,
-    Disable_Logs,
-    Enable_Logs,
-    Get_Stack_Info,
-    Repaint_Stack,
-    Get_Loopback,
-    Set_Loopback,
-    Get_Logs_Enabled,
-    Set_Logs_Enabled,
-
-    // Response types (high values to distinguish from commands)
-    Response_Ack = 0x8000,
-    Response_Error = 0x8001,
-
-    // Typed responses (self-describing payloads, matches Link's UiToCtl)
-    Response_SframeKey = 0x8002,   // 16 bytes: SFrame encryption key
-    Response_Loopback = 0x8003,    // 1 byte: UiLoopbackMode
-    Response_LogsEnabled = 0x8004, // 1 byte: 0=disabled, 1=enabled
-    Response_StackInfo =
-        0x8005, // JSON: {"stack_base":...,"stack_top":...,"stack_size":...,"stack_used":...}
+    Ping = 0x0020,
+    CircularPing = 0x0021,
+    GetVersion = 0x0022,
+    SetVersion = 0x0023,
+    GetSframeKey = 0x0024,
+    SetSframeKey = 0x0025,
+    SetLoopback = 0x0026,
+    GetLoopback = 0x0027,
+    GetStackInfo = 0x0028,
+    RepaintStack = 0x0029,
+    GetLogsEnabled = 0x002A,
+    SetLogsEnabled = 0x002B,
+    ClearStorage = 0x002C,
 };
 
-// Loopback modes for UI chip (matches Rust UiLoopbackMode)
+// UI Chip Responses (UI to MGMT)
+enum struct UiToCtl : uint16_t
+{
+    Pong = 0x0030,
+    CircularPing = 0x0031,
+    Version = 0x0032,
+    SframeKey = 0x0033,
+    Ack = 0x0034,
+    Error = 0x0035,
+    Loopback = 0x0036,
+    Log = 0x0037,
+    StackInfo = 0x0038,
+    LogsEnabled = 0x0039,
+};
+
 enum struct UiLoopbackMode : uint8_t
 {
-    Off = 0,    // Normal operation - audio sent to NET
-    Raw = 1,    // Before A-law encoding (stereo PCM directly to speaker)
-    Alaw = 2,   // After encoding, before SFrame (encode then decode)
-    Sframe = 3, // Full encryption round-trip (encode → encrypt → decrypt → decode)
+    Off = 0,
+    Raw = 1,
+    Alaw = 2,
+    Sframe = 3,
 };

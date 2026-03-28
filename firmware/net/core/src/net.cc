@@ -314,7 +314,7 @@ static void UILinkPacketTask(void* args)
 
         while (auto packet = ui_layer.Read())
         {
-            if ((ui_net_link::Packet_Type)packet->type != ui_net_link::Packet_Type::Message)
+            if (packet->type != static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame))
             {
                 NET_LOG_ERROR("Got unexpected packet type %d", (int)packet->type);
                 continue;
@@ -341,7 +341,6 @@ static void UILinkPacketTask(void* args)
 
 static void MgmtLinkPacketTask(void* args)
 {
-    // TODO need to use TLV not slip, serial should take a param for that oops
     NET_LOG_INFO("Start mgmt link packet task");
     while (true)
     {
@@ -349,27 +348,32 @@ static void MgmtLinkPacketTask(void* args)
 
         while (auto packet = mgmt_layer.Read())
         {
-            switch (packet->type)
+            switch (static_cast<CtlToNet>(packet->type))
             {
-            case Configuration::Version:
+            case CtlToNet::Ping:
             {
-                NET_LOG_WARN("VERSION NOT IMPLEMENTED");
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Pong), std::span<const uint8_t>{});
                 break;
             }
-            case Configuration::Clear_Storage:
+            case CtlToNet::CircularPing:
+            {
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::CircularPing),
+                                 std::span<const uint8_t>(packet->payload.data(), packet->length));
+                break;
+            }
+            case CtlToNet::ClearStorage:
             {
                 if (ESP_OK != storage.Clear())
                 {
-                    mgmt_layer.ReplyNack();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
-
-                mgmt_layer.ReplyAck();
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
                 break;
             }
-            case Configuration::Add_Wifi:
+            case CtlToNet::AddWifiSsid:
             {
-                // Parse JSON: {"ssid":"...","password":"..."}
                 try
                 {
                     std::string json_str((char*)packet->payload.data(), packet->length);
@@ -378,7 +382,8 @@ static void MgmtLinkPacketTask(void* args)
                     if (!wifi_json.contains("ssid") || !wifi_json.contains("password"))
                     {
                         NET_LOG_ERROR("Add_Wifi: missing ssid or password field");
-                        mgmt_layer.ReplyNack();
+                        mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                         std::span<const uint8_t>{});
                         break;
                     }
 
@@ -387,18 +392,19 @@ static void MgmtLinkPacketTask(void* args)
 
                     NET_LOG_INFO("Add_Wifi: ssid=%s", ssid.c_str());
                     wifi.Connect(ssid, password);
-                    mgmt_layer.ReplyAck();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                 }
                 catch (const std::exception& ex)
                 {
                     NET_LOG_ERROR("Add_Wifi: JSON parse error: %s", ex.what());
-                    mgmt_layer.ReplyNack();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                 }
                 break;
             }
-            case Configuration::Get_Wifi:
+            case CtlToNet::GetWifiSsids:
             {
-                // Return JSON array: [{"ssid":"...","password":"..."},...]
                 json wifi_array = json::array();
                 const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
                 for (const auto& cred : creds)
@@ -408,52 +414,52 @@ static void MgmtLinkPacketTask(void* args)
                     entry["password"] = std::string(cred.pwd, cred.pwd_len);
                     wifi_array.push_back(entry);
                 }
-                mgmt_layer.Reply(Configuration::Response_WifiSsids, wifi_array.dump());
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::WifiSsids), wifi_array.dump());
                 break;
             }
-            case Configuration::Clear_Wifi:
+            case CtlToNet::ClearWifiSsids:
             {
                 wifi.ClearSavedSSIDs();
-                mgmt_layer.ReplyAck();
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
                 break;
             }
-            case Configuration::Set_Relay_Url:
+            case CtlToNet::SetRelayUrl:
             {
                 std::string moq_url((char*)packet->payload.data(), packet->length);
                 NET_LOG_INFO("Got moq url %d - %s", moq_url.length(), moq_url.c_str());
 
                 if (moq_url.length() == 0)
                 {
-                    // MOQ url will be cleared.
                     NET_LOG_INFO("Cleaning moq url because length is zero");
                     moq_server_url.Clear();
-                    mgmt_layer.ReplyAck();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 moq_server_url = moq_url;
-                mgmt_layer.ReplyAck();
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
                 break;
             }
-            case Configuration::Get_Relay_Url:
+            case CtlToNet::GetRelayUrl:
             {
                 std::string moq_url = moq_server_url.Load();
-                mgmt_layer.Reply(Configuration::Response_RelayUrl, moq_url);
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::RelayUrl), moq_url);
                 break;
             }
-            case Configuration::Get_Loopback:
+            case CtlToNet::GetLoopback:
             {
-                // Return loopback mode using NetLoopbackMode enum
                 uint8_t mode =
                     static_cast<uint8_t>(loopback ? NetLoopbackMode::Moq : NetLoopbackMode::Off);
-                mgmt_layer.Reply(Configuration::Response_Loopback,
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Loopback),
                                  std::span<const uint8_t>(&mode, 1));
                 break;
             }
-            case Configuration::Set_Loopback:
+            case CtlToNet::SetLoopback:
             {
                 if (packet->length < 1)
                 {
-                    mgmt_layer.ReplyNack();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 auto mode = static_cast<NetLoopbackMode>(packet->payload[0]);
@@ -462,105 +468,103 @@ static void MgmtLinkPacketTask(void* args)
                 case NetLoopbackMode::Off:
                     loopback = false;
                     NET_LOG_INFO("Loopback set to: off");
-                    mgmt_layer.ReplyAck();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                     break;
                 case NetLoopbackMode::Raw:
-                    // Raw loopback (direct local bypass) not supported by NET firmware
                     NET_LOG_WARN("Loopback mode 'raw' not supported");
-                    mgmt_layer.ReplyNack();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 case NetLoopbackMode::Moq:
                     loopback = true;
                     NET_LOG_INFO("Loopback set to: moq");
-                    mgmt_layer.ReplyAck();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                     break;
                 default:
                     NET_LOG_WARN("Unknown loopback mode: %d", static_cast<int>(mode));
-                    mgmt_layer.ReplyNack();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 break;
             }
-            case Configuration::Get_Logs_Enabled:
+            case CtlToNet::GetLogsEnabled:
             {
-                // Return logs state: 0=disabled, 1=enabled
                 uint8_t enabled = logs_disabled ? 0 : 1;
-                mgmt_layer.Reply(Configuration::Response_LogsEnabled,
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::LogsEnabled),
                                  std::span<const uint8_t>(&enabled, 1));
                 break;
             }
-            case Configuration::Set_Logs_Enabled:
+            case CtlToNet::SetLogsEnabled:
             {
                 if (packet->length < 1)
                 {
-                    mgmt_layer.ReplyNack();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 uint8_t enabled = packet->payload[0];
                 if (enabled)
                 {
-                    mgmt_layer.ReplyAck();
                     EnableLogging();
                 }
                 else
                 {
-                    mgmt_layer.ReplyAck();
                     DisableLogging();
                 }
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
                 break;
             }
-            case Configuration::Set_Language:
+            case CtlToNet::SetLanguage:
             {
                 std::string new_lang((char*)packet->payload.data(), packet->length);
                 if (!IsValidLanguage(new_lang))
                 {
                     NET_LOG_ERROR("Invalid language: %s", new_lang.c_str());
-                    mgmt_layer.ReplyNack();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 language = new_lang;
                 NET_LOG_INFO("Language set to: %s", new_lang.c_str());
-
-                // Send ACK before track updates to avoid interleaving with log output
-                mgmt_layer.ReplyAck();
-
-                // Update tracks that depend on language
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
                 UpdateAITracks();
                 UpdateChannelTracks();
                 break;
             }
-            case Configuration::Get_Language:
+            case CtlToNet::GetLanguage:
             {
                 std::string lang = language.Load();
-                mgmt_layer.Reply(Configuration::Response_Language, lang);
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Language), lang);
                 break;
             }
-            case Configuration::Set_Channel:
+            case CtlToNet::SetChannel:
             {
                 std::string json_str((char*)packet->payload.data(), packet->length);
                 auto parsed = JsonToNamespace(json_str);
                 if (!parsed.has_value())
                 {
                     NET_LOG_ERROR("Failed to parse channel namespace JSON");
-                    mgmt_layer.ReplyNack();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
 
                 channel_ns = parsed.value();
                 channel_ns_json = json_str;
                 NET_LOG_INFO("Channel namespace set (%zu parts)", channel_ns.size());
-
-                // Send ACK before track updates to avoid interleaving with log output
-                mgmt_layer.ReplyAck();
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
                 UpdateChannelTracks();
                 break;
             }
-            case Configuration::Get_Channel:
+            case CtlToNet::GetChannel:
             {
-                mgmt_layer.Reply(Configuration::Response_Channel, channel_ns_json.Load());
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Channel), channel_ns_json.Load());
                 break;
             }
-            case Configuration::Set_AI:
+            case CtlToNet::SetAi:
             {
                 std::string json_str((char*)packet->payload.data(), packet->length);
                 try
@@ -570,7 +574,8 @@ static void MgmtLinkPacketTask(void* args)
                         || !ai_config.contains("audio") || !ai_config.contains("cmd"))
                     {
                         NET_LOG_ERROR("AI config must be object with query, audio, cmd fields");
-                        mgmt_layer.ReplyNack();
+                        mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                         std::span<const uint8_t>{});
                         break;
                     }
 
@@ -581,7 +586,8 @@ static void MgmtLinkPacketTask(void* args)
                     if (!query_parsed || !audio_parsed || !cmd_parsed)
                     {
                         NET_LOG_ERROR("Failed to parse AI namespace arrays");
-                        mgmt_layer.ReplyNack();
+                        mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                         std::span<const uint8_t>{});
                         break;
                     }
 
@@ -596,44 +602,45 @@ static void MgmtLinkPacketTask(void* args)
                     NET_LOG_INFO("AI namespaces set (query=%zu, audio=%zu, cmd=%zu parts)",
                                  ai_query_ns.size(), ai_audio_response_ns.size(),
                                  ai_cmd_response_ns.size());
-
-                    // Send ACK before track updates to avoid interleaving with log output
-                    mgmt_layer.ReplyAck();
-
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                     UpdateAITracks();
                 }
                 catch (const std::exception& ex)
                 {
                     NET_LOG_ERROR("Failed to parse AI config JSON: %s", ex.what());
-                    mgmt_layer.ReplyNack();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                 }
                 break;
             }
-            case Configuration::Get_AI:
+            case CtlToNet::GetAi:
             {
                 json response;
                 response["query"] = ai_query_ns;
                 response["audio"] = ai_audio_response_ns;
                 response["cmd"] = ai_cmd_response_ns;
-                mgmt_layer.Reply(Configuration::Response_AiConfig, response.dump());
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ai), response.dump());
                 break;
             }
-            case Configuration::Burn_Disable_USB_JTag_Efuse:
+            case CtlToNet::BurnJtagEfuse:
             {
                 const bool res = BurnDisableUSBJTagEFuse();
                 if (res)
                 {
-                    mgmt_layer.ReplyAck();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                 }
                 else
                 {
-                    mgmt_layer.ReplyNack();
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                 }
                 break;
             }
             default:
             {
-                NET_LOG_ERROR("Unknown packet type from mgmt");
+                NET_LOG_ERROR("Unknown packet type 0x%04x from mgmt", packet->type);
                 break;
             }
             }
@@ -882,9 +889,6 @@ extern "C" void app_main(void)
     UpdateAITracks();
     UpdateChannelTracks();
 
-    int next = 0;
-    int64_t heartbeat = 0;
-    bool ready_to_connect_moq = false;
     moq::Session::Status prev_status = moq::Session::Status::kNotConnected;
     Wifi::State prev_wifi_state = Wifi::State::Connected;
     while (true)
@@ -999,15 +1003,6 @@ extern "C" void app_main(void)
             NET_LOG_INFO("Make a new session with uri %s", config.connect_uri.c_str());
             moq_session.reset(new moq::Session(config, readers, writers));
         }
-
-        // if (esp_timer_get_time_ms() > heartbeat)
-        // {
-        //     // NET_LOG_INFO("time %lld", esp_timer_get_time_ms());
-        //     gpio_set_level(NET_LED_G, next);
-        //     next = next ? 0 : 1;
-        //     heartbeat = esp_timer_get_time_ms() + 1000;
-        // }
-
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }

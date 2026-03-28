@@ -2,48 +2,49 @@
 
 #include <cstdint>
 
-enum Configuration
+// NET Chip Commands (MGMT to NET)
+enum struct CtlToNet : uint16_t
 {
-    Version = 0,
-    Clear_Storage = 1,
-    Add_Wifi = 2,   // JSON: {"ssid":"...","password":"..."}
-    Get_Wifi = 3,   // Returns JSON array of wifi credentials
-    Clear_Wifi = 4, // Clears all saved WiFi credentials
-    Set_Relay_Url = 5,
-    Get_Relay_Url = 6,
-    Get_Loopback = 7,
-    Set_Loopback = 8, // NetLoopbackMode value
-    Get_Logs_Enabled = 9,
-    Set_Logs_Enabled = 10, // 0=disabled, 1=enabled
-    Set_Language = 11,
-    Get_Language = 12,
-    Set_Channel = 13,
-    Get_Channel = 14,
-    Set_AI = 15,
-    Get_AI = 16,
-    Burn_Disable_USB_JTag_Efuse = 17,
-
-    // Response types (high values to distinguish from commands)
-    Response_Ack = 0x8000,
-    Response_Error = 0x8001,
-
-    // Typed responses (self-describing payloads, matches Link's NetToCtl)
-    Response_WifiSsids = 0x8002,   // JSON array: [{"ssid":"...","password":"..."},...]
-    Response_RelayUrl = 0x8003,    // UTF-8 URL string
-    Response_Loopback = 0x8004,    // 1 byte: NetLoopbackMode
-    Response_LogsEnabled = 0x8005, // 1 byte: 0=disabled, 1=enabled
-    Response_Language = 0x8006,    // UTF-8 language tag (e.g. "en-US")
-    Response_Channel = 0x8007,     // JSON array of namespace parts
-    Response_AiConfig = 0x8008,    // JSON: {"query":[...],"audio":[...],"cmd":[...]}
+    Ping = 0x0040,
+    CircularPing = 0x0041,
+    AddWifiSsid = 0x0042,
+    GetWifiSsids = 0x0043,
+    ClearWifiSsids = 0x0044,
+    GetRelayUrl = 0x0045,
+    SetRelayUrl = 0x0046,
+    SetLoopback = 0x0047,
+    GetLoopback = 0x0048,
+    GetLogsEnabled = 0x0049,
+    SetLogsEnabled = 0x004A,
+    ClearStorage = 0x004B,
+    GetLanguage = 0x004C,
+    SetLanguage = 0x004D,
+    GetChannel = 0x004E,
+    SetChannel = 0x004F,
+    GetAi = 0x0050,
+    SetAi = 0x0051,
+    BurnJtagEfuse = 0x0052,
 };
 
-// Loopback modes for NET chip (matches Rust NetLoopbackMode)
+// NET Chip Responses (NET to MGMT)
+enum struct NetToCtl : uint16_t
+{
+    Pong = 0x0050,
+    CircularPing = 0x0051,
+    WifiSsids = 0x0052,
+    RelayUrl = 0x0053,
+    Ack = 0x0054,
+    Error = 0x0055,
+    Loopback = 0x0056,
+    LogsEnabled = 0x0057,
+    Language = 0x0058,
+    Channel = 0x0059,
+    Ai = 0x005A,
+};
+
 enum struct NetLoopbackMode : uint8_t
 {
-    Off = 0, // Normal operation - audio to MoQ, filter self-echo
-    Raw = 1, // Local bypass - audio directly back to UI (no MoQ)
-    Moq = 2, // MoQ loopback - audio to MoQ, DON'T filter self-echo
+    Off = 0,
+    Raw = 1,
+    Moq = 2,
 };
-
-// Supported language tags for Set_Language validation
-// en-US, es-ES, de-DE, hi-IN, nb-NO
