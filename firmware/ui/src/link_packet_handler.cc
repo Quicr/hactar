@@ -122,6 +122,47 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             }
             break;
         }
+        case Ui_Cmd_CircularPing:
+        {
+            serial.Reply(Ui_Resp_CircularPing,
+                         std::span<const uint8_t>(packet->payload.data(), packet->length));
+            break;
+        }
+        case Ui_Cmd_GetVersion:
+        {
+            uint32_t version = storage.GetVersion();
+            uint8_t buf[4];
+            buf[0] = static_cast<uint8_t>((version >> 24) & 0xFF);
+            buf[1] = static_cast<uint8_t>((version >> 16) & 0xFF);
+            buf[2] = static_cast<uint8_t>((version >> 8) & 0xFF);
+            buf[3] = static_cast<uint8_t>(version & 0xFF);
+            serial.Reply(Ui_Resp_Version, std::span<const uint8_t>(buf, 4));
+            break;
+        }
+        case Ui_Cmd_SetVersion:
+        {
+            if (packet->length != 4)
+            {
+                UI_LOG_ERROR("ERR. Version must be 4 bytes");
+                serial.Reply(Ui_Resp_Error, std::span<const uint8_t>{});
+                break;
+            }
+            uint32_t version = (static_cast<uint32_t>(packet->payload[0]) << 24)
+                               | (static_cast<uint32_t>(packet->payload[1]) << 16)
+                               | (static_cast<uint32_t>(packet->payload[2]) << 8)
+                               | static_cast<uint32_t>(packet->payload[3]);
+            if (storage.SetVersion(version))
+            {
+                UI_LOG_INFO("OK! Version set to 0x%08lx", version);
+                serial.Reply(Ui_Resp_Ack, std::span<const uint8_t>{});
+            }
+            else
+            {
+                UI_LOG_ERROR("ERR. Failed to set version");
+                serial.Reply(Ui_Resp_Error, std::span<const uint8_t>{});
+            }
+            break;
+        }
         case Ui_Cmd_ClearStorage:
         {
             UI_LOG_INFO("OK! Clearing configurations");

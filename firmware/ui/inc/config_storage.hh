@@ -8,16 +8,69 @@
 #include <cstddef>
 #include <cstring>
 
-#ifndef CONFIG_VERSION
-#define CONFIG_VERSION 0
-#endif
-
-// TODO split into header and source files
+// EEPROM layout (aligned with Link protocol):
+// Offset 0:  Version (4 bytes, big-endian u32)
+// Offset 16: SFrame Key (16 bytes)
 class ConfigStorage
 {
 public:
-    // Permanent addresses
-    // NOTE - this is the order in which the settings are saved to the eeprom
+    static constexpr uint8_t Version_Address = 0;
+    static constexpr uint8_t Version_Size = 4;
+    static constexpr uint8_t Sframe_Key_Address = 16;
+    static constexpr uint8_t Sframe_Key_Size = 16;
+
+    ConfigStorage(I2C_HandleTypeDef& i2c) :
+        eeprom(i2c, 256)
+    {
+    }
+
+    ~ConfigStorage()
+    {
+    }
+
+    uint32_t GetVersion()
+    {
+        uint8_t buf[4];
+        if (eeprom.Read(Version_Address, buf, 4) != HAL_OK)
+        {
+            return 0xFFFFFFFF;
+        }
+        return (static_cast<uint32_t>(buf[0]) << 24) | (static_cast<uint32_t>(buf[1]) << 16)
+               | (static_cast<uint32_t>(buf[2]) << 8) | static_cast<uint32_t>(buf[3]);
+    }
+
+    bool SetVersion(uint32_t version)
+    {
+        uint8_t buf[4];
+        buf[0] = static_cast<uint8_t>((version >> 24) & 0xFF);
+        buf[1] = static_cast<uint8_t>((version >> 16) & 0xFF);
+        buf[2] = static_cast<uint8_t>((version >> 8) & 0xFF);
+        buf[3] = static_cast<uint8_t>(version & 0xFF);
+        return eeprom.Write(Version_Address, buf, 4) == HAL_OK;
+    }
+
+    bool GetSframeKey(uint8_t* key_out)
+    {
+        return eeprom.Read(Sframe_Key_Address, key_out, Sframe_Key_Size) == HAL_OK;
+    }
+
+    bool SetSframeKey(const uint8_t* key, uint16_t len)
+    {
+        if (len != Sframe_Key_Size)
+        {
+            return false;
+        }
+        uint8_t buf[Sframe_Key_Size];
+        memcpy(buf, key, Sframe_Key_Size);
+        return eeprom.Write(Sframe_Key_Address, buf, Sframe_Key_Size) == HAL_OK;
+    }
+
+    void Clear()
+    {
+        eeprom.Fill(0xFF);
+    }
+
+    // Legacy compatibility - these match the old API signatures
     enum class Config_Id
     {
         Version,
@@ -25,151 +78,84 @@ public:
         NumConfig
     };
 
-    static constexpr uint32_t Version_Size = 1;
-    static constexpr uint32_t Sframe_Key_Size = 16;
-
-    // Each config stores: [1 byte length][N bytes data]
-    static constexpr uint32_t Version_Address = 0;
-    static constexpr uint32_t Sframe_Key_Address = Version_Address + 1 + Version_Size;
-
-    static constexpr uint32_t Largest_Size = std::max({Version_Size, Sframe_Key_Size});
-
-    static constexpr uint32_t Config_Len_Size = 1;
-    static constexpr uint32_t Total_Usage =
-        (Config_Len_Size + Version_Size) + (Config_Len_Size + Sframe_Key_Size);
-    static_assert(Total_Usage < 256);
-
-    static constexpr uint8_t sizes[(size_t)Config_Id::NumConfig] = {
-        Version_Size,
-        Sframe_Key_Size,
-    };
-    static constexpr uint8_t addresses[(size_t)Config_Id::NumConfig] = {
-        Version_Address,
-        Sframe_Key_Address,
-    };
-
     struct Config
     {
         Config_Id id;
         bool loaded;
         int16_t len;
-        uint8_t buff[Largest_Size];
+        uint8_t buff[Sframe_Key_Size];
     };
-
-    ConfigStorage(I2C_HandleTypeDef& i2c) :
-        eeprom(i2c, 256)
-    {
-        Initialize();
-    }
-
-    ~ConfigStorage()
-    {
-    }
 
     Config Load(const Config_Id config_id)
     {
         Config config{Config_Id::NumConfig, false, 0, {0}};
+        config.id = config_id;
 
         switch (config_id)
         {
+        case Config_Id::Version:
+        {
+            uint32_t ver = GetVersion();
+            if (ver != 0xFFFFFFFF)
+            {
+                config.loaded = true;
+                config.len = Version_Size;
+                config.buff[0] = static_cast<uint8_t>((ver >> 24) & 0xFF);
+                config.buff[1] = static_cast<uint8_t>((ver >> 16) & 0xFF);
+                config.buff[2] = static_cast<uint8_t>((ver >> 8) & 0xFF);
+                config.buff[3] = static_cast<uint8_t>(ver & 0xFF);
+            }
+            break;
+        }
+        case Config_Id::Sframe_Key:
+        {
+            if (GetSframeKey(config.buff))
+            {
+                bool all_ff = true;
+                for (int i = 0; i < Sframe_Key_Size; ++i)
+                {
+                    if (config.buff[i] != 0xFF)
+                    {
+                        all_ff = false;
+                        break;
+                    }
+                }
+                if (!all_ff)
+                {
+                    config.loaded = true;
+                    config.len = Sframe_Key_Size;
+                }
+            }
+            break;
+        }
         case Config_Id::NumConfig:
-        {
             break;
-        }
-        default:
-        {
-            // Get the address
-            uint8_t address = addresses[static_cast<size_t>(config_id)];
-            config.id = config_id;
-
-            // Get the length
-            config.len = eeprom.ReadByte(address);
-
-            if (config.len == 255 || config.len == -1)
-            {
-                config.len = 0;
-                config.loaded = false;
-            }
-            else
-            {
-                auto res = eeprom.Read(address + 1, config.buff, config.len);
-
-                if (res != HAL_OK)
-                {
-                    // failed
-                    config.loaded = true;
-                }
-                else
-                {
-                    config.loaded = true;
-                }
-            }
-            break;
-        }
         }
         return config;
     }
 
     template <typename T>
-    bool Save(const Config_Id config, T* data, const uint16_t size)
+    bool Save(const Config_Id config_id, T* data, const uint16_t size)
     {
-        if (size > sizes[static_cast<size_t>(config)])
+        switch (config_id)
         {
+        case Config_Id::Version:
+            if (size != Version_Size)
+            {
+                return false;
+            }
+            return SetVersion((static_cast<uint32_t>(reinterpret_cast<uint8_t*>(data)[0]) << 24)
+                              | (static_cast<uint32_t>(reinterpret_cast<uint8_t*>(data)[1]) << 16)
+                              | (static_cast<uint32_t>(reinterpret_cast<uint8_t*>(data)[2]) << 8)
+                              | static_cast<uint32_t>(reinterpret_cast<uint8_t*>(data)[3]));
+        case Config_Id::Sframe_Key:
+            return SetSframeKey(reinterpret_cast<const uint8_t*>(data), size);
+        case Config_Id::NumConfig:
             return false;
         }
-
-        uint8_t address = addresses[static_cast<size_t>(config)];
-        eeprom.WriteByte(address, static_cast<uint8_t>(size));
-        eeprom.Write(address + 1, data, size);
-
-        return true;
-    }
-
-    void Clear()
-    {
-        eeprom.Fill(255);
+        return false;
     }
 
 private:
-    void Initialize()
-    {
-        // Determine if the eeprom is unwritten to
-        // If version is a zero or 255 then it is unset.
-        int16_t version = eeprom.ReadByte(static_cast<uint8_t>(Version_Address));
-
-        if (version == -1)
-        {
-            // An error has occured TODO
-            return;
-        }
-
-        if (version != 255 && version != -1)
-        {
-            // Already set return
-            return;
-        }
-
-        if (version != CONFIG_VERSION && version != 255)
-        {
-            // Different version todo?
-            return;
-        }
-
-        if (version == CONFIG_VERSION)
-        {
-            // Same version number
-            return;
-        }
-
-        // First write the version number
-        eeprom.WriteByte(Version_Address, CONFIG_VERSION);
-
-        // Set the length of each config to zero.
-        for (size_t i = 0; i < static_cast<size_t>(Config_Id::NumConfig); ++i)
-        {
-            eeprom.WriteByte(addresses[i], 0);
-        }
-    }
-
     M24C02_EEPROM eeprom;
 };

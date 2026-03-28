@@ -355,6 +355,12 @@ static void MgmtLinkPacketTask(void* args)
                 mgmt_layer.Reply(Net_Resp_Pong, std::span<const uint8_t>{});
                 break;
             }
+            case Net_Cmd_CircularPing:
+            {
+                mgmt_layer.Reply(Net_Resp_CircularPing,
+                                 std::span<const uint8_t>(packet->payload.data(), packet->length));
+                break;
+            }
             case Net_Cmd_ClearStorage:
             {
                 if (ESP_OK != storage.Clear())

@@ -42,7 +42,7 @@ ui_command_map = {
     "ping": {"id": 0x0020, "num_params": 0},
     "circular_ping": {"id": 0x0021, "num_params": 0},
     "get_version": {"id": 0x0022, "num_params": 0},
-    "set_version": {"id": 0x0023, "num_params": 1},
+    "set_version": {"id": 0x0023, "num_params": 1, "encoder": "version"},
     "get_sframe_key": {"id": 0x0024, "num_params": 0},
     "set_sframe_key": {"id": 0x0025, "num_params": 1, "encoder": "hex"},
     "set_loopback": {"id": 0x0026, "num_params": 1, "encoder": "ui_loopback"},
@@ -141,6 +141,20 @@ def encode_command_payload(encoder: str | None, params: list[str]) -> tuple[byte
             return bytes([1]), None
         else:
             return bytes(), f"Invalid boolean '{val}'. Use: 0, 1, true, false"
+
+    elif encoder == "version":
+        # Version: 4-byte big-endian u32 (accepts 0x... hex or decimal)
+        val = params[0]
+        try:
+            if val.startswith("0x") or val.startswith("0X"):
+                version = int(val, 16)
+            else:
+                version = int(val)
+            if version < 0 or version > 0xFFFFFFFF:
+                return bytes(), f"Version out of range: {version}"
+            return struct.pack(">I", version), None
+        except ValueError:
+            return bytes(), f"Invalid version '{val}'. Use decimal or 0x... hex"
 
     else:
         # Default encoding: length-prefixed strings if multiple params
