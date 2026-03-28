@@ -43,14 +43,22 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio)
     }
 }
 
-void HandleNetLinkPackets(Serial& serial, Protector& protector, AudioChip& audio, Screen& screen)
+void HandleNetLinkPackets(Serial& net_serial, Serial& mgmt_serial, Protector& protector, AudioChip& audio, Screen& screen)
 {
     while (true)
     {
-        link_packet_t* packet = serial.Read();
+        link_packet_t* packet = net_serial.Read();
         if (!packet)
         {
             return;
+        }
+
+        if (packet->type == static_cast<uint16_t>(ui_net_link::NetToUi::CircularPing))
+        {
+            // Forward to MGMT for circular path: MGMT -> NET -> UI -> MGMT
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::CircularPing),
+                              std::span<const uint8_t>(packet->payload.data(), packet->length));
+            continue;
         }
 
         if (packet->type != static_cast<uint16_t>(ui_net_link::NetToUi::AudioFrame))
@@ -97,11 +105,11 @@ void HandleNetLinkPackets(Serial& serial, Protector& protector, AudioChip& audio
     }
 }
 
-void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
+void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorage& storage)
 {
     while (true)
     {
-        link_packet_t* packet = serial.Read();
+        link_packet_t* packet = mgmt_serial.Read();
         if (!packet)
         {
             break;
@@ -113,19 +121,20 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         {
             if (packet->length > 0)
             {
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Pong),
-                             std::span<const uint8_t>(packet->payload.data(), packet->length));
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Pong),
+                                  std::span<const uint8_t>(packet->payload.data(), packet->length));
             }
             else
             {
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Pong), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Pong), std::span<const uint8_t>{});
             }
             break;
         }
         case CtlToUi::CircularPing:
         {
-            serial.Reply(static_cast<uint16_t>(UiToCtl::CircularPing),
-                         std::span<const uint8_t>(packet->payload.data(), packet->length));
+            // Forward to NET for circular path: MGMT -> UI -> NET -> MGMT
+            net_serial.Reply(static_cast<uint16_t>(ui_net_link::UiToNet::CircularPing),
+                             std::span<const uint8_t>(packet->payload.data(), packet->length));
             break;
         }
         case CtlToUi::GetVersion:
@@ -136,7 +145,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             buf[1] = static_cast<uint8_t>((version >> 16) & 0xFF);
             buf[2] = static_cast<uint8_t>((version >> 8) & 0xFF);
             buf[3] = static_cast<uint8_t>(version & 0xFF);
-            serial.Reply(static_cast<uint16_t>(UiToCtl::Version), std::span<const uint8_t>(buf, 4));
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Version), std::span<const uint8_t>(buf, 4));
             break;
         }
         case CtlToUi::SetVersion:
@@ -144,7 +153,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             if (packet->length != 4)
             {
                 UI_LOG_ERROR("ERR. Version must be 4 bytes");
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
                 break;
             }
             uint32_t version = (static_cast<uint32_t>(packet->payload[0]) << 24)
@@ -154,12 +163,12 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             if (storage.SetVersion(version))
             {
                 UI_LOG_INFO("OK! Version set to 0x%08lx", version);
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             }
             else
             {
                 UI_LOG_ERROR("ERR. Failed to set version");
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
             }
             break;
         }
@@ -168,7 +177,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             UI_LOG_INFO("OK! Clearing configurations");
             storage.Clear();
             UI_LOG_INFO("OK! Cleared all configurations");
-            serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             break;
         }
         case CtlToUi::SetSframeKey:
@@ -176,7 +185,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             if (packet->length != 16)
             {
                 UI_LOG_ERROR("ERR. Sframe key is too short!");
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
                 break;
             }
 
@@ -184,12 +193,12 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
                              packet->length))
             {
                 UI_LOG_INFO("OK! Saved SFrame Key configuration");
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             }
             else
             {
                 UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
             }
             break;
         }
@@ -198,12 +207,12 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
             if (config.loaded && config.len == 16)
             {
-                serial.Reply(static_cast<uint16_t>(UiToCtl::SframeKey),
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::SframeKey),
                              std::span<const uint8_t>(config.buff, config.len));
             }
             else
             {
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
             }
             break;
         }
@@ -215,20 +224,20 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
                 json, sizeof(json),
                 "{\"stack_base\":%lu,\"stack_top\":%lu,\"stack_size\":%lu,\"stack_used\":%lu}",
                 info.stack_base, info.stack_top, info.stack_size, info.stack_used);
-            serial.Reply(static_cast<uint16_t>(UiToCtl::StackInfo),
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::StackInfo),
                          std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(json), len));
             break;
         }
         case CtlToUi::RepaintStack:
         {
             stack_debug::RepaintStack();
-            serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             break;
         }
         case CtlToUi::GetLoopback:
         {
             uint8_t mode = static_cast<uint8_t>(UiLoopbackMode::Off);
-            serial.Reply(static_cast<uint16_t>(UiToCtl::Loopback),
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Loopback),
                          std::span<const uint8_t>(&mode, 1));
             break;
         }
@@ -236,25 +245,25 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         {
             if (packet->length < 1)
             {
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
                 break;
             }
             auto mode = static_cast<UiLoopbackMode>(packet->payload[0]);
             if (mode == UiLoopbackMode::Off)
             {
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             }
             else
             {
                 UI_LOG_WARN("Loopback mode %d not supported", static_cast<int>(mode));
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
             }
             break;
         }
         case CtlToUi::GetLogsEnabled:
         {
             uint8_t enabled = Logger::enabled ? 1 : 0;
-            serial.Reply(static_cast<uint16_t>(UiToCtl::LogsEnabled),
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::LogsEnabled),
                          std::span<const uint8_t>(&enabled, 1));
             break;
         }
@@ -262,7 +271,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         {
             if (packet->length < 1)
             {
-                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
                 break;
             }
             uint8_t enabled = packet->payload[0];
@@ -274,7 +283,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             {
                 Logger::Disable();
             }
-            serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             break;
         }
         default:

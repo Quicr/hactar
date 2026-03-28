@@ -110,7 +110,7 @@ uint8_t net_mgmt_uart_tx_buff[NET_MGMT_UART_TX_BUFF_SIZE] = {0};
 uint8_t net_mgmt_uart_rx_buff[NET_MGMT_UART_RX_BUFF_SIZE] = {0};
 
 uart_config_t net_mgmt_uart_config = {
-    .baud_rate = 115200,
+    .baud_rate = 1000000,
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_1,
@@ -314,6 +314,14 @@ static void UILinkPacketTask(void* args)
 
         while (auto packet = ui_layer.Read())
         {
+            if (packet->type == static_cast<uint16_t>(ui_net_link::UiToNet::CircularPing))
+            {
+                // Forward to MGMT for circular path: MGMT -> UI -> NET -> MGMT
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::CircularPing),
+                                 std::span<const uint8_t>(packet->payload.data(), packet->length));
+                continue;
+            }
+
             if (packet->type != static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame))
             {
                 NET_LOG_ERROR("Got unexpected packet type %d", (int)packet->type);
@@ -352,13 +360,15 @@ static void MgmtLinkPacketTask(void* args)
             {
             case CtlToNet::Ping:
             {
-                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Pong), std::span<const uint8_t>{});
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Pong),
+                                 std::span<const uint8_t>(packet->payload.data(), packet->length));
                 break;
             }
             case CtlToNet::CircularPing:
             {
-                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::CircularPing),
-                                 std::span<const uint8_t>(packet->payload.data(), packet->length));
+                // Forward to UI for circular path: MGMT -> NET -> UI -> MGMT
+                ui_layer.Reply(static_cast<uint16_t>(ui_net_link::NetToUi::CircularPing),
+                               std::span<const uint8_t>(packet->payload.data(), packet->length));
                 break;
             }
             case CtlToNet::ClearStorage:

@@ -180,8 +180,8 @@ int app_main()
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
-        HandleNetLinkPackets(net_serial, protector, audio_chip, screen);
-        HandleMgmtLinkPackets(mgmt_serial, config_storage);
+        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, screen);
+        HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage);
 
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
