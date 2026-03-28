@@ -148,9 +148,9 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
                 break;
             }
             uint32_t version = (static_cast<uint32_t>(packet->payload[0]) << 24)
-                               | (static_cast<uint32_t>(packet->payload[1]) << 16)
-                               | (static_cast<uint32_t>(packet->payload[2]) << 8)
-                               | static_cast<uint32_t>(packet->payload[3]);
+                             | (static_cast<uint32_t>(packet->payload[1]) << 16)
+                             | (static_cast<uint32_t>(packet->payload[2]) << 8)
+                             | static_cast<uint32_t>(packet->payload[3]);
             if (storage.SetVersion(version))
             {
                 UI_LOG_INFO("OK! Version set to 0x%08lx", version);
@@ -228,7 +228,8 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         case CtlToUi::GetLoopback:
         {
             uint8_t mode = static_cast<uint8_t>(UiLoopbackMode::Off);
-            serial.Reply(static_cast<uint16_t>(UiToCtl::Loopback), std::span<const uint8_t>(&mode, 1));
+            serial.Reply(static_cast<uint16_t>(UiToCtl::Loopback),
+                         std::span<const uint8_t>(&mode, 1));
             break;
         }
         case CtlToUi::SetLoopback:
@@ -253,7 +254,8 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
         case CtlToUi::GetLogsEnabled:
         {
             uint8_t enabled = Logger::enabled ? 1 : 0;
-            serial.Reply(static_cast<uint16_t>(UiToCtl::LogsEnabled), std::span<const uint8_t>(&enabled, 1));
+            serial.Reply(static_cast<uint16_t>(UiToCtl::LogsEnabled),
+                         std::span<const uint8_t>(&enabled, 1));
             break;
         }
         case CtlToUi::SetLogsEnabled:

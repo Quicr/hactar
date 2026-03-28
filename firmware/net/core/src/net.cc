@@ -365,7 +365,8 @@ static void MgmtLinkPacketTask(void* args)
             {
                 if (ESP_OK != storage.Clear())
                 {
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
@@ -381,7 +382,8 @@ static void MgmtLinkPacketTask(void* args)
                     if (!wifi_json.contains("ssid") || !wifi_json.contains("password"))
                     {
                         NET_LOG_ERROR("Add_Wifi: missing ssid or password field");
-                        mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                        mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                         std::span<const uint8_t>{});
                         break;
                     }
 
@@ -390,12 +392,14 @@ static void MgmtLinkPacketTask(void* args)
 
                     NET_LOG_INFO("Add_Wifi: ssid=%s", ssid.c_str());
                     wifi.Connect(ssid, password);
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                 }
                 catch (const std::exception& ex)
                 {
                     NET_LOG_ERROR("Add_Wifi: JSON parse error: %s", ex.what());
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                 }
                 break;
             }
@@ -428,7 +432,8 @@ static void MgmtLinkPacketTask(void* args)
                 {
                     NET_LOG_INFO("Cleaning moq url because length is zero");
                     moq_server_url.Clear();
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 moq_server_url = moq_url;
@@ -445,14 +450,16 @@ static void MgmtLinkPacketTask(void* args)
             {
                 uint8_t mode =
                     static_cast<uint8_t>(loopback ? NetLoopbackMode::Moq : NetLoopbackMode::Off);
-                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Loopback), std::span<const uint8_t>(&mode, 1));
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Loopback),
+                                 std::span<const uint8_t>(&mode, 1));
                 break;
             }
             case CtlToNet::SetLoopback:
             {
                 if (packet->length < 1)
                 {
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 auto mode = static_cast<NetLoopbackMode>(packet->payload[0]);
@@ -461,20 +468,24 @@ static void MgmtLinkPacketTask(void* args)
                 case NetLoopbackMode::Off:
                     loopback = false;
                     NET_LOG_INFO("Loopback set to: off");
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                     break;
                 case NetLoopbackMode::Raw:
                     NET_LOG_WARN("Loopback mode 'raw' not supported");
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 case NetLoopbackMode::Moq:
                     loopback = true;
                     NET_LOG_INFO("Loopback set to: moq");
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                     break;
                 default:
                     NET_LOG_WARN("Unknown loopback mode: %d", static_cast<int>(mode));
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 break;
@@ -482,14 +493,16 @@ static void MgmtLinkPacketTask(void* args)
             case CtlToNet::GetLogsEnabled:
             {
                 uint8_t enabled = logs_disabled ? 0 : 1;
-                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::LogsEnabled), std::span<const uint8_t>(&enabled, 1));
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::LogsEnabled),
+                                 std::span<const uint8_t>(&enabled, 1));
                 break;
             }
             case CtlToNet::SetLogsEnabled:
             {
                 if (packet->length < 1)
                 {
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 uint8_t enabled = packet->payload[0];
@@ -510,7 +523,8 @@ static void MgmtLinkPacketTask(void* args)
                 if (!IsValidLanguage(new_lang))
                 {
                     NET_LOG_ERROR("Invalid language: %s", new_lang.c_str());
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
                 language = new_lang;
@@ -533,7 +547,8 @@ static void MgmtLinkPacketTask(void* args)
                 if (!parsed.has_value())
                 {
                     NET_LOG_ERROR("Failed to parse channel namespace JSON");
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                     break;
                 }
 
@@ -559,7 +574,8 @@ static void MgmtLinkPacketTask(void* args)
                         || !ai_config.contains("audio") || !ai_config.contains("cmd"))
                     {
                         NET_LOG_ERROR("AI config must be object with query, audio, cmd fields");
-                        mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                        mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                         std::span<const uint8_t>{});
                         break;
                     }
 
@@ -570,7 +586,8 @@ static void MgmtLinkPacketTask(void* args)
                     if (!query_parsed || !audio_parsed || !cmd_parsed)
                     {
                         NET_LOG_ERROR("Failed to parse AI namespace arrays");
-                        mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                        mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                         std::span<const uint8_t>{});
                         break;
                     }
 
@@ -585,13 +602,15 @@ static void MgmtLinkPacketTask(void* args)
                     NET_LOG_INFO("AI namespaces set (query=%zu, audio=%zu, cmd=%zu parts)",
                                  ai_query_ns.size(), ai_audio_response_ns.size(),
                                  ai_cmd_response_ns.size());
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                     UpdateAITracks();
                 }
                 catch (const std::exception& ex)
                 {
                     NET_LOG_ERROR("Failed to parse AI config JSON: %s", ex.what());
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                 }
                 break;
             }
@@ -609,11 +628,13 @@ static void MgmtLinkPacketTask(void* args)
                 const bool res = BurnDisableUSBJTagEFuse();
                 if (res)
                 {
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                     std::span<const uint8_t>{});
                 }
                 else
                 {
-                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error), std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Error),
+                                     std::span<const uint8_t>{});
                 }
                 break;
             }
@@ -868,9 +889,6 @@ extern "C" void app_main(void)
     UpdateAITracks();
     UpdateChannelTracks();
 
-    int next = 0;
-    int64_t heartbeat = 0;
-    bool ready_to_connect_moq = false;
     moq::Session::Status prev_status = moq::Session::Status::kNotConnected;
     Wifi::State prev_wifi_state = Wifi::State::Connected;
     while (true)
@@ -985,15 +1003,6 @@ extern "C" void app_main(void)
             NET_LOG_INFO("Make a new session with uri %s", config.connect_uri.c_str());
             moq_session.reset(new moq::Session(config, readers, writers));
         }
-
-        // if (esp_timer_get_time_ms() > heartbeat)
-        // {
-        //     // NET_LOG_INFO("time %lld", esp_timer_get_time_ms());
-        //     gpio_set_level(NET_LED_G, next);
-        //     next = next ? 0 : 1;
-        //     heartbeat = esp_timer_get_time_ms() + 1000;
-        // }
-
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }

@@ -36,7 +36,7 @@ public:
             return 0xFFFFFFFF;
         }
         return (static_cast<uint32_t>(buf[0]) << 24) | (static_cast<uint32_t>(buf[1]) << 16)
-               | (static_cast<uint32_t>(buf[2]) << 8) | static_cast<uint32_t>(buf[3]);
+             | (static_cast<uint32_t>(buf[2]) << 8) | static_cast<uint32_t>(buf[3]);
     }
 
     bool SetVersion(uint32_t version)
