@@ -9,25 +9,18 @@
 namespace ui_net_link
 {
 
-// UI to NET packet types (aligned with Link protocol)
+// UI to NET packet types
 enum struct UiToNet : uint16_t
 {
     CircularPing = 0x0060,
     AudioFrame = 0x0061,
 };
 
-// NET to UI packet types (aligned with Link protocol)
+// NET to UI packet types
 enum struct NetToUi : uint16_t
 {
     CircularPing = 0x0070,
     AudioFrame = 0x0071,
-};
-
-// Legacy packet type for backwards compatibility
-// TODO: Migrate to UiToNet/NetToUi enum values
-enum struct Packet_Type : uint16_t
-{
-    Message = 0x0061, // Maps to AudioFrame
 };
 
 enum class Channel_Id : uint8_t
@@ -89,8 +82,6 @@ struct __attribute__((packed)) AIResponseChunk
     static constexpr uint32_t Content_Type_Size = sizeof(content_type);
     static constexpr uint32_t Last_Chunk_Size = sizeof(last_chunk);
     static constexpr uint32_t Chunk_Length_Size = sizeof(chunk_length);
-
-    // Ext bytes that are always in packet
     static constexpr uint32_t Channel_Id_Size = sizeof(Channel_Id);
 
     static constexpr uint32_t Chunk_Size =
@@ -125,7 +116,6 @@ Serialize(const AudioObject& talk_frame, bool is_last, link_packet_t& packet)
         packet.payload[offset] = static_cast<uint8_t>(MessageType::AIRequest);
         offset += sizeof(Chunk::type);
 
-        // TODO: We don't use this now but in future we should have this provided from somewhere.
         uint32_t request_id = 0;
         memcpy(packet.payload.data() + offset, &request_id, sizeof(uint32_t));
         offset += sizeof(uint32_t);

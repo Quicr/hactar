@@ -3,7 +3,6 @@
 #include <cstdint>
 
 // NET Chip Commands (MGMT to NET): CtlToNet
-// Values aligned with Link protocol
 enum NetMgmtCmd : uint16_t
 {
     Net_Cmd_Ping = 0x0040,
@@ -28,7 +27,6 @@ enum NetMgmtCmd : uint16_t
 };
 
 // NET Chip Responses (NET to MGMT): NetToCtl
-// Values aligned with Link protocol
 enum NetMgmtResp : uint16_t
 {
     Net_Resp_Pong = 0x0050,
@@ -44,48 +42,9 @@ enum NetMgmtResp : uint16_t
     Net_Resp_Ai = 0x005A,
 };
 
-// Legacy enum for backwards compatibility during transition
-// TODO: Remove once all code migrated to NetMgmtCmd/NetMgmtResp
-enum Configuration
-{
-    Version = Net_Cmd_Ping, // Version maps to Ping for backwards compat
-    Clear_Storage = Net_Cmd_ClearStorage,
-    Add_Wifi = Net_Cmd_AddWifiSsid,
-    Get_Wifi = Net_Cmd_GetWifiSsids,
-    Clear_Wifi = Net_Cmd_ClearWifiSsids,
-    Set_Relay_Url = Net_Cmd_SetRelayUrl,
-    Get_Relay_Url = Net_Cmd_GetRelayUrl,
-    Get_Loopback = Net_Cmd_GetLoopback,
-    Set_Loopback = Net_Cmd_SetLoopback,
-    Get_Logs_Enabled = Net_Cmd_GetLogsEnabled,
-    Set_Logs_Enabled = Net_Cmd_SetLogsEnabled,
-    Set_Language = Net_Cmd_SetLanguage,
-    Get_Language = Net_Cmd_GetLanguage,
-    Set_Channel = Net_Cmd_SetChannel,
-    Get_Channel = Net_Cmd_GetChannel,
-    Set_AI = Net_Cmd_SetAi,
-    Get_AI = Net_Cmd_GetAi,
-    Burn_Disable_USB_JTag_Efuse = Net_Cmd_BurnJtagEfuse,
-
-    // Response types
-    Response_Ack = Net_Resp_Ack,
-    Response_Error = Net_Resp_Error,
-    Response_WifiSsids = Net_Resp_WifiSsids,
-    Response_RelayUrl = Net_Resp_RelayUrl,
-    Response_Loopback = Net_Resp_Loopback,
-    Response_LogsEnabled = Net_Resp_LogsEnabled,
-    Response_Language = Net_Resp_Language,
-    Response_Channel = Net_Resp_Channel,
-    Response_AiConfig = Net_Resp_Ai,
-};
-
-// Loopback modes for NET chip (matches Rust NetLoopbackMode)
 enum struct NetLoopbackMode : uint8_t
 {
-    Off = 0, // Normal operation - audio to MoQ, filter self-echo
-    Raw = 1, // Local bypass - audio directly back to UI (no MoQ)
-    Moq = 2, // MoQ loopback - audio to MoQ, DON'T filter self-echo
+    Off = 0,
+    Raw = 1,
+    Moq = 2,
 };
-
-// Supported language tags for Set_Language validation
-// en-US, es-ES, de-DE, hi-IN, nb-NO

@@ -3,7 +3,6 @@
 #include <cstdint>
 
 // UI Chip Commands (MGMT to UI): CtlToUi
-// Values aligned with Link protocol
 enum UiMgmtCmd : uint16_t
 {
     Ui_Cmd_Ping = 0x0020,
@@ -22,7 +21,6 @@ enum UiMgmtCmd : uint16_t
 };
 
 // UI Chip Responses (UI to MGMT): UiToCtl
-// Values aligned with Link protocol
 enum UiMgmtResp : uint16_t
 {
     Ui_Resp_Pong = 0x0030,
@@ -37,40 +35,10 @@ enum UiMgmtResp : uint16_t
     Ui_Resp_LogsEnabled = 0x0039,
 };
 
-// Legacy enum for backwards compatibility during transition
-// TODO: Remove once all code migrated to UiMgmtCmd/UiMgmtResp
-enum Configuration
-{
-    Ping = Ui_Cmd_Ping,
-    Clear = Ui_Cmd_ClearStorage,
-    Set_Sframe_Key = Ui_Cmd_SetSframeKey,
-    Get_Sframe_Key = Ui_Cmd_GetSframeKey,
-    // Legacy log commands - deprecated in favor of SetLogsEnabled with payload
-    Toggle_Logs = 0x1000, // Internal-only, not in Link protocol
-    Disable_Logs = 0x1001,
-    Enable_Logs = 0x1002,
-    Get_Stack_Info = Ui_Cmd_GetStackInfo,
-    Repaint_Stack = Ui_Cmd_RepaintStack,
-    Get_Loopback = Ui_Cmd_GetLoopback,
-    Set_Loopback = Ui_Cmd_SetLoopback,
-    Get_Logs_Enabled = Ui_Cmd_GetLogsEnabled,
-    Set_Logs_Enabled = Ui_Cmd_SetLogsEnabled,
-
-    // Response types
-    Response_Pong = Ui_Resp_Pong,
-    Response_SframeKey = Ui_Resp_SframeKey,
-    Response_Ack = Ui_Resp_Ack,
-    Response_Error = Ui_Resp_Error,
-    Response_Loopback = Ui_Resp_Loopback,
-    Response_StackInfo = Ui_Resp_StackInfo,
-    Response_LogsEnabled = Ui_Resp_LogsEnabled,
-};
-
-// Loopback modes for UI chip (matches Rust UiLoopbackMode)
 enum struct UiLoopbackMode : uint8_t
 {
-    Off = 0,    // Normal operation - audio sent to NET
-    Raw = 1,    // Before A-law encoding (stereo PCM directly to speaker)
-    Alaw = 2,   // After encoding, before SFrame (encode then decode)
-    Sframe = 3, // Full encryption round-trip (encode → encrypt → decrypt → decode)
+    Off = 0,
+    Raw = 1,
+    Alaw = 2,
+    Sframe = 3,
 };
