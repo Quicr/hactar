@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-// UI Chip Commands (MGMT to UI): CtlToUi
-enum struct UiMgmtCmd : uint16_t
+// UI Chip Commands (MGMT to UI)
+enum struct CtlToUi : uint16_t
 {
     Ping = 0x0020,
     CircularPing = 0x0021,
@@ -20,8 +20,8 @@ enum struct UiMgmtCmd : uint16_t
     ClearStorage = 0x002C,
 };
 
-// UI Chip Responses (UI to MGMT): UiToCtl
-enum struct UiMgmtResp : uint16_t
+// UI Chip Responses (UI to MGMT)
+enum struct UiToCtl : uint16_t
 {
     Pong = 0x0030,
     CircularPing = 0x0031,

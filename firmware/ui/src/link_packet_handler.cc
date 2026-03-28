@@ -107,28 +107,28 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             break;
         }
 
-        switch (static_cast<UiMgmtCmd>(packet->type))
+        switch (static_cast<CtlToUi>(packet->type))
         {
-        case UiMgmtCmd::Ping:
+        case CtlToUi::Ping:
         {
             if (packet->length > 0)
             {
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Pong),
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Pong),
                              std::span<const uint8_t>(packet->payload.data(), packet->length));
             }
             else
             {
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Pong), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Pong), std::span<const uint8_t>{});
             }
             break;
         }
-        case UiMgmtCmd::CircularPing:
+        case CtlToUi::CircularPing:
         {
-            serial.Reply(static_cast<uint16_t>(UiMgmtResp::CircularPing),
+            serial.Reply(static_cast<uint16_t>(UiToCtl::CircularPing),
                          std::span<const uint8_t>(packet->payload.data(), packet->length));
             break;
         }
-        case UiMgmtCmd::GetVersion:
+        case CtlToUi::GetVersion:
         {
             uint32_t version = storage.GetVersion();
             uint8_t buf[4];
@@ -136,15 +136,15 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             buf[1] = static_cast<uint8_t>((version >> 16) & 0xFF);
             buf[2] = static_cast<uint8_t>((version >> 8) & 0xFF);
             buf[3] = static_cast<uint8_t>(version & 0xFF);
-            serial.Reply(static_cast<uint16_t>(UiMgmtResp::Version), std::span<const uint8_t>(buf, 4));
+            serial.Reply(static_cast<uint16_t>(UiToCtl::Version), std::span<const uint8_t>(buf, 4));
             break;
         }
-        case UiMgmtCmd::SetVersion:
+        case CtlToUi::SetVersion:
         {
             if (packet->length != 4)
             {
                 UI_LOG_ERROR("ERR. Version must be 4 bytes");
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Error), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
                 break;
             }
             uint32_t version = (static_cast<uint32_t>(packet->payload[0]) << 24)
@@ -154,29 +154,29 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             if (storage.SetVersion(version))
             {
                 UI_LOG_INFO("OK! Version set to 0x%08lx", version);
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Ack), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             }
             else
             {
                 UI_LOG_ERROR("ERR. Failed to set version");
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Error), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
             }
             break;
         }
-        case UiMgmtCmd::ClearStorage:
+        case CtlToUi::ClearStorage:
         {
             UI_LOG_INFO("OK! Clearing configurations");
             storage.Clear();
             UI_LOG_INFO("OK! Cleared all configurations");
-            serial.Reply(static_cast<uint16_t>(UiMgmtResp::Ack), std::span<const uint8_t>{});
+            serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             break;
         }
-        case UiMgmtCmd::SetSframeKey:
+        case CtlToUi::SetSframeKey:
         {
             if (packet->length != 16)
             {
                 UI_LOG_ERROR("ERR. Sframe key is too short!");
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Error), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
                 break;
             }
 
@@ -184,30 +184,30 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
                              packet->length))
             {
                 UI_LOG_INFO("OK! Saved SFrame Key configuration");
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Ack), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             }
             else
             {
                 UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Error), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
             }
             break;
         }
-        case UiMgmtCmd::GetSframeKey:
+        case CtlToUi::GetSframeKey:
         {
             ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
             if (config.loaded && config.len == 16)
             {
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::SframeKey),
+                serial.Reply(static_cast<uint16_t>(UiToCtl::SframeKey),
                              std::span<const uint8_t>(config.buff, config.len));
             }
             else
             {
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Error), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
             }
             break;
         }
-        case UiMgmtCmd::GetStackInfo:
+        case CtlToUi::GetStackInfo:
         {
             stack_debug::StackInfo info = stack_debug::GetStackInfo();
             char json[128];
@@ -215,52 +215,52 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
                 json, sizeof(json),
                 "{\"stack_base\":%lu,\"stack_top\":%lu,\"stack_size\":%lu,\"stack_used\":%lu}",
                 info.stack_base, info.stack_top, info.stack_size, info.stack_used);
-            serial.Reply(static_cast<uint16_t>(UiMgmtResp::StackInfo),
+            serial.Reply(static_cast<uint16_t>(UiToCtl::StackInfo),
                          std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(json), len));
             break;
         }
-        case UiMgmtCmd::RepaintStack:
+        case CtlToUi::RepaintStack:
         {
             stack_debug::RepaintStack();
-            serial.Reply(static_cast<uint16_t>(UiMgmtResp::Ack), std::span<const uint8_t>{});
+            serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             break;
         }
-        case UiMgmtCmd::GetLoopback:
+        case CtlToUi::GetLoopback:
         {
             uint8_t mode = static_cast<uint8_t>(UiLoopbackMode::Off);
-            serial.Reply(static_cast<uint16_t>(UiMgmtResp::Loopback), std::span<const uint8_t>(&mode, 1));
+            serial.Reply(static_cast<uint16_t>(UiToCtl::Loopback), std::span<const uint8_t>(&mode, 1));
             break;
         }
-        case UiMgmtCmd::SetLoopback:
+        case CtlToUi::SetLoopback:
         {
             if (packet->length < 1)
             {
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Error), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
                 break;
             }
             auto mode = static_cast<UiLoopbackMode>(packet->payload[0]);
             if (mode == UiLoopbackMode::Off)
             {
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Ack), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             }
             else
             {
                 UI_LOG_WARN("Loopback mode %d not supported", static_cast<int>(mode));
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Error), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
             }
             break;
         }
-        case UiMgmtCmd::GetLogsEnabled:
+        case CtlToUi::GetLogsEnabled:
         {
             uint8_t enabled = Logger::enabled ? 1 : 0;
-            serial.Reply(static_cast<uint16_t>(UiMgmtResp::LogsEnabled), std::span<const uint8_t>(&enabled, 1));
+            serial.Reply(static_cast<uint16_t>(UiToCtl::LogsEnabled), std::span<const uint8_t>(&enabled, 1));
             break;
         }
-        case UiMgmtCmd::SetLogsEnabled:
+        case CtlToUi::SetLogsEnabled:
         {
             if (packet->length < 1)
             {
-                serial.Reply(static_cast<uint16_t>(UiMgmtResp::Error), std::span<const uint8_t>{});
+                serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
                 break;
             }
             uint8_t enabled = packet->payload[0];
@@ -272,7 +272,7 @@ void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage)
             {
                 Logger::Disable();
             }
-            serial.Reply(static_cast<uint16_t>(UiMgmtResp::Ack), std::span<const uint8_t>{});
+            serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             break;
         }
         default:

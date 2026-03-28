@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-// NET Chip Commands (MGMT to NET): CtlToNet
-enum struct NetMgmtCmd : uint16_t
+// NET Chip Commands (MGMT to NET)
+enum struct CtlToNet : uint16_t
 {
     Ping = 0x0040,
     CircularPing = 0x0041,
@@ -26,8 +26,8 @@ enum struct NetMgmtCmd : uint16_t
     BurnJtagEfuse = 0x0052,
 };
 
-// NET Chip Responses (NET to MGMT): NetToCtl
-enum struct NetMgmtResp : uint16_t
+// NET Chip Responses (NET to MGMT)
+enum struct NetToCtl : uint16_t
 {
     Pong = 0x0050,
     CircularPing = 0x0051,
