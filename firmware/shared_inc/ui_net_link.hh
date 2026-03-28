@@ -8,9 +8,26 @@
 
 namespace ui_net_link
 {
+
+// UI to NET packet types (aligned with Link protocol)
+enum struct UiToNet : uint16_t
+{
+    CircularPing = 0x0060,
+    AudioFrame = 0x0061,
+};
+
+// NET to UI packet types (aligned with Link protocol)
+enum struct NetToUi : uint16_t
+{
+    CircularPing = 0x0070,
+    AudioFrame = 0x0071,
+};
+
+// Legacy packet type for backwards compatibility
+// TODO: Migrate to UiToNet/NetToUi enum values
 enum struct Packet_Type : uint16_t
 {
-    Message = 0,
+    Message = 0x0061, // Maps to AudioFrame
 };
 
 enum class Channel_Id : uint8_t
@@ -86,7 +103,7 @@ struct __attribute__((packed)) AIResponseChunk
 [[maybe_unused]] static void
 Serialize(const AudioObject& talk_frame, bool is_last, link_packet_t& packet)
 {
-    packet.type = (uint16_t)Packet_Type::Message;
+    packet.type = static_cast<uint16_t>(UiToNet::AudioFrame);
     packet.payload[0] = (uint8_t)talk_frame.channel_id;
 
     uint32_t offset = 1;
@@ -130,7 +147,7 @@ Serialize(const AudioObject& talk_frame, bool is_last, link_packet_t& packet)
 [[maybe_unused]] static void
 Serialize(const Channel_Id channel_id, const char* text, const uint32_t len, link_packet_t& packet)
 {
-    packet.type = (uint16_t)Packet_Type::Message;
+    packet.type = static_cast<uint16_t>(UiToNet::AudioFrame);
     packet.payload[0] = (uint8_t)channel_id;
 
     uint32_t offset = 1;

@@ -9,7 +9,7 @@ Link_Sync_Word = bytes([0x4C, 0x49, 0x4E, 0x4B])
 def make_tlv(type_id: int) -> bytes:
     """Create a Link TLV packet: sync_word (4) + type (2) + length (4) + payload"""
 
-    return Link_Sync_Word + struct.pack("<H", type_id) + struct.pack("<I", 0) 
+    return Link_Sync_Word + struct.pack("<H", type_id) + struct.pack("<I", 0)
 
 command_map = {
     "version": make_tlv(0),
@@ -37,41 +37,44 @@ bypass_map = {
     "loopback": 19,
 }
 
+# UI Commands - aligned with Link protocol CtlToUi (0x0020-0x002C)
 ui_command_map = {
-    "ping": {"id": 0, "num_params": 0},  # Replaces version stub - echoes payload
-    "clear_config": {"id": 1, "num_params": 0},
-    "set_sframe_key": {"id": 2, "num_params": 1, "encoder": "hex"},
-    "get_sframe_key": {"id": 3, "num_params": 0},
-    "toggle_logs": {"id": 4, "num_params": 0},
-    "disable_logs": {"id": 5, "num_params": 0},
-    "enable_logs": {"id": 6, "num_params": 0},
-    "get_stack_info": {"id": 7, "num_params": 0},
-    "repaint_stack": {"id": 8, "num_params": 0},
-    "get_loopback": {"id": 9, "num_params": 0},
-    "set_loopback": {"id": 10, "num_params": 1, "encoder": "ui_loopback"},  # off/raw/alaw/sframe
-    "get_logs_enabled": {"id": 11, "num_params": 0},
-    "set_logs_enabled": {"id": 12, "num_params": 1, "encoder": "bool"},  # 0=disabled, 1=enabled
+    "ping": {"id": 0x0020, "num_params": 0},
+    "circular_ping": {"id": 0x0021, "num_params": 0},
+    "get_version": {"id": 0x0022, "num_params": 0},
+    "set_version": {"id": 0x0023, "num_params": 1},
+    "get_sframe_key": {"id": 0x0024, "num_params": 0},
+    "set_sframe_key": {"id": 0x0025, "num_params": 1, "encoder": "hex"},
+    "set_loopback": {"id": 0x0026, "num_params": 1, "encoder": "ui_loopback"},
+    "get_loopback": {"id": 0x0027, "num_params": 0},
+    "get_stack_info": {"id": 0x0028, "num_params": 0},
+    "repaint_stack": {"id": 0x0029, "num_params": 0},
+    "get_logs_enabled": {"id": 0x002A, "num_params": 0},
+    "set_logs_enabled": {"id": 0x002B, "num_params": 1, "encoder": "bool"},
+    "clear_config": {"id": 0x002C, "num_params": 0},
 }
 
+# NET Commands - aligned with Link protocol CtlToNet (0x0040-0x0052)
 net_command_map = {
-    "version": {"id": 0, "num_params": 0},
-    "clear_storage": {"id": 1, "num_params": 0},
-    "add_wifi": {"id": 2, "num_params": 1, "encoder": "json"},  # JSON: {"ssid":"...","password":"..."}
-    "get_wifi": {"id": 3, "num_params": 0},  # Returns JSON array
-    "clear_wifi": {"id": 4, "num_params": 0},
-    "set_relay_url": {"id": 5, "num_params": 1},
-    "get_relay_url": {"id": 6, "num_params": 0},
-    "get_loopback": {"id": 7, "num_params": 0},
-    "set_loopback": {"id": 8, "num_params": 1, "encoder": "loopback"},  # off/raw/moq
-    "get_logs_enabled": {"id": 9, "num_params": 0},
-    "set_logs_enabled": {"id": 10, "num_params": 1, "encoder": "bool"},  # 0=disabled, 1=enabled
-    "set_language": {"id": 11, "num_params": 1, "encoder": "language"},
-    "get_language": {"id": 12, "num_params": 0},
-    "set_channel": {"id": 13, "num_params": 1, "encoder": "json"},
-    "get_channel": {"id": 14, "num_params": 0},
-    "set_ai": {"id": 15, "num_params": 1, "encoder": "json"},
-    "get_ai": {"id": 16, "num_params": 0},
-    "burn_efuse": {"id": 17, "num_params": 0},
+    "ping": {"id": 0x0040, "num_params": 0},
+    "circular_ping": {"id": 0x0041, "num_params": 0},
+    "add_wifi": {"id": 0x0042, "num_params": 1, "encoder": "json"},
+    "get_wifi": {"id": 0x0043, "num_params": 0},
+    "clear_wifi": {"id": 0x0044, "num_params": 0},
+    "get_relay_url": {"id": 0x0045, "num_params": 0},
+    "set_relay_url": {"id": 0x0046, "num_params": 1},
+    "set_loopback": {"id": 0x0047, "num_params": 1, "encoder": "loopback"},
+    "get_loopback": {"id": 0x0048, "num_params": 0},
+    "get_logs_enabled": {"id": 0x0049, "num_params": 0},
+    "set_logs_enabled": {"id": 0x004A, "num_params": 1, "encoder": "bool"},
+    "clear_storage": {"id": 0x004B, "num_params": 0},
+    "get_language": {"id": 0x004C, "num_params": 0},
+    "set_language": {"id": 0x004D, "num_params": 1, "encoder": "language"},
+    "get_channel": {"id": 0x004E, "num_params": 0},
+    "set_channel": {"id": 0x004F, "num_params": 1, "encoder": "json"},
+    "get_ai": {"id": 0x0050, "num_params": 0},
+    "set_ai": {"id": 0x0051, "num_params": 1, "encoder": "json"},
+    "burn_efuse": {"id": 0x0052, "num_params": 0},
 }
 
 # Supported language tags
@@ -154,57 +157,72 @@ Reply_Ready = 0x81
 Reply_Ack = bytes([0x82])
 Reply_Nack = bytes([0x83])
 
-# TLV Response types (matching net_mgmt_link.h / ui_mgmt_link.h)
-Response_Ack = 0x8000
-Response_Error = 0x8001
+# UI TLV Response types - aligned with Link protocol UiToCtl (0x0030-0x0039)
+Ui_Response_Pong = 0x0030
+Ui_Response_CircularPing = 0x0031
+Ui_Response_Version = 0x0032
+Ui_Response_SframeKey = 0x0033
+Ui_Response_Ack = 0x0034
+Ui_Response_Error = 0x0035
+Ui_Response_Loopback = 0x0036
+Ui_Response_Log = 0x0037
+Ui_Response_StackInfo = 0x0038
+Ui_Response_LogsEnabled = 0x0039
 
-# NET typed responses (matching net_mgmt_link.h)
-Response_WifiSsids = 0x8002      # JSON array: [{"ssid":"...","password":"..."},...]
-Response_RelayUrl = 0x8003      # UTF-8 URL string
-Net_Response_Loopback = 0x8004  # 1 byte: loopback mode enum
-Net_Response_LogsEnabled = 0x8005  # 1 byte: 0=disabled, 1=enabled
-Response_Language = 0x8006      # UTF-8 language tag (e.g. "en-US")
-Response_Channel = 0x8007       # JSON array of namespace parts
-Response_AiConfig = 0x8008      # JSON: {"query":[...],"audio":[...],"cmd":[...]}
+# NET TLV Response types - aligned with Link protocol NetToCtl (0x0050-0x005A)
+Net_Response_Pong = 0x0050
+Net_Response_CircularPing = 0x0051
+Net_Response_WifiSsids = 0x0052
+Net_Response_RelayUrl = 0x0053
+Net_Response_Ack = 0x0054
+Net_Response_Error = 0x0055
+Net_Response_Loopback = 0x0056
+Net_Response_LogsEnabled = 0x0057
+Net_Response_Language = 0x0058
+Net_Response_Channel = 0x0059
+Net_Response_AiConfig = 0x005A
 
-# UI typed responses (matching ui_mgmt_link.h)
-Response_SframeKey = 0x8002        # 16 bytes: SFrame encryption key
-Ui_Response_Loopback = 0x8003     # 1 byte: UiLoopbackMode
-Ui_Response_LogsEnabled = 0x8004  # 1 byte: 0=disabled, 1=enabled
-Response_StackInfo = 0x8005       # JSON: {"stack_base":...,"stack_top":...,"stack_size":...,"stack_used":...}
-
-# Aliases for backwards compatibility
-Response_Loopback = Net_Response_Loopback
-Response_LogsEnabled = Net_Response_LogsEnabled
+# Generic aliases (for backwards compatibility, use NET codes)
+Response_Ack = Net_Response_Ack
+Response_Error = Net_Response_Error
 
 # Chip-specific response names
 NET_RESPONSE_NAMES = {
-    Response_Ack: "ACK",
-    Response_Error: "ERROR",
-    Response_WifiSsids: "WIFI",
-    Response_RelayUrl: "RELAY_URL",
+    Net_Response_Pong: "PONG",
+    Net_Response_CircularPing: "CIRCULAR_PING",
+    Net_Response_WifiSsids: "WIFI",
+    Net_Response_RelayUrl: "RELAY_URL",
+    Net_Response_Ack: "ACK",
+    Net_Response_Error: "ERROR",
     Net_Response_Loopback: "LOOPBACK",
     Net_Response_LogsEnabled: "LOGS_ENABLED",
-    Response_Language: "LANGUAGE",
-    Response_Channel: "CHANNEL",
-    Response_AiConfig: "AI_CONFIG",
+    Net_Response_Language: "LANGUAGE",
+    Net_Response_Channel: "CHANNEL",
+    Net_Response_AiConfig: "AI_CONFIG",
 }
 
 UI_RESPONSE_NAMES = {
-    Response_Ack: "ACK",
-    Response_Error: "ERROR",
-    Response_SframeKey: "SFRAME_KEY",
+    Ui_Response_Pong: "PONG",
+    Ui_Response_CircularPing: "CIRCULAR_PING",
+    Ui_Response_Version: "VERSION",
+    Ui_Response_SframeKey: "SFRAME_KEY",
+    Ui_Response_Ack: "ACK",
+    Ui_Response_Error: "ERROR",
     Ui_Response_Loopback: "LOOPBACK",
+    Ui_Response_Log: "LOG",
+    Ui_Response_StackInfo: "STACK_INFO",
     Ui_Response_LogsEnabled: "LOGS_ENABLED",
-    Response_StackInfo: "STACK_INFO",
 }
 
 # Generic mapping (uses NET codes, for backwards compatibility)
 RESPONSE_TYPE_NAMES = NET_RESPONSE_NAMES
 
-def is_data_response(response_type: int) -> bool:
-    """Check if response type carries data payload (anything except Ack/Error)."""
-    return response_type >= 0x8002
+def is_data_response(chip: str, response_type: int) -> bool:
+    """Check if response type carries data payload (anything except Ack/Error/Pong)."""
+    if chip == "ui":
+        return response_type not in (Ui_Response_Ack, Ui_Response_Error, Ui_Response_Pong)
+    else:
+        return response_type not in (Net_Response_Ack, Net_Response_Error, Net_Response_Pong)
 
 
 def build_chip_command(chip: str, command: str, params: list[str] = None) -> tuple[bytes, str | None]:

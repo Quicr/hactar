@@ -55,7 +55,9 @@ void HandleNetLinkPackets(Serial& serial, Protector& protector, AudioChip& audio
             return;
         }
 
-        if ((ui_net_link::Packet_Type)packet->type != ui_net_link::Packet_Type::Message)
+        // Accept both old (0) and new (0x0061) packet type values for AudioFrame
+        if (packet->type != static_cast<uint16_t>(ui_net_link::Packet_Type::Message)
+            && packet->type != 0)
         {
             UI_LOG_ERROR("Unhandled packet type %d", (int)packet->type);
             continue;

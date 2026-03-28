@@ -19,8 +19,9 @@ import struct
 from hactar_commands import (bypass_map, command_map, hactar_command_completer,
                              hactar_command_print_matches, net_command_map,
                              ui_command_map, build_chip_command, Link_Sync_Word,
-                             Response_Ack, Response_Error, is_data_response,
-                             NET_RESPONSE_NAMES)
+                             Net_Response_Ack, Net_Response_Error,
+                             Ui_Response_Ack, Ui_Response_Error,
+                             NET_RESPONSE_NAMES, UI_RESPONSE_NAMES)
 from hactar_scanning import HactarScanning, ResetDevice, SelectHactarPort
 
 
@@ -93,21 +94,24 @@ class Monitor:
             payload = self.uart.read(msg_len)
 
         # Format response based on type
-        if msg_type == Response_Ack:
+        # Check both UI and NET response codes
+        if msg_type in (Net_Response_Ack, Ui_Response_Ack):
             return "\033[92m[ACK]\033[0m\n"
-        elif msg_type == Response_Error:
+        elif msg_type in (Net_Response_Error, Ui_Response_Error):
             return "\033[91m[ERROR]\033[0m\n"
-        elif is_data_response(msg_type):
-            type_name = NET_RESPONSE_NAMES.get(msg_type, f"0x{msg_type:04x}")
-            # Small payloads (1-2 bytes) are likely numeric, show as hex
-            if len(payload) <= 2:
-                return f"\033[94m[{type_name}]\033[0m {payload.hex()}\n"
-            try:
-                return f"\033[94m[{type_name}]\033[0m {payload.decode('utf-8')}\n"
-            except Exception:
-                return f"\033[94m[{type_name}]\033[0m {payload.hex()}\n"
         else:
-            return f"[TLV type=0x{msg_type:04x} len={msg_len}] {payload.hex()}\n"
+            # Check if it's a known response type
+            type_name = NET_RESPONSE_NAMES.get(msg_type) or UI_RESPONSE_NAMES.get(msg_type)
+            if type_name:
+                # Small payloads (1-2 bytes) are likely numeric, show as hex
+                if len(payload) <= 2:
+                    return f"\033[94m[{type_name}]\033[0m {payload.hex()}\n"
+                try:
+                    return f"\033[94m[{type_name}]\033[0m {payload.decode('utf-8')}\n"
+                except Exception:
+                    return f"\033[94m[{type_name}]\033[0m {payload.hex()}\n"
+            else:
+                return f"[TLV type=0x{msg_type:04x} len={msg_len}] {payload.hex()}\n"
 
     def ReadSerial(self, threaded=False):
         while self.running and threaded:
