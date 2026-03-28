@@ -350,28 +350,28 @@ static void MgmtLinkPacketTask(void* args)
         {
             switch (static_cast<NetMgmtCmd>(packet->type))
             {
-            case Net_Cmd_Ping:
+            case NetMgmtCmd::Ping:
             {
-                mgmt_layer.Reply(Net_Resp_Pong, std::span<const uint8_t>{});
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Pong), std::span<const uint8_t>{});
                 break;
             }
-            case Net_Cmd_CircularPing:
+            case NetMgmtCmd::CircularPing:
             {
-                mgmt_layer.Reply(Net_Resp_CircularPing,
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::CircularPing),
                                  std::span<const uint8_t>(packet->payload.data(), packet->length));
                 break;
             }
-            case Net_Cmd_ClearStorage:
+            case NetMgmtCmd::ClearStorage:
             {
                 if (ESP_OK != storage.Clear())
                 {
-                    mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                     break;
                 }
-                mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                 break;
             }
-            case Net_Cmd_AddWifiSsid:
+            case NetMgmtCmd::AddWifiSsid:
             {
                 try
                 {
@@ -381,7 +381,7 @@ static void MgmtLinkPacketTask(void* args)
                     if (!wifi_json.contains("ssid") || !wifi_json.contains("password"))
                     {
                         NET_LOG_ERROR("Add_Wifi: missing ssid or password field");
-                        mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                        mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                         break;
                     }
 
@@ -390,16 +390,16 @@ static void MgmtLinkPacketTask(void* args)
 
                     NET_LOG_INFO("Add_Wifi: ssid=%s", ssid.c_str());
                     wifi.Connect(ssid, password);
-                    mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                 }
                 catch (const std::exception& ex)
                 {
                     NET_LOG_ERROR("Add_Wifi: JSON parse error: %s", ex.what());
-                    mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                 }
                 break;
             }
-            case Net_Cmd_GetWifiSsids:
+            case NetMgmtCmd::GetWifiSsids:
             {
                 json wifi_array = json::array();
                 const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
@@ -410,16 +410,16 @@ static void MgmtLinkPacketTask(void* args)
                     entry["password"] = std::string(cred.pwd, cred.pwd_len);
                     wifi_array.push_back(entry);
                 }
-                mgmt_layer.Reply(Net_Resp_WifiSsids, wifi_array.dump());
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::WifiSsids), wifi_array.dump());
                 break;
             }
-            case Net_Cmd_ClearWifiSsids:
+            case NetMgmtCmd::ClearWifiSsids:
             {
                 wifi.ClearSavedSSIDs();
-                mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                 break;
             }
-            case Net_Cmd_SetRelayUrl:
+            case NetMgmtCmd::SetRelayUrl:
             {
                 std::string moq_url((char*)packet->payload.data(), packet->length);
                 NET_LOG_INFO("Got moq url %d - %s", moq_url.length(), moq_url.c_str());
@@ -428,31 +428,31 @@ static void MgmtLinkPacketTask(void* args)
                 {
                     NET_LOG_INFO("Cleaning moq url because length is zero");
                     moq_server_url.Clear();
-                    mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                     break;
                 }
                 moq_server_url = moq_url;
-                mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                 break;
             }
-            case Net_Cmd_GetRelayUrl:
+            case NetMgmtCmd::GetRelayUrl:
             {
                 std::string moq_url = moq_server_url.Load();
-                mgmt_layer.Reply(Net_Resp_RelayUrl, moq_url);
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::RelayUrl), moq_url);
                 break;
             }
-            case Net_Cmd_GetLoopback:
+            case NetMgmtCmd::GetLoopback:
             {
                 uint8_t mode =
                     static_cast<uint8_t>(loopback ? NetLoopbackMode::Moq : NetLoopbackMode::Off);
-                mgmt_layer.Reply(Net_Resp_Loopback, std::span<const uint8_t>(&mode, 1));
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Loopback), std::span<const uint8_t>(&mode, 1));
                 break;
             }
-            case Net_Cmd_SetLoopback:
+            case NetMgmtCmd::SetLoopback:
             {
                 if (packet->length < 1)
                 {
-                    mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                     break;
                 }
                 auto mode = static_cast<NetLoopbackMode>(packet->payload[0]);
@@ -461,35 +461,35 @@ static void MgmtLinkPacketTask(void* args)
                 case NetLoopbackMode::Off:
                     loopback = false;
                     NET_LOG_INFO("Loopback set to: off");
-                    mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                     break;
                 case NetLoopbackMode::Raw:
                     NET_LOG_WARN("Loopback mode 'raw' not supported");
-                    mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                     break;
                 case NetLoopbackMode::Moq:
                     loopback = true;
                     NET_LOG_INFO("Loopback set to: moq");
-                    mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                     break;
                 default:
                     NET_LOG_WARN("Unknown loopback mode: %d", static_cast<int>(mode));
-                    mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                     break;
                 }
                 break;
             }
-            case Net_Cmd_GetLogsEnabled:
+            case NetMgmtCmd::GetLogsEnabled:
             {
                 uint8_t enabled = logs_disabled ? 0 : 1;
-                mgmt_layer.Reply(Net_Resp_LogsEnabled, std::span<const uint8_t>(&enabled, 1));
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::LogsEnabled), std::span<const uint8_t>(&enabled, 1));
                 break;
             }
-            case Net_Cmd_SetLogsEnabled:
+            case NetMgmtCmd::SetLogsEnabled:
             {
                 if (packet->length < 1)
                 {
-                    mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                     break;
                 }
                 uint8_t enabled = packet->payload[0];
@@ -501,55 +501,55 @@ static void MgmtLinkPacketTask(void* args)
                 {
                     DisableLogging();
                 }
-                mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                 break;
             }
-            case Net_Cmd_SetLanguage:
+            case NetMgmtCmd::SetLanguage:
             {
                 std::string new_lang((char*)packet->payload.data(), packet->length);
                 if (!IsValidLanguage(new_lang))
                 {
                     NET_LOG_ERROR("Invalid language: %s", new_lang.c_str());
-                    mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                     break;
                 }
                 language = new_lang;
                 NET_LOG_INFO("Language set to: %s", new_lang.c_str());
-                mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                 UpdateAITracks();
                 UpdateChannelTracks();
                 break;
             }
-            case Net_Cmd_GetLanguage:
+            case NetMgmtCmd::GetLanguage:
             {
                 std::string lang = language.Load();
-                mgmt_layer.Reply(Net_Resp_Language, lang);
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Language), lang);
                 break;
             }
-            case Net_Cmd_SetChannel:
+            case NetMgmtCmd::SetChannel:
             {
                 std::string json_str((char*)packet->payload.data(), packet->length);
                 auto parsed = JsonToNamespace(json_str);
                 if (!parsed.has_value())
                 {
                     NET_LOG_ERROR("Failed to parse channel namespace JSON");
-                    mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                     break;
                 }
 
                 channel_ns = parsed.value();
                 channel_ns_json = json_str;
                 NET_LOG_INFO("Channel namespace set (%zu parts)", channel_ns.size());
-                mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                 UpdateChannelTracks();
                 break;
             }
-            case Net_Cmd_GetChannel:
+            case NetMgmtCmd::GetChannel:
             {
-                mgmt_layer.Reply(Net_Resp_Channel, channel_ns_json.Load());
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Channel), channel_ns_json.Load());
                 break;
             }
-            case Net_Cmd_SetAi:
+            case NetMgmtCmd::SetAi:
             {
                 std::string json_str((char*)packet->payload.data(), packet->length);
                 try
@@ -559,7 +559,7 @@ static void MgmtLinkPacketTask(void* args)
                         || !ai_config.contains("audio") || !ai_config.contains("cmd"))
                     {
                         NET_LOG_ERROR("AI config must be object with query, audio, cmd fields");
-                        mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                        mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                         break;
                     }
 
@@ -570,7 +570,7 @@ static void MgmtLinkPacketTask(void* args)
                     if (!query_parsed || !audio_parsed || !cmd_parsed)
                     {
                         NET_LOG_ERROR("Failed to parse AI namespace arrays");
-                        mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                        mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                         break;
                     }
 
@@ -585,35 +585,35 @@ static void MgmtLinkPacketTask(void* args)
                     NET_LOG_INFO("AI namespaces set (query=%zu, audio=%zu, cmd=%zu parts)",
                                  ai_query_ns.size(), ai_audio_response_ns.size(),
                                  ai_cmd_response_ns.size());
-                    mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                     UpdateAITracks();
                 }
                 catch (const std::exception& ex)
                 {
                     NET_LOG_ERROR("Failed to parse AI config JSON: %s", ex.what());
-                    mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                 }
                 break;
             }
-            case Net_Cmd_GetAi:
+            case NetMgmtCmd::GetAi:
             {
                 json response;
                 response["query"] = ai_query_ns;
                 response["audio"] = ai_audio_response_ns;
                 response["cmd"] = ai_cmd_response_ns;
-                mgmt_layer.Reply(Net_Resp_Ai, response.dump());
+                mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ai), response.dump());
                 break;
             }
-            case Net_Cmd_BurnJtagEfuse:
+            case NetMgmtCmd::BurnJtagEfuse:
             {
                 const bool res = BurnDisableUSBJTagEFuse();
                 if (res)
                 {
-                    mgmt_layer.Reply(Net_Resp_Ack, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Ack), std::span<const uint8_t>{});
                 }
                 else
                 {
-                    mgmt_layer.Reply(Net_Resp_Error, std::span<const uint8_t>{});
+                    mgmt_layer.Reply(static_cast<uint16_t>(NetMgmtResp::Error), std::span<const uint8_t>{});
                 }
                 break;
             }
