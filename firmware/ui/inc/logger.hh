@@ -88,6 +88,8 @@ public:
         const int line_size = std::sprintf(log_line, format, args...);
 
         // Send log via TLV protocol if mgmt_serial is configured
+        // NOTE: When mgmt_serial is set, we ONLY send via TLV because mgmt_serial
+        // uses huart1, and raw bytes would corrupt the TLV protocol stream.
         if (mgmt_serial != nullptr)
         {
             // Build full log message with prefix
@@ -102,9 +104,10 @@ public:
             tlv_len += line_size;
             mgmt_serial->Reply(UiToCtl_Log,
                                std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(tlv_log), tlv_len));
+            return; // Don't also send raw bytes - would corrupt TLV stream
         }
 
-        // Also output to debug UART
+        // Fallback: output to debug UART only if mgmt_serial not configured
         switch (level)
         {
         case Level::Raw:
