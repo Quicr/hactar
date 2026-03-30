@@ -379,6 +379,24 @@ static void MgmtLinkPacketTask(void* args)
                                      std::span<const uint8_t>{});
                     break;
                 }
+
+                // Clear in-memory caches for all StoredValue objects
+                moq_server_url.Clear();
+                language.Clear();
+                channel_ns_json.Clear();
+                ai_query_ns_json.Clear();
+                ai_audio_response_ns_json.Clear();
+                ai_cmd_response_ns_json.Clear();
+
+                // Clear in-memory namespace vectors
+                channel_ns.clear();
+                ai_query_ns.clear();
+                ai_audio_response_ns.clear();
+                ai_cmd_response_ns.clear();
+
+                // Clear WiFi credentials
+                wifi.ClearSavedSSIDs();
+
                 mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
                 break;
             }
