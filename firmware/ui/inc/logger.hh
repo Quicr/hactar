@@ -1,12 +1,13 @@
 #pragma once
 
 #include "stm32.h"
-#include "serial.hh"
 #include <string.h>
+#include <cstring>
 #include <iomanip>
 #include <sstream>
 #include <string>
 #include <span>
+#include <functional>
 
 #ifndef UI_LOGGER_ACTIVE_LEVEL
 #define UI_LOGGER_ACTIVE_LEVEL UI_LOGGING_DEBUG
@@ -55,11 +56,14 @@ constexpr int MAX_LOG_LENGTH = 256;
 constexpr int Prefix_Len = 8;
 constexpr uint16_t UiToCtl_Log = 0x0037;
 
+// Callback type for sending TLV logs
+using LogSendCallback = std::function<void(uint16_t type, const uint8_t* data, size_t len)>;
+
 class Logger
 {
 public:
     static inline bool enabled = true;
-    static inline Serial* mgmt_serial = nullptr;
+    static inline LogSendCallback log_sender = nullptr;
 
     enum class Level
     {
@@ -70,9 +74,9 @@ public:
         Raw
     };
 
-    static void SetMgmtSerial(Serial* serial)
+    static void SetLogSender(LogSendCallback callback)
     {
-        mgmt_serial = serial;
+        log_sender = callback;
     }
 
 #ifdef STM32F405xx
@@ -87,10 +91,10 @@ public:
         static char log_line[MAX_LOG_LENGTH] = {0};
         const int line_size = std::sprintf(log_line, format, args...);
 
-        // Send log via TLV protocol if mgmt_serial is configured
-        // NOTE: When mgmt_serial is set, we ONLY send via TLV because mgmt_serial
+        // Send log via TLV protocol if log_sender is configured
+        // NOTE: When log_sender is set, we ONLY send via TLV because the serial
         // uses huart1, and raw bytes would corrupt the TLV protocol stream.
-        if (mgmt_serial != nullptr)
+        if (log_sender != nullptr)
         {
             // Build full log message with prefix
             static char tlv_log[MAX_LOG_LENGTH + Prefix_Len] = {0};
@@ -102,8 +106,7 @@ public:
             }
             std::memcpy(tlv_log + tlv_len, log_line, line_size);
             tlv_len += line_size;
-            mgmt_serial->Reply(UiToCtl_Log,
-                               std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(tlv_log), tlv_len));
+            log_sender(UiToCtl_Log, reinterpret_cast<const uint8_t*>(tlv_log), tlv_len);
             return; // Don't also send raw bytes - would corrupt TLV stream
         }
 

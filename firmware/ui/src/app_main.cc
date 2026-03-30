@@ -144,7 +144,9 @@ int app_main()
     mgmt_serial.StartReceive();
 
     // Enable TLV logging via MGMT serial
-    Logger::SetMgmtSerial(&mgmt_serial);
+    Logger::SetLogSender([](uint16_t type, const uint8_t* data, size_t len) {
+        mgmt_serial.Reply(type, std::span<const uint8_t>(data, len));
+    });
 
     // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
