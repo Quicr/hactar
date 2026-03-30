@@ -153,7 +153,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
             if (packet->length != 4)
             {
                 UI_LOG_ERROR("ERR. Version must be 4 bytes");
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error), "Version must be 4 bytes");
                 break;
             }
             uint32_t version = (static_cast<uint32_t>(packet->payload[0]) << 24)
@@ -168,7 +168,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
             else
             {
                 UI_LOG_ERROR("ERR. Failed to set version");
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error), "Failed to set version");
             }
             break;
         }
@@ -184,8 +184,8 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
         {
             if (packet->length != 16)
             {
-                UI_LOG_ERROR("ERR. Sframe key is too short!");
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                UI_LOG_ERROR("ERR. Sframe key must be 16 bytes");
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error), "SFrame key must be 16 bytes");
                 break;
             }
 
@@ -198,7 +198,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
             else
             {
                 UI_LOG_ERROR("ERR. Failed to save SFrame Key configuration");
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error), "Failed to save SFrame key");
             }
             break;
         }
@@ -212,7 +212,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
             }
             else
             {
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error), "SFrame key not found");
             }
             break;
         }
@@ -245,7 +245,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
         {
             if (packet->length < 1)
             {
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error), "Missing loopback mode parameter");
                 break;
             }
             auto mode = static_cast<UiLoopbackMode>(packet->payload[0]);
@@ -256,7 +256,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
             else
             {
                 UI_LOG_WARN("Loopback mode %d not supported", static_cast<int>(mode));
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error), "Loopback mode not supported");
             }
             break;
         }
@@ -271,7 +271,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
         {
             if (packet->length < 1)
             {
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error), std::span<const uint8_t>{});
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error), "Missing logs enabled parameter");
                 break;
             }
             uint8_t enabled = packet->payload[0];

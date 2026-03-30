@@ -42,6 +42,7 @@ public:
 
     void ReplyAck();
     void ReplyError();
+    void ReplyError(uint16_t type, const char* msg);
     void ReplyNack()
     {
         ReplyError();
