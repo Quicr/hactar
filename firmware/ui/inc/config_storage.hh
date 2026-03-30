@@ -67,7 +67,7 @@ public:
 
     void Clear()
     {
-        eeprom.Fill(0xFF);
+        eeprom.Fill(0x00);
     }
 
     // Legacy compatibility - these match the old API signatures
@@ -95,15 +95,10 @@ public:
         {
         case Config_Id::Version:
         {
-            uint32_t ver = GetVersion();
-            if (ver != 0xFFFFFFFF)
+            if (eeprom.Read(Version_Address, config.buff, Version_Size) == HAL_OK)
             {
                 config.loaded = true;
                 config.len = Version_Size;
-                config.buff[0] = static_cast<uint8_t>((ver >> 24) & 0xFF);
-                config.buff[1] = static_cast<uint8_t>((ver >> 16) & 0xFF);
-                config.buff[2] = static_cast<uint8_t>((ver >> 8) & 0xFF);
-                config.buff[3] = static_cast<uint8_t>(ver & 0xFF);
             }
             break;
         }
@@ -111,20 +106,8 @@ public:
         {
             if (GetSframeKey(config.buff))
             {
-                bool all_ff = true;
-                for (int i = 0; i < Sframe_Key_Size; ++i)
-                {
-                    if (config.buff[i] != 0xFF)
-                    {
-                        all_ff = false;
-                        break;
-                    }
-                }
-                if (!all_ff)
-                {
-                    config.loaded = true;
-                    config.len = Sframe_Key_Size;
-                }
+                config.loaded = true;
+                config.len = Sframe_Key_Size;
             }
             break;
         }
