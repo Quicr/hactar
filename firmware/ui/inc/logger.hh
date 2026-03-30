@@ -1,10 +1,12 @@
 #pragma once
 
 #include "stm32.h"
+#include "serial.hh"
 #include <string.h>
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <span>
 
 #ifndef UI_LOGGER_ACTIVE_LEVEL
 #define UI_LOGGER_ACTIVE_LEVEL UI_LOGGING_DEBUG
@@ -51,10 +53,13 @@
 extern UART_HandleTypeDef huart1;
 constexpr int MAX_LOG_LENGTH = 256;
 constexpr int Prefix_Len = 8;
+constexpr uint16_t UiToCtl_Log = 0x0037;
+
 class Logger
 {
 public:
     static inline bool enabled = true;
+    static inline Serial* mgmt_serial = nullptr;
 
     enum class Level
     {
@@ -64,6 +69,11 @@ public:
         Debug,
         Raw
     };
+
+    static void SetMgmtSerial(Serial* serial)
+    {
+        mgmt_serial = serial;
+    }
 
 #ifdef STM32F405xx
     template <typename... T>
@@ -77,7 +87,24 @@ public:
         static char log_line[MAX_LOG_LENGTH] = {0};
         const int line_size = std::sprintf(log_line, format, args...);
 
-        // If raw don't add any additional text.
+        // Send log via TLV protocol if mgmt_serial is configured
+        if (mgmt_serial != nullptr)
+        {
+            // Build full log message with prefix
+            static char tlv_log[MAX_LOG_LENGTH + Prefix_Len] = {0};
+            int tlv_len = 0;
+            if (level != Level::Raw)
+            {
+                std::memcpy(tlv_log, log_level_string(level), Prefix_Len);
+                tlv_len = Prefix_Len;
+            }
+            std::memcpy(tlv_log + tlv_len, log_line, line_size);
+            tlv_len += line_size;
+            mgmt_serial->Reply(UiToCtl_Log,
+                               std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(tlv_log), tlv_len));
+        }
+
+        // Also output to debug UART
         switch (level)
         {
         case Level::Raw:

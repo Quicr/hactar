@@ -143,6 +143,9 @@ int app_main()
     net_serial.StartReceive();
     mgmt_serial.StartReceive();
 
+    // Enable TLV logging via MGMT serial
+    Logger::SetMgmtSerial(&mgmt_serial);
+
     // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
     bool done_booting = false;
