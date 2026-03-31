@@ -40,7 +40,7 @@ jobs:
         submodules: recursive
 
     - name: Install Rust
-      uses: dtolnay/rust-action@stable
+      uses: dtolnay/rust-toolchain@stable
 
     - name: Run link tests
       working-directory: ./link/link
@@ -56,7 +56,7 @@ jobs:
         submodules: recursive
 
     - name: Install Rust
-      uses: dtolnay/rust-action@stable
+      uses: dtolnay/rust-toolchain@stable
 
     - name: Install Dependencies
       run: |
@@ -83,7 +83,7 @@ jobs:
         submodules: recursive
 
     - name: Install Rust
-      uses: dtolnay/rust-action@stable
+      uses: dtolnay/rust-toolchain@stable
 
     - name: Install ARM target
       run: rustup target add thumbv6m-none-eabi
