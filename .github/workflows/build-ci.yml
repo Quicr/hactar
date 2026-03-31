@@ -12,50 +12,94 @@ jobs:
     permissions:
       pull-requests: read
     outputs:
-      mgmt: ${{ steps.filter.outputs.mgmt }}
+      link: ${{ steps.filter.outputs.link }}
       net: ${{ steps.filter.outputs.net }}
       ui: ${{ steps.filter.outputs.ui }}
     steps:
+    - uses: actions/checkout@v4
     - uses: dorny/paths-filter@v3
       id: filter
       with:
         filters: |
-          mgmt:
-            - 'firmware/mgmt/**'
+          link:
+            - 'link/**'
           net:
             - 'firmware/net/**'
           ui:
             - 'firmware/ui/**'
+            - 'firmware/shared/**'
+            - 'firmware/shared_inc/**'
 
-  build-mgmt:
+  test-link:
     needs: changes
-    if: ${{ needs.changes.outputs.mgmt == 'true' }}
+    if: ${{ needs.changes.outputs.link == 'true' }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
 
+    - name: Install Rust
+      uses: dtolnay/rust-action@stable
+
+    - name: Run link tests
+      working-directory: ./link/link
+      run: cargo test --features std
+
+  build-ctl:
+    needs: changes
+    if: ${{ needs.changes.outputs.link == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Rust
+      uses: dtolnay/rust-action@stable
+
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential git gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib stlink-tools python3 pip
-        pip install pyserial
+        sudo apt-get install -y libudev-dev
 
-    - name: Build
-      working-directory: ./firmware/mgmt
-      shell: bash
-      run: make -j compile
+    - name: Build CTL
+      working-directory: ./link/ctl
+      run: cargo build --release
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ctl
+        path: link/ctl/target/release/ctl
+
+  build-mgmt:
+    needs: changes
+    if: ${{ needs.changes.outputs.link == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Rust
+      uses: dtolnay/rust-action@stable
+
+    - name: Install ARM target
+      run: rustup target add thumbv6m-none-eabi
+
+    - name: Install cargo-binutils
+      run: cargo install cargo-binutils && rustup component add llvm-tools
+
+    - name: Build MGMT
+      working-directory: ./link/mgmt
+      run: cargo objcopy --release -- -O binary target/thumbv6m-none-eabi/release/mgmt.bin
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: mgmt
-        path: |
-          firmware/mgmt/build/mgmt.bin
-          firmware/mgmt/build/mgmt.elf
-          firmware/mgmt/build/mgmt.hex
+        path: link/mgmt/target/thumbv6m-none-eabi/release/mgmt.bin
 
     - name: Nightly mgmt release
       if: github.ref_name == 'main'
@@ -65,7 +109,7 @@ jobs:
         name: "Nightly Build"
         allowUpdates: true
         replacesArtifacts: true
-        artifacts: firmware/mgmt/build/mgmt.bin
+        artifacts: link/mgmt/target/thumbv6m-none-eabi/release/mgmt.bin
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -73,7 +117,6 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.net == 'true' }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     container:
       image: espressif/idf:v5.4
     steps:
@@ -123,7 +166,6 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.ui == 'true' }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
     - uses: actions/checkout@v4
       with:
@@ -160,4 +202,3 @@ jobs:
         artifacts: firmware/ui/build/ui.bin
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
