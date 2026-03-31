@@ -2,7 +2,10 @@
 
 #include "stm32.h"
 #include <string.h>
+#include <cstring>
+#include <functional>
 #include <iomanip>
+#include <span>
 #include <sstream>
 #include <string>
 
@@ -51,10 +54,16 @@
 extern UART_HandleTypeDef huart1;
 constexpr int MAX_LOG_LENGTH = 256;
 constexpr int Prefix_Len = 8;
+constexpr uint16_t UiToCtl_Log = 0x0037;
+
+// Callback type for sending TLV logs
+using LogSendCallback = std::function<void(uint16_t type, const uint8_t* data, size_t len)>;
+
 class Logger
 {
 public:
     static inline bool enabled = true;
+    static inline LogSendCallback log_sender = nullptr;
 
     enum class Level
     {
@@ -64,6 +73,11 @@ public:
         Debug,
         Raw
     };
+
+    static void SetLogSender(LogSendCallback callback)
+    {
+        log_sender = callback;
+    }
 
 #ifdef STM32F405xx
     template <typename... T>
@@ -77,7 +91,26 @@ public:
         static char log_line[MAX_LOG_LENGTH] = {0};
         const int line_size = std::sprintf(log_line, format, args...);
 
-        // If raw don't add any additional text.
+        // Send log via TLV protocol if log_sender is configured
+        // NOTE: When log_sender is set, we ONLY send via TLV because the serial
+        // uses huart1, and raw bytes would corrupt the TLV protocol stream.
+        if (log_sender != nullptr)
+        {
+            // Build full log message with prefix
+            static char tlv_log[MAX_LOG_LENGTH + Prefix_Len] = {0};
+            int tlv_len = 0;
+            if (level != Level::Raw)
+            {
+                std::memcpy(tlv_log, log_level_string(level), Prefix_Len);
+                tlv_len = Prefix_Len;
+            }
+            std::memcpy(tlv_log + tlv_len, log_line, line_size);
+            tlv_len += line_size;
+            log_sender(UiToCtl_Log, reinterpret_cast<const uint8_t*>(tlv_log), tlv_len);
+            return; // Don't also send raw bytes - would corrupt TLV stream
+        }
+
+        // Fallback: output to debug UART only if mgmt_serial not configured
         switch (level)
         {
         case Level::Raw:

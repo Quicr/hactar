@@ -143,6 +143,11 @@ int app_main()
     net_serial.StartReceive();
     mgmt_serial.StartReceive();
 
+    // Enable TLV logging via MGMT serial
+    Logger::SetLogSender([](uint16_t type, const uint8_t* data, size_t len) {
+        mgmt_serial.Reply(type, std::span<const uint8_t>(data, len));
+    });
+
     // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
     bool done_booting = false;
@@ -180,8 +185,8 @@ int app_main()
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
-        HandleNetLinkPackets(net_serial, protector, audio_chip, screen);
-        HandleMgmtLinkPackets(mgmt_serial, config_storage);
+        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, screen);
+        HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage);
 
         renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);

@@ -151,9 +151,15 @@ public:
         if constexpr (ContiguousRange<T>)
         {
             storage.ClearKey(ns, key + "_size");
+            stored.clear();
+        }
+        else
+        {
+            stored = T{};
         }
 
         storage.ClearKey(ns, key);
+        loaded = false;
     }
 
     const T* operator->() const

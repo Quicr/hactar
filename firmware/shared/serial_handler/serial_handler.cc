@@ -263,6 +263,11 @@ void SerialHandler::ReplyError()
     Write(packet);
 }
 
+void SerialHandler::ReplyError(uint16_t type, const char* msg)
+{
+    Reply(type, std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(msg), strlen(msg)));
+}
+
 void SerialHandler::Reply(uint16_t type)
 {
     link_packet_t packet;
