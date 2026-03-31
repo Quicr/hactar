@@ -379,13 +379,13 @@ static void MgmtLinkPacketTask(void* args)
                     break;
                 }
 
-                // Clear in-memory caches for all StoredValue objects
-                moq_server_url.Clear();
-                language.Clear();
-                channel_ns_json.Clear();
-                ai_query_ns_json.Clear();
-                ai_audio_response_ns_json.Clear();
-                ai_cmd_response_ns_json.Clear();
+                // Clear in-memory caches (NVS already wiped by storage.Clear())
+                moq_server_url.stored.clear();
+                language.stored.clear();
+                channel_ns_json.stored.clear();
+                ai_query_ns_json.stored.clear();
+                ai_audio_response_ns_json.stored.clear();
+                ai_cmd_response_ns_json.stored.clear();
 
                 // Clear in-memory namespace vectors
                 channel_ns.clear();
