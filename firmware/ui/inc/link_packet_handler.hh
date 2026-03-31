@@ -8,5 +8,9 @@
 
 extern "C" {
 void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorage& storage);
-void HandleNetLinkPackets(Serial& net_serial, Serial& mgmt_serial, Protector& protector, AudioChip& audio, Screen& screen);
+void HandleNetLinkPackets(Serial& net_serial,
+                          Serial& mgmt_serial,
+                          Protector& protector,
+                          AudioChip& audio,
+                          Screen& screen);
 };

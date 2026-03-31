@@ -3,11 +3,11 @@
 #include "stm32.h"
 #include <string.h>
 #include <cstring>
+#include <functional>
 #include <iomanip>
+#include <span>
 #include <sstream>
 #include <string>
-#include <span>
-#include <functional>
 
 #ifndef UI_LOGGER_ACTIVE_LEVEL
 #define UI_LOGGER_ACTIVE_LEVEL UI_LOGGING_DEBUG
