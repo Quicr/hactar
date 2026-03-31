@@ -375,7 +375,8 @@ static void MgmtLinkPacketTask(void* args)
             {
                 if (ESP_OK != storage.Clear())
                 {
-                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "Storage clear failed");
+                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                          "Storage clear failed");
                     break;
                 }
 
@@ -409,7 +410,8 @@ static void MgmtLinkPacketTask(void* args)
                     if (!wifi_json.contains("ssid") || !wifi_json.contains("password"))
                     {
                         NET_LOG_ERROR("Add_Wifi: missing ssid or password field");
-                        mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "Missing ssid or password field");
+                        mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                              "Missing ssid or password field");
                         break;
                     }
 
@@ -483,7 +485,8 @@ static void MgmtLinkPacketTask(void* args)
             {
                 if (packet->length < 1)
                 {
-                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "Missing loopback mode parameter");
+                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                          "Missing loopback mode parameter");
                     break;
                 }
                 auto mode = static_cast<NetLoopbackMode>(packet->payload[0]);
@@ -497,7 +500,8 @@ static void MgmtLinkPacketTask(void* args)
                     break;
                 case NetLoopbackMode::Raw:
                     NET_LOG_WARN("Loopback mode 'raw' not supported");
-                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "Raw loopback not supported");
+                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                          "Raw loopback not supported");
                     break;
                 case NetLoopbackMode::Moq:
                     loopback = true;
@@ -507,7 +511,8 @@ static void MgmtLinkPacketTask(void* args)
                     break;
                 default:
                     NET_LOG_WARN("Unknown loopback mode: %d", static_cast<int>(mode));
-                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "Unknown loopback mode");
+                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                          "Unknown loopback mode");
                     break;
                 }
                 break;
@@ -523,7 +528,8 @@ static void MgmtLinkPacketTask(void* args)
             {
                 if (packet->length < 1)
                 {
-                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "Missing logs enabled parameter");
+                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                          "Missing logs enabled parameter");
                     break;
                 }
                 uint8_t enabled = packet->payload[0];
@@ -544,7 +550,8 @@ static void MgmtLinkPacketTask(void* args)
                 if (!IsValidLanguage(new_lang))
                 {
                     NET_LOG_ERROR("Invalid language: %s", new_lang.c_str());
-                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "Invalid language");
+                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                          "Invalid language");
                     break;
                 }
                 language = new_lang;
@@ -567,7 +574,8 @@ static void MgmtLinkPacketTask(void* args)
                 if (!parsed.has_value())
                 {
                     NET_LOG_ERROR("Failed to parse channel namespace JSON");
-                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "Invalid channel namespace JSON");
+                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                          "Invalid channel namespace JSON");
                     break;
                 }
 
@@ -593,7 +601,8 @@ static void MgmtLinkPacketTask(void* args)
                         || !ai_config.contains("audio") || !ai_config.contains("cmd"))
                     {
                         NET_LOG_ERROR("AI config must be object with query, audio, cmd fields");
-                        mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "AI config requires query, audio, cmd fields");
+                        mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                              "AI config requires query, audio, cmd fields");
                         break;
                     }
 
@@ -604,7 +613,8 @@ static void MgmtLinkPacketTask(void* args)
                     if (!query_parsed || !audio_parsed || !cmd_parsed)
                     {
                         NET_LOG_ERROR("Failed to parse AI namespace arrays");
-                        mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "Invalid AI namespace arrays");
+                        mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                              "Invalid AI namespace arrays");
                         break;
                     }
 
@@ -626,7 +636,8 @@ static void MgmtLinkPacketTask(void* args)
                 catch (const std::exception& ex)
                 {
                     NET_LOG_ERROR("Failed to parse AI config JSON: %s", ex.what());
-                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "Invalid AI config JSON");
+                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                          "Invalid AI config JSON");
                 }
                 break;
             }
@@ -649,7 +660,8 @@ static void MgmtLinkPacketTask(void* args)
                 }
                 else
                 {
-                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error), "eFuse burn failed");
+                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                          "eFuse burn failed");
                 }
                 break;
             }
