@@ -28,6 +28,22 @@ Hardware design for test device
 The license for information in this repository is in [LICENSE](https://github.com/Quicr/hactar/blob/main/LICENSE).  This license covers everything in the repository except for the directory `firmware/ui/dependencies/cmox`, which is covered by the license in [firmware/ui/dependencies/cmox/LICENSE].
 
 ## Quick Start
+
+The easiest way to build and flash all firmware is from the repository root:
+
+```bash
+# Build everything (requires Rust and ESP-IDF)
+make all
+
+# Flash all chips (requires device connected via USB)
+make flash
+
+# Or flash individual chips
+make flash-mgmt
+make flash-ui
+make flash-net
+```
+
 For new developers looking to start developing on Hactar quickly there are quick start python scripts located in etc/quick-start, that will automatically download and setup your dev environment.
 
 ## Where To Find Things
@@ -90,27 +106,44 @@ Any and all instructions for Debian will work on WSL and is recommended you foll
 ## Firmware
 
 ### Firmware Technologies
-- [GNU arm-none-eabi](https://developer.arm.com/downloads/-/gnu-rm)
-- [ESP-IDF v5.4.2](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32/get-started/index.html)
+- [Rust](https://www.rust-lang.org/tools/install) (for MGMT chip and CTL tool)
+- [GNU arm-none-eabi](https://developer.arm.com/downloads/-/gnu-rm) (for UI chip)
+- [ESP-IDF v5.4.2](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32/get-started/index.html) (for NET chip)
 - [STM32 CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html)
 
-
 The Firmware is split into 3 categories. Management, User Interface, and Network.
-- Management - STM32F072
-- User Interface - STM32F405
-- Network - ESP32S3
+- Management - STM32F072 (Rust, in `link/mgmt`)
+- User Interface - STM32F405 (C++, in `firmware/ui`)
+- Network - ESP32S3 (C++, in `firmware/net`)
+
+### CTL Tool
+
+The `ctl` tool (in `link/ctl`) is a Rust command-line program that handles flashing and device communication. It auto-detects connected Hactar devices and provides commands for:
+
+- Flashing firmware to all chips
+- Sending commands to chips (ping, version, config)
+- Monitoring device logs
+
+Build and run the CTL tool:
+```bash
+# From repository root
+make run-ctl
+
+# Or directly
+cd link/ctl && cargo run --release
+```
 
 ### [___Management___](#management)
 
-The management chip is responsible for flashing firmware to the STM32F405 - user interface chip and the ESP32S3 network chip using a CH340 USB to UART chip.
+The management chip (STM32F072) is responsible for flashing firmware to the UI and NET chips, and routing communication between the USB interface and the other chips.
 
-The management chip receives commands from the usb communication that informs it what chip we are currently uploading. As well as debugging. It is able to receive log messages from the ui and net chips and push them out to the usb interface.
+The MGMT firmware is written in Rust and located in `link/mgmt`.
 
 ##### To view your device list
 
 - ##### Debian/MacOS
 
-    `ls /dev/ttyUSB*`
+    `ls /dev/ttyUSB*` or `ls /dev/cu.usbserial-*`
 
 - ##### Windows
 
@@ -124,37 +157,58 @@ The management chip receives commands from the usb communication that informs it
 
 *Flashing*
 
-- In hactar/firmware/mgmt, enter:
+From the repository root:
 
-```bash 
-make upload
+```bash
+make flash-mgmt
+```
+
+Or using the CTL tool directly:
+
+```bash
+link/ctl/target/release/ctl mgmt flash link/mgmt/target/thumbv6m-none-eabi/release/mgmt.bin
 ```
 
 #### Commands
 
-Run the monitor program to type in commands. The commands are converted into TLV formats that the hactar device recognizes.
+Run the CTL tool to interact with the device:
 
 ```bash
-make monitor
+make run-ctl
 ```
 
-- **version** - Get the mgmt version
-- **who are you&** - Hactars will respond with "I AM A HACTAR"
+Or use individual commands directly:
+
+```bash
+# Test connectivity
+link/ctl/target/release/ctl hello
+
+# Ping that traverses all chips (MGMT -> UI -> NET -> MGMT)
+link/ctl/target/release/ctl circular-ping
+
+# MGMT commands
+link/ctl/target/release/ctl mgmt ping
+link/ctl/target/release/ctl mgmt version
+
+# UI commands
+link/ctl/target/release/ctl ui ping
+link/ctl/target/release/ctl ui version
+
+# NET commands
+link/ctl/target/release/ctl net ping
+link/ctl/target/release/ctl net version
+```
+
+Legacy commands (via hactar-cli monitor):
+
 - **hard reset** - Restarts the main function of the management chip
-- **reset** - Resets `ui` chip and then `net` chip. Accepts commands.
+- **reset** - Resets `ui` chip and then `net` chip
 - **reset ui** - Resets `ui` chip
 - **reset net** - Resets `net` chip
 - **stop ui** - Hold `ui` chip in reset
 - **stop net** - Hold `net` chip in reset
-- **flash ui** - Puts `ui` into bootloader mode
-- **flash net** - Puts `net` into bootloader mode
 - **enable logs** - Enables logs on the management side
-- **enable ui logs** - Enables logs for the `ui` on the management side
-- **enable net logs** - Enables logs for the `net` on the management side
 - **disable logs** - Disable logs on the management side
-- **disable ui logs** - Disable logs for the `ui` on the management side
-- **disable net logs** - Disable logs for the `net` on the management side
-- **default logging** - Returns the logging mode to the default
 
 #### UI commands
 
@@ -184,38 +238,21 @@ make monitor
 - **net set_fl_config** - Sets the frontline config
 - **net burn_efuse** - Burns the efuse to enable jtag debugging
 
-#### Make Target Overview
+#### Root Makefile Targets
 
-- `all` - Builds the target bin, elf, and binary files
+From the repository root:
 
-- `compile` - Builds the target bin, elf, and binary. Output firmware/build/mgmt
-
-- `upload` - Uploads the build target to the Management chip using the our custom flasher tool with serial usb-c uploading. See [Python Flasher](#py_flasher)
-
-- `upload_debugger` - Uploads the build target to the Management chip using the st-flash tools. Please see
-[st-flash installation](#stflash_installation) for instructions on installing.
-
-- `upload_cube_uart` - Uploads the build target to the Management chip using the STM32_Programmer_CLI with serial usb-c uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
-
-- `upload_cube_swd` - Uploads the build target to the Management chip using the STM32_Programmer_CLI with st-link using SWD uploading. See [Installation](#stm_installation) for instructions on installing the STM32_Programmer_CLI.
-
-- `docker` - Uses docker to compile, flash, and monitor the mgmt chip. By default it will compile the code. To change the functionality, pass a target of the Makefile into the parameter `mft` when being invoked.
-    - Ex. `make docker mft=upload`
-    - Ex. `make docker mft=monitor`
-
-- `monitor` - Opens the python serial monitor
-
-- `format` - Formats the source and header files
-
-- `docker-clean` - Removes dockere image that was generated when running docker target.
-
-- `clean` - Deletes the firmware/build/ui directory.
-
-- `info` - Displays the build path, include files, object files, dependencies and vpaths used by the compiler.
+- `make all` - Build all firmware (MGMT, UI, NET) and the CTL tool
+- `make flash` - Flash all chips
+- `make flash-mgmt` - Flash only the MGMT chip
+- `make flash-ui` - Flash only the UI chip
+- `make flash-net` - Flash only the NET chip
+- `make run-ctl` - Run the CTL tool interactively
+- `make clean` - Clean all build artifacts
 
 **Source code**
 
-All source code for the Management Chip can be found in firmware/mgmt. Adding C/C++ files in firmware/mgmt/src and firmware/mgmt/inc **does** require any changes in the makefile.
+The Management Chip firmware is written in Rust and located in `link/mgmt`.
 
 ### User Interface
 
@@ -288,17 +325,13 @@ We are leveraging the **esp-idf** framework.
 
 All source code for the network chip can be found in `firmware/net`, `firmware/shared`, and `firmware/shared_inc`.
 
-## STM32 Toolchain Installation
+## MGMT Toolchain Installation
 
-The following tools are used for Management and User Interface.
+The following tools are required for building the Management chip firmware and CTL tool.
 - [Make](#make) \[required]
-- [ARM None Eabi Toolchain](#arm-none-eabi-toolchain) \[required]
-- [Python3](https://www.python.org/downloads/) \[optional]
-- [ST-Flash](#st-flash) \[optional]
-- [STM32_Programmer_CLI](#stm32-programmer-cli) \[optional]
-- [OpenOCD](#openocd) \[optional]
+- [Rust](#rust) \[required]
 
-##### **Make** 
+##### **Make**
 
 Make is used for compiling and uploading automation for each chip firmware.
 
@@ -312,6 +345,35 @@ sudo apt install make
 ```brew
 brew install make
 ```
+
+##### Rust with Embedded ARM Target
+
+Rust is required for building the MGMT firmware and CTL tool. **The MGMT chip requires the `thumbv6m-none-eabi` target** for cross-compilation to the STM32F072 (ARM Cortex-M0).
+
+*All Platforms*
+
+1. Install Rust:
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+2. **Required:** Add the ARM Cortex-M0 target and tools for MGMT firmware:
+```bash
+rustup target add thumbv6m-none-eabi
+cargo install cargo-binutils
+rustup component add llvm-tools
+```
+
+Without the `thumbv6m-none-eabi` target, you will not be able to build the MGMT firmware.
+
+## UI Toolchain Installation
+
+The following tools are used for building the User Interface chip firmware.
+- [ARM None Eabi Toolchain](#arm-none-eabi-toolchain) \[required]
+- [Python3](https://www.python.org/downloads/) \[optional]
+- [ST-Flash](#st-flash) \[optional]
+- [STM32_Programmer_CLI](#stm32-programmer-cli) \[optional]
+- [OpenOCD](#openocd) \[optional]
 
 ##### ARM None Eabi Toolchain
 
@@ -446,44 +508,56 @@ python main.py monitor --port=/dev/ttyUSB0
 
 ### Hactar Setup
 
+#### Prerequisites
+
+- USB-C Cable
+- [Rust](https://www.rust-lang.org/tools/install) with `thumbv6m-none-eabi` target
+- arm-none-eabi toolchain (for UI chip)
+- ESP-IDF v5.4 (for NET chip)
+- make
+
+Install Rust target for MGMT:
+```bash
+rustup target add thumbv6m-none-eabi
+cargo install cargo-binutils
+rustup component add llvm-tools
+```
+
+#### Flash All Chips
+
+The simplest way to set up a Hactar device is to flash all chips at once from the repository root:
+
+```bash
+# Build everything
+make all
+
+# Flash all chips (MGMT, UI, NET)
+make flash
+```
+
+#### Flash Individual Chips
+
 *Management Chip*
 
-- Prerequisites
-    - USB-C Cable
-    - Python3
-    - arm-none-eabi-g++
-    - make
-- Build the mgmt code by navigating to `hactar/firmware/mgmt` and entering `make compile`
-- Plug in a USB-C
-- Upload the mgmt code by entering `make upload`
-- After this you should see the red led turn off
+```bash
+make flash-mgmt
+```
 
-*UI chip*
+The MGMT chip must be flashed first as it handles flashing the other chips.
 
-- Prerequisites
-    - A programmed `management chip`
-    - USB-C Cable
-    - Python3
-    - arm-none-eabi-g++
-    - make
-- Plug in the USB-C cable to the Hactar board.
-- Build the ui code by navigating to the `hactar/firmware/ui` folder and entering `make compile`
-- Upload the ui code by entering `make upload`
-    - The python script "flasher.py" is called to upload to the main chip.
-- After finishing uploading the firmware to the main chip, the management chip will return to running mode.
+*UI Chip*
+
+```bash
+make flash-ui
+```
 
 *Network Chip*
 
-- Prerequisites
-    - A programmed `management chip`
-    - USB-C Cable
-    - idf.py via esp-idf must be on your path
-    - make
-- Plug in the USB-C cable to the Hactar board.
-- Build the net code by navigating to the `hactar/firmware/net` folder and entering `make compile`
-- Upload the net code by entering `make upload_py`
-    - NOTE - The size is quite large, takes about 4 minutes to upload.
-- After finishing uploading the firmware to the net chip, the management chip will return to running mode.
+```bash
+make flash-net
+```
+
+Note: The NET chip firmware is large and takes about 4 minutes to upload.
 
 *Debug mode example*
 
