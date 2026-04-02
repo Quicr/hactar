@@ -7,33 +7,30 @@ on:
     branches: [ "main" ]
 
 jobs:
-  format-cpp:
-    name: Format Check (C/C++)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: jidicula/clang-format-action@v4.13.0
-        with:
-          clang-format-version: '18'
-          exclude-regex: '(lib|Drivers|Core|net/include/sys|net/include/netinet|cmox)'
-
-  format-rust:
-    name: Format Check (Rust)
+  format-check:
+    name: Format Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: C/C++ format check
+        uses: jidicula/clang-format-action@v4.13.0
+        with:
+          clang-format-version: '18'
+          exclude-regex: '(lib|Drivers|Core|net/include/sys|net/include/netinet|cmox)'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
 
-      - name: Check link crate
+      - name: Rust format check (link)
         run: cargo fmt --manifest-path link/link/Cargo.toml -- --check
 
-      - name: Check mgmt crate
+      - name: Rust format check (mgmt)
         run: cargo fmt --manifest-path link/mgmt/Cargo.toml -- --check
 
-      - name: Check ctl crate
+      - name: Rust format check (ctl)
         run: cargo fmt --manifest-path link/ctl/Cargo.toml -- --check
