@@ -19,7 +19,7 @@ jobs:
         uses: jidicula/clang-format-action@v4.13.0
         with:
           clang-format-version: '18'
-          exclude-regex: '(lib|Drivers|Core|net/include/sys|net/include/netinet|cmox)'
+          exclude-regex: '(lib|Drivers|Core|net/include/sys|net/include/netinet|cmox|sframe|link/)'
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
