@@ -11,3 +11,4 @@
 [submodule "link"]
 	path = link
 	url = https://github.com/link-rs/link
+	branch = main
