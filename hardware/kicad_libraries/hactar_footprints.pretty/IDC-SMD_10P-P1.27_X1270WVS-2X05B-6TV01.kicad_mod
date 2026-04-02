@@ -1,7 +1,7 @@
 (footprint "IDC-SMD_10P-P1.27_X1270WVS-2X05B-6TV01"
-	(version 20240108)
+	(version 20241229)
 	(generator "pcbnew")
-	(generator_version "8.0")
+	(generator_version "9.0")
 	(layer "F.Cu")
 	(property "Reference" "CN**"
 		(at 0 -4.5 0)
@@ -21,18 +21,6 @@
 		(effects
 			(font
 				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "Footprint" ""
-		(at 0 0 0)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "7e5a3fa9-be77-4855-b00d-d82259339f78")
-		(effects
-			(font
-				(size 1.27 1.27)
 				(thickness 0.15)
 			)
 		)
@@ -360,7 +348,7 @@
 			(width 0.06)
 			(type solid)
 		)
-		(fill none)
+		(fill no)
 		(layer "F.Fab")
 		(uuid "c8e10aa2-ecdf-4473-a88a-d0c62fdb1ee0")
 	)
@@ -378,64 +366,65 @@
 	(pad "1" smd rect
 		(at -2.54 1.95)
 		(size 0.75 2.4)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "16625cfe-916f-4672-a194-4576332713d1")
 	)
 	(pad "2" smd rect
 		(at -2.54 -1.95)
 		(size 0.75 2.4)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "8850615a-9f2b-4891-970c-46a3f587a5f5")
 	)
 	(pad "3" smd rect
 		(at -1.27 1.95)
 		(size 0.75 2.4)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "460b7f46-222c-4b9e-8197-cb5560c8a927")
 	)
 	(pad "4" smd rect
 		(at -1.27 -1.95)
 		(size 0.75 2.4)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "1b178f93-63c1-47e8-b396-196f3f9baf42")
 	)
 	(pad "5" smd rect
 		(at 0 1.95)
 		(size 0.75 2.4)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "ea266f5e-09bd-48f9-8a68-02d85b0f106c")
 	)
 	(pad "6" smd rect
 		(at 0 -1.95)
 		(size 0.75 2.4)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "d2992b07-4746-4df9-8498-25fb42644537")
 	)
 	(pad "7" smd rect
 		(at 1.27 1.95)
 		(size 0.75 2.4)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "12a463a8-98d9-4297-8428-b478690cd570")
 	)
 	(pad "8" smd rect
 		(at 1.27 -1.95)
 		(size 0.75 2.4)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "b155ce5b-a49b-4a7c-9306-6ea081a6b506")
 	)
 	(pad "9" smd rect
 		(at 2.54 1.95)
 		(size 0.75 2.4)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "f73d50af-a0f1-4685-bc08-911c5b470030")
 	)
 	(pad "10" smd rect
 		(at 2.54 -1.95)
 		(size 0.75 2.4)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "4ba9414f-d162-4e3c-8491-678b22bdeb36")
 	)
-	(model "${KIPRJMOD}/../kicad_libraries/Hactar_Footprints.pretty/X1270WVS-2x05B-6TV01.3dshapes/IDC-SMD_10P-P1.27_X1270WVS-2X05B-6TV01.step"
+	(embedded_fonts no)
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_models.3dshapes/IDC-SMD_10P-P1.27_X1270WVS-2X05B-6TV01.step"
 		(offset
 			(xyz 0 -0 -0)
 		)

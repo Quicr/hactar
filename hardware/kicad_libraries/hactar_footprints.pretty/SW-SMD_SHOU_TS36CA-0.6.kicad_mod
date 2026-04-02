@@ -262,7 +262,7 @@
 		(uuid "4ed56e42-24a3-4c20-a4cf-6cc439755a68")
 	)
 	(embedded_fonts no)
-	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/TS36CA-0.6.3dshapes/SW-SMD_SHOU_TS36CA-0.6.wrl"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_models.3dshapes/SW-SMD_SHOU_TS36CA-0.6.wrl"
 		(offset
 			(xyz -0 -0.75 1.8)
 		)

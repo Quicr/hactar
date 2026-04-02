@@ -190,7 +190,7 @@
 		(uuid "e1bb4526-7416-4e25-8bf9-8204179b458b")
 	)
 	(embedded_fonts no)
-	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/KEY-SMD_4P-L4.2-W3.2-H2.5-LS4.6-P2.2.wrl"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_models.3dshapes/KEY-SMD_4P-L4.2-W3.2-H2.5-LS4.6-P2.2.wrl"
 		(offset
 			(xyz 0 -0 -0)
 		)
