@@ -7,8 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  format-check:
-    name: Format Check
+  format-cpp:
+    name: Format Check (C/C++)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,3 +16,24 @@ jobs:
         with:
           clang-format-version: '18'
           exclude-regex: '(lib|Drivers|Core|net/include/sys|net/include/netinet|cmox)'
+
+  format-rust:
+    name: Format Check (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check link crate
+        run: cargo fmt --manifest-path link/link/Cargo.toml -- --check
+
+      - name: Check mgmt crate
+        run: cargo fmt --manifest-path link/mgmt/Cargo.toml -- --check
+
+      - name: Check ctl crate
+        run: cargo fmt --manifest-path link/ctl/Cargo.toml -- --check
