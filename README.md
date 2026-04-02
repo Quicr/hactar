@@ -325,18 +325,13 @@ We are leveraging the **esp-idf** framework.
 
 All source code for the network chip can be found in `firmware/net`, `firmware/shared`, and `firmware/shared_inc`.
 
-## STM32 Toolchain Installation
+## MGMT Toolchain Installation
 
-The following tools are used for Management and User Interface.
+The following tools are required for building the Management chip firmware and CTL tool.
 - [Make](#make) \[required]
-- [Rust](#rust) \[required for MGMT]
-- [ARM None Eabi Toolchain](#arm-none-eabi-toolchain) \[required for UI]
-- [Python3](https://www.python.org/downloads/) \[optional]
-- [ST-Flash](#st-flash) \[optional]
-- [STM32_Programmer_CLI](#stm32-programmer-cli) \[optional]
-- [OpenOCD](#openocd) \[optional]
+- [Rust](#rust) \[required]
 
-##### **Make** 
+##### **Make**
 
 Make is used for compiling and uploading automation for each chip firmware.
 
@@ -368,6 +363,15 @@ rustup target add thumbv6m-none-eabi
 cargo install cargo-binutils
 rustup component add llvm-tools
 ```
+
+## UI Toolchain Installation
+
+The following tools are used for building the User Interface chip firmware.
+- [ARM None Eabi Toolchain](#arm-none-eabi-toolchain) \[required]
+- [Python3](https://www.python.org/downloads/) \[optional]
+- [ST-Flash](#st-flash) \[optional]
+- [STM32_Programmer_CLI](#stm32-programmer-cli) \[optional]
+- [OpenOCD](#openocd) \[optional]
 
 ##### ARM None Eabi Toolchain
 
