@@ -346,23 +346,25 @@ sudo apt install make
 brew install make
 ```
 
-##### Rust
+##### Rust with Embedded ARM Target
 
-Rust is required for building the MGMT firmware and CTL tool.
+Rust is required for building the MGMT firmware and CTL tool. **The MGMT chip requires the `thumbv6m-none-eabi` target** for cross-compilation to the STM32F072 (ARM Cortex-M0).
 
 *All Platforms*
 
+1. Install Rust:
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-After installing Rust, add the ARM Cortex-M0 target for MGMT:
-
+2. **Required:** Add the ARM Cortex-M0 target and tools for MGMT firmware:
 ```bash
 rustup target add thumbv6m-none-eabi
 cargo install cargo-binutils
 rustup component add llvm-tools
 ```
+
+Without the `thumbv6m-none-eabi` target, you will not be able to build the MGMT firmware.
 
 ## UI Toolchain Installation
 
