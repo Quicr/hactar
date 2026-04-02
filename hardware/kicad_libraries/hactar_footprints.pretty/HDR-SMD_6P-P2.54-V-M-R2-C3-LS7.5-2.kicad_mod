@@ -220,7 +220,7 @@
 		(uuid "d4a2796f-aa58-4f8b-8e7d-7fdcd17d8386")
 	)
 	(embedded_fonts no)
-	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/HDR-SMD_6P-P2.54-V-M-R2-C3-LS7.5-2.step"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_models.3dshapes/HDR-SMD_6P-P2.54-V-M-R2-C3-LS7.5-2.step"
 		(offset
 			(xyz 0 0 0.5)
 		)

@@ -311,7 +311,7 @@
 		(uuid "9cd1625f-c407-402f-9915-9cca3816dc42")
 	)
 	(embedded_fonts no)
-	(model "${KIPRJMOD}/../kicad_libraries/hactar_footprints.3dshapes/SW-SMD_MK-12C02-G020.wrl"
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_models.3dshapes/SW-SMD_MK-12C02-G020.wrl"
 		(offset
 			(xyz 0 -0.4 0)
 		)

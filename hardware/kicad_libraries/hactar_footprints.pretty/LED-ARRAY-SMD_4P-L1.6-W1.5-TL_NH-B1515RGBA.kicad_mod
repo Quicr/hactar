@@ -1,7 +1,7 @@
 (footprint "LED-ARRAY-SMD_4P-L1.6-W1.5-TL_NH-B1515RGBA"
-	(version 20240108)
+	(version 20241229)
 	(generator "pcbnew")
-	(generator_version "8.0")
+	(generator_version "9.0")
 	(layer "F.Cu")
 	(property "Reference" "D**"
 		(at 0 -2 0)
@@ -21,18 +21,6 @@
 		(effects
 			(font
 				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "Footprint" ""
-		(at 0 0 0)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "80266d95-9497-432b-9a0b-ce09e9b35a8b")
-		(effects
-			(font
-				(size 1.27 1.27)
 				(thickness 0.15)
 			)
 		)
@@ -120,7 +108,7 @@
 			(width 0.15)
 			(type solid)
 		)
-		(fill none)
+		(fill no)
 		(layer "F.SilkS")
 		(uuid "f2e2c444-e5d1-4c03-bd96-541792905610")
 	)
@@ -131,7 +119,7 @@
 			(width 0.05)
 			(type default)
 		)
-		(fill none)
+		(fill no)
 		(layer "F.CrtYd")
 		(uuid "a8b9df95-95f6-4338-ac37-329dd23d5ad7")
 	)
@@ -142,7 +130,7 @@
 			(width 0.06)
 			(type solid)
 		)
-		(fill none)
+		(fill no)
 		(layer "F.Fab")
 		(uuid "904221b0-e552-4d74-a690-8b29a0ac3185")
 	)
@@ -160,28 +148,29 @@
 	(pad "1" smd rect
 		(at -0.7 -0.4 270)
 		(size 0.4 0.6)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "2975dbf1-88c7-4be3-a839-7272c7f62162")
 	)
 	(pad "2" smd rect
 		(at 0.7 -0.4 270)
 		(size 0.4 0.6)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "5db7c4c8-1361-4342-9bd6-07ef1b997c32")
 	)
 	(pad "3" smd rect
 		(at 0.7 0.4 270)
 		(size 0.4 0.6)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "60daa57c-67c5-4e8d-84eb-4f63467fa879")
 	)
 	(pad "4" smd rect
 		(at -0.7 0.4 270)
 		(size 0.4 0.6)
-		(layers "F.Cu" "F.Paste" "F.Mask")
+		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "8782860e-9655-4ad6-8bb2-78ce3fc54ce5")
 	)
-	(model "${KIPRJMOD}/../kicad_libraries/Hactar_Footprints.pretty/LED-ARRAY-SMD_4P-L1.6-W1.5-TL_NH-B1515RGBA.3dshapes/LED-ARRAY-SMD_4P-L1.6-W1.5-TL_NH-B1515RGBA.step"
+	(embedded_fonts no)
+	(model "${KIPRJMOD}/../kicad_libraries/hactar_models.3dshapes/LED-ARRAY-SMD_4P-L1.6-W1.5-TL_NH-B1515RGBA.step"
 		(offset
 			(xyz 0 -0 1)
 		)
