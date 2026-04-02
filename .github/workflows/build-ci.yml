@@ -30,6 +30,27 @@ jobs:
             - 'firmware/shared/**'
             - 'firmware/shared_inc/**'
 
+  test-link:
+    needs: changes
+    if: ${{ needs.changes.outputs.link == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libudev-dev
+
+    - name: Run link tests
+      working-directory: ./link/link
+      run: cargo test --features std
+
   build-ctl:
     needs: changes
     if: ${{ needs.changes.outputs.link == 'true' }}
