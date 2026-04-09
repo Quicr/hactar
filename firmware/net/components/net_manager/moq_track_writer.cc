@@ -6,6 +6,7 @@
 #include "macros.hh"
 #include "task_helpers.hh"
 #include "utils.hh"
+#include <cstdint>
 
 using namespace moq;
 
@@ -116,6 +117,9 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
 
     std::lock_guard<std::mutex> _(obj_mux);
 
+    std::vector<uint8_t> user_id = {0};
+    user_id.resize(8);
+
     auto& obj = moq_objs.emplace_back();
     obj.headers.group_id = device_id;
     obj.headers.object_id = object_id++;
@@ -123,6 +127,8 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
     obj.headers.immutable_extensions = quicr::Extensions{};
     obj.headers.immutable_extensions.value()[2].emplace_back().assign(time_bytes.begin(),
                                                                       time_bytes.end());
+    obj.headers.immutable_extensions.value()[8].emplace_back().assign(user_id.begin(),
+                                                                      user_id.end());
 
     obj.data.assign(bytes, bytes + len);
 }
