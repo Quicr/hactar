@@ -1,4 +1,5 @@
 #include "uart_router.h"
+#include "command_handler.h"
 #include "main.h"
 #include <stdint.h>
 #include <string.h>
@@ -105,7 +106,7 @@ static uint8_t Ok_Ascii[3] = "Ok\n";
 static uint8_t Ack = 0x82;
 static uint8_t Nack = 0x83;
 
-static const uint8_t Link_Sync_Word[4] = {0x4C, 0x49, 0x4E, 0x4B};
+// static const uint8_t Link_Sync_Word[4] = {0x4C, 0x49, 0x4E, 0x4B};
 
 uint32_t last_receive_tick = 0;
 
@@ -143,7 +144,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
     // 2. rx complete -- The rx buffer is full
     // 3. idle  -- Nothing has been received in awhile
 
-    HAL_GPIO_TogglePin(LEDB_G_GPIO_Port, LEDB_G_Pin);
+    // HAL_GPIO_TogglePin(LEDB_G_GPIO_Port, LEDB_G_Pin);
 
     __disable_irq();
 
@@ -166,7 +167,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t rx_idx)
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
-    HAL_GPIO_TogglePin(LEDB_B_GPIO_Port, LEDB_B_Pin);
+    // HAL_GPIO_TogglePin(LEDB_B_GPIO_Port, LEDB_B_Pin);
 
     __disable_irq();
     if (!net_stream.tx.free && huart->Instance == net_stream.uart->Instance)
@@ -191,11 +192,11 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 
     if (huart->Instance == net_stream.uart->Instance)
     {
-        uart_router_reinit_stream(&net_stream);
+        // uart_router_reinit_stream(&net_stream);
     }
     else if (huart->Instance == ui_stream.uart->Instance)
     {
-        uart_router_reinit_stream(&ui_stream);
+        // uart_router_reinit_stream(&ui_stream);
     }
     else if (huart->Instance == usb_stream.uart->Instance)
     {
@@ -317,14 +318,13 @@ void uart_router_perform_transmit(uart_stream_t* stream)
 
 void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 {
-    const uint32_t Link_Sync_Word_Size = 4;
     const uint32_t Type_Size = 2;
     const uint32_t Length_Size = 4;
 
     // Note, sync word is not part of the header.
     const uint32_t Header_Bytes = Type_Size + Length_Size;
 
-    static Command command = 0;
+    static CtlToMgmt command = 0;
     static uint32_t len = 0;
 
     static uint32_t num_read = 0;
@@ -355,7 +355,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 
     while (internal_tx.read != internal_tx.write)
     {
-        if (sync_matched < Link_Sync_Word_Size)
+        if (sync_matched < LINK_SYNC_WORD_LEN)
         {
             const uint8_t byte = read_from_tx(&internal_tx, &num_read);
             if (byte == Link_Sync_Word[sync_matched])
@@ -373,12 +373,12 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
         const uint16_t distance = get_distance(&internal_tx);
 
         // If we don't have enough bytes for the length and the command
-        if (distance < Header_Bytes && num_read == Link_Sync_Word_Size)
+        if (distance < Header_Bytes && num_read == LINK_SYNC_WORD_LEN)
         {
             break;
         }
 
-        if (num_read == Link_Sync_Word_Size)
+        if (num_read == LINK_SYNC_WORD_LEN)
         {
             command = read_from_tx(&internal_tx, &num_read);
             command |= read_from_tx(&internal_tx, &num_read);
@@ -388,7 +388,7 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
             len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 24);
         }
 
-        if (command >= Cmd_Count)
+        if (command >= CtlToMgmtCnt)
         {
             // bad data continue
             num_read = 0;
@@ -397,82 +397,33 @@ void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
         }
 
         // Get the type
-        if (len == 0)
+        if (packet_idx >= PACKET_SZ)
         {
-            switch (command)
-            {
-            case Cmd_To_Ui:
-            case Cmd_To_Net:
-            case Cmd_Loopback:
-            {
-                // Bad data continue;
-                num_read = 0;
-                sync_matched = 0;
-                break;
-            }
-            default:
-            {
-                // Is command, check if the idx matches the type.
-                if (command_map[command].command == command
-                    && command_map[command].callback != NULL)
-                {
-                    uart_router_send_byte(&usb_uart, Ack);
-                    command_map[command].callback(command_map[command].usr_arg);
-                }
-                else
-                {
-                    uart_router_send_byte(&usb_uart, Nack);
-                }
-                break;
-            }
-            }
-
             packet_idx = 0;
             num_read = 0;
             sync_matched = 0;
             continue;
         }
-        else
-        {
-            if (packet_idx >= PACKET_SZ)
-            {
-                packet_idx = 0;
-                num_read = 0;
-                sync_matched = 0;
-                continue;
-            }
 
+        if (packet_idx < len)
+        {
             // Read more bytes!
             packet[packet_idx++] = read_from_tx(&internal_tx, &num_read);
         }
 
-        // Should this num_read be > Header+sync_size
-        if (num_read - (Header_Bytes + Link_Sync_Word_Size) >= len && num_read >= 0)
+        if (packet_idx >= len)
         {
-            // Send the packet to ui or net
-            switch (command)
-            {
-            case Cmd_To_Ui:
-            {
-                uart_router_copy_to_tx(&ui_stream.tx, packet, packet_idx);
-                break;
-            }
-            case Cmd_To_Net:
-            {
-                uart_router_copy_to_tx(&net_stream.tx, packet, packet_idx);
-                break;
-            }
-            case Cmd_Loopback:
-            {
-                uart_router_copy_to_tx(&usb_stream.tx, packet, packet_idx);
-                break;
-            }
-            default:
-                break;
-            }
+            command_handle_packet(command, packet, packet_idx);
 
             num_read = 0;
             packet_idx = 0;
+            sync_matched = 0;
+            continue;
+        }
+        else if (num_read >= PACKET_SZ)
+        {
+            // bad data continue
+            num_read = 0;
             sync_matched = 0;
             continue;
         }

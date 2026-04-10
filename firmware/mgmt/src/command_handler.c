@@ -5,6 +5,101 @@
 #include "state.h"
 #include "uart_router.h"
 
+#define HELLO_REPLY_LEN COMMAND_LEN + LEN_LEN + LINK_SYNC_WORD_LEN
+
+void command_handle_packet(const CtlToMgmt command, const uint8_t* data, const uint32_t len)
+{
+    switch (command)
+    {
+    case Ping:
+    {
+        command_pong();
+        break;
+    }
+    case ToUi:
+    {
+        command_to_ui();
+        break;
+    }
+    case ToNet:
+    {
+        command_to_net();
+        break;
+    }
+    case HelloRequest:
+    {
+        command_hello_request(data, len);
+        break;
+    }
+    case SetPin:
+    {
+        command_set_pin(data, len);
+        break;
+    }
+    case SetUiBaudrate:
+    {
+        command_set_ui_baudrate(data, len);
+        break;
+    }
+    default:
+    {
+    }
+    }
+}
+
+void command_pong()
+{
+}
+
+void command_to_ui()
+{
+}
+
+void command_to_net()
+{
+}
+
+void command_hello_request(const uint8_t* data, const uint32_t len)
+{
+    const uint32_t reply_len = LINK_SYNC_WORD_LEN;
+
+    uint8_t packet[HELLO_REPLY_LEN] = {0};
+    if (len != LINK_SYNC_WORD_LEN)
+    {
+        return;
+    }
+
+    // Should be in write to packet function
+    packet[0] = HelloReply & 0xFF;
+    packet[1] = HelloReply >> 8;
+
+    packet[2] = reply_len & 0xFF;
+    packet[3] = reply_len >> 8;
+    packet[4] = reply_len >> 16;
+    packet[5] = reply_len >> 24;
+
+    const uint32_t data_offset = 6;
+    for (uint32_t i = 0; i < len; ++i)
+    {
+        packet[data_offset + i] = data[i] ^ Link_Sync_Word[i];
+    }
+
+    uart_router_copy_to_tx(&uart_router_get_usb_stream()->tx, Link_Sync_Word, LINK_SYNC_WORD_LEN);
+    uart_router_copy_to_tx(&uart_router_get_usb_stream()->tx, packet, HELLO_REPLY_LEN);
+}
+
+void command_set_pin(const uint8_t* data, const uint32_t len)
+{
+    if (len != 2)
+    {
+        return;
+    }
+}
+
+void command_set_ui_baudrate(const uint8_t* data, const uint32_t len)
+{
+}
+
 void command_get_version(void* arg)
 {
     // TODO actually get a version
