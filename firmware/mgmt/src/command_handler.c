@@ -2,14 +2,19 @@
 #include "app_mgmt.h"
 #include "chip_control.h"
 #include "io_control.h"
+#include "main.h"
 #include "state.h"
+#include "stm32f072xb.h"
+#include "stm32f0xx_hal.h"
+#include "stm32f0xx_hal_gpio.h"
 #include "uart_router.h"
+#include <stdint.h>
 
-#define HELLO_REPLY_LEN COMMAND_LEN + LEN_LEN + LINK_SYNC_WORD_LEN
+#define HELLO_REPLY_LEN TYPE_LEN + LENGTH_LEN + LINK_SYNC_WORD_LEN
 
-void command_handle_packet(const CtlToMgmt command, const uint8_t* data, const uint32_t len)
+void command_handle_packet(const tlv_packet_t* packet)
 {
-    switch (command)
+    switch (packet->type)
     {
     case Ping:
     {
@@ -18,27 +23,27 @@ void command_handle_packet(const CtlToMgmt command, const uint8_t* data, const u
     }
     case ToUi:
     {
-        command_to_ui();
+        command_to_ui(packet);
         break;
     }
     case ToNet:
     {
-        command_to_net();
+        command_to_net(packet);
         break;
     }
     case HelloRequest:
     {
-        command_hello_request(data, len);
+        command_hello_request(packet);
         break;
     }
     case SetPin:
     {
-        command_set_pin(data, len);
+        command_set_pin(packet);
         break;
     }
     case SetUiBaudrate:
     {
-        command_set_ui_baudrate(data, len);
+        command_set_ui_baudrate(packet);
         break;
     }
     default:
@@ -51,53 +56,101 @@ void command_pong()
 {
 }
 
-void command_to_ui()
+void command_to_ui(const tlv_packet_t* packet)
 {
+    uart_router_copy_to_tx(&uart_router_get_ui_stream()->tx, packet->value, packet->len);
 }
 
-void command_to_net()
+void command_to_net(const tlv_packet_t* packet)
 {
+    uart_router_copy_to_tx(&uart_router_get_net_stream()->tx, packet->value, packet->len);
 }
 
-void command_hello_request(const uint8_t* data, const uint32_t len)
+void command_hello_request(const tlv_packet_t* packet)
 {
-    const uint32_t reply_len = LINK_SYNC_WORD_LEN;
-
-    uint8_t packet[HELLO_REPLY_LEN] = {0};
-    if (len != LINK_SYNC_WORD_LEN)
+    if (packet->len != LINK_SYNC_WORD_LEN)
     {
         return;
     }
 
-    // Should be in write to packet function
-    packet[0] = HelloReply & 0xFF;
-    packet[1] = HelloReply >> 8;
+    tlv_packet_t reply;
+    reply.type = HelloReply;
+    reply.len = LINK_SYNC_WORD_LEN;
 
-    packet[2] = reply_len & 0xFF;
-    packet[3] = reply_len >> 8;
-    packet[4] = reply_len >> 16;
-    packet[5] = reply_len >> 24;
-
-    const uint32_t data_offset = 6;
-    for (uint32_t i = 0; i < len; ++i)
+    for (uint32_t i = 0; i < packet->len; ++i)
     {
-        packet[data_offset + i] = data[i] ^ Link_Sync_Word[i];
+        reply.value[i] = packet->value[i] ^ Link_Sync_Word[i];
     }
 
-    uart_router_copy_to_tx(&uart_router_get_usb_stream()->tx, Link_Sync_Word, LINK_SYNC_WORD_LEN);
-    uart_router_copy_to_tx(&uart_router_get_usb_stream()->tx, packet, HELLO_REPLY_LEN);
+    uart_router_write_tlv(&uart_router_get_usb_stream()->tx, &reply);
 }
 
-void command_set_pin(const uint8_t* data, const uint32_t len)
+void command_set_pin(const tlv_packet_t* packet)
 {
-    if (len != 2)
+    if (packet->len != 2)
     {
         return;
     }
+
+    PinId pin_id = packet->value[0];
+    GPIO_PinState state = (GPIO_PinState)packet->value[1];
+
+    switch (pin_id)
+    {
+    case UiBoot0:
+    {
+        HAL_GPIO_WritePin(UI_BOOT0_GPIO_Port, UI_BOOT0_Pin, state);
+        break;
+    }
+    case UiBoot1:
+    {
+        HAL_GPIO_WritePin(UI_BOOT1_GPIO_Port, UI_BOOT1_Pin, state);
+        break;
+    }
+    case UiRst:
+    {
+        HAL_GPIO_WritePin(UI_NRST_GPIO_Port, UI_NRST_Pin, state);
+        break;
+    }
+    case NetBoot:
+    {
+        HAL_GPIO_WritePin(NET_BOOT_GPIO_Port, NET_BOOT_Pin, state);
+        break;
+    }
+    case NetRst:
+    {
+        HAL_GPIO_WritePin(NET_NRST_GPIO_Port, NET_NRST_Pin, state);
+        break;
+    }
+    default:
+    {
+        return;
+    }
+    }
+
+    HAL_Delay(100);
+
+    uart_router_reply_ack();
 }
 
-void command_set_ui_baudrate(const uint8_t* data, const uint32_t len)
+void command_set_ui_baudrate(const tlv_packet_t* packet)
 {
+    if (packet->len != 4)
+    {
+        // Should reply with a nack imo
+        return;
+    }
+
+    uint32_t baudrate = packet->value[0];
+    baudrate |= packet->value[1] << 8;
+    baudrate |= packet->value[2] << 16;
+    baudrate |= packet->value[3] << 24;
+
+    uart_router_update_baudrate(uart_router_get_ui_stream(), baudrate);
+
+    HAL_Delay(100);
+
+    uart_router_reply_ack();
 }
 
 void command_get_version(void* arg)

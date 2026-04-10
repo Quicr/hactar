@@ -2,6 +2,7 @@
 #define COMMAND_HANDLER_HH
 
 #include "stm32f0xx_hal.h"
+#include "uart_router.h"
 #include <stdint.h>
 
 // TODO Get commands
@@ -40,7 +41,6 @@ typedef enum
     SetUiBaudrate,
     GetStackInfo,
     RepaintStack,
-    CtlToMgmtCnt
 } CtlToMgmt;
 
 typedef enum
@@ -50,8 +50,7 @@ typedef enum
     FromNet,
     AckReply,
     HelloReply,
-    StackInfo,
-    MgmtToCtlCnt
+    StackInfo
 } MgmtToCtl;
 
 typedef struct
@@ -79,13 +78,13 @@ typedef enum
     NetRst,
 } PinId;
 
-void command_handle_packet(const CtlToMgmt command, const uint8_t* data, const uint32_t len);
+void command_handle_packet(const tlv_packet_t* packet);
 void command_pong();
-void command_to_ui();
-void command_to_net();
-void command_hello_request(const uint8_t* data, const uint32_t len);
-void command_set_pin(const uint8_t* data, const uint32_t len);
-void command_set_ui_baudrate(const uint8_t* data, const uint32_t len);
+void command_to_ui(const tlv_packet_t* packet);
+void command_to_net(const tlv_packet_t* packet);
+void command_hello_request(const tlv_packet_t* packet);
+void command_set_pin(const tlv_packet_t* packet);
+void command_set_ui_baudrate(const tlv_packet_t* packet);
 
 void command_get_version(void* arg);
 

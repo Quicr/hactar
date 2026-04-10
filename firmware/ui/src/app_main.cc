@@ -73,16 +73,16 @@ static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_rx_buff_sz,
                           false);
 
-Screen screen(hspi1,
-              DISP_CS_GPIO_Port,
-              DISP_CS_Pin,
-              DISP_DC_GPIO_Port,
-              DISP_DC_Pin,
-              DISP_RST_GPIO_Port,
-              DISP_RST_Pin,
-              DISP_BL_GPIO_Port,
-              DISP_BL_Pin,
-              Screen::Orientation::flipped_portrait);
+// Screen screen(hspi1,
+//               DISP_CS_GPIO_Port,
+//               DISP_CS_Pin,
+//               DISP_DC_GPIO_Port,
+//               DISP_DC_Pin,
+//               DISP_RST_GPIO_Port,
+//               DISP_RST_Pin,
+//               DISP_BL_GPIO_Port,
+//               DISP_BL_Pin,
+//               Screen::Orientation::flipped_portrait);
 
 volatile bool sleeping = true;
 volatile bool error = false;
@@ -90,27 +90,29 @@ volatile bool error = false;
 constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1;
 uint32_t flags = Expected_Flags;
 
-GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
-    KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
-};
+// GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
+//     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port,
+//     KB_COL5_GPIO_Port,
+// };
+//
+// uint16_t col_pins[Keyboard::Q10_Cols] = {
+//     KB_COL1_Pin, KB_COL2_Pin, KB_COL3_Pin, KB_COL4_Pin, KB_COL5_Pin,
+// };
+//
+// GPIO_TypeDef* row_ports[Keyboard::Q10_Rows] = {
+//     KB_ROW1_GPIO_Port, KB_ROW2_GPIO_Port, KB_ROW3_GPIO_Port, KB_ROW4_GPIO_Port,
+//     KB_ROW5_GPIO_Port, KB_ROW6_GPIO_Port, KB_ROW7_GPIO_Port,
+// };
 
-uint16_t col_pins[Keyboard::Q10_Cols] = {
-    KB_COL1_Pin, KB_COL2_Pin, KB_COL3_Pin, KB_COL4_Pin, KB_COL5_Pin,
-};
+// uint16_t row_pins[Keyboard::Q10_Rows] = {
+//     KB_ROW1_Pin, KB_ROW2_Pin, KB_ROW3_Pin, KB_ROW4_Pin, KB_ROW5_Pin, KB_ROW6_Pin, KB_ROW7_Pin,
+// }
+// ;
 
-GPIO_TypeDef* row_ports[Keyboard::Q10_Rows] = {
-    KB_ROW1_GPIO_Port, KB_ROW2_GPIO_Port, KB_ROW3_GPIO_Port, KB_ROW4_GPIO_Port,
-    KB_ROW5_GPIO_Port, KB_ROW6_GPIO_Port, KB_ROW7_GPIO_Port,
-};
-
-uint16_t row_pins[Keyboard::Q10_Rows] = {
-    KB_ROW1_Pin, KB_ROW2_Pin, KB_ROW3_Pin, KB_ROW4_Pin, KB_ROW5_Pin, KB_ROW6_Pin, KB_ROW7_Pin,
-};
-
-static constexpr uint16_t kb_ring_buff_sz = 5;
-RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
-
-Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
+// static constexpr uint16_t kb_ring_buff_sz = 5;
+// RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
+//
+// Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
 
 enum class Ptt_Btn_State
 {
@@ -130,7 +132,7 @@ int app_main()
     uint32_t ticks_ms = 0;
     ConfigStorage config_storage(hi2c1);
     Protector protector(config_storage);
-    Renderer renderer(screen, keyboard);
+    // Renderer renderer(screen, keyboard);
 
     audio_chip.Init();
     audio_chip.StartI2S();
@@ -138,7 +140,7 @@ int app_main()
     // Test in case the audio chip settings change and something looks suspicious
     // CountNumAudioInterrupts(audio_chip, sleeping);
 
-    InitScreen(screen);
+    // InitScreen(screen);
     Leds(HIGH, HIGH, HIGH);
     net_serial.StartReceive();
     mgmt_serial.StartReceive();
@@ -160,7 +162,7 @@ int app_main()
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
-            renderer.ChangeView(Renderer::View::Chat);
+            // renderer.ChangeView(Renderer::View::Chat);
             done_booting = true;
         }
 
@@ -180,15 +182,15 @@ int app_main()
         CheckPTT(protector);
         CheckPTTAI(protector);
 
-        HandleKeypress(screen, keyboard, net_serial, protector);
+        // HandleKeypress(screen, keyboard, net_serial, protector);
 
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
 
-        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, screen);
+        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip);
         HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage);
 
-        renderer.Render(ticks_ms);
+        // renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
 
         sleeping = true;
@@ -395,7 +397,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        keyboard.Scan(HAL_GetTick());
+        // keyboard.Scan(HAL_GetTick());
     }
     else if (htim->Instance == TIM3)
     {

@@ -1,6 +1,7 @@
 #include "uart_router.h"
 #include "command_handler.h"
 #include "main.h"
+#include "stm32f0xx_hal_uart.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -37,7 +38,10 @@ uart_stream_t usb_stream = {
         {
             .buff = usb_rx_buff,
             .size = USB_UART_BUFF_SZ,
-            .idx = 0,
+            .write = 0,
+            .total_tlv_read = 0,
+            .num_read = 0,
+            .sync_matched = 0,
         },
     .tx =
         {
@@ -57,7 +61,10 @@ uart_stream_t ui_stream = {
         {
             .buff = ui_rx_buff,
             .size = UI_UART_BUFF_SZ,
-            .idx = 0,
+            .write = 0,
+            .total_tlv_read = 0,
+            .num_read = 0,
+            .sync_matched = 0,
         },
     .tx =
         {
@@ -77,7 +84,10 @@ uart_stream_t net_stream = {
         {
             .buff = net_rx_buff,
             .size = NET_UART_BUFF_SZ,
-            .idx = 0,
+            .write = 0,
+            .total_tlv_read = 0,
+            .num_read = 0,
+            .sync_matched = 0,
         },
     .tx =
         {
@@ -123,7 +133,42 @@ static uint8_t read_from_tx(transmit_t* tx, uint32_t* num_read)
     return tx->buff[tx->read++];
 }
 
-static uint16_t get_distance(transmit_t* tx)
+static uint8_t tlv_byte_read_rx(receive_t* rx)
+{
+    if (rx->read >= rx->size)
+    {
+        rx->read = 0;
+    }
+
+    rx->total_tlv_read += 1;
+
+    return rx->buff[rx->read++];
+}
+
+static uint8_t byte_read_rx(receive_t* rx)
+{
+    if (rx->read >= rx->size)
+    {
+        rx->read = 0;
+    }
+
+    return rx->buff[rx->read++];
+}
+
+static uint16_t get_tx_distance(transmit_t* tx)
+{
+    if (tx->write > tx->read)
+    {
+        // read head is directly behind write head just need the difference
+        return tx->write - tx->read;
+    }
+
+    // the read head is ahead of the write head, so we read until the end of the buffer
+    // and wrap around on the isr
+    return tx->size - tx->read;
+}
+
+static uint16_t get_rx_distance(receive_t* tx)
 {
     if (tx->write > tx->read)
     {
@@ -196,7 +241,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
     }
     else if (huart->Instance == ui_stream.uart->Instance)
     {
-        // uart_router_reinit_stream(&ui_stream);
+        uart_router_reinit_stream(&ui_stream);
     }
     else if (huart->Instance == usb_stream.uart->Instance)
     {
@@ -209,37 +254,13 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
 void uart_router_rx_isr(uart_stream_t* stream, const uint16_t num_received)
 {
     // Calculate the number of bytes have occurred since the last event
-    const uint16_t num_bytes = num_received - stream->rx.idx;
+    const uint16_t num_bytes = num_received - stream->rx.write;
 
-    // Faster than putting a check inside of the copy loop since this is only
-    // checked once per rx event.
-    switch (stream->path)
-    {
-    case Tx_Path_None:
-        break;
-    case Tx_Path_Usb:
-        uart_router_copy_to_tx(&usb_stream.tx, stream->rx.buff + stream->rx.idx, num_bytes);
-        break;
-    case Tx_Path_Ui:
-        uart_router_copy_to_tx(&ui_stream.tx, stream->rx.buff + stream->rx.idx, num_bytes);
-        break;
-    case Tx_Path_Net:
-        uart_router_copy_to_tx(&net_stream.tx, stream->rx.buff + stream->rx.idx, num_bytes);
-        break;
-    case Tx_Path_Ui_Net:
-        uart_router_copy_to_tx(&ui_stream.tx, stream->rx.buff + stream->rx.idx, num_bytes);
-        uart_router_copy_to_tx(&net_stream.tx, stream->rx.buff + stream->rx.idx, num_bytes);
-        break;
-    case Tx_Path_Internal:
-        uart_router_copy_to_tx(&internal_tx, stream->rx.buff + stream->rx.idx, num_bytes);
-        break;
-    }
-
-    stream->rx.idx += num_bytes;
+    stream->rx.write += num_bytes;
     // rx read head is at the end
-    if (stream->rx.idx >= stream->rx.size)
+    if (stream->rx.write >= stream->rx.size)
     {
-        stream->rx.idx = 0;
+        stream->rx.write = 0;
     }
 }
 
@@ -311,123 +332,13 @@ void uart_router_perform_transmit(uart_stream_t* stream)
 
     stream->tx.free = 0;
 
-    stream->tx.num_sending = get_distance(&stream->tx);
+    stream->tx.num_sending = get_tx_distance(&stream->tx);
 
     HAL_UART_Transmit_DMA(stream->uart, stream->tx.buff + stream->tx.read, stream->tx.num_sending);
 }
 
 void uart_router_parse_internal(const command_map_t command_map[Cmd_Count])
 {
-    const uint32_t Type_Size = 2;
-    const uint32_t Length_Size = 4;
-
-    // Note, sync word is not part of the header.
-    const uint32_t Header_Bytes = Type_Size + Length_Size;
-
-    static CtlToMgmt command = 0;
-    static uint32_t len = 0;
-
-    static uint32_t num_read = 0;
-    static uint32_t packet_idx = 0;
-    static uint8_t sync_matched = 0;
-    static uint8_t packet[PACKET_SZ] = {0};
-
-    // Time out internal data
-    if (HAL_GetTick() - last_receive_tick >= 2000 && num_read > 0)
-    {
-        packet_idx = 0;
-        num_read = 0;
-        sync_matched = 0;
-        uart_router_send_string(&usb_uart, "[Error] command timeout\n");
-    }
-
-    if (HAL_GetTick() - last_receive_tick >= 100 && internal_tx.read != internal_tx.write
-        && num_read == 0)
-    {
-        // If we have timed out on the received data and have not read anything, clear the buffer
-        internal_tx.read = internal_tx.write;
-
-        // Reset
-        packet_idx = 0;
-        num_read = 0;
-        sync_matched = 0;
-    }
-
-    while (internal_tx.read != internal_tx.write)
-    {
-        if (sync_matched < LINK_SYNC_WORD_LEN)
-        {
-            const uint8_t byte = read_from_tx(&internal_tx, &num_read);
-            if (byte == Link_Sync_Word[sync_matched])
-            {
-                ++sync_matched;
-            }
-            else
-            {
-                sync_matched = byte == Link_Sync_Word[0];
-                num_read = 0;
-            }
-            continue;
-        }
-
-        const uint16_t distance = get_distance(&internal_tx);
-
-        // If we don't have enough bytes for the length and the command
-        if (distance < Header_Bytes && num_read == LINK_SYNC_WORD_LEN)
-        {
-            break;
-        }
-
-        if (num_read == LINK_SYNC_WORD_LEN)
-        {
-            command = read_from_tx(&internal_tx, &num_read);
-            command |= read_from_tx(&internal_tx, &num_read);
-            len = (uint32_t)(read_from_tx(&internal_tx, &num_read));
-            len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 8);
-            len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 16);
-            len |= (uint32_t)(read_from_tx(&internal_tx, &num_read) << 24);
-        }
-
-        if (command >= CtlToMgmtCnt)
-        {
-            // bad data continue
-            num_read = 0;
-            sync_matched = 0;
-            continue;
-        }
-
-        // Get the type
-        if (packet_idx >= PACKET_SZ)
-        {
-            packet_idx = 0;
-            num_read = 0;
-            sync_matched = 0;
-            continue;
-        }
-
-        if (packet_idx < len)
-        {
-            // Read more bytes!
-            packet[packet_idx++] = read_from_tx(&internal_tx, &num_read);
-        }
-
-        if (packet_idx >= len)
-        {
-            command_handle_packet(command, packet, packet_idx);
-
-            num_read = 0;
-            packet_idx = 0;
-            sync_matched = 0;
-            continue;
-        }
-        else if (num_read >= PACKET_SZ)
-        {
-            // bad data continue
-            num_read = 0;
-            sync_matched = 0;
-            continue;
-        }
-    }
 }
 
 uart_stream_t* uart_router_get_ui_stream()
@@ -503,6 +414,25 @@ void uart_router_start_receive(uart_stream_t* uart_stream)
     }
 }
 
+void uart_router_update_baudrate(uart_stream_t* stream, const uint32_t baudrate)
+{
+    HAL_UART_Abort(stream->uart);
+
+    // De-Init uart for UI upload
+    if (HAL_UART_DeInit(stream->uart) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    stream->uart->Init.BaudRate = baudrate;
+
+    if (HAL_UART_Init(stream->uart) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    uart_router_start_receive(stream);
+}
+
 void uart_router_usb_update_reinit(const uint32_t HAL_word_length, const uint32_t HAL_parity)
 {
     HAL_UART_Abort(&usb_uart);
@@ -544,11 +474,173 @@ void uart_router_reinit_stream(uart_stream_t* stream)
 
 void uart_router_reset_stream(uart_stream_t* stream)
 {
+    stream->rx.num_read = 0;
+    stream->rx.read = 0;
+    stream->rx.total_tlv_read = 0;
+    stream->rx.sync_matched = 0;
+    stream->rx.write = 0;
+
     stream->tx.read = 0;
     stream->tx.write = 0;
     stream->tx.unsent = 0;
     stream->tx.num_sending = 0;
     stream->tx.free = 1;
 
-    stream->rx.idx = 0;
+    stream->rx.write = 0;
+}
+
+void uart_router_reply_ack()
+{
+    const uint16_t reply = AckReply;
+
+    uart_router_copy_to_tx(&usb_stream.tx, Link_Sync_Word, LINK_SYNC_WORD_LEN);
+
+    uart_router_copy_byte_to_tx(&usb_stream.tx, reply & 0xFF);
+    uart_router_copy_byte_to_tx(&usb_stream.tx, reply >> 8);
+
+    uart_router_copy_byte_to_tx(&usb_stream.tx, 0);
+    uart_router_copy_byte_to_tx(&usb_stream.tx, 0);
+    uart_router_copy_byte_to_tx(&usb_stream.tx, 0);
+    uart_router_copy_byte_to_tx(&usb_stream.tx, 0);
+}
+
+static void init_packet(tlv_packet_t* packet)
+{
+    packet->len = 0;
+    packet->type = 0;
+}
+
+void uart_router_read_usb()
+{
+    static tlv_packet_t packet = {0};
+
+    const uint8_t done = uart_router_read_tlv(&usb_stream, &packet);
+
+    if (!done)
+    {
+        return;
+    }
+
+    command_handle_packet(&packet);
+}
+
+uint8_t uart_router_read_raw(uart_stream_t* stream, tlv_packet_t* packet)
+{
+    receive_t* rx = &stream->rx;
+    if (rx->read == rx->write)
+    {
+        return 0;
+    }
+
+    while (rx->read != rx->write && rx->num_read < PACKET_SZ)
+    {
+        packet->value[rx->num_read++] = tlv_byte_read_rx(rx);
+    }
+
+    packet->len = rx->num_read;
+
+    rx->num_read = 0;
+    rx->total_tlv_read = 0;
+
+    return packet->len > 0;
+}
+
+void uart_router_read_ui()
+{
+    static tlv_packet_t packet = {.type = FromUi, .len = 0};
+
+    if (!uart_router_read_raw(&ui_stream, &packet))
+    {
+        return;
+    }
+
+    uart_router_write_tlv(&usb_stream.tx, &packet);
+}
+
+void uart_router_read_net()
+{
+    static tlv_packet_t packet = {.type = FromNet, .len = 0};
+
+    if (!uart_router_read_raw(&ui_stream, &packet))
+    {
+        return;
+    }
+
+    uart_router_write_tlv(&usb_stream.tx, &packet);
+}
+
+uint8_t uart_router_read_tlv(uart_stream_t* stream, tlv_packet_t* packet)
+{
+    // Note, sync word is not part of the header.
+    receive_t* rx = &stream->rx;
+
+    while (rx->read != rx->write)
+    {
+        if (rx->sync_matched < LINK_SYNC_WORD_LEN)
+        {
+            const uint8_t byte = byte_read_rx(rx);
+            if (byte == Link_Sync_Word[rx->sync_matched])
+            {
+                ++rx->sync_matched;
+            }
+            else
+            {
+                rx->sync_matched = byte == Link_Sync_Word[0];
+            }
+            continue;
+        }
+
+        const uint16_t distance = get_rx_distance(rx);
+
+        // If we don't have enough bytes for the length and the command
+        if (distance < HEADER_LEN && rx->total_tlv_read == LINK_SYNC_WORD_LEN)
+        {
+            return 0;
+        }
+
+        if (rx->total_tlv_read < HEADER_LEN)
+        {
+            packet->type = tlv_byte_read_rx(rx);
+            packet->type |= tlv_byte_read_rx(rx);
+
+            packet->len = (uint32_t)(tlv_byte_read_rx(rx));
+            packet->len |= (uint32_t)(tlv_byte_read_rx(rx) << 8);
+            packet->len |= (uint32_t)(tlv_byte_read_rx(rx) << 16);
+            packet->len |= (uint32_t)(tlv_byte_read_rx(rx) << 24);
+
+            if (packet->len == 0)
+            {
+                return 1;
+            }
+        }
+
+        packet->value[rx->num_read++] = tlv_byte_read_rx(rx);
+
+        if (rx->num_read >= packet->len)
+        {
+            rx->total_tlv_read = 0;
+            rx->num_read = 0;
+            rx->sync_matched = 0;
+
+            return 1;
+        }
+        else if (rx->num_read >= PACKET_SZ)
+        {
+            // bad data continue
+            rx->total_tlv_read = 0;
+            rx->num_read = 0;
+            rx->sync_matched = 0;
+            continue;
+        }
+    }
+
+    return 0;
+}
+
+void uart_router_write_tlv(transmit_t* tx, tlv_packet_t* packet)
+{
+    uart_router_copy_to_tx(tx, Link_Sync_Word, LINK_SYNC_WORD_LEN);
+    uart_router_copy_to_tx(tx, (const uint8_t*)&packet->type, sizeof(packet->type));
+    uart_router_copy_to_tx(tx, (const uint8_t*)&packet->len, sizeof(packet->len));
+    uart_router_copy_to_tx(tx, packet->value, packet->len);
 }
