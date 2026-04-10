@@ -75,7 +75,8 @@ int app_main(void)
 
         command_default_logging((void*)state);
 
-        uart_router_usb_update_reinit(UART_WORDLENGTH_8B, UART_PARITY_NONE);
+        // uart_router_usb_update_reinit(UART_WORDLENGTH_8B, UART_PARITY_NONE);
+        uart_router_start_receive(usb_stream);
         uart_router_start_receive(net_stream);
         uart_router_start_receive(ui_stream);
 
@@ -134,9 +135,9 @@ void TurnOffLEDs()
 void LEDA(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b)
 {
     // Set LEDS for net
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, r);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, g);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, b);
+    // HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, r);
+    // HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, g);
+    // HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, b);
 }
 
 /**
@@ -146,9 +147,9 @@ void LEDA(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b)
 void LEDB(GPIO_PinState r, GPIO_PinState g, GPIO_PinState b)
 {
     // Set LEDS for ui
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, r);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, g);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, b);
+    // HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, r);
+    // HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, g);
+    // HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, b);
 }
 
 void app_mgmt_reset(const Reset_Type reset_type)

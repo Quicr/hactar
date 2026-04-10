@@ -2,6 +2,7 @@
 #define COMMAND_HANDLER_HH
 
 #include "stm32f0xx_hal.h"
+#include <stdint.h>
 
 // TODO Get commands
 typedef enum
@@ -29,12 +30,62 @@ typedef enum
     Cmd_Count
 } Command;
 
+typedef enum
+{
+    Ping = 0x0000,
+    ToUi,
+    ToNet,
+    HelloRequest,
+    SetPin,
+    SetUiBaudrate,
+    GetStackInfo,
+    RepaintStack,
+    CtlToMgmtCnt
+} CtlToMgmt;
+
+typedef enum
+{
+    Pong = 0x0010,
+    FromUi,
+    FromNet,
+    AckReply,
+    HelloReply,
+    StackInfo,
+    MgmtToCtlCnt
+} MgmtToCtl;
+
 typedef struct
 {
     const Command command;
     void (*callback)(void* arg);
     void* usr_arg;
 } command_map_t;
+
+typedef struct
+{
+    const CtlToMgmt command;
+    const uint8_t* data;
+    const uint32_t len;
+    void (*callback)(void* arg);
+    void* usr_arg;
+} ctl_to_mgmt_map_t;
+
+typedef enum
+{
+    UiBoot0,
+    UiBoot1,
+    UiRst,
+    NetBoot,
+    NetRst,
+} PinId;
+
+void command_handle_packet(const CtlToMgmt command, const uint8_t* data, const uint32_t len);
+void command_pong();
+void command_to_ui();
+void command_to_net();
+void command_hello_request(const uint8_t* data, const uint32_t len);
+void command_set_pin(const uint8_t* data, const uint32_t len);
+void command_set_ui_baudrate(const uint8_t* data, const uint32_t len);
 
 void command_get_version(void* arg);
 

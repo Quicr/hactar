@@ -34,7 +34,7 @@ extern "C" {
 #include "state.h"
 #include "stm32f0xx_hal.h"
 
-static const State default_state = Debug;
+static const State default_state = Normal;
 
 typedef enum
 {

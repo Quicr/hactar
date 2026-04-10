@@ -12,6 +12,12 @@
 #define PACKET_SZ 512
 #define COMMAND_TIMEOUT 1000
 
+#define COMMAND_LEN 2
+#define LEN_LEN 4
+#define LINK_SYNC_WORD_LEN 4
+
+static const uint8_t Link_Sync_Word[LINK_SYNC_WORD_LEN] = {0x4C, 0x49, 0x4E, 0x4B};
+
 typedef enum
 {
     Tx_Path_None = 0,
