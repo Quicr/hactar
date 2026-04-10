@@ -11,6 +11,5 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
 void HandleNetLinkPackets(Serial& net_serial,
                           Serial& mgmt_serial,
                           Protector& protector,
-                          AudioChip& audio,
-                          Screen& screen);
+                          AudioChip& audio);
 };

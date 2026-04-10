@@ -1,5 +1,6 @@
 #include "app_mgmt.h"
 #include "chip_control.h"
+#include "command_handler.h"
 #include "io_control.h"
 #include "main.h"
 #include "stm32f0xx_hal_def.h"
@@ -20,26 +21,6 @@ static uint8_t uploader = 0;
 
 State state = default_state;
 State next_state = Running;
-
-const command_map_t command_map[Cmd_Count] = {
-    {Cmd_Version, command_get_version, NULL},
-    {Cmd_Who_Are_You, command_who_are_you, NULL},
-    {Cmd_Hard_Reset, command_hard_reset, NULL},
-    {Cmd_Reset, command_reset, NULL},
-    {Cmd_Reset_Ui, command_reset_ui, NULL},
-    {Cmd_Reset_Net, command_reset_net, NULL},
-    {Cmd_Stop_Ui, command_stop_ui, NULL},
-    {Cmd_Stop_Net, command_stop_net, NULL},
-    {Cmd_Flash_Ui, command_flash_ui, (void*)&uploader},
-    {Cmd_Flash_Net, command_flash_net, (void*)&uploader},
-    {Cmd_Enable_Logs, command_enable_logs, NULL},
-    {Cmd_Enable_Logs_Ui, command_enable_logs_ui, NULL},
-    {Cmd_Enable_Logs_Net, command_enable_logs_net, NULL},
-    {Cmd_Disable_Logs, command_disable_logs, NULL},
-    {Cmd_Disable_Logs_Ui, command_disable_logs_ui, NULL},
-    {Cmd_Disable_Logs_Net, command_disable_logs_net, NULL},
-    {Cmd_Default_Logging, command_default_logging, (void*)&default_state},
-};
 
 void HAL_GPIO_EXTI_Callback(uint16_t pin)
 {
@@ -87,21 +68,21 @@ int app_main(void)
         state = next_state;
         while (state == Running)
         {
-            if (!uploader)
-            {
-                uart_router_parse_internal(command_map);
-            }
+
+            uart_router_read_usb();
+            uart_router_read_ui();
+            uart_router_read_net();
 
             uart_router_transmit(usb_stream);
             uart_router_transmit(ui_stream);
             uart_router_transmit(net_stream);
 
-            CheckTimeout();
-
-            if (state != next_state)
-            {
-                state = next_state;
-            }
+            // CheckTimeout();
+            //
+            // if (state != next_state)
+            // {
+            //     state = next_state;
+            // }
         }
     }
     return 0;

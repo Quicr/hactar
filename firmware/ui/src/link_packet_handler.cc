@@ -43,8 +43,10 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio)
     }
 }
 
-void HandleNetLinkPackets(
-    Serial& net_serial, Serial& mgmt_serial, Protector& protector, AudioChip& audio, Screen& screen)
+void HandleNetLinkPackets(Serial& net_serial,
+                          Serial& mgmt_serial,
+                          Protector& protector,
+                          AudioChip& audio)
 {
     while (true)
     {
@@ -94,7 +96,7 @@ void HandleNetLinkPackets(
         }
         case ui_net_link::MessageType::Chat:
         {
-            HandleChatMessages(screen, packet);
+            // HandleChatMessages(screen, packet);
             break;
         }
         default:

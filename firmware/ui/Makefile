@@ -53,7 +53,7 @@ OCDFLAGS   = -f interface/stlink.cfg -f target/stm32f4x.cfg
 .PHONY: all compile upload upload_debugger upload_cube_uart upload_cube_swd docker monitor format
 
 # default action: build all
-all: info compile
+all: compile
 
 compile: check_who_compiled CMakeLists.txt
 	cmake -B $(BUILD_DIR)
