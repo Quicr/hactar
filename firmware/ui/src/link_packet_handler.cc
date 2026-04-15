@@ -178,12 +178,19 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
             }
             break;
         }
-        case CtlToUi::ClearStorage:
+        case CtlToUi::GetSframeKey:
         {
-            UI_LOG_INFO("OK! Clearing configurations");
-            storage.Clear();
-            UI_LOG_INFO("OK! Cleared all configurations");
-            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
+            if (config.loaded && config.len == 16)
+            {
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::SframeKey),
+                                  std::span<const uint8_t>(config.buff, config.len));
+            }
+            else
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "SFrame key not found");
+            }
             break;
         }
         case CtlToUi::SetSframeKey:
@@ -208,40 +215,6 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
                 mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
                                        "Failed to save SFrame key");
             }
-            break;
-        }
-        case CtlToUi::GetSframeKey:
-        {
-            ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
-            if (config.loaded && config.len == 16)
-            {
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::SframeKey),
-                                  std::span<const uint8_t>(config.buff, config.len));
-            }
-            else
-            {
-                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
-                                       "SFrame key not found");
-            }
-            break;
-        }
-        case CtlToUi::GetStackInfo:
-        {
-            stack_debug::StackInfo info = stack_debug::GetStackInfo();
-            char json[128];
-            int len = snprintf(
-                json, sizeof(json),
-                "{\"stack_base\":%lu,\"stack_top\":%lu,\"stack_size\":%lu,\"stack_used\":%lu}",
-                info.stack_base, info.stack_top, info.stack_size, info.stack_used);
-            mgmt_serial.Reply(
-                static_cast<uint16_t>(UiToCtl::StackInfo),
-                std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(json), len));
-            break;
-        }
-        case CtlToUi::RepaintStack:
-        {
-            stack_debug::RepaintStack();
-            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             break;
         }
         case CtlToUi::GetLoopback:
@@ -272,6 +245,25 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
             }
             break;
         }
+        case CtlToUi::GetStackInfo:
+        {
+            stack_debug::StackInfo info = stack_debug::GetStackInfo();
+            char json[128];
+            int len = snprintf(
+                json, sizeof(json),
+                "{\"stack_base\":%lu,\"stack_top\":%lu,\"stack_size\":%lu,\"stack_used\":%lu}",
+                info.stack_base, info.stack_top, info.stack_size, info.stack_used);
+            mgmt_serial.Reply(
+                static_cast<uint16_t>(UiToCtl::StackInfo),
+                std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(json), len));
+            break;
+        }
+        case CtlToUi::RepaintStack:
+        {
+            stack_debug::RepaintStack();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            break;
+        }
         case CtlToUi::GetLogsEnabled:
         {
             uint8_t enabled = Logger::enabled ? 1 : 0;
@@ -297,6 +289,31 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
                 Logger::Disable();
             }
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            break;
+        }
+        case CtlToUi::ClearStorage:
+        {
+            UI_LOG_INFO("OK! Clearing configurations");
+            storage.Clear();
+            UI_LOG_INFO("OK! Cleared all configurations");
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            break;
+        }
+        case CtlToUi::GetVolume:
+        {
+            break;
+        }
+        case CtlToUi::SetVolume:
+        {
+            break;
+        }
+        case CtlToUi::Volume:
+        {
+
+            break;
+        }
+        case CtlToUi::Preamp:
+        {
             break;
         }
         default:

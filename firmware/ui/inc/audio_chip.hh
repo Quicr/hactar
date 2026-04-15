@@ -4,7 +4,6 @@
 #include "stm32.h"
 #include "stm32f4xx_hal_i2c.h"
 #include "stm32f4xx_hal_i2s.h"
-#include <memory>
 
 extern UART_HandleTypeDef huart1;
 
@@ -108,14 +107,14 @@ private:
     static constexpr uint16_t Max_Volume = 0b111'1111;
     // -73db
     static constexpr uint16_t Min_Volume = 0b010'1111;
-    static constexpr uint16_t Default_Volume = 0b110'0111;
+    static constexpr uint16_t Default_Volume = 0b001'0111;
     static constexpr float Default_Volume_dB = Default_Volume - 48 - 73;
 
     // +30db
     static constexpr uint16_t Max_Mic_Volume = 0b11'1111;
     // -17.25db
     static constexpr uint16_t Min_Mic_Volume = 0b00'0000;
-    static constexpr uint16_t Default_Mic_Volume = 0b11'1111;
+    static constexpr uint16_t Default_Mic_Volume = 0b10'1111;
     static constexpr float Default_Mic_Volume_dB = (0.75 * Default_Mic_Volume) - 17.25;
 
     I2S_HandleTypeDef* i2s;

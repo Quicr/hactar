@@ -11,6 +11,8 @@ CTL_SRCS := $(shell find link/ctl/src -name '*.rs') link/ctl/Cargo.toml
 MGMT_SRCS := $(shell find link/mgmt/src -name '*.rs') link/mgmt/Cargo.toml
 LINK_SRCS := $(shell find link/link/src -name '*.rs') link/link/Cargo.toml
 
+.PHONY: all flash flash-mgmt flash-ui flash-net run-ctl
+
 all: $(CTL_BIN) $(MGMT_BIN) $(UI_BIN) $(NET_ELF)
 
 $(CTL_BIN): $(CTL_SRCS) $(LINK_SRCS)
