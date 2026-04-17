@@ -112,7 +112,8 @@ void HandleNetLinkPackets(Serial& net_serial,
 void HandleMgmtLinkPackets(Serial& mgmt_serial,
                            Serial& net_serial,
                            ConfigStorage& storage,
-                           AudioChip& audio_chip)
+                           AudioChip& audio_chip,
+                           UiLoopbackMode& loopback)
 {
     while (true)
     {
@@ -223,7 +224,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
         }
         case CtlToUi::GetLoopback:
         {
-            uint8_t mode = static_cast<uint8_t>(UiLoopbackMode::Off);
+            uint8_t mode = static_cast<uint8_t>(loopback);
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Loopback),
                               std::span<const uint8_t>(&mode, 1));
             break;
@@ -236,17 +237,20 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
                                        "Missing loopback mode parameter");
                 break;
             }
-            auto mode = static_cast<UiLoopbackMode>(packet->payload[0]);
-            if (mode == UiLoopbackMode::Off)
+
+            const uint8_t mode = packet->payload[0];
+
+            if (mode >= static_cast<uint8_t>(UiLoopbackMode::Count))
             {
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
-            }
-            else
-            {
-                UI_LOG_WARN("Loopback mode %d not supported", static_cast<int>(mode));
                 mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
-                                       "Loopback mode not supported");
+                                       "Loopback mode given is not supported");
+                return;
             }
+
+            loopback = static_cast<UiLoopbackMode>(mode);
+
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+
             break;
         }
         case CtlToUi::GetStackInfo:
@@ -306,16 +310,15 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
         case CtlToUi::GetVolume:
         {
             UI_LOG_INFO("Get volume");
-            const uint16_t curr_vol = audio_chip.Volume();
-            mgmt_serial.Reply(
-                static_cast<uint16_t>(UiToCtl::Volume),
-                std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&curr_vol), 2));
+            const uint8_t curr_vol = audio_chip.Volume();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
+                              std::span<const uint8_t>(&curr_vol, 1));
             break;
         }
         case CtlToUi::SetVolume:
         {
             UI_LOG_INFO("Set volume");
-            if (packet->length < 2)
+            if (packet->length < 1)
             {
                 mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
                                        "Missing set volume parameter");
@@ -327,81 +330,80 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
 
             audio_chip.VolumeSet(volume);
 
-            const uint16_t curr_vol = audio_chip.Volume();
-            mgmt_serial.Reply(
-                static_cast<uint16_t>(UiToCtl::Volume),
-                std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&curr_vol), 2));
+            const uint8_t curr_vol = audio_chip.Volume();
+            // mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::LogsEnabled),
+            //                   std::span<const uint8_t>(&enabled, 1));
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
+                              std::span<const uint8_t>(&curr_vol, 1));
             break;
         }
-        case CtlToUi::Volume:
+        case CtlToUi::AdjVolume:
         {
             if (packet->length < 2)
             {
                 mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
-                                       "Missing set volume parameter");
+                                       "Missing adj volume parameter");
             }
 
-            const int16_t amt = static_cast<uint16_t>(packet->payload[0])
-                              | static_cast<uint16_t>(packet->payload[1] << 8);
+            const AudioChip::AdjDirection direction =
+                static_cast<AudioChip::AdjDirection>(packet->payload[0]);
+
+            const int8_t amt = static_cast<int8_t>(packet->payload[1]);
 
             UI_LOG_INFO("Volume up/down");
-            audio_chip.VolumeAdjust(amt);
+            audio_chip.VolumeAdjust(direction, amt);
 
-            const uint16_t curr_vol = audio_chip.Volume();
-            mgmt_serial.Reply(
-                static_cast<uint16_t>(UiToCtl::Volume),
-                std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&curr_vol), 2));
+            const uint8_t curr_vol = audio_chip.Volume();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
+                              std::span<const uint8_t>(&curr_vol, 1));
             break;
         }
         case CtlToUi::GetMicPreamp:
         {
             UI_LOG_INFO("Get MicPreamp");
-            const uint16_t mic_preamp = audio_chip.MicPreamp();
-            mgmt_serial.Reply(
-                static_cast<uint16_t>(UiToCtl::MicPreamp),
-                std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&mic_preamp), 2));
+            const uint8_t mic_preamp = audio_chip.MicPreamp();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),
+                              std::span<const uint8_t>(&mic_preamp, 1));
             break;
         }
         case CtlToUi::SetMicPreamp:
         {
             UI_LOG_INFO("Set MicPreamp");
-            if (packet->length < 2)
+            if (packet->length < 1)
             {
                 mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
                                        "Missing set volume parameter");
                 break;
             }
 
-            const uint16_t mic_preamp = static_cast<uint16_t>(packet->payload[0])
-                                      | static_cast<uint16_t>(packet->payload[1] << 8);
+            const uint8_t set_mic_preamp = packet->payload[0];
 
-            audio_chip.MicPreampSet(mic_preamp);
+            audio_chip.MicPreampSet(set_mic_preamp);
 
-            const uint16_t curr_mic_preamp = audio_chip.MicPreamp();
-            mgmt_serial.Reply(
-                static_cast<uint16_t>(UiToCtl::MicPreamp),
-                std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&curr_mic_preamp), 2));
+            const uint8_t mic_preamp = audio_chip.MicPreamp();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),
+                              std::span<const uint8_t>(&mic_preamp, 1));
             break;
         }
-        case CtlToUi::MicPreamp:
+        case CtlToUi::AdjMicPreamp:
         {
             UI_LOG_INFO("Micpreamp up/down");
             if (packet->length < 2)
             {
                 mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
-                                       "Missing set volume parameter");
+                                       "Missing adj mic-preamp parameter");
                 break;
             }
 
-            const int16_t mic_adj = static_cast<uint16_t>(packet->payload[0])
-                                  | static_cast<uint16_t>(packet->payload[1] << 8);
+            const AudioChip::AdjDirection direction =
+                static_cast<AudioChip::AdjDirection>(packet->payload[0]);
 
-            audio_chip.MicPreampAdjust(mic_adj);
+            const int8_t amt = static_cast<int8_t>(packet->payload[1]);
+            audio_chip.MicPreampAdjust(direction, amt);
 
-            const uint16_t curr_mic_preamp = audio_chip.MicPreamp();
-            mgmt_serial.Reply(
-                static_cast<uint16_t>(UiToCtl::MicPreamp),
-                std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&curr_mic_preamp), 2));
+            const uint8_t mic_preamp = audio_chip.MicPreamp();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),
+                              std::span<const uint8_t>(&mic_preamp, 1));
             break;
         }
         default:

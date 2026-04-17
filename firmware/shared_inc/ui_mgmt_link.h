@@ -20,10 +20,10 @@ enum struct CtlToUi : uint16_t
     ClearStorage,
     GetVolume,
     SetVolume,
-    Volume,
+    AdjVolume,
     GetMicPreamp,
     SetMicPreamp,
-    MicPreamp
+    AdjMicPreamp
 };
 
 // UI Chip Responses (UI to MGMT)
@@ -46,7 +46,8 @@ enum struct UiToCtl : uint16_t
 enum struct UiLoopbackMode : uint8_t
 {
     Off = 0,
-    Raw = 1,
-    Alaw = 2,
-    Sframe = 3,
+    Raw,
+    Alaw,
+    Sframe,
+    Count,
 };

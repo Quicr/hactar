@@ -5,6 +5,7 @@
 #include "protector.hh"
 #include "screen.hh"
 #include "serial.hh"
+#include "ui_mgmt_link.h"
 
 extern "C" {
 void HandleNetLinkPackets(Serial& net_serial,
@@ -14,5 +15,6 @@ void HandleNetLinkPackets(Serial& net_serial,
 void HandleMgmtLinkPackets(Serial& mgmt_serial,
                            Serial& net_serial,
                            ConfigStorage& storage,
-                           AudioChip& audio);
+                           AudioChip& audio,
+                           UiLoopbackMode& loopback);
 };

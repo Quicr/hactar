@@ -22,6 +22,12 @@ private:
     } Register;
 
 public:
+    enum class AdjDirection
+    {
+        Down,
+        Up,
+    };
+
     AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c);
     ~AudioChip();
 
@@ -37,12 +43,12 @@ public:
     void StopI2S();
 
     void VolumeSet(const int16_t vol);
-    void VolumeAdjust(const int16_t amt);
+    void VolumeAdjust(const AdjDirection direction, const int16_t amt);
     void VolumeReset();
     uint16_t Volume();
 
     void MicPreampSet(const int16_t vol);
-    void MicPreampAdjust(const int16_t amt);
+    void MicPreampAdjust(const AdjDirection direction, const int16_t amt);
     void MicPreampReset();
     uint16_t MicPreamp();
 

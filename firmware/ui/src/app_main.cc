@@ -2,6 +2,7 @@
 #include "audio_chip.hh"
 #include "audio_codec.hh"
 #include "config_storage.hh"
+#include "constants.hh"
 #include "keyboard.hh"
 #include "keyboard_display.hh"
 #include "led_control.hh"
@@ -13,19 +14,25 @@
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
+#include "stm32f4xx_hal_gpio.h"
 #include "tools.hh"
+#include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 #include <cmox_crypto.h>
 #include <cmox_init.h>
 #include <cmox_low_level.h>
 #include <sframe/sframe.h>
 #include <stm32f4xx_hal.h>
+#include <cstdint>
 #include <random>
 
 // Forward declare
-inline void CheckPTT(Protector& protector);
-inline void CheckPTTAI(Protector& protector);
-inline void SendAudio(Protector& protector, const ui_net_link::Channel_Id channel_id, bool last);
+inline void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode);
+inline void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode);
+inline void SendAudio(Protector& protector,
+                      const ui_net_link::Channel_Id channel_id,
+                      bool last,
+                      const UiLoopbackMode loopback_mode);
 inline void HandleMedia(link_packet_t* packet);
 inline void HandleAiResponse(link_packet_t* packet);
 
@@ -43,6 +50,8 @@ extern TIM_HandleTypeDef htim5;
 extern RNG_HandleTypeDef hrng;
 
 // Global variables that need to exist for hardware callbacks
+UiLoopbackMode loopback_mode = UiLoopbackMode::Off;
+
 // Buffer allocations
 static constexpr uint16_t net_ui_serial_tx_buff_sz = 2048;
 uint8_t net_ui_serial_tx_buff[net_ui_serial_tx_buff_sz] = {0};
@@ -156,6 +165,9 @@ int app_main()
 
     UI_LOG_INFO("Starting main loop");
 
+    uint32_t volume_button_press_ms = 0;
+    constexpr uint32_t Volume_Button_Debounce_ms = 200;
+
     while (1)
     {
         Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
@@ -176,21 +188,40 @@ int app_main()
 
         if (error)
         {
-            // Error("Main loop", "Flags did not match expected");
+            Error("Main loop", "Flags did not match expected");
         }
 
-        CheckPTT(protector);
-        CheckPTTAI(protector);
+        if (HAL_GPIO_ReadPin(VOLUME_UP_GPIO_Port, VOLUME_UP_Pin) == GPIO_PIN_SET)
+        {
+            if (HAL_GetTick() - volume_button_press_ms >= Volume_Button_Debounce_ms)
+            {
+                audio_chip.VolumeAdjust(AudioChip::AdjDirection::Up, 1);
+                UI_LOG_INFO("Volume %d", (int)audio_chip.Volume());
+                volume_button_press_ms = HAL_GetTick();
+            }
+        }
+        if (HAL_GPIO_ReadPin(VOLUME_DOWN_GPIO_Port, VOLUME_DOWN_Pin) == GPIO_PIN_SET)
+        {
+            if (HAL_GetTick() - volume_button_press_ms >= Volume_Button_Debounce_ms)
+            {
+                audio_chip.VolumeAdjust(AudioChip::AdjDirection::Down, 1);
+                UI_LOG_INFO("Volume %d", (int)audio_chip.Volume());
+                volume_button_press_ms = HAL_GetTick();
+            }
+        }
+
+        CheckPTT(protector, loopback_mode);
+        CheckPTTAI(protector, loopback_mode);
 
         // HandleKeypress(screen, keyboard, net_serial, protector);
 
-        RaiseFlag(Rx_Audio_Companded);
-        RaiseFlag(Rx_Audio_Transmitted);
-
         HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip);
-        HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip);
+        HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode);
 
         // renderer.Render(ticks_ms);
+        // TODO remove?
+        RaiseFlag(Rx_Audio_Companded);
+        RaiseFlag(Rx_Audio_Transmitted);
         RaiseFlag(Draw_Complete);
 
         sleeping = true;
@@ -250,7 +281,7 @@ inline void AudioCallback()
     RaiseFlag(Audio_Interrupt);
 }
 
-void CheckPTT(Protector& protector)
+void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode)
 {
     // Send talk start and sot packets
     if ((HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET
@@ -271,17 +302,17 @@ void CheckPTT(Protector& protector)
 
     if (ptt_state == Ptt_Btn_State::Pressed || ptt_state == Ptt_Btn_State::Releasing)
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt, false);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt, false, loopback_mode);
     }
 
     if (ptt_state == Ptt_Btn_State::Last_Send)
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt, true);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt, true, loopback_mode);
         ptt_state = Ptt_Btn_State::Released;
     }
 }
 
-void CheckPTTAI(Protector& protector)
+void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
 {
 
     // Send talk start and sot packets
@@ -301,35 +332,105 @@ void CheckPTTAI(Protector& protector)
 
     if (ptt_ai_state == Ptt_Btn_State::Pressed || ptt_ai_state == Ptt_Btn_State::Releasing)
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, false);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, false, loopback_mode);
     }
 
     if (ptt_ai_state == Ptt_Btn_State::Last_Send)
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, true);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, true, loopback_mode);
         ptt_ai_state = Ptt_Btn_State::Released;
     }
 }
 
-void SendAudio(Protector& protector, const ui_net_link::Channel_Id channel_id, bool last)
+bool FillAndProtectAudioFrame(Protector& protector,
+                              link_packet_t& packet,
+                              ui_net_link::AudioObject& talk_frame,
+                              const bool last)
 {
-    ui_net_link::AudioObject talk_frame;
-    talk_frame.channel_id = channel_id;
-
+    // TODO this is a total nightmare of wasted cycles
     AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, talk_frame.data,
                             constants::Audio_Phonic_Sz, true, constants::Stereo);
 
-    link_packet_t message_packet;
-    ui_net_link::Serialize(talk_frame, last, message_packet);
+    ui_net_link::Serialize(talk_frame, last, packet);
 
-    if (!protector.TryProtect(&message_packet))
+    if (!protector.TryProtect(&packet))
     {
         UI_LOG_ERROR("Failed to encrypt audio packet");
-        return;
+        return false;
     }
 
-    // LedRToggle();
-    net_serial.Write(message_packet);
+    return true;
+}
+
+void SendAudio(Protector& protector,
+               const ui_net_link::Channel_Id channel_id,
+               bool last,
+               const UiLoopbackMode loopback_mode)
+{
+    switch (loopback_mode)
+    {
+    case UiLoopbackMode::Off:
+    {
+        ui_net_link::AudioObject talk_frame;
+        talk_frame.channel_id = channel_id;
+
+        link_packet_t message_packet;
+
+        FillAndProtectAudioFrame(protector, message_packet, talk_frame, last);
+
+        // LedRToggle();
+        net_serial.Write(message_packet);
+        break;
+    }
+    case UiLoopbackMode::Raw:
+    {
+        const uint16_t* rx_buff = audio_chip.RxBuffer();
+        uint16_t* tx_buff = audio_chip.TxBuffer();
+
+        for (size_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
+        {
+            tx_buff[i] = rx_buff[i];
+        }
+
+        break;
+    }
+    case UiLoopbackMode::Alaw:
+    {
+        uint8_t buff[constants::Audio_Phonic_Sz];
+        AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, buff,
+                                constants::Audio_Phonic_Sz, true, constants::Stereo);
+        AudioCodec::ALawExpand(buff, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
+                               constants::Audio_Buffer_Sz, constants::Stereo, true);
+
+        break;
+    }
+    case UiLoopbackMode::Sframe:
+    {
+
+        ui_net_link::AudioObject talk_frame;
+        talk_frame.channel_id = channel_id;
+
+        link_packet_t message_packet;
+
+        FillAndProtectAudioFrame(protector, message_packet, talk_frame, last);
+
+        if (!protector.TryUnprotect(&message_packet))
+        {
+            UI_LOG_ERROR("Failed to decrypt ptt object");
+            break;
+        }
+
+        ui_net_link::Deserialize(message_packet, talk_frame);
+        AudioCodec::ALawExpand(talk_frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
+                               constants::Audio_Buffer_Sz, constants::Stereo, true);
+
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
