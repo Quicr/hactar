@@ -1,6 +1,7 @@
 #include "app_main.hh"
 #include "audio_chip.hh"
 #include "audio_codec.hh"
+#include "button.hh"
 #include "config_storage.hh"
 #include "constants.hh"
 #include "keyboard.hh"
@@ -134,6 +135,12 @@ enum class Ptt_Btn_State
 Ptt_Btn_State ptt_state;
 Ptt_Btn_State ptt_ai_state;
 
+Button ptt(PTT_BTN_GPIO_Port, PTT_BTN_Pin, Button::Polarity::High, 0, 0);
+Button mic_ptt(MIC_IO_GPIO_Port, MIC_IO_Pin, Button::Polarity::Low, 0, 0);
+Button ptt_ai(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin, Button::Polarity::High, 0, 0);
+Button volume_up(VOLUME_UP_GPIO_Port, VOLUME_UP_Pin, Button::Polarity::High, 20, 50);
+Button volume_down(VOLUME_DOWN_GPIO_Port, VOLUME_DOWN_Pin, Button::Polarity::High, 20, 50);
+
 int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
@@ -191,23 +198,16 @@ int app_main()
             Error("Main loop", "Flags did not match expected");
         }
 
-        if (HAL_GPIO_ReadPin(VOLUME_UP_GPIO_Port, VOLUME_UP_Pin) == GPIO_PIN_SET)
+        if (volume_up.ShortPress())
         {
-            if (HAL_GetTick() - volume_button_press_ms >= Volume_Button_Debounce_ms)
-            {
-                audio_chip.VolumeAdjust(AudioChip::AdjDirection::Up, 1);
-                UI_LOG_INFO("Volume %d", (int)audio_chip.Volume());
-                volume_button_press_ms = HAL_GetTick();
-            }
+            audio_chip.VolumeAdjust(AudioChip::AdjDirection::Up, 1);
+            UI_LOG_INFO("Volume up %d", (int)audio_chip.Volume());
         }
-        if (HAL_GPIO_ReadPin(VOLUME_DOWN_GPIO_Port, VOLUME_DOWN_Pin) == GPIO_PIN_SET)
+
+        if (volume_down.ShortPress())
         {
-            if (HAL_GetTick() - volume_button_press_ms >= Volume_Button_Debounce_ms)
-            {
-                audio_chip.VolumeAdjust(AudioChip::AdjDirection::Down, 1);
-                UI_LOG_INFO("Volume %d", (int)audio_chip.Volume());
-                volume_button_press_ms = HAL_GetTick();
-            }
+            audio_chip.VolumeAdjust(AudioChip::AdjDirection::Down, 1);
+            UI_LOG_INFO("Volume down %d", (int)audio_chip.Volume());
         }
 
         CheckPTT(protector, loopback_mode);
@@ -499,6 +499,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     if (htim->Instance == TIM2)
     {
         // keyboard.Scan(HAL_GetTick());
+        ptt.Update(HAL_GetTick());
+        mic_ptt.Update(HAL_GetTick());
+        ptt_ai.Update(HAL_GetTick());
+        volume_up.Update(HAL_GetTick());
+        volume_down.Update(HAL_GetTick());
     }
     else if (htim->Instance == TIM3)
     {
