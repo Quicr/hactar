@@ -25,7 +25,9 @@
 #include <sframe/sframe.h>
 #include <stm32f4xx_hal.h>
 #include <cstdint>
+#include <cstring>
 #include <random>
+#include <span>
 
 // Forward declare
 inline void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode);
@@ -52,6 +54,7 @@ extern RNG_HandleTypeDef hrng;
 
 // Global variables that need to exist for hardware callbacks
 UiLoopbackMode loopback_mode = UiLoopbackMode::Off;
+AudioDirectionMode audio_direction_mode = AudioDirectionMode::Net;
 
 // Buffer allocations
 static constexpr uint16_t net_ui_serial_tx_buff_sz = 2048;
@@ -135,11 +138,12 @@ enum class Ptt_Btn_State
 Ptt_Btn_State ptt_state;
 Ptt_Btn_State ptt_ai_state;
 
-Button ptt(PTT_BTN_GPIO_Port, PTT_BTN_Pin, Button::Polarity::High, 0, 0);
-Button mic_ptt(MIC_IO_GPIO_Port, MIC_IO_Pin, Button::Polarity::Low, 0, 0);
-Button ptt_ai(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin, Button::Polarity::High, 0, 0);
-Button volume_up(VOLUME_UP_GPIO_Port, VOLUME_UP_Pin, Button::Polarity::High, 20, 50);
-Button volume_down(VOLUME_DOWN_GPIO_Port, VOLUME_DOWN_Pin, Button::Polarity::High, 20, 50);
+Button ptt(PTT_BTN_GPIO_Port, PTT_BTN_Pin, Button::Polarity::High, 0, 0, 10000, 10000);
+Button mic_ptt(MIC_IO_GPIO_Port, MIC_IO_Pin, Button::Polarity::Low, 0, 0, 10000, 10000);
+Button ptt_ai(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin, Button::Polarity::High, 0, 0, 10000, 10000);
+Button volume_up(VOLUME_UP_GPIO_Port, VOLUME_UP_Pin, Button::Polarity::High, 20, 100, 200, 200);
+Button
+    volume_down(VOLUME_DOWN_GPIO_Port, VOLUME_DOWN_Pin, Button::Polarity::High, 20, 100, 200, 200);
 
 int app_main()
 {
@@ -152,6 +156,8 @@ int app_main()
 
     audio_chip.Init();
     audio_chip.StartI2S();
+    audio_chip.VolumeSet(100);
+    audio_chip.MicPreampSet(60);
 
     // Test in case the audio chip settings change and something looks suspicious
     // CountNumAudioInterrupts(audio_chip, sleeping);
@@ -198,16 +204,26 @@ int app_main()
             Error("Main loop", "Flags did not match expected");
         }
 
-        if (volume_up.ShortPress())
+        if (volume_up.ShortPress() || volume_up.RepeatedPress())
         {
             audio_chip.VolumeAdjust(AudioChip::AdjDirection::Up, 1);
             UI_LOG_INFO("Volume up %d", (int)audio_chip.Volume());
         }
+        else if (volume_up.DoublePress())
+        {
+            audio_chip.MicPreampAdjust(AudioChip::AdjDirection::Up, 1);
+            UI_LOG_INFO("Mic Preamp up %d", (int)audio_chip.MicPreamp());
+        }
 
-        if (volume_down.ShortPress())
+        if (volume_down.ShortPress() || volume_down.RepeatedPress())
         {
             audio_chip.VolumeAdjust(AudioChip::AdjDirection::Down, 1);
             UI_LOG_INFO("Volume down %d", (int)audio_chip.Volume());
+        }
+        else if (volume_down.DoublePress())
+        {
+            audio_chip.MicPreampAdjust(AudioChip::AdjDirection::Down, 1);
+            UI_LOG_INFO("Mic Preamp down %d", (int)audio_chip.MicPreamp());
         }
 
         CheckPTT(protector, loopback_mode);
@@ -216,7 +232,8 @@ int app_main()
         // HandleKeypress(screen, keyboard, net_serial, protector);
 
         HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip);
-        HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode);
+        HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
+                              audio_direction_mode);
 
         // renderer.Render(ticks_ms);
         // TODO remove?
@@ -283,33 +300,46 @@ inline void AudioCallback()
 
 void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode)
 {
-    // Send talk start and sot packets
-    if ((HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET
-         || HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_RESET)
-        && ptt_state != Ptt_Btn_State::Pressed)
-    {
-        HAL_TIM_Base_Stop(&htim4);
-        ptt_state = Ptt_Btn_State::Pressed;
-        LedGOn();
-    }
-    else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET
-             && HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_SET
-             && ptt_state == Ptt_Btn_State::Pressed)
-    {
-        ptt_state = Ptt_Btn_State::Releasing;
-        HAL_TIM_Base_Start_IT(&htim4);
-    }
+    static bool pressed = false;
 
-    if (ptt_state == Ptt_Btn_State::Pressed || ptt_state == Ptt_Btn_State::Releasing)
+    if ((ptt.IsHeld() || mic_ptt.IsHeld()))
     {
+        pressed = true;
         SendAudio(protector, ui_net_link::Channel_Id::Ptt, false, loopback_mode);
     }
-
-    if (ptt_state == Ptt_Btn_State::Last_Send)
+    else if (pressed && (!ptt.IsHeld() && !ptt.IsHeld()))
     {
+        pressed = false;
         SendAudio(protector, ui_net_link::Channel_Id::Ptt, true, loopback_mode);
-        ptt_state = Ptt_Btn_State::Released;
     }
+
+    // // Send talk start and sot packets
+    // if ((HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET
+    //      || HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_RESET)
+    //     && ptt_state != Ptt_Btn_State::Pressed)
+    // {
+    //     HAL_TIM_Base_Stop(&htim4);
+    //     ptt_state = Ptt_Btn_State::Pressed;
+    //     LedGOn();
+    // }
+    // else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET
+    //          && HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_SET
+    //          && ptt_state == Ptt_Btn_State::Pressed)
+    // {
+    //     ptt_state = Ptt_Btn_State::Releasing;
+    //     HAL_TIM_Base_Start_IT(&htim4);
+    // }
+    //
+    // if (ptt_state == Ptt_Btn_State::Pressed || ptt_state == Ptt_Btn_State::Releasing)
+    // {
+    //     SendAudio(protector, ui_net_link::Channel_Id::Ptt, false, loopback_mode);
+    // }
+    //
+    // if (ptt_state == Ptt_Btn_State::Last_Send)
+    // {
+    //     SendAudio(protector, ui_net_link::Channel_Id::Ptt, true, loopback_mode);
+    //     ptt_state = Ptt_Btn_State::Released;
+    // }
 }
 
 void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
@@ -342,24 +372,53 @@ void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
     }
 }
 
-bool FillAndProtectAudioFrame(Protector& protector,
-                              link_packet_t& packet,
-                              ui_net_link::AudioObject& talk_frame,
-                              const bool last)
+void ConstructAudioPacket(link_packet_t& message_packet,
+                          const ui_net_link::Channel_Id channel_id,
+                          const bool last)
 {
-    // TODO this is a total nightmare of wasted cycles
-    AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, talk_frame.data,
-                            constants::Audio_Phonic_Sz, true, constants::Stereo);
+    uint32_t offset = 0;
 
-    ui_net_link::Serialize(talk_frame, last, packet);
+    message_packet.payload[offset] = static_cast<uint8_t>(channel_id);
+    offset += sizeof(uint8_t);
+    // UI_LOG_INFO("Channel id %d", (int)message_packet.payload[0]);
 
-    if (!protector.TryProtect(&packet))
+    static constexpr uint32_t audio_size = constants::Audio_Phonic_Sz;
+    if (channel_id == ui_net_link::Channel_Id::Ptt)
     {
-        UI_LOG_ERROR("Failed to encrypt audio packet");
-        return false;
+        message_packet.payload[offset] = static_cast<uint8_t>(ui_net_link::MessageType::Media);
+        offset += sizeof(uint8_t);
+
+        message_packet.payload[offset] = static_cast<uint8_t>(last);
+        offset += sizeof(uint8_t);
+
+        memcpy(message_packet.payload.data() + offset, &audio_size, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+    else if (channel_id == ui_net_link::Channel_Id::Ptt_Ai)
+    {
+        message_packet.payload[offset] = static_cast<uint8_t>(ui_net_link::MessageType::AIRequest);
+        offset += sizeof(uint8_t);
+
+        uint32_t request_id = 0;
+        memcpy(message_packet.payload.data() + offset, &request_id, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+
+        message_packet.payload[offset] = static_cast<uint8_t>(last);
+        offset += sizeof(uint8_t);
+
+        memcpy(message_packet.payload.data() + offset, &audio_size, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+    else
+    {
+        return;
     }
 
-    return true;
+    message_packet.length = offset + constants::Audio_Phonic_Sz;
+
+    AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz,
+                            message_packet.payload.data() + offset, constants::Audio_Phonic_Sz,
+                            true, constants::Stereo);
 }
 
 void SendAudio(Protector& protector,
@@ -371,15 +430,55 @@ void SendAudio(Protector& protector,
     {
     case UiLoopbackMode::Off:
     {
-        ui_net_link::AudioObject talk_frame;
-        talk_frame.channel_id = channel_id;
+        switch (audio_direction_mode)
+        {
+        case AudioDirectionMode::Net:
+        {
+            link_packet_t message_packet;
+            message_packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
 
-        link_packet_t message_packet;
+            ConstructAudioPacket(message_packet, channel_id, last);
 
-        FillAndProtectAudioFrame(protector, message_packet, talk_frame, last);
+            if (!protector.TryProtect(&message_packet))
+            {
+                UI_LOG_ERROR("Failed to encrypt audio packet");
+                return;
+            }
 
-        // LedRToggle();
-        net_serial.Write(message_packet);
+            net_serial.Write(message_packet);
+            break;
+        }
+        case AudioDirectionMode::Mgmt:
+        {
+            static bool first = true;
+
+            if (first)
+            {
+                first = false;
+                // mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioStart),
+                //                   std::span<const uint8_t>{});
+            }
+
+            // uint32_t offset = 0;
+            link_packet_t message_packet;
+            message_packet.type = static_cast<uint16_t>(UiToCtl::AudioFrame);
+            //
+            // mgmt_serial.Write(message_packet);
+
+            if (last)
+            {
+                first = true;
+                // mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioEnd),
+                //                   std::span<const uint8_t>{});
+            }
+            break;
+        }
+        default:
+        {
+            break;
+        }
+        }
+
         break;
     }
     case UiLoopbackMode::Raw:
@@ -412,7 +511,7 @@ void SendAudio(Protector& protector,
 
         link_packet_t message_packet;
 
-        FillAndProtectAudioFrame(protector, message_packet, talk_frame, last);
+        ConstructAudioPacket(message_packet, channel_id, last);
 
         if (!protector.TryUnprotect(&message_packet))
         {

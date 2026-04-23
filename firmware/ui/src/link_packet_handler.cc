@@ -113,7 +113,8 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
                            Serial& net_serial,
                            ConfigStorage& storage,
                            AudioChip& audio_chip,
-                           UiLoopbackMode& loopback)
+                           UiLoopbackMode& loopback,
+                           AudioDirectionMode& audio_direction_mode)
 {
     while (true)
     {
@@ -404,6 +405,45 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             const uint8_t mic_preamp = audio_chip.MicPreamp();
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),
                               std::span<const uint8_t>(&mic_preamp, 1));
+            break;
+        }
+        case CtlToUi::GetAudioMode:
+        {
+            UI_LOG_INFO("Mgmt requested audio mode");
+            const uint8_t tmp = static_cast<const uint8_t>(audio_direction_mode);
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioMode),
+                              std::span<const uint8_t>(&tmp, 1));
+            break;
+        }
+        case CtlToUi::SetAudioMode:
+        {
+            if (packet->length < 1)
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Missing set audio mode parameter");
+                break;
+            }
+
+            audio_direction_mode = static_cast<AudioDirectionMode>(packet->payload[0]);
+            mgmt_serial.ReplyAck();
+
+            UI_LOG_INFO("Set audio mode %d", (int)audio_direction_mode);
+            break;
+        }
+        case CtlToUi::AudioFrame:
+        {
+            if (packet->length < sizeof(ui_net_link::Chunk))
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Audio frame is the wrong size");
+                break;
+            }
+
+            HandleMedia(packet, audio_chip);
+            break;
+        }
+        case CtlToUi::AudioStart:
+        {
             break;
         }
         default:

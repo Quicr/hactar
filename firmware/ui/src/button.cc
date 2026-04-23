@@ -4,19 +4,24 @@ Button::Button(GPIO_TypeDef* port,
                const uint16_t pin,
                const Polarity polarity,
                const uint32_t debounce_ms,
-               const uint32_t repeat_ms) :
+               const uint32_t repeat_ms,
+               const uint32_t long_press_ms,
+               const uint32_t double_press_ms) :
     port(port),
     pin(pin),
     polarity(polarity),
     debounce_ms(debounce_ms),
     repeat_ms(repeat_ms),
+    long_press_ms(long_press_ms),
+    double_press_ms(double_press_ms),
     last_raw_press(false),
     stable_press(false),
     debounce_deadline_ms(0),
     press_ms(0),
+    repeat_deadline_ms(0),
+    double_press_deadline_ms(0),
     pending_events(0),
-    num_press(0),
-    double_press_deadline_ms(0)
+    num_press(0)
 {
 }
 
@@ -43,51 +48,62 @@ void Button::Update(const uint32_t tick_ms)
         if (stable_press)
         {
             press_ms = tick_ms;
+            repeat_deadline_ms = tick_ms;
         }
         else
         {
             // Released.
-            if (press_ms >= Long_Press_Timeout_ms)
+            if (tick_ms - press_ms >= long_press_ms)
             {
                 RaiseEvent(Event::Long);
+                RaiseEvent(Event::Released);
                 return;
+            }
+            else if (tick_ms - press_ms >= repeat_ms)
+            {
+                num_press = 0;
             }
             else
             {
                 double_press_deadline_ms = tick_ms;
                 num_press++;
             }
-
-            press_ms = 0;
         }
     }
 
-    if (num_press >= Double_Press_Cnt
-        && tick_ms - double_press_deadline_ms <= Double_Press_Timeout_ms)
+    if (num_press >= Double_Press_Cnt && tick_ms - double_press_deadline_ms <= double_press_ms)
     {
         num_press = 0;
         double_press_deadline_ms = 0;
         RaiseEvent(Event::Double);
+        RaiseEvent(Event::Released);
     }
-    else if (num_press && tick_ms - double_press_deadline_ms > Double_Press_Timeout_ms)
+    else if (num_press && tick_ms - double_press_deadline_ms > double_press_ms)
     {
         num_press = 0;
         double_press_deadline_ms = 0;
         RaiseEvent(Event::Short);
+        RaiseEvent(Event::Released);
     }
 
-    if (stable_press && stable_press == raw_press && tick_ms - press_ms >= repeat_ms)
+    if (stable_press && stable_press == raw_press && tick_ms - press_ms >= repeat_ms
+        && tick_ms - repeat_deadline_ms >= repeat_ms)
     {
         // If repeating,
         num_press = 0;
-        press_ms = tick_ms;
-        RaiseEvent(Event::Short);
+        repeat_deadline_ms = tick_ms;
+        RaiseEvent(Event::Repeat);
     }
 }
 
 bool Button::IsHeld()
 {
     return stable_press;
+}
+
+bool Button::WasReleased()
+{
+    return ConsumeEvent(Event::Released);
 }
 
 bool Button::ShortPress()
@@ -103,6 +119,11 @@ bool Button::LongPress()
 bool Button::DoublePress()
 {
     return ConsumeEvent(Event::Double);
+}
+
+bool Button::RepeatedPress()
+{
+    return ConsumeEvent(Event::Repeat);
 }
 
 bool Button::ReadRaw()

@@ -2,8 +2,7 @@
 
 #include <cstdint>
 
-// UI Chip Commands (MGMT to UI)
-enum struct CtlToUi : uint16_t
+enum class CtlToUi : uint16_t
 {
     Ping = 0x0020,
     CircularPing,
@@ -23,11 +22,15 @@ enum struct CtlToUi : uint16_t
     AdjVolume,
     GetMicPreamp,
     SetMicPreamp,
-    AdjMicPreamp
+    AdjMicPreamp,
+    GetAudioMode,
+    SetAudioMode,
+    AudioFrame,
+    AudioStart,
+    AudioEnd
 };
 
-// UI Chip Responses (UI to MGMT)
-enum struct UiToCtl : uint16_t
+enum class UiToCtl : uint16_t
 {
     Pong = 0x0030,
     CircularPing,
@@ -41,6 +44,16 @@ enum struct UiToCtl : uint16_t
     LogsEnabled,
     Volume,
     MicPreamp,
+    AudioMode,
+    AudioStart,
+    AudioEnd,
+    AudioFrame,
+};
+
+enum class AudioDirectionMode : uint8_t
+{
+    Net = 0,
+    Mgmt
 };
 
 enum struct UiLoopbackMode : uint8_t

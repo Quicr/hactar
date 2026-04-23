@@ -16,5 +16,6 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
                            Serial& net_serial,
                            ConfigStorage& storage,
                            AudioChip& audio,
-                           UiLoopbackMode& loopback);
+                           UiLoopbackMode& loopback,
+                           AudioDirectionMode& audio_direction_mode);
 };

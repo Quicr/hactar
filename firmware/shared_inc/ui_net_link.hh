@@ -25,7 +25,7 @@ enum struct NetToUi : uint16_t
 
 enum class Channel_Id : uint8_t
 {
-    Ptt,
+    Ptt = 0,
     Ptt_Ai,
     Chat,
     Chat_Ai,
