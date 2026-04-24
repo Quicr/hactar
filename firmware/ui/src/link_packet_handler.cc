@@ -425,9 +425,8 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             }
 
             audio_direction_mode = static_cast<AudioDirectionMode>(packet->payload[0]);
-            mgmt_serial.ReplyAck();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
 
-            UI_LOG_INFO("Set audio mode %d", (int)audio_direction_mode);
             break;
         }
         case CtlToUi::AudioFrame:
