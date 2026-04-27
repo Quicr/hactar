@@ -28,7 +28,10 @@ public:
     //
     // overrides from SubscribeTrackHandler
     //
-    void ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data) override;
+    void ObjectReceived(
+        const quicr::ObjectHeaders& headers,
+        quicr::BytesSpan data,
+        std::optional<quicr::messages::StreamHeaderProperties> stream_mode = std::nullopt) override;
 
     void StatusChanged(Status status) override;
 

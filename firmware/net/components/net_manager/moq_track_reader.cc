@@ -80,7 +80,9 @@ void TrackReader::Stop()
     NET_LOG_ERROR("reader has stopped");
 }
 
-void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers, quicr::BytesSpan data)
+void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers,
+                                 quicr::BytesSpan data,
+                                 std::optional<quicr::messages::StreamHeaderProperties> stream_mode)
 {
     ++num_print;
 
