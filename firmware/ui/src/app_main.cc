@@ -312,34 +312,6 @@ void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode)
         pressed = false;
         SendAudio(protector, ui_net_link::Channel_Id::Ptt, true, loopback_mode);
     }
-
-    // // Send talk start and sot packets
-    // if ((HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET
-    //      || HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_RESET)
-    //     && ptt_state != Ptt_Btn_State::Pressed)
-    // {
-    //     HAL_TIM_Base_Stop(&htim4);
-    //     ptt_state = Ptt_Btn_State::Pressed;
-    //     LedGOn();
-    // }
-    // else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET
-    //          && HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_SET
-    //          && ptt_state == Ptt_Btn_State::Pressed)
-    // {
-    //     ptt_state = Ptt_Btn_State::Releasing;
-    //     HAL_TIM_Base_Start_IT(&htim4);
-    // }
-    //
-    // if (ptt_state == Ptt_Btn_State::Pressed || ptt_state == Ptt_Btn_State::Releasing)
-    // {
-    //     SendAudio(protector, ui_net_link::Channel_Id::Ptt, false, loopback_mode);
-    // }
-    //
-    // if (ptt_state == Ptt_Btn_State::Last_Send)
-    // {
-    //     SendAudio(protector, ui_net_link::Channel_Id::Ptt, true, loopback_mode);
-    //     ptt_state = Ptt_Btn_State::Released;
-    // }
 }
 
 void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
@@ -421,6 +393,47 @@ void ConstructAudioPacket(link_packet_t& message_packet,
                             true, constants::Stereo);
 }
 
+bool ConstructAndProtectAudioPacket(Protector& protector,
+                                    link_packet_t& packet,
+                                    const ui_net_link::Channel_Id channel_id,
+                                    const bool last)
+{
+    ConstructAudioPacket(packet, channel_id, last);
+    if (!protector.TryProtect(&packet))
+    {
+        UI_LOG_ERROR("Failed to encrypt audio packet");
+        return false;
+    }
+
+    return true;
+}
+
+void SendAudioToMgmt(Protector& protector,
+                     link_packet_t& packet,
+                     const ui_net_link::Channel_Id channel_id,
+                     const bool last)
+{
+
+    static bool first = true;
+
+    if (first)
+    {
+        first = false;
+        mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioStart), std::span<const uint8_t>{});
+    }
+
+    packet.type = static_cast<uint16_t>(UiToCtl::AudioFrame);
+    ConstructAndProtectAudioPacket(protector, packet, channel_id, last);
+
+    mgmt_serial.Write(packet);
+
+    if (last)
+    {
+        first = true;
+        mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioEnd), std::span<const uint8_t>{});
+    }
+}
+
 void SendAudio(Protector& protector,
                const ui_net_link::Channel_Id channel_id,
                bool last,
@@ -430,17 +443,15 @@ void SendAudio(Protector& protector,
     {
     case UiLoopbackMode::Off:
     {
+        link_packet_t message_packet;
         switch (audio_direction_mode)
         {
         case AudioDirectionMode::Net:
         {
-            link_packet_t message_packet;
             message_packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
 
-            ConstructAudioPacket(message_packet, channel_id, last);
-            if (!protector.TryProtect(&message_packet))
+            if (!ConstructAndProtectAudioPacket(protector, message_packet, channel_id, last))
             {
-                UI_LOG_ERROR("Failed to encrypt audio packet");
                 return;
             }
 
@@ -449,33 +460,15 @@ void SendAudio(Protector& protector,
         }
         case AudioDirectionMode::Mgmt:
         {
-            static bool first = true;
+            SendAudioToMgmt(protector, message_packet, channel_id, last);
+            break;
+        }
+        case AudioDirectionMode::Both:
+        {
+            SendAudioToMgmt(protector, message_packet, channel_id, last);
 
-            if (first)
-            {
-                first = false;
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioStart),
-                                  std::span<const uint8_t>{});
-            }
-
-            link_packet_t message_packet;
-            message_packet.type = static_cast<uint16_t>(UiToCtl::AudioFrame);
-
-            ConstructAudioPacket(message_packet, channel_id, last);
-            if (!protector.TryProtect(&message_packet))
-            {
-                UI_LOG_ERROR("Failed to encrypt audio packet");
-                return;
-            }
-
-            mgmt_serial.Write(message_packet);
-
-            if (last)
-            {
-                first = true;
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioEnd),
-                                  std::span<const uint8_t>{});
-            }
+            message_packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
+            net_serial.Write(message_packet);
             break;
         }
         default:

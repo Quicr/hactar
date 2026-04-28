@@ -53,7 +53,8 @@ enum class UiToCtl : uint16_t
 enum class AudioDirectionMode : uint8_t
 {
     Net = 0,
-    Mgmt
+    Mgmt,
+    Both
 };
 
 enum struct UiLoopbackMode : uint8_t
