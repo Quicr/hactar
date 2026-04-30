@@ -77,3 +77,9 @@ enum class UiLoopbackMode : uint8_t
     Sframe,
     Count,
 };
+
+enum class AudioAdjustDirection : uint8_t
+{
+    Down = 0,
+    Up
+};

@@ -71,7 +71,7 @@ void Button::Update(const uint32_t tick_ms)
         }
     }
 
-    if (num_press >= Double_Press_Cnt && tick_ms - double_press_deadline_ms <= double_press_ms)
+    if (num_press >= Double_Press_Count && tick_ms - double_press_deadline_ms <= double_press_ms)
     {
         num_press = 0;
         double_press_deadline_ms = 0;

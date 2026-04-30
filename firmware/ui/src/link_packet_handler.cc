@@ -403,13 +403,30 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
                                        "Missing adj volume parameter");
             }
 
-            const AudioChip::AdjDirection direction =
-                static_cast<AudioChip::AdjDirection>(packet->payload[0]);
+            const AudioAdjustDirection direction =
+                static_cast<AudioAdjustDirection>(packet->payload[0]);
 
             const int8_t amt = static_cast<int8_t>(packet->payload[1]);
 
-            UI_LOG_INFO("Volume up/down");
-            audio_chip.VolumeAdjust(direction, amt);
+            switch (direction)
+            {
+            case AudioAdjustDirection::Down:
+            {
+                audio_chip.VolumeAdjust(-amt);
+                break;
+            }
+            case AudioAdjustDirection::Up:
+            {
+                audio_chip.VolumeAdjust(amt);
+                break;
+            }
+            default:
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Direction parameter is not equal to 0 or 1");
+                return;
+            }
+            }
 
             const uint8_t curr_vol = audio_chip.Volume();
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
@@ -453,11 +470,30 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
                 break;
             }
 
-            const AudioChip::AdjDirection direction =
-                static_cast<AudioChip::AdjDirection>(packet->payload[0]);
+            const AudioAdjustDirection direction =
+                static_cast<AudioAdjustDirection>(packet->payload[0]);
 
             const int8_t amt = static_cast<int8_t>(packet->payload[1]);
-            audio_chip.MicPreampAdjust(direction, amt);
+
+            switch (direction)
+            {
+            case AudioAdjustDirection::Down:
+            {
+                audio_chip.MicPreampAdjust(-amt);
+                break;
+            }
+            case AudioAdjustDirection::Up:
+            {
+                audio_chip.MicPreampAdjust(amt);
+                break;
+            }
+            default:
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Direction parameter is not equal to 0 or 1");
+                return;
+            }
+            }
 
             const uint8_t mic_preamp = audio_chip.MicPreamp();
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),

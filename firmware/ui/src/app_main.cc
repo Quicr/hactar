@@ -87,6 +87,7 @@ static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_rx_buff_sz,
                           false);
 
+#if 0
 // Screen screen(hspi1,
 //               DISP_CS_GPIO_Port,
 //               DISP_CS_Pin,
@@ -97,13 +98,7 @@ static Serial mgmt_serial(&huart1,
 //               DISP_BL_GPIO_Port,
 //               DISP_BL_Pin,
 //               Screen::Orientation::flipped_portrait);
-
-volatile bool sleeping = true;
-volatile bool error = false;
-
-constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1;
-uint32_t flags = Expected_Flags;
-
+//
 // GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
 //     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port,
 //     KB_COL5_GPIO_Port,
@@ -127,6 +122,13 @@ uint32_t flags = Expected_Flags;
 // RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
 //
 // Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
+#endif
+
+volatile bool sleeping = true;
+volatile bool error = false;
+
+constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1;
+uint32_t flags = Expected_Flags;
 
 enum class Ptt_Btn_State
 {
@@ -207,23 +209,23 @@ int app_main()
 
         if (volume_up.ShortPress() || volume_up.RepeatedPress())
         {
-            audio_chip.VolumeAdjust(AudioChip::AdjDirection::Up, 1);
+            audio_chip.VolumeAdjust(1);
             UI_LOG_INFO("Volume up %d", (int)audio_chip.Volume());
         }
         else if (volume_up.DoublePress())
         {
-            audio_chip.MicPreampAdjust(AudioChip::AdjDirection::Up, 1);
+            audio_chip.MicPreampAdjust(1);
             UI_LOG_INFO("Mic Preamp up %d", (int)audio_chip.MicPreamp());
         }
 
         if (volume_down.ShortPress() || volume_down.RepeatedPress())
         {
-            audio_chip.VolumeAdjust(AudioChip::AdjDirection::Down, 1);
+            audio_chip.VolumeAdjust(-1);
             UI_LOG_INFO("Volume down %d", (int)audio_chip.Volume());
         }
         else if (volume_down.DoublePress())
         {
-            audio_chip.MicPreampAdjust(AudioChip::AdjDirection::Down, 1);
+            audio_chip.MicPreampAdjust(-1);
             UI_LOG_INFO("Mic Preamp down %d", (int)audio_chip.MicPreamp());
         }
 
@@ -384,6 +386,7 @@ void ConstructAudioPacket(link_packet_t& message_packet,
     }
     else
     {
+        UI_LOG_ERROR("Channel Id %d does not exist", static_cast<int>(channel_id));
         return;
     }
 

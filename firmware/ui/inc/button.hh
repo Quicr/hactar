@@ -11,7 +11,7 @@ public:
         High,
     };
 
-    static constexpr uint32_t Double_Press_Cnt = 2;
+    static constexpr uint32_t Double_Press_Count = 2;
 
     Button(GPIO_TypeDef* port,
            const uint16_t pin,

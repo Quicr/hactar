@@ -242,25 +242,9 @@ void AudioChip::VolumeSet(const int16_t vol)
     SetBits(0x03, 0b1'0111'1111, 0x100 + volume);
 }
 
-void AudioChip::VolumeAdjust(const AdjDirection direction, const int16_t amt)
+void AudioChip::VolumeAdjust(const int16_t amt)
 {
-    switch (direction)
-    {
-    case AdjDirection::Down:
-    {
-        VolumeSet(volume - amt);
-        break;
-    }
-    case AdjDirection::Up:
-    {
-        VolumeSet(volume + amt);
-        break;
-    }
-    default:
-    {
-        break;
-    }
-    }
+    VolumeSet(volume + amt);
 }
 
 void AudioChip::VolumeReset()
@@ -293,25 +277,9 @@ void AudioChip::MicPreampSet(const int16_t vol)
     SetBits(0x00, 0b1'0011'1111, 0x100 + mic_preamp);
 }
 
-void AudioChip::MicPreampAdjust(const AdjDirection direction, const int16_t amt)
+void AudioChip::MicPreampAdjust(const int16_t amt)
 {
-    switch (direction)
-    {
-    case AdjDirection::Down:
-    {
-        MicPreampSet(mic_preamp - amt);
-        break;
-    }
-    case AdjDirection::Up:
-    {
-        MicPreampSet(mic_preamp + amt);
-        break;
-    }
-    default:
-    {
-        break;
-    }
-    }
+    MicPreampSet(mic_preamp + amt);
 }
 
 void AudioChip::MicPreampReset()
