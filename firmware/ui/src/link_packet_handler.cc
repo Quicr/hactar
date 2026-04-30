@@ -386,14 +386,11 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
                 break;
             }
 
-            const uint16_t volume = static_cast<uint16_t>(packet->payload[0])
-                                  | static_cast<uint16_t>(packet->payload[1] << 8);
+            const uint16_t volume = static_cast<uint16_t>(packet->payload[0]);
 
             audio_chip.VolumeSet(volume);
 
             const uint8_t curr_vol = audio_chip.Volume();
-            // mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::LogsEnabled),
-            //                   std::span<const uint8_t>(&enabled, 1));
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
                               std::span<const uint8_t>(&curr_vol, 1));
             break;
