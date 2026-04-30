@@ -54,7 +54,8 @@ extern RNG_HandleTypeDef hrng;
 
 // Global variables that need to exist for hardware callbacks
 UiLoopbackMode loopback_mode = UiLoopbackMode::Off;
-AudioDirectionMode audio_direction_mode = AudioDirectionMode::Net;
+AudioTransmitMode audio_transmit_mode = AudioTransmitMode::Net;
+AudioReceiveMode audio_receive_mode = AudioReceiveMode::Headphones;
 
 // Buffer allocations
 static constexpr uint16_t net_ui_serial_tx_buff_sz = 2048;
@@ -231,9 +232,9 @@ int app_main()
 
         // HandleKeypress(screen, keyboard, net_serial, protector);
 
-        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip);
+        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode);
         HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
-                              audio_direction_mode);
+                              audio_transmit_mode, audio_receive_mode);
 
         // renderer.Render(ticks_ms);
         // TODO remove?
@@ -444,9 +445,9 @@ void SendAudio(Protector& protector,
     case UiLoopbackMode::Off:
     {
         link_packet_t message_packet;
-        switch (audio_direction_mode)
+        switch (audio_transmit_mode)
         {
-        case AudioDirectionMode::Net:
+        case AudioTransmitMode::Net:
         {
             message_packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
 
@@ -458,12 +459,12 @@ void SendAudio(Protector& protector,
             net_serial.Write(message_packet);
             break;
         }
-        case AudioDirectionMode::Mgmt:
+        case AudioTransmitMode::Mgmt:
         {
             SendAudioToMgmt(protector, message_packet, channel_id, last);
             break;
         }
-        case AudioDirectionMode::Both:
+        case AudioTransmitMode::Both:
         {
             SendAudioToMgmt(protector, message_packet, channel_id, last);
 

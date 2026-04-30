@@ -23,8 +23,10 @@ enum class CtlToUi : uint16_t
     GetMicPreamp,
     SetMicPreamp,
     AdjMicPreamp,
-    GetAudioMode,
-    SetAudioMode,
+    GetAudioTransmitMode,
+    SetAudioTransmitMode,
+    GetAudioReceiveMode,
+    SetAudioReceiveMode,
     AudioFrame,
     AudioStart,
     AudioEnd
@@ -44,17 +46,27 @@ enum class UiToCtl : uint16_t
     LogsEnabled,
     Volume,
     MicPreamp,
-    AudioMode,
+    AudioTransmitMode,
+    AudioReceiveMode,
     AudioStart,
     AudioEnd,
     AudioFrame,
+    AudioFrameUnprotected,
 };
 
-enum class AudioDirectionMode : uint8_t
+enum class AudioTransmitMode : uint8_t
 {
     Net = 0,
     Mgmt,
     Both
+};
+
+enum class AudioReceiveMode : uint8_t
+{
+    None = 0,
+    Headphones,
+    Ctl,
+    Both,
 };
 
 enum struct UiLoopbackMode : uint8_t

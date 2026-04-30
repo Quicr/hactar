@@ -57,7 +57,17 @@ struct __attribute__((packed)) Chunk
     const MessageType type = MessageType::Media;
     uint8_t last_chunk;
     std::uint32_t chunk_length;
-    std::uint8_t chunk_data[constants::Audio_Phonic_Sz];
+
+    static constexpr uint32_t Type_Size = sizeof(type);
+    static constexpr uint32_t Last_Chunk_Size = sizeof(last_chunk);
+    static constexpr uint32_t Chunk_Length_Size = sizeof(chunk_length);
+
+    static constexpr uint32_t Total_Offset = Type_Size + Last_Chunk_Size + Chunk_Length_Size;
+    static constexpr uint32_t Chunk_Size = link_packet_t::Payload_Size - Total_Offset;
+
+    static constexpr uint32_t ExpectedSize = Total_Offset + constants::Audio_Phonic_Sz;
+
+    std::uint8_t chunk_data[Chunk_Size];
 };
 
 struct __attribute__((packed)) AIRequestChunk
