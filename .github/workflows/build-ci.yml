@@ -123,7 +123,7 @@ jobs:
     if: ${{ needs.changes.outputs.net == 'true' }}
     runs-on: ubuntu-latest
     container:
-      image: espressif/idf:v5.4
+      image: espressif/idf:v5.5.3
     steps:
     - uses: actions/checkout@v4
       with:
