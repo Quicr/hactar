@@ -69,7 +69,7 @@ enum class AudioReceiveMode : uint8_t
     Both,
 };
 
-enum struct UiLoopbackMode : uint8_t
+enum class UiLoopbackMode : uint8_t
 {
     Off = 0,
     Raw,
