@@ -78,46 +78,6 @@ jobs:
         name: ctl
         path: link/ctl/target/release/ctl
 
-  build-mgmt:
-    needs: changes
-    if: ${{ needs.changes.outputs.link == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-
-    - name: Install ARM target
-      run: rustup target add thumbv6m-none-eabi
-
-    - name: Install cargo-binutils
-      run: cargo install cargo-binutils && rustup component add llvm-tools
-
-    - name: Build MGMT
-      working-directory: ./link/mgmt
-      run: cargo objcopy --release -- -O binary target/thumbv6m-none-eabi/release/mgmt.bin
-
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: mgmt
-        path: link/mgmt/target/thumbv6m-none-eabi/release/mgmt.bin
-
-    - name: Nightly mgmt release
-      if: github.ref_name == 'main'
-      uses: ncipollo/release-action@v1
-      with:
-        tag: nightly
-        name: "Nightly Build"
-        allowUpdates: true
-        replacesArtifacts: true
-        artifacts: link/mgmt/target/thumbv6m-none-eabi/release/mgmt.bin
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   build-net:
     needs: changes
     if: ${{ needs.changes.outputs.net == 'true' }}
