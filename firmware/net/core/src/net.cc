@@ -882,17 +882,6 @@ extern "C" void app_main(void)
         NET_LOG_WARN("AI namespaces not configured - device needs configuration");
     }
 
-    // setup moq transport
-    quicr::ClientConfig config;
-    config.endpoint_id = "hactar-ev12-snk";
-    config.connect_uri = moq_server_url.Load();
-    config.transport_config.debug = true;
-    config.transport_config.use_reset_wait_strategy = false;
-    config.transport_config.time_queue_max_duration = 5000;
-    config.transport_config.tls_cert_filename = "";
-    config.transport_config.tls_key_filename = "";
-    config.tick_service_sleep_delay_us = 30000;
-
     // Use mac addr as id for my session
     uint64_t mac = 0;
     esp_efuse_mac_get_default((uint8_t*)&mac);
@@ -901,6 +890,17 @@ extern "C" void app_main(void)
     device_id = mac;
 
     NET_LOG_ERROR("mac addr %llu", mac);
+
+    // setup moq transport
+    quicr::ClientConfig config;
+    config.endpoint_id = std::to_string(device_id);
+    config.connect_uri = moq_server_url.Load();
+    config.transport_config.debug = true;
+    config.transport_config.use_reset_wait_strategy = false;
+    config.transport_config.time_queue_max_duration = 5000;
+    config.transport_config.tls_cert_filename = "";
+    config.transport_config.tls_key_filename = "";
+    config.tick_service_sleep_delay_us = 30000;
 
     // Initialize reader/writer vectors
     readers.resize((uint32_t)ui_net_link::Channel_Id::Count);

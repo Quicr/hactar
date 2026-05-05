@@ -45,6 +45,14 @@ upload_esptool:
 	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="net" --use_external_flasher=true
 	esptool.py ${ESP_TOOL_ARGS}
 
+erase:
+	openocd -f board/esp32s3-ftdi.cfg \                                                                                                                                                              ✔  7m 32s  15:20:45
+	-c "adapter speed 500" \
+	-c "init" \
+	-c "reset halt" \
+	-c "flash erase_sector 0 0 last; exit"
+
+
 docker:
 	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \
 		docker build -t ${DOCKER_IMAGE} .; \
