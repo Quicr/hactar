@@ -526,9 +526,11 @@ void SendAudio(Protector& protector,
             break;
         }
 
-        ui_net_link::Deserialize(message_packet, talk_frame);
-        AudioCodec::ALawExpand(talk_frame.data, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
-                               constants::Audio_Buffer_Sz, constants::Stereo, true);
+        ui_net_link::Chunk* audio_chunk =
+            static_cast<ui_net_link::Chunk*>(static_cast<void*>(message_packet.payload.data() + 1));
+        AudioCodec::ALawExpand(audio_chunk->chunk_data, constants::Audio_Phonic_Sz,
+                               audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                               true);
 
         break;
     }
