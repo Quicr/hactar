@@ -347,75 +347,15 @@ void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
     }
 }
 
-void ConstructAudioPacket(link_packet_t& message_packet,
-                          const ui_net_link::Channel_Id channel_id,
-                          const bool last)
+void ConstructPacketHeader(link_packet_t& message_packet,
+                           const ui_net_link::Channel_Id channel_id,
+                           const bool last,
+                           uint32_t& offset)
 {
-    uint32_t offset = 0;
-
-    message_packet.payload[offset] = static_cast<uint8_t>(channel_id);
-    offset += sizeof(uint8_t);
-    // UI_LOG_INFO("Channel id %d", (int)message_packet.payload[0]);
-
-    static constexpr uint32_t audio_size = constants::Audio_Phonic_Sz;
-    if (channel_id == ui_net_link::Channel_Id::Ptt)
-    {
-        message_packet.payload[offset] = static_cast<uint8_t>(ui_net_link::MessageType::Media);
-        offset += sizeof(uint8_t);
-
-        message_packet.payload[offset] = static_cast<uint8_t>(last);
-        offset += sizeof(uint8_t);
-
-        memcpy(message_packet.payload.data() + offset, &audio_size, sizeof(uint32_t));
-        offset += sizeof(uint32_t);
-    }
-    else if (channel_id == ui_net_link::Channel_Id::Ptt_Ai)
-    {
-        message_packet.payload[offset] = static_cast<uint8_t>(ui_net_link::MessageType::AIRequest);
-        offset += sizeof(uint8_t);
-
-        uint32_t request_id = 0;
-        memcpy(message_packet.payload.data() + offset, &request_id, sizeof(uint32_t));
-        offset += sizeof(uint32_t);
-
-        message_packet.payload[offset] = static_cast<uint8_t>(last);
-        offset += sizeof(uint8_t);
-
-        memcpy(message_packet.payload.data() + offset, &audio_size, sizeof(uint32_t));
-        offset += sizeof(uint32_t);
-    }
-    else
-    {
-        UI_LOG_ERROR("Channel Id %d does not exist", static_cast<int>(channel_id));
-        return;
-    }
-
-    message_packet.length = offset + constants::Audio_Phonic_Sz;
-
-    AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz,
-                            message_packet.payload.data() + offset, constants::Audio_Phonic_Sz,
-                            true, constants::Stereo);
+    offset = 0;
 }
 
-bool ConstructAndProtectAudioPacket(Protector& protector,
-                                    link_packet_t& packet,
-                                    const ui_net_link::Channel_Id channel_id,
-                                    const bool last)
-{
-    ConstructAudioPacket(packet, channel_id, last);
-    if (!protector.TryProtect(&packet))
-    {
-        UI_LOG_ERROR("Failed to encrypt audio packet");
-        return false;
-    }
-
-    return true;
-}
-
-void SendAudioToMgmt(Protector& protector,
-                     link_packet_t& packet,
-                     const ui_net_link::Channel_Id channel_id,
-                     const bool last)
+void SendAudioToMgmt(link_packet_t& packet, const bool last)
 {
 
     static bool first = true;
@@ -427,8 +367,6 @@ void SendAudioToMgmt(Protector& protector,
     }
 
     packet.type = static_cast<uint16_t>(UiToCtl::AudioFrame);
-    ConstructAndProtectAudioPacket(protector, packet, channel_id, last);
-
     mgmt_serial.Write(packet);
 
     if (last)
@@ -443,101 +381,112 @@ void SendAudio(Protector& protector,
                bool last,
                const UiLoopbackMode loopback_mode)
 {
-    switch (loopback_mode)
+    const uint16_t* rx_buff = audio_chip.RxBuffer();
+    if (loopback_mode == UiLoopbackMode::Raw)
     {
-    case UiLoopbackMode::Off:
-    {
-        link_packet_t message_packet;
-        switch (audio_transmit_mode)
-        {
-        case AudioTransmitMode::Net:
-        {
-            message_packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
-
-            if (!ConstructAndProtectAudioPacket(protector, message_packet, channel_id, last))
-            {
-                return;
-            }
-
-            net_serial.Write(message_packet);
-            break;
-        }
-        case AudioTransmitMode::Mgmt:
-        {
-            SendAudioToMgmt(protector, message_packet, channel_id, last);
-            break;
-        }
-        case AudioTransmitMode::Both:
-        {
-            SendAudioToMgmt(protector, message_packet, channel_id, last);
-
-            message_packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
-            net_serial.Write(message_packet);
-            break;
-        }
-        default:
-        {
-            break;
-        }
-        }
-
-        break;
-    }
-    case UiLoopbackMode::Raw:
-    {
-        const uint16_t* rx_buff = audio_chip.RxBuffer();
         uint16_t* tx_buff = audio_chip.TxBuffer();
 
         for (size_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
         {
             tx_buff[i] = rx_buff[i];
         }
+    }
+
+    link_packet_t audio_packet;
+
+    uint32_t offset = 0;
+    audio_packet.payload[offset] = static_cast<uint8_t>(channel_id);
+    offset += sizeof(uint8_t);
+    // UI_LOG_INFO("Channel id %d", (int)audio_packet.payload[0]);
+
+    static constexpr uint32_t audio_size = constants::Audio_Phonic_Sz;
+    if (channel_id == ui_net_link::Channel_Id::Ptt)
+    {
+        audio_packet.payload[offset] = static_cast<uint8_t>(ui_net_link::MessageType::Media);
+        offset += sizeof(uint8_t);
+
+        audio_packet.payload[offset] = static_cast<uint8_t>(last);
+        offset += sizeof(uint8_t);
+
+        memcpy(audio_packet.payload.data() + offset, &audio_size, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+    else if (channel_id == ui_net_link::Channel_Id::Ptt_Ai)
+    {
+        audio_packet.payload[offset] = static_cast<uint8_t>(ui_net_link::MessageType::AIRequest);
+        offset += sizeof(uint8_t);
+
+        uint32_t request_id = 0;
+        memcpy(audio_packet.payload.data() + offset, &request_id, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+
+        audio_packet.payload[offset] = static_cast<uint8_t>(last);
+        offset += sizeof(uint8_t);
+
+        memcpy(audio_packet.payload.data() + offset, &audio_size, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+    else
+    {
+        UI_LOG_ERROR("Channel Id %d does not exist", static_cast<int>(channel_id));
+        return;
+    }
+
+    audio_packet.length = offset + constants::Audio_Phonic_Sz;
+
+    AudioCodec::ALawCompand(rx_buff, constants::Audio_Buffer_Sz,
+                            audio_packet.payload.data() + offset, constants::Audio_Phonic_Sz, true,
+                            constants::Stereo);
+
+    if (loopback_mode == UiLoopbackMode::Alaw)
+    {
+        AudioCodec::ALawExpand(audio_packet.payload.data() + offset, constants::Audio_Phonic_Sz,
+                               audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                               true);
+    }
+
+    if (!protector.TryProtect(&audio_packet))
+    {
+        UI_LOG_ERROR("Failed to encrypt audio packet");
+        return;
+    }
+
+    switch (audio_transmit_mode)
+    {
+    case AudioTransmitMode::Net:
+    {
+        audio_packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
+
+        net_serial.Write(audio_packet);
+        break;
+    }
+    case AudioTransmitMode::Mgmt:
+    {
+        SendAudioToMgmt(audio_packet, last);
 
         break;
     }
-    case UiLoopbackMode::Alaw:
+    case AudioTransmitMode::Both:
     {
-        uint8_t buff[constants::Audio_Phonic_Sz];
-        AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, buff,
-                                constants::Audio_Phonic_Sz, true, constants::Stereo);
-        AudioCodec::ALawExpand(buff, constants::Audio_Phonic_Sz, audio_chip.TxBuffer(),
-                               constants::Audio_Buffer_Sz, constants::Stereo, true);
+        SendAudioToMgmt(audio_packet, last);
 
+        audio_packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
+        net_serial.Write(audio_packet);
         break;
     }
-    case UiLoopbackMode::Sframe:
+    }
+
+    if (loopback_mode == UiLoopbackMode::Sframe)
     {
-        ui_net_link::AudioObject talk_frame;
-        talk_frame.channel_id = channel_id;
-
-        link_packet_t message_packet;
-
-        ConstructAudioPacket(message_packet, channel_id, last);
-
-        if (!protector.TryProtect(&message_packet))
+        if (!protector.TryUnprotect(&audio_packet))
         {
-            UI_LOG_ERROR("Failed to encrypt audio packet");
+            UI_LOG_ERROR("Failed to unprotect sframe loopback");
             return;
         }
 
-        if (!protector.TryUnprotect(&message_packet))
-        {
-            UI_LOG_ERROR("Failed to decrypt ptt object");
-            break;
-        }
-
-        ui_net_link::Chunk* audio_chunk =
-            static_cast<ui_net_link::Chunk*>(static_cast<void*>(message_packet.payload.data() + 1));
-        AudioCodec::ALawExpand(audio_chunk->chunk_data, constants::Audio_Phonic_Sz,
+        AudioCodec::ALawExpand(audio_packet.payload.data() + offset, constants::Audio_Phonic_Sz,
                                audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
                                true);
-
-        break;
-    }
-    default:
-    {
-        break;
-    }
     }
 }
 

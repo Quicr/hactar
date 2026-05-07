@@ -16,10 +16,10 @@ public:
     Button(GPIO_TypeDef* port,
            const uint16_t pin,
            const Polarity polarity,
-           const uint32_t debounce_ms,
-           const uint32_t repeat_ms,
-           const uint32_t long_press_ms,
-           const uint32_t double_press_ms);
+           const uint32_t debounce_timeout_ms,
+           const uint32_t repeat_timeout_ms,
+           const uint32_t long_press_timeout_ms,
+           const uint32_t double_press_timeout_ms);
     ~Button() = default;
 
     void Update(const uint32_t tick_ms);
@@ -57,10 +57,10 @@ private:
     GPIO_TypeDef* port;
     const uint16_t pin;
     const Polarity polarity;
-    const uint32_t debounce_ms;
-    const uint32_t repeat_ms;
-    const uint32_t long_press_ms;
-    const uint32_t double_press_ms;
+    const uint32_t debounce_timeout_ms;
+    const uint32_t repeat_timeout_ms;
+    const uint32_t long_press_timeout_ms;
+    const uint32_t double_press_timeout_ms;
 
     bool last_raw_press;
     bool stable_press;
