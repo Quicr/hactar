@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cstdint>
 #include <memory>
 
 using json = nlohmann::json;
@@ -827,6 +828,49 @@ void SetPThreadDefault()
     esp_pthread_set_cfg(&cfg);
 }
 
+static void NoisyTask(void* arg)
+{
+    while (true)
+    {
+        if (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
+        {
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+    const uint32_t empty_sz = 320;
+    std::vector<uint8_t> empty;
+    empty.resize(empty_sz);
+    for (int i = 0; i < empty_sz; ++i)
+    {
+        empty[i] = 0;
+    }
+
+    while (true)
+    {
+        uint32_t channel_id = 0;
+        writers[channel_id]->PushObject(empty.data(), empty_sz, curr_audio_isr_time);
+
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
+}
+
+uint64_t fibonacci(const uint64_t n)
+{
+    uint64_t a = 0;
+    uint64_t b = 1;
+
+    for (uint64_t i = 0; i < n; ++i)
+    {
+        const uint64_t next = a + b;
+        a = b;
+        b = next;
+    }
+
+    return a;
+}
+
 extern "C" void app_main(void)
 {
     SetPThreadDefault();
@@ -840,6 +884,13 @@ extern "C" void app_main(void)
     CreateMgmtLinkPacketTask();
     mgmt_layer.BeginEventTask();
 
+    // while (true)
+    // {
+    //     uint64_t fib = fibonacci(100);
+    //     NET_LOG_INFO("fib %lld", fib);
+    //     vTaskDelay(pdMS_TO_TICKS(20));
+    // }
+
     CreateUILinkPacketTask();
 
     wifi.Begin();
@@ -848,7 +899,8 @@ extern "C" void app_main(void)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
 
-    ui_layer.BeginEventTask();
+    // ui_layer.BeginEventTask();
+    xTaskCreate(NoisyTask, "noisy task", 2048, NULL, 1, NULL);
 
     // std::string& connect_uri = moq_server_url.Load();
     if (moq_server_url->empty())
@@ -918,6 +970,7 @@ extern "C" void app_main(void)
 
     moq::Session::Status prev_status = moq::Session::Status::kNotConnected;
     Wifi::State prev_wifi_state = Wifi::State::Connected;
+
     while (true)
     {
         moq::Session::Status status = moq_session->GetStatus();
