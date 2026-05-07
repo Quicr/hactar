@@ -16,7 +16,7 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     buff_mod(0),
     flags(0),
     volume(Default_Volume),
-    mic_volume(Default_Mic_Volume)
+    mic_preamp(Default_Mic_Preamp)
 {
 }
 
@@ -48,7 +48,7 @@ void AudioChip::Init()
     SetStereo();
 
     // Set the left and right headphone volumes
-    MicVolumeSet(mic_volume);
+    MicPreampSet(mic_preamp);
     VolumeSet(volume);
 
     // Enable the outputs
@@ -242,19 +242,9 @@ void AudioChip::VolumeSet(const int16_t vol)
     SetBits(0x03, 0b1'0111'1111, 0x100 + volume);
 }
 
-void AudioChip::VolumeAdjust(const int16_t db)
+void AudioChip::VolumeAdjust(const int16_t amt)
 {
-    VolumeSet(volume + db);
-}
-
-void AudioChip::VolumeUp()
-{
-    VolumeSet(volume + 1);
-}
-
-void AudioChip::VolumeDown()
-{
-    VolumeSet(volume - 1);
+    VolumeSet(volume + amt);
 }
 
 void AudioChip::VolumeReset()
@@ -267,49 +257,39 @@ uint16_t AudioChip::Volume()
     return volume;
 }
 
-void AudioChip::MicVolumeSet(const int16_t vol)
+void AudioChip::MicPreampSet(const int16_t vol)
 {
-    if (vol >= Max_Mic_Volume)
+    if (vol >= Max_Mic_Preamp)
     {
-        mic_volume = Max_Mic_Volume;
+        mic_preamp = Max_Mic_Preamp;
     }
-    else if (vol <= Min_Mic_Volume)
+    else if (vol <= Min_Mic_Preamp)
     {
-        mic_volume = Min_Mic_Volume;
+        mic_preamp = Min_Mic_Preamp;
     }
     else
     {
-        mic_volume = vol;
+        mic_preamp = vol;
     }
 
-    // Then flip the first bit (which is the update mic_volume bit)
+    // Then flip the first bit (which is the update mic_preamp bit)
     // for both headphones
-    SetBits(0x00, 0b1'0011'1111, 0x100 + mic_volume);
+    SetBits(0x00, 0b1'0011'1111, 0x100 + mic_preamp);
 }
 
-void AudioChip::MicVolumeAdjust(const int16_t steps)
+void AudioChip::MicPreampAdjust(const int16_t amt)
 {
-    MicVolumeSet(mic_volume + steps);
+    MicPreampSet(mic_preamp + amt);
 }
 
-void AudioChip::MicVolumeUp()
+void AudioChip::MicPreampReset()
 {
-    MicVolumeSet(mic_volume + 1);
+    MicPreampSet(Default_Mic_Preamp);
 }
 
-void AudioChip::MicVolumeDown()
+uint16_t AudioChip::MicPreamp()
 {
-    MicVolumeSet(mic_volume - 1);
-}
-
-void AudioChip::MicVolumeReset()
-{
-    MicVolumeSet(Default_Mic_Volume);
-}
-
-uint16_t AudioChip::MicVolume()
-{
-    return mic_volume;
+    return mic_preamp;
 }
 
 HAL_StatusTypeDef AudioChip::WriteRegister(uint8_t address)

@@ -2,20 +2,14 @@
 #include "audio_chip.hh"
 #include "audio_codec.hh"
 #include "keyboard_display.hh"
+#include "link_packet_t.hh"
 #include "logger.hh"
 #include "stack_debug.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
+#include <cstdint>
 #include <cstdio>
 #include <span>
-
-static void HandleMedia(link_packet_t* packet, AudioChip& audio)
-{
-    ui_net_link::AudioObject play_frame;
-    ui_net_link::Deserialize(*packet, play_frame);
-    AudioCodec::ALawExpand(play_frame.data, constants::Audio_Phonic_Sz, audio.TxBuffer(),
-                           constants::Audio_Buffer_Sz, constants::Stereo, true);
-}
 
 static void HandleAiResponse(link_packet_t* packet, AudioChip& audio)
 {
@@ -43,8 +37,105 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio)
     }
 }
 
-void HandleNetLinkPackets(
-    Serial& net_serial, Serial& mgmt_serial, Protector& protector, AudioChip& audio, Screen& screen)
+void ForwardToMgmt(Serial& mgmt_serial, link_packet_t* packet, const bool last)
+{
+    static bool first = true;
+
+    if (first)
+    {
+        first = false;
+        mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioStart), std::span<const uint8_t>{});
+    }
+
+    packet->type = static_cast<uint16_t>(UiToCtl::AudioFrameUnprotected);
+
+    mgmt_serial.Write(*packet);
+
+    if (last)
+    {
+        first = true;
+        mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioEnd), std::span<const uint8_t>{});
+    }
+}
+
+void HandleQuicrPackets(Serial& mgmt_serial,
+                        Protector& protector,
+                        AudioChip& audio,
+                        const AudioReceiveMode audio_receive_mode,
+                        link_packet_t* packet)
+{
+    // Send to mgmt, and then handle locally
+    if (!protector.TryUnprotect(packet))
+    {
+        UI_LOG_ERROR("Failed to decrypt ptt object");
+        return;
+    }
+
+    const auto message_type = static_cast<ui_net_link::MessageType>(packet->payload[1]);
+
+    switch (message_type)
+    {
+    case ui_net_link::MessageType::Media:
+    {
+        ui_net_link::Chunk* audio_chunk =
+            static_cast<ui_net_link::Chunk*>(static_cast<void*>(packet->payload.data() + 1));
+
+        switch (audio_receive_mode)
+        {
+        case AudioReceiveMode::Ctl:
+        {
+            ForwardToMgmt(mgmt_serial, packet, audio_chunk->last_chunk);
+            break;
+        }
+        case AudioReceiveMode::Both:
+        {
+            ForwardToMgmt(mgmt_serial, packet, audio_chunk->last_chunk);
+            AudioCodec::ALawExpand(audio_chunk->chunk_data, constants::Audio_Phonic_Sz,
+                                   audio.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                                   true);
+            break;
+        }
+        case AudioReceiveMode::Headphones:
+        {
+            AudioCodec::ALawExpand(audio_chunk->chunk_data, constants::Audio_Phonic_Sz,
+                                   audio.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                                   true);
+            break;
+        }
+        default:
+        {
+            return;
+        }
+        }
+        break;
+    }
+    case ui_net_link::MessageType::AIRequest:
+    {
+        break;
+    }
+    case ui_net_link::MessageType::AIResponse:
+    {
+        HandleAiResponse(packet, audio);
+        break;
+    }
+    case ui_net_link::MessageType::Chat:
+    {
+        // HandleChatMessages(screen, packet);
+        break;
+    }
+    default:
+    {
+        UI_LOG_INFO("Got an unknown message type %d", (int)message_type);
+        break;
+    }
+    }
+}
+
+void HandleNetLinkPackets(Serial& net_serial,
+                          Serial& mgmt_serial,
+                          Protector& protector,
+                          AudioChip& audio,
+                          const AudioReceiveMode audio_receive_mode)
 {
     while (true)
     {
@@ -54,59 +145,36 @@ void HandleNetLinkPackets(
             return;
         }
 
-        if (packet->type == static_cast<uint16_t>(ui_net_link::NetToUi::CircularPing))
+        switch (static_cast<ui_net_link::NetToUi>(packet->type))
+        {
+        case ui_net_link::NetToUi::CircularPing:
         {
             // Forward to MGMT for circular path: MGMT -> NET -> UI -> MGMT
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::CircularPing),
                               std::span<const uint8_t>(packet->payload.data(), packet->length));
-            continue;
-        }
-
-        if (packet->type != static_cast<uint16_t>(ui_net_link::NetToUi::AudioFrame))
-        {
-            UI_LOG_ERROR("Unhandled packet type %d", (int)packet->type);
-            continue;
-        }
-
-        if (!protector.TryUnprotect(packet))
-        {
-            UI_LOG_ERROR("Failed to decrypt ptt object");
-            continue;
-        }
-
-        const auto message_type = static_cast<ui_net_link::MessageType>(packet->payload[1]);
-
-        switch (message_type)
-        {
-        case ui_net_link::MessageType::Media:
-        {
-            HandleMedia(packet, audio);
             break;
         }
-        case ui_net_link::MessageType::AIRequest:
+        case ui_net_link::NetToUi::AudioFrame:
         {
-            break;
-        }
-        case ui_net_link::MessageType::AIResponse:
-        {
-            HandleAiResponse(packet, audio);
-            break;
-        }
-        case ui_net_link::MessageType::Chat:
-        {
-            HandleChatMessages(screen, packet);
+            HandleQuicrPackets(mgmt_serial, protector, audio, audio_receive_mode, packet);
             break;
         }
         default:
         {
-            UI_LOG_INFO("Got an unknown message type %d", (int)message_type);
+            UI_LOG_ERROR("Unhandled packet type %d", (int)packet->type);
             break;
         }
         }
     }
 }
 
-void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorage& storage)
+void HandleMgmtLinkPackets(Serial& mgmt_serial,
+                           Serial& net_serial,
+                           ConfigStorage& storage,
+                           AudioChip& audio_chip,
+                           UiLoopbackMode& loopback,
+                           AudioTransmitMode& audio_transmit_mode,
+                           AudioReceiveMode& audio_receive_mode)
 {
     while (true)
     {
@@ -176,12 +244,19 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
             }
             break;
         }
-        case CtlToUi::ClearStorage:
+        case CtlToUi::GetSframeKey:
         {
-            UI_LOG_INFO("OK! Clearing configurations");
-            storage.Clear();
-            UI_LOG_INFO("OK! Cleared all configurations");
-            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
+            if (config.loaded && config.len == 16)
+            {
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::SframeKey),
+                                  std::span<const uint8_t>(config.buff, config.len));
+            }
+            else
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "SFrame key not found");
+            }
             break;
         }
         case CtlToUi::SetSframeKey:
@@ -208,19 +283,35 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
             }
             break;
         }
-        case CtlToUi::GetSframeKey:
+        case CtlToUi::GetLoopback:
         {
-            ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
-            if (config.loaded && config.len == 16)
-            {
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::SframeKey),
-                                  std::span<const uint8_t>(config.buff, config.len));
-            }
-            else
+            uint8_t mode = static_cast<uint8_t>(loopback);
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Loopback),
+                              std::span<const uint8_t>(&mode, 1));
+            break;
+        }
+        case CtlToUi::SetLoopback:
+        {
+            if (packet->length < 1)
             {
                 mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
-                                       "SFrame key not found");
+                                       "Missing loopback mode parameter");
+                break;
             }
+
+            const uint8_t mode = packet->payload[0];
+
+            if (mode >= static_cast<uint8_t>(UiLoopbackMode::Count))
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Loopback mode given is not supported");
+                return;
+            }
+
+            loopback = static_cast<UiLoopbackMode>(mode);
+
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+
             break;
         }
         case CtlToUi::GetStackInfo:
@@ -242,34 +333,6 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
             break;
         }
-        case CtlToUi::GetLoopback:
-        {
-            uint8_t mode = static_cast<uint8_t>(UiLoopbackMode::Off);
-            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Loopback),
-                              std::span<const uint8_t>(&mode, 1));
-            break;
-        }
-        case CtlToUi::SetLoopback:
-        {
-            if (packet->length < 1)
-            {
-                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
-                                       "Missing loopback mode parameter");
-                break;
-            }
-            auto mode = static_cast<UiLoopbackMode>(packet->payload[0]);
-            if (mode == UiLoopbackMode::Off)
-            {
-                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
-            }
-            else
-            {
-                UI_LOG_WARN("Loopback mode %d not supported", static_cast<int>(mode));
-                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
-                                       "Loopback mode not supported");
-            }
-            break;
-        }
         case CtlToUi::GetLogsEnabled:
         {
             uint8_t enabled = Logger::enabled ? 1 : 0;
@@ -285,7 +348,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
                                        "Missing logs enabled parameter");
                 break;
             }
-            uint8_t enabled = packet->payload[0];
+            const uint8_t enabled = packet->payload[0];
             if (enabled)
             {
                 Logger::Enable();
@@ -295,6 +358,210 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial, Serial& net_serial, ConfigStorag
                 Logger::Disable();
             }
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            break;
+        }
+        case CtlToUi::ClearStorage:
+        {
+            UI_LOG_INFO("OK! Clearing configurations");
+            storage.Clear();
+            UI_LOG_INFO("OK! Cleared all configurations");
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            break;
+        }
+        case CtlToUi::GetVolume:
+        {
+            UI_LOG_INFO("Get volume");
+            const uint8_t curr_vol = audio_chip.Volume();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
+                              std::span<const uint8_t>(&curr_vol, 1));
+            break;
+        }
+        case CtlToUi::SetVolume:
+        {
+            UI_LOG_INFO("Set volume");
+            if (packet->length < 1)
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Missing set volume parameter");
+                break;
+            }
+
+            const uint16_t volume = static_cast<uint16_t>(packet->payload[0]);
+
+            audio_chip.VolumeSet(volume);
+
+            const uint8_t curr_vol = audio_chip.Volume();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
+                              std::span<const uint8_t>(&curr_vol, 1));
+            break;
+        }
+        case CtlToUi::AdjVolume:
+        {
+            if (packet->length < 2)
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Missing adj volume parameter");
+            }
+
+            const AudioAdjustDirection direction =
+                static_cast<AudioAdjustDirection>(packet->payload[0]);
+
+            const int8_t amt = static_cast<int8_t>(packet->payload[1]);
+
+            switch (direction)
+            {
+            case AudioAdjustDirection::Down:
+            {
+                audio_chip.VolumeAdjust(-amt);
+                break;
+            }
+            case AudioAdjustDirection::Up:
+            {
+                audio_chip.VolumeAdjust(amt);
+                break;
+            }
+            default:
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Direction parameter is not equal to 0 or 1");
+                return;
+            }
+            }
+
+            const uint8_t curr_vol = audio_chip.Volume();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
+                              std::span<const uint8_t>(&curr_vol, 1));
+            break;
+        }
+        case CtlToUi::GetMicPreamp:
+        {
+            UI_LOG_INFO("Get MicPreamp");
+            const uint8_t mic_preamp = audio_chip.MicPreamp();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),
+                              std::span<const uint8_t>(&mic_preamp, 1));
+            break;
+        }
+        case CtlToUi::SetMicPreamp:
+        {
+            UI_LOG_INFO("Set MicPreamp");
+            if (packet->length < 1)
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Missing set volume parameter");
+                break;
+            }
+
+            const uint8_t set_mic_preamp = packet->payload[0];
+
+            audio_chip.MicPreampSet(set_mic_preamp);
+
+            const uint8_t mic_preamp = audio_chip.MicPreamp();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),
+                              std::span<const uint8_t>(&mic_preamp, 1));
+            break;
+        }
+        case CtlToUi::AdjMicPreamp:
+        {
+            UI_LOG_INFO("Micpreamp up/down");
+            if (packet->length < 2)
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Missing adj mic-preamp parameter");
+                break;
+            }
+
+            const AudioAdjustDirection direction =
+                static_cast<AudioAdjustDirection>(packet->payload[0]);
+
+            const int8_t amt = static_cast<int8_t>(packet->payload[1]);
+
+            switch (direction)
+            {
+            case AudioAdjustDirection::Down:
+            {
+                audio_chip.MicPreampAdjust(-amt);
+                break;
+            }
+            case AudioAdjustDirection::Up:
+            {
+                audio_chip.MicPreampAdjust(amt);
+                break;
+            }
+            default:
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Direction parameter is not equal to 0 or 1");
+                return;
+            }
+            }
+
+            const uint8_t mic_preamp = audio_chip.MicPreamp();
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),
+                              std::span<const uint8_t>(&mic_preamp, 1));
+            break;
+        }
+        case CtlToUi::GetAudioTransmitMode:
+        {
+            UI_LOG_INFO("Mgmt requested audio transmit mode");
+            const uint8_t tmp = static_cast<const uint8_t>(audio_transmit_mode);
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioTransmitMode),
+                              std::span<const uint8_t>(&tmp, 1));
+            break;
+        }
+        case CtlToUi::SetAudioTransmitMode:
+        {
+            if (packet->length < 1)
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Missing set audio transmit mode parameter");
+                break;
+            }
+
+            audio_transmit_mode = static_cast<AudioTransmitMode>(packet->payload[0]);
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+
+            break;
+        }
+        case CtlToUi::GetAudioReceiveMode:
+        {
+            UI_LOG_INFO("Mgmt requested audio receive mode");
+            const uint8_t tmp = static_cast<const uint8_t>(audio_receive_mode);
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioReceiveMode),
+                              std::span<const uint8_t>(&tmp, 1));
+            break;
+        }
+        case CtlToUi::SetAudioReceiveMode:
+        {
+            if (packet->length < 1)
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Missing set audio recieve mode parameter");
+                break;
+            }
+
+            audio_receive_mode = static_cast<AudioReceiveMode>(packet->payload[0]);
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+
+            break;
+        }
+        case CtlToUi::AudioFrame:
+        {
+            if (packet->length < sizeof(ui_net_link::Chunk::ExpectedSize))
+            {
+                mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
+                                       "Audio frame is the wrong size");
+                break;
+            }
+
+            ui_net_link::Chunk* audio_chunk =
+                static_cast<ui_net_link::Chunk*>(static_cast<void*>(packet->payload.data() + 1));
+            AudioCodec::ALawExpand(audio_chunk->chunk_data, constants::Audio_Phonic_Sz,
+                                   audio_chip.TxBuffer(), constants::Audio_Buffer_Sz,
+                                   constants::Stereo, true);
+            break;
+        }
+        case CtlToUi::AudioStart:
+        {
             break;
         }
         default:
