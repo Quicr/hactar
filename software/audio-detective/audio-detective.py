@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 import numpy as np
 import librosa
-from scipy.signal import iirnotch, lfilter, welch
+from scipy.signal import filtfilt, iirnotch, lfilter, welch
 
 # Setup professional logging
 logging.basicConfig(
@@ -90,6 +90,94 @@ def calculate_thd(fundamental_hz, fft, freqs, max_harmonic=5):
 
     thd_ratio = np.sqrt(np.sum(np.square(harmonic_amps))) / fundamental_amp
     return float(100 * thd_ratio)
+
+
+def harmonic_frequencies(fundamental_hz, nyquist_hz, include_harmonics=False):
+    if fundamental_hz <= 0 or fundamental_hz >= nyquist_hz:
+        return []
+
+    frequencies = []
+    multiplier = 1
+    while True:
+        frequency = fundamental_hz * multiplier
+        if frequency >= nyquist_hz:
+            break
+        frequencies.append(frequency)
+        if not include_harmonics:
+            break
+        multiplier += 1
+
+    return frequencies
+
+
+def filter_frequencies(y, sr, frequencies, notch_q=30):
+    filtered = y
+    for frequency in frequencies:
+        b, a = iirnotch(frequency, Q=notch_q, fs=sr)
+        if len(filtered) > 3 * max(len(a), len(b)):
+            filtered = filtfilt(b, a, filtered)
+        else:
+            filtered = lfilter(b, a, filtered)
+    return filtered
+
+
+def filter_edge_samples(sr, frequencies, notch_q=30, min_seconds=0.1, max_seconds=0.5):
+    if not frequencies:
+        return 0
+
+    lowest_frequency = max(float(min(frequencies)), EPSILON)
+    cascade_depth = max(len(frequencies), 1)
+    # Cascaded notches have longer boundary settling than a single filter.
+    settling_seconds = 3 * notch_q * np.sqrt(cascade_depth) / (np.pi * lowest_frequency)
+    edge_seconds = min(max(settling_seconds, min_seconds), max_seconds)
+    return int(np.ceil(edge_seconds * sr))
+
+
+def amplitude_snr_db(y, noise_only, edge_samples=0):
+    if edge_samples > 0 and len(y) > 2 * edge_samples:
+        y = y[edge_samples:-edge_samples]
+        noise_only = noise_only[edge_samples:-edge_samples]
+
+    rms_sig = np.sqrt(np.mean(y**2))
+    rms_noise = np.sqrt(np.mean(noise_only**2))
+    return amplitude_to_db(rms_sig / max(rms_noise, EPSILON))
+
+
+def instantaneous_snr(y, noise_only, sr, window_seconds=0.05, floor=1e-10, edge_samples=0):
+    frame_length = min(max(int(window_seconds * sr), 1), len(y))
+    hop_length = frame_length
+
+    rms_t_sig = librosa.feature.rms(
+        y=y,
+        frame_length=frame_length,
+        hop_length=hop_length,
+        center=False,
+    )[0]
+    rms_t_noise = librosa.feature.rms(
+        y=noise_only,
+        frame_length=frame_length,
+        hop_length=hop_length,
+        center=False,
+    )[0]
+
+    snr_t = np.full(rms_t_sig.shape, np.nan, dtype=float)
+    active_frames = rms_t_sig > floor
+    if edge_samples > 0 and len(y) > 2 * edge_samples:
+        frame_starts = np.arange(len(snr_t)) * hop_length
+        frame_ends = frame_starts + frame_length
+        active_frames &= (frame_starts >= edge_samples) & (frame_ends <= len(y) - edge_samples)
+
+    snr_t[active_frames] = 20 * np.log10(
+        rms_t_sig[active_frames] / np.maximum(rms_t_noise[active_frames], floor)
+    )
+    times = librosa.frames_to_time(
+        np.arange(len(snr_t)),
+        sr=sr,
+        hop_length=hop_length,
+        n_fft=frame_length,
+    )
+
+    return times, snr_t
 
 
 def analyze_hum(freqs, psd, fundamental_hz=None):
@@ -356,28 +444,25 @@ def write_plots(plot_file, y, sr, times, snr_t, snr_db, noise_only):
     return plt
 
 
-def analyze_audio(filepath, show_plot=False, plot_file=None):
+def analyze_audio(filepath, show_plot=False, plot_file=None, filter_harmonics=False):
     logger.info(f"Analyzing: {filepath}")
 
     y, sr = librosa.load(filepath, sr=None)
     actual_freq, fft, freqs = find_fundamental(y, sr)
     logger.info(f"Fundamental frequency detected at {actual_freq:.2f}Hz")
 
-    if 0 < actual_freq < sr / 2:
-        b, a = iirnotch(actual_freq, Q=30, fs=sr)
-        noise_only = lfilter(b, a, y)
+    notch_frequencies = harmonic_frequencies(actual_freq, sr / 2, filter_harmonics)
+    if notch_frequencies:
+        noise_only = filter_frequencies(y, sr, notch_frequencies)
+        if filter_harmonics:
+            logger.info(f"Filtered fundamental and {len(notch_frequencies) - 1} harmonics")
     else:
         noise_only = y
 
-    rms_sig = np.sqrt(np.mean(y**2))
-    rms_noise = np.sqrt(np.mean(noise_only**2))
-    snr_db = amplitude_to_db(rms_sig / max(rms_noise, EPSILON))
+    edge_samples = filter_edge_samples(sr, notch_frequencies)
+    snr_db = amplitude_snr_db(y, noise_only, edge_samples)
 
-    hop = int(0.05 * sr)
-    rms_t_sig = librosa.feature.rms(y=y, hop_length=hop)[0]
-    rms_t_noise = librosa.feature.rms(y=noise_only, hop_length=hop)[0]
-    snr_t = 20 * np.log10(np.maximum(rms_t_sig, 1e-10) / np.maximum(rms_t_noise, 1e-10))
-    times = librosa.frames_to_time(np.arange(len(snr_t)), sr=sr, hop_length=hop)
+    times, snr_t = instantaneous_snr(y, noise_only, sr, edge_samples=edge_samples)
 
     measurements = collect_measurements(sr, y, actual_freq, fft, freqs)
     alerts = run_forensics(sr, y)
@@ -403,9 +488,11 @@ def analyze_audio(filepath, show_plot=False, plot_file=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("file", help="Input WAV file")
+    parser.add_argument("--help", action="help", help="Show this help message and exit")
+    parser.add_argument("-h", "--harmonics", action="store_true", help="Filter harmonics of the fundamental as well")
     parser.add_argument("-p", "--plot", action="store_true", help="Show diagnostic plots")
     parser.add_argument("-f", "--plot-file", help="Write diagnostic plots to this image file")
     args = parser.parse_args()
-    analyze_audio(args.file, args.plot, args.plot_file)
+    analyze_audio(args.file, args.plot, args.plot_file, args.harmonics)
