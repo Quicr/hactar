@@ -1,8 +1,6 @@
 #include "net.hh"
 #include "chunk.hh"
-#include "config_builder.hh"
-#include "driver/gpio.h"
-#include "driver/ledc.h"
+#include "config_builder.hh" #include "driver/gpio.h" #include "driver/ledc.h"
 #include "driver/uart.h"
 #include "efuse_burner.hh"
 #include "esp_event.h"
@@ -10,6 +8,7 @@
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_pthread.h"
+#include "esp_random.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
 #include "freertos/queue.h"
@@ -844,7 +843,7 @@ static void NoisyTask(void* arg)
     empty.resize(empty_sz);
     for (int i = 0; i < empty_sz; ++i)
     {
-        empty[i] = 0;
+        empty[i] = esp_random() % 0xFF;
     }
 
     while (true)

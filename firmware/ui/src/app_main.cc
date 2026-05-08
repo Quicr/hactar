@@ -141,12 +141,13 @@ enum class Ptt_Btn_State
 Ptt_Btn_State ptt_state;
 Ptt_Btn_State ptt_ai_state;
 
-Button ptt(PTT_BTN_GPIO_Port, PTT_BTN_Pin, Button::Polarity::High, 0, 0, 10000, 10000);
-Button mic_ptt(MIC_IO_GPIO_Port, MIC_IO_Pin, Button::Polarity::Low, 0, 0, 10000, 10000);
-Button ptt_ai(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin, Button::Polarity::High, 0, 0, 10000, 10000);
-Button volume_up(VOLUME_UP_GPIO_Port, VOLUME_UP_Pin, Button::Polarity::High, 20, 100, 200, 200);
-Button
-    volume_down(VOLUME_DOWN_GPIO_Port, VOLUME_DOWN_Pin, Button::Polarity::High, 20, 100, 200, 200);
+Button ptt(PTT_BTN_GPIO_Port, PTT_BTN_Pin, Button::Polarity::Low, 0, 0, 10000, 10000);
+// Button mic_ptt(MIC_IO_GPIO_Port, MIC_IO_Pin, Button::Polarity::Low, 0, 0, 10000, 10000);
+Button ptt_ai(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin, Button::Polarity::Low, 0, 0, 10000, 10000);
+// Button volume_up(VOLUME_UP_GPIO_Port, VOLUME_UP_Pin, Button::Polarity::High, 20, 100, 200, 200);
+// Button
+//     volume_down(VOLUME_DOWN_GPIO_Port, VOLUME_DOWN_Pin, Button::Polarity::High, 20, 100, 200,
+//     200);
 
 int app_main()
 {
@@ -207,30 +208,30 @@ int app_main()
             // Error("Main loop", "Flags did not match expected");
         }
 
-        if (volume_up.ShortPress() || volume_up.RepeatedPress())
-        {
-            audio_chip.VolumeAdjust(1);
-            UI_LOG_INFO("Volume up %d", (int)audio_chip.Volume());
-        }
-        else if (volume_up.DoublePress())
-        {
-            audio_chip.MicPreampAdjust(1);
-            UI_LOG_INFO("Mic Preamp up %d", (int)audio_chip.MicPreamp());
-        }
-
-        if (volume_down.ShortPress() || volume_down.RepeatedPress())
-        {
-            audio_chip.VolumeAdjust(-1);
-            UI_LOG_INFO("Volume down %d", (int)audio_chip.Volume());
-        }
-        else if (volume_down.DoublePress())
-        {
-            audio_chip.MicPreampAdjust(-1);
-            UI_LOG_INFO("Mic Preamp down %d", (int)audio_chip.MicPreamp());
-        }
+        // if (volume_up.ShortPress() || volume_up.RepeatedPress())
+        // {
+        //     audio_chip.VolumeAdjust(1);
+        //     UI_LOG_INFO("Volume up %d", (int)audio_chip.Volume());
+        // }
+        // else if (volume_up.DoublePress())
+        // {
+        //     audio_chip.MicPreampAdjust(1);
+        //     UI_LOG_INFO("Mic Preamp up %d", (int)audio_chip.MicPreamp());
+        // }
+        //
+        // if (volume_down.ShortPress() || volume_down.RepeatedPress())
+        // {
+        //     audio_chip.VolumeAdjust(-1);
+        //     UI_LOG_INFO("Volume down %d", (int)audio_chip.Volume());
+        // }
+        // else if (volume_down.DoublePress())
+        // {
+        //     audio_chip.MicPreampAdjust(-1);
+        //     UI_LOG_INFO("Mic Preamp down %d", (int)audio_chip.MicPreamp());
+        // }
 
         CheckPTT(protector, loopback_mode);
-        CheckPTTAI(protector, loopback_mode);
+        // CheckPTTAI(protector, loopback_mode);
 
         // HandleKeypress(screen, keyboard, net_serial, protector);
 
@@ -305,7 +306,7 @@ void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode)
 {
     static bool pressed = false;
 
-    if ((ptt.IsHeld() || mic_ptt.IsHeld()))
+    if ((ptt.IsHeld()))
     {
         pressed = true;
         SendAudio(protector, ui_net_link::Channel_Id::Ptt, false, loopback_mode);
@@ -557,10 +558,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     {
         // keyboard.Scan(HAL_GetTick());
         ptt.Update(HAL_GetTick());
-        mic_ptt.Update(HAL_GetTick());
+        // mic_ptt.Update(HAL_GetTick());
         ptt_ai.Update(HAL_GetTick());
-        volume_up.Update(HAL_GetTick());
-        volume_down.Update(HAL_GetTick());
+        // volume_up.Update(HAL_GetTick());
+        // volume_down.Update(HAL_GetTick());
     }
     else if (htim->Instance == TIM3)
     {
