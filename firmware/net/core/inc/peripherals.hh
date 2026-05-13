@@ -8,9 +8,9 @@
 #include <memory>
 
 // Pin and peripheral definitions
-#define NET_LED_B GPIO_NUM_1
-#define NET_LED_G GPIO_NUM_2
-#define NET_LED_R GPIO_NUM_3
+#define NET_LED_B GPIO_NUM_36
+#define NET_LED_G GPIO_NUM_37
+#define NET_LED_R GPIO_NUM_38
 #define NET_DEBUG_1 GPIO_NUM_5
 #define NET_DEBUG_2 GPIO_NUM_6
 #define NET_DEBUG_3 GPIO_NUM_7
