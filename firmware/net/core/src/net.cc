@@ -21,6 +21,7 @@
 #include "nvs_flash.h"
 #include "peripherals.hh"
 #include "picoquic_utils.h"
+#include "quicr/detail/transport.h"
 #include "sdkconfig.h"
 #include "serial.hh"
 #include "spdlog/logger.h"
@@ -35,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cstdint>
 #include <memory>
 
 using json = nlohmann::json;
@@ -56,6 +58,9 @@ uint64_t device_id = 0;
 
 // NOTE! This can be enabled during run on via serial
 bool loopback = false;
+bool blaster = false;
+uint32_t blaster_size = 0;
+TaskHandle_t blaster_task_handle = nullptr;
 
 std::vector<std::shared_ptr<moq::TrackReader>> readers;
 std::vector<std::shared_ptr<moq::TrackWriter>> writers;
@@ -161,6 +166,7 @@ uint64_t curr_audio_isr_time = esp_timer_get_time();
 uint64_t last_audio_isr_time = esp_timer_get_time();
 
 bool logs_disabled = false;
+uint32_t request_id = 0;
 
 spdlog::level::level_enum last_spd_log_level =
     static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL);
@@ -303,7 +309,41 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
     }
 }
 
-uint32_t request_id = 0;
+static void BlasterTask(void* arg)
+{
+    while (blaster)
+    {
+        if (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
+        {
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+    std::vector<uint8_t> blast_vec;
+    constexpr uint32_t channel_id = (uint32_t)ui_net_link::Channel_Id::Ptt;
+    while (blaster && moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
+    {
+        if (blaster_size != blast_vec.size())
+        {
+            blast_vec.resize(blaster_size);
+            for (int i = 0; i < blaster_size; ++i)
+            {
+                blast_vec[i] = 0;
+            }
+        }
+
+        if (writers[channel_id])
+        {
+            writers[channel_id]->PushObject(blast_vec.data(), blast_vec.size(),
+                                            curr_audio_isr_time);
+        }
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
+
+    vTaskDelete(blaster_task_handle);
+    blaster_task_handle = NULL;
+}
 
 static void UILinkPacketTask(void* args)
 {
@@ -314,34 +354,51 @@ static void UILinkPacketTask(void* args)
 
         while (auto packet = ui_layer.Read())
         {
-            if (packet->type == static_cast<uint16_t>(ui_net_link::UiToNet::CircularPing))
+            switch (static_cast<ui_net_link::UiToNet>(packet->type))
+            {
+            case ui_net_link::UiToNet::CircularPing:
             {
                 // Forward to MGMT for circular path: MGMT -> UI -> NET -> MGMT
                 mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::CircularPing),
                                  std::span<const uint8_t>(packet->payload.data(), packet->length));
-                continue;
+                break;
             }
+            case ui_net_link::UiToNet::BlasterSend:
+            {
+                const uint8_t channel_id = static_cast<uint8_t>(ui_net_link::Channel_Id::Ptt);
 
-            if (packet->type != static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame))
+                if (!writers[channel_id])
+                {
+                    break;
+                }
+
+                writers[channel_id]->PushObject(packet->payload.data(), packet->length,
+                                                curr_audio_isr_time);
+                break;
+            }
+            case ui_net_link::UiToNet::AudioFrame:
+            {
+                // Bytes that is used for interchip communication
+                constexpr uint32_t ext_bytes = 1;
+
+                const uint8_t channel_id = packet->payload[0];
+                const uint32_t length = packet->length - ext_bytes;
+
+                if (channel_id < (uint8_t)ui_net_link::Channel_Id::Count - 1)
+                {
+                    if (writers[channel_id])
+                    {
+                        writers[channel_id]->PushObject(packet->payload.data() + 1, length,
+                                                        curr_audio_isr_time);
+                    }
+                }
+                break;
+            }
+            default:
             {
                 NET_LOG_ERROR("Got unexpected packet type %d", (int)packet->type);
-                continue;
+                break;
             }
-
-            uint8_t channel_id = packet->payload[0];
-            uint32_t ext_bytes = 1;
-            uint32_t length = packet->length;
-
-            // Remove the bytes already read from the payload length (channel_id)
-            length -= ext_bytes;
-
-            if (channel_id < (uint8_t)ui_net_link::Channel_Id::Count - 1)
-            {
-                if (writers[channel_id])
-                {
-                    writers[channel_id]->PushObject(packet->payload.data() + 1, length,
-                                                    curr_audio_isr_time);
-                }
             }
         }
     }
@@ -663,6 +720,61 @@ static void MgmtLinkPacketTask(void* args)
                     mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
                                           "eFuse burn failed");
                 }
+                break;
+            }
+            case CtlToNet::BlasterSend:
+            {
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
+
+                const uint8_t channel_id = static_cast<uint8_t>(ui_net_link::Channel_Id::Ptt);
+
+                if (!writers[channel_id])
+                {
+                    NET_LOG_ERROR("Writer doesn't exist");
+                    break;
+                }
+
+                NET_LOG_ERROR("transmit blaster");
+                writers[channel_id]->PushObject(packet->payload.data(), packet->length,
+                                                curr_audio_isr_time);
+
+                break;
+            }
+            case CtlToNet::GetBlaster:
+            {
+                const uint8_t mode = blaster;
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Blaster),
+                                 std::span<const uint8_t>(&mode, 1));
+                break;
+            }
+            case CtlToNet::SetBlaster:
+            {
+                if (packet->length != 3)
+                {
+                    mgmt_layer.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                          "Invalid size for SetBlaster, must be lenght of 3");
+                    break;
+                }
+
+                blaster = packet->payload[0];
+
+                int16_t blaster_sz = packet->payload[1];
+                blaster_sz = packet->payload[2] << 8;
+
+                NET_LOG_INFO("blaster_size");
+                if (blaster_sz >= 0)
+                {
+                    blaster_size = blaster_sz;
+                }
+
+                if (blaster && blaster_task_handle == NULL)
+                    ;
+                {
+                    // Start the blaster
+                    xTaskCreate(BlasterTask, "blaster task", 2048, NULL, 1, &blaster_task_handle);
+                }
+
+                mgmt_layer.Reply(static_cast<uint16_t>(NetToCtl::Ack), std::span<const uint8_t>{});
                 break;
             }
             default:
