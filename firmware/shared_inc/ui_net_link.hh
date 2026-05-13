@@ -13,7 +13,8 @@ namespace ui_net_link
 enum struct UiToNet : uint16_t
 {
     CircularPing = 0x0060,
-    AudioFrame = 0x0061,
+    AudioFrame,
+    BlasterSend,
 };
 
 // NET to UI packet types

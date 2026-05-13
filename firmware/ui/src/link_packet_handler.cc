@@ -564,6 +564,14 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
         {
             break;
         }
+        case CtlToUi::BlasterSend:
+        {
+            packet->type = static_cast<uint16_t>(ui_net_link::UiToNet::BlasterSend);
+            net_serial.Write(*packet);
+
+            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            break;
+        }
         default:
         {
             UI_LOG_ERROR("ERR. No handler for packet type 0x%04x", packet->type);
