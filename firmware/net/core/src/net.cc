@@ -939,34 +939,6 @@ void SetPThreadDefault()
     esp_pthread_set_cfg(&cfg);
 }
 
-static void NoisyTask(void* arg)
-{
-    while (true)
-    {
-        if (moq_session && moq_session->GetStatus() == moq::Session::Status::kReady)
-        {
-            break;
-        }
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-
-    const uint32_t empty_sz = 320;
-    std::vector<uint8_t> empty;
-    empty.resize(empty_sz);
-    for (int i = 0; i < empty_sz; ++i)
-    {
-        empty[i] = 0;
-    }
-
-    while (true)
-    {
-        uint32_t channel_id = 0;
-        writers[channel_id]->PushObject(empty.data(), empty_sz, curr_audio_isr_time);
-
-        vTaskDelay(pdMS_TO_TICKS(20));
-    }
-}
-
 uint64_t fibonacci(const uint64_t n)
 {
     uint64_t a = 0;
@@ -994,14 +966,7 @@ extern "C" void app_main(void)
 
     CreateMgmtLinkPacketTask();
     mgmt_layer.BeginEventTask();
-
-    // while (true)
-    // {
-    //     uint64_t fib = fibonacci(100);
-    //     NET_LOG_INFO("fib %lld", fib);
-    //     vTaskDelay(pdMS_TO_TICKS(20));
-    // }
-
+    
     CreateUILinkPacketTask();
 
     wifi.Begin();
@@ -1009,9 +974,6 @@ extern "C" void app_main(void)
 #if defined(my_ssid) && defined(my_ssid_pwd)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
-
-    // ui_layer.BeginEventTask();
-    xTaskCreate(NoisyTask, "noisy task", 2048, NULL, 1, NULL);
 
     // std::string& connect_uri = moq_server_url.Load();
     if (moq_server_url->empty())
@@ -1021,6 +983,8 @@ extern "C" void app_main(void)
             "No moq server url found, using default moq://relay.us-west-2.quicr.ctgpoc.com:33435");
         moq_server_url = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
     }
+    
+    moq_server_url = "moq://frontline.m10x.org:33435";
 
     NET_LOG_WARN("Using moq server url of %s len %u", moq_server_url->c_str(),
                  moq_server_url->length());
@@ -1030,12 +994,15 @@ extern "C" void app_main(void)
     {
         language = "en-US";
     }
+    language = "en-US";
 
     // Load namespaces from storage
     LoadNamespacesFromStorage();
 
     // Log warnings if namespaces are not configured (no defaults - must be configured via
     // fl-identity)
+    channel_ns = std::vector<std::string>({"cisco.com", "ff68267e-62cf-42c9-83ad-cadbae78fb02",
+                                           "677449f5-5253-4e83-ac7b-4f5c07f8c3a9", "ptt"});
     if (channel_ns.empty())
     {
         NET_LOG_WARN("Channel namespace not configured - device needs configuration");
