@@ -1,7 +1,7 @@
 ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('FreeCAD Model'),'2;1');
-FILE_NAME('Open CASCADE Shape Model','2026-04-21T10:18:30',(''),(''),
+FILE_NAME('Open CASCADE Shape Model','2026-05-19T20:09:06',(''),(''),
   'Open CASCADE STEP processor 7.9','FreeCAD','Unknown');
 FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));
 ENDSEC;
@@ -336,7 +336,7 @@ DATA;
 #325 = AXIS2_PLACEMENT_3D('',#326,#327,#328);
 #326 = CARTESIAN_POINT('',(0.,19.948932,6.805));
 #327 = DIRECTION('',(0.,1.,0.));
-#328 = DIRECTION('',(0.,0.,1.));
+#328 = DIRECTION('',(0.,-0.,1.));
 #329 = ADVANCED_FACE('',(#330),#355,.F.);
 #330 = FACE_BOUND('',#331,.F.);
 #331 = EDGE_LOOP('',(#332,#340,#348,#354));
