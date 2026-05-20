@@ -30,6 +30,10 @@
 #define NET_MGMT_UART_TX_PIN GPIO_NUM_43
 #define NET_MGMT_UART_RX_PIN GPIO_NUM_44
 
+struct NetTraits
+{
+};
+
 extern Wifi wifi;
 extern Serial ui_layer;
 extern std::shared_ptr<moq::Session> moq_session;
