@@ -60,9 +60,9 @@ make flash-net
 - Cut the pad between the center and the label 3.3V. 
 - Solder a blob between VSYS and the center pad.
 
-[![EV17 full view](ev17_fullview.png)]
+[![EV17 full view](img/ev17_fullview.png)]
 
-[![EV17 zoomed in on solder pad](ev17_solderpad.png)]
+[![EV17 zoomed in on solder pad](img/ev17_solderpad.png)]
 
 # Configuring your Hactar
 
