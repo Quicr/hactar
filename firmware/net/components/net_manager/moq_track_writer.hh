@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "logger.hh"
+#include "net.hh"
 #include <quicr/publish_track_handler.h>
 
 namespace moq
@@ -17,7 +18,8 @@ public:
     TrackWriter(const quicr::FullTrackName& full_track_name,
                 quicr::TrackMode track_mode,
                 uint8_t default_priority,
-                uint32_t default_ttl);
+                uint32_t default_ttl,
+                const Runtime& runtime);
 
     virtual ~TrackWriter();
 
@@ -49,8 +51,9 @@ public:
 
 private:
     static void PublishTask(void* params);
-
     std::string track_name;
+    const Runtime& runtime;
+
     std::deque<moq::TrackWriter::link_data_obj> moq_objs;
     uint64_t object_id;
 
