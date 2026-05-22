@@ -5,16 +5,24 @@
 #include "logger.hh"
 #include "net.hh"
 #include "net_mgmt_link.h"
+#include "picoquic_utils.h"
+#include "spdlog/spdlog.h"
 #include "ui_net_link.hh"
 
 MgmtLinkHandler::MgmtLinkHandler(Serial& mgmt_layer,
+                                 Serial& ui_layer,
+                                 Wifi& wifi,
                                  Storage& storage,
                                  ConfigState& config,
-                                 Diagnostics& diagnostics) :
+                                 Diagnostics& diagnostics,
+                                 MoqContext& moq_context) :
     serial(mgmt_layer),
+    ui_serial(ui_layer),
+    wifi(wifi),
     storage(storage),
     config(config),
     diagnostics(diagnostics),
+    moq_context(moq_context),
     serial_read_handle(nullptr),
     serial_read_buffer(),
     serial_read_stack()
@@ -28,6 +36,7 @@ MgmtLinkHandler::~MgmtLinkHandler()
 void MgmtLinkHandler::Begin()
 {
     CreateLinkPacketTask();
+    serial.BeginEventTask(serial_read_handle);
 }
 
 void MgmtLinkHandler::CreateLinkPacketTask()
@@ -48,8 +57,6 @@ void MgmtLinkHandler::CreateLinkPacketTask()
 
     NET_LOG_INFO("Created mgmt link packet handler Internal RAM left %ld",
                  heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
-
-    serial.BeginEventTask(serial_read_handle);
 }
 
 void MgmtLinkHandler::LinkPacketTask(void* arg)
@@ -75,8 +82,9 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
             case CtlToNet::CircularPing:
             {
                 // Forward to UI for circular path: MGMT -> NET -> UI -> MGMT
-                ui_layer.Reply(static_cast<uint16_t>(ui_net_link::NetToUi::CircularPing),
-                               std::span<const uint8_t>(packet->payload.data(), packet->length));
+                handler->ui_serial.Reply(
+                    static_cast<uint16_t>(ui_net_link::NetToUi::CircularPing),
+                    std::span<const uint8_t>(packet->payload.data(), packet->length));
                 break;
             }
             case CtlToNet::ClearStorage:
@@ -103,7 +111,7 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                 handler->config.ai_cmd_response_ns.clear();
 
                 // Clear WiFi credentials
-                wifi.ClearSavedSSIDs();
+                handler->wifi.ClearSavedSSIDs();
 
                 handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
                                       std::span<const uint8_t>{});
@@ -128,7 +136,7 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                     std::string password = wifi_json["password"].get<std::string>();
 
                     NET_LOG_INFO("Add_Wifi: ssid=%s", ssid.c_str());
-                    wifi.Connect(ssid, password);
+                    handler->wifi.Connect(ssid, password);
                     handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
                                           std::span<const uint8_t>{});
                 }
@@ -143,7 +151,7 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
             case CtlToNet::GetWifiSsids:
             {
                 json wifi_array = json::array();
-                const std::vector<Wifi::ap_cred_t>& creds = wifi.GetStoredCreds();
+                const std::vector<Wifi::ap_cred_t>& creds = handler->wifi.GetStoredCreds();
                 for (const auto& cred : creds)
                 {
                     json entry;
@@ -157,7 +165,7 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
             }
             case CtlToNet::ClearWifiSsids:
             {
-                wifi.ClearSavedSSIDs();
+                handler->wifi.ClearSavedSSIDs();
                 handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
                                       std::span<const uint8_t>{});
                 break;
@@ -272,8 +280,8 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                 NET_LOG_INFO("Language set to: %s", new_lang.c_str());
                 handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
                                       std::span<const uint8_t>{});
-                UpdateAITracks();
-                UpdateChannelTracks();
+                handler->moq_context.UpdateAITracks(handler->config);
+                handler->moq_context.UpdateChannelTracks(handler->config);
                 break;
             }
             case CtlToNet::GetLanguage:
@@ -300,7 +308,7 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                              handler->config.channel_ns.size());
                 handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
                                       std::span<const uint8_t>{});
-                UpdateChannelTracks();
+                handler->moq_context.UpdateChannelTracks(handler->config);
                 break;
             }
             case CtlToNet::GetChannel:
@@ -350,7 +358,7 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                                  handler->config.ai_cmd_response_ns.size());
                     handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
                                           std::span<const uint8_t>{});
-                    UpdateAITracks();
+                    handler->moq_context.UpdateAITracks(handler->config);
                 }
                 catch (const std::exception& ex)
                 {

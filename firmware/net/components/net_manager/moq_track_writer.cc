@@ -4,20 +4,21 @@
 #include "moq_track_writer.hh"
 #include "chunk.hh"
 #include "macros.hh"
+#include "net.hh"
 #include "task_helpers.hh"
 #include "utils.hh"
 
 using namespace moq;
 
-extern uint64_t device_id;
-
 TrackWriter::TrackWriter(const quicr::FullTrackName& full_track_name,
                          quicr::TrackMode track_mode,
                          uint8_t default_priority,
-                         uint32_t default_ttl) :
+                         uint32_t default_ttl,
+                         const Runtime& runtime) :
     quicr::PublishTrackHandler(full_track_name, track_mode, default_priority, default_ttl),
     track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end())
                + std::string(full_track_name.name.begin(), full_track_name.name.end())),
+    runtime(runtime),
     moq_objs({0}),
     object_id(0),
     is_running(false),
@@ -117,7 +118,7 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
     std::lock_guard<std::mutex> _(obj_mux);
 
     auto& obj = moq_objs.emplace_back();
-    obj.headers.group_id = device_id;
+    obj.headers.group_id = runtime.device_id;
     obj.headers.object_id = object_id++;
     obj.headers.payload_length = len;
     obj.headers.immutable_extensions = quicr::Extensions{};
