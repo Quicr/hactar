@@ -47,7 +47,7 @@ void Serial::BeginEventTask(TaskHandle_t& read_handle)
     ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(port, tx_pin, rx_pin, rts_pin, cts_pin));
 
-    *this->read_handle = read_handle;
+    this->read_handle = &read_handle;
 
     if (use_queue_task)
     {
