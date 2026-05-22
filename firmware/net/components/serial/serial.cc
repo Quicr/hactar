@@ -8,8 +8,7 @@
 
 Serial::Serial(const uart_port_t port,
                uart_dev_t& uart,
-               TaskHandle_t& read_handle,
-               const periph_interrput_t intr_source,
+               const periph_interrupt_t intr_source,
                const uart_config_t uart_config,
                const int tx_pin,
                const int rx_pin,
@@ -28,7 +27,7 @@ Serial::Serial(const uart_port_t port,
     SerialHandler(rx_rings, tx_buff, tx_buff_sz, rx_buff, rx_buff_sz, Transmit, this),
     port(port),
     uart(uart),
-    read_handle(read_handle),
+    read_handle(nullptr),
     uart_config(uart_config),
     tx_pin(tx_pin),
     rx_pin(rx_pin),
@@ -43,10 +42,12 @@ Serial::Serial(const uart_port_t port,
 {
 }
 
-void Serial::BeginEventTask()
+void Serial::BeginEventTask(TaskHandle_t& read_handle)
 {
     ESP_ERROR_CHECK(uart_param_config(port, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(port, tx_pin, rx_pin, rts_pin, cts_pin));
+
+    *this->read_handle = read_handle;
 
     if (use_queue_task)
     {
@@ -129,7 +130,7 @@ void Serial::ReadTask(void* arg)
             serial->rx_write_idx = 0;
         }
         serial->unread += num_bytes;
-        xTaskNotifyGive(serial->read_handle);
+        xTaskNotifyGive(*serial->read_handle);
     }
 }
 
@@ -200,7 +201,7 @@ void Serial::QueueReadTask(void* arg)
 
             if (total_read > 0)
             {
-                xTaskNotifyGive(serial->read_handle);
+                xTaskNotifyGive(*serial->read_handle);
             }
 
             break;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "moq_session.hh"
+
 namespace moq
 {
 enum class MessageType : uint8_t
