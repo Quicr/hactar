@@ -7,22 +7,23 @@
 #include "logger.hh"
 #include "macros.hh"
 #include "moq_session.hh"
+#include "net.hh"
 #include "task_helpers.hh"
 #include "ui_net_link.hh"
 #include "utils.hh"
 
 using namespace moq;
 
-extern uint64_t device_id;
-extern bool loopback;
-extern SemaphoreHandle_t audio_req_smpr;
-
 TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
                          Serial& serial,
-                         const std::string& codec) :
+                         const std::string& codec,
+                         const Runtime& runtime,
+                         const Diagnostics& diagnostics) :
     SubscribeTrackHandler(full_track_name, 3, quicr::messages::GroupOrder::kAscending),
     serial(serial),
     codec(codec),
+    runtime(runtime),
+    diagnostics(diagnostics),
     track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end())
                + std::string(full_track_name.name.begin(), full_track_name.name.end())),
     byte_buffer(),
@@ -93,7 +94,7 @@ void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers,
         NET_LOG_INFO("%s Received %llu", Stringify(GetFullTrackName()).c_str(), num_recv);
     }
 
-    if (!loopback && headers.group_id == device_id)
+    if (!diagnostics.loopback && headers.group_id == runtime.device_id)
     {
         return;
     }
@@ -238,7 +239,7 @@ void TrackReader::TransmitAudio()
             continue;
         }
 
-        if (!xSemaphoreTake(audio_req_smpr, 0))
+        if (!xSemaphoreTake(runtime.audio_req_smpr, 0))
         {
             continue;
         }

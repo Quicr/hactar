@@ -1,6 +1,6 @@
 #include "net.hh"
 #include "chunk.hh"
-#include "config_builder.hh"
+#include "config_state.hh"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "driver/uart.h"
@@ -17,6 +17,10 @@
 #include "link_packet_t.hh"
 #include "logger.hh"
 #include "macros.hh"
+#include "mgmt_link_handler.hh"
+#include "moq_session.hh"
+#include "moq_track_reader.hh"
+#include "moq_track_writer.hh"
 #include "net_mgmt_link.h"
 #include "nvs_flash.h"
 #include "peripherals.hh"
@@ -52,10 +56,9 @@ std::shared_ptr<moq::TrackWriter> CreateWriteTrack(const std::string& channel_na
 
 /** EXTERNAL VARIABLES */
 // External variables defined in net.hh
-uint64_t device_id = 0;
+// uint64_t device_id = 0;
 
 // NOTE! This can be enabled during run on via serial
-bool loopback = false;
 
 std::vector<std::shared_ptr<moq::TrackReader>> readers;
 std::vector<std::shared_ptr<moq::TrackWriter>> writers;
@@ -68,11 +71,11 @@ TaskHandle_t net_ui_serial_read_handle;
 StaticTask_t net_ui_serial_read_buffer;
 StackType_t* net_ui_serial_read_stack = nullptr;
 
-uint8_t net_ui_uart_tx_buff[NET_UI_UART_TX_BUFF_SIZE] = {0};
-uint8_t net_ui_uart_rx_buff[NET_UI_UART_RX_BUFF_SIZE] = {0};
+uint8_t net_ui_uart_tx_buff[NetTraits::UiUart::tx_buffer_size] = {0};
+uint8_t net_ui_uart_rx_buff[NetTraits::UiUart::rx_buffer_size] = {0};
 
 uart_config_t net_ui_uart_config = {
-    .baud_rate = 460800,
+    .baud_rate = static_cast<int>(NetTraits::UiUart::baud_rate),
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_1,
@@ -82,107 +85,46 @@ uart_config_t net_ui_uart_config = {
     .flags = {},
 };
 
-Serial ui_layer(NET_UI_UART_PORT,
-                NET_UI_UART_DEV,
-                net_ui_serial_read_handle,
+Serial ui_layer(NetTraits::UiUart::port,
+                NetTraits::UiUart::Uart(),
                 ETS_UART1_INTR_SOURCE,
                 net_ui_uart_config,
-                NET_UI_UART_TX_PIN,
-                NET_UI_UART_RX_PIN,
+                NetTraits::UiUart::tx_pin,
+                NetTraits::UiUart::rx_pin,
                 UART_PIN_NO_CHANGE,
                 UART_PIN_NO_CHANGE,
                 *net_ui_uart_tx_buff,
-                NET_UI_UART_TX_BUFF_SIZE,
+                NetTraits::UiUart::tx_buffer_size,
                 *net_ui_uart_rx_buff,
-                NET_UI_UART_RX_BUFF_SIZE,
-                NET_UI_UART_RING_RX_NUM,
+                NetTraits::UiUart::rx_buffer_size,
+                NetTraits::UiUart::ring_rx_count,
                 8192,
                 8192,
                 20,
                 true,
                 false);
 
-TaskHandle_t net_mgmt_serial_read_handle;
-StaticTask_t net_mgmt_serial_read_buffer;
-StackType_t* net_mgmt_serial_read_stack = nullptr;
-
-uint8_t net_mgmt_uart_tx_buff[NET_MGMT_UART_TX_BUFF_SIZE] = {0};
-uint8_t net_mgmt_uart_rx_buff[NET_MGMT_UART_RX_BUFF_SIZE] = {0};
-
-uart_config_t net_mgmt_uart_config = {
-    .baud_rate = 1000000,
-    .data_bits = UART_DATA_8_BITS,
-    .parity = UART_PARITY_DISABLE,
-    .stop_bits = UART_STOP_BITS_1,
-    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-    .rx_flow_ctrl_thresh = 0,
-    .source_clk = UART_SCLK_DEFAULT,
-    .flags = {},
-};
-
-Serial mgmt_layer(UART_NUM_0,
-                  UART0,
-                  net_mgmt_serial_read_handle,
+Serial mgmt_layer(NetTraits::MgmtUart::port,
+                  NetTraits::MgmtUart::Uart(),
                   ETS_UART0_INTR_SOURCE,
-                  net_mgmt_uart_config,
-                  NET_MGMT_UART_TX_PIN,
-                  NET_MGMT_UART_RX_PIN,
+                  NetTraits::MgmtUart::config,
+                  NetTraits::MgmtUart::tx_pin,
+                  NetTraits::MgmtUart::rx_pin,
                   UART_PIN_NO_CHANGE,
                   UART_PIN_NO_CHANGE,
-                  *net_mgmt_uart_tx_buff,
-                  NET_MGMT_UART_TX_BUFF_SIZE,
-                  *net_mgmt_uart_rx_buff,
-                  NET_MGMT_UART_RX_BUFF_SIZE,
-                  NET_MGMT_UART_RING_RX_NUM,
+                  NetTraits::MgmtUart::TxBuff(),
+                  NetTraits::MgmtUart::tx_buffer_size,
+                  NetTraits::MgmtUart::RxBuff(),
+                  NetTraits::MgmtUart::rx_buffer_size,
+                  NetTraits::MgmtUart::ring_rx_count,
                   0,
                   256,
                   2,
                   true,
                   false);
 
-struct ConfigState
-{
-    Storage storage;
-
-    StoredValue<std::string> moq_server_url;
-    StoredValue<std::string> language;
-    StoredValue<std::string> channel_ns_json;
-    StoredValue<std::string> ai_query_ns_json;
-    StoredValue<std::string> ai_audio_response_ns_json;
-    StoredValue<std::string> ai_cmd_response_ns_json;
-
-    // In-memory namespace caches (decoded from JSON)
-    std::vector<std::string> channel_ns;
-    std::vector<std::string> ai_query_ns;
-    std::vector<std::string> ai_audio_response_ns;
-    std::vector<std::string> ai_cmd_response_ns;
-
-    ConfigState() :
-        storage(),
-        moq_server_url(storage, "moq", "server_url"),
-        language(storage, "config", "language"),
-        channel_ns_json(storage, "config", "channel_ns"),
-        ai_query_ns_json(storage, "config", "ai_qry_ns"),
-        ai_audio_response_ns_json(storage, "config", "ai_aud_ns"),
-        ai_cmd_response_ns_json(storage, "config", "ai_cmd_ns"),
-        channel_ns(),
-        ai_query_ns(),
-        ai_audio_response_ns(),
-        ai_cmd_response_ns()
-
-    {
-    }
-} config_state;
-
-Wifi wifi(config_state.storage);
-
 uint64_t curr_audio_isr_time = esp_timer_get_time();
 uint64_t last_audio_isr_time = esp_timer_get_time();
-
-bool logs_disabled = false;
-
-spdlog::level::level_enum last_spd_log_level =
-    static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL);
 
 // TODO remove me some day
 #ifdef __has_include
@@ -195,79 +137,29 @@ spdlog::level::level_enum last_spd_log_level =
 #include "wifi_creds.hh"
 #endif
 
-static void DisableLogging()
-{
-    esp_log_level_set("*", ESP_LOG_NONE);
-    auto logger = spdlog::get("MTC");
-    if (logger)
-    {
-        last_spd_log_level = logger->level();
-        logger->set_level(spdlog::level::level_enum::off);
-    }
-
-    debug_printf_suspend();
-    logs_disabled = true;
-}
-
-static void EnableLogging()
-{
-    // Renable
-    esp_log_level_set("*", ESP_LOG_MAX);
-
-    auto logger = spdlog::get("MTC");
-    if (logger)
-    {
-        logger->set_level(last_spd_log_level);
-    }
-
-    debug_printf_resume();
-    logs_disabled = false;
-}
-
-// Load namespaces from storage into memory
-// Initialize empty entries to "[]" so storage always contains valid JSON
-static void LoadNamespacesFromStorage()
-{
-    auto load_ns = [](StoredValue<std::string>& stored, std::vector<std::string>& ns) {
-        std::string json_str = stored.Load();
-        if (json_str.empty())
-        {
-            stored = "[]";
-            ns.clear();
-            return;
-        }
-        auto parsed = JsonToNamespace(json_str);
-        ns = parsed.value_or(std::vector<std::string>{});
-    };
-
-    load_ns(config_state.channel_ns_json, config_state.channel_ns);
-    load_ns(config_state.ai_query_ns_json, config_state.ai_query_ns);
-    load_ns(config_state.ai_audio_response_ns_json, config_state.ai_audio_response_ns);
-    load_ns(config_state.ai_cmd_response_ns_json, config_state.ai_cmd_response_ns);
-}
-
+// TODO move into a moq handler of some sort
 // Update AI tracks when AI namespaces or language changes
 // AI Query: publish to {ai_query_ns, language}
 // AI Audio Response: subscribe to {ai_audio_response_ns, device_id}
 // AI Command Response: subscribe to {ai_cmd_response_ns, device_id}
-static void UpdateAITracks()
+void UpdateAITracks(Runtime& runtime, ConfigState& config)
 {
-    const std::string lang = config_state.language.Load();
-    const std::string device_id_str = std::to_string(device_id);
+    const std::string lang = config.language.Load();
+    const std::string device_id_str = std::to_string(runtime.device_id);
 
     // AI Query publication track
-    if (!config_state.ai_query_ns.empty() && !lang.empty())
+    if (!config.ai_query_ns.empty() && !lang.empty())
     {
-        if (auto writer = CreateWriteTrack("ai_audio", config_state.ai_query_ns, lang, "pcm"))
+        if (auto writer = CreateWriteTrack("ai_audio", config.ai_query_ns, lang, "pcm"))
         {
             writer->Start();
         }
     }
 
     // AI Audio Response subscription track
-    if (!config_state.ai_audio_response_ns.empty())
+    if (!config.ai_audio_response_ns.empty())
     {
-        if (auto reader = CreateReadTrack("self_ai_audio", config_state.ai_audio_response_ns,
+        if (auto reader = CreateReadTrack("self_ai_audio", config.ai_audio_response_ns,
                                           device_id_str, "pcm", ui_layer))
         {
             reader->Start();
@@ -275,36 +167,37 @@ static void UpdateAITracks()
     }
 
     // AI Command Response subscription track
-    if (!config_state.ai_cmd_response_ns.empty())
+    if (!config.ai_cmd_response_ns.empty())
     {
-        if (auto reader = CreateReadTrack("self_ai_text", config_state.ai_cmd_response_ns,
-                                          device_id_str, "ai_cmd_response:json", ui_layer))
+        if (auto reader = CreateReadTrack("self_ai_text", config.ai_cmd_response_ns, device_id_str,
+                                          "ai_cmd_response:json", ui_layer))
         {
             reader->Start();
         }
     }
 }
 
+// TODO move itno a moq handler
 // Update channel tracks when channel namespace or language changes
 // Channel: both publish and subscribe to {channel_ns, language}
-static void UpdateChannelTracks()
+void UpdateChannelTracks(ConfigState& config)
 {
-    const std::string lang = config_state.language.Load();
+    const std::string lang = config.language.Load();
 
-    if (config_state.channel_ns.empty() || lang.empty())
+    if (config.channel_ns.empty() || lang.empty())
     {
         NET_LOG_WARN("Cannot update channel tracks: namespace or language empty");
         return;
     }
 
     // Channel publication track
-    if (auto writer = CreateWriteTrack("channel", config_state.channel_ns, lang, "pcm"))
+    if (auto writer = CreateWriteTrack("channel", config.channel_ns, lang, "pcm"))
     {
         writer->Start();
     }
 
     // Channel subscription track
-    if (auto reader = CreateReadTrack("channel", config_state.channel_ns, lang, "pcm", ui_layer))
+    if (auto reader = CreateReadTrack("channel", config.channel_ns, lang, "pcm", ui_layer))
     {
         reader->Start();
     }
@@ -520,6 +413,15 @@ void SetPThreadDefault()
 
 extern "C" void app_main(void)
 {
+    Diagnostics diagnostics;
+    Storage storage;
+    ConfigState config(storage);
+    MgmtLinkHandler mgmt_link_handler(mgmt_layer, storage, config, diagnostics);
+
+    Peripherals
+        // Wifi wifi(storage);
+        Runtime runtime{Wifi(storage)};
+
     SetPThreadDefault();
     PrintRAM();
     InitializeGPIO();
@@ -529,7 +431,6 @@ extern "C" void app_main(void)
     NET_LOG_INFO("Starting Net Main");
 
     CreateMgmtLinkPacketTask();
-    mgmt_layer.BeginEventTask();
 
     CreateUILinkPacketTask();
 
@@ -539,37 +440,37 @@ extern "C" void app_main(void)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
 
-    ui_layer.BeginEventTask();
+    ui_layer.BeginEventTask(net_ui_serial_read_handle);
 
-    // std::string& connect_uri = config_state.moq_server_url.Load();
-    if (config_state.moq_server_url->empty())
+    // std::string& connect_uri = config.moq_server_url.Load();
+    if (config.moq_server_url->empty())
     {
         // No moq url found, using default
         NET_LOG_WARN(
             "No moq server url found, using default moq://relay.us-west-2.quicr.ctgpoc.com:33435");
-        config_state.moq_server_url = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
+        config.moq_server_url = "moq://relay.us-west-2.quicr.ctgpoc.com:33435";
     }
 
-    NET_LOG_WARN("Using moq server url of %s len %u", config_state.moq_server_url->c_str(),
-                 config_state.moq_server_url->length());
+    NET_LOG_WARN("Using moq server url of %s len %u", config.moq_server_url->c_str(),
+                 config.moq_server_url->length());
 
     // Set default language if not configured
-    if (config_state.language->empty())
+    if (config.language->empty())
     {
-        config_state.language = "en-US";
+        config.language = "en-US";
     }
 
     // Load namespaces from storage
-    LoadNamespacesFromStorage();
+    config.LoadNamespacesFromStorage();
 
     // Log warnings if namespaces are not configured (no defaults - must be configured via
     // fl-identity)
-    if (config_state.channel_ns.empty())
+    if (config.channel_ns.empty())
     {
         NET_LOG_WARN("Channel namespace not configured - device needs configuration");
     }
-    if (config_state.ai_query_ns.empty() || config_state.ai_audio_response_ns.empty()
-        || config_state.ai_cmd_response_ns.empty())
+    if (config.ai_query_ns.empty() || config.ai_audio_response_ns.empty()
+        || config.ai_cmd_response_ns.empty())
     {
         NET_LOG_WARN("AI namespaces not configured - device needs configuration");
     }
@@ -584,21 +485,21 @@ extern "C" void app_main(void)
     NET_LOG_ERROR("mac addr %llu", mac);
 
     // setup moq transport
-    quicr::ClientConfig config;
-    config.endpoint_id = std::to_string(device_id);
-    config.connect_uri = config_state.moq_server_url.Load();
-    config.transport_config.debug = true;
-    config.transport_config.use_reset_wait_strategy = false;
-    config.transport_config.time_queue_max_duration = 5000;
-    config.transport_config.tls_cert_filename = "";
-    config.transport_config.tls_key_filename = "";
-    config.tick_service_sleep_delay_us = 30000;
+    quicr::ClientConfig moq_config;
+    moq_config.endpoint_id = std::to_string(device_id);
+    moq_config.connect_uri = config.moq_server_url.Load();
+    moq_config.transport_config.debug = true;
+    moq_config.transport_config.use_reset_wait_strategy = false;
+    moq_config.transport_config.time_queue_max_duration = 5000;
+    moq_config.transport_config.tls_cert_filename = "";
+    moq_config.transport_config.tls_key_filename = "";
+    moq_config.tick_service_sleep_delay_us = 30000;
 
     // Initialize reader/writer vectors
     readers.resize((uint32_t)ui_net_link::Channel_Id::Count);
     writers.resize((uint32_t)ui_net_link::Channel_Id::Count - 1);
 
-    moq_session.reset(new moq::Session(config, readers, writers));
+    moq_session.reset(new moq::Session(moq_config, readers, writers));
 
     PrintRAM();
 
@@ -633,7 +534,7 @@ extern "C" void app_main(void)
                     || status == moq::Session::Status::kPendingServerSetup
                     || status == moq::Session::Status::kReady)
                 {
-                    RestartMoqSession(moq_session, config, readers, writers);
+                    RestartMoqSession(moq_session, moq_config, readers, writers);
                 }
                 break;
             }
@@ -689,7 +590,7 @@ extern "C" void app_main(void)
                 [[fallthrough]];
             case moq::Session::Status::kFailedToConnect:
             {
-                RestartMoqSession(moq_session, config, readers, writers);
+                RestartMoqSession(moq_session, moq_config, readers, writers);
                 break;
             }
             case moq::Session::Status::kNotReady:
@@ -713,14 +614,14 @@ extern "C" void app_main(void)
             prev_status = status;
         }
 
-        if (config.connect_uri != config_state.moq_server_url)
+        if (moq_config.connect_uri != config.moq_server_url)
         {
             StopMoqSession(moq_session, readers, writers);
 
             NET_LOG_INFO("Load moq server uri");
-            config.connect_uri = config_state.moq_server_url;
-            NET_LOG_INFO("Make a new session with uri %s", config.connect_uri.c_str());
-            moq_session.reset(new moq::Session(config, readers, writers));
+            moq_config.connect_uri = config.moq_server_url;
+            NET_LOG_INFO("Make a new session with uri %s", moq_config.connect_uri.c_str());
+            moq_session.reset(new moq::Session(moq_config, readers, writers));
         }
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
@@ -742,27 +643,6 @@ bool CreateUILinkPacketTask()
 
     NET_LOG_INFO("Created ui link packet handler PSRAM left %ld",
                  heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
-    return true;
-}
-
-bool CreateMgmtLinkPacketTask()
-{
-    NET_LOG_INFO("Creating mgmt link packet task");
-
-    constexpr size_t stack_size = 8192; // Increased for JSON parsing
-    net_mgmt_serial_read_stack =
-        (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_INTERNAL);
-    if (net_mgmt_serial_read_stack == NULL)
-    {
-        NET_LOG_INFO("Failed to allocate stack for mgmt link packet handler");
-        return false;
-    }
-    net_mgmt_serial_read_handle =
-        xTaskCreateStatic(MgmtLinkPacketTask, "mgmt link packet handler", stack_size, NULL, 10,
-                          net_mgmt_serial_read_stack, &net_mgmt_serial_read_buffer);
-
-    NET_LOG_INFO("Created mgmt link packet handler Internal RAM left %ld",
-                 heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     return true;
 }
 

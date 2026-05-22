@@ -16,8 +16,7 @@ class Serial : public SerialHandler
 public:
     Serial(const uart_port_t port,
            uart_dev_t& uart,
-           TaskHandle_t& read_handle,
-           const periph_interrput_t intr_source,
+           const periph_interrupt_t intr_source,
            const uart_config_t uart_config,
            const int tx_pin,
            const int rx_pin,
@@ -36,7 +35,7 @@ public:
 
     ~Serial();
 
-    void BeginEventTask();
+    void BeginEventTask(TaskHandle_t& read_handle);
 
     uint16_t NumReadyRxPackets();
 
@@ -51,7 +50,7 @@ private:
 
     uart_port_t port;
     uart_dev_t& uart;
-    TaskHandle_t& read_handle;
+    TaskHandle_t* read_handle;
     const uart_config_t uart_config;
     const int tx_pin;
     const int rx_pin;
