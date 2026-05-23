@@ -48,12 +48,12 @@ struct NetTraits
         }
         static uint8_t& TxBuff()
         {
-            static uint8_t tx_buff[NetTraits::MgmtUart::tx_buffer_size] = {0};
+            static uint8_t tx_buff[tx_buffer_size] = {0};
             return *tx_buff;
         }
         static uint8_t& RxBuff()
         {
-            static uint8_t rx_buff[NetTraits::MgmtUart::rx_buffer_size] = {0};
+            static uint8_t rx_buff[rx_buffer_size] = {0};
             return *rx_buff;
         }
     };
@@ -87,12 +87,12 @@ struct NetTraits
         }
         static uint8_t& TxBuff()
         {
-            static uint8_t tx_buff[NetTraits::MgmtUart::tx_buffer_size] = {0};
+            static uint8_t tx_buff[tx_buffer_size] = {0};
             return *tx_buff;
         }
         static uint8_t& RxBuff()
         {
-            static uint8_t rx_buff[NetTraits::MgmtUart::rx_buffer_size] = {0};
+            static uint8_t rx_buff[rx_buffer_size] = {0};
             return *rx_buff;
         }
     };
