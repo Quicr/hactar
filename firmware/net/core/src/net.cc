@@ -74,6 +74,12 @@ void SetPThreadDefault()
 
 extern "C" void app_main(void)
 {
+    SetPThreadDefault();
+    PrintRAM();
+    InitializeGPIO();
+    IntitializeLEDs();
+    InitializeUIReadyISR(GpioIsrRisingHandler);
+
     Diagnostics diagnostics;
     Storage storage;
     ConfigState config(storage);
@@ -97,12 +103,6 @@ extern "C" void app_main(void)
     UiLinkHandler ui_link_handler(ui_layer, mgmt_layer, moq_context, runtime_ctx);
     MgmtLinkHandler mgmt_link_handler(mgmt_layer, ui_layer, wifi, storage, config, diagnostics,
                                       moq_context);
-
-    SetPThreadDefault();
-    PrintRAM();
-    InitializeGPIO();
-    IntitializeLEDs();
-    InitializeUIReadyISR(GpioIsrRisingHandler);
 
     NET_LOG_INFO("Starting Net Main");
 
