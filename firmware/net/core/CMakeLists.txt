@@ -6,4 +6,4 @@ set(SOURCE ./src/net.cc ./src/peripherals.cc ./src/efuse_burner.cc ./src/mgmt_li
 
 idf_component_register(SRCS ${SOURCE}
     INCLUDE_DIRS inc ../../shared_inc/
-    REQUIRES driver serial logger quicr storage wifi net_manager nlohmann_json pthread efuse)
+    REQUIRES driver serial logger quicr storage wifi moq_manager nlohmann_json pthread efuse)
