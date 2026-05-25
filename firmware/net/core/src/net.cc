@@ -115,7 +115,6 @@ extern "C" void app_main(void)
     wifi.Connect(my_ssid, my_ssid_pwd);
 #endif
 
-    // std::string& connect_uri = config.moq_server_url.Load();
     if (config.moq_server_url->empty())
     {
         // No moq url found, using default
