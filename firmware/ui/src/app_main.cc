@@ -303,47 +303,45 @@ inline void AudioCallback()
 
 void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode)
 {
+    static uint32_t timeout = 0;
     static bool pressed = false;
 
-    if ((ptt.IsHeld() || mic_ptt.IsHeld()))
+    if ((ptt.IsHeld() || mic_ptt.IsHeld()) && !pressed)
     {
         pressed = true;
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt, false, loopback_mode);
+        timeout = HAL_GetTick();
     }
-    else if (pressed && (!ptt.IsHeld() && !ptt.IsHeld()))
+    else if (pressed && (!ptt.IsHeld() && !mic_ptt.IsHeld()))
     {
         pressed = false;
         SendAudio(protector, ui_net_link::Channel_Id::Ptt, true, loopback_mode);
+    }
+
+    if (pressed && HAL_GetTick() - timeout >= 100)
+    {
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt, false, loopback_mode);
     }
 }
 
 void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
 {
+    static uint32_t timeout = 0;
+    static bool pressed = false;
 
-    // Send talk start and sot packets
-    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET
-        && ptt_ai_state != Ptt_Btn_State::Pressed)
+    if (ptt_ai.IsHeld())
     {
-        HAL_TIM_Base_Stop(&htim5);
-        ptt_ai_state = Ptt_Btn_State::Pressed;
-        LedBOn();
+        pressed = true;
+        timeout = HAL_GetTick();
     }
-    else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET
-             && ptt_ai_state == Ptt_Btn_State::Pressed)
+    else if (pressed && !ptt_ai.IsHeld())
     {
-        ptt_ai_state = Ptt_Btn_State::Releasing;
-        HAL_TIM_Base_Start_IT(&htim5);
+        pressed = false;
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, true, loopback_mode);
     }
 
-    if (ptt_ai_state == Ptt_Btn_State::Pressed || ptt_ai_state == Ptt_Btn_State::Releasing)
+    if (pressed && HAL_GetTick() - timeout >= 100)
     {
         SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, false, loopback_mode);
-    }
-
-    if (ptt_ai_state == Ptt_Btn_State::Last_Send)
-    {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, true, loopback_mode);
-        ptt_ai_state = Ptt_Btn_State::Released;
     }
 }
 
