@@ -1,5 +1,7 @@
 #pragma once
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "moq_context.hh"
 #include "net.hh"
 #include "serial.hh"
@@ -11,13 +13,16 @@ public:
                   Serial& mgmt_layer,
                   MoqContext& moq_context,
                   const Runtime& runtime);
+
+    ~UiLinkHandler();
+
     void Begin();
 
 private:
     void CreateLinkPacketTask();
     static void LinkPacketTask(void* arg);
 
-    static constexpr size_t stack_size = 16184;
+    static constexpr size_t Stack_Size = 16184;
 
     Serial& ui_layer;
     Serial& mgmt_layer;
@@ -27,4 +32,6 @@ private:
     TaskHandle_t read_handle;
     StaticTask_t read_buffer;
     StackType_t* read_stack;
+    SemaphoreHandle_t read_semaphore;
+    volatile bool read_running;
 };
