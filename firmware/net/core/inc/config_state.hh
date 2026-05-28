@@ -15,6 +15,8 @@ struct ConfigState
 {
 public:
     StoredValue<std::string> moq_server_url;
+    StoredValue<uint64_t> user_id;
+    StoredValue<std::string> user_name;
     StoredValue<std::string> language;
     StoredValue<std::string> channel_ns_json;
     StoredValue<std::string> ai_query_ns_json;
@@ -29,6 +31,8 @@ public:
 
     ConfigState(Storage& storage) :
         moq_server_url(storage, "moq", "server_url"),
+        user_id(storage, "config", "user_id"),
+        user_name(storage, "config", "user_name"),
         language(storage, "config", "language"),
         channel_ns_json(storage, "config", "channel_ns"),
         ai_query_ns_json(storage, "config", "ai_qry_ns"),

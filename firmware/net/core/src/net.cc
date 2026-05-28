@@ -137,6 +137,7 @@ extern "C" void app_main(void)
 
     // Log warnings if namespaces are not configured (no defaults - must be configured via
     // fl-identity)
+    // TODO maybe we should loop forever at this point?
     if (config.channel_ns.empty())
     {
         NET_LOG_WARN("Channel namespace not configured - device needs configuration");
@@ -146,6 +147,20 @@ extern "C" void app_main(void)
     {
         NET_LOG_WARN("AI namespaces not configured - device needs configuration");
     }
+
+    config.user_id.Load();
+    if (config.user_id.stored == 0)
+    {
+        NET_LOG_ERROR("User id is zero");
+    }
+
+    config.user_name.Load();
+    if (config.user_name->empty())
+    {
+        config.user_name = "unknown";
+    }
+
+    NET_LOG_INFO("User id %d user name %s", (int)config.user_id.stored, config.user_name->c_str());
 
     // Use mac addr as id for my session
     uint64_t mac = 0;
