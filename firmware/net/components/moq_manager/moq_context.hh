@@ -36,7 +36,8 @@ private:
     CreateWriteTrack(const std::string& channel_name,
                      const std::vector<std::string>& track_namespace,
                      const std::string& trackname,
-                     const std::string& codec);
+                     const std::string& codec,
+                     const ConfigState& config);
 
     Serial& ui_layer;
     const Runtime& runtime;

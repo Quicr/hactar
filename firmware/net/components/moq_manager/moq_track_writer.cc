@@ -7,6 +7,7 @@
 #include "net.hh"
 #include "task_helpers.hh"
 #include "utils.hh"
+#include <cstdint>
 
 using namespace moq;
 
@@ -14,12 +15,14 @@ TrackWriter::TrackWriter(const quicr::FullTrackName& full_track_name,
                          quicr::TrackMode track_mode,
                          uint8_t default_priority,
                          uint32_t default_ttl,
+                         const ConfigState& config,
                          const Runtime& runtime) :
     quicr::PublishTrackHandler(full_track_name, track_mode, default_priority, default_ttl),
     track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end())
                + std::string(full_track_name.name.begin(), full_track_name.name.end())),
+    config(config),
     runtime(runtime),
-    moq_objs({0}),
+    moq_objs(0),
     object_id(0),
     is_running(false),
     task_mutex(),
@@ -116,6 +119,7 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
     auto time_bytes = quicr::AsBytes(timestamp);
 
     std::lock_guard<std::mutex> _(obj_mux);
+    const auto* user_id_bytes = reinterpret_cast<const uint8_t*>(&config.user_id.stored);
 
     auto& obj = moq_objs.emplace_back();
     obj.headers.group_id = runtime.device_id;
@@ -124,6 +128,9 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
     obj.headers.immutable_extensions = quicr::Extensions{};
     obj.headers.immutable_extensions.value()[2].emplace_back().assign(time_bytes.begin(),
                                                                       time_bytes.end());
+
+    obj.headers.immutable_extensions.value()[8].emplace_back().assign(
+        user_id_bytes, user_id_bytes + sizeof(config.user_id));
 
     obj.data.assign(bytes, bytes + len);
 }

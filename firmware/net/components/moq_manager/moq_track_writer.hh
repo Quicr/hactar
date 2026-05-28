@@ -4,6 +4,7 @@
 #ifndef __MOQ_TRACK_WRITER__
 #define __MOQ_TRACK_WRITER__
 
+#include "config_state.hh"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "logger.hh"
@@ -19,6 +20,7 @@ public:
                 quicr::TrackMode track_mode,
                 uint8_t default_priority,
                 uint32_t default_ttl,
+                const ConfigState& config,
                 const Runtime& runtime);
 
     virtual ~TrackWriter();
@@ -52,6 +54,7 @@ public:
 private:
     static void PublishTask(void* params);
     std::string track_name;
+    const ConfigState& config;
     const Runtime& runtime;
 
     std::deque<moq::TrackWriter::link_data_obj> moq_objs;

@@ -128,6 +128,8 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
 
                 // Clear in-memory caches (NVS already wiped by storage.Clear())
                 handler->config.moq_server_url.stored.clear();
+                handler->config.user_id = 0;
+                handler->config.user_name.stored.clear();
                 handler->config.language.stored.clear();
                 handler->config.channel_ns_json.stored.clear();
                 handler->config.ai_query_ns_json.stored.clear();
@@ -419,6 +421,54 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                     handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
                                                "eFuse burn failed");
                 }
+                break;
+            }
+            case CtlToNet::GetUserId:
+            {
+                handler->config.user_id.Load();
+                const uint64_t user_id = handler->config.user_id;
+                handler->serial.Reply(
+                    static_cast<uint16_t>(NetToCtl::UserId),
+                    std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&user_id),
+                                             sizeof(user_id)));
+                break;
+            }
+            case CtlToNet::SetUserId:
+            {
+                if (packet->length != sizeof(handler->config.user_id.stored))
+                {
+                    break;
+                }
+
+                uint64_t user_id = 0;
+                memcpy(&user_id, packet->payload.data(), sizeof(user_id));
+
+                handler->config.user_id = user_id;
+
+                NET_LOG_INFO("User id set to %lld", user_id);
+
+                handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                      std::span<const uint8_t>{});
+
+                break;
+            }
+            case CtlToNet::GetUserName:
+            {
+                std::string username = handler->config.user_name.Load();
+                handler->serial.Reply(static_cast<uint16_t>(NetToCtl::UserName), username);
+                break;
+            }
+            case CtlToNet::SetUserName:
+            {
+
+                std::string new_name((char*)packet->payload.data(), packet->length);
+                handler->config.user_name = new_name;
+                NET_LOG_INFO("Language set to: %s", new_name.c_str());
+
+                handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                      std::span<const uint8_t>{});
+                handler->moq_context.UpdateAITracks(handler->config);
+                handler->moq_context.UpdateChannelTracks(handler->config);
                 break;
             }
             default:

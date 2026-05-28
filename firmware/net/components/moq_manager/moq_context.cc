@@ -81,7 +81,7 @@ void MoqContext::UpdateAITracks(ConfigState& config)
 
     if (!config.ai_query_ns.empty() && !lang.empty())
     {
-        if (auto writer = CreateWriteTrack("ai_audio", config.ai_query_ns, lang, "pcm"))
+        if (auto writer = CreateWriteTrack("ai_audio", config.ai_query_ns, lang, "pcm", config))
         {
             writer->Start();
         }
@@ -116,7 +116,7 @@ void MoqContext::UpdateChannelTracks(ConfigState& config)
         return;
     }
 
-    if (auto writer = CreateWriteTrack("channel", config.channel_ns, lang, "pcm"))
+    if (auto writer = CreateWriteTrack("channel", config.channel_ns, lang, "pcm", config))
     {
         writer->Start();
     }
@@ -229,7 +229,8 @@ std::shared_ptr<moq::TrackWriter>
 MoqContext::CreateWriteTrack(const std::string& channel_name,
                              const std::vector<std::string>& track_namespace,
                              const std::string& trackname,
-                             const std::string& codec)
+                             const std::string& codec,
+                             const ConfigState& config)
 try
 {
     if (!session)
@@ -273,7 +274,7 @@ try
 
     NET_LOG_WARN("Create writer %s:%s idx %d", channel_name.c_str(), codec.c_str(), offset);
     writers[offset].reset(
-        new moq::TrackWriter(desired_ftn, quicr::TrackMode::kDatagram, 2, 100, runtime));
+        new moq::TrackWriter(desired_ftn, quicr::TrackMode::kDatagram, 2, 100, config, runtime));
 
     lock.unlock();
     return writers[offset];
