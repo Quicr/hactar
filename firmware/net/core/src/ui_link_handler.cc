@@ -9,8 +9,38 @@ UiLinkHandler::UiLinkHandler(Serial& ui_layer,
     ui_layer(ui_layer),
     mgmt_layer(mgmt_layer),
     moq_context(moq_context),
-    runtime(runtime)
+    runtime(runtime),
+    read_handle(nullptr),
+    read_buffer(),
+    read_stack(),
+    read_semaphore(nullptr),
+    read_running(false)
 {
+}
+
+UiLinkHandler::~UiLinkHandler()
+{
+    read_running = false;
+
+    if (read_handle)
+    {
+        // Tell the task to wake up so it can be stopped
+        xTaskNotifyGive(read_handle);
+        xSemaphoreTake(read_semaphore, portMAX_DELAY);
+        read_handle = nullptr;
+    }
+
+    if (read_semaphore)
+    {
+        vSemaphoreDelete(read_semaphore);
+        read_semaphore = nullptr;
+    }
+
+    if (read_stack)
+    {
+        heap_caps_free(read_stack);
+        read_stack = nullptr;
+    }
 }
 
 void UiLinkHandler::Begin()
@@ -21,18 +51,29 @@ void UiLinkHandler::Begin()
 
 void UiLinkHandler::CreateLinkPacketTask()
 {
-    read_stack =
-        (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_SPIRAM);
-    if (read_stack == NULL)
+    NET_LOG_INFO("Creating ui link packet task");
+
+    read_semaphore = xSemaphoreCreateBinary();
+    if (read_semaphore == NULL)
     {
-        NET_LOG_INFO("Failed to allocate stack for ui link packet handler");
+        esp_system_abort("Failed to allocate semaphore for mgmt link packet handler");
         return;
     }
-    read_handle = xTaskCreateStatic(LinkPacketTask, "ui link packet handler", stack_size, this, 10,
-                                    read_stack, &read_buffer);
 
-    NET_LOG_INFO("Created ui link packet handler PSRAM left %ld",
-                 heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    read_stack =
+        (StackType_t*)heap_caps_malloc(Stack_Size * sizeof(StackType_t), MALLOC_CAP_INTERNAL);
+    if (read_stack == NULL)
+    {
+        esp_system_abort("Failed to allocate stack for mgmt link packet handler");
+        return;
+    }
+
+    read_running = true;
+    read_handle = xTaskCreateStatic(LinkPacketTask, "mgmt link packet handler", Stack_Size, this,
+                                    10, read_stack, &read_buffer);
+
+    NET_LOG_INFO("Created mgmt link packet handler Internal RAM left %ld",
+                 heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
 }
 
 void UiLinkHandler::LinkPacketTask(void* arg)
@@ -40,7 +81,7 @@ void UiLinkHandler::LinkPacketTask(void* arg)
     UiLinkHandler* handler = static_cast<UiLinkHandler*>(arg);
 
     NET_LOG_INFO("Start ui link packet task");
-    while (true)
+    while (handler->read_running)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
