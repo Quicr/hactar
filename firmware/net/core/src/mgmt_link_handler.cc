@@ -140,7 +140,6 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                 handler->config.ai_audio_response_ns.clear();
                 handler->config.ai_cmd_response_ns.clear();
 
-                // Clear WiFi credentials
                 handler->wifi.ClearSavedSSIDs();
 
                 handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
