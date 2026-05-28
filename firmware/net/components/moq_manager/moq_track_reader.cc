@@ -275,12 +275,11 @@ void TrackReader::TransmitText()
 
 void TrackReader::WriteToSerial(std::optional<quicr::Bytes> data)
 {
-    link_packet_t link_packet{};
-    link_packet.type = static_cast<uint16_t>(ui_net_link::NetToUi::AudioFrame);
-    link_packet.length = data->size() + 1;
-    link_packet.payload[0] = 0; // TODO Use actual channel id.
-
-    memcpy(link_packet.payload.data() + 1, data->data(), data->size());
-
-    serial.Write(link_packet);
+    serial.Write(link_packet_t::Sync_Word, sizeof(link_packet_t::Sync_Word));
+    const uint16_t type = static_cast<uint16_t>(ui_net_link::NetToUi::AudioFrame);
+    serial.Write((uint8_t*)&type, sizeof(type));
+    const uint32_t len = data->size() + 1;
+    serial.Write((uint8_t*)&len, sizeof(len));
+    serial.Write(0); // todo Channel id
+    serial.Write(data->data(), data->size());
 }
