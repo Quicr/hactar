@@ -153,6 +153,7 @@ void MoqContext::PushAudioFrame(uint8_t channel_id,
 {
     if (channel_id >= writers.size())
     {
+        NET_LOG_ERROR("Channel id received for a writer that doesn't exist!");
         return;
     }
 
@@ -220,7 +221,7 @@ try
 }
 catch (const std::exception& ex)
 {
-    ESP_LOGE("sub", "Exception in sub %s", ex.what());
+    NET_LOG_ERROR("Exception in sub %s", ex.what());
     return nullptr;
 }
 
@@ -231,6 +232,12 @@ MoqContext::CreateWriteTrack(const std::string& channel_name,
                              const std::string& codec)
 try
 {
+    if (!session)
+    {
+        NET_LOG_WARN("MoQ session not ready, cannot create writer");
+        return nullptr;
+    }
+
     uint32_t offset = 0;
     if (codec == "pcm")
     {
@@ -244,12 +251,6 @@ try
     else
     {
         NET_LOG_ERROR("Unknown writer channel");
-        return nullptr;
-    }
-
-    if (!session)
-    {
-        NET_LOG_WARN("MoQ session not ready, cannot create writer");
         return nullptr;
     }
 
@@ -279,6 +280,6 @@ try
 }
 catch (const std::exception& ex)
 {
-    ESP_LOGE("pub", "Exception in pub %s", ex.what());
+    NET_LOG_ERROR("Exception in pub %s", ex.what());
     return nullptr;
 }

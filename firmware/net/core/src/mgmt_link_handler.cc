@@ -25,12 +25,35 @@ MgmtLinkHandler::MgmtLinkHandler(Serial& mgmt_layer,
     moq_context(moq_context),
     serial_read_handle(nullptr),
     serial_read_buffer(),
-    serial_read_stack()
+    serial_read_stack(),
+    serial_read_semaphore(nullptr),
+    serial_read_running(false)
 {
 }
 
 MgmtLinkHandler::~MgmtLinkHandler()
 {
+    serial_read_running = false;
+
+    if (serial_read_handle)
+    {
+        // Tell the task to wake up so it can be stopped
+        xTaskNotifyGive(serial_read_handle);
+        xSemaphoreTake(serial_read_semaphore, portMAX_DELAY);
+        serial_read_handle = nullptr;
+    }
+
+    if (serial_read_semaphore)
+    {
+        vSemaphoreDelete(serial_read_semaphore);
+        serial_read_semaphore = nullptr;
+    }
+
+    if (serial_read_stack)
+    {
+        heap_caps_free(serial_read_stack);
+        serial_read_stack = nullptr;
+    }
 }
 
 void MgmtLinkHandler::Begin()
@@ -43,16 +66,23 @@ void MgmtLinkHandler::CreateLinkPacketTask()
 {
     NET_LOG_INFO("Creating mgmt link packet task");
 
-    constexpr size_t stack_size = 8192; // Increased for JSON parsing
+    serial_read_semaphore = xSemaphoreCreateBinary();
+    if (serial_read_semaphore == NULL)
+    {
+        esp_system_abort("Failed to allocate semaphore for mgmt link packet handler");
+        return;
+    }
+
     serial_read_stack =
-        (StackType_t*)heap_caps_malloc(stack_size * sizeof(StackType_t), MALLOC_CAP_INTERNAL);
+        (StackType_t*)heap_caps_malloc(Stack_Size * sizeof(StackType_t), MALLOC_CAP_INTERNAL);
     if (serial_read_stack == NULL)
     {
         esp_system_abort("Failed to allocate stack for mgmt link packet handler");
         return;
     }
 
-    serial_read_handle = xTaskCreateStatic(LinkPacketTask, "mgmt link packet handler", stack_size,
+    serial_read_running = true;
+    serial_read_handle = xTaskCreateStatic(LinkPacketTask, "mgmt link packet handler", Stack_Size,
                                            this, 10, serial_read_stack, &serial_read_buffer);
 
     NET_LOG_INFO("Created mgmt link packet handler Internal RAM left %ld",
@@ -64,7 +94,7 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
     MgmtLinkHandler* handler = static_cast<MgmtLinkHandler*>(arg);
 
     NET_LOG_INFO("Start mgmt link packet task");
-    while (true)
+    while (handler->serial_read_running)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
@@ -400,6 +430,9 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
             }
         }
     }
+
+    xSemaphoreGive(handler->serial_read_semaphore);
+    vTaskDelete(NULL);
 }
 
 void MgmtLinkHandler::DisableLogging()
