@@ -4,6 +4,7 @@ FROM ubuntu:22.04
 LABEL description="Docker image for ui"
 
 RUN apt-get update
+RUN apt-get upgrade -y
 RUN apt-get install -y cmake build-essential git gcc-arm-none-eabi binutils-arm-none-eabi \
     libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib stlink-tools python3 pip
 
