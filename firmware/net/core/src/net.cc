@@ -15,6 +15,7 @@
 #include "moq_context.hh"
 #include "net_mgmt_link.h"
 #include "peripherals.hh"
+#include "portmacro.h"
 #include "serial.hh"
 #include "storage.hh"
 #include "stored_value.hh"
@@ -55,6 +56,34 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
         runtime_ctx.curr_audio_isr_time = esp_timer_get_time();
         xSemaphoreGiveFromISR(runtime_ctx.audio_req_smpr, NULL);
     }
+}
+
+static void BlasterTask(void* arg)
+{
+    BlasterTaskContext* context = static_cast<BlasterTaskContext*>(arg);
+
+    std::vector<uint8_t> blast_vec;
+    constexpr uint8_t channel_id = (uint8_t)ui_net_link::Channel_Id::Ptt;
+    TickType_t last_wake = xTaskGetTickCount();
+    const TickType_t frequency = pdMS_TO_TICKS(20);
+    while (context->blaster.enabled)
+    {
+        if (context->blaster.packet_size != blast_vec.size())
+        {
+            blast_vec.resize(context->blaster.packet_size);
+            for (int i = 0; i < context->blaster.packet_size; ++i)
+            {
+                blast_vec[i] = 0;
+            }
+        }
+
+        context->moq_context.PushAudioFrame(channel_id, blast_vec.data(), blast_vec.size(),
+                                            context->runtime.curr_audio_isr_time);
+        xTaskDelayUntil(&last_wake, frequency);
+    }
+
+    vTaskDelete(context->blaster.task_handle);
+    context->blaster.task_handle = NULL;
 }
 
 void PrintRAM()
