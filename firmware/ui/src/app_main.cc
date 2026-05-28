@@ -1,7 +1,9 @@
 #include "app_main.hh"
 #include "audio_chip.hh"
 #include "audio_codec.hh"
+#include "button.hh"
 #include "config_storage.hh"
+#include "constants.hh"
 #include "keyboard.hh"
 #include "keyboard_display.hh"
 #include "led_control.hh"
@@ -13,22 +15,27 @@
 #include "renderer.hh"
 #include "screen.hh"
 #include "serial.hh"
+#include "stm32f4xx_hal_gpio.h"
 #include "tools.hh"
+#include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
 #include <cmox_crypto.h>
 #include <cmox_init.h>
 #include <cmox_low_level.h>
 #include <sframe/sframe.h>
 #include <stm32f4xx_hal.h>
+#include <cstdint>
+#include <cstring>
 #include <random>
+#include <span>
 
 // Forward declare
-inline void CheckPTT(Protector& protector);
-inline void CheckPTTAI(Protector& protector);
+inline void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode);
+inline void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode);
 inline void SendAudio(Protector& protector,
                       const ui_net_link::Channel_Id channel_id,
-                      const ui_net_link::Packet_Type packet_type,
-                      bool last);
+                      bool last,
+                      const UiLoopbackMode loopback_mode);
 inline void HandleMedia(link_packet_t* packet);
 inline void HandleAiResponse(link_packet_t* packet);
 
@@ -46,6 +53,10 @@ extern TIM_HandleTypeDef htim5;
 extern RNG_HandleTypeDef hrng;
 
 // Global variables that need to exist for hardware callbacks
+UiLoopbackMode loopback_mode = UiLoopbackMode::Off;
+AudioTransmitMode audio_transmit_mode = AudioTransmitMode::Net;
+AudioReceiveMode audio_receive_mode = AudioReceiveMode::Headphones;
+
 // Buffer allocations
 static constexpr uint16_t net_ui_serial_tx_buff_sz = 2048;
 uint8_t net_ui_serial_tx_buff[net_ui_serial_tx_buff_sz] = {0};
@@ -53,9 +64,9 @@ static constexpr uint16_t net_ui_serial_rx_buff_sz = 2048;
 uint8_t net_ui_serial_rx_buff[net_ui_serial_rx_buff_sz] = {0};
 static constexpr uint16_t net_ui_serial_num_rx_packets = 7;
 
-static constexpr uint16_t mgmt_ui_serial_tx_buff_sz = 128;
+static constexpr uint16_t mgmt_ui_serial_tx_buff_sz = 1024;
 uint8_t mgmt_ui_serial_tx_buff[mgmt_ui_serial_tx_buff_sz] = {0};
-static constexpr uint16_t mgmt_ui_serial_rx_buff_sz = 128;
+static constexpr uint16_t mgmt_ui_serial_rx_buff_sz = 1024;
 uint8_t mgmt_ui_serial_rx_buff[mgmt_ui_serial_rx_buff_sz] = {0};
 static constexpr uint16_t mgmt_ui_serial_num_rx_packets = 1;
 
@@ -76,44 +87,48 @@ static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_rx_buff_sz,
                           false);
 
-Screen screen(hspi1,
-              DISP_CS_GPIO_Port,
-              DISP_CS_Pin,
-              DISP_DC_GPIO_Port,
-              DISP_DC_Pin,
-              DISP_RST_GPIO_Port,
-              DISP_RST_Pin,
-              DISP_BL_GPIO_Port,
-              DISP_BL_Pin,
-              Screen::Orientation::flipped_portrait);
+#if 0
+// Screen screen(hspi1,
+//               DISP_CS_GPIO_Port,
+//               DISP_CS_Pin,
+//               DISP_DC_GPIO_Port,
+//               DISP_DC_Pin,
+//               DISP_RST_GPIO_Port,
+//               DISP_RST_Pin,
+//               DISP_BL_GPIO_Port,
+//               DISP_BL_Pin,
+//               Screen::Orientation::flipped_portrait);
+//
+// GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
+//     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port,
+//     KB_COL5_GPIO_Port,
+// };
+//
+// uint16_t col_pins[Keyboard::Q10_Cols] = {
+//     KB_COL1_Pin, KB_COL2_Pin, KB_COL3_Pin, KB_COL4_Pin, KB_COL5_Pin,
+// };
+//
+// GPIO_TypeDef* row_ports[Keyboard::Q10_Rows] = {
+//     KB_ROW1_GPIO_Port, KB_ROW2_GPIO_Port, KB_ROW3_GPIO_Port, KB_ROW4_GPIO_Port,
+//     KB_ROW5_GPIO_Port, KB_ROW6_GPIO_Port, KB_ROW7_GPIO_Port,
+// };
+
+// uint16_t row_pins[Keyboard::Q10_Rows] = {
+//     KB_ROW1_Pin, KB_ROW2_Pin, KB_ROW3_Pin, KB_ROW4_Pin, KB_ROW5_Pin, KB_ROW6_Pin, KB_ROW7_Pin,
+// }
+// ;
+
+// static constexpr uint16_t kb_ring_buff_sz = 5;
+// RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
+//
+// Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
+#endif
 
 volatile bool sleeping = true;
 volatile bool error = false;
 
 constexpr uint32_t Expected_Flags = (1 << Timer_Flags_Count) - 1;
 uint32_t flags = Expected_Flags;
-
-GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
-    KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
-};
-
-uint16_t col_pins[Keyboard::Q10_Cols] = {
-    KB_COL1_Pin, KB_COL2_Pin, KB_COL3_Pin, KB_COL4_Pin, KB_COL5_Pin,
-};
-
-GPIO_TypeDef* row_ports[Keyboard::Q10_Rows] = {
-    KB_ROW1_GPIO_Port, KB_ROW2_GPIO_Port, KB_ROW3_GPIO_Port, KB_ROW4_GPIO_Port,
-    KB_ROW5_GPIO_Port, KB_ROW6_GPIO_Port, KB_ROW7_GPIO_Port,
-};
-
-uint16_t row_pins[Keyboard::Q10_Rows] = {
-    KB_ROW1_Pin, KB_ROW2_Pin, KB_ROW3_Pin, KB_ROW4_Pin, KB_ROW5_Pin, KB_ROW6_Pin, KB_ROW7_Pin,
-};
-
-static constexpr uint16_t kb_ring_buff_sz = 5;
-RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
-
-Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
 
 enum class Ptt_Btn_State
 {
@@ -126,6 +141,13 @@ enum class Ptt_Btn_State
 Ptt_Btn_State ptt_state;
 Ptt_Btn_State ptt_ai_state;
 
+Button ptt(PTT_BTN_GPIO_Port, PTT_BTN_Pin, Button::Polarity::High, 0, 0, 10000, 10000);
+Button mic_ptt(MIC_IO_GPIO_Port, MIC_IO_Pin, Button::Polarity::Low, 0, 0, 10000, 10000);
+Button ptt_ai(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin, Button::Polarity::High, 0, 0, 10000, 10000);
+Button volume_up(VOLUME_UP_GPIO_Port, VOLUME_UP_Pin, Button::Polarity::High, 20, 100, 200, 200);
+Button
+    volume_down(VOLUME_DOWN_GPIO_Port, VOLUME_DOWN_Pin, Button::Polarity::High, 20, 100, 200, 200);
+
 int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
@@ -133,18 +155,25 @@ int app_main()
     uint32_t ticks_ms = 0;
     ConfigStorage config_storage(hi2c1);
     Protector protector(config_storage);
-    Renderer renderer(screen, keyboard);
+    // Renderer renderer(screen, keyboard);
 
     audio_chip.Init();
     audio_chip.StartI2S();
+    audio_chip.VolumeSet(100);
+    audio_chip.MicPreampSet(60);
 
     // Test in case the audio chip settings change and something looks suspicious
     // CountNumAudioInterrupts(audio_chip, sleeping);
 
-    InitScreen(screen);
+    // InitScreen(screen);
     Leds(HIGH, HIGH, HIGH);
     net_serial.StartReceive();
     mgmt_serial.StartReceive();
+
+    // Enable TLV logging via MGMT serial
+    Logger::SetLogSender([](uint16_t type, const uint8_t* data, size_t len) {
+        mgmt_serial.Reply(type, std::span<const uint8_t>(data, len));
+    });
 
     // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
@@ -152,13 +181,16 @@ int app_main()
 
     UI_LOG_INFO("Starting main loop");
 
+    uint32_t volume_button_press_ms = 0;
+    constexpr uint32_t Volume_Button_Debounce_ms = 200;
+
     while (1)
     {
         Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
-            renderer.ChangeView(Renderer::View::Chat);
+            // renderer.ChangeView(Renderer::View::Chat);
             done_booting = true;
         }
 
@@ -175,18 +207,41 @@ int app_main()
             // Error("Main loop", "Flags did not match expected");
         }
 
-        CheckPTT(protector);
-        CheckPTTAI(protector);
+        if (volume_up.ShortPress() || volume_up.RepeatedPress())
+        {
+            audio_chip.VolumeAdjust(1);
+            UI_LOG_INFO("Volume up %d", (int)audio_chip.Volume());
+        }
+        else if (volume_up.DoublePress())
+        {
+            audio_chip.MicPreampAdjust(1);
+            UI_LOG_INFO("Mic Preamp up %d", (int)audio_chip.MicPreamp());
+        }
 
-        HandleKeypress(screen, keyboard, net_serial, protector);
+        if (volume_down.ShortPress() || volume_down.RepeatedPress())
+        {
+            audio_chip.VolumeAdjust(-1);
+            UI_LOG_INFO("Volume down %d", (int)audio_chip.Volume());
+        }
+        else if (volume_down.DoublePress())
+        {
+            audio_chip.MicPreampAdjust(-1);
+            UI_LOG_INFO("Mic Preamp down %d", (int)audio_chip.MicPreamp());
+        }
 
+        CheckPTT(protector, loopback_mode);
+        CheckPTTAI(protector, loopback_mode);
+
+        // HandleKeypress(screen, keyboard, net_serial, protector);
+
+        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode);
+        HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
+                              audio_transmit_mode, audio_receive_mode);
+
+        // renderer.Render(ticks_ms);
+        // TODO remove?
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
-
-        HandleNetLinkPackets(net_serial, protector, audio_chip, screen);
-        HandleMgmtLinkPackets(mgmt_serial, config_storage);
-
-        renderer.Render(ticks_ms);
         RaiseFlag(Draw_Complete);
 
         sleeping = true;
@@ -246,39 +301,23 @@ inline void AudioCallback()
     RaiseFlag(Audio_Interrupt);
 }
 
-void CheckPTT(Protector& protector)
+void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode)
 {
-    // Send talk start and sot packets
-    if ((HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_SET
-         || HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_RESET)
-        && ptt_state != Ptt_Btn_State::Pressed)
-    {
-        HAL_TIM_Base_Stop(&htim4);
-        ptt_state = Ptt_Btn_State::Pressed;
-        LedGOn();
-    }
-    else if (HAL_GPIO_ReadPin(PTT_BTN_GPIO_Port, PTT_BTN_Pin) == GPIO_PIN_RESET
-             && HAL_GPIO_ReadPin(MIC_IO_GPIO_Port, MIC_IO_Pin) == GPIO_PIN_SET
-             && ptt_state == Ptt_Btn_State::Pressed)
-    {
-        ptt_state = Ptt_Btn_State::Releasing;
-        HAL_TIM_Base_Start_IT(&htim4);
-    }
+    static bool pressed = false;
 
-    if (ptt_state == Ptt_Btn_State::Pressed || ptt_state == Ptt_Btn_State::Releasing)
+    if ((ptt.IsHeld() || mic_ptt.IsHeld()))
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message,
-                  false);
+        pressed = true;
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt, false, loopback_mode);
     }
-
-    if (ptt_state == Ptt_Btn_State::Last_Send)
+    else if (pressed && (!ptt.IsHeld() && !ptt.IsHeld()))
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt, ui_net_link::Packet_Type::Message, true);
-        ptt_state = Ptt_Btn_State::Released;
+        pressed = false;
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt, true, loopback_mode);
     }
 }
 
-void CheckPTTAI(Protector& protector)
+void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
 {
 
     // Send talk start and sot packets
@@ -298,40 +337,157 @@ void CheckPTTAI(Protector& protector)
 
     if (ptt_ai_state == Ptt_Btn_State::Pressed || ptt_ai_state == Ptt_Btn_State::Releasing)
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message,
-                  false);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, false, loopback_mode);
     }
 
     if (ptt_ai_state == Ptt_Btn_State::Last_Send)
     {
-        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, ui_net_link::Packet_Type::Message,
-                  true);
+        SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, true, loopback_mode);
         ptt_ai_state = Ptt_Btn_State::Released;
+    }
+}
+
+void ConstructPacketHeader(link_packet_t& message_packet,
+                           const ui_net_link::Channel_Id channel_id,
+                           const bool last,
+                           uint32_t& offset)
+{
+    offset = 0;
+}
+
+void SendAudioToMgmt(link_packet_t& packet, const bool last)
+{
+
+    static bool first = true;
+
+    if (first)
+    {
+        first = false;
+        mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioStart), std::span<const uint8_t>{});
+    }
+
+    packet.type = static_cast<uint16_t>(UiToCtl::AudioFrame);
+    mgmt_serial.Write(packet);
+
+    if (last)
+    {
+        first = true;
+        mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioEnd), std::span<const uint8_t>{});
     }
 }
 
 void SendAudio(Protector& protector,
                const ui_net_link::Channel_Id channel_id,
-               const ui_net_link::Packet_Type packet_type,
-               bool last)
+               bool last,
+               const UiLoopbackMode loopback_mode)
 {
-    ui_net_link::AudioObject talk_frame;
-    talk_frame.channel_id = channel_id;
+    const uint16_t* rx_buff = audio_chip.RxBuffer();
+    if (loopback_mode == UiLoopbackMode::Raw)
+    {
+        uint16_t* tx_buff = audio_chip.TxBuffer();
 
-    AudioCodec::ALawCompand(audio_chip.RxBuffer(), constants::Audio_Buffer_Sz, talk_frame.data,
-                            constants::Audio_Phonic_Sz, true, constants::Stereo);
+        for (size_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
+        {
+            tx_buff[i] = rx_buff[i];
+        }
+    }
 
-    link_packet_t message_packet;
-    ui_net_link::Serialize(talk_frame, packet_type, last, message_packet);
+    link_packet_t audio_packet;
 
-    if (!protector.TryProtect(&message_packet))
+    uint32_t offset = 0;
+    audio_packet.payload[offset] = static_cast<uint8_t>(channel_id);
+    offset += sizeof(uint8_t);
+    // UI_LOG_INFO("Channel id %d", (int)audio_packet.payload[0]);
+
+    static constexpr uint32_t audio_size = constants::Audio_Phonic_Sz;
+    if (channel_id == ui_net_link::Channel_Id::Ptt)
+    {
+        audio_packet.payload[offset] = static_cast<uint8_t>(ui_net_link::MessageType::Media);
+        offset += sizeof(uint8_t);
+
+        audio_packet.payload[offset] = static_cast<uint8_t>(last);
+        offset += sizeof(uint8_t);
+
+        memcpy(audio_packet.payload.data() + offset, &audio_size, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+    else if (channel_id == ui_net_link::Channel_Id::Ptt_Ai)
+    {
+        audio_packet.payload[offset] = static_cast<uint8_t>(ui_net_link::MessageType::AIRequest);
+        offset += sizeof(uint8_t);
+
+        uint32_t request_id = 0;
+        memcpy(audio_packet.payload.data() + offset, &request_id, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+
+        audio_packet.payload[offset] = static_cast<uint8_t>(last);
+        offset += sizeof(uint8_t);
+
+        memcpy(audio_packet.payload.data() + offset, &audio_size, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+    else
+    {
+        UI_LOG_ERROR("Channel Id %d does not exist", static_cast<int>(channel_id));
+        return;
+    }
+
+    audio_packet.length = offset + constants::Audio_Phonic_Sz;
+
+    AudioCodec::ALawCompand(rx_buff, constants::Audio_Buffer_Sz,
+                            audio_packet.payload.data() + offset, constants::Audio_Phonic_Sz, true,
+                            constants::Stereo);
+
+    if (loopback_mode == UiLoopbackMode::Alaw)
+    {
+        AudioCodec::ALawExpand(audio_packet.payload.data() + offset, constants::Audio_Phonic_Sz,
+                               audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                               true);
+    }
+
+    if (!protector.TryProtect(&audio_packet))
     {
         UI_LOG_ERROR("Failed to encrypt audio packet");
         return;
     }
 
-    // LedRToggle();
-    net_serial.Write(message_packet);
+    switch (audio_transmit_mode)
+    {
+    case AudioTransmitMode::Net:
+    {
+        audio_packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
+
+        net_serial.Write(audio_packet);
+        break;
+    }
+    case AudioTransmitMode::Mgmt:
+    {
+        SendAudioToMgmt(audio_packet, last);
+
+        break;
+    }
+    case AudioTransmitMode::Both:
+    {
+        SendAudioToMgmt(audio_packet, last);
+
+        audio_packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
+        net_serial.Write(audio_packet);
+        break;
+    }
+    }
+
+    if (loopback_mode == UiLoopbackMode::Sframe)
+    {
+        if (!protector.TryUnprotect(&audio_packet))
+        {
+            UI_LOG_ERROR("Failed to unprotect sframe loopback");
+            return;
+        }
+
+        AudioCodec::ALawExpand(audio_packet.payload.data() + offset, constants::Audio_Phonic_Sz,
+                               audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                               true);
+    }
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t size)
@@ -353,6 +509,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     {
         Serial::TxISR(&net_serial);
         RaiseFlag(Rx_Audio_Transmitted);
+    }
+    else if (huart->Instance == Serial::UART(&mgmt_serial)->Instance)
+    {
+        Serial::TxISR(&mgmt_serial);
     }
 }
 
@@ -395,7 +555,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        keyboard.Scan(HAL_GetTick());
+        // keyboard.Scan(HAL_GetTick());
+        ptt.Update(HAL_GetTick());
+        mic_ptt.Update(HAL_GetTick());
+        ptt_ai.Update(HAL_GetTick());
+        volume_up.Update(HAL_GetTick());
+        volume_down.Update(HAL_GetTick());
     }
     else if (htim->Instance == TIM3)
     {

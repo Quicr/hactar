@@ -103,6 +103,7 @@ void Wifi::ClearSavedSSIDs()
 {
     NET_LOG_INFO("Clearing ssids");
     storage.ClearNamespace("wifi");
+    stored_creds.stored.clear();
     NET_LOG_INFO("Clearing complete");
 }
 

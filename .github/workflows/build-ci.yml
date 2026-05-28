@@ -12,70 +12,78 @@ jobs:
     permissions:
       pull-requests: read
     outputs:
-      mgmt: ${{ steps.filter.outputs.mgmt }}
+      link: ${{ steps.filter.outputs.link }}
       net: ${{ steps.filter.outputs.net }}
       ui: ${{ steps.filter.outputs.ui }}
     steps:
+    - uses: actions/checkout@v4
     - uses: dorny/paths-filter@v3
       id: filter
       with:
         filters: |
-          mgmt:
-            - 'firmware/mgmt/**'
+          link:
+            - 'link/**'
           net:
             - 'firmware/net/**'
           ui:
             - 'firmware/ui/**'
+            - 'firmware/shared/**'
+            - 'firmware/shared_inc/**'
 
-  build-mgmt:
+  test-link:
     needs: changes
-    if: ${{ needs.changes.outputs.mgmt == 'true' }}
+    if: ${{ needs.changes.outputs.link == 'true' }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
 
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential git gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib stlink-tools python3 pip
-        pip install pyserial
+        sudo apt-get install -y libudev-dev
 
-    - name: Build
-      working-directory: ./firmware/mgmt
-      shell: bash
-      run: make -j compile
+    - name: Run link tests
+      working-directory: ./link/link
+      run: cargo test --features std
+
+  build-ctl:
+    needs: changes
+    if: ${{ needs.changes.outputs.link == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libudev-dev libasound2-dev
+
+    - name: Build CTL
+      working-directory: ./link/ctl
+      run: cargo build --release
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: mgmt
-        path: |
-          firmware/mgmt/build/mgmt.bin
-          firmware/mgmt/build/mgmt.elf
-          firmware/mgmt/build/mgmt.hex
-
-    - name: Nightly mgmt release
-      if: github.ref_name == 'main'
-      uses: ncipollo/release-action@v1
-      with:
-        tag: nightly
-        name: "Nightly Build"
-        allowUpdates: true
-        replacesArtifacts: true
-        artifacts: firmware/mgmt/build/mgmt.bin
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        name: ctl
+        path: link/ctl/target/release/ctl
 
   build-net:
     needs: changes
     if: ${{ needs.changes.outputs.net == 'true' }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     container:
-      image: espressif/idf:v5.4
+      image: espressif/idf:v5.5.3
     steps:
     - uses: actions/checkout@v4
       with:
@@ -123,7 +131,6 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.ui == 'true' }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
     - uses: actions/checkout@v4
       with:
@@ -160,4 +167,3 @@ jobs:
         artifacts: firmware/ui/build/ui.bin
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

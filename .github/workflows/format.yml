@@ -12,7 +12,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: jidicula/clang-format-action@v4.13.0
+        with:
+          submodules: recursive
+
+      - name: C/C++ format check
+        uses: jidicula/clang-format-action@v4.13.0
         with:
           clang-format-version: '18'
-          exclude-regex: '(lib|Drivers|Core|net/include/sys|net/include/netinet|cmox)'
+          exclude-regex: '(lib|Drivers|Core|net/include/sys|net/include/netinet|cmox|sframe|link/)'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Rust format check (link)
+        run: cargo fmt --manifest-path link/link/Cargo.toml -- --check
+
+      - name: Rust format check (mgmt)
+        run: cargo fmt --manifest-path link/mgmt/Cargo.toml -- --check
+
+      - name: Rust format check (ctl)
+        run: cargo fmt --manifest-path link/ctl/Cargo.toml -- --check

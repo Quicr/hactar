@@ -5,8 +5,19 @@
 #include "protector.hh"
 #include "screen.hh"
 #include "serial.hh"
+#include "ui_mgmt_link.h"
 
 extern "C" {
-void HandleMgmtLinkPackets(Serial& serial, ConfigStorage& storage);
-void HandleNetLinkPackets(Serial& serial, Protector& protector, AudioChip& audio, Screen& screen);
+void HandleNetLinkPackets(Serial& net_serial,
+                          Serial& mgmt_serial,
+                          Protector& protector,
+                          AudioChip& audio,
+                          const AudioReceiveMode audio_receive_mode);
+void HandleMgmtLinkPackets(Serial& mgmt_serial,
+                           Serial& net_serial,
+                           ConfigStorage& storage,
+                           AudioChip& audio,
+                           UiLoopbackMode& loopback,
+                           AudioTransmitMode& audio_transmit_mode,
+                           AudioReceiveMode& audio_receive_mode);
 };

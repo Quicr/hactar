@@ -21,6 +21,8 @@ ESP_TOOL_ARGS 		= --trace --no-stub --port=${port} --baud=${BAUD} write_flash --
 	${PARITIONS_ADDR} ${BUILD_PATH}/partition_table/partition-table.bin \
 	${PROG_ADDR} ${BUILD_PATH}/${TARGET}.bin
 
+.PHONY: compile upload upload_debugger upload_esptool docker monitor
+
 all: compile
 
 compile: check_who_compiled
@@ -30,13 +32,26 @@ upload: compile
 	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="net" -bin=${BUILD_PATH}
 
 upload_debugger: compile
-	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/bootloader/bootloader.bin ${BOOTLOADER_ADDR} verify exit"
+	openocd -f board/esp32s3-ftdi.cfg \
+    -c "adapter speed 500" \
+    -c "init" \
+    -c "reset halt" \
+    -c "esp32s3 flash_stub_clock_boost off" \
+    -c "program_esp ./build/bootloader/bootloader.bin 0x00000 verify exit"
 	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ${BUILD_PATH}/partition_table/partition-table.bin ${PARITIONS_ADDR} verify exit"
-	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ./build/net.bin 0x10000 verify exit"
+	openocd -f board/esp32s3-ftdi.cfg -c "program_esp ./build/net.bin 0x10000 verify reset exit"
 
 upload_esptool:
 	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="net" --use_external_flasher=true
 	esptool.py ${ESP_TOOL_ARGS}
+
+erase:
+	openocd -f board/esp32s3-ftdi.cfg \                                                                                                                                                              ✔  7m 32s  15:20:45
+	-c "adapter speed 500" \
+	-c "init" \
+	-c "reset halt" \
+	-c "flash erase_sector 0 0 last; exit"
+
 
 docker:
 	@if ! docker image inspect ${DOCKER_IMAGE} > /dev/null 2>&1; then \

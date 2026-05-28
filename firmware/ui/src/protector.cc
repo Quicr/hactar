@@ -13,8 +13,7 @@ Protector::Protector(ConfigStorage& storage) :
         Error("main", "cmox failed to initialise");
     }
 
-// Not currently in use.
-#if 0
+    // Not currently in use.
     ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
     if (config.loaded && config.len == 16)
     {
@@ -27,10 +26,9 @@ Protector::Protector(ConfigStorage& storage) :
     else if (config.len != 16)
     {
         UI_LOG_ERROR("MLS key len malformed %d", (int)config.len);
-        Error_Handler("Initialize MLS", "MLS key len malformed");
+        Error("Initialize MLS", "MLS key len malformed");
         return;
     }
-#endif
 
     UI_LOG_WARN("No MLS key stored, using default");
     constexpr const char* mls_key = "sixteen byte key";
