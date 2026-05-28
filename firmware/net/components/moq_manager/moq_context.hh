@@ -18,6 +18,7 @@ public:
 
     moq::Session::Status GetStatus() const;
     bool Connect();
+    bool Connected();
 
     void UpdateAITracks(ConfigState& config);
     void UpdateChannelTracks(ConfigState& config);
