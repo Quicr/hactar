@@ -5,9 +5,9 @@
 	(uuid "bd865368-262b-4f76-b7a6-1673c2cb0f8c")
 	(paper "A2")
 	(title_block
-		(title "EV17MK1 FINN BERG & BRETT REGNIER")
-		(date "2026-03-06")
-		(rev "EV17MK1")
+		(title "EV18MK1 FINN BERG & BRETT REGNIER")
+		(date "2026-05-31")
+		(rev "EV18MK1")
 		(company "CISCO SYSTEMS INC")
 	)
 	(lib_symbols
@@ -27754,12 +27754,6 @@
 		(uuid "28c62f5e-6df7-46f4-9d4b-b2217d5dfa7d")
 	)
 	(junction
-		(at 332.74 265.43)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "29b84891-01d9-4c12-aaca-e529aadb9c83")
-	)
-	(junction
 		(at 288.29 322.58)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -28328,6 +28322,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "938efd5f-8d51-4637-8f77-7f72659efe30")
+	)
+	(junction
+		(at 332.74 267.97)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "93e866e5-73dc-4f9d-9f67-93119703db7e")
 	)
 	(junction
 		(at 93.98 328.93)
@@ -29351,7 +29351,7 @@
 	)
 	(wire
 		(pts
-			(xy 327.66 265.43) (xy 332.74 265.43)
+			(xy 327.66 267.97) (xy 332.74 267.97)
 		)
 		(stroke
 			(width 0)
@@ -31311,6 +31311,16 @@
 	)
 	(wire
 		(pts
+			(xy 340.36 267.97) (xy 340.36 265.43)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3dceb3d1-f443-4a5d-a259-925e9b59c4c8")
+	)
+	(wire
+		(pts
 			(xy 232.41 106.68) (xy 247.65 106.68)
 		)
 		(stroke
@@ -32211,7 +32221,7 @@
 	)
 	(wire
 		(pts
-			(xy 332.74 265.43) (xy 340.36 265.43)
+			(xy 332.74 267.97) (xy 340.36 267.97)
 		)
 		(stroke
 			(width 0)
@@ -36008,6 +36018,16 @@
 			(type default)
 		)
 		(uuid "c407fb9c-2ecf-4cab-ae11-33d5c760d7a2")
+	)
+	(wire
+		(pts
+			(xy 327.66 267.97) (xy 327.66 265.43)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c425bf90-7718-4a3a-91a8-070134baf137")
 	)
 	(wire
 		(pts
@@ -42277,7 +42297,7 @@
 	)
 	(symbol
 		(lib_id "power:GNDA")
-		(at 332.74 265.43 0)
+		(at 332.74 267.97 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -42286,7 +42306,7 @@
 		(fields_autoplaced yes)
 		(uuid "0fad3dd5-c94d-46b6-9df7-fe9fd6fb553c")
 		(property "Reference" "#PWR0112"
-			(at 332.74 271.78 0)
+			(at 332.74 274.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -42295,7 +42315,7 @@
 			)
 		)
 		(property "Value" "GNDA"
-			(at 332.74 270.51 0)
+			(at 332.74 273.05 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -42303,7 +42323,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 332.74 265.43 0)
+			(at 332.74 267.97 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -42312,7 +42332,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 332.74 265.43 0)
+			(at 332.74 267.97 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -42321,7 +42341,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GNDA\" , analog ground"
-			(at 332.74 265.43 0)
+			(at 332.74 267.97 0)
 			(effects
 				(font
 					(size 1.27 1.27)
