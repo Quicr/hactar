@@ -57653,7 +57653,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
 			(at 320.04 260.858 90)
 			(effects
 				(font
@@ -57680,7 +57680,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C25792"
+		(property "JLCPCB Part #" "C23164"
 			(at 320.04 259.08 0)
 			(effects
 				(font
