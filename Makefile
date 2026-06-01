@@ -11,7 +11,11 @@ CTL_SRCS := $(shell find link/ctl/src -name '*.rs') link/ctl/Cargo.toml
 MGMT_SRCS := $(shell find link/mgmt/src -name '*.rs') link/mgmt/Cargo.toml
 LINK_SRCS := $(shell find link/link/src -name '*.rs') link/link/Cargo.toml
 
-.PHONY: all flash flash-mgmt flash-ui flash-net run-ctl
+.PHONY: all flash flash-mgmt flash-ui flash-net run-ctl set-version set-wifi
+
+rev ?= 17
+ssid ?=
+pwd ?=
 
 all: $(CTL_BIN) $(MGMT_BIN) $(UI_BIN) $(NET_ELF)
 
@@ -42,6 +46,12 @@ flash-net: $(CTL_BIN) $(NET_ELF)
 
 run-ctl: $(CTL_BIN)
 	$(CTL_BIN)
+
+set-version: $(CTL_BIN)
+	$(CTL_BIN) mgmt version set ${rev}
+
+set-wifi: $(CTL_BIN)
+	$(CTL_BIN) net wifi add ${ssid} ${pwd}
 
 clean:
 	cd link/ctl && cargo clean
