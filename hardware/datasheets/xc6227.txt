@@ -1,0 +1,4744 @@
+XC6227 Series
+
+ETR03054-007
+
+700mA High Speed LDO Regulator with Reverse Current Protection
+
+■GENERAL DESCRIPTION
+The XC6227 series is a highly accurate, low noise, high ripple rejection, low dropout, and low power consumption high speed
+voltage regulator.
+The series consists of a voltage reference, an error amplifier, a driver transistor, a current limiter, a thermal protection circuit, a
+reverse current protection circuit and a phase compensation circuit.
+The CE function enables the entire circuit to be placed in a stand-by state by inputting a low level signal to the CE pin. Over-current
+protection and thermal protection circuits are integrated. The protection circuit starts to operate when either output current reaches
+the current limit level or junction temperature reaches the temperature limit. With the reverse current protection function of a driver
+transistor, the reverse current flow is prohibited when VOUT voltage is higher than VIN voltage. For an example, when a battery is
+connected to the VOUT pin, battery current will not flow back to the XC6227.
+
+■APPLICATIONS
+
+■FEATURES
+
+● USB products and HDMI equipments
+● E-book Readers / Electronic dictionaries
+● Smart Phones / Mobile phones
+● Portable game consoles
+● Modules (Wireless, Camera, etc.)
+
+Maximum Output Current
+
+: 700mA
+
+Dropout Voltage
+
+: 120mV @IOUT=300mA(VOUT=3.0V)
+
+Operating Voltage Range
+
+: 1.7V ~ 6.0V
+
+Output Voltages
+
+: 0.8V ~ 5.0V (0.05V increments)
+
+Accuracy
+
+: ±1% (VOUT＞2.0V)
+±0.02V (VOUT≦2.0V)
+
+Low Power Consumption
+
+: 100μA
+
+Chip Enable(CE)
+
+: Active High
+Standby Current below 0.1μA
+
+High Ripple Rejection
+
+: 65dB @ 1kHz
+
+Operating Ambient Temperature : -40℃ ~ 105℃ (D,E Type)
+-40℃ ~ 85℃ (A,C Type)
+Low ESR Capacitor
+
+: Ceramic capacitor
+
+Packages
+
+: USP-6C, SOT-25, SOT-89-5
+
+Environmentally Friendly
+
+: EU RoHS Compliant, Pb Free
+
+■TYPICAL APPLICATION CIRCUIT ■ TYPICAL PERFORMANCE
+CHARACTERISTICS
+●VOUT Sink Current vs. Input Voltage
+USB 5V
+
+X C6227C331
+VOUT=3.3V
+
+VOUT Sink Current
+（TYP：2.8μA）
+CIN：1μF(ceramic)
+
+CE
+
+IOUT
+
+XC6227C VOUT
+To System LSI
+
+CL：2.2μF(ceramic)
+
+VIN
+VSS
+
+Battery
+
+Step-Up
+DC/DC VOUT
+Converter
+VSS
+
+V OUT Sink Current：IREVS (μA)
+
+VIN
+
+IOUT=0mA
+
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+0
+
+-40℃
+25℃
+85℃
+105℃
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+Input Voltage：V IN(V)
+
+1/26
+
+XC6227 Series
+■BLOCK DIAGRAM
+1) A,D type
+
+2) C,E type
+Reverse
+Current
+Protection
+
+Reverse
+Current
+Protection
+VOUT
+
+VIN
+
+VOUT
+
+VIN
+
+CFB
+CurrentLimit
+&
+ThermalShutdown
+
+CFB
+CurrentLimit
+&
+ThermalShutdown
+
+R1
++
+Error
+Amp
+-
+
+CE
+
+ON/OFF
+Control
+
+each
+circuit
+
+R1
++
+Error
+Amp
+-
+
+R2
+Voltage
+Reference
+
+CE
+
+ON/OFF
+Control
+
+each
+circuit
+
+R2
+Voltage
+Reference
+
+VSS
+
+XC6227Aseries
+
+VSS
+
+XC6227Cseries
+
+* Diodes inside the circuits are ESD protection diodes and parasitic diodes.
+
+2/26
+
+XC6227
+Series
+
+■PRODUCT CLASSIFICATION
+●Ordering Information
+Operating Ambient Temperature : 105℃
+
+XC6227①②③④⑤⑥-⑦(*1)
+DESIGNATOR
+
+ITEM
+
+①
+
+Type
+
+②③
+
+Output Voltage
+
+④
+
+⑤⑥-⑦
+(*1)
+
+Output Voltage
+(the 2nd decimal place)
+
+Packages (Order Unit)
+
+SYMBOL
+D
+E
+08 ~ 50
+1
+B
+
+DESCRIPTION
+Refer to Selection Guide
+e.g. 2.8V → ②=2, ③=8
+Output voltage {x.x0v} (the 2nd decimal place is "0")
+±1% (VOUT>2.0V), ±20mV (VOUT≦2.0V)
+Output voltage {x.x5v} (the 2nd decimal place is "5")
+±1% (VOUT(T)>2.0V), ±20mV (VOUT(T)≦2.0V)
+
+MR-G
+
+SOT-25 (3,000pcs/Reel)
+
+PR-G
+
+SOT-89-5 (1,000pcs/Reel)
+
+ER-G
+
+USP-6C (3,000pcs/Reel)
+
+The “-G” suffix denotes Halogen and Antimony free as well as being fully EU RoHS compliant.
+
+Operating Ambient Temperature : 85℃
+
+XC6227①②③④⑤⑥-⑦(*1)
+DESIGNATOR
+
+ITEM
+
+①
+
+Type
+
+②③
+
+Output Voltage
+
+④
+
+Output Voltage
+(the 2nd decimal place)
+
+⑤⑥-⑦
+(*1)
+
+Packages (Order Unit)
+
+SYMBOL
+A
+C
+08 ~ 50
+1
+B
+
+DESCRIPTION
+Refer to Selection Guide
+e.g. 2.8V → ②=2, ③=8
+Output voltage {x.x0v} (the 2nd decimal place is "0")
+±1% (VOUT>2.0V), ±20mV (VOUT≦2.0V)
+Output voltage {x.x5v} (the 2nd decimal place is "5")
+±1% (VOUT(T)>2.0V), ±20mV (VOUT(T)≦2.0V)
+
+MR-G
+
+SOT-25 (3,000pcs/Reel)
+
+PR-G
+
+SOT-89-5 (1,000pcs/Reel)
+
+ER-G
+
+USP-6C (3,000pcs/Reel)
+
+The “-G” suffix denotes Halogen and Antimony free as well as being fully EU RoHS compliant.
+
+●Selection Guide
+TYPE
+
+CE High Active
+
+CE PULL-DOWN
+RESISTOR
+
+A, D
+
+Yes
+
+No
+
+C, E
+
+Yes
+
+Yes
+
+3/26
+
+XC6227 Series
+■PIN CONFIGURATION
+
+VOUT
+
+CE 6
+
+1 VIN
+
+VSS 5
+
+2 NC
+
+NC 4
+
+3 VOUT
+
+VOUT
+
+NC
+
+5
+
+4
+
+5
+
+VIN
+2
+
+4
+
+1
+
+2
+
+3
+
+1
+
+2
+
+3
+
+VIN
+
+VSS
+
+CE
+
+CE
+
+VSS
+
+NC
+
+USP-6C
+(BOTTOM VIEW)
+
+SOT-89-5
+(TOP VIEW)
+
+SOT-25
+(TOP VIEW)
+
+*The dissipation pad for the USP-6C package should be solder-plated in recommended mount pattern and metal masking so as to enhance
+mounting strength and heat release. If the pad needs to be connected to other pins, it should be connected to the VSS (No. 5) pin.
+
+USP-6C
+
+PIN NUMBER
+SOT-25
+
+SOT-89-5
+
+1
+
+1
+
+PIN NAME
+
+FUNCTIONS
+
+4
+
+VIN
+
+Power Input
+
+3
+
+5
+
+5
+
+VOUT
+
+Output
+
+2,4
+
+4
+
+3
+
+NC
+
+No connection
+
+5
+
+2
+
+2
+
+VSS
+
+Ground
+
+6
+
+3
+
+1
+
+CE
+
+ON/OFF Control
+
+■FUNCTION CHART
+PIN NAME
+
+CE
+
+SIGNAL
+
+TYPE
+
+STATUS
+
+L
+
+A,C,D,E
+
+Stand-by
+
+H
+
+A,C,D,E
+
+Active
+
+A,D
+
+Undefined state
+
+C,E
+
+Stand-by
+
+OPEN
+
+4/26
+
+XC6227
+Series
+
+■ABSOLUTE MAXIMUM RATINGS
+PARAMETER
+
+SYMBOL
+
+RATINGS
+
+UNITS
+
+Input Voltage
+
+VIN
+
+VSS - 0.3 ~ 6.5
+
+V
+
+Output Voltage
+
+VOUT
+
+VSS - 0.3 ~ 6.5
+
+V
+
+CE Input Voltage
+
+VCE
+
+VSS - 0.3 ~ 6.5
+120 (IC only)
+
+V
+
+1000 (40mm x 40mm Standard Board) (*1)
+
+USP-6C
+
+1250 (JESD51-7 Board) (*1)
+Power
+Dissipation
+(Ta=25℃)
+
+250 (IC only)
+SOT-25
+
+Pd
+
+600 (40mm x 40mm Standard Board) (*1)
+
+mW
+
+760 (JESD51-7 Board) (*1)
+500 (IC only)
+1300 (40mm x 40mm Standard Board) (*1)
+
+SOT-89-5
+
+1750 (JESD51-7 Board) (*1)
+Operating
+Ambient
+Temperature
+(*1)
+
+A,C Type
+
+-40 ~ 85
+Topr
+
+D,E Type
+
+℃
+-40 ~ 105
+
+Storage Temperature
+Tstg
+-55 ~ 125
+The power dissipation figure shown is PCB mounted and is for reference only.
+Please refer to PACKAGING INFORMATION for the mounting condition.
+
+℃
+
+5/26
+
+XC6227 Series
+■ELECTRICAL CHARACTERISTICS
+Ta=25℃
+
+PARAMETER
+
+SYMBOL
+
+Output Voltage
+
+VOUT(E) (*2)
+
+Output Current
+
+IOUTMAX
+
+Load Regulation
+Dropout Voltage1 (*5)
+Dropout Voltage2 (*5)
+Supply Current
+Stand-by Current
+
+ΔVOUT
+Vdif
+Vdif2
+ISS
+ISTBY
+
+Line Regulation
+
+ΔVOUT/
+(ΔVIN ・VOUT)
+
+Input Voltage
+Output Voltage
+Temperature
+Characteristics
+
+VIN
+ΔVOUT/
+(ΔTa ・VOUT)
+
+Power Supply
+Rejection Ratio
+
+PSRR
+
+Limit Current
+
+Ilim
+
+Short Current
+
+Ishort
+VCEH
+
+CE High Level Voltage
+CE Low Level Voltage
+CE High Level Current
+CE Low Level Current
+Reverse Current (*8)
+VOUT Pin Sink Current (*9)
+Thermal Shutdown
+Detect Temperature
+Thermal Shutdown
+Release Temperature
+
+CONDITIONS
+VOUT(T)＞2.0V, VCE=VIN, IOUT=10mA
+VOUT(T)≦2.0V, VCE=VIN, IOUT=10mA
+VCE=VIN, VIN=VOUT(T)+1.0V
+VOUT(T)＞1.5V
+VCE=VIN, VIN=2.5V
+VOUT(T)≦1.5V
+VCE=VIN, 0.1mA≦IOUT≦300mA
+IOUT=300mA, VCE=VIN
+IOUT=0mA, VCE=VIN
+VIN=VCE=VOUT(T)+1.0V, IOUT=0mA
+VIN=6.0V, VCE=VSS
+VOUT(T)+0.5V≦VIN≦6.0V
+:VOUT(T)≧1.0V
+VCE=VIN, IOUT=30mA
+1.5V≦VIN≦6.0V
+:VOUT(T)≦0.95V
+VCE=VIN, IOUT=30mA
+VCE=VIN, IOUT=30mA
+A/C Type : -40℃≦Ta≦85℃
+D/E Type : -40℃≦Ta≦105℃
+VOUT(T)≧4.8V,
+VIN=5.75VDC+0.5Vp-pAC
+VCE=VIN, IOUT=30mA, f=1kHz
+1.0V≦VOUT(T)＜4.8V
+VIN=｛VOUT(T)+1.0｝VDC+0.5Vp-pAC
+VCE=VIN, IOUT=30mA, f=1kHz
+VOUT(T)＜1.0V,
+VIN=2.0VDC+0.5Vp-pAC
+VCE=VIN, IOUT=30mA, f=1kHz
+VCE=VIN, VIN=VOUT(T)+1.0V
+VOUT(T)＞1.5V
+VCE=VIN, VIN=2.5V
+VOUT(T)≦1.5V
+VCE=VIN, Short VOUT to VSS level
+
+VCEL
+
+MIN.
+×0.99(*3)
+-0.02 (*3)
+
+TYP.
+
+MAX.
+×1.01 (*3)
++0.02 (*3)
+
+UNITS
+
+CIRCUIT
+
+VOUT(T)
+
+V
+
+①
+
+700
+
+-
+
+-
+
+mA
+
+①
+
+-
+
+E-1
+E-2
+E-3
+100
+0.01
+
+220
+0.1
+
+mV
+mV
+mV
+μA
+μA
+
+①
+①
+①
+②
+②
+
+-
+
+0.01
+
+0.1
+
+%/V
+
+①
+
+1.7
+
+-
+
+6.0
+
+V
+
+①
+
+-
+
+±100
+
+-
+
+ppm
+/℃
+
+①
+
+-
+
+65
+
+-
+
+dB
+
+③
+
+720
+
+950
+
+-
+
+mA
+
+①
+
+1.2
+
+55
+-
+
+6.0
+
+mA
+V
+
+①
+①
+
+(*4)
+
+VSS
+
+-
+
+0.3
+
+V
+
+①
+
+ICEH
+ICEL
+IREV
+IREVS
+
+VCE=VIN=6.0V, C/E Type
+VCE=VSS
+VIN=0V, VOUT= 6.0V (*10)
+VIN=5.0V, VOUT=6.0V (*10)
+
+17.7
+-0.1
+-
+
+24
+0.01
+2.8
+
+36.9
+0.1
+1.5
+5.3
+
+μA
+μA
+μA
+μA
+
+①
+①
+①
+①
+
+TTSD
+
+Junction Temperature
+
+-
+
+150
+
+-
+
+℃
+
+①
+
+TTSR
+
+Junction Temperature
+
+-
+
+125
+
+-
+
+℃
+
+①
+
+NOTE:
+* 1: Unless otherwise stated, input voltage is VIN=VOUT(T)＋1.0V.
+* 2: VOUT(E) is effective output voltage (Refer to the voltage chart E-1 and E-2)
+It is defined as output voltages when an amply stabilized VOUT(T)+1.0V is supplied to the VIN pin while maintaining a certain IOUT .
+* 3: The relation between VOUT(E) and VOUT(T) is shown in the voltage chart E-1 and E-2.
+* 4: VOUT(T) is nominal output voltage
+* 5: Vdif (Vdif2)= {VIN1(*7)-VOUT1(*6)}
+* 6: VOUT1 equals 98% of the output voltage when amply stabilized VOUT (T)+1.0V are supplied to the VIN pin.
+* 7: VIN1 is the input voltage when VOUT1 appears at the VOUT pin while input voltage is gradually decreased.
+* 8: Reverse current (IREV) flows from VOUT to VIN.
+* 9: VOUT pin sink current (IREVS) flows from VOUT to VSS.
+*10: Please note when an external power supply connects to the VOUT pin, please use it with 6.0V or less.
+
+6/26
+
+XC6227
+Series
+
+■OUTPUT VOLTAGE CHART
+●Voltage Chart 1
+NOMINAL
+OUTPUT
+VOLTAGE
+VOUT(T) (V)
+0.80
+0.85
+0.90
+0.95
+1.00
+1.05
+1.10
+1.15
+1.20
+1.25
+1.30
+1.35
+1.40
+1.45
+1.50
+1.55
+1.60
+1.65
+1.70
+1.75
+1.80
+1.85
+1.90
+1.95
+2.00
+2.05
+2.10
+2.15
+2.20
+2.25
+2.30
+2.35
+2.40
+2.45
+2.50
+2.55
+2.60
+2.65
+2.70
+2.75
+2.80
+2.85
+2.90
+2.95
+3.00
+
+OUTPUT VOLTAGE
+
+LOAD REGULATION
+E-1
+
+DROPOUT VOLTAGE 1
+E-1
+
+DROPOUT VOLTAGE 2
+E-3
+
+VOUT(E) (V)
+
+ΔVOUT(mV)
+
+Vdif(mV)
+
+Vdif2(mV)
+
+MIN.
+
+MAX.
+
+TYP.
+
+MAX.
+
+TYP.
+
+MAX.
+
+TYP.
+
+MAX.
+
+0.7800
+0.8300
+0.8800
+0.9300
+0.9800
+1.0300
+1.0800
+1.1300
+1.1800
+1.2300
+1.2800
+1.3300
+1.3800
+1.4300
+1.4800
+1.5300
+1.5800
+1.6300
+1.6800
+1.7300
+1.7800
+1.8300
+1.8800
+1.9300
+1.9800
+2.0295
+2.0790
+2.1285
+2.1780
+2.2275
+2.2770
+2.3265
+2.3760
+2.4255
+2.4750
+2.5245
+2.5740
+2.6235
+2.6730
+2.7225
+2.7720
+2.8215
+2.8710
+2.9205
+2.9700
+
+0.8200
+0.8700
+0.9200
+0.9700
+1.0200
+1.0700
+1.1200
+1.1700
+1.2200
+1.2700
+1.3200
+1.3700
+1.4200
+1.4700
+1.5200
+1.5700
+1.6200
+1.6700
+1.7200
+1.7700
+1.8200
+1.8700
+1.9200
+1.9700
+2.0200
+2.0705
+2.1210
+2.1715
+2.2220
+2.2725
+2.3230
+2.3735
+2.4240
+2.4745
+2.5250
+2.5755
+2.6260
+2.6765
+2.7270
+2.7775
+2.8280
+2.8785
+2.9290
+2.9795
+3.0300
+
+25
+25
+25
+25
+25
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+30
+35
+35
+35
+35
+35
+35
+35
+35
+35
+35
+35
+35
+35
+35
+35
+35
+35
+35
+35
+43
+
+50
+50
+50
+50
+50
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+60
+70
+70
+70
+70
+70
+70
+70
+70
+70
+70
+70
+70
+70
+70
+70
+70
+70
+70
+70
+85
+
+720
+720
+720
+720
+570
+570
+570
+570
+420
+420
+420
+420
+320
+320
+280
+280
+280
+280
+280
+280
+220
+220
+220
+220
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+160
+160
+160
+160
+160
+160
+160
+160
+160
+160
+120
+
+880
+880
+880
+880
+740
+740
+740
+740
+570
+570
+570
+570
+470
+470
+410
+410
+410
+410
+410
+410
+350
+350
+350
+350
+320
+320
+320
+320
+320
+320
+320
+320
+320
+320
+260
+260
+260
+260
+260
+260
+260
+260
+260
+260
+200
+
+230
+230
+230
+230
+75
+75
+75
+75
+50
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+
+510
+510
+510
+510
+260
+260
+260
+260
+135
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+
+7/26
+
+XC6227 Series
+■OUTPUT VOLTAGE CHART (Continued)
+●Voltage Chart 2
+NOMINAL
+OUTPUT
+VOLTAGE
+VOUT(T) (V)
+3.05
+3.10
+3.15
+3.20
+3.25
+3.30
+3.35
+3.40
+3.45
+3.50
+3.55
+3.60
+3.65
+3.70
+3.75
+3.80
+3.85
+3.90
+3.95
+4.00
+4.05
+4.10
+4.15
+4.20
+4.25
+4.30
+4.35
+4.40
+4.45
+4.50
+4.55
+4.60
+4.65
+4.70
+4.75
+4.80
+4.85
+4.90
+4.95
+5.00
+
+8/26
+
+OUTPUT VOLTAGE
+
+LOAD REGULATION
+E-1
+
+DROPOUT VOLTAGE 1
+E-2
+
+DROPOUT VOLTAGE 2
+E-3
+
+VOUT(E) (V)
+
+ΔVOUT(V)
+
+Vdif(mV)
+
+Vdif2(mV)
+
+MIN.
+
+MAX.
+
+TYP.
+
+MAX.
+
+TYP.
+
+MAX.
+
+TYP
+
+MAX
+
+3.0195
+3.0690
+3.1185
+3.1680
+3.2175
+3.2670
+3.3165
+3.3660
+3.4155
+3.4650
+3.5145
+3.5640
+3.6135
+3.6630
+3.7125
+3.7620
+3.8115
+3.8610
+3.9105
+3.9600
+4.0095
+4.0590
+4.1085
+4.1580
+4.2075
+4.2570
+4.3065
+4.3560
+4.4055
+4.4550
+4.5045
+4.5540
+4.6035
+4.6530
+4.7025
+4.7520
+4.8015
+4.8510
+4.9005
+4.9500
+
+3.0805
+3.1310
+3.1815
+3.2320
+3.2825
+3.3330
+3.3835
+3.4340
+3.4845
+3.5350
+3.5855
+3.6360
+3.6865
+3.7370
+3.7875
+3.8380
+3.8885
+3.9390
+3.9895
+4.0400
+4.0905
+4.1410
+4.1915
+4.2420
+4.2925
+4.3430
+4.3935
+4.4440
+4.4945
+4.5450
+4.5955
+4.6460
+4.6965
+4.7470
+4.7975
+4.8480
+4.8985
+4.9490
+4.9995
+5.0500
+
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+43
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+50
+
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+85
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+100
+
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+120
+
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+200
+
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+40
+
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+80
+
+XC6227
+Series
+
+■TEST CIRCUITS
+●測定回路①
+Circuit ①
+A
+VIN
+
+CIN(ceramic)
+V
+
+A
+
+CE
+
+VOUT
+
+A
+
+V
+
+V
+CL
+(ceramic)
+
+VSS
+
+●測定回路②
+Circuit
+②
+
+VIN
+
+CIN(ceramic)
+
+CE
+
+V
+
+VOUT
+
+CL(ceramic)
+VSS
+A
+
+●測定回路③
+Circuit ③
+
+VIN
+
+IOUT
+V
+
+CE
+
+VOUT
+
+A
+
+V
+VSS
+
+CL
+(ceramic)
+
+※ CIN：1.0μF or higher
+CL：2.2μF or higher (VOUT=2.5～5.0V)
+4.7μF or higher (VOUT=2.1～2.45V)
+6.8μF or higher (VOUT=0.8～2.05V)
+
+9/26
+
+XC6227 Series
+■OPERATIONAL EXPLANATION
+The voltage divided by two resistors R1 and R2 is compared with the internal reference voltage by the error amplifier. The Pchannel MOSFET connected to the VOUT pin, is then driven by the subsequent output signal. The output voltage at the VOUT pin
+is controlled and stabilized by a system of negative feedback. The current limit and short protection operate in relation to the level
+of output current. The thermal protection operates in relation to the level of heat generation. The reverse current protection
+operates when VOUT voltage is higher than VIN voltage. Further, the IC's internal circuitry can be turned off via the CE pin's signal.
+Reverse
+Current
+Protection
+
+Reverse
+Current
+Protection
+VOUT
+
+VOUT
+
+VIN
+
+CFB
+CurrentLimit
+&
+ThermalShutdown
+
+CFB
+CurrentLimit
+&
+ThermalShutdown
+
+R1
++
+Error
+Amp
+-
+
+ON/OFF
+Control
+
+each
+circuit
+
+R1
++
+Error
+Amp
+-
+
+R2
+Voltage
+Reference
+
+CE
+
+ON/OFF
+Control
+
+each
+circuit
+
+R2
+Voltage
+Reference
+
+VSS
+
+VSS
+
+XC6227Aseries
+
+C/E
+Type
+XC6227Cseries
+
+<Input and Output Capacitors>
+The XC6227 needs an output capacitor CL for phase compensation. Values required for the phase compensation are shown in
+the chart below. If a loss of the capacitance happens, stable phase compensation may not be obtained. Please ensure to use a
+capacitor which does not depend on bias or temperature too much. For a stable power input, please connect an input capacitor
+CIN of 1.0μF between the VIN pin and the VSS pin.
+●Output Capacitor (CL) Table
+NOMINAL OUTPUT VOLTAGE
+
+VOUT(T)
+
+OUTPUT CAPACITOR CL
+
+0.8V ~ 2.05V
+
+CL=6.8μF
+
+2.1V ~ 2.45V
+
+CL=4.7μF
+
+2.5V ~ 5.00V
+
+CL=2.2μF
+
+<Reverse Current Protection>
+The XC6227 series includes reverse current protection to prevent the damage as a result of current flow from VOUT pin to the
+VIN pin and VSS pin when the power supply is connected to the VOUT pin. When VIN is smaller than VOUT, the reverse current
+protection works and suppress the reverse current to 1.5μA (MAX.).
+When VIN is smaller than VOUT, the VOUT pin sink current flowing from the VOUT pin to the VSS pin is 2.8μA (TYP.) as the IC
+operation current.
+Please also note when an external power supply is connected to the VOUT pin, please use it within 6.0V.
+<Current Limiter, Short-Circuit Protection>
+The XC6227 series integrates an output current limiter and a fold-back short protection for the output pin. When the load current
+reaches the current limit level, the fixed current limiter circuit operates and output voltage drops. When the output pin is shortcircuited to the VSS pin, the current is decreased to a level of 55mA (TYP.).
+<Thermal Shutdown>
+When the junction temperature of the built-in driver transistor reaches the temperature limit level (150℃ TYP.), the thermal
+shutdown circuit operates and the driver transistor will be turned OFF. The IC resumes its operation when the thermal shutdown
+function is released and the IC’s operation is automatically restored because the junction temperature drops to the level of 125℃
+(TYP.) as the thermal shutdown release voltage.
+<CE Pin>
+The entire XC6227 circuitry can be turned off via the CE pin signal. In shutdown mode, output at the VOUT pin will be pulled
+down to the VSS level via R1 & R2.
+The C/E type has a pull-down resistor in order to operate normally even the CE pin is left open (when the CE pin is left open,
+the IC stops operation), so that the CE pin input current flows.
+If the CE pin voltage is set with the specified voltage range, the logic is fixed and the IC will operate normally. However, the
+supply current may increase as a result of shoot-through current in the IC's internal circuitry when a medium voltage is input to
+the CE pin.
+
+10/26
+
+XC6227
+Series
+
+■NOTES ON USE
+1. For temporary, transitional voltage drop or voltage rising phenomenon, the IC is liable to malfunction should the ratings be
+exceeded.
+2. Where wiring impedance is high, operations may become unstable due to noise and/or phase lag depending on output
+current.
+Please wire the input capacitor (CIN) and the output capacitor (CL) as close to the IC as possible.
+3. When starting up the IC, inrush current can occur, which can lead to the input voltage reduction. To contain the
+reduction of the input voltage, please take countermeasures such as adding an input capacitance.
+4. Torex places an importance on improving our products and its reliability.
+However, by any possibility, we would request user fail-safe design and post-aging treatment on system or equipment.
+
+11/26
+
+XC6227 Series
+■TYPICAL PERFORMANCE CHARACTERISTICS
+(1) Output Voltage vs. Output Current
+
+*CE Voltage condition: unless otherwise stated VCE=VIN
+
+XC6227x081
+
+Ta = 25℃
+
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+0.8
+0.6
+
+0.4
+-40℃
+25℃
+
+0.2
+
+85℃
+
+200
+
+Output Voltage: VOUT [V]
+
+2.0
+
+400
+
+600
+
+800
+
+1000
+
+0.6
+0.4
+VIN=1.4V
+VIN=1.6V
+
+0.2
+
+VIN=1.8V
+VIN=2.3V
+VIN=6.0V
+
+0.0
+
+1200
+
+0
+
+200
+
+400
+
+600
+
+800
+
+XC6227x151
+
+XC6227x151
+
+VIN = 2.5V
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+Ta = 25℃
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+1.0
+-40℃
+
+0.5
+
+25℃
+
+85℃
+
+2.0
+
+1.5
+
+1.0
+VIN=1.6V
+VIN=1.8V
+
+0.5
+
+VIN=2.0V
+
+VIN=2.5V
+VIN=6.0V
+
+105℃
+
+0.0
+200
+
+3.0
+
+400
+
+600
+
+800
+
+1000
+
+0
+
+200
+
+400
+
+600
+
+800
+
+XC6227x281
+
+XC6227x281
+
+VIN = 3.8V
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+Ta = 25℃
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+-40℃
+25℃
+
+3.0
+2.5
+2.0
+1.5
+1.0
+
+VIN=2.9V
+VIN=3.1V
+VIN=3.3V
+
+0.5
+
+VIN=3.8V
+
+85℃
+
+VIN=6.0V
+
+105℃
+
+0.0
+
+0
+
+0.0
+200
+
+1200
+
+Output Current: I OUT [mA]
+
+1.5
+
+0
+
+1000
+
+Output Current: I OUT [mA]
+
+2.0
+
+0.5
+
+0.0
+
+1200
+
+2.5
+
+1.0
+
+1200
+
+Output Current: I OUT [mA]
+
+1.5
+
+0
+
+1000
+
+Output Current: I OUT [mA]
+
+Output Voltage: VOUT [V]
+
+0
+
+Output Voltage: VOUT [V]
+
+0.8
+
+105℃
+
+0.0
+
+12/26
+
+Output Voltage: VOUT [V]
+
+1.0
+
+Output Voltage: VOUT [V]
+
+Output Voltage: VOUT [V]
+
+1.0
+
+XC6227x081
+VIN = 1.8V
+
+400
+600
+800
+1000
+Output Current: I OUT [mA]
+
+1200
+
+200
+
+400
+
+600
+
+800
+
+Output Current: IOUT [mA]
+
+1000
+
+1200
+
+XC6227
+Series
+
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(1) Output Voltage vs. Output Current (Continued)
+XC6227x501
+
+VIN = 6.0V
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+Ta = 25℃
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+6.0
+
+5.0
+4.0
+3.0
+2.0
+
+-40℃
+25℃
+
+1.0
+
+85℃
+
+Output Voltage: VOUT [V]
+
+Output Voltage: VOUT [V]
+
+6.0
+
+XC6227x501
+
+5.0
+4.0
+3.0
+2.0
+
+VIN=5.1V
+VIN=5.3V
+
+1.0
+
+VIN=5.5V
+VIN=6.0V
+
+105℃
+
+0.0
+0
+
+200
+
+400
+
+600
+
+800
+
+1000
+
+0.0
+
+1200
+
+0
+
+Output Current: I OUT [mA]
+
+200
+
+400
+
+600
+
+800
+
+1000
+
+1200
+
+Output Current: I OUT [mA]
+
+(2) Output Voltage vs. Input Voltage
+XC6227x081
+
+XC6227x081
+Ta = 25℃
+
+0.8
+0.6
+
+0.4
+
+IOUT=0.1mA
+IOUT=10mA
+IOUT=30mA
+
+0.2
+
+IOUT=100mA
+
+1.0
+
+2.0
+
+4.0
+
+5.0
+
+0.80
+
+0.75
+
+IOUT=0.1mA
+
+IOUT=10mA
+
+0.70
+
+IOUT=30mA
+
+0.65
+
+6.0
+
+2.0
+
+3.0
+
+4.0
+
+5.0
+
+Input Voltage: VIN [V]
+
+Input Voltage: VIN [V]
+
+XC6227x151
+
+XC6227x151
+
+Ta = 25℃
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+1.5
+
+1.0
+IOUT=0.1mA
+IOUT=10mA
+
+0.5
+
+IOUT=30mA
+IOUT=100mA
+
+6.0
+
+Ta = 25℃
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+1.60
+
+Output Voltage: VOUT [V]
+
+2.0
+Output Voltage: VOUT [V]
+
+3.0
+
+0.85
+
+IOUT=100mA
+
+0.0
+0.0
+
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+0.90
+
+Output Voltage: VOUT [V]
+
+Output Voltage: VOUT [V]
+
+Ta = 25℃
+
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+1.0
+
+1.55
+
+1.50
+1.45
+
+IOUT=0.1mA
+IOUT=10mA
+
+1.40
+
+IOUT=30mA
+IOUT=100mA
+
+1.35
+
+0.0
+0.0
+
+1.0
+
+2.0
+
+3.0
+
+4.0
+
+Input Voltage: VIN [V]
+
+5.0
+
+6.0
+
+2.0
+
+3.0
+
+4.0
+
+5.0
+
+6.0
+
+Input Voltage: VIN [V]
+
+13/26
+
+XC6227 Series
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(2) Output Voltage vs. Input Voltage (Continued)
+XC6227x281
+3.0
+
+XC6227x281
+Ta = 25℃
+
+Ta = 25℃
+
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+Output Voltage: VOUT [V]
+
+Output Voltage: VOUT [V]
+
+2.5
+
+2.0
+1.5
+
+IOUT=0.1mA
+IOUT=10mA
+
+1.0
+
+IOUT=30mA
+IOUT=100mA
+
+0.5
+
+3.00
+
+0.0
+
+2.80
+
+2.70
+
+IOUT=0.1mA
+IOUT=10mA
+
+IOUT=30mA
+
+2.60
+
+IOUT=100mA
+
+2.50
+0.0
+
+1.0
+
+2.0
+
+3.0
+
+4.0
+
+5.0
+
+6.0
+
+3.0
+
+3.5
+
+4.0
+
+4.5
+
+5.0
+
+5.5
+
+6.0
+
+Input Voltage: VIN [V]
+
+Input Voltage: VIN [V]
+
+XC6227x501
+
+XC6227x501
+
+Ta = 25℃
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+Ta = 25℃
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+6.0
+
+4.0
+3.0
+IOUT=0.1mA
+
+2.0
+
+IOUT=10mA
+IOUT=30mA
+
+1.0
+
+5.20
+
+Output Voltage: VOUT [V]
+
+5.0
+
+Output Voltage: VOUT [V]
+
+2.90
+
+5.10
+5.00
+
+4.90
+
+IOUT=0.1mA
+
+IOUT=10mA
+
+4.80
+
+IOUT=30mA
+
+IOUT=100mA
+
+IOUT=100mA
+
+0.0
+
+4.70
+0.0
+
+1.0
+
+2.0
+
+3.0
+
+4.0
+
+5.0
+
+6.0
+
+5.2
+
+5.4
+
+Input Voltage: VIN [V]
+
+5.6
+
+5.8
+
+6.0
+
+Input Voltage: VIN [V]
+
+(3) Dropout Voltage vs. Output Current
+XC6227x151
+
+XC6227x081
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+1000
+-40℃
+
+1200
+
+※Below the minimum
+operating voltage
+
+1000
+800
+600
+400
+
+-40℃
+25℃
+
+200
+
+85℃
+
+Dropout Voltage: Vdif [mV]
+
+Dropout Voltage: Vdif [mV]
+
+1400
+
+25℃
+
+800
+
+85℃
+105℃
+
+600
+400
+200
+
+※Below the minimum
+operating voltage
+
+105℃
+
+0
+0
+
+100
+
+200
+
+300
+
+400
+
+500
+
+Output Current: I OUT [mA]
+
+14/26
+
+600
+
+700
+
+0
+0
+
+100
+
+200
+
+300
+
+400
+
+500
+
+Output Current: I OUT [mA]
+
+600
+
+700
+
+XC6227
+Series
+
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(3) Dropout Voltage vs. Output Current (Continued)
+XC6227x281
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+800
+
+-40℃
+25℃
+85℃
+105℃
+
+600
+
+400
+
+200
+
+100
+
+200
+
+300
+
+400
+
+500
+
+600
+
+-40℃
+25℃
+85℃
+105℃
+
+400
+300
+
+200
+100
+
+0
+
+0
+
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+500
+Dropout Voltage: Vdif [mV]
+
+Dropout Voltage: Vdif [mV]
+
+XC6227x501
+
+0
+
+700
+
+0
+
+100
+
+Output Current: I OUT [mA]
+
+200
+
+300
+
+400
+
+500
+
+600
+
+700
+
+Output Current: I OUT [mA]
+
+(4) Supply Current vs. Input Voltage
+XC6227x081
+
+XC6227x151
+
+Supply Current: ISS [μA]
+
+200
+
+150
+
+100
+
+-40℃
+
+50
+
+25℃
+
+150
+
+100
+-40℃
+
+50
+
+25℃
+
+85℃
+
+85℃
+105℃
+
+0
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+105℃
+
+0
+6
+
+0
+
+1
+
+2
+
+Input Voltage: VIN [V]
+
+3
+
+200
+
+-40℃
+
+5
+
+6
+
+Supply Current: I SS [μA]
+
+25℃
+
+85℃
+105℃
+
+100
+
+50
+
+0
+1
+
+6
+
+-40℃
+
+25℃
+
+0
+
+5
+
+XC6227x501
+
+200
+
+150
+
+4
+
+Input Voltage: VIN [V]
+
+XC6227x281
+
+Supply Current: ISS [μA]
+
+Supply Current: ISS [μA]
+
+200
+
+2
+
+3
+
+4
+
+Input Voltage: VIN [V]
+
+5
+
+6
+
+85℃
+
+150
+
+105℃
+
+100
+
+50
+
+0
+0
+
+1
+
+2
+
+3
+
+4
+
+Input Voltage: VIN [V]
+
+15/26
+
+XC6227 Series
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(5) Output Voltage vs. Ambient Temperature
+XC6227x081
+
+XC6227x151
+VIN = 1.8V,IOUT=30mA
+
+VIN = 2.5V,IOUT=30mA
+
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+CIN = 1.0μF (ceramic),CL =6.8μF(ceramic)
+
+1.60
+
+Output Voltage: VOUT [V]
+
+Output Voltage: VOUT [V]
+
+0.85
+
+0.83
+
+0.80
+
+0.78
+
+0.75
+-50
+
+-25
+
+0
+
+25
+
+50
+
+75
+
+100
+
+1.55
+
+1.50
+
+1.45
+
+1.40
+
+125
+
+-50
+
+0
+
+25
+
+50
+
+75
+
+100
+
+Ambient Temperature: Ta [℃]
+
+Ambient Temperature: Ta [℃]
+
+XC6227x281
+
+XC6227x501
+
+125
+
+VIN = 3.8V,IOUT=30mA
+
+VIN = 6.0V,IOUT=30mA
+
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+CIN = 1.0μF (ceramic),CL =2.2μF(ceramic)
+
+5.40
+
+Output Voltage: VOUT [V]
+
+3.00
+
+Output Voltage: VOUT [V]
+
+-25
+
+2.90
+2.80
+
+2.70
+
+5.20
+
+5.00
+4.80
+4.60
+
+2.60
+-50
+
+-25
+
+0
+
+25
+
+50
+
+75
+
+100
+
+-50
+
+125
+
+-25
+
+0
+
+25
+
+50
+
+75
+
+100
+
+125
+
+Ambient Temperature: Ta [℃]
+
+Ambient Temperature: Ta [℃]
+
+(6) CE Pin Threshold Voltage vs. Ambient Temperature
+
+(7) Reverse Current vs. Output Voltage
+XC6227
+
+XC6227
+
+5
+
+1.0
+
+-5
+
+Reverse Current：IREV(μA)
+
+CE Threshold Voltage: VCE [V]
+
+VIN=0V
+
+1.2
+
+0.8
+0.6
+0.4
+
+CE "H" LE VEL
+CE "L" LEVEL
+
+0.2
+
+0.0
+
+-25
+-40℃
+
+-35
+
+25℃
+85℃
+
+-45
+
+105℃
+
+-55
+-50
+
+-25
+
+0
+
+25
+
+50
+
+75
+
+100
+
+Ambient Temperature: Ta [℃]
+
+16/26
+
+-15
+
+125
+
+0
+
+1
+
+2
+
+3
+
+4
+
+Output Voltage：V OUT (V)
+
+5
+
+6
+
+XC6227
+Series
+
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(8) VOUT Sink Current vs. Output Voltage
+XC6227
+VIN=2.4V
+
+10
+V OUT Sink Current：IREVS (μA)
+
+-40℃
+
+8
+
+25℃
+85℃
+
+6
+
+105℃
+
+4
+2
+0
+
+2.5
+
+3
+
+3.5
+
+4
+
+4.5
+
+5
+
+5.5
+
+6
+
+Output Voltage：V OUT (V)
+
+(9) Input Transient Response
+
+XC6227x081
+
+VIN = 0→2.5V, tr = 5μs, CL = 6.8μF (ceramic)
+
+Input Voltage
+
+2.0
+
+2.0
+
+0.0
+-1.0
+
+2.5
+
+1.5
+
+Output Voltage
+
+1.0
+
+-2.0
+
+0.5
+
+-3.0
+
+0.0
+
+1.0
+
+-1.0
+
+1.0
+
+-2.0
+
+0.5
+
+-3.0
+
+0.0
+
+Time [40μs/div]
+
+Time [40μs/div]
+
+XC6227x281
+
+XC6227x501
+Ta = 25℃, IOUT=30mA
+VIN = 0→6.0V, tr = 5μs, CL = 2.2μF (ceramic)
+
+Input Voltage
+
+Output Voltage
+
+8.0
+
+5.0
+
+6.0
+
+4.0
+
+0.0
+
+3.0
+
+-2.0
+
+2.0
+
+-4.0
+
+1.0
+
+-6.0
+
+0.0
+Time [40μs/div]
+
+Input Voltage: VIN [V]
+
+4.0
+
+6.0
+
+Output Voltage: VOUT [V]
+
+6.0
+
+2.0
+
+1.5
+
+VIN = 0→3.8V,tr = 5μs, CL = 2.2μF (ceramic)
+
+Input Voltage: VIN [V]
+
+Output Voltage
+
+2.5
+
+0.0
+
+Ta = 25℃, IOUT=30mA
+
+2.0
+
+Input Voltage
+
+3.0
+
+4.0
+
+2.0
+
+12.0
+10.0
+Input Voltage
+Output Voltage
+
+8.0
+
+6.0
+
+0.0
+
+4.0
+
+-2.0
+
+2.0
+
+-4.0
+
+Output Voltage: VOUT [V]
+
+1.0
+
+3.0
+
+Input Voltage: VIN [V]
+
+2.0
+
+3.0
+
+Output Voltage: VOUT [V]
+
+Ta = 25℃, IOUT=30mA
+
+VIN = 0→1.8V, tr = 5μs, CL = 6.8μF (ceramic)
+
+Output Voltage: VOUT [V]
+
+Input Voltage: VIN [V]
+
+3.0
+
+XC6227x151
+Ta = 25℃, IOUT=30mA
+
+0.0
+Time [40μs/div]
+
+17/26
+
+XC6227 Series
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(10) CE Rising Response Time
+XC6227x081
+
+XC6227x151
+
+Ta = 25℃, VIN=1.8V, I OUT=30mA, VCE = 0→1.8V, tr = 5μs
+
+2.0
+
+CE Input Voltage
+
+0.0
+
+-1.0
+
+1.5
+
+Output Voltage
+
+1.0
+
+-2.0
+
+0.5
+
+-3.0
+
+0.0
+
+2.0
+
+1.0
+
+-1.0
+
+1.0
+
+-2.0
+
+0.5
+
+XC6227x501
+Ta = 25℃, VIN=6.0V, I OUT=30mA, VCE = 0→5.0V, tr = 5μs
+
+C IN =1.0μF (ceramic),C L =2.2μF (ceramic)
+
+8.0
+
+4.0
+
+5.0
+
+6.0
+
+4.0
+
+3.0
+
+-2.0
+
+2.0
+
+-4.0
+
+1.0
+
+-6.0
+
+0.0
+
+CE Voltage: VCE [V]
+
+6.0
+
+Output Voltage: VOUT [V]
+
+CE Voltage: VCE [V]
+
+0.0
+Time [40μs/div]
+
+6.0
+
+0.0
+
+2.0
+1.5
+
+XC6227x281
+
+Output Voltage
+
+Output Voltage
+
+0.0
+
+Ta = 25℃, VIN=3.8V, I OUT=30mA, VCE = 0→3.8V, tr = 5μs
+
+CE Input Voltage
+
+2.5
+
+CE Input Voltage
+
+-3.0
+
+Time [40μs/div]
+
+2.0
+
+3.0
+Output Voltage: VOUT [V]
+
+1.0
+
+2.5
+
+3.0
+
+4.0
+2.0
+
+C IN= 1.0μF (ceramic),C L =2.2μF (ceramic)
+
+12.0
+
+10.0
+CE Input Voltage
+
+8.0
+Output Voltage
+
+6.0
+
+0.0
+
+4.0
+
+-2.0
+
+2.0
+
+-4.0
+
+0.0
+
+Output Voltage: VOUT [V]
+
+CE Voltage: VCE [V]
+
+2.0
+
+C IN =1.0μF (ceramic),C L =6.8μF (ceramic)
+
+3.0
+
+CE Voltage: VCE [V]
+
+C IN = 1.0μF (ceramic),C L =6.8μF(ceramic)
+
+Output Voltage: VOUT [V]
+
+3.0
+
+Ta = 25℃, VIN=2.5V, I OUT=30mA, VCE = 0→2.5V, tr = 5μs
+
+Time [40μs/div]
+
+Time [40μs/div]
+
+(11) Input Transient Response
+XC6227x081
+
+Input Voltage
+
+4.5
+
+0.83
+
+3.5
+
+0.82
+
+0.8
+
+0.81
+
+-0.2
+
+0.80
+
+-1.2
+
+0.79
+
+Output Voltage
+
+-2.2
+
+0.78
+
+Time [50μs/div]
+
+18/26
+
+2.5
+
+Ta = 25℃, IOUT=30mA
+VIN = 3.8V⇔4.8V, tr = tf = 5μs, CL = 6.8μF (ceramic)
+
+1.53
+Input Voltage
+
+1.5
+
+1.52
+1.51
+
+0.5
+-0.5
+
+1.54
+
+1.50
+Output Voltage
+
+-1.5
+
+1.49
+1.48
+
+Time [50μs/div]
+
+Output Voltage: VOUT [V]
+
+1.8
+
+0.84
+
+Input Voltage: VIN [V]
+
+2.8
+
+XC6227x151
+
+Output Voltage: V OUT [V]
+
+Input Voltage: V IN [V]
+
+3.8
+
+Ta = 25℃, IOUT=30mA
+VIN = 1.8V⇔2.8V, tr = tf = 5μs, CL = 6.8μF (ceramic)
+
+XC6227
+Series
+
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(11) Input Transient Response (Continued)
+XC6227x281
+
+XC6227x501
+
+Ta = 25℃, IOUT=30mA
+VIN = 5.5V⇔6.0V, tr = tf = 5μs, CL = 2.2μF (ceramic)
+
+5.04
+
+2.83
+
+6.0
+
+5.03
+
+2.82
+
+2.8
+
+2.81
+
+1.8
+
+2.80
+
+0.8
+
+Output Voltage
+
+-0.2
+
+2.79
+2.78
+
+Time [50μs/div]
+
+5.5
+
+Input Voltage
+
+5.02
+
+5.0
+
+5.01
+
+4.5
+
+5.00
+
+4.0
+
+Output Voltage
+
+3.5
+
+4.99
+
+Output Voltage: VOUT [V]
+
+3.8
+
+Input Voltage
+
+6.5
+Input Voltage: VIN [V]
+
+Input Voltage: VIN [V]
+
+4.8
+
+2.84
+Output Voltage: VOUT [V]
+
+5.8
+
+Ta = 25℃, IOUT=30mA
+VIN = 5.5V⇔6.0V, tr = tf = 5μs, CL = 2.2μF (ceramic)
+
+4.98
+Time [50μs/div]
+
+19/26
+
+XC6227 Series
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(12) Load Transient Response
+XC6227x081
+
+XC6227x081
+VIN=1.8V , Ta = 25℃ , IOUT = 10⇔100mA , tr=tf=5μs
+
+VIN=1.8V , Ta = 25℃ , IOUT = 10⇔300mA , tr=tf=5μs
+
+800
+Output Voltage
+
+0.70
+0.65
+
+600
+
+400
+Output Current
+
+0.60
+
+200
+0
+
+1000
+
+0.80
+
+800
+
+0.75
+
+0.70
+
+0.60
+
+XC6227x151
+
+XC6227x151
+VIN=2.5V , Ta = 25℃ , IOUT = 10⇔300mA , tr=tf=5μs
+
+1.50
+
+800
+
+400
+Output Current
+
+1.30
+
+200
+0
+
+Time [100μs/div]
+
+20/26
+
+600
+
+Output Voltage: VOUT [V]
+
+1000
+
+Output Current Iout[mA]
+
+Output Voltage: VOUT [V]
+
+CIN = 1.0μF (ceramic) , CL =6.8μF(ceramic)
+
+1.55
+
+1.40
+
+400
+
+0
+Time [100μs/div]
+
+Output Voltage
+
+600
+
+200
+
+Time [100μs/div]
+
+CIN = 1.0μF (ceramic) , CL =6.8μF(ceramic)
+
+1.35
+
+Output Current
+
+0.65
+
+VIN=2.5V , Ta = 25℃ , IOUT = 10⇔100mA , tr=tf=5μs
+
+1.45
+
+Output Voltage
+
+1.55
+
+1000
+
+1.50
+
+800
+
+1.45
+1.40
+
+Output Voltage
+Output Current
+
+1.35
+
+600
+400
+200
+
+1.30
+
+0
+Time [40μs/div]
+
+Output Current Iout[mA]
+
+0.75
+
+0.85
+
+Output Current Iout[mA]
+
+0.80
+
+Output Voltage: VOUT [V]
+
+CIN = 1.0μF (ceramic) , CL =6.8μF(ceramic)
+
+1000
+
+Output Current Iout[mA]
+
+Output Voltage: VOUT [V]
+
+CIN =1.0μF (ceramic) , CL =6.8μF(cceramic)
+
+0.85
+
+XC6227
+Series
+
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(12) Load Transient Response (Continued)
+XC6227x281
+
+XC6227x281
+
+VIN=3.8V , Ta = 25℃ , IOUT = 10⇔100mA , tr=tf=5μs
+
+VIN=3.8V , Ta = 25℃ , IOUT = 10⇔300mA , tr=tf=5μs
+
+CIN = 1.0μF (ceramic) , CL =2.2μF(ceramic)
+
+CIN = 1.0μF (ceramic) , CL =2.2μF(ceramic)
+
+2.70
+
+600
+
+2.60
+
+400
+
+2.50
+
+Output Current
+
+2.40
+
+200
+
+1000
+
+2.80
+
+800
+
+2.70
+
+2.60
+
+XC6227x501
+
+XC6227x501
+
+600
+400
+
+Output Current
+
+4.60
+
+200
+0
+
+Time [100μs/div]
+
+5.10
+Output Voltage: VOUT [V]
+
+4.80
+4.70
+
+1000
+800
+
+Output Voltage
+
+0
+
+VIN=6.0V , Ta = 25℃ , IOUT = 10⇔300mA , tr=tf=5μs
+
+Output Current Iout[mA]
+
+Output Voltage: VOUT [V]
+
+4.90
+
+400
+
+Time [100μs/div]
+
+VIN=6.0V , Ta = 25℃ , IOUT = 10⇔100mA , tr=tf=5μs
+
+5.00
+
+600
+
+200
+
+2.40
+
+0
+
+CIN = 1.0μF (ceramic) , CL =2.2μF(ceramic)
+
+Output Current
+
+2.50
+
+Time [100μs/div]
+
+5.10
+
+Output Voltage
+
+Output Current Iout[mA]
+
+800
+Output Voltage
+
+2.90
+
+CIN = 1.0μF (ceramic) , CL =2.2μF(ceramic)
+
+5.00
+
+4.90
+4.80
+
+1000
+800
+
+Output Voltage
+Output Current
+
+600
+400
+
+4.70
+
+200
+
+4.60
+
+0
+
+Output Current Iout[mA]
+
+2.80
+
+Output Voltage: VOUT [V]
+
+1000
+
+Output Current Iout[mA]
+
+Output Voltage: VOUT [V]
+
+2.90
+
+Time [100μs/div]
+
+21/26
+
+XC6227 Series
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(13) Ripple Rejection Rate
+XC6227x081
+
+XC6227x151
+Ta = 25℃, IOUT=30mA
+
+Ta = 25℃, IOUT=30mA
+
+VIN = 1.8VDC+0.5Vp-pAC, CL = 6.8μF (ceramic)
+
+VIN = 2.5VDC+0.5Vp-pAC, CL = 6.8μF (ceramic)
+
+80
+Ripple Rejection Rate: RR [dB]
+
+Ripple Rejection Rate: RR [dB]
+
+80
+
+60
+40
+20
+0
+10
+
+100
+
+1k
+
+10k
+
+100k
+
+20
+
+10
+
+100
+
+1k
+
+10k
+
+Ripple Frequency: f [Hz]
+
+Ripple Frequency: f [Hz]
+
+XC6227x281
+
+XC6227x501
+
+Ripple Rejection Rate: RR [dB]
+
+60
+
+40
+
+20
+
+0
+
+100k
+
+1M
+
+Ta = 25℃, IOUT=30mA
+VIN = 5.75VDC+0.5Vp-pAC, CL = 2.2μF (ceramic)
+
+80
+
+80
+Ripple Rejection Rate: RR [dB]
+
+40
+
+0
+
+1M
+
+Ta = 25℃, IOUT=30mA
+VIN = 3.8VDC+0.5Vp-pAC, CL = 2.2μF (ceramic)
+
+60
+
+40
+
+20
+
+0
+10
+
+100
+
+1k
+
+10k
+
+Ripple Frequency: f [Hz]
+
+22/26
+
+60
+
+100k
+
+1M
+
+10
+
+100
+
+1k
+
+10k
+
+Ripple Frequency: f [Hz]
+
+100k
+
+1M
+
+XC6227
+Series
+
+■TYPICAL PERFORMANCE CHARACTERISTICS (Continued)
+(14) Output Noise Density
+X C6227x121
+
+X C6227x181
+VIN=2.8, Ta=25℃
+CIN=1.0μF(ceramic), CL =6.8μF(ceramic)
+
+VIN=2.2V, Ta=25℃
+CIN=1.0μF(ceramic), CL =6.8μF(ceramic)
+
+100
+Frequency-Range ： 0.1～100kHz
+Output Noise ： 51.53μVrms
+
+Output Noise Density : (μV/√Hz)
+
+Output Noise Density : (μV/√Hz)
+
+100
+
+10
+IOUT=30mA
+
+1
+
+0.1
+
+0.01
+0.1
+
+1
+
+10
+
+100
+
+Frequency : f (kHz)
+
+Frequency-Range ： 0.1～100kHz
+Output Noise ： 76.29μVrms
+
+10
+IOUT=30mA
+
+1
+
+0.1
+
+0.01
+0.1
+
+1
+
+10
+
+100
+
+Frequency : f (kHz)
+
+X C6227x331
+VIN=5.0V, Ta=25℃
+CIN=1.0μF(ceramic), CL =2.2μF(ceramic)
+
+Output Noise Density : (μV/√Hz)
+
+100
+Frequency-Range ： 0.1～100kHz
+Output Noise ： 143.28μVrms
+
+10
+IOUT=30mA
+
+1
+
+0.1
+
+0.01
+0.1
+
+1
+
+10
+
+100
+
+Frequency : f (kHz)
+
+23/26
+
+XC6227 Series
+■PACKAGING INFORMATION
+For the latest package information go to, www.torexsemi.com/technical-support/packages
+PACKAGE
+
+OUTLINE / LAND PATTERN
+
+THERMAL CHARACTERISTICS
+
+SOT-25
+
+SOT-25 PKG
+
+SOT-25 Power Dissipation
+
+SOT-89-5
+
+SOT-89-5 PKG
+
+SOT-89-5 Power Dissipation
+
+USP-6C
+
+USP-6C PKG
+
+USP-6C Power Dissipation
+
+24/26
+
+E
+
+015
+
+マーク④,⑤
+
+XC6227S015**-G
+
+Z
+
+030
+
+XC6227S030**-G
+
+製造ロットを表す。01～09、0A～0Z、11･･･9Z、A1～A9、AA･･･Z9、ZA～ZZを繰り返す。
+(但し、G，I，J，O，Q，Wは除く。反転文字は使用しない。)
+
+XC6227
+Series
+
+※SOT-25は、UnderRULE
+dot仕様とする。
+■MARKING
+
+システム管理上、オーダーシート・CSVデータ内の対象マーク前に「#」を付けて表す。
+●SOT-25 / SOT-89-5 / USP-6C
+●SOT-25
+SOT-25(Under dot仕様)
+
+5
+
+4
+④
+
+4
+
+1
+2
+
+⑤
+
+⑤
+
+4
+
+④
+
+③
+②
+
+3
+
+3
+
+①
+
+2
+
+5
+
+③
+
+⑤
+
+1
+
+6
+
+②
+
+③
+
+2
+
+①
+
+②
+
+5
+
+●USP-6C
+USP-6C
+
+④
+
+①
+
+●SOT-89-5
+SOT-89-5
+
+Enlarge
+拡大
+1
+
+2
+
+3
+
+* SOT-25 Under dot
+
+① represents product series
+MARK
+
+PRODUCT SERIES
+
+3
+
+XC6227******-G
+
+② represents regulator type, voltage range, and accuracy
+MARK
+
+REGULATOR TYPE
+
+A
+B
+C
+D
+E
+F
+H
+K
+
+A/D
+A/D
+A/D
+A/D
+C/E
+C/E
+C/E
+C/E
+
+OUTPUT
+ACCURACY
+VOLTAGE RANGE
+0.8～2.9
+0.85～2.95
+3.0～5.0
+3.05～4.95
+0.8～2.9
+0.85～2.95
+3.0～5.0
+3.05～4.95
+
+PRODUCT SERIES
+
+1
+B
+1
+B
+1
+B
+1
+B
+
+XC6227A/D081xx-G ～ XC6227A/D291xx-G
+XC6227A/D08Bxx-G ～ XC6227A/D29Bxx-G
+XC6227A/D301xx-G ～ XC6227A/D501xx-G
+XC6227A/D30Bxx-G ～ XC6227A/D49Bxx-G
+XC6227C/E081xx-G ～ XC6227C/E291xx-G
+XC6227C/E08Bxx-G ～ XC6227C/E29Bxx-G
+XC6227C/E301xx-G ～ XC6227C/E501xx-G
+XC6227C/E30Bxx-G ～ XC6227C/E49Bxx-G
+
+* Accuracy “1”- 0.1V step, Accuracy “B”- 0.05V step
+
+③ represents output voltage.
+MARK
+
+OUTPUT
+VOLTAGE (V)
+
+MARK
+
+OUTPUT
+VOLTAGE (V)
+
+MARK
+
+OUTPUT
+VOLTAGE (V)
+
+0
+
+-
+
+3.0x
+
+A
+
+1.0x
+
+4.0x
+
+N
+
+2.0x
+
+5.0x
+
+1
+
+-
+
+3.1x
+
+B
+
+1.1x
+
+4.1x
+
+P
+
+2.1x
+
+-
+
+2
+
+-
+
+3.2x
+
+C
+
+1.2x
+
+4.2x
+
+R
+
+2.2x
+
+-
+
+3
+
+-
+
+3.3x
+
+D
+
+1.3x
+
+4.3x
+
+S
+
+2.3x
+
+-
+
+4
+
+-
+
+3.4x
+
+E
+
+1.4x
+
+4.4x
+
+T
+
+2.4x
+
+-
+
+5
+
+-
+
+3.5x
+
+F
+
+1.5x
+
+4.5x
+
+U
+
+2.5x
+
+-
+
+6
+
+-
+
+3.6x
+
+H
+
+1.6x
+
+4.6x
+
+V
+
+2.6x
+
+-
+
+7
+
+-
+
+3.7x
+
+K
+
+1.7x
+
+4.7x
+
+X
+
+2.7x
+
+-
+
+8
+
+0.8x
+
+3.8x
+
+L
+
+1.8x
+
+4.8x
+
+Y
+
+2.8x
+
+-
+
+9
+
+0.9x
+
+3.9x
+
+M
+
+1.9x
+
+4.9x
+
+Z
+
+2.9x
+
+-
+
+④⑤ represents production lot number
+01 to 09, 0A to 0Z, 11 to 9Z, A1 to A9, AA to Z9, ZA to ZZ repeated. (G, I, J, O, Q, W excluded)
+* No character inversion used.
+
+25/26
+
+XC6227 Series
+
+1.
+
+The product and product specifications contained herein are subject to change without notice to
+improve performance characteristics. Consult us, or our representatives before use, to confirm
+that the information in this datasheet is up to date.
+
+2.
+
+The information in this datasheet is intended to illustrate the operation and characteristics of our
+products. We neither make warranties or representations with respect to the accuracy or
+completeness of the information contained in this datasheet nor grant any license to any
+intellectual property rights of ours or any third party concerning with the information in this
+datasheet.
+
+3.
+
+Applicable export control laws and regulations should be complied and the procedures required
+by such laws and regulations should also be followed, when the product or any information
+contained in this datasheet is exported.
+
+4.
+
+The product is neither intended nor warranted for use in equipment of systems which require
+extremely high levels of quality and/or reliability and/or a malfunction or failure which may cause
+loss of human life, bodily injury, serious property damage including but not limited to devices or
+equipment used in 1) nuclear facilities, 2) aerospace industry, 3) medical facilities, 4) automobile
+industry and other transportation industry and 5) safety devices and safety equipment to control
+combustions and explosions. Do not use the product for the above use unless agreed by us in
+writing in advance.
+
+5.
+
+Although we make continuous efforts to improve the quality and reliability of our products;
+nevertheless Semiconductors are likely to fail with a certain probability. So in order to prevent
+personal injury and/or property damage resulting from such failure, customers are required to
+incorporate adequate safety measures in their designs, such as system fail safes, redundancy
+and fire prevention features.
+
+6.
+
+Our products are not designed to be Radiation-resistant.
+
+7.
+
+Please use the product listed in this datasheet within the specified ranges.
+
+8.
+
+We assume no responsibility for damage or loss due to abnormal use.
+
+9.
+
+All rights reserved. No part of this datasheet may be copied or reproduced unless agreed by Torex
+Semiconductor Ltd in writing in advance.
+
+TOREX SEMICONDUCTOR LTD.
+
+26/26
+
+

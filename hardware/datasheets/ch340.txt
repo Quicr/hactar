@@ -1,0 +1,897 @@
+The Data Sheet of CH340 (the first)
+
+1
+
+USB to serial chip CH340
+English Data
+Sheet Version: 2C
+http://wch.cn
+1 Introduction
+CH340 is a USB bus conversion chip, it can realize USB to UART interface or USB to printer interface.
+In serial UART mode, CH340 provides common MODEM liaison signal, used to expand UART interface of
+computer or upgrade the common serial device to USB bus directly. For more information on USB conversion to
+printer interface please refer to the manual CH340DS2.
+
+2 Features
+● Full speed USB device interface, compatible with USB V2.0.
+● Emulate standard UART interface, used to upgrade the serial peripherals, or expand UART interface via
+USB bus.
+● Original serial applications are totally compatible, without any modification in Windows operation system.
+● Hardware full duplex serial UART interface, built-in transmit-receive buffer, supports communication baud
+rate varies from 50bps to 2Mbps.
+● Supports common MODEM liaison signal RTS, DTR, DCD, RI, DSR and CTS.
+● Through external level conversion chip provide further RS232, RS485, RS422 interface, etc.
+● CH340R supports IrDA criterion SIR infrared communication, supports baud rate varies from 2400bps to
+115200bps.
+● Software compatible with CH341, use driver of CH341 directly.
+● Support 5V and 3.3V power supply even 3V.
+● CH340C, CH340E and CH340B have built-in crystal, no external crystal, CH340B also integrates
+EEPROM used to configure the serial number, etc.
+● SOP-16 and SSOP-20 and MSOP-10 lead-free RoHS compliant package.
+
+The Data Sheet of CH340 (the first)
+
+2
+
+3 Package
+
+Package shape Width of plastic
+
+Pitch of Pin
+
+Instruction of package
+
+Ordering type
+
+SOP-16
+
+3.9mm
+
+150mil 1.27mm
+
+50mil
+
+Small outline package of 16-pin
+
+CH340G
+
+SOP-16
+
+3.9mm
+
+150mil 1.27mm
+
+50mil
+
+Small outline package of 16-pin
+
+CH340C
+
+SOP-16
+
+3.9mm
+
+150mil 1.27mm
+
+50mil
+
+Small outline package of 16-pin
+
+CH340B
+
+MSOP-10
+
+3.0mm
+
+118mil 0.50mm 19.7mil
+
+Shrink small outline package of 10-pin
+
+CH340E
+
+SSOP-20
+
+5.30mm 209mil 0.65mm
+
+25mil
+
+Shrink small outline package of 20-pin
+
+CH340T
+
+SSOP-20
+
+5.30mm 209mil 0.65mm
+
+25mil
+
+Shrink small outline package of 20-pin
+
+CH340R
+
+Model differences:
+CH340C, CH340E and CH340B have built-in crystal, no external crystal;
+CH340B also has built-in EEPROM used to configure the serial number,etc.Some functions can be customized.
+CH340R provides reverse polarity TXD and MODEM signals. (No spot)
+
+4. Pins
+SSOP20 SOP16 MSOP10
+Pin Name
+Pin No. Pin No. Pin No.
+
+Pin Type
+
+Pin Description (description in bracket is only about
+CH340R)
+
+19
+
+16
+
+7
+
+VCC
+
+POWER
+
+Positive power input port, requires an external 0.1uF power
+decoupling capacitor
+
+8
+
+1
+
+3
+
+GND
+
+POWER
+
+Public ground, ground connection for USB
+
+5
+
+4
+
+NONE
+
+V3
+
+POWER
+
+Connect to VCC to input external power when 3.3V power
+supply, connect to 0.1uF decoupling capacitor when 5V
+power supply
+
+9
+
+7
+
+NONE
+
+XI
+
+IN
+
+CH340T/R/G: Input of crystal oscillator, connect to crystal
+and capacitor
+
+NC.
+
+NONE
+
+CH340C: No Connection, must be suspended
+
+RST#
+
+IN
+
+CH340B: Input of external reset, active low, built-in
+
+The Data Sheet of CH340 (the first)
+
+3
+
+pull-up resistor
+10
+
+8
+
+NONE
+
+XO
+
+OUT
+
+CH340T/R/G: Output of crystal oscillator, connect to
+crystal and capacitor
+
+NC.
+
+NONE
+
+CH340C/B: No Connection, must be suspended
+
+6
+
+5
+
+1
+
+UD+
+
+USB signal
+
+Directly connect to D+ data wire of USB bus
+
+7
+
+6
+
+2
+
+UD-
+
+USB signal
+
+Directly connect to D- data wire of USB bus
+
+20
+
+NONE
+
+NONE
+
+NOS#
+
+IN
+
+Forbid USB device suspending, active low, built-in pull-up
+resistor
+
+3
+
+2
+
+8
+
+TXD
+
+OUT
+
+Transmit asynchronous data output(reverse output for
+CH340R)
+
+4
+
+3
+
+9
+
+RXD
+
+IN
+
+Receive asynchronous data input, built-in configurable
+pull-up and pull-down resistor
+
+11
+
+9
+
+5
+
+CTS#
+
+IN
+
+MODEM liaison input signal, clear to send, active
+low(high)
+
+12
+
+10
+
+NONE
+
+DSR#
+
+IN
+
+MODEM liaison input signal, data set ready, active
+low(high)
+
+13
+
+11
+
+NONE
+
+RI#
+
+IN
+
+MODEM liaison input signal, ring indicator , active
+low(high)
+
+14
+
+12
+
+NONE
+
+DCD#
+
+IN
+
+MODEM liaison input signal, data carrier detect, active
+low(high)
+
+15
+
+13
+
+NONE
+
+DTR#
+
+OUT
+
+MODEM liaison output signal, data terminal ready, active
+low(high)
+
+16
+
+14
+
+4
+
+RTS#
+
+OUT
+
+MODEM liaison output signal, request to send, active
+low(high)
+
+2
+
+NONE
+
+NONE
+
+ACT#
+
+OUT
+
+USB configuration completed state output, active low
+
+18
+
+15
+
+NONE
+
+R232
+
+IN
+
+CH340T/R/G/C: Assistant RS232 enable, active high,
+built-in pull-down resistor
+
+17
+
+15
+
+6
+
+TNOW
+
+OUT
+
+CH340T/E/B: Ongoing data transmission status indicator,
+active high
+
+IR#
+
+IN
+
+CH340R:Serial mode input setting, built-in pull-up resistor,
+SIR infrared serial interface when low, common serial
+interface when high
+
+CK0
+
+OUT
+
+CH340T: clock output
+
+NC.
+
+NONE
+
+CH340R:No Connection, must be suspend
+
+1
+
+NONE
+
+NONE
+
+5. Function Description
+CH340 chip has built-in USB pull-up resistor, UD+ and UD- pins must be connected to USB bus directly.
+CH340 chip has built-in power-on reset circuit. CH340B also provides low active external reset pin.
+CH340G/CH340T/CH340R chips need to work with 12MHz clock signal supplied to XI pin. Generally,
+clock signal is generated crystal oscillation with inverter in CH340. The peripheral circuit needs to place a crystal
+of 12MHz between XI and XO, and connect to a capacitor to ground separately.
+CH340C, CH340E and CH340B chip have built-in clock generator, no external crystal and oscillating
+capacitor required.
+
+The Data Sheet of CH340 (the first)
+
+4
+
+CH340B chip also provides EEPROM for configuring data area, product serial number and other
+information could be customized for each chip by specific software tools, configurable data area is shown in the
+table below.
+Byte Abbreviati
+on
+Address
+
+Description of chip configuration data area
+For CH340B: Internal configuration information valid reg,
+must be 58H.
+For CH340H/S: External configuration information valid
+reg, must be 53H.
+Invalid for other value
+
+Default
+
+00H
+
+SIG
+
+01H
+
+MODE
+
+Serial mode, must be 23H
+
+23H
+
+02H
+
+CFG
+
+Specific configuration of chip,
+bit5 is used to configure product Serial Number:
+0= valid; 1= invalid.
+
+FEH
+
+03H
+
+WP
+
+05~04H
+
+VID
+
+Vendor ID, high byte is behind, any value. Set to 0000H or
+0FFFFH implies VID and PID using vendor default value
+
+1A86H
+
+07~06H
+
+PID
+
+Product ID, high byte is behind, any value
+
+7523H
+
+0AH
+
+PWR
+
+Max Power, The maximum supply current in 2mA units
+
+31H
+
+17~10H
+
+SN
+
+Serial Number, the length of ASCII string is 8, disable the
+Serial number when the first byte is not ASCII character
+(21H~7FH)
+
+12345678
+
+3FH~1AH
+
+PROD
+
+Others
+
+Internal configuration information write protect flag，57H
+imply read only, otherwise can be rewrite
+
+00H
+
+00H
+
+Using product
+For CH340B: Product String, Unicode string for Product
+default
+description. The first byte is by total bytes (less than 26H),
+description when
+the next byte is 03H, Unicode string after that, using vendor
+the first byte is
+default description when do not meet characteristics above.
+00H
+(Reserved unit)
+
+00H or FFH
+
+CH340 chip supports 5V and 3.3V power voltage. When using 5V source power, the VCC pin input 5V
+power and the V3 pin should connect with decoupling 0.1uF capacitor. When using 3.3V power voltage,
+connects V3 with VCC, both input 3.3V power voltage, and the other circuit voltage which connected with
+CH340 cannot exceed 3.3V.
+CH340 supports USB device suspending automatically to save power. USB device suspend is forbidden
+when NOS# is driven low.
+The DTR# pin of CH340 is used as a configuration input pin before the USB configuration is complete. An
+external 4.7KΩ pull-down resistor can be connected with this pin to generate default low level during USB
+enumeration, apply larger supply current to the USB bus via the configuration descriptor.
+In UART mode, CH340 chip contains these pins: data transfer pins, MODEM liaison signal pins and
+assistant pins.
+
+The Data Sheet of CH340 (the first)
+
+5
+
+Data transfer pins contain: TXD and RXD pin. RXD keeps high when UART reception is idle.
+For CH340G/C/T/R chip, If R232 pin is driven high, assistant RS232 function will be enabled, an
+internal inverter will automatically insert to the RXD pin , and the pin becomes low by default. When
+UART transmission is idle, the TXD pin of CH340G/C/B/T keeps high, while CH340R keeps low.
+MODEM liaison signal pins contain: CTS#, DSR#, RI#, DCD# and RTS#. All these MODEM liaison
+signal are controlled and function defined by computer applications.
+Assistant pins contain: IR#, R232, CK0, ACT# and TNOW. When IR# is low-level, infrared serial
+interface mode is enabled. R232 pin is used to control assistant RS232 function. If R232 pin is driven
+high, the RXD pin input will be reversed automatically. ACT# pin is USB device configuration
+complete status output (such as USB infrared adapter ready). TNOW pin indicates CH340 is
+transmitting data from UART when it is high-level and becomes low when transmit over. In RS485
+and other half-duplex mode, TNOW could be used to indicate UART transmit-receive status. IR# and
+R232 are detected only once when chip powered on and reset.
+CH340 has built-in separate transmit-receive buffer and supports simplex, half-duplex and full
+duplex UART communication. Serial data contains one low-level start bit , 5, 6, 7 or 8 data bits and 1
+or 2 high-level stop bits, supports odd/even/mark/space check. CH340 supports common baud rate:
+50, 75, 100, 110, 134.5, 150, 300, 600, 900, 1200, 1800, 2400, 3600, 4800, 9600, 14400, 19200,
+33600, 38400, 56000, 57600, 76800, 115200, 128000, 153600, 230400, 460800, 921600,
+1500000, 2000000 etc.
+The baud rate error of CH340 UART reception allows not less than 2%, the baud rate error of
+CH340G/CH340T/CH340R UART transmission is less than 0.3%, less than 1% for CH340C/CH340E/
+CH340B.
+In the Windows operation system, CH340 driver can emulate standard serial port. So the mostly
+original serial applications are totally compatible, without any modification.
+CH340 can be used to upgrade the serial interface peripherals, or expand extra serial port for computers via
+USB bus, through external level conversion chip provide further RS232, RS485, RS422 interface, etc.
+Only need to add infrared transceiver, CH340R can expand SIR infrared adapter for computer via USB bus,
+realize infrared communication between computer and peripheral equipment that comply with IrDA specifications.
+
+6. Parameter
+6.1 Absolute maximum rating (Critical or exceeding absolute maximum can cause permanent damage to device)
+Name
+TA
+
+Parameter Description
+Ambient temperature
+
+Min.
+
+Max.
+
+Units
+
+CH340G/CH340T/CH340R
+
+-40
+
+85
+
+℃
+
+CH340C/CH340E/CH340B
+
+-20
+
+70
+
+℃
+
+TS
+
+Storage temperature
+
+-55
+
+125
+
+℃
+
+VCC
+
+Supply Voltage(VCC connects to power, GND to ground)
+
+-0.5
+
+6.0
+
+V
+
+VIO
+
+The voltage of input or output pin
+
+-0.5
+
+VCC+0.5
+
+V
+
+The Data Sheet of CH340 (the first)
+
+6
+
+6.2. Electrical Parameter (test conditions: TA=25℃, VCC=5V, exclude pin connected to USB bus)
+(All the current parameters should multiply the coefficient of 40% when the power is 3.3V)
+Name
+
+Parameter Description
+
+VCC Supply Voltage
+
+Min.
+
+Typical
+
+Max.
+
+V3 doesn’t connect to VCC
+
+4.0
+
+5
+
+5.3
+
+CH340G/T/R
+
+2.8
+
+3.3
+
+3.6
+
+CH340C/E/B
+
+3.0
+
+3.3
+
+3.6
+
+V3 connect to
+VCC
+ICC
+
+ISLP
+
+Operating Supply
+Current(Normal Operation)
+
+CH340G/C/E/T/R
+
+7
+
+20
+
+CH340B
+
+6
+
+15
+
+Operating Supply Current(USB
+Suspend)
+
+VCC=5V
+
+0.1
+
+0.2
+
+VCC=3.3V
+
+0.09
+
+0.15
+
+Units
+
+V
+
+mA
+
+mA
+
+VIL
+
+Low-level Input Voltage
+
+-0.5
+
+0.7
+
+V
+
+VIH
+
+High-level Input Voltage
+
+2.0
+
+VCC+0.5
+
+V
+
+VOL
+
+Low-level Output Voltage(4mA draw current)
+
+0.5
+
+V
+
+VOH
+
+High-level Output Voltage(3mA output current)
+(Output 100uA current during chip reset)
+
+VCC-0.5
+
+IUP
+
+Input current input with built-in pull-up resistor
+
+3
+
+150
+
+300
+
+uA
+
+IDN
+
+Input current input with built-in pull-down resistor
+
+-50
+
+-150
+
+-300
+
+uA
+
+VR
+
+Restrict voltage when power-up reset
+
+2.4
+
+2.6
+
+2.8
+
+V
+
+V
+
+6.3. Sequence Parameter (test conditions: TA=25℃,VCC=5V)
+Name
+
+Parameter Description
+
+Min.
+
+Typical
+
+Max.
+
+Units
+
+FCLK
+
+Frequency of input clock in XI
+
+11.98
+
+12.00
+
+12.02
+
+MHz
+
+TPR
+
+Reset time of power-up
+
+20
+
+35
+
+50
+
+mS
+
+7. Application
+7.1.1 USB to RS232 Converter Configuration using CH340T
+
+The Data Sheet of CH340 (the first)
+
+7
+
+7.1.2 USB to RS232 Converter Configuration using CH340B
+
+The image above use CH340T/CH340B (or CH340C ) to realize USB to RS232 converter. CH340 provides
+common UART and MODEM signal, converts TTL to RS232 through level conversion chip U8. Port P11 is
+DB9 connector, the pin and its function are the same as common PC DB9 connector, the chips similar with
+U8 have MAX213/ADM213/SP213/MAX211 etc.
+U8 and C46/C47/C48/C49/C40 could be removed when realize USB to TTL converter only. The signal lines in
+the image only RXD、TXD and public ground need connected, the other signal lines should suspend when not use.
+P2 is USB port, USB bus contains a pair of 5V power lines and a pair of data signal lines . Usually, the color of
++5V power line is red, the black one is ground. D+ signal line is green and the D- signal line is white. The max
+supply current of USB bus is up to 500mA. Generally, CH340 and low power consumption USB products can use
+the 5V power supplied by USB bus directly. If the USB products supply standing power by other manner, CH340
+should use this power too. If the USB bus power and standing power are necessary at the same time, connect a 1Ω
+resistor between USB bus 5V power line and USB products 5V standing power line, and connect the ground lines
+of these two power directly.
+The capacitor C8 on V3 pin is 0.1uF, used to CH340 internal power node decoupling. The capacitor C9 is
+0.1uF, used to external power decoupling.
+For CH340G/T/R chip, Crystal X2, capacitor C6 and C7 are used for clock oscillation circuit. The X2 is 12MHz
+quartz crystal, C6 and C7 are monolithic or high frequency ceramic capacitors with 22pF. If X2 is ceramic with low
+cost, C6 and C7 must use the recommended value of crystal manufacturer and generally is 47pF. For the crystal
+which is difficult to oscillate, halved value is suggested for C6.
+For CH340C/E/B chip, crystal X2 and capacitor C6, C7 are not required.
+When designing the PCB, pay attention to: decoupling capacitor C8 and C9 must keep near to connection pin
+of CH340; makes sure D+ and D- signal lines are parallel and supply ground lines or pour copper beside them to
+decrease the interference from outside signal; the signal lines relevant to XI and XO should be kept as short as
+possible. In order to lessen the high frequency interference, around the ground wire or pour copper around the
+relevant components.
+7.2. USB to RS232 Converter Configuration (3-wire)
+The image below is USB to 3-wire RS232 converter design which is the most basic and most commonly used,
+U5 uses MAX232/ICL232/SP232 etc.
+
+The Data Sheet of CH340 (the first)
+
+8
+
+7.3 USB to RS232 Converter Configuration (Simplified version using R232)
+
+The image above is USB to RS232 converter design too, the function of this circuit is the same with 7.2 section
+except the range of output RS232 is narrower. When R232 pin is driven high, the assistant RS232 function will be
+enabled, just need to add some diodes, transistors, resistors and capacitors, the special level conversion chip U5 in
+section 7.2 could be replaced and the hardware cost is lower.
+
+7.4 USB to Infrared Adapter
+
+The image above is USB to infrared adapter design is composed with USB convert IrDA infrared chip
+CH340R and infrared transceiver U14 (ZHX1810/HSDL3000 etc).The resistor R13 is used to weaken influence of
+large current in infrared transmitting. The current limiting resistor R14 should be adjusted according to the
+manufacturer’s recommended value of the infrared transceiver U14.
+
+7.5. USB to RS485 Converter Configuration
+The TNOW pin can be used to control DE (high active send enable) and RE# (low active receive enable)
+pin of RS485 transceiver.
+
+
