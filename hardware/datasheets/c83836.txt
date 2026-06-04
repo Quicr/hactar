@@ -1,0 +1,4418 @@
+M24C01/02-W M24C01/02-R
+M24C02-F
+1-Kbit and 2-Kbit serial I²C bus EEPROMs
+Datasheet - production data
+
+Features
+• Compatible with I2C bus modes:
+– 400 kHz
+– 100 kHz
+TSSOP8 (DW)
+169 mil width
+
+SO8 (MN)
+150 mil width
+
+
+
+
+PDIP8 (BN)(1)
+
+• Memory array:
+– 1 Kbit (128 bytes) of EEPROM
+– 2 Kbit (256 bytes ) of EEPROM
+– Page size: 16 byte
+• Single supply voltage:
+– M24C01/02-W: 2.5 V to 5.5 V
+– M24C01/02-R: 1.8 V to 5.5 V
+– M24C02-F: 1.7 V to 5.5 V (full temperature
+range) and 1.6 V to 1.7 V (limited
+temperature range)
+• Write:
+– Byte Write within 5 ms
+– Page Write within 5 ms
+• Operating temperature range:
+– from -40 °C up to +85 °C
+• Random and sequential Read modes
+• Write protect of the whole memory array
+
+UFDFPN8 (MC)
+DFN8 - 2 x 3 mm
+
+• Enhanced ESD/Latch-Up protection
+• More than 4 million Write cycles
+• More than 200-years data retention
+
+Packages
+
+UFDFPN5 (MH)
+DFN5 - 1.7 x 1.4 mm
+
+• RoHS compliant and halogen-free
+(ECOPACK2®)
+
+1. Not recommended for new designs
+
+April 2017
+This is information on a product in full production.
+
+DocID024020 Rev 5
+
+1/42
+www.st.com
+
+Contents
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Contents
+1
+
+Description . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+
+2
+
+Signal description . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+2.1
+
+Serial Clock (SCL) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+
+2.2
+
+Serial Data (SDA) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+
+2.3
+
+Chip Enable (E2, E1, E0) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+
+2.4
+
+Write Control (WC) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+
+2.5
+
+VSS (ground) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+
+2.6
+
+Supply voltage (VCC) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+2.6.1
+
+Operating supply voltage (VCC) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+
+2.6.2
+
+Power-up conditions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+
+2.6.3
+
+Device reset . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+
+2.6.4
+
+Power-down conditions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+
+3
+
+Memory organization . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+
+4
+
+Device operation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+
+5
+
+4.1
+
+Start condition . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+
+4.2
+
+Stop condition . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+
+4.3
+
+Data input . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+
+4.4
+
+Acknowledge bit (ACK) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+
+4.5
+
+Device addressing . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+
+Instructions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+5.1
+
+5.2
+
+2/42
+
+Write operations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+5.1.1
+
+Byte Write . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+
+5.1.2
+
+Page Write . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+
+5.1.3
+
+Minimizing Write delays by polling on ACK . . . . . . . . . . . . . . . . . . . . . . 17
+
+Read operations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+5.2.1
+
+Random Address Read . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+
+5.2.2
+
+Current Address Read . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+
+5.2.3
+
+Sequential Read . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Contents
+
+6
+
+Initial delivery state . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+
+7
+
+Maximum rating . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+
+8
+
+DC and AC parameters . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+
+9
+
+Package information . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+9.1
+
+UFDFPN5 package information . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+
+9.2
+
+TSSOP8 package information . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+
+9.3
+
+SO8N package information . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+
+9.4
+
+PDIP8 package information . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+
+9.5
+
+UFDFN8 package information . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+
+10
+
+Part numbering . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+
+11
+
+Revision history . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 40
+
+DocID024020 Rev 5
+
+3/42
+3
+
+List of tables
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+List of tables
+Table 1.
+Table 2.
+Table 3.
+Table 4.
+Table 5.
+Table 6.
+Table 7.
+Table 8.
+Table 9.
+Table 10.
+Table 11.
+Table 12.
+Table 13.
+Table 14.
+Table 15.
+Table 16.
+Table 17.
+Table 18.
+Table 19.
+Table 20.
+Table 21.
+Table 22.
+Table 23.
+
+4/42
+
+Signal names . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+Device select code . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+Address byte . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+Absolute maximum ratings . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+Operating conditions (voltage range W) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+Operating conditions (voltage range R) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+Operating conditions (voltage range F) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+AC measurement conditions. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+Input parameters. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+Cycling performance . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+Memory cell data retention . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+DC characteristics (M24C01/02-W, device grade 6). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+DC characteristics (M24C01/02-R device grade 6) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+DC characteristics (M24C02-F, device grade 6). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+400 kHz AC characteristics (I2C Fast-mode) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+100 kHz AC characteristics (I2C Standard mode). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+UFDFPN5 - 1.7 × 1.4 mm, 0.55 mm thickness, ultra thin fine pitch
+dual flat package, no lead - package mechanical data . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+TSSOP8 – 3 x 4.4 mm, 0.65 mm pitch, 8-lead thin shrink small outline,
+package mechanical data . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+SO8N – 3.9x4.9 mm, 8-lead plastic small outline, 150 mils body width,
+package mechanical data . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+PDIP8 – 8-pin plastic DIP, 0.25 mm lead frame, package mechanical data. . . . . . . . . . . . 35
+UFDFN8 - 8-lead, 2 × 3 mm, 0.5 mm pitch ultra thin profile fine pitch dual flat
+package mechanical data . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+Ordering information scheme . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+Document revision history . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 40
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+List of figures
+
+List of figures
+Figure 1.
+Figure 2.
+Figure 3.
+Figure 4.
+Figure 5.
+Figure 6.
+Figure 7.
+Figure 8.
+Figure 9.
+Figure 10.
+Figure 11.
+
+Logic diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+8-pin package connections, top view . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+UFDFPN5 package connections . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+Block diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+I2C bus protocol . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+Write mode sequences with WC = 0 (data write enabled) . . . . . . . . . . . . . . . . . . . . . . . . . 15
+Write mode sequences with WC = 1 (data write inhibited) . . . . . . . . . . . . . . . . . . . . . . . . . 16
+Write cycle polling flowchart using ACK . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+Read mode sequences . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+AC measurement I/O waveform . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+
+Figure 12.
+Figure 13.
+
+AC waveforms . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+UFDFPN5 – 1.7x1.4 mm, 0.55 mm thickness, ultra thin fine pitch
+dual flat package, no lead - package outline . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+UFDFPN5 - 5-lead, 1.7 × 1.4 mm, 0.55 mm thickness, ultra thin fine pitch
+dual flat package, no lead recommended footprint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+TSSOP8 – 3x4.4 mm, 0.65 mm pitch, 8-lead thin shrink small outline,
+package outline. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+SO8N – 3.9x4.9 mm, 8-lead plastic small outline, 150 mils body width, package outline . 33
+SO8N – 3.9x4.9 mm, 8-lead plastic small outline, 150 mils body width,
+package recommended footprint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34
+PDIP8 – 8-pin plastic DIP, 0.25 mm lead frame, package outline . . . . . . . . . . . . . . . . . . . 35
+UFDFN8 - 8-lead, 2 × 3 mm, 0.5 mm pitch ultra thin profile fine pitch dual
+flat package outline . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+UFDFN8 - 8-lead, 2 × 3 mm, 0.5 mm pitch ultra thin profile fine pitch dual
+flat recommended footprint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+
+Figure 14.
+Figure 15.
+Figure 16.
+Figure 17.
+Figure 18.
+Figure 19.
+Figure 20.
+
+Maximum Rbus value versus bus parasitic capacitance (Cbus) for
+an I2C bus at maximum frequency fC = 400 kHz . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+
+DocID024020 Rev 5
+
+5/42
+5
+
+Description
+
+1
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Description
+The M24C01(C02) is a 1(2)-Kbit I2C-compatible EEPROM (Electrically Erasable
+PROgrammable Memory) organized as 128 (256) × 8 bits.
+The M24C01/02-W can be accessed with a supply voltage from 2.5 V to 5.5 V, the
+M24C01/02-R can be accessed with a supply voltage from 1.8 V to 5.5 V, and the
+M24C02-F can be accessed either with a supply voltage from 1.7 V to 5.5 V (over the full
+temperature range) or with an extended supply voltage from 1.6 V to 1.7 V if the
+temperature is reduced to 0 °C/ 85 °C. All these devices operate with a maximum clock
+frequency of 400 kHz.
+Figure 1. Logic diagram
+9&&
+
+
+((
+
+6'$
+0[[[
+
+6&/
+:&
+
+966
+
+$,I
+
+Table 1. Signal names
+Signal name
+(1)
+
+Function
+
+Direction
+
+E2, E1, E0
+
+Chip Enable
+
+Input
+
+SDA
+
+Serial Data
+
+I/O
+
+SCL
+
+Serial Clock
+
+Input
+
+WC
+
+Write Control
+
+Input
+
+VCC
+
+Supply voltage
+
+-
+
+VSS
+
+Ground
+
+-
+
+1. Signal not connected in the DFN5 package.
+
+Figure 2. 8-pin package connections, top view
+(
+
+
+
+
+
+9&&
+
+(
+
+
+
+
+
+:&
+
+(
+
+
+
+
+
+6&/
+
+966
+
+
+
+
+
+6'$
+$,I
+
+6/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Description
+
+Figure 3. UFDFPN5 package connections
+6 ## 
+6 33 
+3$! 
+
+!"#$
+89:7
+
+ 7#
+
+
+
+ 6 33
+
+
+
+
+
+
+ 3#,
+
+
+
+
+
+4OP VIEW
+MARKING SIDE
+
+"OTTOM VIEW
+PADS SIDE
+-36
+
+1. Inputs E2, E1, E0 are not connected, therefore read as (000). Please refer to Section 2.3 for further
+explanations.
+
+DocID024020 Rev 5
+
+7/42
+41
+
+Signal description
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+2
+
+Signal description
+
+2.1
+
+Serial Clock (SCL)
+The signal applied on the SCL input is used to strobe the data available on SDA(in) and to
+output the data on SDA(out).
+
+2.2
+
+Serial Data (SDA)
+SDA is an input/output used to transfer data in or data out of the device. SDA(out) is an
+open drain output that may be wire-OR’ed with other open drain or open collector signals on
+the bus. A pull-up resistor must be connected from Serial Data (SDA) to VCC (Figure 11
+indicates how to calculate the value of the pull-up resistor).
+
+2.3
+
+Chip Enable (E2, E1, E0)
+(E2,E1,E0) input signals are used to set the value that is to be looked for on the three least
+significant bits (b3, b2, b1) of the 7-bit device select code. These inputs must be tied to VCC
+or VSS, as shown in Table 2: Device select code. When not connected (left floating), these
+inputs are read as low (0).
+For the UFDFPN5 package, the (E2,E1,E0) inputs are not connected, therefore read as
+(0,0,0).
+
+2.4
+
+Write Control (WC)
+This input signal is useful for protecting the entire contents of the memory from inadvertent
+write operations. Write operations are disabled to the entire memory array when Write
+Control (WC) is driven high. Write operations are enabled when Write Control (WC) is either
+driven low or left floating.
+When Write Control (WC) is driven high, device select and address bytes are
+acknowledged, Data bytes are not acknowledged.
+
+2.5
+
+VSS (ground)
+VSS is the reference for the VCC supply voltage.
+
+2.6
+
+Supply voltage (VCC)
+
+2.6.1
+
+Operating supply voltage (VCC)
+Prior to selecting the memory and issuing instructions to it, a valid and stable VCC voltage
+within the specified [VCC(min), VCC(max)] range must be applied (see Operating conditions
+in Section 8: DC and AC parameters). In order to secure a stable DC supply voltage, it is
+recommended to decouple the VCC line with a suitable capacitor (usually of the order of
+10 nF to 100 nF) close to the VCC/VSS package pins.
+
+8/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Signal description
+
+This voltage must remain stable and valid until the end of the transmission of the instruction
+and, for a write instruction, until the completion of the internal write cycle (tW).
+
+2.6.2
+
+Power-up conditions
+The VCC voltage has to rise continuously from 0 V up to the minimum VCC operating voltage
+(see Operating conditions in Section 8: DC and AC parameters).
+
+2.6.3
+
+Device reset
+In order to prevent inadvertent write operations during power-up, a power-on-reset (POR)
+circuit is included.
+At power-up, the device does not respond to any instruction until VCC has reached the
+internal reset threshold voltage. This threshold is lower than the minimum VCC operating
+voltage (see Operating conditions in Section 8: DC and AC parameters). When VCC passes
+over the POR threshold, the device is reset and enters the Standby Power mode; however,
+the device must not be accessed until VCC reaches a valid and stable DC voltage within the
+specified [VCC(min), VCC(max)] range (see Operating conditions in Section 8: DC and AC
+parameters).
+In a similar way, during power-down (continuous decrease in VCC), the device must not be
+accessed when VCC drops below VCC(min). When VCC drops below the threshold voltage,
+the device stops responding to any instruction sent to it.
+
+2.6.4
+
+Power-down conditions
+During power-down (continuous decrease in VCC), the device must be in the Standby Power
+mode (mode reached after decoding a Stop condition, assuming that there is no internal
+write cycle in progress).
+
+DocID024020 Rev 5
+
+9/42
+41
+
+Memory organization
+
+3
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Memory organization
+The memory is organized as shown below.
+Figure 4. Block diagram
+7#
+% % %
+
+(IGH VOLTAGE
+GENERATOR
+
+#ONTROL LOGIC
+
+3#,
+3$!
+
+)/ SHIFT REGISTER
+
+$ATA
+REGISTER
+
+9 DECODER
+
+!DDRESS REGISTER
+AND COUNTER
+
+ PAGE
+
+8 DECODER
+
+-36
+
+10/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+4
+
+Device operation
+
+Device operation
+The device supports the I2C protocol. This is summarized in Figure 5. Any device that sends
+data on to the bus is defined to be a transmitter, and any device that reads the data to be a
+receiver. The device that controls the data transfer is known as the bus master, and the
+other as the slave device. A data transfer can only be initiated by the bus master, which will
+also provide the serial clock for synchronization. The device is always a slave in all
+communications.
+Figure 5. I2C bus protocol
+
+DocID024020 Rev 5
+
+11/42
+41
+
+Device operation
+
+4.1
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Start condition
+Start is identified by a falling edge of Serial Data (SDA) while Serial Clock (SCL) is stable in
+the high state. A Start condition must precede any data transfer instruction. The device
+continuously monitors (except during a Write cycle) Serial Data (SDA) and Serial Clock
+(SCL) for a Start condition.
+
+4.2
+
+Stop condition
+Stop is identified by a rising edge of Serial Data (SDA) while Serial Clock (SCL) is stable and
+driven high. A Stop condition terminates communication between the device and the bus
+master. A Read instruction that is followed by NoAck can be followed by a Stop condition to
+force the device into the Standby mode.
+A Stop condition at the end of a Write instruction triggers the internal Write cycle.
+
+4.3
+
+Data input
+During data input, the device samples Serial Data (SDA) on the rising edge of Serial Clock
+(SCL). For correct device operation, Serial Data (SDA) must be stable during the rising edge
+of Serial Clock (SCL), and the Serial Data (SDA) signal must change only when Serial Clock
+(SCL) is driven low.
+
+4.4
+
+Acknowledge bit (ACK)
+The acknowledge bit is used to indicate a successful byte transfer. The bus transmitter,
+whether it be bus master or slave device, releases Serial Data (SDA) after sending eight bits
+of data. During the 9th clock pulse period, the receiver pulls Serial Data (SDA) low to
+acknowledge the receipt of the eight data bits.
+
+12/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+4.5
+
+Device operation
+
+Device addressing
+To start communication between the bus master and the slave device, the bus master must
+initiate a Start condition. Following this, the bus master sends the device select code, shown
+in Table 2 (most significant bit first).
+When using the DFN5 package, the Ei pins are not accessible. These inputs are read as low
+(0).
+As a result, to properly communicate with the device in DFN5 package, the E0, E1 and E2
+bits must always be set to logic 0 for any operation. See Table 2.
+Table 2. Device select code
+Device type identifier(1)
+
+Chip Enable address
+
+R/W
+
+Package
+b7
+
+b6
+
+b5
+
+b4
+
+b3
+
+b2
+
+b1
+
+b0
+
+TSSOP8,SO8,PDIP8,
+UFDFPN8
+
+1
+
+0
+
+1
+
+0
+
+E2
+
+E1
+
+E0
+
+R/W
+
+DFN5
+
+1
+
+0
+
+1
+
+0
+
+0
+
+0
+
+0
+
+R/W
+
+1. The MSB b7 is sent first.
+
+The 8th bit is the Read/Write bit (RW). This bit is set to 1 for Read and 0 for Write operations.
+If a match occurs on the device select code, the corresponding device gives an
+acknowledgment on Serial Data (SDA) during the 9th bit time. If the device does not match
+the device select code, it deselects itself from the bus, and goes into Standby mode.
+
+DocID024020 Rev 5
+
+13/42
+41
+
+Instructions
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+5
+
+Instructions
+
+5.1
+
+Write operations
+Following a Start condition the bus master sends a device select code with the R/W bit (RW)
+reset to 0. The device acknowledges this, as shown in Figure 5, and waits for the address
+byte. The device responds to each address byte with an acknowledge bit, and then waits for
+the data byte.
+Table 3. Address byte
+A7
+
+A6
+
+A5
+
+A4
+
+A3
+
+A2
+
+A1
+
+A0
+
+When the bus master generates a Stop condition immediately after a data byte Ack bit (in
+the “10th bit” time slot), either at the end of a Byte Write or a Page Write, the internal Write
+cycle tW is triggered. A Stop condition at any other time slot does not trigger the internal
+Write cycle.
+After the Stop condition and the successful completion of an internal Write cycle (tW), the
+device internal address counter is automatically incremented to point to the next byte after
+the last modified byte.
+During the internal Write cycle, Serial Data (SDA) is disabled internally, and the device does
+not respond to any requests.
+If the Write Control input (WC) is driven High, the Write instruction is not executed and the
+accompanying data bytes are not acknowledged, as shown in Figure 6.
+
+14/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Byte Write
+After the device select code and the address byte, the bus master sends one data byte. If
+the addressed location is Write-protected, by Write Control (WC) being driven high, the
+device replies with NoAck, and the location is not modified. If, instead, the addressed
+location is not Write-protected, the device replies with Ack. The bus master terminates the
+transfer by generating a Stop condition, as shown in Figure 5.
+Figure 6. Write mode sequences with WC = 0 (data write enabled)
+7#
+!#+
+
+!#+
+
+"YTE ADDRESS
+
+!#+
+$ATA IN
+3TOP
+
+$EV 3ELECT
+3TART
+
+"YTE 7RITE
+
+27
+
+7#
+!#+
+0AGE 7RITE
+
+$EV 3ELECT
+3TART
+
+!#+
+
+"YTE ADDRESS
+
+!#+
+$ATA IN 
+
+!#+
+$ATA IN 
+
+$ATA IN 
+
+27
+
+7# CONTgD
+
+!#+
+0AGE 7RITE
+CONTgD
+
+!#+
+$ATA IN .
+3TOP
+
+5.1.1
+
+Instructions
+
+DocID024020 Rev 5
+
+!)C
+
+15/42
+41
+
+Instructions
+
+5.1.2
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Page Write
+The Page Write mode allows up to 16 byte to be written in a single Write cycle, provided that
+they are all located in the same page in the memory: that is, the most significant memory
+address bits, A8/A4, are the same. If more bytes are sent than will fit up to the end of the
+page, a “roll-over” occurs, i.e. the bytes exceeding the page end are written on the same
+page, from location 0.
+The bus master sends from 1 to 16 byte of data, each of which is acknowledged by the
+device if Write Control (WC) is low. If Write Control (WC) is high, the contents of the
+addressed memory location are not modified, and each data byte is followed by a NoAck, as
+shown in Figure 6. After each transferred byte, the internal page address counter is
+incremented.
+The transfer is terminated by the bus master generating a Stop condition.
+Figure 7. Write mode sequences with WC = 1 (data write inhibited)
+7#
+!#+
+
+"YTE ADDRESS
+
+./ !#+
+$ATA IN
+3TOP
+
+$EV SELECT
+3TART
+
+"YTE 7RITE
+
+!#+
+
+27
+
+7#
+!#+
+$EV SELECT
+3TART
+
+0AGE 7RITE
+
+!#+
+
+"YTE ADDRESS
+
+./ !#+
+$ATA IN 
+
+./ !#+
+
+$ATA IN 
+
+$ATA IN 
+
+27
+
+7# CONTgD
+./ !#+
+
+$ATA IN .
+3TOP
+
+0AGE 7RITE
+CONTgD
+
+./ !#+
+
+!)D
+
+16/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+5.1.3
+
+Instructions
+
+Minimizing Write delays by polling on ACK
+The maximum Write time (tw) is shown in AC characteristics tables in Section 8: DC and AC
+parameters, but the typical time is shorter. To make use of this, a polling sequence can be
+used by the bus master.
+The sequence, as shown in Figure 8, is:
+•
+
+Initial condition: a Write cycle is in progress.
+
+•
+
+Step 1: the bus master issues a Start condition followed by a device select code (the
+first byte of the new instruction).
+
+•
+
+Step 2: if the device is busy with the internal Write cycle, no Ack will be returned and
+the bus master goes back to Step 1. If the device has terminated the internal Write
+cycle, it responds with an Ack, indicating that the device is ready to receive the second
+part of the instruction (the first byte of this instruction having been sent during Step 1).
+Figure 8. Write cycle polling flowchart using ACK
+:ULWHF\FOH
+LQSURJUHVV
+
+6WDUWFRQGLWLRQ
+'HYLFHVHOHFW
+ZLWK5: 
+
+12
+
+$&.
+UHWXUQHG
+<(6
+
+)LUVWE\WHRILQVWUXFWLRQ
+ZLWK5: DOUHDG\
+GHFRGHGE\WKHGHYLFH
+12
+
+1H[W
+2SHUDWLRQLV
+DGGUHVVLQJWKH
+PHPRU\
+
+<(6
+
+6HQG$GGUHVV
+DQG5HFHLYH$&.
+
+5H6WDUW
+
+6WRS
+
+12
+
+'DWDIRUWKH
+:ULWHRSHUDWLRQ
+
+&RQWLQXHWKH
+:ULWHRSHUDWLRQ
+
+6WDUW&RQGLWLRQ
+
+<(6
+
+'HYLFHVHOHFW
+ZLWK5: 
+
+&RQWLQXHWKH
+5DQGRP5HDGRSHUDWLRQ
+$,H
+
+DocID024020 Rev 5
+
+17/42
+41
+
+Instructions
+
+5.2
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Read operations
+Read operations are performed independently of the state of the Write Control (WC) signal.
+After the successful completion of a Read operation, the device internal address counter is
+incremented by one, to point to the next byte address.
+For the Read instructions, after each byte read (data out), the device waits for an
+acknowledgment (data in) during the 9th bit time. If the bus master does not acknowledge
+during this 9th time, the device terminates the data transfer and switches to its Standby
+mode.
+Figure 9. Read mode sequences
+$&.
+
+'DWDRXW
+6WRS
+
+6WDUW
+
+'HYVHO
+
+12$&.
+
+5:
+
+$&.
+5DQGRP
+$GGUHVV
+5HDG
+
+%\WHDGGU
+
+'HYVHO
+
+$&.
+
+$&.
+
+'DWDRXW
+
+$&.
+
+12$&.
+'DWDRXW1
+
+$&.
+%\WHDGGU
+
+$&.
+%\WHDGGU
+
+5:
+
+$&.
+'HYVHO
+
+6WDUW
+
+'HYVHO
+6WDUW
+
+'DWDRXW
+5:
+
+5:
+
+$&.
+
+12$&.
+
+6WRS
+
+6WDUW
+
+'HYVHO
+
+6HTXHQWLRQ
+5DQGRP
+5HDG
+
+$&.
+
+%\WHDGGU
+
+5:
+
+$&.
+6HTXHQWLDO
+&XUUHQW
+5HDG
+
+$&.
+
+6WDUW
+
+6WDUW
+
+'HYVHO
+
+$&.
+
+6WRS
+
+&XUUHQW
+$GGUHVV
+5HDG
+
+$&.
+'DWDRXW
+
+5:
+
+12$&.
+
+6WRS
+
+'DWDRXW1
+
+18/42
+
+DocID024020 Rev 5
+
+$,G
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+5.2.1
+
+Instructions
+
+Random Address Read
+A dummy Write is first performed to load the address into this address counter (as shown in
+Figure 8) but without sending a Stop condition. Then, the bus master sends another Start
+condition, and repeats the device select code, with the RW bit set to 1. The device
+acknowledges this, and outputs the contents of the addressed byte. The bus master must
+not acknowledge the byte, and terminates the transfer with a Stop condition.
+
+5.2.2
+
+Current Address Read
+For the Current Address Read operation, following a Start condition, the bus master only
+sends a device select code with the R/W bit set to 1. The device acknowledges this, and
+outputs the byte addressed by the internal address counter. The counter is then
+incremented. The bus master terminates the transfer with a Stop condition, as shown in
+Figure 8, without acknowledging the byte.
+
+5.2.3
+
+Sequential Read
+This operation can be used after a Current Address Read or a Random Address Read. The
+bus master does acknowledge the data byte output, and sends additional clock pulses so
+that the device continues to output the next byte in sequence. To terminate the stream of
+bytes, the bus master must not acknowledge the last byte, and must generate a Stop
+condition, as shown in Figure 8.
+The output data comes from consecutive addresses, with the internal address counter
+automatically incremented after each byte output. After the last memory address, the
+address counter “rolls-over”, and the device continues to output data from memory address
+00h.
+
+Note:
+
+For device delivered in DFN5 package, after the last memory address (7Fh for a 1Kbit and
+FFh for a 2Kbit), the address counter doesn't roll-over to the memory address 00h. The next
+addresses and data bytes outputted are therefore undefined and not guarantee.
+The address counter will contain meaningful address value only after a Random Address
+Read (with address value between 0 and 7E for 1Kb and FE for 2 Kb) has been performed.
+
+DocID024020 Rev 5
+
+19/42
+41
+
+Initial delivery state
+
+6
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Initial delivery state
+The device is delivered with all the memory array bits set to 1 (each byte contains FFh).
+
+20/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+7
+
+Maximum rating
+
+Maximum rating
+Stressing the device outside the ratings listed in Table 4 may cause permanent damage to
+the device. These are stress ratings only, and operation of the device at these, or any other
+conditions outside those indicated in the operating sections of this specification, is not
+implied. Exposure to absolute maximum rating conditions for extended periods may affect
+device reliability.
+Table 4. Absolute maximum ratings
+Symbol
+
+TSTG
+TLEAD
+
+Parameter
+
+Min.
+
+Max.
+
+Unit
+
+Ambient operating temperature
+
+-
+
+130
+
+°C
+
+Storage temperature
+
+–65
+
+150
+
+°C
+
+see note(1)
+
+Lead temperature during soldering
+
+°C
+(2)
+
+°C
+
+PDIP-specific lead temperature during soldering
+
+-
+
+260
+
+IOL
+
+DC output current (SDA = 0)
+
+-
+
+5
+
+mA
+
+VIO
+
+Input or output range
+
+–0.50
+
+6.5
+
+V
+
+VCC
+
+Supply voltage
+
+–0.50
+
+6.5
+
+V
+
+VESD
+
+Electrostatic pulse (Human Body model)(3)
+
+-
+
+3000
+
+V
+
+1. Compliant with JEDEC Std J-STD-020D (for small body, Sn-Pb or Pb-free assembly), the ST ECOPACK2®
+7191395 specification, and the European directive on Restrictions of Hazardous Substances (RoHS
+directive 2011/65/EU of July 2011).
+2. TLEAD max must not be applied for more than 10 s.
+3. Positive and negative pulses applied on different combinations of pin connections, according to AECQ100-002 (compliant with ANSI/ESDA/JEDEC JS-001-2012 standard, C1=100 pF, R1=1500 Ω).
+
+DocID024020 Rev 5
+
+21/42
+41
+
+DC and AC parameters
+
+8
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+DC and AC parameters
+This section summarizes the operating and measurement conditions, and the DC and AC
+characteristics of the device.
+Table 5. Operating conditions (voltage range W)
+Symbol
+
+Parameter
+
+Min.
+
+Max.
+
+Unit
+
+VCC
+
+Supply voltage
+
+2.5
+
+5.5
+
+V
+
+TA
+
+Ambient operating temperature
+
+–40
+
+85
+
+°C
+
+fC
+
+Operating clock frequency
+
+-
+
+400
+
+kHz
+
+Min.
+
+Max.
+
+Unit
+
+Table 6. Operating conditions (voltage range R)
+Symbol
+
+Parameter
+
+VCC
+
+Supply voltage
+
+1.8
+
+5.5
+
+V
+
+TA
+
+Ambient operating temperature
+
+–40
+
+85
+
+°C
+
+fC
+
+Operating clock frequency
+
+-
+
+400
+
+kHz
+
+Table 7. Operating conditions (voltage range F)
+Symbol
+VCC
+TA
+fC
+
+Parameter
+
+Min.
+
+Max.
+
+Unit
+V
+
+Supply voltage
+
+1.60
+
+1.65
+
+1.70
+
+5.5
+
+Ambient operating temperature: READ
+
+-40
+
+-40
+
+-40
+
+85
+
+Ambient operating temperature: WRITE
+
+0
+
+-20
+
+-40
+
+85
+
+Operating clock frequency
+
+-
+
+-
+
+-
+
+400
+
+°C
+kHz
+
+Table 8. AC measurement conditions
+Symbol
+
+Min.
+
+Max.
+
+Unit
+
+Load capacitance
+
+-
+
+100
+
+pF
+
+-
+
+SCL input rise/fall time, SDA input fall time
+
+-
+
+50
+
+ns
+
+-
+
+Input levels
+
+0.2 VCC to 0.8 VCC
+
+V
+
+-
+
+Input and output timing reference levels
+
+0.3 VCC to 0.7 VCC
+
+V
+
+Cbus
+
+Parameter
+
+Figure 10. AC measurement I/O waveform
+)NPUT VOLTAGE LEVELS
+6##
+
+)NPUT AND OUTPUT
+4IMING REFERENCE LEVELS
+6##
+6##
+
+6##
+
+-36
+
+22/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+DC and AC parameters
+Table 9. Input parameters
+
+Parameter(1)
+
+Symbol
+
+Test condition
+
+Min.
+
+Max.
+
+Unit
+
+CIN
+
+Input capacitance (SDA)
+
+-
+
+-
+
+8
+
+pF
+
+CIN
+
+Input capacitance (other pins)
+
+-
+
+-
+
+6
+
+pF
+
+VIN < 0.3 VCC
+
+15
+
+70
+
+kΩ
+
+VIN > 0.7 VCC
+
+500
+
+-
+
+kΩ
+
+ZL
+ZH
+
+Input impedance (Ei, WC)
+
+1. Characterized only, not tested in production.
+
+Table 10. Cycling performance(1)
+Symbol
+
+Parameter
+
+Test condition
+
+Max.
+
+Ncycle
+
+Write cycle
+endurance
+
+TA ≤ 25 °C, VCC(min) < VCC < VCC(max)
+
+4,000,000
+
+TA = 85 °C, VCC(min) < VCC < VCC(max)
+
+1,200,000
+
+Unit
+Write cycle
+
+1. Cycling performance for products identified by process letter T.
+
+Table 11. Memory cell data retention
+Parameter
+Data retention(1)
+
+Test condition
+TA = 55 °C
+
+Min.
+
+Unit
+
+200
+
+Year
+
+1. For products identified by process letter T. The data retention behavior is checked in production, while the
+200-year limit is defined from characterization and qualification results.
+
+DocID024020 Rev 5
+
+23/42
+41
+
+DC and AC parameters
+
+M24C01/02-W M24C01/02-R M24C02-F
+Table 12. DC characteristics (M24C01/02-W, device grade 6)
+
+Symbol
+
+Parameter
+
+Test conditions (in addition to those
+in Table 5 and Table 8)
+
+Min.
+
+Max.
+
+Unit
+
+ILI
+
+Input leakage current
+(SCL, SDA, E2, E1)
+
+VIN = VSS or VCC, device in Standby
+mode
+
+-
+
+±2
+
+µA
+
+ILO
+
+Output leakage
+current
+
+SDA in Hi-Z, external voltage applied
+on SDA: VSS or VCC
+
+-
+
+±2
+
+µA
+
+ICC
+
+Supply current (Read)
+
+VCC = 5.5 V, fc = 400 kHz
+
+-
+
+1(1)
+
+mA
+
+VCC = 2.5 V, fc = 400 kHz
+
+-
+
+1
+
+mA
+
+ICC0
+
+Supply current (Write)
+
+During tW,
+2.5 V ≤ VCC ≤ 5.5 V
+
+-
+
+0.5(2)
+
+mA
+
+Device not selected(3),
+VIN = VSS or VCC, VCC = 2.5 V
+
+-
+
+2
+
+µA
+
+Device not selected(3),
+VIN = VSS or VCC, VCC = 5.5 V
+
+-
+
+3
+
+µA
+
+ICC1
+
+Standby supply
+current
+
+VIL
+
+Input low voltage
+(SCL, SDA, WC)
+
+-
+
+–0.45
+
+0.3 VCC
+
+V
+
+VIH
+
+Input high voltage
+(SCL, SDA, WC)
+
+-
+
+0.7 VCC
+
+VCC +1
+
+V
+
+VOL
+
+Output low voltage
+
+IOL = 2.1 mA, VCC = 2.5 V or
+IOL = 3 mA, VCC = 5.5 V
+
+-
+
+0.4
+
+V
+
+1. 2 mA for devices identified by process letter G or S.
+2. Characterized only (not tested in production) for devices identified by process letter T. ICC0(max)is lower
+than 0.5 mA when writing data with an ambient temperature greater than 25 °C.
+3. The device is not selected after power-up, after a Read instruction (after the Stop condition), or after the
+completion of the internal write cycle tW (tW is triggered by the correct decoding of a Write instruction).
+
+24/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+DC and AC parameters
+
+Table 13. DC characteristics (M24C01/02-R device grade 6)
+Test conditions(1) (in addition to
+those in Table 6 and Table 8)
+
+Symbol
+
+Parameter
+
+Min.
+
+Max.
+
+Unit
+
+ILI
+
+Input leakage current (Ei,
+SCL, SDA)
+
+VIN = VSS or VCC, device in
+Standby mode
+
+-
+
+±2
+
+µA
+
+ILO
+
+Output leakage current
+
+SDA in Hi-Z, external voltage
+applied on SDA: VSS or VCC
+
+-
+
+±2
+
+µA
+
+ICC
+
+Supply current (Read)
+
+VCC = 1.8 V, fc= 400 kHz
+
+-
+
+0.8
+
+mA
+
+ICC0
+
+Supply current (Write)
+
+During tW
+VCC = 1.8 V ≤ VCC ≤ 2.5 V
+
+-
+
+0.5(2)
+
+mA
+
+ICC1
+
+Standby supply current
+
+Device not selected(3),
+VIN = VSS or VCC, VCC = 1.8 V
+
+-
+
+1
+
+µA
+
+VIL
+
+Input low voltage
+(SCL, SDA, WC)
+
+2.5 V ≤ VCC
+
+–0.45
+
+0.3 VCC
+
+V
+
+VCC < 2.5 V
+
+–0.45
+
+0.25 VCC
+
+V
+
+Input high voltage
+(SCL, SDA)
+
+VCC < 2.5 V
+
+0.75 VCC
+
+6.5
+
+V
+
+Input high voltage
+(WC)
+
+VCC < 2.5 V
+
+0.75 VCC VCC+ 0.6
+
+Output low voltage
+
+IOL = 0.7 mA, VCC = 1.8 V
+
+VIH
+
+VOL
+
+-
+
+V
+
+0.2
+
+V
+
+1. If the application uses the voltage range R device with 2.5 V ≤Vcc ≤5.5 V and -40 °C < TA < +85 °C, please
+refer to Table 12 instead of this table.
+2. Characterized only (not tested in production) for devices identified by process letter T.
+3. The device is not selected after power-up, after a Read instruction (after the Stop condition), or after the
+completion of the internal write cycle tW (tW is triggered by the correct decoding of a Write instruction).
+
+DocID024020 Rev 5
+
+25/42
+41
+
+DC and AC parameters
+
+M24C01/02-W M24C01/02-R M24C02-F
+Table 14. DC characteristics (M24C02-F, device grade 6)
+
+Symbol
+
+Parameter
+
+ILI
+
+Input leakage current
+(Ei, SCL, SDA)
+
+ILO
+
+Test conditions(1) (in addition to
+those in Table 7 and Table 8)
+
+Min.
+
+Max.
+
+Unit
+
+VIN = VSS or VCC, device in
+Standby mode
+
+-
+
+±2
+
+µA
+
+Output leakage current
+
+VOUT = VSS or VCC, SDA in Hi-Z
+
+-
+
+±2
+
+µA
+
+ICC
+
+Supply current (Read)
+
+VCC = 1.6 V or 1.7 V, fc= 400 kHz
+
+-
+
+0.8
+
+mA
+
+ICC0
+
+Supply current (Write)
+
+During tW,
+VCC ≤ 1.8 V
+
+-
+
+0.5(2)
+
+mA
+
+ICC1
+
+Standby supply current
+
+Device not selected(3),
+VIN = VSS or VCC, VCC ≤ 1.8 V
+
+-
+
+1
+
+µA
+
+VIL
+
+Input low voltage
+(SCL, SDA, WC)
+
+2.5 V ≤ VCC
+
+–0.45
+
+0.3 VCC
+
+V
+
+VCC < 2.5 V
+
+–0.45
+
+0.25 VCC
+
+V
+
+Input high voltage
+(SCL, SDA)
+
+VCC < 2.5 V
+
+0.75 VCC
+
+6.5
+
+V
+
+Input high voltage
+(WC)
+
+VCC < 2.5 V
+
+0.75 VCC VCC+0.6
+
+Output low voltage
+
+IOL = 0.7 mA, VCC ≤ 1.8 V
+
+VIH
+
+VOL
+
+-
+
+0.2
+
+V
+V
+
+1. If the application uses the voltage range F device with 2.5 V ≤Vcc ≤5.5 V, please refer to Table 12 instead of
+this table.
+2. Characterized only (not tested in production) for devices identified by process letter T.
+3. The device is not selected after power-up, after a Read instruction (after the Stop condition), or after the
+completion of the internal write cycle tW (tW is triggered by the correct decoding of a Write instruction).
+
+26/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+DC and AC parameters
+
+Table 15. 400 kHz AC characteristics (I2C Fast-mode)
+Symbol
+
+Alt.
+
+fC
+
+fSCL
+
+tCHCL
+
+Min.
+
+Max.
+
+Unit
+
+Clock frequency
+
+-
+
+400
+
+kHz
+
+tHIGH
+
+Clock pulse width high
+
+600
+
+-
+
+ns
+
+tCLCH
+
+tLOW
+
+Clock pulse width low
+
+1300
+
+-
+
+ns
+
+tQL1QL2(1)
+
+tF
+
+SDA (out) fall time
+
+20(2)
+
+300
+
+ns
+
+Input signal rise time
+
+(3)
+
+(3)
+
+ns
+
+(3)
+
+ns
+
+tXH1XH2
+
+tR
+
+Parameter
+
+tXL1XL2
+
+tF
+
+Input signal fall time
+
+(3)
+
+tDXCH
+
+tSU:DAT
+
+Data in set up time
+
+100
+
+-
+
+ns
+
+tCLDX
+
+tHD:DAT
+
+Data in hold time
+
+0
+
+-
+
+ns
+
+tCLQX
+
+(4)
+
+tDH
+
+Data out hold time
+
+100
+
+-
+
+ns
+
+tCLQV
+
+(5)
+
+tAA
+
+Clock low to next data valid (access time)
+
+900
+
+ns
+
+tCHDL
+
+tSU:STA
+
+Start condition setup time
+
+600
+
+-
+
+ns
+
+tDLCL
+
+tHD:STA
+
+Start condition hold time
+
+600
+
+-
+
+ns
+
+tCHDH
+
+tSU:STO
+
+Stop condition set up time
+
+600
+
+-
+
+ns
+
+tDHDL
+
+tBUF
+
+Time between Stop condition and next Start
+condition
+
+1300
+
+-
+
+ns
+
+tW
+
+tWR
+
+Write time
+
+-
+
+5
+
+ms
+
+tNS(1)
+
+-
+
+Pulse width ignored (input filter on SCL and
+SDA) - single glitch
+
+-
+
+100
+
+ns
+
+1. Characterized only, not tested in production.
+2. With CL = 10 pF.
+3. There is no min. or max. values for the input signal rise and fall times. It is however recommended by the
+I²C specification that the input signal rise and fall times be more than 20 ns and less than 300 ns when
+fC < 400 kHz.
+4. The min value for tCLQX (Data out hold time) of the M24xxx devices offers a safe timing to bridge the
+undefined region of the falling edge SCL.
+5. tCLQV is the time (from the falling edge of SCL) required by the SDA bus line to reach either 0.3 VCC or
+0.7 VCC, assuming that Rbus × Cbus time constant is within the values specified in Figure 11.
+
+DocID024020 Rev 5
+
+27/42
+41
+
+DC and AC parameters
+
+M24C01/02-W M24C01/02-R M24C02-F
+Table 16. 100 kHz AC characteristics (I2C Standard mode)(1)
+
+Symbol
+
+Alt.
+
+fC
+
+fSCL
+
+tCHCL
+
+Parameter
+
+Min.
+
+Max.
+
+Unit
+
+Clock frequency
+
+-
+
+100
+
+kHz
+
+tHIGH
+
+Clock pulse width high
+
+4
+
+-
+
+µs
+
+tCLCH
+
+tLOW
+
+Clock pulse width low
+
+4.7
+
+-
+
+µs
+
+tXH1XH2
+
+tR
+
+Input signal rise time
+
+-
+
+1
+
+µs
+
+tXL1XL2
+
+tF
+
+Input signal fall time
+
+-
+
+300
+
+ns
+
+tQL1QL2(2)
+
+tF
+
+SDA fall time
+
+-
+
+300
+
+ns
+
+tDXCH
+
+tSU:DAT Data in setup time
+
+250
+
+-
+
+ns
+
+tCLDX
+
+tHD:DAT Data in hold time
+
+0
+
+-
+
+ns
+
+tCLQX(3)
+
+tDH
+
+Data out hold time
+
+200
+
+-
+
+ns
+
+tCLQV(4)
+
+tAA
+
+Clock low to next data valid (access time)
+
+-
+
+3450
+
+ns
+
+(5)
+
+tSU:STA Start condition setup time
+
+4.7
+
+-
+
+µs
+
+tDLCL
+
+tHD:STA Start condition hold time
+
+4
+
+-
+
+µs
+
+tCHDH
+
+tSU:STO Stop condition setup time
+
+4
+
+-
+
+µs
+
+tDHDL
+
+tBUF
+
+Time between Stop condition and next Start
+condition
+
+4.7
+
+-
+
+µs
+
+tW
+
+tWR
+
+Write time
+
+-
+
+5
+
+ms
+
+tNS(2)
+
+-
+
+Pulse width ignored (input filter on SCL and
+SDA), single glitch
+
+-
+
+100
+
+ns
+
+tCHDL
+
+1. Values recommended by the I2C bus Standard-mode specification for a robust design of the I2C bus
+application. Note that the M24xxx devices decode correctly faster timings as specified in Table 15: 400 kHz
+AC characteristics (I2C Fast-mode).
+2. Characterized only.
+3. To avoid spurious Start and Stop conditions, a minimum delay is placed between SCL=1 and the falling or
+rising edge of SDA.
+4. tCLQV is the time (from the falling edge of SCL) required by the SDA bus line to reach either 0.3 VCC or
+0.7 VCC, assuming that Rbus × Cbus time constant is within the values specified in Figure 11.
+5. For a reStart condition, or following a Write cycle.
+
+28/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+DC and AC parameters
+
+Figure 11. Maximum Rbus value versus bus parasitic capacitance (Cbus) for
+an I2C bus at maximum frequency fC = 400 kHz
+"US LINE PULL UP RESISTOR
+K
+
+
+
+2
+BU
+S §
+
+
+
+(ERE 2BUS § #BUS   NS
+
+4HE 2 BUS X #BUS TIME CONSTANT
+MUST BE BELOW THE  NS
+TIME CONSTANT LINE REPRESENTED
+ON THE LEFT
+#
+BU
+S 
+
+6##
+
+2BUS
+
+
+
+N
+
+ K½
+
+S
+
+)£# BUS
+MASTER
+
+3#,
+
+-XXX
+
+3$!
+
+
+
+ P&
+
+
+
+
+"US LINE CAPACITOR P&
+
+#BUS
+
+
+
+AIB
+
+Figure 12. AC waveforms
+^ƚĂƌƚ
+ĐŽŶĚŝƚŝŽŶ
+
+^ƚŽƉ
+ĐŽŶĚŝƚŝŽŶ
+
+ƚy>ϭy>Ϯ
+
+ƚy,ϭy,Ϯ
+
+ƚ,>
+
+^ƚĂƌƚ
+ĐŽŶĚŝƚŝŽŶ
+
+ƚ>,
+
+^>
+ƚ>>
+
+ƚy>ϭy>Ϯ
+^/Ŷ
+ƚ,>
+
+ƚy,ϭy,Ϯ
+
+^
+/ŶƉƵƚ
+
+ƚ>y
+
+ƚy,
+^
+ŚĂŶŐĞ
+
+ƚ,,
+
+^ƚŽƉ
+ĐŽŶĚŝƚŝŽŶ
+
+ƚ,>
+
+^ƚĂƌƚ
+ĐŽŶĚŝƚŝŽŶ
+
+^>
+
+^/Ŷ
+ƚt
+ƚ,,
+
+ƚ,>
+tƌŝƚĞĐǇĐůĞ
+
+ƚ,>
+^>
+ƚ>Ys
+^KƵƚ
+
+ƚ>Yy
+ĂƚĂǀĂůŝĚ
+
+ƚY>ϭY>Ϯ
+
+ĂƚĂǀĂůŝĚ
+
+/ϬϬϳϵϱũ
+
+DocID024020 Rev 5
+
+29/42
+41
+
+Package information
+
+9
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Package information
+In order to meet environmental requirements, ST offers these devices in different grades of
+ECOPACK® packages, depending on their level of environmental compliance. ECOPACK®
+specifications, grade definitions and product status are available at: www.st.com.
+ECOPACK® is an ST trademark.
+
+9.1
+
+UFDFPN5 package information
+Figure 13. UFDFPN5 – 1.7x1.4 mm, 0.55 mm thickness, ultra thin fine pitch
+dual flat package, no lead - package outline
+'
+
+N
+
+/
+3LQ
+
+3LQ
+
+E
+;
+(
+
+(
+<
+
+'
+
+7RSYLHZ
+PDUNLQJVLGH
+
+H
+
+/
+
+%RWWRPYLHZ
+SDGVVLGH
+
+$
+$
+
+6LGHYLHZ
+
+$8.B0(B9
+
+1. On the bottom side, pin 1 is identified by the specific pad shape and, on the top side, pin 1 is defined from
+the orientation of the marking: when reading the marking, pin 1 is below the upper left package corner.
+
+Table 17. UFDFPN5 - 1.7 × 1.4 mm, 0.55 mm thickness, ultra thin fine pitch
+dual flat package, no lead - package mechanical data
+inches(1)
+
+millimeters
+Symbol
+
+30/42
+
+Min
+
+Typ
+
+Max
+
+Min
+
+Typ
+
+Max
+
+A
+
+0.500
+
+0.550
+
+0.600
+
+0.0197
+
+0.0217
+
+0.0236
+
+A1
+
+0.000
+
+-
+
+0.050
+
+0.0000
+
+-
+
+0.0020
+
+b(2)
+
+0.175
+
+0.200
+
+0.225
+
+0.0069
+
+0.0079
+
+0.0089
+
+D
+
+1.600
+
+1.700
+
+1.800
+
+0.0630
+
+0.0669
+
+0.0709
+
+D1
+
+1.400
+
+1.500
+
+1.600
+
+0.0551
+
+0.0591
+
+0.0630
+
+E
+
+1.300
+
+1.400
+
+1.500
+
+0.0512
+
+0.0551
+
+0.0591
+
+E1
+
+0.175
+
+0.200
+
+0.225
+
+0.0069
+
+0.0079
+
+0.0089
+
+X
+
+-
+
+0.200
+
+-
+
+-
+
+0.0079
+
+-
+
+Y
+
+-
+
+0.200
+
+-
+
+-
+
+0.0079
+
+-
+
+e
+
+-
+
+0.400
+
+-
+
+-
+
+0.0157
+
+-
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Package information
+
+Table 17. UFDFPN5 - 1.7 × 1.4 mm, 0.55 mm thickness, ultra thin fine pitch
+dual flat package, no lead - package mechanical data (continued)
+inches(1)
+
+millimeters
+Symbol
+Min
+
+Typ
+
+Max
+
+Min
+
+Typ
+
+Max
+
+L
+
+0.500
+
+0.550
+
+0.600
+
+0.0197
+
+0.0217
+
+0.0236
+
+L1
+
+-
+
+0.100
+
+-
+
+-
+
+0.0039
+
+-
+
+k
+
+-
+
+0.400
+
+-
+
+-
+
+0.0157
+
+-
+
+1. Values in inches are converted from mm and rounded to 4 decimal digits.
+2. Dimension b applies to plated terminal and is measured between 0.15 and 0.30mm from the terminal tip.
+
+Figure 14. UFDFPN5 - 5-lead, 1.7 × 1.4 mm, 0.55 mm thickness, ultra thin fine pitch
+dual flat package, no lead recommended footprint
+3LQ
+
+
+
+
+
+
+
+
+
+
+
+
+
+$8.B)3B9
+
+1. Dimensions are expressed in millimeters.
+
+DocID024020 Rev 5
+
+31/42
+41
+
+Package information
+
+9.2
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+TSSOP8 package information
+Figure 15.TSSOP8 – 3x4.4 mm, 0.65 mm pitch, 8-lead thin shrink small outline,
+package outline
+
+
+ϴ
+
+ϱ
+
+Đ
+ϭ
+
+ϭ
+
+
+
+ϰ
+
+ɲ
+
+>
+
+ϭ
+W
+
+Ϯ
+
+
+
+>ϭ
+ď
+
+Ğ
+
+76623$0B9
+
+1. Drawing is not to scale.
+
+Table 18. TSSOP8 – 3 x 4.4 mm, 0.65 mm pitch, 8-lead thin shrink small outline,
+package mechanical data
+inches(1)
+
+millimeters
+Symbol
+Min.
+
+Typ.
+
+Max.
+
+Min.
+
+Typ.
+
+Max.
+
+A
+
+-
+
+-
+
+1.200
+
+-
+
+-
+
+0.0472
+
+A1
+
+0.050
+
+-
+
+0.150
+
+0.0020
+
+-
+
+0.0059
+
+A2
+
+0.800
+
+1.000
+
+1.050
+
+0.0315
+
+0.0394
+
+0.0413
+
+b
+
+0.190
+
+-
+
+0.300
+
+0.0075
+
+-
+
+0.0118
+
+c
+
+0.090
+
+-
+
+0.200
+
+0.0035
+
+-
+
+0.0079
+
+CP
+
+-
+
+-
+
+0.100
+
+-
+
+-
+
+0.0039
+
+D
+
+2.900
+
+3.000
+
+3.100
+
+0.1142
+
+0.1181
+
+0.1220
+
+e
+
+-
+
+0.650
+
+-
+
+-
+
+0.0256
+
+-
+
+E
+
+6.200
+
+6.400
+
+6.600
+
+0.2441
+
+0.2520
+
+0.2598
+
+E1
+
+4.300
+
+4.400
+
+4.500
+
+0.1693
+
+0.1732
+
+0.1772
+
+L
+
+0.450
+
+0.600
+
+0.750
+
+0.0177
+
+0.0236
+
+0.0295
+
+L1
+
+-
+
+1.000
+
+-
+
+-
+
+0.0394
+
+-
+
+α
+
+0°
+
+-
+
+8°
+
+0°
+
+-
+
+8°
+
+1. Values in inches are converted from mm and rounded to four decimal digits.
+
+32/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+9.3
+
+Package information
+
+SO8N package information
+Figure 16. SO8N – 3.9x4.9 mm, 8-lead plastic small outline, 150 mils body width,
+package outline
+H X 
+!
+
+!
+C
+
+CCC
+
+B
+E
+
+PP
+*$8*(3/$1(
+
+$
+
+K
+
+
+%
+
+%
+
+
+
+!
+
+,
+,
+62$B9
+
+1. Drawing is not to scale.
+
+Table 19. SO8N – 3.9x4.9 mm, 8-lead plastic small outline, 150 mils body width,
+package mechanical data
+Symbol
+
+inches(1)
+
+millimeters
+Min.
+
+Typ.
+
+Max.
+
+Min.
+
+Typ.
+
+Max.
+
+A
+
+-
+
+-
+
+1.750
+
+-
+
+-
+
+0.0689
+
+A1
+
+0.100
+
+-
+
+0.250
+
+0.0039
+
+-
+
+0.0098
+
+A2
+
+1.250
+
+-
+
+-
+
+0.0492
+
+-
+
+-
+
+b
+
+0.280
+
+-
+
+0.480
+
+0.0110
+
+-
+
+0.0189
+
+c
+
+0.170
+
+-
+
+0.230
+
+0.0067
+
+-
+
+0.0091
+
+D
+
+4.800
+
+4.900
+
+5.000
+
+0.1890
+
+0.1929
+
+0.1969
+
+E
+
+5.800
+
+6.000
+
+6.200
+
+0.2283
+
+0.2362
+
+0.2441
+
+E1
+
+3.800
+
+3.900
+
+4.000
+
+0.1496
+
+0.1535
+
+0.1575
+
+e
+
+-
+
+1.270
+
+-
+
+-
+
+0.0500
+
+-
+
+h
+
+0.250
+
+-
+
+0.500
+
+0.0098
+
+-
+
+0.0197
+
+k
+
+0°
+
+-
+
+8°
+
+0°
+
+-
+
+8°
+
+L
+
+0.400
+
+-
+
+1.270
+
+0.0157
+
+-
+
+0.0500
+
+L1
+
+-
+
+1.040
+
+-
+
+-
+
+0.0409
+
+-
+
+ccc
+
+-
+
+-
+
+0.100
+
+-
+
+-
+
+0.0039
+
+1. Values in inches are converted from mm and rounded to four decimal digits.
+
+DocID024020 Rev 5
+
+33/42
+41
+
+Package information
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Figure 17. SO8N – 3.9x4.9 mm, 8-lead plastic small outline, 150 mils body width,
+package recommended footprint
+
+
+
+
+ [
+
+
+2B621B)3B9
+
+1. Dimensions are expressed in millimeters.
+
+34/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+9.4
+
+Package information
+
+PDIP8 package information
+Figure 18. PDIP8 – 8-pin plastic DIP, 0.25 mm lead frame, package outline
+
+%
+
+B
+!
+
+!
+
+!
+
+,
+
+B
+
+C
+
+E
+
+E!
+E"
+
+$
+
+
+%
+
+0$)0 "
+1. Drawing is not to scale.
+2. Not recommended for new designs.
+
+Table 20. PDIP8 – 8-pin plastic DIP, 0.25 mm lead frame, package mechanical data
+inches(1)
+
+millimeters
+Symbol
+Min.
+
+Typ.
+
+Max.
+
+Min.
+
+Typ.
+
+Max.
+
+A
+
+-
+
+-
+
+5.33
+
+-
+
+-
+
+0.2098
+
+A1
+
+0.38
+
+-
+
+-
+
+0.0150
+
+-
+
+-
+
+A2
+
+2.92
+
+3.30
+
+4.95
+
+0.1150
+
+0.1299
+
+0.1949
+
+b
+
+0.36
+
+0.46
+
+0.56
+
+0.0142
+
+0.0181
+
+0.0220
+
+b2
+
+1.14
+
+1.52
+
+1.78
+
+0.0449
+
+0.0598
+
+0.0701
+
+c
+
+0.20
+
+0.25
+
+0.36
+
+0.0079
+
+0.0098
+
+0.0142
+
+D
+
+9.02
+
+9.27
+
+10.16
+
+0.3551
+
+0.3650
+
+0.4000
+
+E
+
+7.62
+
+7.87
+
+8.26
+
+0.3000
+
+0.3098
+
+0.3252
+
+E1
+
+6.10
+
+6.35
+
+7.11
+
+0.2402
+
+0.2500
+
+0.2799
+
+e
+
+-
+
+2.54
+
+-
+
+-
+
+0.1000
+
+-
+
+eA
+
+-
+
+7.62
+
+-
+
+-
+
+0.3000
+
+-
+
+eB
+
+-
+
+-
+
+10.92
+
+-
+
+-
+
+0.4299
+
+L
+
+2.92
+
+3.30
+
+3.81
+
+0.1150
+
+0.1299
+
+0.1500
+
+1. Values in inches are converted from mm and rounded to four decimal digits.
+
+DocID024020 Rev 5
+
+35/42
+41
+
+Package information
+
+9.5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+UFDFN8 package information
+Figure 19. UFDFN8 - 8-lead, 2 × 3 mm, 0.5 mm pitch ultra thin profile fine pitch dual
+flat package outline
+'
+
+1
+
+$ %
+
+$
+$
+
+FFF 
+
+3LQ
+,'PDUNLQJ
+
+(
+
+&
+
+HHH &
+
+6HDWLQJSODQH
+
+$
+
+6LGHYLHZ
+[
+
+DDD &
+
+
+
+DDD &
+
+[
+
+
+
+7RSYLHZ
+'
+H
+
+
+'DWXP$
+
+E
+
+
+
+/
+
+/
+
+/ /
+
+3LQ
+,'PDUNLQJ
+
+(
+
+H
+
+/
+H
+
+.
+
+7HUPLQDOWLS
+
+'HWDLO³$´
+(YHQWHUPLQDO
+
+/
+1'[ H
+6HH'HWDLO³$´
+
+%RWWRPYLHZ
+
+=:EB0(B9
+
+1. Max. package warpage is 0.05 mm.
+2. Exposed copper is not systematic and can appear partially or totally according to the cross section.
+3. Drawing is not to scale.
+4. The central pad (the area E2 by D2 in the above illustration) must be either connected to VSS or left
+floating (not connected) in the end application.
+
+Table 21. UFDFN8 - 8-lead, 2 × 3 mm, 0.5 mm pitch ultra thin profile fine pitch dual flat
+package mechanical data
+inches(1)
+
+millimeters
+Symbol
+
+36/42
+
+Min
+
+Typ
+
+Max
+
+Min
+
+Typ
+
+Max
+
+A
+
+0.450
+
+0.550
+
+0.600
+
+0.0177
+
+0.0217
+
+0.0236
+
+A1
+
+0.000
+
+0.020
+
+0.050
+
+0.0000
+
+0.0008
+
+0.0020
+
+(2)
+
+b
+
+0.200
+
+0.250
+
+0.300
+
+0.0079
+
+0.0098
+
+0.0118
+
+D
+
+1.900
+
+2.000
+
+2.100
+
+0.0748
+
+0.0787
+
+0.0827
+
+D2
+
+1.200
+
+-
+
+1.600
+
+0.0472
+
+-
+
+0.0630
+
+E
+
+2.900
+
+3.000
+
+3.100
+
+0.1142
+
+0.1181
+
+0.1220
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Package information
+
+Table 21. UFDFN8 - 8-lead, 2 × 3 mm, 0.5 mm pitch ultra thin profile fine pitch dual flat
+package mechanical data (continued)
+inches(1)
+
+millimeters
+Symbol
+Min
+
+Typ
+
+Max
+
+Min
+
+Typ
+
+Max
+
+E2
+
+1.200
+
+-
+
+1.600
+
+0.0472
+
+-
+
+0.0630
+
+e
+
+-
+
+0.500
+
+-
+
+K
+
+0.300
+
+-
+
+-
+
+0.0118
+
+-
+
+-
+
+L
+
+0.300
+
+-
+
+0.500
+
+0.0118
+
+-
+
+0.0197
+
+L1
+
+-
+
+-
+
+0.150
+
+-
+
+-
+
+0.0059
+
+L3
+
+0.300
+
+-
+
+-
+
+0.0118
+
+-
+
+-
+
+aaa
+
+-
+
+-
+
+0.150
+
+-
+
+-
+
+0.0059
+
+bbb
+
+-
+
+-
+
+0.100
+
+-
+
+-
+
+0.0039
+
+ccc
+
+-
+
+-
+
+0.100
+
+-
+
+-
+
+0.0039
+
+-
+
+-
+
+0.050
+
+-
+
+-
+
+0.0020
+
+-
+
+-
+
+0.080
+
+-
+
+-
+
+0.0031
+
+ddd
+eee
+
+(3)
+
+0.0197
+
+1. Values in inches are converted from mm and rounded to 4 decimal digits.
+2. Dimension b applies to plated terminal and is measured between 0.15 and 0.30 mm from the terminal tip.
+3. Applied for exposed die paddle and terminals. Exclude embedding part of exposed die paddle from
+measuring.
+
+Figure 20. UFDFN8 - 8-lead, 2 × 3 mm, 0.5 mm pitch ultra thin profile fine pitch dual
+flat recommended footprint
+
+
+
+
+
+
+
+
+
+
+=:EB)3B9
+
+1. Dimensions are expressed in millimeters.
+
+DocID024020 Rev 5
+
+37/42
+41
+
+Part numbering
+
+10
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Part numbering
+Table 22. Ordering information scheme
+Example:
+
+M24C02
+
+W MC 6
+
+T
+
+P
+
+Device type
+M24 = I2C serial access EEPROM
+
+Device function
+C01 = 1 Kbit (128 x 8 bit)
+C02 = 2 Kbit (256 x 8 bit)
+
+Operating voltage
+W = VCC = 2.5 V to 5.5 V
+R = VCC = 1.8 V to 5.5 V
+F = VCC = 1.6 V or 1.7 V to 5.5 V
+Package
+BN = PDIP8(1)(2)
+MN = SO8 (150 mil width)(3)
+DW = TSSOP8 (169 mil width)(3)
+MC = UFDFPN8 (MLP8)(3)
+MH =UFDFPN5 (MLP5)(3)
+
+Device grade
+6 = Industrial: device tested with standard test flow over –40 to 85 °C
+
+Option
+T = Tape and reel packing
+blank = tube packing
+
+Plating technology
+P or G = ECOPACK2® (RoHS compliant)
+1. RoHS-compliant (ECOPACK1®)
+2. Not recommended for new designs.
+3. ECOPACK2® (RoHS compliant and free of brominated, chlorinated and antimony-oxide flame retardants)
+
+38/42
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Part numbering
+
+Engineering samples
+Parts marked as “ES”, “E” or accompanied by an Engineering Sample notification letter, are
+not yet qualified and therefore not yet ready to be used in production and any consequences
+deriving from such usage will not be at ST charge. In no event, ST will be liable for any
+customer usage of these engineering samples in production. ST Quality has to be contacted
+prior to any decision to use these Engineering samples to run qualification activity.
+
+DocID024020 Rev 5
+
+39/42
+41
+
+Revision history
+
+11
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Revision history
+Table 23. Document revision history
+Date
+
+17-Dec-2012
+
+24-Sep-2013
+
+06-Dec-2016
+
+40/42
+
+Revision
+
+Changes
+
+1
+
+New M24C01/02 datasheet resulting from splitting the previous
+datasheet M24C08-x M24C04-x M24C02-x M24C01-x (revision 18)
+into separate datasheets.
+Added part number M24C02-F.
+Updated ESD value in Table 4.
+Updated standby supply current values (ICCI) in Table 12, Table 13
+and Table 14.
+
+2
+
+Added:
+– Table 10: Cycling performance
+– Table 7: Operating conditions (voltage range F) and Table 7:
+Operating conditions (voltage range F, for all other devices)
+Updated:
+– Features: supply voltage, write cycles and data retention
+– Section 1: Description
+– Note (1) under Table 4: Absolute maximum ratings
+– Table 11: Memory cell data retention, Table 12: DC characteristics
+(M24C01/02-W, device grade 6), Table 13: DC characteristics
+(M24C01/02-R device grade 6), Table 14: DC characteristics
+(M24C02-F, device grade 6), Table 21: Ordering information
+scheme
+– Figure 11: AC waveforms
+Renamed Figure 15 and Table 21.
+
+3
+
+Updated: Section 1: Description, notes on Table 4: Absolute
+maximum ratings, title of Table 7: Operating conditions (voltage range
+F), note 1 on Table 11: Memory cell data retention, Table 12: DC
+characteristics (M24C01/02-W, device grade 6), Table 13: DC
+characteristics (M24C01/02-R device grade 6), Table 14: DC
+characteristics (M24C02-F, device grade 6), Table 21: Ordering
+information scheme
+Removed Table 7: Operating conditions (voltage range F. for all other
+devices)
+Added Figure 14: SO8N – 3.9x4.9 mm, 8-lead plastic small outline,
+150 mils body width, package recommended footprint, Engineering
+samples reference
+
+DocID024020 Rev 5
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+Revision history
+
+Table 23. Document revision history (continued)
+Date
+
+05-Apr-2017
+
+20-Apr-2017
+
+Revision
+
+Changes
+
+4
+
+Updated Section 2.3: Chip Enable (E2, E1, E0), Section 4.5: Device
+addressing, Section 5.2.3: Sequential Read, Table 22: Ordering
+information scheme
+Added UFDFPN5 package in cover page and Section 9.1: UFDFPN5
+package information
+
+5
+
+Updated:
+– Figure 14: UFDFPN5 - 5-lead, 1.7 × 1.4 mm, 0.55 mm thickness,
+ultra thin fine pitch dual flat package, no lead recommended
+footprint and Figure 20: UFDFN8 - 8-lead, 2 × 3 mm, 0.5 mm pitch
+ultra thin profile fine pitch dual flat recommended footprint
+– Note on Section 5.2.3: Sequential Read
+
+DocID024020 Rev 5
+
+41/42
+41
+
+M24C01/02-W M24C01/02-R M24C02-F
+
+IMPORTANT NOTICE – PLEASE READ CAREFULLY
+STMicroelectronics NV and its subsidiaries (“ST”) reserve the right to make changes, corrections, enhancements, modifications, and
+improvements to ST products and/or to this document at any time without notice. Purchasers should obtain the latest relevant information on
+ST products before placing orders. ST products are sold pursuant to ST’s terms and conditions of sale in place at the time of order
+acknowledgement.
+Purchasers are solely responsible for the choice, selection, and use of ST products and ST assumes no liability for application assistance or
+the design of Purchasers’ products.
+No license, express or implied, to any intellectual property right is granted by ST herein.
+Resale of ST products with provisions different from the information set forth herein shall void any warranty granted by ST for such product.
+ST and the ST logo are trademarks of ST. All other product or service names are the property of their respective owners.
+Information in this document supersedes and replaces information previously supplied in any prior versions of this document.
+© 2017 STMicroelectronics – All rights reserved
+
+42/42
+
+DocID024020 Rev 5
+
+

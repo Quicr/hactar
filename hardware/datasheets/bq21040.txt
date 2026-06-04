@@ -1,0 +1,3266 @@
+Order
+Now
+
+Product
+Folder
+
+Support &
+Community
+
+Tools &
+Software
+
+Technical
+Documents
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+bq21040 0.8-A, Single-Input, Single Cell Li-Ion and Li-Pol Battery Charger
+1 Features
+
+3 Description
+
+•
+
+The bq21040 device is a highly integrated Li-Ion and
+Li-Pol linear battery charger device targeted at spacelimited portable applications. The device operates
+from either a USB port or AC adapter. The high input
+voltage range with input overvoltage protection
+supports low-cost unregulated adapters.
+
+1
+
+•
+
+•
+
+Charging
+– 1% Charge Voltage Accuracy
+– 10% Charge Current Accuracy
+– Low Battery Leakage Current (1 µA)
+– Programmable Charge Current using External
+Resistor up to 800 mA
+– 4.2-V Li-Ion and Li-Pol Charger
+Protection
+– 30-V Input Rating; with 6.6-V Input
+Overvoltage Protection
+– Input Voltage Dynamic Power Management
+– 125°C Thermal Regulation; 150°C Thermal
+Shutdown Protection
+– OUT Short-Circuit Protection and ISET Short
+Detection
+– Overtemperature Sensing Protection Through
+NTC
+– Fixed 10-Hour Safety Timer
+System
+– Status Indication – Charging/Done
+– Available in Small SOT-23 Package
+
+The battery is charged in three phases: conditioning,
+constant current and constant voltage. In all charge
+phases, an internal control loop monitors the IC
+junction temperature and reduces the charge current
+if an internal temperature threshold is exceeded.
+The charger power stage and charge current sense
+functions are fully integrated. The charger function
+has high accuracy current and voltage regulation
+loops, charge status display, and charge termination.
+The pre-charge current and termination current
+threshold are fixed to 20% and 10%, respectively.
+The fast charge current value is programmable
+through an external resistor.
+Device Information(1)
+
+2 Applications
+•
+•
+•
+•
+
+The bq21040 has a single power output that charges
+the battery. A system load can be placed in parallel
+with the battery as long as the average system load
+does not keep the battery from charging fully during
+the 10 hour safety timer.
+
+PART NUMBER
+
+EPOS
+Medical Endoscopes
+BLE Speaker and Headsets
+Low-Power Handheld Devices
+
+bq21040
+
+PACKAGE
+SOT-23 (6)
+
+BODY SIZE (NOM)
+3.00 mm × 1.75 mm
+
+(1) For all available packages, see the orderable addendum at
+the end of the data sheet.
+
+Simplified Schematic
+bq21040
+VIN
+VIN
+
+VOUT
+BAT
+TEMP
+
+1 µF
+
+ISET
+
+TS
+
+RISET
+
+PACK+
+1 µF
+
+NTC
+
++
+±
+
+System
+Load
+
+RCHG
+
+PACK±
+
+GND
+
+CHG
+
+Copyright © 2016, Texas Instruments Incorporated
+
+1
+
+An IMPORTANT NOTICE at the end of this data sheet addresses availability, warranty, changes, use in safety-critical applications,
+intellectual property matters and other important disclaimers. PRODUCTION DATA.
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+Table of Contents
+1
+2
+3
+4
+5
+6
+7
+
+Features .................................................................. 1
+Applications ........................................................... 1
+Description ............................................................. 1
+Revision History..................................................... 2
+Device Comparison ............................................... 3
+Pin Configuration and Functions ......................... 3
+Specifications......................................................... 3
+7.1
+7.2
+7.3
+7.4
+7.5
+7.6
+7.7
+
+8
+
+Absolute Maximum Ratings ...................................... 3
+ESD Ratings ............................................................ 4
+Recommended Operating Conditions....................... 4
+Thermal Information .................................................. 4
+Electrical Characteristics........................................... 4
+Timing Requirements ................................................ 6
+Typical Operational Characteristics (Protection
+Circuits Waveforms)................................................... 7
+
+Detailed Description .............................................. 8
+8.1 Overview ................................................................... 8
+8.2 Functional Block Diagram ......................................... 9
+
+8.3 Feature Description................................................. 10
+8.4 Device Functional Modes........................................ 13
+
+9
+
+Application and Implementation ........................ 17
+9.1 Application Information............................................ 17
+9.2 Typical Application .................................................. 17
+
+10 Power Supply Recommendations ..................... 22
+11 Layout................................................................... 22
+11.1 Layout Guidelines ................................................. 22
+11.2 Layout Example .................................................... 22
+11.3 Thermal Considerations ........................................ 23
+
+12 Device and Documentation Support ................. 24
+12.1
+12.2
+12.3
+12.4
+12.5
+
+Receiving Notification of Documentation Updates 24
+Community Resources.......................................... 24
+Trademarks ........................................................... 24
+Electrostatic Discharge Caution ............................ 24
+Glossary ................................................................ 24
+
+13 Mechanical, Packaging, and Orderable
+Information ........................................................... 24
+
+4 Revision History
+NOTE: Page numbers for previous revisions may differ from page numbers in the current version.
+Changes from Revision C (August 2017) to Revision D
+
+Page
+
+•
+
+Changed HBM From: ±1000 To: ±2000 in the ESD Ratings.................................................................................................. 4
+
+•
+
+Changed CDM From: ±250 To: ±500 in the ESD Ratings ..................................................................................................... 4
+
+Changes from Revision B (May 2017) to Revision C
+
+Page
+
+•
+
+Changed Simplified Schematic .............................................................................................................................................. 1
+
+•
+
+Changed 250 kΩ to 237 kΩ in TS pin description.................................................................................................................. 3
+
+•
+
+Changed RTS max from 25.8 kΩ to 258 kΩ ............................................................................................................................ 4
+
+•
+
+Changed Low temperature charging to Normal temperature charging in VTS-0C Test Conditions .......................................... 6
+
+•
+
+Changed low temperature charging to normal temperature charging in VHYS-0C Test Conditions ......................................... 6
+
+•
+
+Changed High temperature charging to Normal temperature charging in VTS-45C Test Conditions ....................................... 6
+
+•
+
+Changed high temperature charging to normal temperature charging in VHYS-45C Test Conditions ...................................... 6
+
+•
+
+Deleted Load Regulation graph ............................................................................................................................................. 7
+
+•
+
+Deleted Line Regulation graph .............................................................................................................................................. 7
+
+•
+
+Changed Figure 6 ................................................................................................................................................................ 11
+
+•
+
+Deleted The bq21040 does not have a safety timer. in Timers ........................................................................................... 15
+
+•
+
+Changed Figure 10 .............................................................................................................................................................. 17
+
+Changes from Revision A (April 2016) to Revision B
+
+Page
+
+•
+
+Changed MIN and MAX values in the Electrical Characteristics table, Changed MIN and MAX values for Fast
+charge current factor, KISET ................................................................................................................................................. 1
+
+•
+
+Added Receiving Notification of Documentation Updates section ........................................................................................ 1
+
+2
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+5
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+Device Comparison
+PART NO.
+
+VO(REG)
+
+VOVP
+
+TS
+
+PACKAGE
+
+bq21040
+
+4.20 V
+
+6.6 V
+
+TS
+
+3.00 mm × 1.75 mm × 1.45 mm SOT-23
+
+6 Pin Configuration and Functions
+DBV Package
+6-Pin SOT-23
+Top View
+
+TS
+
+1
+
+6
+
+VIN
+
+OUT
+
+2
+
+5
+
+GND
+
+CHG
+
+3
+
+4
+
+ISET
+
+Pin Functions
+PIN
+NAME
+
+NO.
+
+I/O
+
+DESCRIPTION
+
+CHG
+
+3
+
+O
+
+Low (FET on) indicates charging and Open Drain (FET off) indicates no Charging or Charge
+complete.
+
+GND
+
+5
+
+—
+
+Ground terminal
+
+ISET
+
+4
+
+I
+
+Programs the Fast-charge current setting. External resistor from ISET to VSS defines fast charge
+current value. Range is 10.8kΩ (50mA) to 675Ω (800mA).
+
+OUT
+
+2
+
+O
+
+Battery connection. System load may be connected. Expected range of bypass capacitors 1μF to
+10μF.
+
+TS
+
+1
+
+I
+
+Temperature sense terminal connected to bq21040 -10k at 25°C NTC thermistor, in the battery
+pack. Floating T terminal or pulling High puts part in TTDM “Charger” Mode and disable TS
+monitoring, Timers and Termination. Pulling terminal Low disables the IC. If NTC sensing is not
+needed, connect this terminal to VSS through an external 10 kΩ resistor. A 237 kΩ from TS to
+ground will prevent IC entering TTDM mode when battery with thermistor is removed.
+
+VIN
+
+6
+
+I
+
+Input power, connected to external DC supply (AC adapter or USB port). Expected range of
+bypass capacitors 1μF to 10μF, connect from IN to VSS.
+
+7 Specifications
+7.1 Absolute Maximum Ratings
+over operating free-air temperature range (unless otherwise noted) (1) (2)
+
+Input voltage
+
+MIN
+
+MAX
+
+UNIT
+
+IN (with respect to VSS)
+
+–0.3
+
+30
+
+V
+
+OUT (with respect to VSS)
+
+–0.3
+
+7
+
+V
+
+PRE-TERM, ISET, ISET2, TS, /CHG (with respect to VSS)
+
+–0.3
+
+7
+
+V
+A
+
+Input current
+
+IN
+
+1.25
+
+Output current (continuous)
+
+OUT
+
+1.25
+
+A
+
+Output sink current
+
+CHG
+
+15
+
+mA
+
+Junction temperature, TJ
+
+–40
+
+150
+
+°C
+
+Storage temperature, Tstg
+
+–65
+
+150
+
+°C
+
+(1)
+(2)
+
+Stresses beyond those listed under Absolute Maximum Ratings may cause permanent damage to the device. These are stress ratings
+only, which do not imply functional operation of the device at these or any other conditions beyond those indicated under Recommended
+Operating Conditions. Exposure to absolute-maximum-rated conditions for extended periods may affect device reliability.
+All voltage values are with respect to the network ground terminal unless otherwise noted.
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+3
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+7.2 ESD Ratings
+VALUE
+V(ESD)
+(1)
+(2)
+
+Electrostatic discharge
+
+Human-body model (HBM), per ANSI/ESDA/JEDEC JS-001 (1)
+
+±2000
+
+Charged-device model (CDM), per JEDEC specification JESD22C101 (2)
+
+±500
+
+UNIT
+V
+
+JEDEC document JEP155 states that 500-V HBM allows safe manufacturing with a standard ESD control process.
+JEDEC document JEP157 states that 250-V CDM allows safe manufacturing with a standard ESD control process.
+
+7.3 Recommended Operating Conditions
+over operating free-air temperature range (unless otherwise noted)
+MIN
+VIN
+
+NOM
+
+MAX
+
+UNIT
+
+IN voltage range
+
+3.5
+
+28
+
+V
+
+IN operating voltage range, restricted by VDPM and VOVP
+
+4.45
+
+6.45
+
+V
+
+0.8
+
+A
+
+IIN
+
+Input current, IN terminal
+
+IOUT
+
+Current, OUT terminal
+
+TJ
+
+Junction temperature
+
+RISET
+RTS
+
+0.8
+
+A
+
+0
+
+125
+
+°C
+
+Fast-charge current programming resistor
+
+0.675
+
+10.8
+
+kΩ
+
+10k NTC thermistor range without entering TTDM
+
+1.66
+
+258
+
+kΩ
+
+7.4 Thermal Information
+bq21040
+THERMAL METRIC (1)
+
+DBV (SOT-23)
+
+UNIT
+
+6 PINS
+RθJA
+
+Junction-to-ambient thermal resistance
+
+130.8
+
+°C/W
+
+RθJC(top)
+
+Junction-to-case (top) thermal resistance
+
+75.2
+
+°C/W
+
+RθJB
+
+Junction-to-board thermal resistance
+
+45.5
+
+°C/W
+
+ψJT
+
+Junction-to-top characterization parameter
+
+31.8
+
+°C/W
+
+ψJB
+
+Junction-to-board characterization parameter
+
+45.5
+
+°C/W
+
+RθJC(bot)
+
+Junction-to-case (bottom) thermal resistance
+
+n/a
+
+°C/W
+
+(1)
+
+For more information about traditional and new thermal metrics, see the Semiconductor and IC Package Thermal Metrics application
+report.
+
+7.5 Electrical Characteristics
+over operating free-air temperature range (unless otherwise noted)
+PARAMETER
+
+TEST CONDITIONS
+
+MIN
+
+TYP
+
+MAX
+
+UNIT
+
+INPUT
+UVLO
+
+Undervoltage lockout exit
+
+VIN: 0 V to 4 V
+
+3.15
+
+3.3
+
+3.45
+
+V
+
+VHYS-UVLO
+
+Hysteresis on VUVLO_RISE falling
+
+VIN: 0 V to 4 V, VUVLO_FALL =
+VUVLO_RISE – VHYS-UVLO
+
+175
+
+227
+
+280
+
+mV
+
+VIN-DT
+
+Input power good detection
+threshold is VOUT+VIN-DT
+
+(Input power good if VIN > VOUT + VINDT); VOUT = 3.6 V, VIN: 3.5 V to 4 V
+
+30
+
+80
+
+145
+
+mV
+
+VHYS-INDT
+
+Hysteresis on VIN-DT falling
+
+VOUT = 3.6 V, VIN: 4 V to 3.5 V
+
+VOVP
+
+Input overvoltage protection
+threshold
+
+VIN: 5 V to 12 V
+
+VHYS-OVP
+
+Hysteresis on OVP
+
+VIN: 11 V to 5 V
+
+VIN-DPM
+
+Adaptor low input voltage
+protection. Restricts lout at VINDPM
+
+Feature active in adaptor mode; Limit
+Input Current to 50 mA; VOUT = 3.5 V;
+RISET = 825
+
+31
+6.5
+
+6.65
+
+mV
+6.8
+
+95
+4.24
+
+4.3
+
+V
+mV
+
+4.46
+
+V
+
+500
+
+Ω
+
+ISET SHORT CIRCUIT TEST
+RISET_SHORT
+
+4
+
+Highest resistance considered a
+fault (short). Monitored for
+IOUT>90mA
+
+RISET: 250 Ω to 540 Ω, Iout latches off.
+Cycle power to reset
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+Electrical Characteristics (continued)
+over operating free-air temperature range (unless otherwise noted)
+PARAMETER
+IOUT_CL
+
+Maximum OUT current limit
+regulation (clamp)
+
+TEST CONDITIONS
+
+MIN
+
+VIN = 5 V, VOUT = 3.6 V, RISET: 250 Ω to
+540 Ω, Iout latches off after tDGL-SHORT
+
+1.05
+
+0.75
+
+TYP
+
+MAX
+
+UNIT
+
+1.4
+
+A
+
+0.85
+
+V
+
+BATTERY SHORT PROTECTION
+VOUT(SC)
+
+OUT terminal short-circuit detection
+threshold/precharge threshold
+
+Vout:3V to 0.5V, no deglitch
+
+VOUT(SC-HYS)
+
+OUT terminal short hysteresis
+
+Recovery ≥ VOUT(SC) + VOUT(SC-HYS);
+Rising, no deglitch
+
+IOUT(SC)
+
+Source current to OUT terminal
+during short-circuit detection
+
+0.8
+77
+
+10
+
+15
+
+mV
+20
+
+mA
+
+QUIESCENT CURRENT
+IOUT(PDWN)
+
+Battery current into OUT terminal
+
+VIN = 0V
+
+1
+
+µA
+
+IOUT(DONE)
+
+OUT pin current, charging
+terminated
+
+VIN = 6 V, VBAT > VBAT(REG), net current
+is into OUT pin
+
+6
+
+µA
+
+IIN(STDBY)
+
+Standby current into IN pin
+
+TS = Low, VIN ≤ 6 V
+
+125
+
+µA
+
+ICC
+
+Active supply current, IN pin
+
+TS = Low, VIN = 6 V, no load on OUT
+pin, VBAT > VBAT(REG)
+
+1000
+
+µA
+
+4.23
+
+V
+
+800
+
+mA
+
+325
+
+550
+
+mV
+
+KISET/
+RISET
+
+KISET/
+RISET
+
+KISET/
+RISET
+
+A
+
+KISET (60mA < I <1000mA)
+
+490
+
+540
+
+590
+
+KISET (25mA < I < 60mA)
+
+470
+
+527
+
+605
+
+KISET (10mA < I < 25mA)
+
+340
+
+520
+
+685
+
+2.4
+
+2.5
+
+2.6
+
+V
+
+BATTERY CHARGER FAST-CHARGE
+VOUT(REG)
+
+Battery regulation voltage
+
+VREG = 4.2 V, IL = 25 mA, VIN = 5.5 V
+
+4.16
+
+IOUT(RANGE)
+
+Programmed output fast charge
+current range
+
+VOUT(REG) > VOUT > VLOWV; VIN = 5 V,
+RISET = 0.675 to 52 kΩ
+
+10
+
+VDO(IN-OUT)
+
+Drop-Out, VIN – VOUT
+
+Adjust VIN down until IOUT = 0.5 A, VOUT
+= 4.15 V, RISET = 1.08kΩ
+
+IOUT
+
+Output fast charge formula
+
+VOUT(REG) > VOUT > VLOWV; VIN = 5 V
+
+KISET
+
+Fast charge current factor
+
+4.2
+
+AΩ
+
+PRECHARGE
+VLOWV
+
+Pre-charge to fast-charge transition
+threshold
+
+Pre-charge
+
+Default pre-charge current
+
+VBAT < VLOWV, ICHG = 50 mA
+
+18
+
+20
+
+22
+
+%ISET
+
+Termination Threshold Current,
+default setting
+
+VOUT > VRCH; RISET = 1 kΩ
+
+9
+
+10
+
+11
+
+%IOUTCC
+
+TERMINATION
+%TERM
+
+RECHARGE OR REFRESH
+VRCH
+
+Recharge detection threshold
+
+VIN = 5 V, VTS = 0.5 V, VOUT = 4.25 V to
+VRCH
+
+VO(REG) - VO(REG) - VO(REG) 120 mV
+95 mV
+70 mV
+
+mV
+
+VIN = 5 V, VTS = 0.5 V, battery absent
+
+VO(REG) - VO(REG) - VO(REG) 450 mV
+400 mV
+350 mV
+
+mV
+
+BATT DETECT
+VREG-BD
+
+VOUT Reduced regulation during
+battery detect
+
+IBD-SINK
+
+Sink current during VREG-BD
+
+VBD-HI
+
+7
+
+High battery detection threshold
+VIN = 5 V, VTS = 0.5 V, battery absent
+
+VBD-LO
+
+Low battery detection threshold
+
+10
+
+mA
+
+VO(REG) - VO(REG) - VO(REG) 150 mV
+100 mV
+50 mV
+
+V
+
+VREGBD+0.50
+
+VREGBD+0.1
+
+VREGBD+0.15
+
+V
+
+48
+
+50
+
+53
+
+µA
+
+BATTERY-PACK NTC MONITOR
+INTC 50µA
+
+NTC bias current
+
+INTC-DIS-10K
+
+10K NTC bias current when
+charging is disabled
+
+VTS = 0 V
+
+27
+
+30
+
+34
+
+µA
+
+INTC-FLDBK -10K
+
+INTC is reduced prior to entering
+TTDM to keep cold thermistor from
+entering TTDM
+
+VTS = 1.525 V
+
+4
+
+5
+
+6.5
+
+µA
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+5
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+Electrical Characteristics (continued)
+over operating free-air temperature range (unless otherwise noted)
+PARAMETER
+
+TEST CONDITIONS
+
+MIN
+
+TYP
+
+MAX
+
+UNIT
+
+1550
+
+1600
+
+1650
+
+mV
+
+1800
+
+1950
+
+VTTDM(TS)
+
+Termination and timer disable
+mode-Threshold-Enter
+
+VTS: 0.5 V to 1.7 V; timer held in reset
+
+IHYS-TTDM(TS)
+
+Hysteresis exiting TTDM
+
+VTS: 1.7 V to 0.5 V; timer enabled
+
+VCLAMP(TS)
+
+TS maximum voltage clamp
+
+VTS = Open (float)
+
+VTS_I-FLDBK
+
+TS voltage where INTC is reduce to INTC adjustment (90 to 10%; 45 to 6.6
+keep thermistor from entering
+µs) takes place near this spec
+TTDM
+threshold. VTS: 1.425 V to 1.525 V
+
+1475
+
+mV
+
+CTS
+
+Optional capacitance – ESD
+
+0.22
+
+µF
+
+100
+
+VTS-0C
+
+Low temperature CHG pending
+
+Normal temperature charging to
+pending; VTS: 1 V to 1.5 V
+
+VHYS-0C
+
+Hysteresis at 0°C
+
+Charge pending to normal temperature
+charging; VTS: 1.5 V to 1 V
+
+VTS-45C
+
+High temperature CHG disable
+
+Normal temperature charging to
+pending; VTS: 0.5 V to 0.2 V
+
+VHYS-45C
+
+Hysteresis at 45°C
+
+Charge pending to normal temperature
+charging; VTS: 0.2 V to 0.5 V
+
+VTS-EN-10K
+
+Charge enable threshold (10k NTC) VTS: 0 V to 0.175 V
+
+VTS-DIS_HYS-10K
+
+HYS below VTS-EN-10k to disable
+(10k NTC)
+
+1220
+
+mV
+2000
+
+1250
+
+1280
+
+100
+260
+
+290
+
+20
+
+mV
+mV
+
+88
+
+VTS: 0.125 V to 0 V
+
+mV
+mV
+
+275
+
+80
+
+mV
+
+96
+
+12
+
+mV
+mV
+
+THERMAL REGULATION
+TJ(REG)
+
+Temperature regulation limit
+
+125
+
+TJ(OFF)
+
+Thermal shutdown temperature
+
+155
+
+TJ(OFF-HYS)
+
+Thermal shutdown hysteresis
+
+20
+
+°C
+
+CHG INDICATION
+VOL
+
+Output Low Voltage-CHG FET on first charge after power-up
+
+ISINK = 5 mA
+
+0.4
+
+V
+
+ILEAK
+
+Leakage current into IC
+
+V CHG = 5 V
+
+1
+
+µA
+
+MAX
+
+UNIT
+
+7.6 Timing Requirements
+MIN
+
+NOM
+
+INPUT
+tDGL(OVP_SET)
+
+Input over-voltage blanking time
+
+VIN: 5 V to 12 V
+
+113
+
+µs
+
+tDGL(OVP_REC)
+
+Deglitch time exiting OVP
+
+Time measured from VIN: 12V to 5V
+
+30
+
+µs
+
+1
+
+ms
+
+ISET SHORT CIRCUIT TEST
+tDGL_SHORT
+
+Deglitch time transition from ISET short Clear fault by disconnecting IN or cycling
+to IOUT disable
+(high / low) TS
+
+PRECHARGE – SET INTERNALLY
+tDGL1(LOWV)
+
+Deglitch time on pre-charge to fastcharge transition
+
+70
+
+µs
+
+tDGL2(LOWV)
+
+Deglitch time on fast-charge to precharge transition
+
+32
+
+ms
+
+Deglitch time, termination detected
+
+29
+
+ms
+
+29
+
+ms
+
+25
+
+ms
+
+30
+
+ms
+
+TERMINATION
+tDGL(TERM)
+
+RECHARGE OR REFRESH
+tDGL1(RCHG)
+
+Deglitch time, recharge threshold
+detected
+
+VIN = 5 V, VTS = 0.5 V, VOUT: 4.25 V to 3.5
+V in 1 µs; tDGL(RCHG) is time to ISET ramp
+
+BATTERY DETECT ROUTINE
+tDGL(HI/LOW REG)
+
+Regulation time at VREG or VREG-BD
+
+BATTERY-PACK NTC MONITOR; TS TERMINAL
+tDGL(TS)
+6
+
+Deglitch for TS thresholds: 0/45C.
+
+Battery charging
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+7.7 Typical Operational Characteristics (Protection Circuits Waveforms)
+SETUP: bq21040 typical applications schematic; VIN = 5V, VBAT = 3.6V (unless otherwise indicated)
+4.212
+
+546
+
+VO at 0°C
+
+Kiset
+
+VOUT - Output Voltage DC - V
+
+542
+Low to High Currents
+(may occur in recharge to fast charge transion)
+
+540
+
+Kiset - W
+
+ROUT = 100 Ω
+
+4.21
+
+544
+
+538
+High to Low Currents
+(may occur in Voltage Regulation - Taper Current)
+
+536
+534
+532
+
+4.208
+4.206
+
+VO at 25°C
+
+4.204
+
+VO at 85°C
+
+4.202
+4.2
+4.198
+
+530
+
+4.196
+4.5
+
+528
+0
+
+.15
+
+0.2
+
+0.4
+IO - Output Current - A
+
+0.6
+
+0.8
+
+5
+
+6
+
+6.5
+
+Figure 2. Line Regulation
+
+Figure 1. Kiset for Low and High Currents
+363.4
+
+4.2
+
+363.2
+
+4.199
+
+IO at 25°C
+IO - Output Current - mA
+
+Vreg at 25°C
+
+VOUT - Output Voltage - V
+
+5.5
+VI - Input Voltage DC - V
+
+4.198
+Vreg at 85°C
+
+4.197
+4.196
+4.195
+
+Vreg at 0°C
+
+363
+362.8
+
+362.4
+
+4.194
+
+362.2
+
+4.193
+
+362
+
+4.192
+0
+
+0.2
+
+0.4
+0.6
+IO - Output current - A
+
+0.8
+
+1
+
+IO at 85°C
+
+362.6
+
+IO at 0°C
+
+361.8
+2.5
+
+3
+
+3.5
+VO - Output Voltage - V
+
+4
+
+4.5
+
+Figure 4. Current Regulation Over Temperature
+Figure 3. Load Regulation Over Temperature
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+7
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+8 Detailed Description
+8.1 Overview
+The bq21040 is a highly integrated single cell Li-Ion and Li-Pol charger. The charger can be used to charge a
+battery, power a system or both. The charger has three phases of charging: Pre-charge to recover a fully
+discharged battery, fast-charge constant current to supply the buck charge safely and voltage regulation to safely
+reach full capacity. The charger is very flexible, allowing programming of the fast-charge current. This charger is
+designed to work with a USB connection or Adaptor (DC out). The charger also checks to see if a battery is
+present.
+The charger also comes with a full set of safety features: Temperature Sensing Standard, Over-Voltage
+Protection, DPM-IN, Safety Timers, and ISET short protection. All of these features and more are described in
+detail below.
+The charger is designed for a single power path from the input to the output to charge a single cell Li-Ion or
+Li-Pol battery pack. Upon application of a 5VDC power source the ISET and OUT short checks are performed to
+assure a proper charge cycle.
+If the battery voltage is below the LOWV threshold, the battery is considered discharged and a preconditioning
+cycle begins. The amount of the current goes into the battery during this phase is called pre-charge current. It is
+fixed to 20% of the fast charge current.
+Once the battery voltage has charged to the VLOWV threshold, fast charge is initiated and the fast charge
+current is applied. The fast charge constant current is programmed using the ISET terminal. The constant current
+provides the bulk of the charge. Power dissipation in the IC is greatest in fast charge with a lower battery voltage.
+If the IC reaches 125°C the IC enters thermal regulation, slows the timer clock by half and reduce the charge
+current as needed to keep the temperature from rising any further. Figure 5 shows the charging profile with
+thermal regulation. Typically under normal operating conditions, the IC’s junction temperature is less than 125°C
+and thermal regulation is not entered.
+Once the cell has charged to the regulation voltage the voltage loop takes control and holds the battery at the
+regulation voltage until the current tapers to the termination threshold. The termination current is set to 10% of
+the fast charge current. The CHG terminal is low (LED on) during the first charge cycle only and turns off once
+the termination threshold is reached, regardless if termination, for charge current, is enabled or disabled.
+
+8
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+8.2 Functional Block Diagram
+
+Internal Charge Current Sense
+w/Multiple Outputs
+
+IN
+
+OUT
+
+80 mV
++
+
+Input
+Power
+Detect
+
+IN
+
+OUT
+-
+
++
+-
+
++
+
+OUT
+
+IN,DPM
+
++
+
+-
+
+-
+
+Charge
+Pump
+
+TjC
+-
+
+Fast Charge
+Pre-Charge
+
+ISET
+
++
+
+IOUT x 1.5V
+540 AŸ
+
+VO,REG
+
+IN
+
+125 CREF
+
++
+
+1.5V
+
+-
+
+Pre-CHG Reference
+75uA
+Term Reference
+
+TjC
+
++
+_
+
+150 CREF
+
++
+_
+
+Charge
+Pump
+
+Thermal Shutdown
+
++
+
+IN
+
+X2 Gain (1:2)
+Term: Pre-CHGX2
+
++
+_
+
+_
+
+OVPREF
+
+CHG
+On During 1st
+Charge Only
+
++
+_
+
+TS_0C
+
++
+_
+
+TS_45C
+
++
+_
+
+VREF_0C_COLD
+
+TTDM MODE
+
+ON
+OFF:
+
+CHARGE
+CONTROL
+
+VTTDM
+
+TS Cold Temperature
+Sink Current
+
+45uA
+
+5uA
+
++
+_
+
+VCLAMP
+
+TS Disable
+Sink Current
+
+20uA
+
+_
+
+TS
+
++
+
+VREF_45C_HOT
+
+45uA
+
+Copyright © 2016, Texas Instruments Incorporated
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+9
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+8.3 Feature Description
+
+VO(REG)
+
+PreConditioning
+Phase
+
+Thermal
+Regulation
+Phase
+
+Current
+Regulation
+Phase
+
+Voltage Regulation and
+Charge Termination
+Phase
+
+DONE
+
+IO(OUT)
+FAST-CHARGE
+CURRENT
+
+PRE-CHARGE
+CURRENT AND
+TERMINATION
+THRESHOLD
+
+Battery Current,
+I(OUT)
+
+Battery
+Voltage,
+V(OUT)
+
+Charge
+Complete
+Status,
+Charger
+Off
+
+VO(LOWV)
+
+I(TERM)
+
+IO(PRECHG)
+T(THREG)
+
+0A
+Temperature, Tj
+
+T(CHG)
+
+T(PRECHG)
+
+DONE
+
+Figure 5. Charging Profile With Thermal Regulation
+8.3.1 Power-Down or Undervoltage Lockout (UVLO)
+The bq21040 is in power-down mode if the IN terminal voltage is less than UVLO. The part is considered “dead”
+and all the terminals are high impedance. Once the IN voltage rises above the UVLO threshold the IC will enter
+Sleep Mode or Active mode depending on the OUT terminal (battery) voltage.
+8.3.2 Power-up
+The IC is alive after the IN voltage ramps above UVLO (see sleep mode), resets all logic and timers, and starts
+to perform many of the continuous monitoring routines. Typically the input voltage quickly rises through the
+UVLO and sleep states where the IC declares power good, starts the qualification charge at 100mA starts the
+safety timer and enables the CHG terminal. See Figure 6.
+8.3.3 Sleep Mode
+If the IN terminal voltage is between than VOUT+VDT and UVLO, the charge current is disabled, the safety timer
+counting stops (not reset) and the CHG terminal is high impedance. As the input voltage rises and the charger
+exits sleep mode, the safety timer continues to count, charge is enabled and the CHG terminal returns to its
+previous state. See Figure 7.
+8.3.4 New Charge Cycle
+A new charge cycle is started when a good power source is applied, performing a chip disable/enable (TS
+terminal), exiting Termination and Timer Disable Mode (TTDM), detecting a battery insertion or the OUT voltage
+dropping below the VRCH threshold. The CHG terminal is active low only during the first charge cycle, therefore
+exiting TTDM or a dropping below VRCH will not turn on the CHG terminal FET, if the CHG terminal is already
+high impedance.
+
+10
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+VTS
+1.8V
+Normal
+Operation
+
+Disabled
+
+HOT
+Fault
+
+Disabled
+
+Cold
+Fault
+
+Normal
+Operation
+
+TTDM
+Mode
+
+Cold
+Fault
+
+Normal
+Operation
+
+tDGL(TTDM)
+Enter
+
+Normal
+Operation
+
+TTDM
+Mode
+tDGL(TTDM)
+Enter
+
+tDGL(TTDM)
+Exit
+
+TTDM
+
+t < tDGL(TTDM)
+Exit
+
+TTDMHYS
+tDGL(TS)
+
+tDGL(TS)
+
+tDGL(TS)
+
+0°C
+0°CHYS
+
+tDGL(TS)
+tDGL(TS)
+
+tDGL(TS)
+
+45°CHYS
+45°C
+
+Dots Show Threshold Trip Points
+followed by a deglitch time before
+transitioning into a new mode.
+
+EN
+
+DISHYS
+
+0V
+
+Drawing Not to Scale
+
+t
+
+Figure 6. TS Battery Temperature Bias Threshold and Deglitch Timers
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+11
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+Apply Input
+Power
+
+Is power good?
+VBAT + VDT < VOVP &
+VUVLO < VIN
+
+No
+
+Yes
+
+Is chip enabled?
+VTS > VEN
+
+No
+
+Yes
+
+Set the Current Limit to 100 mA
+and Start Charge Perform ISET &
+OUT short tests
+
+Yes
+
+Set the charge current based on
+ISET
+
+Yes
+
+Return to Charge
+
+Figure 7. bq21040 Power-Up Flow Diagram
+8.3.5 Overvoltage-Protection (OVP) – Continuously Monitored
+If the input source applies an overvoltage, the pass FET, if previously on, turns off after a deglitch, tBLK(OVP). The
+timer ends and the CHG terminal goes to a high impedance state. After the overvoltage returns to a normal
+voltage, the timer continues, charge continues, and the CHG terminal goes low after a 25ms deglitch.
+
+12
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+8.3.6
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+CHG Terminal Indication
+
+The charge terminal has an internal open drain FET which is on (pulls down to VSS) during the first charge only
+(independent of TTDM) and is turned off once the battery reaches voltage regulation and the charge current
+tapers to the termination threshold set by the PRE-TERM resistor. The bq21040 does not terminate charge,
+however, the CHG terminal will turn off once the battery current reaches 10% of the programmed charge current.
+The charge terminal is high impedance in sleep mode and OVP and returns to its previous state once the
+condition is removed.
+Cycling input power, pulling the TS terminal low and releasing or entering pre-charge mode causes the CHG
+terminal to go reset (go low if power is good and a discharged battery is attached) and is considered the start of
+a first charge.
+
+8.4 Device Functional Modes
+8.4.1
+
+CHG LED Pull-up Source
+
+For host monitoring, a pullup resistor is used between the STATUS terminal and the VCC of the host and for a
+visual indication a resistor in series with an LED is connected between the STATUS terminal and a power
+source. If the CHG source is capable of exceeding 7 V, a 6.2-V Zener should be used to clamp the voltage. If the
+source is the OUT terminal, note that as the battery changes voltage, and the brightness of the LEDs vary.
+Table 1. Charging States and CHG LED
+CHARGING STATE
+
+CHG FET/LED
+
+First charge after VIN applied
+
+ON
+
+Refresh charge
+OVP
+
+OFF
+
+SLEEP
+TEMP FAULT
+
+ON for 1st Charge
+
+8.4.2 IN-DPM (VIN-DPM or IN-DPM)
+The IN-DPM feature is used to detect an input source voltage that is folding back (voltage dropping), reaching its
+current limit due to excessive load. When the input voltage drops to the VIN-DPM threshold the internal pass FET
+starts to reduce the current until there is no further drop in voltage at the input. This would prevent a source with
+voltage less than VIN-DPM to power the out terminal. This works well with current limited adaptors and USB ports
+as long as the nominal voltage is above 4.3 V. This is an added safety feature that helps protect the source from
+excessive loads.
+8.4.3 OUT
+The Charger’s OUT terminal provides current to the battery and to the system, if present. This IC can be used to
+charge the battery plus power the system, charge just the battery or just power the system (TTDM) assuming the
+loads do not exceed the available current. The OUT terminal is a current limited source and is inherently
+protected against shorts. If the system load ever exceeds the output programmed current threshold, the output
+will be discharged unless there is sufficient capacitance or a charged battery present to supplement the
+excessive load.
+8.4.4 ISET
+An external resistor is used to Program the Output Current (50 to 800 mA) and can be used as a current monitor.
+RISET = KISET / IOUT
+
+where
+•
+•
+
+IOUT is the desired fast charge current;
+KISET is a gain factor found in the electrical specification
+
+(1)
+
+For greater accuracy at lower currents, part of the sense FET is disabled to give better resolution. Figure 1
+shows the transition from low current to higher current. Going from higher currents to low currents, there is
+hysteresis and the transition occurs around 0.15 A.
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+13
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+1.8
+1.6
+
+IO - Output Current - A
+
+1.4
+
+IOUT Clamp min - max
+
+IOUT Fault min - max
+
+The ISET resistor is short protected and will detect a resistance lower than ≉340 Ω. The detection requires at
+least 80mA of output current. If a “short” is detected, then the IC will latch off and can only be reset by cycling the
+power. The OUT current is internally clamped to a maximum current between 1.05 A and 1.4 A and is
+independent of the ISET short detection circuitry, as shown in Figure 8. Also, see Figure 23 and Figure 24.
+
+1.2
+
+IOUT Internal Clamp Range
+
+1
+0.8
+IOUT Programmed
+
+max
+0.6
+ISET Short
+Fault
+Range
+min
+
+0.4
+0.2
+
+Non Restricted
+Operating Area
+
+0
+100
+
+1000
+
+10000
+
+ISET - W
+
+Figure 8. Programmed/Clamped Out Current
+8.4.5 TS
+The TS function is designed to follow the temperature sensing standard for Li-Ion and Li-Pol batteries. There are
+two thresholds, 45°C and 0°C. Normal operation occurs between 0°C and 45°C.
+The TS feature is implemented using an internal 50μA current source to bias the thermistor (designed for use
+with a 10k NTC β = 3370 (SEMITEC 103AT-2 or Mitsubishi TH05-3H103F) connected from the TS terminal to
+VSS. If this feature is not needed, a fixed 10kΩ can be placed between TS and VSS to allow normal operation.
+This may be done if the host is monitoring the thermistor and then the host would determine when to pull the TS
+terminal low to disable charge.
+The TS terminal has two additional features, when the TS terminal is pulled low or floated/driven high. A low
+disables charge (similar to a high on the BAT_EN feature) and a high puts the charger in TTDM.
+Above 45°C or below 0°C the charge is disabled. Once the thermistor reaches ≉–10°C the TS current folds back
+to keep a cold thermistor (between –10°C and –50°C) from placing the IC in the TTDM mode. If the TS terminal
+is pulled low into disable mode, the current is reduce to ≉30μA, see Figure 6. Since the ITS curent is fixed along
+with the temperature thresholds, it is not possible to use thermistor values other than the 10k NTC (at 25°C).
+8.4.6 Termination and Timer Disable Mode (TTDM) - TS Terminal High
+The battery charger is in TTDM when the TS terminal goes high from removing the thermistor (removing battery
+pack/floating the TS terminal) or by pulling the TS terminal up to the TTDM threshold.
+When entering TTDM, the 10 hour safety timer is held in reset and termination is disabled. A battery detect
+routine is run to see if the battery was removed or not. If the battery was removed then the CHG terminal will go
+to its high impedance state if not already there. If a battery is detected the CHG terminal does not change states
+until the current tapers to the termination threshold, where the CHG terminal goes to its high impedance state if
+not already there (the regulated output will remain on).
+The charging profile does not change (still has pre-charge, fast-charge constant current and constant voltage
+modes). This implies the battery is still charged safely and the current is allowed to taper to zero.
+
+14
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+When coming out of TTDM, the battery detect routine is run and if a battery is detected, then a new charge cycle
+begins and the CHG LED turns on.
+If TTDM is not desired upon removing the battery with the thermistor, one can add a 237k resistor between TS
+and VSS to disable TTDM. This keeps the current source from driving the TS terminal into TTDM. This creates
+≉0.1°C error at hot and a ≉3°C error at cold.
+8.4.7 Timers
+The pre-charge timer is set to 30 minutes. The pre-charge current, can be programmed to off-set any system
+load, making sure that the 30 minutes is adequate.
+The fast charge timer is fixed at 10 hours and can be increased real time by going into thermal regulation, INDPM or if in USB current limit. The timer clock slows by a factor of 2, resulting in a clock than counts half as fast
+when in these modes. If either the 30 minute or ten hour timer times out, the charging is terminated and the CHG
+terminal goes high impedance if not already in that state. The fast charge timer is reset by disabling the IC,
+cycling power or going into and out of TTDM.
+8.4.8 Termination
+Once the OUT terminal goes above VRCH, (reaches voltage regulation) and the current tapers down to the
+termination threshold (10% of the fast charge current), the CHG terminal goes high impedance and a battery
+detect route is run to determine if the battery was removed or the battery is full. If the battery is present, the
+charge current will terminate. If the battery was removed along with the thermistor, then the TS terminal is driven
+high and the charge enters TTDM. If the battery was removed and the TS terminal is held in the active region,
+then the battery detect routine will continue until a battery is inserted.
+8.4.9 Battery Detect Routine
+The battery detect routine should check for a missing battery while keeping the OUT terminal at a useable
+voltage. Whenever the battery is missing the CHG terminal should be high impedance.
+The battery detect routine is run when entering and exiting TTDM to verify if battery is present, or run all the time
+if battery is missing and not in TTDM. On power-up, if battery voltage is greater than VRCH threshold, a battery
+detect routine is run to determine if a battery is present.
+The battery detect routine is disabled while the IC is in TTDM, or has a TS fault. See Figure 9 for the Battery
+Detect Flow Diagram.
+8.4.10 Refresh Threshold
+After termination, if the OUT terminal voltage drops to VRCH (100mV below regulation) then a new charge is
+initiated, but the CHG terminal remains at a high impedance (off).
+8.4.11 Starting a Charge on a Full Battery
+The termination threshold is raised by ≉14%, for the first minute of a charge cycle so if a full battery is removed
+and reinserted or a new charge cycle is initiated, that the new charge terminates (less than 1 minute). Batteries
+that have relaxed many hours may take several minutes to taper to the termination threshold and terminate
+charge.
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+15
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+Start
+BATT_DETECT
+
+Start 25ms timer
+
+Timer Expired?
+
+No
+
+Yes
+
+Is VOUT<VREG-100mV?
+
+Yes
+
+Battery Present
+Turn off Sink Current
+Return to flow
+
+No
+Set OUT REG
+to VREG-400mV
+Enable sink current
+Reset & Start 25ms timer
+
+Timer Expired?
+
+No
+
+Yes
+
+Yes
+Is VOUT>VREG-300mV?
+
+Battery Present
+Turn off Sink Current
+Return to flow
+
+No
+Battery Absent
+Don’t Signal Charge
+Turn off Sink Current
+Return to Flow
+
+Figure 9. Battery Detect Routine (bq21040)
+
+16
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+9 Application and Implementation
+NOTE
+Information in the following applications sections is not part of the TI component
+specification, and TI does not warrant its accuracy or completeness. TI’s customers are
+responsible for determining suitability of components for their purposes. Customers should
+validate and test their design implementation to confirm system functionality.
+
+9.1 Application Information
+The bq21040 device is a highly integrated Li-Ion and Li-Pol linear charger device targeted at space-limited
+portable applications. The device operates from either a USB port or AC adapter. The high input voltage range
+with input overvoltage protection supports low-cost unregulated adapters. This device has a single power output
+that charges the battery. A system load can be placed in parallel with the battery as long as the average system
+load does not keep the battery from charging fully during the 10 hour safety timer.
+
+9.2 Typical Application
+IOUT_FAST_CHG = 540mA; IOUT_PRE_CHG = 108mA; IOUT_TERM = 54mA
+bq21040
+VIN
+VIN
+
+VOUT
+BAT
+TEMP
+
+1 µF
+
+ISET
+
+TS
+
+RISET
+
+PACK+
+1 µF
+
+NTC
+
++
+±
+
+System
+Load
+
+RCHG
+
+PACK±
+
+GND
+
+CHG
+
+Copyright © 2016, Texas Instruments Incorporated
+
+Figure 10. Typical Application Circuit
+9.2.1 Design Requirements
+• Supply voltage = 5 V
+• Fast charge current: IOUT-FC = 540 mA; ISET-terminal 2
+• Termination Current Threshold: %IOUT-FC = 10% of Fast Charge or about 54mA
+• Pre-Charge Current by default is twice the termination Current or about 108mA
+• TS – Battery Temperature Sense = 10k NTC (103AT)
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+17
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+Typical Application (continued)
+9.2.2 Detailed Design Procedure
+9.2.2.1 Calculations
+9.2.2.1.1 Program the Fast Charge Current, ISET:
+RISET = [K(ISET) / I(OUT)]
+
+(2)
+
+From the Electrical Characteristics table:
+• K(SET) = 540AΩ
+• RISET = [540AΩ/0.54A] = 1.0 kΩ
+Selecting the closest standard value, use a 1.0 kΩ resistor between ISET (terminal 16) and Vss.
+9.2.2.1.2 Pre-Charge and Termination Current Thresholds, ITERM, and PRE-CHG
+TERM = I(OUT) × 10%IOUT-FC
+TERM = 540mA × 10% = 54mA
+
+(3)
+(4)
+
+One can calculate the pre-charge current by using 20% of the fast charge current (factor of 2 difference).
+PRE-Charge = I(OUT) × 20%IOUT-FC
+PRE-Charge = 540mA × 20% = 108mA
+
+(5)
+(6)
+
+9.2.2.1.3 TS Function
+
+Use a 10k NTC thermistor in the battery pack (103AT).
+To Disable the temp sense function, use a fixed 10k resistor between the TS (terminal 1) and Vss.
+9.2.2.1.4
+
+CHG
+
+LED Status: connect a 1.5kΩ resistor in series with a LED between the OUT terminal and the CHG terminal.
+Processor Monitoring: Connect a pull-up resistor between the processor’s power rail and the CHG terminal.
+9.2.2.2 Selecting In and Out Terminal Capacitors
+In most applications, all that is needed is a high-frequency decoupling capacitor (ceramic) on the power terminal,
+input and output terminals. Using the values shown on the application diagram, is recommended. After
+evaluation of these voltage signals with real system operational conditions, one can determine if capacitance
+values can be adjusted toward the minimum recommended values (DC load application) or higher values for fast
+high amplitude pulsed load applications. Note if designed for high input voltage sources (bad adaptors or wrong
+adaptors), the capacitor needs to be rated appropriately. Ceramic capacitors are tested to 2x their rated values
+so a 16V capacitor may be adequate for a 30V transient (verify tested rating with capacitor manufacturer).
+
+18
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+Typical Application (continued)
+9.2.3 Application Curves
+SETUP: bq21040 typical applications schematic; VIN = 5V, VBAT = 3.6V (unless otherwise indicated)
+
+Figure 11. Power-Up Timing
+
+Figure 12. Power-Up Timing – No Battery or Load in TTDM
+
+Figure 13. Start-Up in Thermal Regulation
+
+Figure 14. TS Entering and Leaving Cold Temperature
+
+Figure 15. OVP 8-V Adaptor — Hot Plug
+
+Figure 16. OVP From Normal Power-Up
+Operation – VIN 0 V → 6 V → 7 V → 6 V→ 0 V
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+19
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+Typical Application (continued)
+
+.
+
+Fixed 10kΩ resistor, between TS and GND.
+Figure 18. Power-Up Timing with No Battery and No
+Load – Battery Detection
+
+Figure 17. TS Enable and Disable
+
+Figure 20. Battery Removal With OUT and
+TS Disconnect 1st, With 100-Ω Load
+
+Figure 19. Battery Removal – GND Removed 1st, 42-Ω
+Load
+
+Continuous battery detection when not in TTDM
+
+CH4: IOUT (1A/Div)
+Battery voltage swept from 0V to 4.25V to 3.9V.
+
+Figure 21. Battery Removal With Fixed TS = 0.5 V
+
+20
+
+Submit Documentation Feedback
+
+Figure 22. Battery Charge Profile
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+Typical Application (continued)
+
+CH4: IOUT (1A/Div)
+
+CH4: IOUT (0.2A/Div)
+
+Figure 23. ISET Shorted During Normal Operation
+
+Figure 24. ISET Shorted Prior to USB Power-up
+
+CH4: IOUT (0.2A/Div)
+
+Figure 25. DPM – Adaptor Current Limits – VIN Regulated
+
+The IC temperature rises to 125°C and enters thermal
+regulation. Charge current is reduced to regulate the IC at
+125°C. VIN is reduced, the IC temperature drops, the charge
+current returns to the programmed value
+
+Figure 26. DPM – USB Current Limits – VIN Regulated to
+4.4 V
+
+VIN swept from 5 V to 3.9 V to 5 V
+
+VBAT = 4 V
+
+.
+Figure 27. Charge Cycle With Thermal Regulation
+
+Figure 28. Entering and Exiting UVLO
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+21
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+10 Power Supply Recommendations
+The devices are designed to operate from an input voltage supply range between 3.5 V and 28 V and current
+capability of at least the maximum designed charge current. This input supply should be well regulated. If located
+more than a few inches from the bq21040 IN and GND terminals, a larger capacitor is recommended.
+
+11 Layout
+11.1 Layout Guidelines
+To obtain optimal performance, the decoupling capacitor from IN to GND (thermal pad) and the output filter
+capacitors from OUT to GND (thermal pad) should be placed as close as possible to the bq21040, with short
+trace runs to both IN, OUT, and GND (thermal pad).
+• All low-current GND connections should be kept separate from the high-current charge or discharge paths
+from the battery. Use a single-point ground technique incorporating both the small signal ground path and the
+power ground path.
+• The high current charge paths into IN terminal and from the OUT terminal must be sized appropriately for the
+maximum charge current in order to avoid voltage drops in these traces
+• The bq21040 is packaged in a thermally-enhanced MLP package. The package includes a thermal pad to
+provide an effective thermal contact between the IC and the printed circuit board (PCB); this thermal pad is
+also the main ground connection for the device. Connect the thermal pad to the PCB ground connection. It is
+best to use multiple 10mil vias in the power pad of the IC and close enough to conduct the heat to the bottom
+ground plane. The bottom ground place should avoid traces that “cut off” the thermal path. The thinner the
+PCB the less temperature rise. The EVM PCB has a thickness of 0.031 inches and uses 2 oz. (2.8mil thick)
+copper on top and bottom, and is a good example of optimal thermal performance.
+
+11.2 Layout Example
+
+Figure 29. Board Layout
+22
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+bq21040
+www.ti.com
+
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+11.3 Thermal Considerations
+The bq21040 is packaged in a thermally-enhanced MLP package. The package includes a thermal pad to
+provide an effective thermal contact between the IC and the printed circuit board (PCB). The power pad should
+be directly connected to the VSS terminal. The most common measure of package thermal performance is
+thermal impedance (RθJA) measured (or modeled) from the chip junction to the air surrounding the package
+surface (ambient). The mathematical expression for ψJT is:
+ψJT = (TJ – T) / P
+
+where
+•
+•
+•
+
+TJ = Chip junction temperature
+P = Device power dissipation
+T = Case temperature
+
+(7)
+
+Factors that can influence the measurement and calculation of ψJT include:
+1. Whether or not the device is board mounted
+2. Trace size, composition, thickness, and geometry
+3. Orientation of the device (horizontal or vertical)
+4. Volume of the ambient air surrounding the device under test and airflow
+5. Whether other surfaces are in close proximity to the device being tested
+Due to the charge profile of Li-Ion and Li-Pol batteries the maximum power dissipation is typically seen at the
+beginning of the charge cycle when the battery voltage is at its lowest. Typically after fast charge begins the pack
+voltage increases to ≉3.4V within the first 2 minutes. The thermal time constant of the assembly typically takes a
+few minutes to heat up so when doing maximum power dissipation calculations, 3.4V is a good minimum voltage
+to use. This is verified, with the system and a fully discharged battery, by plotting temperature on the bottom of
+the PCB under the IC (pad should have multiple vias), the charge current and the battery voltage as a function of
+time. The fast charge current will start to taper off if the part goes into thermal regulation.
+The device power dissipation, P, is a function of the charge rate and the voltage drop across the internal
+PowerFET. It can be calculated from the following equation when a battery pack is being charged:
+P = [V(IN) – V(OUT)] × I(OUT) + [V(OUT) – V(BAT)] × I(BAT)
+
+(8)
+
+The thermal loop feature reduces the charge current to limit excessive IC junction temperature. It is
+recommended that the design not run in thermal regulation for typical operating conditions (nominal input voltage
+and nominal ambient temperatures) and use the feature for non typical situations such as hot environments or
+higher than normal input source voltage. With that said, the IC will still perform as described, if the thermal loop
+is always active.
+11.3.1 Leakage Current Effects on Battery Capacity
+To determine how fast a leakage current on the battery will discharge the battery is an easy calculation. The time
+from full to discharge can be calculated by dividing the Amp-Hour Capacity of the battery by the leakage current.
+For a 0.75AHr battery and a 10μA leakage current (750 mAHr / 0.010 mA = 75000 hours), it would take 75k
+hours or 8.8 years to discharge. In reality the self discharge of the cell would be much faster so the 10μA
+leakage would be considered negligible.
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+23
+
+bq21040
+SLUSCE2D – APRIL 2016 – REVISED JANUARY 2019
+
+www.ti.com
+
+12 Device and Documentation Support
+12.1 Receiving Notification of Documentation Updates
+To receive notification of documentation updates, navigate to the device product folder on ti.com. In the upper
+right corner, click on Alert me to register and receive a weekly digest of any product information that has
+changed. For change details, review the revision history included in any revised document.
+
+12.2 Community Resources
+The following links connect to TI community resources. Linked contents are provided "AS IS" by the respective
+contributors. They do not constitute TI specifications and do not necessarily reflect TI's views; see TI's Terms of
+Use.
+TI E2E™ Online Community TI's Engineer-to-Engineer (E2E) Community. Created to foster collaboration
+among engineers. At e2e.ti.com, you can ask questions, share knowledge, explore ideas and help
+solve problems with fellow engineers.
+Design Support TI's Design Support Quickly find helpful E2E forums along with design support tools and
+contact information for technical support.
+
+12.3 Trademarks
+E2E is a trademark of Texas Instruments.
+All other trademarks are the property of their respective owners.
+
+12.4 Electrostatic Discharge Caution
+These devices have limited built-in ESD protection. The leads should be shorted together or the device placed in conductive foam
+during storage or handling to prevent electrostatic damage to the MOS gates.
+
+12.5 Glossary
+SLYZ022 — TI Glossary.
+This glossary lists and explains terms, acronyms, and definitions.
+
+13 Mechanical, Packaging, and Orderable Information
+The following pages include mechanical packaging and orderable information. This information is the most
+current data available for the designated devices. This data is subject to change without notice and revision of
+this document. For browser-based versions of this data sheet, refer to the left-hand navigation.
+
+24
+
+Submit Documentation Feedback
+
+Copyright © 2016–2019, Texas Instruments Incorporated
+
+Product Folder Links: bq21040
+
+PACKAGE OPTION ADDENDUM
+www.ti.com
+
+10-Nov-2025
+
+PACKAGING INFORMATION
+Orderable part number
+
+(1)
+
+Status
+
+Material type
+
+(1)
+
+(2)
+
+Package | Pins
+
+Package qty | Carrier
+
+RoHS
+(3)
+
+Lead finish/
+Ball material
+
+MSL rating/
+Peak reflow
+
+(4)
+
+(5)
+
+Op temp (°C)
+
+Part marking
+(6)
+
+BQ21040DBVR
+
+Active
+
+Production
+
+SOT-23 (DBV) | 6
+
+3000 | LARGE T&R
+
+Yes
+
+SN
+
+Level-1-260C-UNLIM
+
+0 to 125
+
+130E
+
+BQ21040DBVR.B
+
+Active
+
+Production
+
+SOT-23 (DBV) | 6
+
+3000 | LARGE T&R
+
+Yes
+
+SN
+
+Level-1-260C-UNLIM
+
+0 to 125
+
+130E
+
+BQ21040DBVT
+
+Active
+
+Production
+
+SOT-23 (DBV) | 6
+
+250 | SMALL T&R
+
+Yes
+
+SN
+
+Level-1-260C-UNLIM
+
+0 to 125
+
+130E
+
+BQ21040DBVT.B
+
+Active
+
+Production
+
+SOT-23 (DBV) | 6
+
+250 | SMALL T&R
+
+Yes
+
+SN
+
+Level-1-260C-UNLIM
+
+0 to 125
+
+130E
+
+Status: For more details on status, see our product life cycle.
+
+(2)
+
+Material type: When designated, preproduction parts are prototypes/experimental devices, and are not yet approved or released for full production. Testing and final process, including without limitation quality assurance,
+reliability performance testing, and/or process qualification, may not yet be complete, and this item is subject to further changes or possible discontinuation. If available for ordering, purchases will be subject to an additional
+waiver at checkout, and are intended for early internal evaluation purposes only. These items are sold without warranties of any kind.
+(3)
+
+RoHS values: Yes, No, RoHS Exempt. See the TI RoHS Statement for additional information and value definition.
+
+(4)
+
+Lead finish/Ball material: Parts may have multiple material finish options. Finish options are separated by a vertical ruled line. Lead finish/Ball material values may wrap to two lines if the finish value exceeds the maximum
+column width.
+(5)
+
+MSL rating/Peak reflow: The moisture sensitivity level ratings and peak solder (reflow) temperatures. In the event that a part has multiple moisture sensitivity ratings, only the lowest level per JEDEC standards is shown.
+Refer to the shipping label for the actual reflow temperature that will be used to mount the part to the printed circuit board.
+(6)
+
+Part marking: There may be an additional marking, which relates to the logo, the lot trace code information, or the environmental category of the part.
+
+Multiple part markings will be inside parentheses. Only one part marking contained in parentheses and separated by a "~" will appear on a part. If a line is indented then it is a continuation of the previous line and the two
+combined represent the entire part marking for that device.
+Important Information and Disclaimer:The information provided on this page represents TI's knowledge and belief as of the date that it is provided. TI bases its knowledge and belief on information provided by third parties, and
+makes no representation or warranty as to the accuracy of such information. Efforts are underway to better integrate information from third parties. TI has taken and continues to take reasonable steps to provide representative
+and accurate information but may not have conducted destructive testing or chemical analysis on incoming materials and chemicals. TI and TI suppliers consider certain information to be proprietary, and thus CAS numbers
+and other limited information may not be available for release.
+In no event shall TI's liability arising out of such information exceed the total purchase price of the TI part(s) at issue in this document sold by TI to Customer on an annual basis.
+
+Addendum-Page 1
+
+PACKAGE MATERIALS INFORMATION
+www.ti.com
+
+24-Apr-2020
+
+TAPE AND REEL INFORMATION
+
+*All dimensions are nominal
+
+Device
+
+Package Package Pins
+Type Drawing
+
+SPQ
+
+Reel
+Reel
+A0
+Diameter Width (mm)
+(mm) W1 (mm)
+
+BQ21040DBVR
+
+SOT-23
+
+DBV
+
+6
+
+3000
+
+178.0
+
+9.0
+
+BQ21040DBVT
+
+SOT-23
+
+DBV
+
+6
+
+250
+
+178.0
+
+9.0
+
+Pack Materials-Page 1
+
+B0
+(mm)
+
+K0
+(mm)
+
+P1
+(mm)
+
+W
+Pin1
+(mm) Quadrant
+
+3.23
+
+3.17
+
+1.37
+
+4.0
+
+8.0
+
+Q3
+
+3.23
+
+3.17
+
+1.37
+
+4.0
+
+8.0
+
+Q3
+
+PACKAGE MATERIALS INFORMATION
+www.ti.com
+
+24-Apr-2020
+
+*All dimensions are nominal
+
+Device
+
+Package Type
+
+Package Drawing
+
+Pins
+
+SPQ
+
+Length (mm)
+
+Width (mm)
+
+Height (mm)
+
+BQ21040DBVR
+
+SOT-23
+
+DBV
+
+6
+
+3000
+
+180.0
+
+180.0
+
+18.0
+
+BQ21040DBVT
+
+SOT-23
+
+DBV
+
+6
+
+250
+
+180.0
+
+180.0
+
+18.0
+
+Pack Materials-Page 2
+
+PACKAGE OUTLINE
+
+DBV0006A
+
+SOT-23 - 1.45 mm max height
+SCALE 4.000
+
+SMALL OUTLINE TRANSISTOR
+
+C
+
+3.0
+2.6
+1.75
+1.45
+
+PIN 1
+INDEX AREA
+1
+
+B
+
+6
+
+2X 0.95
+1.9
+
+0.1 C
+
+A
+
+3.05
+2.75
+5
+
+2
+
+4
+6X
+0.2
+
+0.50
+0.25
+C A B
+
+3
+4X 0 -15
+
+(1.1)
+
+0.15
+TYP
+0.00
+
+1.45
+0.90
+4X 4 -15
+
+0.25
+GAGE PLANE
+
+8
+TYP
+0
+
+0.22
+TYP
+0.08
+
+0.6
+TYP
+0.3
+
+SEATING PLANE
+
+4214840/G 08/2024
+
+NOTES:
+1. All linear dimensions are in millimeters. Any dimensions in parenthesis are for reference only. Dimensioning and tolerancing
+per ASME Y14.5M.
+2. This drawing is subject to change without notice.
+3. Body dimensions do not include mold flash or protrusion. Mold flash and protrusion shall not exceed 0.25 per side.
+4. Leads 1,2,3 may be wider than leads 4,5,6 for package orientation.
+5. Refernce JEDEC MO-178.
+
+www.ti.com
+
+EXAMPLE BOARD LAYOUT
+
+DBV0006A
+
+SOT-23 - 1.45 mm max height
+SMALL OUTLINE TRANSISTOR
+
+PKG
+6X (1.1)
+1
+6X (0.6)
+
+6
+SYMM
+2
+
+5
+
+3
+
+4
+
+2X (0.95)
+
+(R0.05) TYP
+
+(2.6)
+
+LAND PATTERN EXAMPLE
+EXPOSED METAL SHOWN
+SCALE:15X
+
+SOLDER MASK
+OPENING
+
+METAL
+
+SOLDER MASK
+OPENING
+
+METAL UNDER
+SOLDER MASK
+
+EXPOSED METAL
+
+EXPOSED METAL
+
+0.07 MIN
+ARROUND
+
+0.07 MAX
+ARROUND
+NON SOLDER MASK
+DEFINED
+(PREFERRED)
+
+SOLDER MASK
+DEFINED
+
+SOLDER MASK DETAILS
+
+4214840/G 08/2024
+
+NOTES: (continued)
+6. Publication IPC-7351 may have alternate designs.
+7. Solder mask tolerances between and around signal pads can vary based on board fabrication site.
+
+www.ti.com
+
+EXAMPLE STENCIL DESIGN
+
+DBV0006A
+
+SOT-23 - 1.45 mm max height
+SMALL OUTLINE TRANSISTOR
+
+PKG
+6X (1.1)
+1
+6X (0.6)
+
+6
+SYMM
+2
+
+5
+
+3
+
+4
+
+2X(0.95)
+
+(R0.05) TYP
+
+(2.6)
+
+SOLDER PASTE EXAMPLE
+BASED ON 0.125 mm THICK STENCIL
+SCALE:15X
+
+4214840/G 08/2024
+
+NOTES: (continued)
+8. Laser cutting apertures with trapezoidal walls and rounded corners may offer better paste release. IPC-7525 may have alternate
+design recommendations.
+9. Board assembly site may have different recommendations for stencil design.
+
+www.ti.com
+
+IMPORTANT NOTICE AND DISCLAIMER
+TI PROVIDES TECHNICAL AND RELIABILITY DATA (INCLUDING DATASHEETS), DESIGN RESOURCES (INCLUDING REFERENCE
+DESIGNS), APPLICATION OR OTHER DESIGN ADVICE, WEB TOOLS, SAFETY INFORMATION, AND OTHER RESOURCES “AS IS”
+AND WITH ALL FAULTS, AND DISCLAIMS ALL WARRANTIES, EXPRESS AND IMPLIED, INCLUDING WITHOUT LIMITATION ANY
+IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-INFRINGEMENT OF THIRD
+PARTY INTELLECTUAL PROPERTY RIGHTS.
+These resources are intended for skilled developers designing with TI products. You are solely responsible for (1) selecting the appropriate
+TI products for your application, (2) designing, validating and testing your application, and (3) ensuring your application meets applicable
+standards, and any other safety, security, regulatory or other requirements.
+These resources are subject to change without notice. TI grants you permission to use these resources only for development of an
+application that uses the TI products described in the resource. Other reproduction and display of these resources is prohibited. No license
+is granted to any other TI intellectual property right or to any third party intellectual property right. TI disclaims responsibility for, and you fully
+indemnify TI and its representatives against any claims, damages, costs, losses, and liabilities arising out of your use of these resources.
+TI’s products are provided subject to TI’s Terms of Sale, TI’s General Quality Guidelines, or other applicable terms available either on
+ti.com or provided in conjunction with such TI products. TI’s provision of these resources does not expand or otherwise alter TI’s applicable
+warranties or warranty disclaimers for TI products. Unless TI explicitly designates a product as custom or customer-specified, TI products
+are standard, catalog, general purpose devices.
+TI objects to and rejects any additional or different terms you may propose.
+IMPORTANT NOTICE
+Copyright © 2025, Texas Instruments Incorporated
+Last updated 10/2025
+
+
