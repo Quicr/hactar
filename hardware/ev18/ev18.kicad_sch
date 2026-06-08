@@ -40126,7 +40126,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 373.38 316.23 0)
 			(effects
 				(font
@@ -43180,7 +43180,7 @@
 		(at 461.01 328.93 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -44454,7 +44454,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 214.63 377.19 0)
 			(effects
 				(font
@@ -45159,7 +45159,7 @@
 		(at 355.6 312.42 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -46562,7 +46562,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C323847"
+		(property "JLCPCB Part #" "C18752"
 			(at 242.57 226.06 0)
 			(effects
 				(font
@@ -47125,7 +47125,7 @@
 		(at 226.06 394.97 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -47137,6 +47137,7 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+				(hide yes)
 			)
 		)
 		(property "Value" "TestPoint"
@@ -47470,7 +47471,7 @@
 		(at 87.63 336.55 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -47539,7 +47540,7 @@
 		(at 336.55 312.42 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -48598,7 +48599,7 @@
 		(at 487.68 314.96 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -48713,7 +48714,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 162.56 322.58 0)
 			(effects
 				(font
@@ -48920,7 +48921,7 @@
 		(at 158.75 322.58 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -50103,7 +50104,7 @@
 		(at 218.44 377.19 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -50820,7 +50821,7 @@
 		(at 373.38 312.42 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -51895,7 +51896,7 @@
 		(at 469.9 314.96 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -52593,7 +52594,7 @@
 		(at 389.89 321.31 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -52819,7 +52820,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 430.53 316.23 0)
 			(effects
 				(font
@@ -53748,7 +53749,7 @@
 		(at 210.82 377.19 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -55285,7 +55286,7 @@
 		(at 313.69 312.42 90)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -55924,7 +55925,7 @@
 		(at 161.29 377.19 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -56040,7 +56041,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 313.69 316.23 0)
 			(effects
 				(font
@@ -56150,7 +56151,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 389.89 316.23 0)
 			(effects
 				(font
@@ -58114,7 +58115,7 @@
 		(at 478.79 328.93 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -58582,7 +58583,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 83.82 336.55 0)
 			(effects
 				(font
@@ -59863,7 +59864,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 410.21 316.23 0)
 			(effects
 				(font
@@ -60553,7 +60554,7 @@
 		(at 410.21 321.31 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -61686,7 +61687,7 @@
 		(at 478.79 314.96 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -61754,7 +61755,7 @@
 		(at 469.9 328.93 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -61869,7 +61870,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 157.48 377.19 0)
 			(effects
 				(font
@@ -61979,7 +61980,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 355.6 316.23 0)
 			(effects
 				(font
@@ -62107,7 +62108,7 @@
 		(at 389.89 312.42 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -62774,7 +62775,7 @@
 		(at 313.69 320.04 90)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -64264,7 +64265,7 @@
 		(at 80.01 336.55 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -64706,7 +64707,7 @@
 		(at 355.6 321.31 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -64775,7 +64776,7 @@
 		(at 373.38 321.31 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -66030,7 +66031,7 @@
 		(at 430.53 321.31 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -67127,7 +67128,7 @@
 		(at 410.21 312.42 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -67196,7 +67197,7 @@
 		(at 336.55 321.31 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -68749,7 +68750,7 @@
 		(at 461.01 314.96 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -69280,7 +69281,7 @@
 		(at 153.67 377.19 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -70680,7 +70681,7 @@
 		(at 430.53 312.42 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -71281,7 +71282,7 @@
 		(at 168.91 322.58 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -71397,7 +71398,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C111027"
+		(property "JLCPCB Part #" "C1882650"
 			(at 336.55 316.23 0)
 			(effects
 				(font
