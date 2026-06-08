@@ -27030,6 +27030,17 @@
 		)
 		(uuid "90ab8125-813e-4f00-bb9d-cd4f43bf5469")
 	)
+	(text "MCU \nESP32-S3-WROOM-1-N8R2  C2913204\nESP32-S3-WROOM-1U-N8R2 C3013944 - Current"
+		(exclude_from_sim no)
+		(at 259.08 36.576 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "923383af-b5c3-463c-83eb-ccf11e5cc5ee")
+	)
 	(text "BOOTLOADER"
 		(exclude_from_sim no)
 		(at 91.948 86.614 0)
@@ -41225,7 +41236,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB Part #" "C2913204"
+		(property "JLCPCB Part #" "C3013944"
 			(at 262.89 83.82 0)
 			(effects
 				(font
