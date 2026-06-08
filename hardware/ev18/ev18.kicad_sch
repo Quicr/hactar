@@ -26916,9 +26916,9 @@
 		)
 		(uuid "69623a15-f052-44c2-9e7c-fd8fdaa73a42")
 	)
-	(text "Inductor + filter should be as close to the jacks\nAfter the inductor/filter, all components need to be close to the chip"
+	(text "Inductor + filter should be as close to the jacks\nafter the inductor/filter.\nall other components need to be close to the chip"
 		(exclude_from_sim yes)
-		(at 202.184 255.778 0)
+		(at 239.522 257.048 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -26974,16 +26974,6 @@
 			(justify left bottom)
 		)
 		(uuid "73c27193-e843-4418-ab88-ae465e7d85b5")
-	)
-	(text "C60 and L4 should be close to jack\nAfter L4 should be close to the wm8960"
-		(exclude_from_sim yes)
-		(at 218.948 292.354 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-		)
-		(uuid "771ed837-2bd9-440f-a10e-fea95fb606d3")
 	)
 	(text "Volume"
 		(exclude_from_sim no)
@@ -27077,7 +27067,7 @@
 		)
 		(uuid "9b900097-8afe-4922-b985-9227976a05f3")
 	)
-	(text "PA11 and PA12\nreserved\nfor USB"
+	(text "PA11 and PA12\nreserved\nfor native USB"
 		(exclude_from_sim no)
 		(at 110.49 106.934 0)
 		(effects
