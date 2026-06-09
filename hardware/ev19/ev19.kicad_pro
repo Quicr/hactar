@@ -723,7 +723,7 @@
       "default_line_thickness": 6.0,
       "default_text_size": 50.0,
       "field_names": [],
-      "hop_over_size_choice": 0,
+      "hop_over_size_choice": 2,
       "intersheets_ref_own_page": false,
       "intersheets_ref_prefix": "",
       "intersheets_ref_short": false,
@@ -774,13 +774,25 @@
         "uuid": "bd865368-262b-4f76-b7a6-1673c2cb0f8c"
       }
     ],
-    "used_designators": "",
+    "used_designators": "U2,U4,U11,U13,R7-10,R87-90,NT2-3,J1,J10,C5,C13,C56,C65,#PWR4-5,#PWR8,#PWR10,#PWR17-18,#PWR20,#PWR93,#PWR95,#PWR100-104,#PWR107-108,#FLG1,#FLG4,#FLG16-17",
     "variants": []
   },
   "sheets": [
     [
       "bd865368-262b-4f76-b7a6-1673c2cb0f8c",
       "ev19"
+    ],
+    [
+      "0a459bf4-8497-47cc-bd36-7181f89d310b",
+      "Mgmt MCU"
+    ],
+    [
+      "96cbbe17-d0f1-4842-b6da-920144cf5dc2",
+      "Power Supply"
+    ],
+    [
+      "263ca4e0-82d1-459e-91cf-8ccb746fb25d",
+      "USB"
     ]
   ],
   "text_variables": {},
