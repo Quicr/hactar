@@ -3091,7 +3091,7 @@
 		(uuid "dbe4b5a3-0387-41a7-8e5d-dd2f6e9e2fb6")
 	)
 	(hierarchical_label "USB_RX1_MGMT"
-		(shape output)
+		(shape input)
 		(at 186.69 86.36 0)
 		(effects
 			(font
