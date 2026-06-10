@@ -4993,7 +4993,7 @@
 		(uuid "0ae688a6-9b84-4097-9b92-dfb47b5800dc")
 	)
 	(hierarchical_label "UI_RX1_MGMT"
-		(shape input)
+		(shape output)
 		(at 110.49 67.31 0)
 		(effects
 			(font
@@ -5026,7 +5026,7 @@
 		(uuid "1e8ac929-da56-49bb-9f52-9f4635bc2176")
 	)
 	(hierarchical_label "UI_NRST"
-		(shape input)
+		(shape output)
 		(at 49.53 97.79 180)
 		(effects
 			(font
@@ -5048,7 +5048,7 @@
 		(uuid "2be02c52-e36f-4ca2-a03a-7ce17ba2af91")
 	)
 	(hierarchical_label "NET_CTS_MGMT"
-		(shape input)
+		(shape output)
 		(at 49.53 125.73 180)
 		(effects
 			(font
@@ -5070,7 +5070,7 @@
 		(uuid "32a539e7-f129-4741-aac6-26fcea215634")
 	)
 	(hierarchical_label "UI_CTS1_MGMT"
-		(shape input)
+		(shape output)
 		(at 110.49 64.77 0)
 		(effects
 			(font
@@ -5081,7 +5081,7 @@
 		(uuid "56a2970e-d823-4698-af03-543869db47f8")
 	)
 	(hierarchical_label "USB_RX1_MGMT"
-		(shape input)
+		(shape output)
 		(at 110.49 85.09 0)
 		(effects
 			(font
@@ -5125,7 +5125,7 @@
 		(uuid "8b2a6394-4016-4f8d-8dc4-f1f173d73554")
 	)
 	(hierarchical_label "MGMT_DBG_2"
-		(shape input)
+		(shape output)
 		(at 49.53 120.65 180)
 		(effects
 			(font
@@ -5136,7 +5136,7 @@
 		(uuid "925060a4-da6e-4a5b-ab4e-6343a1a43fb6")
 	)
 	(hierarchical_label "UI_STAT"
-		(shape input)
+		(shape output)
 		(at 49.53 113.03 180)
 		(effects
 			(font
@@ -5169,7 +5169,7 @@
 		(uuid "9d0f50fa-11f0-455f-8204-c96b7f3227b4")
 	)
 	(hierarchical_label "MGMT_SWDIO"
-		(shape input)
+		(shape bidirectional)
 		(at 110.49 95.25 0)
 		(effects
 			(font
@@ -5180,7 +5180,7 @@
 		(uuid "a56f9b78-15fc-4e10-9c5c-96f67957ebc3")
 	)
 	(hierarchical_label "NET_BOOT"
-		(shape input)
+		(shape output)
 		(at 49.53 105.41 180)
 		(effects
 			(font
@@ -5202,7 +5202,7 @@
 		(uuid "b704d4d3-7fc7-4685-a745-7cd3ce306410")
 	)
 	(hierarchical_label "UI_BOOT1"
-		(shape input)
+		(shape output)
 		(at 49.53 110.49 180)
 		(effects
 			(font
@@ -5213,7 +5213,7 @@
 		(uuid "c14e71cb-67e1-4f13-b4ba-d60529e91298")
 	)
 	(hierarchical_label "UI_BOOT0"
-		(shape input)
+		(shape output)
 		(at 110.49 100.33 0)
 		(effects
 			(font
@@ -5235,7 +5235,7 @@
 		(uuid "c631e77b-1c39-46fc-be6b-ab5b3fbaf588")
 	)
 	(hierarchical_label "MCLK"
-		(shape input)
+		(shape output)
 		(at 110.49 82.55 0)
 		(effects
 			(font
@@ -5246,7 +5246,7 @@
 		(uuid "cf12b82d-3f25-4e94-8951-621148b61707")
 	)
 	(hierarchical_label "NET_NRST"
-		(shape input)
+		(shape output)
 		(at 49.53 80.01 180)
 		(effects
 			(font
@@ -5268,7 +5268,7 @@
 		(uuid "db707c8b-62d7-4dbc-86f8-3b15a802ace4")
 	)
 	(hierarchical_label "NET_RX1_MGMT"
-		(shape input)
+		(shape output)
 		(at 49.53 115.57 180)
 		(effects
 			(font
@@ -5290,7 +5290,7 @@
 		(uuid "f621c843-3b37-483d-a39d-9e13a58ab0b8")
 	)
 	(hierarchical_label "MGMT_DBG_1"
-		(shape input)
+		(shape output)
 		(at 49.53 82.55 180)
 		(effects
 			(font
@@ -6933,6 +6933,7 @@
 	(symbol
 		(lib_id "Hactar_Symbols:SW4_Push")
 		(at 201.93 96.52 90)
+		(mirror x)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -6942,7 +6943,7 @@
 		(dnp no)
 		(uuid "58449fb0-262f-4e24-b7e2-337986a1f9fc")
 		(property "Reference" "SW3"
-			(at 199.136 100.584 90)
+			(at 199.136 92.456 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects

@@ -774,7 +774,7 @@
         "uuid": "bd865368-262b-4f76-b7a6-1673c2cb0f8c"
       }
     ],
-    "used_designators": "U2,U4,U11,U13,R7-10,R87-90,NT2-3,J1,J10,C5,C13,C56,C65,#PWR4-5,#PWR8,#PWR10,#PWR17-18,#PWR20,#PWR93,#PWR95,#PWR100-104,#PWR107-108,#FLG1,#FLG4,#FLG16-17",
+    "used_designators": "TP1-7,R64,R66-74,J4-9,J11,CN1,#PWR51,#PWR53,#PWR59-62,#PWR64-65,#PWR81-84,#PWR86-87",
     "variants": []
   },
   "sheets": [
@@ -793,6 +793,10 @@
     [
       "263ca4e0-82d1-459e-91cf-8ccb746fb25d",
       "USB"
+    ],
+    [
+      "29f7095a-d4ca-419f-8e63-1f1108d83f3d",
+      "Dev Board"
     ]
   ],
   "text_variables": {},
