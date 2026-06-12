@@ -26335,7 +26335,7 @@
 	)
 	(rectangle
 		(start 21.59 198.12)
-		(end 100.33 262.89)
+		(end 100.33 271.78)
 		(stroke
 			(width 0)
 			(type default)
@@ -26835,6 +26835,16 @@
 			)
 		)
 		(uuid "8c2da511-84bc-4896-80a5-39ba93b3c5ce")
+	)
+	(text "Shield is intentionally left NC,\nbecuase USB-C convention\nis shield should be grounded \non the power supplier side."
+		(exclude_from_sim no)
+		(at 37.338 264.414 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "8c9885f7-1d07-477a-96be-3c710d1d31b3")
 	)
 	(text "BOOTLOADER"
 		(exclude_from_sim no)
