@@ -14,7 +14,6 @@
 	(condition "A.NetName == '+3.3V'")
 	(severity error)
 )
-
 (rule +3.0va_thickness
 	(constraint track_width (max 0.650mm))
 	(condition "A.NetName == '+3.0VA'")
