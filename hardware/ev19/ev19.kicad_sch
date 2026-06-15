@@ -26826,6 +26826,16 @@
 		)
 		(uuid "798a1b6d-20ac-4aa2-a1fb-ea66a4bd3ed6")
 	)
+	(text "Test usb footprint"
+		(exclude_from_sim no)
+		(at 516.89 337.566 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "8c075c3b-9dff-447a-81d9-9582e44e01c0")
+	)
 	(text "NET SERIAL UPLOADER + SPI\n"
 		(exclude_from_sim no)
 		(at 537.464 273.558 0)
@@ -28531,12 +28541,24 @@
 		(uuid "fa2fc185-42ee-48fd-9100-8517b7406d77")
 	)
 	(no_connect
+		(at 554.99 345.44)
+		(uuid "002afd40-a9c2-44d4-9db6-fef6945dd8ee")
+	)
+	(no_connect
+		(at 554.99 337.82)
+		(uuid "02eece18-5711-45a2-9f61-a50c5a20f83b")
+	)
+	(no_connect
 		(at 124.46 331.47)
 		(uuid "07fc7783-ba0a-4fab-8b47-51c0c1901120")
 	)
 	(no_connect
 		(at 474.98 274.32)
 		(uuid "098941f1-1d11-41aa-8d71-8c18259a90d7")
+	)
+	(no_connect
+		(at 554.99 350.52)
+		(uuid "0d210f8f-1853-45c2-9eae-629582e49ad7")
 	)
 	(no_connect
 		(at 104.14 91.44)
@@ -28557,6 +28579,10 @@
 	(no_connect
 		(at 267.97 193.04)
 		(uuid "36987d1e-92d7-4530-8054-34378de71609")
+	)
+	(no_connect
+		(at 532.13 368.3)
+		(uuid "3f692760-768c-4202-92b4-8bd94de6abbb")
 	)
 	(no_connect
 		(at 426.72 109.22)
@@ -28591,6 +28617,10 @@
 		(uuid "5713a4af-41f3-46ad-bbe8-7e20020fecec")
 	)
 	(no_connect
+		(at 554.99 360.68)
+		(uuid "58d6dedb-bf7b-4d0c-ab73-e05b1168f197")
+	)
+	(no_connect
 		(at 267.97 182.88)
 		(uuid "594e3e37-6a50-4348-b764-eea52c6dce26")
 	)
@@ -28623,6 +28653,10 @@
 		(uuid "68f2d867-1bb5-489e-b79f-97fbb2cbf9dc")
 	)
 	(no_connect
+		(at 554.99 347.98)
+		(uuid "73ee438b-b3a9-4a72-bd05-4ff835de29d3")
+	)
+	(no_connect
 		(at 426.72 144.78)
 		(uuid "780a9b90-2194-4b05-a137-8467cb69362b")
 	)
@@ -28633,6 +28667,10 @@
 	(no_connect
 		(at 534.67 256.54)
 		(uuid "7b33e29a-780c-415a-884b-b4e2584f2ee3")
+	)
+	(no_connect
+		(at 554.99 342.9)
+		(uuid "7d19b734-34d3-4286-b446-2e46f1424147")
 	)
 	(no_connect
 		(at 278.13 78.74)
@@ -28671,6 +28709,10 @@
 		(uuid "b229bc2d-6b49-4736-914c-7c3aa9847747")
 	)
 	(no_connect
+		(at 554.99 335.28)
+		(uuid "b4cb0f70-020a-4064-bc10-315f738b1309")
+	)
+	(no_connect
 		(at 356.87 269.24)
 		(uuid "bd080d45-2f62-4009-a721-3af6cb6317a8")
 	)
@@ -28679,8 +28721,20 @@
 		(uuid "bd80abff-4322-42a2-b517-29aaa797b6d0")
 	)
 	(no_connect
+		(at 554.99 358.14)
+		(uuid "c2c64345-c93a-4f5b-bfc3-ef455db72a50")
+	)
+	(no_connect
+		(at 539.75 368.3)
+		(uuid "c4de2b7e-108b-48d0-90fe-211b4f9d36a0")
+	)
+	(no_connect
 		(at 467.36 116.84)
 		(uuid "c5198e20-c5fe-4129-8dbb-e3d456150620")
+	)
+	(no_connect
+		(at 554.99 330.2)
+		(uuid "c669dec0-8787-489a-a656-06378a2f2916")
 	)
 	(no_connect
 		(at 426.72 142.24)
@@ -41067,7 +41121,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Hactar_Footprints:ESP32-S3-WROOM-1"
+		(property "Footprint" "RF_Module:ESP32-S3-WROOM-1"
 			(at 262.89 81.28 0)
 			(effects
 				(font
@@ -62438,6 +62492,147 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:USB_C_Receptacle_USB2.0_16P")
+		(at 539.75 345.44 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "ad37a10b-e791-4c80-8c8b-2d4d0ad8f62b")
+		(property "Reference" "J10"
+			(at 550.164 326.644 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "USB_C_Receptacle"
+			(at 557.276 364.49 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12"
+			(at 543.56 345.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://www.usb.org/sites/default/files/documents/usb_type-c.zip"
+			(at 543.56 345.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "USB 2.0-only 16P Type-C Receptacle connector"
+			(at 539.75 345.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C165948"
+			(at 539.75 345.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Position Offset" ""
+			(at 539.75 345.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Type" ""
+			(at 539.75 345.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "A1"
+			(uuid "2fe8a29e-30aa-45b9-a6a5-30b0209f1261")
+		)
+		(pin "A12"
+			(uuid "92013580-179a-40c0-8760-e0ff23ad8d62")
+		)
+		(pin "A4"
+			(uuid "eabc5ad5-561f-4c8a-8aa5-a9ed9e31e7a2")
+		)
+		(pin "A5"
+			(uuid "38575684-05ec-4a7f-8c0c-3a12d0bca15a")
+		)
+		(pin "A6"
+			(uuid "75d0637a-bbea-49e8-b458-abd3f860f1b0")
+		)
+		(pin "A7"
+			(uuid "94973f83-cbdc-4f19-905b-5c5b446e1b2f")
+		)
+		(pin "A8"
+			(uuid "29673efa-0a66-475e-81e8-02071321de8f")
+		)
+		(pin "A9"
+			(uuid "0dd77799-455c-4388-9095-624b8d96e80f")
+		)
+		(pin "B1"
+			(uuid "acf9a70e-ffcb-4648-8c12-d3cd1087219b")
+		)
+		(pin "B12"
+			(uuid "b7e3a354-f5c6-46c0-9fd3-fff051eebb6e")
+		)
+		(pin "B4"
+			(uuid "cb56d0e2-fe98-4701-949c-c2dab4594031")
+		)
+		(pin "B5"
+			(uuid "96f49d2f-0a54-4303-896a-45bdf4af3fbf")
+		)
+		(pin "B6"
+			(uuid "97048219-8b68-4237-996b-13973c95908c")
+		)
+		(pin "B7"
+			(uuid "352d495a-3062-41fd-9143-809521aff33c")
+		)
+		(pin "B8"
+			(uuid "762c6578-e8a4-4451-a6e2-d22f294e08e8")
+		)
+		(pin "B9"
+			(uuid "6c5e4e4c-eeb7-468d-9621-547ef2c972b0")
+		)
+		(pin "S1"
+			(uuid "1727b70c-2621-49f2-ba92-d55d337fde53")
+		)
+		(instances
+			(project "ev19"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "J10")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R_US")
 		(at 33.02 347.98 0)
 		(unit 1)
@@ -63784,7 +63979,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Hactar_Footprints:Texas_S-PWSON-N10_ThermalVias"
+		(property "Footprint" "Package_SON:Texas_S-PWSON-N10_ThermalVias"
 			(at 218.44 349.25 0)
 			(effects
 				(font
