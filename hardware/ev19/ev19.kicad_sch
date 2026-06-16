@@ -63340,6 +63340,197 @@
 		)
 	)
 	(symbol
+		(lib_id "Hactar_Symbols:BM14B(0.8)-24DS-0.4V(53)")
+		(at 341.63 226.06 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "9330b0c5-bebb-45b1-80ab-92205d7beff8")
+		(property "Reference" "CN3"
+			(at 347.98 194.31 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "BM14B(0.8)-24DS-0.4V(53)"
+			(at 332.74 231.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Hactar_Footprints:BM14B(0.B)-24DS-0.4V(53)"
+			(at 345.44 231.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 345.44 231.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 341.63 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Part #" "C3640874"
+			(at 341.63 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "FT Position Offset" "2.9800,1.2065"
+			(at 341.63 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Availability" ""
+			(at 341.63 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Position Offset" "2.2225,0.889"
+			(at 341.63 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Device" ""
+			(at 341.63 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "5833bd88-3897-4efb-ab5d-9ae47f39373e")
+		)
+		(pin "10"
+			(uuid "015a8c73-d62a-4c63-90f3-84140cdbfe84")
+		)
+		(pin "11"
+			(uuid "3e8bc6f9-8347-42e0-a74d-1024e3ea11b6")
+		)
+		(pin "12"
+			(uuid "ca60c2c0-d6d0-49c3-9c53-656d88e1f774")
+		)
+		(pin "13"
+			(uuid "b598f70e-e448-4a28-b1c0-fa86a602dd81")
+		)
+		(pin "14"
+			(uuid "3fd26919-f819-4707-a7c2-2adcc3b98936")
+		)
+		(pin "15"
+			(uuid "7b887edb-e5e0-4cdc-9293-7f76f702f230")
+		)
+		(pin "16"
+			(uuid "cb9be56e-bbcc-4f65-85e9-357ba9a32d09")
+		)
+		(pin "17"
+			(uuid "858cdd0a-9cd5-41c7-ae5d-69f6ea02bce4")
+		)
+		(pin "18"
+			(uuid "f84d458c-0997-40d5-bd9c-9cbe043612ea")
+		)
+		(pin "19"
+			(uuid "8ac3c7f6-b4a8-44a2-af99-eb651a30604a")
+		)
+		(pin "2"
+			(uuid "d24462db-0a01-42b0-aeae-7fbd6f62b584")
+		)
+		(pin "20"
+			(uuid "4132ca2c-28f4-41ed-8363-ef69b41d3800")
+		)
+		(pin "21"
+			(uuid "84bee98c-ad91-4d78-91a9-aea0981e55f2")
+		)
+		(pin "22"
+			(uuid "9d6734d8-edb6-4f64-8646-41aec27e3bce")
+		)
+		(pin "23"
+			(uuid "3dddd73d-2384-4020-8100-816100314317")
+		)
+		(pin "24"
+			(uuid "bf689f2d-a167-4ad4-9881-14706e6d26ec")
+		)
+		(pin "25"
+			(uuid "c195ab9d-370c-479a-b069-a0157582e0ba")
+		)
+		(pin "26"
+			(uuid "7695cbf5-f19c-40cd-bfb7-8addea9e7297")
+		)
+		(pin "27"
+			(uuid "8b7131d4-c3a2-4cfb-81ce-b1d3fdf6179b")
+		)
+		(pin "28"
+			(uuid "b9249fae-24d0-4bcb-972e-88bea1ba4696")
+		)
+		(pin "3"
+			(uuid "3538c24b-d434-4b85-8a67-168b6cbb35ed")
+		)
+		(pin "4"
+			(uuid "7c153173-89ab-4f4e-ad15-abf1cf79956f")
+		)
+		(pin "5"
+			(uuid "4c2047f9-69ce-4e70-a914-a03f3f751e2c")
+		)
+		(pin "6"
+			(uuid "ca1e3a43-a8a0-495f-924e-c0b611a7c083")
+		)
+		(pin "7"
+			(uuid "c0005851-5b1a-449e-a379-5ca2fda3bd07")
+		)
+		(pin "8"
+			(uuid "fd08642e-3d1d-444b-b1fd-dba7a730650f")
+		)
+		(pin "9"
+			(uuid "ec237a2f-dc56-4dde-b266-014ea8223618")
+		)
+		(instances
+			(project "ev19"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "CN3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 368.3 214.63 0)
 		(unit 1)
@@ -73689,153 +73880,6 @@
 			(project "ev18"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
 					(reference "#PWR085")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Hactar_Symbols:BM14B(0.8)-24DS-0.4V(53)")
-		(at 341.63 226.06 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "e00570f3-5411-4ba6-b033-002ed6b4c00f")
-		(property "Reference" "CN3"
-			(at 323.342 187.198 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "BM14B(0.8)-24DS-0.4V(53) - BBQ keyboard"
-			(at 324.612 186.944 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 341.63 226.06 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 341.63 226.06 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 341.63 226.06 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "4f29662c-7682-45a0-a2df-12b871b7b06e")
-		)
-		(pin "11"
-			(uuid "485e7dae-fbbe-4a70-ba63-40e37f36cc66")
-		)
-		(pin "13"
-			(uuid "a72a490a-f7e2-4314-9a14-1e9536c975eb")
-		)
-		(pin "12"
-			(uuid "de5b8b03-c7e6-4884-9351-f269f1660a49")
-		)
-		(pin "23"
-			(uuid "24b3dcae-0e60-4e52-9e55-edb42a2b0fdb")
-		)
-		(pin "24"
-			(uuid "6a7a4dee-6f2f-4f9e-9e4a-1ebe42ce5912")
-		)
-		(pin "2"
-			(uuid "2429ecde-9819-4d5e-b620-4616568d562d")
-		)
-		(pin "21"
-			(uuid "f29209f2-bae1-49a0-9635-5dde38649012")
-		)
-		(pin "22"
-			(uuid "3a291fd2-f153-437d-9f08-e131e54b887e")
-		)
-		(pin "26"
-			(uuid "63205cb2-ad7f-483c-bbd1-2aafffed889c")
-		)
-		(pin "14"
-			(uuid "95cc5f4a-24ef-4f83-87a2-405dc62ba905")
-		)
-		(pin "15"
-			(uuid "208d3242-0a91-4171-8674-c3a692405f91")
-		)
-		(pin "25"
-			(uuid "8976dd9f-ae31-435b-a7be-4e23637f80dc")
-		)
-		(pin "5"
-			(uuid "d0ddc67e-853c-43ac-a720-2801921bf7f9")
-		)
-		(pin "3"
-			(uuid "5c1c7913-31c7-45e2-806f-d9422dda3863")
-		)
-		(pin "1"
-			(uuid "b20c6566-3dd0-46b8-aaa6-cd600444b3de")
-		)
-		(pin "6"
-			(uuid "692b6e4b-1fca-40df-8172-434cb76d4b46")
-		)
-		(pin "19"
-			(uuid "598999d4-03eb-467d-987a-5c997f259c8d")
-		)
-		(pin "20"
-			(uuid "81f71706-f5d6-4bd0-a403-766a82d97e15")
-		)
-		(pin "17"
-			(uuid "19ff0440-ccd4-4a47-a7ab-b9510504651d")
-		)
-		(pin "7"
-			(uuid "2006378b-a5a6-4816-8892-0fafdcf6a590")
-		)
-		(pin "18"
-			(uuid "5107e7fe-4c8f-4c94-be24-6f5b9c06b3ba")
-		)
-		(pin "16"
-			(uuid "b443c486-b49b-407f-a0d5-0c1034d9594f")
-		)
-		(pin "27"
-			(uuid "6cae76bd-d279-451b-8f6d-6ec4b244c46c")
-		)
-		(pin "8"
-			(uuid "004fb8ce-2377-471e-a7e1-cb760be9635f")
-		)
-		(pin "28"
-			(uuid "4790e85d-30b3-4a8b-b226-4712282475dd")
-		)
-		(pin "9"
-			(uuid "3c0b3064-e924-4e74-8f2c-5b1298033f16")
-		)
-		(pin "10"
-			(uuid "112f0124-f4f6-4623-b30c-4778e71c0362")
-		)
-		(instances
-			(project ""
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
-					(reference "CN3")
 					(unit 1)
 				)
 			)
