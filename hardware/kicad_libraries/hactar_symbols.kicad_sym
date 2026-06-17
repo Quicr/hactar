@@ -1281,7 +1281,7 @@
 				)
 			)
 		)
-		(property "Value" ""
+		(property "Value" "ES8311"
 			(at 0 0 0)
 			(effects
 				(font
@@ -1318,8 +1318,8 @@
 		)
 		(symbol "ES8311_0_1"
 			(rectangle
-				(start -12.7 17.78)
-				(end 12.7 -17.78)
+				(start -10.16 17.78)
+				(end 10.16 -17.78)
 				(stroke
 					(width 0)
 					(type default)
@@ -1331,7 +1331,7 @@
 		)
 		(symbol "ES8311_1_1"
 			(pin power_in line
-				(at -15.24 16.51 0)
+				(at -12.7 16.51 0)
 				(length 2.54)
 				(name "PVDD"
 					(effects
@@ -1349,7 +1349,7 @@
 				)
 			)
 			(pin power_in line
-				(at -15.24 13.97 0)
+				(at -12.7 13.97 0)
 				(length 2.54)
 				(name "DVDD"
 					(effects
@@ -1367,7 +1367,7 @@
 				)
 			)
 			(pin input line
-				(at -15.24 8.89 0)
+				(at -12.7 8.89 0)
 				(length 2.54)
 				(name "MCLK"
 					(effects
@@ -1385,7 +1385,7 @@
 				)
 			)
 			(pin input line
-				(at -15.24 6.35 0)
+				(at -12.7 6.35 0)
 				(length 2.54)
 				(name "BCLK"
 					(effects
@@ -1403,7 +1403,7 @@
 				)
 			)
 			(pin input line
-				(at -15.24 3.81 0)
+				(at -12.7 3.81 0)
 				(length 2.54)
 				(name "LRCK"
 					(effects
@@ -1421,7 +1421,7 @@
 				)
 			)
 			(pin output line
-				(at -15.24 1.27 0)
+				(at -12.7 1.27 0)
 				(length 2.54)
 				(name "ASDOUT"
 					(effects
@@ -1439,7 +1439,7 @@
 				)
 			)
 			(pin input line
-				(at -15.24 -1.27 0)
+				(at -12.7 -1.27 0)
 				(length 2.54)
 				(name "DSDIN"
 					(effects
@@ -1456,8 +1456,8 @@
 					)
 				)
 			)
-			(pin input line
-				(at -15.24 -6.35 0)
+			(pin bidirectional line
+				(at -12.7 -6.35 0)
 				(length 2.54)
 				(name "SCL"
 					(effects
@@ -1466,7 +1466,7 @@
 						)
 					)
 				)
-				(number ""
+				(number "1"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1474,8 +1474,8 @@
 					)
 				)
 			)
-			(pin input line
-				(at -15.24 -8.89 0)
+			(pin bidirectional line
+				(at -12.7 -8.89 0)
 				(length 2.54)
 				(name "SDA"
 					(effects
@@ -1484,7 +1484,7 @@
 						)
 					)
 				)
-				(number ""
+				(number "19"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1493,7 +1493,7 @@
 				)
 			)
 			(pin input line
-				(at -15.24 -11.43 0)
+				(at -12.7 -11.43 0)
 				(length 2.54)
 				(name "CE"
 					(effects
@@ -1502,7 +1502,7 @@
 						)
 					)
 				)
-				(number ""
+				(number "20"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1511,7 +1511,7 @@
 				)
 			)
 			(pin power_in line
-				(at -15.24 -16.51 0)
+				(at -12.7 -16.51 0)
 				(length 2.54)
 				(name "DGND"
 					(effects
@@ -1529,7 +1529,7 @@
 				)
 			)
 			(pin power_in line
-				(at 15.24 16.51 180)
+				(at 12.7 16.51 180)
 				(length 2.54)
 				(name "AVDD"
 					(effects
@@ -1547,7 +1547,7 @@
 				)
 			)
 			(pin input line
-				(at 15.24 6.35 180)
+				(at 12.7 8.89 180)
 				(length 2.54)
 				(name "MIC1P"
 					(effects
@@ -1565,7 +1565,7 @@
 				)
 			)
 			(pin input line
-				(at 15.24 3.81 180)
+				(at 12.7 6.35 180)
 				(length 2.54)
 				(name "MIC1N"
 					(effects
@@ -1583,7 +1583,7 @@
 				)
 			)
 			(pin input line
-				(at 15.24 -1.27 180)
+				(at 12.7 1.27 180)
 				(length 2.54)
 				(name "OUTP"
 					(effects
@@ -1601,7 +1601,7 @@
 				)
 			)
 			(pin input line
-				(at 15.24 -3.81 180)
+				(at 12.7 -1.27 180)
 				(length 2.54)
 				(name "OUTN"
 					(effects
@@ -1618,8 +1618,62 @@
 					)
 				)
 			)
+			(pin passive line
+				(at 12.7 -6.35 180)
+				(length 2.54)
+				(name "VMID"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "16"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at 12.7 -8.89 180)
+				(length 2.54)
+				(name "ADCVREF"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "15"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at 12.7 -11.43 180)
+				(length 2.54)
+				(name "DACVREF"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "15"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
 			(pin power_in line
-				(at 15.24 -16.51 180)
+				(at 12.7 -16.51 180)
 				(length 2.54)
 				(name "AGND"
 					(effects
