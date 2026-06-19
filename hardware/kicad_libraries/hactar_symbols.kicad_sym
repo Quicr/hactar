@@ -748,20 +748,18 @@
 				(hide yes)
 			)
 		)
-		(symbol "BM14B(0.8)-24DS-0.4V(53)_0_1"
+		(symbol "BM14B(0.8)-24DS-0.4V(53)_1_1"
 			(rectangle
 				(start 0 30.48)
 				(end 8.89 0)
 				(stroke
 					(width 0)
-					(type default)
+					(type solid)
 				)
 				(fill
-					(type none)
+					(type background)
 				)
 			)
-		)
-		(symbol "BM14B(0.8)-24DS-0.4V(53)_1_1"
 			(pin passive line
 				(at -2.54 29.21 0)
 				(length 2.54)
@@ -1316,20 +1314,18 @@
 				(hide yes)
 			)
 		)
-		(symbol "ES8311_0_1"
+		(symbol "ES8311_1_1"
 			(rectangle
 				(start -10.16 17.78)
 				(end 10.16 -17.78)
 				(stroke
 					(width 0)
-					(type default)
+					(type solid)
 				)
 				(fill
-					(type none)
+					(type background)
 				)
 			)
-		)
-		(symbol "ES8311_1_1"
 			(pin power_in line
 				(at -12.7 16.51 0)
 				(length 2.54)
