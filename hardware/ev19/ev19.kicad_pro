@@ -741,6 +741,18 @@
     [
       "bd865368-262b-4f76-b7a6-1673c2cb0f8c",
       "Root"
+    ],
+    [
+      "85bd6cfd-9a99-4a39-8c15-15502de0fc83",
+      "Audio"
+    ],
+    [
+      "3dc257c8-f72f-473f-bf23-b8869158b2ba",
+      "UI MCU"
+    ],
+    [
+      "db648703-aeb9-4fd1-b9ca-7ebdcc6dbe86",
+      "EEPROM"
     ]
   ],
   "text_variables": {},
