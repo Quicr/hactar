@@ -3255,10 +3255,6 @@
 		(uuid "2a31e981-5a2e-4544-8e9c-63a904356b3c")
 	)
 	(no_connect
-		(at 265.43 119.38)
-		(uuid "55ef8b59-119a-40ea-8b77-844a9f42ee00")
-	)
-	(no_connect
 		(at 265.43 124.46)
 		(uuid "a0f20909-1cd1-4636-9281-3414a1e4e9f1")
 	)
@@ -4025,6 +4021,16 @@
 			(type default)
 		)
 		(uuid "755cf12f-2acd-43be-a834-1ed52a1d4489")
+	)
+	(wire
+		(pts
+			(xy 257.81 119.38) (xy 265.43 119.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "762f256a-61aa-45de-9150-c28241e3bd7a")
 	)
 	(wire
 		(pts
@@ -5197,6 +5203,17 @@
 			(justify right)
 		)
 		(uuid "848a0194-d21c-4147-b531-6fd7ab6dddd4")
+	)
+	(hierarchical_label "nJACK_R1N"
+		(shape input)
+		(at 257.81 119.38 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "861c592c-8c39-45d8-80f0-0c7f271f13cc")
 	)
 	(hierarchical_label "I2S_BCLK"
 		(shape output)
