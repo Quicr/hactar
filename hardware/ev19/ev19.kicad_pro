@@ -82,20 +82,7 @@
           "width": 0.13
         }
       ],
-      "drc_exclusions": [
-        [
-          "footprint_type_mismatch|59250000|94575000|12c0b78d-f7a7-41cb-b9af-5c8426711a01|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_overlap|79448932|44540000|329da267-cfc0-4c6b-a362-904eda16d715|7fdd3903-3b60-413a-8753-53b80889c396",
-          ""
-        ],
-        [
-          "silk_overlap|80168932|44540000|329da267-cfc0-4c6b-a362-904eda16d715|3a950ebd-ee98-4699-8a83-da4cdf6a2f8b",
-          ""
-        ]
-      ],
+      "drc_exclusions": [],
       "meta": {
         "version": 2
       },
@@ -758,7 +745,7 @@
         "uuid": "bd865368-262b-4f76-b7a6-1673c2cb0f8c"
       }
     ],
-    "used_designators": "SW2-3,R4-5,R15,R20-22,R25,R40,R51,R75,U3,Q1,Q3,D5,C1-3,C6,C8-9,C17,Y1,#PWR1-2,#PWR9,#PWR16,#PWR21,#PWR27-29,#PWR88-89,#PWR94",
+    "used_designators": "J13,H5,SW2-3,R4-5,R15,R20-22,R25,R40,R51,R75,U3,Q1,Q3,D5,C1-3,C6,C8-9,C17,Y1,#PWR1-2,#PWR9,#PWR16,#PWR21,#PWR27-29,#PWR88-89,#PWR94",
     "variants": []
   },
   "sheets": [

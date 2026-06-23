@@ -2427,17 +2427,35 @@
 						)
 					)
 				)
-				(pin passive line
-					(at 12.7 -8.89 180)
+				(pin input line
+					(at 12.7 1.27 180)
 					(length 2.54)
-					(name "ADCVREF"
+					(name "OUTP"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "15"
+					(number "12"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 12.7 -1.27 180)
+					(length 2.54)
+					(name "OUTN"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "13"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2449,6 +2467,24 @@
 					(at 12.7 -11.43 180)
 					(length 2.54)
 					(name "DACVREF"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "14"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 12.7 -8.89 180)
+					(length 2.54)
+					(name "ADCVREF"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2485,42 +2521,6 @@
 					(at 12.7 6.35 180)
 					(length 2.54)
 					(name "MIC1N"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "17"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 12.7 1.27 180)
-					(length 2.54)
-					(name "OUTP"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "17"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 12.7 -1.27 180)
-					(length 2.54)
-					(name "OUTN"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2582,6 +2582,25 @@
 						)
 					)
 					(number "20"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 -16.51 180)
+					(length 2.54)
+					(hide yes)
+					(name "PAD"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "21"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -14229,7 +14248,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Hactar_Footprints:QFN-20-1EP_3x3mm_P0.4mm_EP1.8x1.8mm_ThermalVias"
 			(at 96.52 78.74 0)
 			(hide yes)
 			(show_name no)
@@ -14252,6 +14271,17 @@
 			)
 		)
 		(property "Description" ""
+			(at 96.52 78.74 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB Part #" "C962342"
 			(at 96.52 78.74 0)
 			(hide yes)
 			(show_name no)
@@ -14289,13 +14319,13 @@
 		(pin "16"
 			(uuid "3603a7bf-e370-42b8-afc4-98b3aa70c9a9")
 		)
-		(pin "17"
+		(pin "14"
 			(uuid "9a0ef0f1-f237-4b36-8f7a-c702a7c73b14")
 		)
-		(pin "17"
+		(pin "12"
 			(uuid "6826e5df-3e51-401b-aee3-05b9ed4e3dd3")
 		)
-		(pin "15"
+		(pin "13"
 			(uuid "dc06fb37-af9e-4519-a164-7b427ae578dd")
 		)
 		(pin "1"
@@ -14321,6 +14351,9 @@
 		)
 		(pin "6"
 			(uuid "548577ef-0315-4809-9e13-3a7fe429ef65")
+		)
+		(pin "21"
+			(uuid "6c97e436-956e-4280-b45a-44bf41fd2531")
 		)
 		(instances
 			(project "ev19"
