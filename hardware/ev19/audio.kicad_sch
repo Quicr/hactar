@@ -9310,7 +9310,7 @@
 				)
 			)
 		)
-		(property "Value" "+3.3V_AUDIO"
+		(property "Value" "+3.3V_ES8311"
 			(at 31.496 27.686 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13992,7 +13992,7 @@
 				)
 			)
 		)
-		(property "Value" "+3.3V_AUDIO"
+		(property "Value" "+3.3V_ES8311"
 			(at 89.916 56.896 0)
 			(show_name no)
 			(do_not_autoplace no)
