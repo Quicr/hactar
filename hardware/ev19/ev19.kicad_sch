@@ -24163,6 +24163,16 @@
 		)
 		(uuid "a3129eac-ce3f-4816-b769-45e11b878a22")
 	)
+	(text "7.071\n"
+		(exclude_from_sim no)
+		(at 154.432 264.668 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "a3b15d54-24cf-483a-8c48-7568b37484c3")
+	)
 	(text "USB"
 		(exclude_from_sim no)
 		(at 22.098 196.342 0)
@@ -32595,7 +32605,7 @@
 		)
 		(uuid "b1435522-114f-4d78-8fa5-4a6d9a6e318e")
 	)
-	(label "WM8960_Sense"
+	(label "ES8311_Sense"
 		(at 410.21 321.31 180)
 		(effects
 			(font
@@ -34104,7 +34114,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "RF_Module:ESP32-S3-WROOM-1"
+		(property "Footprint" "Hactar_Footprints:ESP32-S3-WROOM-1"
 			(at 262.89 81.28 0)
 			(hide yes)
 			(show_name no)
@@ -40118,7 +40128,7 @@
 				)
 			)
 		)
-		(property "Value" "+3.3V_WM8960"
+		(property "Value" "+3.3V_ES8311"
 			(at 417.576 307.086 0)
 			(show_name no)
 			(do_not_autoplace no)
