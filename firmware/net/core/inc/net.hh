@@ -124,15 +124,6 @@ struct Runtime
 
 class MoqContext;
 
-struct BlasterTaskContext
-{
-    Serial& ui_layer;
-    Serial& mgmt_layer;
-    MoqContext& moq_context;
-    Runtime& runtime;
-    Blaster& blaster;
-};
-
 struct UiLinkTaskContext
 {
     Serial& ui_layer;

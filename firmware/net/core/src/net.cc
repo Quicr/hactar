@@ -17,6 +17,7 @@
 #include "peripherals.hh"
 #include "portmacro.h"
 #include "serial.hh"
+#include "spdlog/common.h"
 #include "storage.hh"
 #include "stored_value.hh"
 #include "ui_link_handler.hh"
@@ -58,34 +59,6 @@ static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
     }
 }
 
-static void BlasterTask(void* arg)
-{
-    BlasterTaskContext* context = static_cast<BlasterTaskContext*>(arg);
-
-    std::vector<uint8_t> blast_vec;
-    constexpr uint8_t channel_id = (uint8_t)ui_net_link::Channel_Id::Ptt;
-    TickType_t last_wake = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(20);
-    while (context->blaster.enabled)
-    {
-        if (context->blaster.packet_size != blast_vec.size())
-        {
-            blast_vec.resize(context->blaster.packet_size);
-            for (int i = 0; i < context->blaster.packet_size; ++i)
-            {
-                blast_vec[i] = 0;
-            }
-        }
-
-        context->moq_context.PushAudioFrame(channel_id, blast_vec.data(), blast_vec.size(),
-                                            context->runtime.curr_audio_isr_time);
-        xTaskDelayUntil(&last_wake, frequency);
-    }
-
-    vTaskDelete(context->blaster.task_handle);
-    context->blaster.task_handle = NULL;
-}
-
 void PrintRAM()
 {
     NET_LOG_ERROR("Internal SRAM available: %d bytes",
@@ -109,7 +82,12 @@ extern "C" void app_main(void)
     IntitializeLEDs();
     InitializeUIReadyISR(GpioIsrRisingHandler);
 
-    Diagnostics diagnostics;
+    Diagnostics diagnostics = {
+        .loopback = false,
+        .logs_disabled = false,
+        .last_spd_log_level = static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL),
+        .blaster = {false, nullptr, 1},
+    };
     Storage storage;
     ConfigState config(storage);
 
@@ -131,7 +109,7 @@ extern "C" void app_main(void)
     MoqContext moq_context(ui_layer, runtime_ctx, diagnostics);
     UiLinkHandler ui_link_handler(ui_layer, mgmt_layer, moq_context, runtime_ctx);
     MgmtLinkHandler mgmt_link_handler(mgmt_layer, ui_layer, wifi, storage, config, diagnostics,
-                                      moq_context);
+                                      moq_context, runtime_ctx);
 
     NET_LOG_INFO("Starting Net Main");
 
