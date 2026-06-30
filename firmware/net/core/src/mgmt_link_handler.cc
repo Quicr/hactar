@@ -8,6 +8,37 @@
 #include "picoquic_utils.h"
 #include "spdlog/spdlog.h"
 #include "ui_net_link.hh"
+#include <cstdint>
+
+void MgmtLinkHandler::BlasterTask(void* arg)
+{
+    BlasterTaskContext* context = static_cast<BlasterTaskContext*>(arg);
+
+    std::vector<uint8_t> blast_vec;
+    constexpr uint8_t channel_id = (uint8_t)ui_net_link::Channel_Id::Ptt;
+    TickType_t last_wake = xTaskGetTickCount();
+    const TickType_t frequency = pdMS_TO_TICKS(20);
+    if (context->blaster.enabled)
+    {
+
+        if (context->blaster.packet_size != blast_vec.size())
+        {
+            blast_vec.resize(context->blaster.packet_size);
+            for (int i = 0; i < context->blaster.packet_size; ++i)
+            {
+                blast_vec[i] = 0;
+            }
+        }
+
+        context->moq_context.PushAudioFrame(channel_id, blast_vec.data(), blast_vec.size(),
+                                            context->runtime.curr_audio_isr_time);
+    }
+
+    xTaskDelayUntil(&last_wake, frequency);
+
+    vTaskDelete(context->blaster.task_handle);
+    context->blaster.task_handle = NULL;
+}
 
 MgmtLinkHandler::MgmtLinkHandler(Serial& mgmt_layer,
                                  Serial& ui_layer,
@@ -15,7 +46,8 @@ MgmtLinkHandler::MgmtLinkHandler(Serial& mgmt_layer,
                                  Storage& storage,
                                  ConfigState& config,
                                  Diagnostics& diagnostics,
-                                 MoqContext& moq_context) :
+                                 MoqContext& moq_context,
+                                 Runtime& runtime_context) :
     serial(mgmt_layer),
     ui_serial(ui_layer),
     wifi(wifi),
@@ -23,11 +55,13 @@ MgmtLinkHandler::MgmtLinkHandler(Serial& mgmt_layer,
     config(config),
     diagnostics(diagnostics),
     moq_context(moq_context),
+    runtime_context(runtime_context),
     serial_read_handle(nullptr),
     serial_read_buffer(),
     serial_read_stack(),
     serial_read_semaphore(nullptr),
-    serial_read_running(false)
+    serial_read_running(false),
+    blaster_context(ui_layer, mgmt_layer, moq_context, runtime_context, diagnostics.blaster)
 {
 }
 
@@ -348,6 +382,15 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                                       handler->config.channel_ns_json.Load());
                 break;
             }
+            case CtlToNet::GetAi:
+            {
+                json response;
+                response["query"] = handler->config.ai_query_ns;
+                response["audio"] = handler->config.ai_audio_response_ns;
+                response["cmd"] = handler->config.ai_cmd_response_ns;
+                handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ai), response.dump());
+                break;
+            }
             case CtlToNet::SetAi:
             {
                 std::string json_str((char*)packet->payload.data(), packet->length);
@@ -399,13 +442,55 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                 }
                 break;
             }
-            case CtlToNet::GetAi:
+            case CtlToNet::BlasterSend:
             {
-                json response;
-                response["query"] = handler->config.ai_query_ns;
-                response["audio"] = handler->config.ai_audio_response_ns;
-                response["cmd"] = handler->config.ai_cmd_response_ns;
-                handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ai), response.dump());
+                handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                      std::span<const uint8_t>{});
+                break;
+            }
+            case CtlToNet::GetBlaster:
+            {
+                const uint8_t get_blaster[3] = {
+                    handler->diagnostics.blaster.enabled,
+                    static_cast<uint8_t>(handler->diagnostics.blaster.packet_size & 0xFF),
+                    static_cast<uint8_t>(handler->diagnostics.blaster.packet_size >> 8),
+                };
+
+                handler->serial.Reply(
+                    static_cast<uint16_t>(NetToCtl::Blaster),
+                    std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&get_blaster),
+                                             sizeof(get_blaster)));
+
+                break;
+            }
+            case CtlToNet::SetBlaster:
+            {
+                if (packet->length < 3)
+                {
+                    handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                               "SetBlaster requires {enabled:1}{size:2}");
+                    break;
+                }
+
+                handler->diagnostics.blaster.enabled = packet->payload[0];
+
+                const int16_t packet_size = (static_cast<uint16_t>(packet->payload[1]) & 0xFF)
+                                          | (static_cast<uint16_t>(packet->payload[2] << 8));
+
+                if (packet_size > 0)
+                {
+                    handler->diagnostics.blaster.packet_size = packet_size;
+                }
+
+                handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                      std::span<const uint8_t>{});
+
+                if (handler->diagnostics.blaster.enabled
+                    && handler->diagnostics.blaster.task_handle == nullptr)
+                {
+                    xTaskCreate(BlasterTask, "Blaster task", 4096, (void*)&handler->blaster_context,
+                                10, &handler->diagnostics.blaster.task_handle);
+                }
                 break;
             }
             case CtlToNet::BurnJtagEfuse:
@@ -473,6 +558,8 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
             }
             default:
             {
+                handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                           "Unknown packet type");
                 NET_LOG_ERROR("Unknown packet type 0x%04x from mgmt", packet->type);
                 break;
             }

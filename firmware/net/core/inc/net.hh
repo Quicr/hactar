@@ -98,12 +98,20 @@ struct NetTraits
     };
 };
 
+struct Blaster
+{
+    volatile bool enabled = false;
+    TaskHandle_t task_handle = nullptr;
+    uint32_t packet_size;
+};
+
 struct Diagnostics
 {
     bool loopback = false;
     bool logs_disabled = false;
     spdlog::level::level_enum last_spd_log_level =
         static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL);
+    Blaster blaster;
 };
 
 struct Runtime

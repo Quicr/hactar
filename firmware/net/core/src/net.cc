@@ -15,7 +15,9 @@
 #include "moq_context.hh"
 #include "net_mgmt_link.h"
 #include "peripherals.hh"
+#include "portmacro.h"
 #include "serial.hh"
+#include "spdlog/common.h"
 #include "storage.hh"
 #include "stored_value.hh"
 #include "ui_link_handler.hh"
@@ -80,7 +82,12 @@ extern "C" void app_main(void)
     IntitializeLEDs();
     InitializeUIReadyISR(GpioIsrRisingHandler);
 
-    Diagnostics diagnostics;
+    Diagnostics diagnostics = {
+        .loopback = false,
+        .logs_disabled = false,
+        .last_spd_log_level = static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL),
+        .blaster = {false, nullptr, 1},
+    };
     Storage storage;
     ConfigState config(storage);
 
@@ -102,7 +109,7 @@ extern "C" void app_main(void)
     MoqContext moq_context(ui_layer, runtime_ctx, diagnostics);
     UiLinkHandler ui_link_handler(ui_layer, mgmt_layer, moq_context, runtime_ctx);
     MgmtLinkHandler mgmt_link_handler(mgmt_layer, ui_layer, wifi, storage, config, diagnostics,
-                                      moq_context);
+                                      moq_context, runtime_ctx);
 
     NET_LOG_INFO("Starting Net Main");
 
