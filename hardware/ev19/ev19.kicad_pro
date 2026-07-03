@@ -63,11 +63,11 @@
           "hatch_thickness": 1.0,
           "min_clearance": 0.127,
           "min_island_area": 10.0,
-          "min_thickness": 0.127,
+          "min_thickness": 0.25,
           "pad_connection": 1,
           "remove_islands": 0,
-          "thermal_relief_gap": 0.127,
-          "thermal_relief_spoke_width": 0.127
+          "thermal_relief_gap": 0.5,
+          "thermal_relief_spoke_width": 0.5
         }
       },
       "diff_pair_dimensions": [
@@ -694,7 +694,7 @@
       "default_line_thickness": 6.0,
       "default_text_size": 50.0,
       "field_names": [],
-      "hop_over_size_choice": 0,
+      "hop_over_size_choice": 3,
       "intersheets_ref_own_page": false,
       "intersheets_ref_prefix": "",
       "intersheets_ref_short": false,
@@ -745,7 +745,7 @@
         "uuid": "bd865368-262b-4f76-b7a6-1673c2cb0f8c"
       }
     ],
-    "used_designators": "J13,H5,SW2-3,R4-5,R15,R20-22,R25,R40,R51,R75,U3,Q1,Q3,D5,C1-3,C6,C8-9,C17,Y1,#PWR1-2,#PWR9,#PWR16,#PWR21,#PWR27-29,#PWR88-89,#PWR94",
+    "used_designators": "",
     "variants": []
   },
   "sheets": [
