@@ -5397,15 +5397,15 @@
 		(uuid "fbc914f3-0f27-48fe-b000-a97adcb85e5f")
 	)
 	(no_connect
-		(at 245.11 147.32)
+		(at 246.38 140.97)
 		(uuid "08aada4f-fe59-4446-a3d5-31d5a816755e")
 	)
 	(no_connect
-		(at 245.11 142.24)
+		(at 246.38 135.89)
 		(uuid "67a6bc18-0fbf-4775-a9c1-e844ac2bfe7c")
 	)
 	(no_connect
-		(at 245.11 139.7)
+		(at 246.38 133.35)
 		(uuid "6a65eb80-8df2-4abd-8b73-8a50ea23686f")
 	)
 	(no_connect
@@ -5413,23 +5413,23 @@
 		(uuid "9eb74f9e-40ce-4945-907e-efe598cd6aa2")
 	)
 	(no_connect
-		(at 250.19 109.22)
+		(at 251.46 156.21)
 		(uuid "a9c68156-859c-4f2f-aee3-bc234a1cfea3")
 	)
 	(no_connect
-		(at 245.11 157.48)
+		(at 246.38 151.13)
 		(uuid "aa84028b-8ff5-413d-b0a7-e809df4d7557")
 	)
 	(no_connect
-		(at 245.11 154.94)
+		(at 246.38 148.59)
 		(uuid "d08e4b7f-d20c-4ec5-9853-6ad62a7b7fba")
 	)
 	(no_connect
-		(at 245.11 152.4)
+		(at 246.38 146.05)
 		(uuid "e53b3b12-40c2-49bd-906a-98de8828289c")
 	)
 	(no_connect
-		(at 245.11 144.78)
+		(at 246.38 138.43)
 		(uuid "ecc3d1a5-e66e-40c9-9fcc-7039fd404621")
 	)
 	(no_connect
@@ -5437,11 +5437,11 @@
 		(uuid "edabe08a-a099-4f30-8cf0-356e514aee3a")
 	)
 	(no_connect
-		(at 245.11 137.16)
+		(at 246.38 130.81)
 		(uuid "edc9b7e8-8e23-43f0-9f38-d10d88f400ae")
 	)
 	(no_connect
-		(at 245.11 149.86)
+		(at 246.38 143.51)
 		(uuid "ee92eb99-c2d1-43c7-9cba-1b7a073157de")
 	)
 	(wire
@@ -5596,7 +5596,7 @@
 	)
 	(wire
 		(pts
-			(xy 234.95 121.92) (xy 245.11 121.92)
+			(xy 236.22 115.57) (xy 246.38 115.57)
 		)
 		(stroke
 			(width 0)
@@ -5626,7 +5626,7 @@
 	)
 	(wire
 		(pts
-			(xy 228.6 119.38) (xy 245.11 119.38)
+			(xy 229.87 113.03) (xy 246.38 113.03)
 		)
 		(stroke
 			(width 0)
@@ -6546,7 +6546,7 @@
 	)
 	(wire
 		(pts
-			(xy 234.95 132.08) (xy 245.11 132.08)
+			(xy 236.22 125.73) (xy 246.38 125.73)
 		)
 		(stroke
 			(width 0)
@@ -6556,7 +6556,7 @@
 	)
 	(wire
 		(pts
-			(xy 228.6 113.03) (xy 228.6 114.3)
+			(xy 229.87 106.68) (xy 229.87 107.95)
 		)
 		(stroke
 			(width 0)
@@ -6796,7 +6796,7 @@
 	)
 	(wire
 		(pts
-			(xy 228.6 120.65) (xy 228.6 119.38)
+			(xy 229.87 114.3) (xy 229.87 113.03)
 		)
 		(stroke
 			(width 0)
@@ -6966,7 +6966,7 @@
 	)
 	(wire
 		(pts
-			(xy 234.95 134.62) (xy 245.11 134.62)
+			(xy 236.22 128.27) (xy 246.38 128.27)
 		)
 		(stroke
 			(width 0)
@@ -7036,7 +7036,7 @@
 	)
 	(wire
 		(pts
-			(xy 234.95 129.54) (xy 245.11 129.54)
+			(xy 236.22 123.19) (xy 246.38 123.19)
 		)
 		(stroke
 			(width 0)
@@ -7396,7 +7396,7 @@
 	)
 	(wire
 		(pts
-			(xy 228.6 114.3) (xy 245.11 114.3)
+			(xy 229.87 107.95) (xy 246.38 107.95)
 		)
 		(stroke
 			(width 0)
@@ -7586,7 +7586,7 @@
 	)
 	(wire
 		(pts
-			(xy 234.95 116.84) (xy 245.11 116.84)
+			(xy 236.22 110.49) (xy 246.38 110.49)
 		)
 		(stroke
 			(width 0)
@@ -7736,7 +7736,7 @@
 	)
 	(wire
 		(pts
-			(xy 234.95 127) (xy 245.11 127)
+			(xy 236.22 120.65) (xy 246.38 120.65)
 		)
 		(stroke
 			(width 0)
@@ -7786,7 +7786,7 @@
 	)
 	(wire
 		(pts
-			(xy 234.95 124.46) (xy 245.11 124.46)
+			(xy 236.22 118.11) (xy 246.38 118.11)
 		)
 		(stroke
 			(width 0)
@@ -8165,7 +8165,7 @@
 		(uuid "3ace144e-467c-453e-a984-4a9d848060a9")
 	)
 	(label "SPI1_MISO"
-		(at 234.95 127 0)
+		(at 236.22 120.65 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -8205,7 +8205,7 @@
 		(uuid "4724a029-5ce3-4660-8a47-77259db7ec03")
 	)
 	(label "DISP_CS"
-		(at 234.95 134.62 0)
+		(at 236.22 128.27 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -8235,7 +8235,7 @@
 		(uuid "4dd27581-6a87-41a7-afab-1131f7acb202")
 	)
 	(label "SPI1_MOSI"
-		(at 234.95 124.46 0)
+		(at 236.22 118.11 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -8315,7 +8315,7 @@
 		(uuid "62e8c77f-e992-4834-8a2a-141f7ead9bcc")
 	)
 	(label "DISP_DC"
-		(at 234.95 129.54 0)
+		(at 236.22 123.19 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -8525,7 +8525,7 @@
 		(uuid "b61ef2e5-a69c-438e-86ba-960eb34c422a")
 	)
 	(label "DISP_RST"
-		(at 234.95 132.08 0)
+		(at 236.22 125.73 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -8545,7 +8545,7 @@
 		(uuid "ba636357-08ec-4d3f-af7b-c97091bb35a2")
 	)
 	(label "SPI1_CLK"
-		(at 234.95 121.92 0)
+		(at 236.22 115.57 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -8665,7 +8665,7 @@
 		(uuid "e657a235-2461-42b3-82b0-c70534721e37")
 	)
 	(label "DISP_BL"
-		(at 234.95 116.84 0)
+		(at 236.22 110.49 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -12048,7 +12048,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 228.6 120.65 0)
+		(at 229.87 114.3 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -12058,7 +12058,7 @@
 		(dnp no)
 		(uuid "513878b2-34d6-4f27-844b-53efc1bd7968")
 		(property "Reference" "#PWR0109"
-			(at 228.6 127 0)
+			(at 229.87 120.65 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12069,7 +12069,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 228.6 124.206 0)
+			(at 229.87 117.856 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12079,7 +12079,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 228.6 120.65 0)
+			(at 229.87 114.3 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12090,7 +12090,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 228.6 120.65 0)
+			(at 229.87 114.3 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12101,7 +12101,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 228.6 120.65 0)
+			(at 229.87 114.3 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12934,8 +12934,7 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic_MountingPin:Conn_01x18_MountingPin")
-		(at 250.19 137.16 0)
-		(mirror x)
+		(at 251.46 128.27 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -12945,7 +12944,7 @@
 		(dnp no)
 		(uuid "7ab437ff-ef8c-49e5-a3ac-75db1a9e421c")
 		(property "Reference" "J14"
-			(at 228.854 159.004 0)
+			(at 230.124 106.426 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12956,7 +12955,7 @@
 			)
 		)
 		(property "Value" "Conn_01x18_MountingPin"
-			(at 228.854 161.544 0)
+			(at 228.092 160.274 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12967,7 +12966,7 @@
 			)
 		)
 		(property "Footprint" "Connector_FFC-FPC:Hirose_FH12-18S-0.5SH_1x18-1MP_P0.50mm_Horizontal"
-			(at 250.19 137.16 0)
+			(at 251.46 128.27 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12978,7 +12977,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 250.19 137.16 0)
+			(at 251.46 128.27 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12989,7 +12988,7 @@
 			)
 		)
 		(property "Description" "Generic connectable mounting pin connector, single row, 01x18, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 250.19 137.16 0)
+			(at 251.46 128.27 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13000,7 +12999,7 @@
 			)
 		)
 		(property "JLCPCB Part #" "C2856802"
-			(at 250.19 137.16 0)
+			(at 251.46 128.27 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15485,7 +15484,7 @@
 	)
 	(symbol
 		(lib_id "power:+3.3V")
-		(at 228.6 113.03 0)
+		(at 229.87 106.68 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -15495,7 +15494,7 @@
 		(dnp no)
 		(uuid "d574beab-32db-4eb3-903c-1fdd0d66ef5c")
 		(property "Reference" "#PWR0108"
-			(at 228.6 116.84 0)
+			(at 229.87 110.49 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15506,7 +15505,7 @@
 			)
 		)
 		(property "Value" "+3.3V"
-			(at 228.6 109.474 0)
+			(at 229.87 103.124 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -15516,7 +15515,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 228.6 113.03 0)
+			(at 229.87 106.68 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15527,7 +15526,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 228.6 113.03 0)
+			(at 229.87 106.68 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15538,7 +15537,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
-			(at 228.6 113.03 0)
+			(at 229.87 106.68 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
