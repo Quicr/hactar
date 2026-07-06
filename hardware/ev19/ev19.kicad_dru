@@ -68,3 +68,7 @@
 	(condition "A.isPlated() && B.isPlated() && A.Net != B.Net")
 	(constraint clearance (min 0.127mm))
 )
+(rule "via_to_via_spacing"
+    (constraint clearance (min 0.2mm))
+    (condition "A.Type == 'Via' && B.Type == 'Via'")
+)

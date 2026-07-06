@@ -6136,16 +6136,6 @@
 	)
 	(wire
 		(pts
-			(xy 73.66 54.61) (xy 87.63 54.61)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4baf4240-61d2-4016-b1f0-44ffa7aa411e")
-	)
-	(wire
-		(pts
 			(xy 39.37 26.67) (xy 39.37 27.94)
 		)
 		(stroke
@@ -7476,6 +7466,16 @@
 	)
 	(wire
 		(pts
+			(xy 46.99 54.61) (xy 87.63 54.61)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c541fe4b-fd81-4262-9454-129c6a8dd0dd")
+	)
+	(wire
+		(pts
 			(xy 128.27 49.53) (xy 154.94 49.53)
 		)
 		(stroke
@@ -8484,16 +8484,6 @@
 		)
 		(uuid "ac838e6c-6b0a-4553-8f4b-bae2e5e15bfd")
 	)
-	(label "MIC_IO"
-		(at 73.66 54.61 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "ad46b744-f695-447e-bb51-f0021245d140")
-	)
 	(label "PTT_BTN"
 		(at 148.59 67.31 180)
 		(effects
@@ -8899,6 +8889,17 @@
 			(justify right)
 		)
 		(uuid "97990fe3-9083-455f-a861-ee777dae027d")
+	)
+	(hierarchical_label "MIC_PTT_BTN"
+		(shape input)
+		(at 46.99 54.61 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "b20d245e-7b34-42f2-a731-90d197aecbd3")
 	)
 	(hierarchical_label "UI_RTS2_NET"
 		(shape input)
