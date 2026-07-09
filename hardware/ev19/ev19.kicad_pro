@@ -745,7 +745,7 @@
         "uuid": "bd865368-262b-4f76-b7a6-1673c2cb0f8c"
       }
     ],
-    "used_designators": "NT11,#PWR125",
+    "used_designators": "#PWR125,NT12-13,TP1-7,TP9,U11",
     "variants": []
   },
   "sheets": [
