@@ -1013,7 +1013,7 @@
 				)
 			)
 		)
-		(property "Value" "M24C02-RMN6TP"
+		(property "Value" "M24C02-RDW6TP"
 			(at 60.706 59.182 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1023,7 +1023,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+		(property "Footprint" "Package_SO:TSSOP-8_3x3mm_P0.65mm"
 			(at 60.96 40.64 0)
 			(hide yes)
 			(show_name no)
@@ -1056,7 +1056,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" "C83836"
+		(property "JLCPCB Part #" "C152731"
 			(at 60.96 49.53 0)
 			(hide yes)
 			(show_name no)
