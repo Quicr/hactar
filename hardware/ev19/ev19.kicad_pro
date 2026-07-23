@@ -745,7 +745,7 @@
         "uuid": "bd865368-262b-4f76-b7a6-1673c2cb0f8c"
       }
     ],
-    "used_designators": "H5,TP10,TP33-50,R64,R66-74,R97-106,#PWR60,#PWR86-87,#PWR126-130,J6-7,J11,J13-16",
+    "used_designators": "#FLG16-17,H5,TP10,TP33-50,R64,R66-74,R97-106,#PWR60-61,#PWR81,#PWR86-87,#PWR126-130,J6-7,J11,J13-16",
     "variants": []
   },
   "sheets": [
