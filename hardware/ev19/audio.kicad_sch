@@ -3839,6 +3839,16 @@
 		)
 		(uuid "a040fa40-224e-4020-bbe1-d9c79fd96d95")
 	)
+	(text "MICBIAS"
+		(exclude_from_sim no)
+		(at 223.012 68.072 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "c8955106-74b8-4f9d-822e-de44d4e3aea8")
+	)
 	(junction
 		(at 120.65 99.06)
 		(diameter 0)
@@ -6103,16 +6113,6 @@
 		)
 		(uuid "78d68202-c5e0-4643-8434-351363577e00")
 	)
-	(label "MICBIAS"
-		(at 218.44 68.58 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "7ee8a0d1-22c2-4470-8185-80ad5253cbb8")
-	)
 	(label "MIC1N"
 		(at 115.57 72.39 180)
 		(effects
@@ -6655,6 +6655,83 @@
 			(project "ev19"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c/85bd6cfd-9a99-4a39-8c15-15502de0fc83"
 					(reference "#PWR0112")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDA")
+		(at 110.49 100.33 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "176b4b1a-425f-4f40-9abc-fbc67c4b47c5")
+		(property "Reference" "#PWR083"
+			(at 110.49 106.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDA"
+			(at 110.49 104.394 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 110.49 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 110.49 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDA\" , analog ground"
+			(at 110.49 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "d0557197-9749-45dd-9c55-5d8cbb378649")
+		)
+		(instances
+			(project "ev19"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c/85bd6cfd-9a99-4a39-8c15-15502de0fc83"
+					(reference "#PWR083")
 					(unit 1)
 				)
 			)
@@ -7933,83 +8010,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:GNDA")
-		(at 110.49 100.33 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "2756814f-40d0-4a3a-b747-42f6b4281eea")
-		(property "Reference" "#PWR042"
-			(at 110.49 106.68 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GNDA"
-			(at 110.49 104.14 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 110.49 100.33 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 110.49 100.33 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GNDA\" , analog ground"
-			(at 110.49 100.33 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "dd9ef36f-1c10-4434-9fbe-568ed93c2170")
-		)
-		(instances
-			(project "ev19"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c/85bd6cfd-9a99-4a39-8c15-15502de0fc83"
-					(reference "#PWR042")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:C_Small")
 		(at 212.09 116.84 90)
 		(unit 1)
@@ -8840,84 +8840,6 @@
 			(project "ev19"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c/85bd6cfd-9a99-4a39-8c15-15502de0fc83"
 					(reference "#PWR0125")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GNDA")
-		(at 238.76 59.69 0)
-		(mirror y)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "3bc3d4d6-7a17-4af2-98ce-3a01f7ff5515")
-		(property "Reference" "#PWR0115"
-			(at 238.76 66.04 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GNDA"
-			(at 238.76 63.754 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 238.76 59.69 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 238.76 59.69 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GNDA\" , analog ground"
-			(at 238.76 59.69 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "a42b9681-d03a-4805-bd1f-ea5994edca11")
-		)
-		(instances
-			(project "ev19"
-				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c/85bd6cfd-9a99-4a39-8c15-15502de0fc83"
-					(reference "#PWR0115")
 					(unit 1)
 				)
 			)
@@ -14697,6 +14619,83 @@
 			(project "ev19"
 				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c/85bd6cfd-9a99-4a39-8c15-15502de0fc83"
 					(reference "R32")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDA")
+		(at 238.76 59.69 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "debc3d4f-70e1-4598-9c03-f6398ddab8c5")
+		(property "Reference" "#PWR082"
+			(at 238.76 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDA"
+			(at 238.76 63.5 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 238.76 59.69 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 238.76 59.69 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDA\" , analog ground"
+			(at 238.76 59.69 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "091ea4af-e550-49d0-bb8f-d80ad06a65f5")
+		)
+		(instances
+			(project "ev19"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c/85bd6cfd-9a99-4a39-8c15-15502de0fc83"
+					(reference "#PWR082")
 					(unit 1)
 				)
 			)

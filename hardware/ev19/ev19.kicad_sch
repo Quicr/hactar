@@ -20267,7 +20267,7 @@
 				)
 			)
 			(property "Datasheet" ""
-				(at 0 0 0)
+				(at 0 -15.24 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -20278,7 +20278,7 @@
 				)
 			)
 			(property "Description" "3-pole Solder Jumper, pins 1+2 closed/bridged"
-				(at 0 0 0)
+				(at 0 -12.7 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -20355,18 +20355,6 @@
 						(type default)
 					)
 					(fill
-						(type none)
-					)
-				)
-				(arc
-					(start -1.016 -1.016)
-					(mid -2.0276 0)
-					(end -1.016 1.016)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
 						(type outline)
 					)
 				)
@@ -20385,18 +20373,6 @@
 					(pts
 						(xy 0 -1.27) (xy 0 -1.016)
 					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(arc
-					(start 1.016 1.016)
-					(mid 2.0276 0)
-					(end 1.016 -1.016)
 					(stroke
 						(width 0)
 						(type default)
@@ -23639,6 +23615,257 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "SolderJumper_3_Bridged12_1"
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom no)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "JP"
+				(at -2.54 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "SolderJumper_3_Bridged12"
+				(at 0 2.794 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 -15.24 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "3-pole Solder Jumper, pins 1+2 closed/bridged"
+				(at 0 -12.7 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "Solder Jumper SPDT"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "SolderJumper*Bridged12*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "SolderJumper_3_Bridged12_1_0_1"
+				(polyline
+					(pts
+						(xy -2.54 0) (xy -2.032 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.016 1.016) (xy -1.016 -1.016)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.016 0.508)
+					(end -0.508 -0.508)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(arc
+					(start -1.016 -1.016)
+					(mid -2.0276 0)
+					(end -1.016 1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(rectangle
+					(start -0.508 1.016)
+					(end 0.508 -1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 -1.27) (xy 0 -1.016)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start 1.016 1.016)
+					(mid 2.0276 0)
+					(end 1.016 -1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.016 1.016) (xy 1.016 -1.016)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 2.54 0) (xy 2.032 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "SolderJumper_3_Bridged12_1_1_1"
+				(pin passive line
+					(at -5.08 0 0)
+					(length 2.54)
+					(name "A"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -3.81 90)
+					(length 2.54)
+					(name "C"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 5.08 0 180)
+					(length 2.54)
+					(name "B"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Switch:SW_SPDT"
 			(pin_names
 				(offset 0)
@@ -25923,7 +26150,7 @@
 		(uuid "26de5dc9-f947-4cb2-9aeb-640b9db05242")
 	)
 	(rectangle
-		(start 373.38 168.91)
+		(start 361.95 168.91)
 		(end 449.58 293.37)
 		(stroke
 			(width 0)
@@ -26207,6 +26434,16 @@
 			(justify left bottom)
 		)
 		(uuid "33029f2a-dc00-41b5-a3b4-6466ad48ed99")
+	)
+	(text "Test points need to be as close to the resistor as possible"
+		(exclude_from_sim no)
+		(at 363.474 302.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "34152c7e-ab21-4b6e-a1fd-7e146166c6a2")
 	)
 	(text "BOOTLOADER"
 		(exclude_from_sim no)
@@ -27994,7 +28231,7 @@
 	)
 	(wire
 		(pts
-			(xy 378.46 260.35) (xy 421.64 260.35)
+			(xy 377.19 260.35) (xy 421.64 260.35)
 		)
 		(stroke
 			(width 0)
@@ -32204,7 +32441,7 @@
 	)
 	(wire
 		(pts
-			(xy 378.46 262.89) (xy 421.64 262.89)
+			(xy 377.19 262.89) (xy 421.64 262.89)
 		)
 		(stroke
 			(width 0)
@@ -34982,16 +35219,6 @@
 		)
 		(uuid "18c51084-20fd-451c-b380-ab5d49f2a9ee")
 	)
-	(label "VOLUME-"
-		(at 378.46 262.89 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "19089fb2-65df-47cf-90c5-7a3495792835")
-	)
 	(label "MGMT_DEBUG_2"
 		(at 520.7 229.87 0)
 		(effects
@@ -35102,16 +35329,6 @@
 		)
 		(uuid "1e5c93c5-6279-435c-9f5d-4056eaaf1832")
 	)
-	(label "UI_SCL1"
-		(at 378.46 242.57 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "1f5eb57c-dacf-410a-8594-3073fdfeda44")
-	)
 	(label "NET_DEBUG_1"
 		(at 520.7 237.49 0)
 		(effects
@@ -35141,6 +35358,16 @@
 			(justify left bottom)
 		)
 		(uuid "20dfe00b-5396-48e4-b2ea-2de200e59716")
+	)
+	(label "I2C1_SDA"
+		(at 378.46 240.03 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "23b7f94c-b2bf-4f2d-a39f-c1972a7e6e7b")
 	)
 	(label "NET_MTDO"
 		(at 481.33 246.38 180)
@@ -35381,6 +35608,16 @@
 			(justify left bottom)
 		)
 		(uuid "3f143924-8700-4350-8109-40126611d661")
+	)
+	(label "I2C1_SCL"
+		(at 378.46 242.57 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "3f49ac97-566b-40c3-8667-a7d783d24b1d")
 	)
 	(label "NET_MTDI"
 		(at 293.37 93.98 180)
@@ -36222,16 +36459,6 @@
 		)
 		(uuid "938d85c7-0de0-4457-8dd0-26b511df1027")
 	)
-	(label "KB_COL5"
-		(at 378.46 260.35 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "9391cf56-5edb-4855-af31-5148c944e45b")
-	)
 	(label "NET_DEBUG_2"
 		(at 232.41 81.28 0)
 		(effects
@@ -36331,16 +36558,6 @@
 			(justify right bottom)
 		)
 		(uuid "a463a4f8-5f68-4183-9d3e-62a07f794816")
-	)
-	(label "Test points need to be as close to the resistor as possible"
-		(at 392.43 303.53 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "a469883c-123e-4b13-9aea-96e237a03efa")
 	)
 	(label "USB_TX1_MGMT"
 		(at 121.92 88.9 180)
@@ -36772,16 +36989,6 @@
 		)
 		(uuid "e3cb16dc-ea87-4a22-9bb8-97b7ed06da4f")
 	)
-	(label "UI_SDA1"
-		(at 378.46 240.03 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "e83f9970-3169-45dc-aa3c-4b1fa4efd642")
-	)
 	(label "BATTERY_MON"
 		(at 52.07 91.44 0)
 		(effects
@@ -36936,6 +37143,30 @@
 			)
 		)
 	)
+	(global_label "UI_DEBUG_1"
+		(shape input)
+		(at 377.19 260.35 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "4db5c0f4-4967-486e-a374-f90fcbc2eb30")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 362.8353 260.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
 	(global_label "UI_DEBUG_2"
 		(shape input)
 		(at 520.7 234.95 180)
@@ -36949,6 +37180,30 @@
 		(uuid "585acd22-05c1-4701-8c14-3e4aebfd2856")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 506.3453 234.95 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(global_label "UI_DEBUG_2"
+		(shape input)
+		(at 377.19 262.89 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "bab36e93-7f0a-44a6-8d5d-27035e28a11d")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 362.8353 262.89 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -58362,6 +58617,104 @@
 		)
 	)
 	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 158.75 247.65 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "cb52feba-62e0-436d-93cb-a0daec02a637")
+		(property "Reference" "H5"
+			(at 161.29 246.3799 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "MountingHole"
+			(at 161.29 248.9199 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Hactar_Footprints:Standoff_Hole"
+			(at 158.75 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 158.75 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 158.75 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB Position Offset" ""
+			(at 158.75 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Type" ""
+			(at 158.75 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(instances
+			(project "ev19"
+				(path "/bd865368-262b-4f76-b7a6-1673c2cb0f8c"
+					(reference "H5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R_Small_US")
 		(at 67.31 242.57 270)
 		(mirror x)
@@ -63427,6 +63780,7 @@
 		)
 	)
 	(symbol
+		(lib_name "SolderJumper_3_Bridged12_1")
 		(lib_id "Jumper:SolderJumper_3_Bridged12")
 		(at 34.29 346.71 0)
 		(mirror x)

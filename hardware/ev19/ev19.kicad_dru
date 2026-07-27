@@ -23,11 +23,6 @@
 	(constraint track_width (min 0.127mm))
 	(severity error)
 )
-(rule "Pad to Silkscreen"
-	(layer outer)
-	(condition "A.Type == 'pad' && B.Layer == '?.Silkscreen'")
-	(constraint silk_clearance (min 0.01mm))
-)
 
 (rule "Edge (routed) to track clearance"
 	(condition "A.Type == 'track'")
