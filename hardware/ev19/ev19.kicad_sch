@@ -26837,10 +26837,10 @@
 		)
 		(uuid "f605a78f-ce3d-4b5e-a5f6-cabfbc3994b3")
 	)
-	(text_box "Notes:\n- USB-Shield should be left floating, as the standard is that the supplying-side of USB-C should be connected to their GND\n\n- Vias are 0.600mm/0.300mm to keep it as cheap as possible.\n	- As well, smaller holes have more inductance/resistance.\n\n- All power pins on each chip should have a decoupling capacitor as close as possible.\n\n- LEDS on keyboard are pulled down using PWM"
+	(text_box "General:\n- USB-Shield should be left floating, as the standard is that the supplying-side of USB-C should be connected to their GND\n\n- Vias are 0.600mm/0.300mm to keep it as cheap as possible.\n	- As well, smaller holes have more inductance/resistance.\n\n- All power pins on each chip should have a decoupling capacitor as close as possible.\n\n- LEDS on keyboard are pulled down using PWM\n\n\n\r\nAudio section:\n- The XC6227C301MR-G has a Pd of 250mW without a pad, when the speaker is topped out we should be drawing about 500mW of power for a short burst. \n	The datasheet specifies that a 40x40 cooling pad has a Pd of 600mW. Our GNDA plane is 1900mm^2.\n	So, we should aim to have that much of a ground plane from the GND junction on the package.\n\n- All mic and speaker lines need to have GNDA shielding traces around them for noise control."
 		(exclude_from_sim no)
-		(at 288.29 132.08 0)
-		(size 83.82 34.29)
+		(at 212.09 130.81 0)
+		(size 101.6 114.3)
 		(margins 0.9525 0.9525 0.9525 0.9525)
 		(stroke
 			(width 0)
