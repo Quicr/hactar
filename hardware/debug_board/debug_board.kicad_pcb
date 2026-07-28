@@ -8,9 +8,9 @@
 	)
 	(paper "A4")
 	(title_block
-		(title "Hactar PCB - Finn Berg & Brett Regnier")
-		(date "2026-06-08")
-		(rev "EV18")
+		(title "Hactar Debug Board - Brett Regnier")
+		(date "2026-07-27")
+		(rev "EV1")
 		(company "CISCO SYSTEMS INC")
 	)
 	(layers
@@ -781,7 +781,7 @@
 				(pins)
 			)
 		)
-		(attr exclude_from_bom)
+		(attr exclude_from_pos_files exclude_from_bom)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_circle
 			(center 0 0)
@@ -1570,7 +1570,7 @@
 				(pins)
 			)
 		)
-		(attr exclude_from_bom)
+		(attr exclude_from_pos_files exclude_from_bom)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_circle
 			(center 0 0)
@@ -1687,7 +1687,7 @@
 				(pins)
 			)
 		)
-		(attr exclude_from_bom)
+		(attr exclude_from_pos_files exclude_from_bom)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_circle
 			(center 0 0)
@@ -2343,6 +2343,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "933f8442-834f-4de6-8619-dacaff371265")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2b79aaf1-8539-44cf-8dc5-0a7e70e3b697")
 			(effects
 				(font
 					(size 1 1)
@@ -4239,7 +4252,7 @@
 				(pins)
 			)
 		)
-		(attr exclude_from_bom)
+		(attr exclude_from_pos_files exclude_from_bom)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_circle
 			(center 0 0)
@@ -4352,6 +4365,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "862b20bd-ef9e-42a6-b5f4-c1833de1a007")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1a6d692e-8c3f-4c9f-965e-cfd28b61de88")
 			(effects
 				(font
 					(size 1 1)
@@ -6270,6 +6296,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "a6449342-eb7d-470c-b0e0-226a4f2d472a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "048a3a8a-789b-4cfa-8a9a-6039304415f9")
 			(effects
 				(font
 					(size 1 1)

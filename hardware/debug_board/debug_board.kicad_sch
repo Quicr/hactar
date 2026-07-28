@@ -5,9 +5,9 @@
 	(uuid "bd865368-262b-4f76-b7a6-1673c2cb0f8c")
 	(paper "A4")
 	(title_block
-		(title "HACTAR SCHEMATIC - Finn Berg & Brett Regnier")
-		(date "2026-06-08")
-		(rev "EV19")
+		(title "Hactar Debug Schematic - Brett Regnier")
+		(date "2026-07-27")
+		(rev "EV1")
 		(company "CISCO SYSTEMS INC")
 	)
 	(lib_symbols
@@ -6364,7 +6364,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
+		(in_pos_files no)
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1079837a-8c4a-43b5-bf09-d8cfd2e58df0")
@@ -6704,6 +6704,17 @@
 			)
 		)
 		(property "Sim.Type" ""
+			(at 135.89 106.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
 			(at 135.89 106.68 0)
 			(hide yes)
 			(show_name no)
@@ -7070,7 +7081,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
+		(in_pos_files no)
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "41c198e0-1509-431e-9281-8759c6af6b88")
@@ -7205,6 +7216,17 @@
 			)
 		)
 		(property "JLCPCB Part #" "C22436164"
+			(at 88.9 109.22 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
 			(at 88.9 109.22 0)
 			(hide yes)
 			(show_name no)
@@ -8079,7 +8101,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
+		(in_pos_files no)
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a9ef8b84-4db5-4038-92c8-7a2b37dc6039")
@@ -8467,7 +8489,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
+		(in_pos_files no)
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "fd96425c-c286-4ebe-823d-95216a261215")
@@ -8601,6 +8623,17 @@
 			)
 		)
 		(property "JLCPCB Part #" "C22436164"
+			(at 88.9 54.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
 			(at 88.9 54.61 0)
 			(hide yes)
 			(show_name no)
