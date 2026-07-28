@@ -4,6 +4,12 @@
 	(generator_version "10.0")
 	(uuid "a6577937-48fa-46c4-9e7e-9e40def1366b")
 	(paper "A4")
+	(title_block
+		(title "HACTAR - Finn Berg & Brett Regnier")
+		(date "2026-07-27")
+		(rev "EV19")
+		(company "CISCO SYSTEMS INC")
+	)
 	(lib_symbols
 		(symbol "Connector_Generic_MountingPin:Conn_01x08_MountingPin"
 			(pin_names
@@ -12374,6 +12380,17 @@
 			)
 		)
 		(property "JLCPCB Part #" "C265121"
+			(at 251.46 118.11 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "180"
 			(at 251.46 118.11 0)
 			(hide yes)
 			(show_name no)

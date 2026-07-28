@@ -5,8 +5,8 @@
 	(uuid "7c9da2df-4537-4edb-a868-b20e89c4d18f")
 	(paper "A4")
 	(title_block
-		(title "EEPROM")
-		(date "2026-06-18")
+		(title "HACTAR - Finn Berg & Brett Regnier")
+		(date "2026-07-27")
 		(rev "EV19")
 		(company "CISCO SYSTEMS INC")
 	)
