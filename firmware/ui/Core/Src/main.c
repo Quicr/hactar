@@ -734,10 +734,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : VOLUME_UP_Pin MIC_IO_Pin VOLUME_DOWN_Pin */
-  GPIO_InitStruct.Pin = VOLUME_UP_Pin|MIC_IO_Pin|VOLUME_DOWN_Pin;
+  /*Configure GPIO pins : VOLUME_UP_Pin VOLUME_DOWN_Pin */
+  GPIO_InitStruct.Pin = VOLUME_UP_Pin|VOLUME_DOWN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : UI_LED_B_Pin UI_LED_R_Pin UI_DEBUG_1_Pin UI_DEBUG_2_Pin */
@@ -746,6 +746,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : MIC_IO_Pin */
+  GPIO_InitStruct.Pin = MIC_IO_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(MIC_IO_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : KB_ROW5_Pin KB_ROW6_Pin KB_ROW7_Pin KB_ROW1_Pin
                            KB_ROW2_Pin */
