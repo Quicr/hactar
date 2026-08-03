@@ -3,8 +3,10 @@
 
 #include "moq_track_writer.hh"
 #include "chunk.hh"
+#include "logger.hh"
 #include "macros.hh"
 #include "net.hh"
+#include "quicr/common.h"
 #include "task_helpers.hh"
 #include "utils.hh"
 #include <cstdint>
@@ -119,7 +121,7 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
     auto time_bytes = quicr::AsBytes(timestamp);
 
     std::lock_guard<std::mutex> _(obj_mux);
-    const auto* user_id_bytes = reinterpret_cast<const uint8_t*>(&config.user_id.stored);
+    auto user_id_bytes = quicr::AsBytes(config.user_id.stored);
 
     auto& obj = moq_objs.emplace_back();
     obj.headers.group_id = runtime.device_id;
@@ -129,8 +131,8 @@ void TrackWriter::PushObject(const uint8_t* bytes, const uint32_t len, const uin
     obj.headers.immutable_extensions.value()[2].emplace_back().assign(time_bytes.begin(),
                                                                       time_bytes.end());
 
-    obj.headers.immutable_extensions.value()[8].emplace_back().assign(
-        user_id_bytes, user_id_bytes + sizeof(config.user_id));
+    obj.headers.immutable_extensions.value()[8].emplace_back().assign(user_id_bytes.begin(),
+                                                                      user_id_bytes.end());
 
     obj.data.assign(bytes, bytes + len);
 }
@@ -174,20 +176,31 @@ void TrackWriter::PublishTask(void* params)
         // TODO changing pub
         while (can_publish() && writer->is_running)
         {
-            // TODO use notifies and then drain the entire moq objs
-            vTaskDelay(2 / portTICK_PERIOD_MS);
-
-            if (writer->moq_objs.size() == 0)
+            try
             {
-                continue;
+                // TODO use notifies and then drain the entire moq objs
+                vTaskDelay(2 / portTICK_PERIOD_MS);
+
+                if (writer->moq_objs.size() == 0)
+                {
+                    continue;
+                }
+
+                std::lock_guard<std::mutex> _(writer->obj_mux);
+                const link_data_obj& obj = writer->moq_objs.front();
+                if (auto pub_status = writer->PublishObject(obj.headers, obj.data);
+                    pub_status == moq::TrackWriter::PublishObjectStatus::kOk)
+                {
+                    writer->moq_objs.pop_front();
+                }
             }
-
-            std::lock_guard<std::mutex> _(writer->obj_mux);
-            const link_data_obj& obj = writer->moq_objs.front();
-            if (auto pub_status = writer->PublishObject(obj.headers, obj.data);
-                pub_status == moq::TrackWriter::PublishObjectStatus::kOk)
+            catch (const std::exception& e)
             {
-                writer->moq_objs.pop_front();
+                NET_LOG_ERROR("Caught exception: %s", e.what());
+            }
+            catch (...)
+            {
+                NET_LOG_ERROR("Caught unknown exception");
             }
         }
     }

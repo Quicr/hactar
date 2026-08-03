@@ -1,6 +1,7 @@
 #include "moq_context.hh"
 #include "logger.hh"
 #include "peripherals.hh"
+#include "quicr/detail/transport.h"
 #include "utils.hh"
 
 MoqContext::MoqContext(Serial& ui_layer, const Runtime& runtime, const Diagnostics& diagnostics) :
@@ -72,6 +73,16 @@ bool MoqContext::Connect()
     }
 
     return session->Connect() == quicr::Transport::Status::kConnecting;
+}
+
+bool MoqContext::Connected()
+{
+    if (!session)
+    {
+        NET_LOG_WARN("MoQ session not ready");
+        return false;
+    }
+    return session->GetStatus() == quicr::Transport::Status::kReady;
 }
 
 void MoqContext::UpdateAITracks(ConfigState& config)
@@ -151,6 +162,13 @@ void MoqContext::PushAudioFrame(uint8_t channel_id,
                                 uint32_t length,
                                 uint64_t timestamp)
 {
+    if (!Connected())
+    {
+        NET_LOG_ERROR("Couldn't publish audio frame for channel %d, moq not connected",
+                      (int)channel_id);
+        return;
+    }
+
     if (channel_id >= writers.size())
     {
         NET_LOG_ERROR("Channel id received for a writer that doesn't exist!");
