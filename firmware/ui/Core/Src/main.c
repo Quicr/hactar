@@ -750,7 +750,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : MIC_IO_Pin */
   GPIO_InitStruct.Pin = MIC_IO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(MIC_IO_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : KB_ROW5_Pin KB_ROW6_Pin KB_ROW7_Pin KB_ROW1_Pin

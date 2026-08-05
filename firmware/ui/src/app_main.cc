@@ -141,9 +141,9 @@ enum class Ptt_Btn_State
 Ptt_Btn_State ptt_state;
 Ptt_Btn_State ptt_ai_state;
 
-Button ptt(PTT_BTN_GPIO_Port, PTT_BTN_Pin, Button::Polarity::High, 0, 0, 10000, 10000);
+Button ptt(PTT_BTN_GPIO_Port, PTT_BTN_Pin, Button::Polarity::Low, 0, 0, 10000, 10000);
 Button mic_ptt(MIC_IO_GPIO_Port, MIC_IO_Pin, Button::Polarity::Low, 0, 0, 10000, 10000);
-Button ptt_ai(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin, Button::Polarity::High, 0, 0, 10000, 10000);
+Button ptt_ai(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin, Button::Polarity::Low, 0, 0, 10000, 10000);
 Button volume_up(VOLUME_UP_GPIO_Port, VOLUME_UP_Pin, Button::Polarity::High, 20, 100, 200, 200);
 Button
     volume_down(VOLUME_DOWN_GPIO_Port, VOLUME_DOWN_Pin, Button::Polarity::High, 20, 100, 200, 200);
@@ -321,14 +321,14 @@ void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
 {
 
     // Send talk start and sot packets
-    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET
+    if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET
         && ptt_ai_state != Ptt_Btn_State::Pressed)
     {
         HAL_TIM_Base_Stop(&htim5);
         ptt_ai_state = Ptt_Btn_State::Pressed;
         LedBOn();
     }
-    else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET
+    else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET
              && ptt_ai_state == Ptt_Btn_State::Pressed)
     {
         ptt_ai_state = Ptt_Btn_State::Releasing;
