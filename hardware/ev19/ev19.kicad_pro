@@ -64,8 +64,8 @@
           "min_clearance": 0.127,
           "min_island_area": 10.0,
           "min_thickness": 0.127,
-          "pad_connection": 2,
-          "remove_islands": 1,
+          "pad_connection": 1,
+          "remove_islands": 0,
           "thermal_relief_gap": 0.5,
           "thermal_relief_spoke_width": 0.5
         }
@@ -590,7 +590,7 @@
       "plot": "~/cisco/code/hactar/hardware/ev16/ev16_pcb.pdf",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "ev18.stl",
+      "step": "ev19.step",
       "svg": "~/cisco/ev12.svg",
       "vrml": "ev14.wrl"
     },
@@ -786,7 +786,7 @@
         "uuid": "bd865368-262b-4f76-b7a6-1673c2cb0f8c"
       }
     ],
-    "used_designators": "#FLG16-17,H5,TP10,TP33-50,R64,R66-74,R97-106,#PWR60-61,#PWR81-83,#PWR86-87,#PWR126-130,J6-7,J11,J13-16",
+    "used_designators": "SW9-10,#FLG16-17,H5,TP10,TP33-50,R64,R66-74,R97-106,#PWR60-61,#PWR81-83,#PWR86-87,#PWR126-130,J6-7,J11,J13-16",
     "variants": []
   },
   "sheets": [
