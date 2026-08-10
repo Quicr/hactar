@@ -1,0 +1,15 @@
+target = ["esp32s3"]
+idf_versions = ["v5.5.4"]
+mirror = "https://dl.espressif.com/github_assets"
+idf_mirror = "https://github.com"
+pypi_mirror = "https://pypi.org/simple"
+recurse_submodules = true
+install_all_prerequisites = false
+skip_prerequisites_check = false
+cleanup = false
+
+[idf_features_per_version]
+"v5.5.4" = ["core", "ci", "ide"]
+
+[idf_tools_per_version]
+"v5.5.4" = ["xtensa-esp-elf-gdb", "xtensa-esp-elf", "esp-clang", "esp-clang-libs", "riscv32-esp-elf", "esp32ulp-elf", "cmake", "openocd-esp32", "ninja", "esp-rom-elfs"]
