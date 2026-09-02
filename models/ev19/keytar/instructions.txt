@@ -1,10 +1,10 @@
 Print collection:
-1 EV19-case-top.step
-1 EV19-case-bottom.step
-1 EV19-case-keyboard-shim.step
-1 EV19-case-shelf.step
-1 EV19-case-power-switch.step
-4 EV19-case-side-buttons.step
+1 ev19-keytar-case-top.step
+1 ev19-keytar-case-bottom.step
+1 ev19-keytar-case-keyboard-shim.step
+1 ev19-keytar-case-shelf.step
+1 ev19-keytar-case-power-switch.step
+4 ev19-keytar-case-side-buttons.step
 
 How to print: 
 - Print everything flat
