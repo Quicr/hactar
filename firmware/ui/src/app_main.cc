@@ -152,6 +152,13 @@ int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
 
+    mgmt_serial.StartReceive();
+
+    // Enable TLV logging via MGMT serial
+    Logger::SetLogSender([](uint16_t type, const uint8_t* data, size_t len) {
+        mgmt_serial.Reply(type, std::span<const uint8_t>(data, len));
+    });
+
     uint32_t ticks_ms = 0;
     ConfigStorage config_storage(hi2c1);
     Protector protector(config_storage);
@@ -159,21 +166,15 @@ int app_main()
 
     audio_chip.Init();
     audio_chip.StartI2S();
-    audio_chip.VolumeSet(100);
-    audio_chip.MicPreampSet(60);
+    // audio_chip.VolumeSet(100);
+    // audio_chip.MicPreampSet(60);
 
     // Test in case the audio chip settings change and something looks suspicious
     // CountNumAudioInterrupts(audio_chip, sleeping);
 
     // InitScreen(screen);
-    Leds(HIGH, HIGH, HIGH);
+    Leds(LOW, LOW, LOW);
     net_serial.StartReceive();
-    mgmt_serial.StartReceive();
-
-    // Enable TLV logging via MGMT serial
-    Logger::SetLogSender([](uint16_t type, const uint8_t* data, size_t len) {
-        mgmt_serial.Reply(type, std::span<const uint8_t>(data, len));
-    });
 
     // TODO remove once we have a proper loading screen/view implementation
     const uint32_t loading_done_timeout = HAL_GetTick();
@@ -183,6 +184,8 @@ int app_main()
 
     uint32_t volume_button_press_ms = 0;
     constexpr uint32_t Volume_Button_Debounce_ms = 200;
+
+    uint32_t sleep_timeout = 0;
 
     while (1)
     {
@@ -194,13 +197,13 @@ int app_main()
             done_booting = true;
         }
 
-        while (sleeping)
-        {
-            // LowPowerMode();
-            __NOP();
-        }
-
+        // while (sleeping || HAL_GetTick() - sleep_timeout >= 20)
+        // {
+        //     // LowPowerMode();
+        //     __NOP();
+        // }
         ticks_ms = HAL_GetTick();
+        sleep_timeout = ticks_ms;
 
         if (error)
         {
@@ -600,7 +603,7 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 #endif /* USE_FULL_ASSERT */
 
-inline void Error(const char* who, const char* why)
+void Error(const char* who, const char* why)
 {
     // Disable interrupts
     UI_LOG_ERROR("Error has occurred; who: %s; why: %s", who, why);

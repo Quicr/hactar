@@ -1,523 +1,164 @@
 #include "audio_chip.hh"
-#include "app_main.hh"
-#include "audio_codec.hh"
 #include "logger.hh"
-#include "main.h"
+#include <algorithm>
+#include <cstring>
 
-extern UART_HandleTypeDef huart1;
+namespace
+{
+constexpr uint16_t Es8311_I2c_Address = 0x18 << 1;
+
+constexpr uint8_t Reset = 0x00;
+constexpr uint8_t Clock_Manager_1 = 0x01;
+constexpr uint8_t Clock_Manager_2 = 0x02;
+constexpr uint8_t Clock_Manager_3 = 0x03;
+constexpr uint8_t Clock_Manager_4 = 0x04;
+constexpr uint8_t Clock_Manager_5 = 0x05;
+constexpr uint8_t Clock_Manager_6 = 0x06;
+constexpr uint8_t Clock_Manager_7 = 0x07;
+constexpr uint8_t Clock_Manager_8 = 0x08;
+constexpr uint8_t System_Power = 0x0c;
+constexpr uint8_t System_Power_2 = 0x0d;
+constexpr uint8_t System_Power_3 = 0x0e;
+constexpr uint8_t Serial_Data_Port_1 = 0x09;
+constexpr uint8_t Serial_Data_Port_2 = 0x0a;
+constexpr uint8_t Adc_Power = 0x16;
+constexpr uint8_t Adc_Gain = 0x17;
+constexpr uint8_t Dac_Power = 0x32;
+constexpr uint8_t Dac_Volume = 0x32;
+constexpr uint8_t Dac_Output = 0x37;
+constexpr uint8_t Dac_Output_Volume = 0x38;
+constexpr uint8_t Dac_Mixer = 0x39;
+constexpr uint8_t Dac_Output_Power = 0x44;
+
+constexpr uint8_t Min_Volume = 0x00;
+constexpr uint8_t Max_Volume = 0xc0;
+constexpr uint8_t Min_Mic_Preamp = 0x00;
+constexpr uint8_t Max_Mic_Preamp = 0x1f;
+} // namespace
 
 AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     i2s(&hi2s),
-    i2c(&hi2c),
-    tx_buffer{0},
-    tx_ptr{tx_buffer},
-    rx_buffer{0},
-    rx_ptr{rx_buffer},
-    buff_mod(0),
-    flags(0),
-    volume(Default_Volume),
-    mic_preamp(Default_Mic_Preamp)
+    i2c(&hi2c)
 {
 }
 
-AudioChip::~AudioChip()
+bool AudioChip::Init()
 {
-    i2c = nullptr;
-    i2s = nullptr;
-}
+    HoldInReset();
 
-void AudioChip::Init()
-{
-    // Reset the wm8960
-    Reset();
+    // The ES8311 receives a fixed 12 MHz MCLK. The codec PLL converts it for an 8 kHz sample rate.
+    const uint8_t setup[][2] = {
+        {Reset, 0x80},
+        {Clock_Manager_1, 0x1C},
+        {Clock_Manager_2, 0x00},
+        {Clock_Manager_3, 0x17},
+        {Clock_Manager_4, 0x17},
+        {Clock_Manager_5, 0x00},
+        {Clock_Manager_6, 0x00},
+        {Clock_Manager_7, 0x00},
+        {Clock_Manager_8, 0xff},
+        {System_Power, 0x00},
+        {System_Power_2, 0x00},
+        {System_Power_3, 0x00},
+        // I2S slave, Philips framing, 16-bit data.
+        {Serial_Data_Port_1, 0x0c},
+        {Serial_Data_Port_2, 0x00},
+        {Adc_Power, 0x02},
+        {Adc_Gain, mic_preamp},
+        {Dac_Power, 0x00},
+        {Dac_Output, 0x08},
+        {Dac_Output_Volume, volume},
+        {Dac_Mixer, 0x00},
+        {Dac_Output_Power, 0x00},
+    };
 
-    // Set the power
-    SetRegister(0x19, 0b0'1111'1110);
-
-    // Enable outputs
-    SetRegister(0x1A, 0b1'1110'0001);
-
-    // Enable lr mixer ctrl
-    // SetRegister(0x2F, 0b0'0000'0000);
-    SetRegister(0x2F, 0b0'0010'1100);
-
-    // Disable soft mute and ADC high pass filter
-    SetRegister(0x05, 0b0'0000'0000);
-
-    SetClocks();
-    SetStereo();
-
-    // Set the left and right headphone volumes
-    MicPreampSet(mic_preamp);
-    VolumeSet(volume);
-
-    // Enable the outputs
-    SetRegister(0x31, 0b0'0111'0111);
-
-    // Set DAC left and right volumes
-    SetRegister(0x0A, 0b1'1111'1111);
-    SetRegister(0x0B, 0b1'1111'1111);
-
-    // Set left and right mixer
-    SetRegister(0x22, 0b1'0000'0000);
-    SetRegister(0x25, 0b1'0000'0000);
-
-    SetBits(0x2B, 0b0'0111'0000, 0b0'0111'000);
-
-    // Enable DAC softmute
-    SetBit(0x06, 3, 1);
-
-    // Noise gate threshold
-    // SetRegister(0x14, 0b0'1111'1001);
-
-    // Slow close enable
-    // SetRegister(0x17, 0b1'1101'0000);
-
-    // // Headphone switch enabled
-    // SetRegister(0x18, 0b0'0100'0000);
-
-    // // Vmid soft start for anti-pop
-    // SetRegister(0x1C, 0b0'0000'0100);
-
-    // SetRegister(0x1D, 0b0'0100'0000);
-
-    // Set the Master mode (1), I2S to 16 bit words
-    // Set audio data format to i2s mode
-    SetRegister(0x07, 0b0'0100'0010);
-
-    UnmuteMic();
-}
-
-void AudioChip::Reset()
-{
-    // Reset the wm8960
-    SetRegister(0x0F, 0b1'0000'0000);
-    HAL_Delay(100);
-}
-
-// NOTE- These are hard coded values in the constants.hh file
-// for this function
-void AudioChip::SetClocks()
-{
-    switch (constants::Sample_Rate)
+    UI_LOG_INFO("ES8311 starting writing registers");
+    for (const auto& entry : setup)
     {
-    case constants::SampleRates::_8khz:
-    {
-        // Enable PLL integer mode.
-        /** MCLK = 6MHz, ReqCLK = 12.288MHz
-         *   5 < PLLN < 13
-         *   int R = f2 / MCLK
-         *   PLLN = int R.
-         *   f2 = 4 * PREDIV * ReqCLK
-         *   f2 = 4 * 1 * 12.288MHz = 49.152MHz
-         *   R = 49.152MHz / MCLK = 8.192MHz
-         *   int R = 0x8
-         *   K = int(2^24 * (R - PLLN))
-         *     = int(2^24 * (8.192 - 8))
-         *     = 3221225
-         *     = 0x3126E9 -> but the table says 0x3126E8
-         *                                       = 0b0011'0001'0010'0110'1110'1001
-         **/
-        SetRegister(0x34, 0b0'0000'1000);
+        if (!WriteRegister(entry[0], entry[1]))
+        {
+            UI_LOG_ERROR("ES8311 register 0x%02x write failed", entry[0]);
+            return false;
+        }
 
-        SetRegister(0x35, 0b0'0011'0001);
-        SetRegister(0x36, 0b0'0010'0110);
-        SetRegister(0x37, 0b0'1110'1001);
-
-        // Set ADCDIV to get 8kHz from SYSCLK
-        // Set DACDIV to get 8kHz from SYSCLK
-        // Post scale the PLL to be divided by 2
-        // Set the clock (Select the PLL) (0x01)
-        SetRegister(0x04, 0b1'1011'0001);
-
-        // Set the clock division
-        // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
-        // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
-        // Expected BCLK = constants::sample_rate * channels * frame bits per sample
-        // Note- we need to do 32 bit frames because there is not an option to do a
-        // BCLK of 256KHz
-        // 8000Hz * 2 * 32 = 512KHz
-        SetRegister(0x08, 0b1'1100'1100);
-
-        // Change the ALC sample rate -> 8kHz
-        SetRegister(0x1B, 0b0'0000'0101);
-
-        // Change the I2S setting accordingly
-        i2s->Init.AudioFreq = I2S_AUDIOFREQ_8K;
-        HAL_I2S_Init(i2s);
-
-        break;
-    }
-    case constants::SampleRates::_16khz:
-    {
-        // Enable PLL integer mode.
-        /** MCLK = 6MHz, ReqCLK = 12.288MHz
-         *   5 < PLLN < 13
-         *   int R = f2 / MCLK
-         *   PLLN = int R.
-         *   f2 = 4 * PREDIV * ReqCLK
-         *   f2 = 4 * 1 * 12.288MHz = 49.152MHz
-         *   R = 49.152MHz / MCLK = 8.192MHz
-         *   int R = 0x8
-         *   K = int(2^24 * (R - PLLN))
-         *     = int(2^24 * (8.192 - 8))
-         *     = 3221225
-         *     = 0x3126E9 -> but the table says 0x3126E8
-         *                                       = 0b0011'0001'0010'0110'1110'1001
-         **/
-        // Enable PLL integer mode.
-        SetRegister(0x34, 0b0'0000'1000);
-
-        SetRegister(0x35, 0b0'0011'0001);
-        SetRegister(0x36, 0b0'0010'0110);
-        SetRegister(0x37, 0b0'1110'1001);
-
-        // Set ADCDIV to get 16kHz from SYSCLK
-        // Set DACDIV to get 16kHz from SYSCLK
-        // Post scale the PLL to be divided by 2
-        // Set the clock (Select the PLL) (0x01)
-        // Set to 16Khz
-        SetRegister(0x04, 0b0'1101'1001);
-
-        // Set the clock division
-        // D_Clock = sysclk / 16 = 12Mhz / 16 = 0.768Mhz
-        // BCLKDIV = SYSCLK / 6 = 2.048Mhz // this is for 32Khz audio
-        // Expected BCLK = constants::sample_rate * channels * frame bits per sample, so 16khz * 2 *
-        // 16 = 512Khz 16000Hz * 2 * 32 = 1.024MHz
-        SetRegister(0x08, 0b1'1100'1001);
-
-        // Change the ALC sample rate -> 8kHz
-        SetRegister(0x1B, 0b0'0000'0011);
-
-        // Change the I2S setting accordingly
-        i2s->Init.AudioFreq = I2S_AUDIOFREQ_16K;
-        HAL_I2S_Init(i2s);
-        break;
-    }
-    default:
-    {
-        Error("Audio chip set frequencies", "Frequency set that doesn't exist");
-        break;
-    }
-    }
-}
-
-// NOTE- These are hard coded values in the constants.hh file
-// for this function
-void AudioChip::SetStereo()
-{
-    if (constants::Stereo)
-    {
-        // Disable mono mixer
-        SetBit(0x17, 4, 0);
-        SetBit(0x2A, 6, 1);
-    }
-    else
-    {
-        // Enable mono mixer
-        SetBit(0x17, 4, 1);
-        SetBit(0x2A, 6, 0);
-    }
-}
-
-void AudioChip::VolumeSet(const int16_t vol)
-{
-    volume = vol;
-    if (volume >= Max_Volume)
-    {
-        volume = Max_Volume;
-    }
-    else if (volume < Min_Volume)
-    {
-        volume = Min_Volume;
+        UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", entry[0], entry[1]);
+        HAL_Delay(20);
     }
 
-    // Clear the volume section of the register
-    // Set the vol bit to 0 so the volume is set into the intermediate
-    // register
-    SetBits(0x02, 0b1'0111'1111, volume);
-
-    // Then flip the first bit (which is the update volume bit)
-    // for both headphones
-    SetBits(0x03, 0b1'0111'1111, 0x100 + volume);
-}
-
-void AudioChip::VolumeAdjust(const int16_t amt)
-{
-    VolumeSet(volume + amt);
-}
-
-void AudioChip::VolumeReset()
-{
-    VolumeSet(Default_Volume);
-}
-
-uint16_t AudioChip::Volume()
-{
-    return volume;
-}
-
-void AudioChip::MicPreampSet(const int16_t vol)
-{
-    if (vol >= Max_Mic_Preamp)
-    {
-        mic_preamp = Max_Mic_Preamp;
-    }
-    else if (vol <= Min_Mic_Preamp)
-    {
-        mic_preamp = Min_Mic_Preamp;
-    }
-    else
-    {
-        mic_preamp = vol;
-    }
-
-    // Then flip the first bit (which is the update mic_preamp bit)
-    // for both headphones
-    SetBits(0x00, 0b1'0011'1111, 0x100 + mic_preamp);
-}
-
-void AudioChip::MicPreampAdjust(const int16_t amt)
-{
-    MicPreampSet(mic_preamp + amt);
-}
-
-void AudioChip::MicPreampReset()
-{
-    MicPreampSet(Default_Mic_Preamp);
-}
-
-uint16_t AudioChip::MicPreamp()
-{
-    return mic_preamp;
-}
-
-HAL_StatusTypeDef AudioChip::WriteRegister(uint8_t address)
-{
-    // PrintRegisterData(address);
-
-    HAL_StatusTypeDef result =
-        HAL_I2C_Master_Transmit(i2c, Write_Condition, registers[address].bytes, 2, HAL_MAX_DELAY);
-
-    return result;
-}
-
-bool AudioChip::SetRegister(uint8_t address, uint16_t data)
-{
-    if (address > Max_Address)
-    {
-        return false;
-    }
-
-    // Reset the top bit
-    registers[address].bytes[0] &= ~Top_Bit_Mask;
-
-    // Set the register data
-    registers[address].bytes[0] |= uint8_t((data >> 8) & Top_Bit_Mask);
-    registers[address].bytes[1] = uint8_t(data & Bot_Bit_Mask);
-
-    // Write the register to the chip
-    return (WriteRegister(address) == HAL_OK);
-}
-
-bool AudioChip::OrRegister(uint8_t address, uint16_t data)
-{
-    if (address > Max_Address)
-    {
-        return false;
-    }
-
-    registers[address].bytes[0] |= uint8_t((data >> 8) & Top_Bit_Mask);
-    registers[address].bytes[1] |= uint8_t(data & Bot_Bit_Mask);
-
+    HAL_Delay(50);
     return true;
 }
 
-bool AudioChip::XorRegister(uint8_t address, uint16_t data)
+void AudioChip::HoldInReset()
 {
-    if (address > Max_Address)
+    if (!WriteRegister(Reset, 0xBF))
     {
-        return false;
+        UI_LOG_ERROR("ES8311 failed to reest");
     }
 
-    // Update the register data
-    registers[address].bytes[0] ^= uint8_t((data >> 8) & Top_Bit_Mask);
-    registers[address].bytes[1] ^= uint8_t(data & Bot_Bit_Mask);
-
-    return (WriteRegister(address) == HAL_OK);
-}
-
-bool AudioChip::SetBit(uint8_t address, uint8_t bit, uint8_t set)
-{
-    if (address > Max_Address)
-    {
-        return false;
-    }
-
-    const uint8_t data = set > 0 ? 1 : 0;
-
-    if (bit > 7)
-    {
-        // Upper bit
-        // First make sure only the first bit is actually set
-        uint8_t set_mask = (bit - 7) & data;
-
-        // Upper register, so the 8th bit is the lower of the upper register
-        uint8_t reset_mask = 0xFE;
-
-        registers[address].bytes[0] &= reset_mask;
-        registers[address].bytes[0] |= set_mask;
-    }
-    else
-    {
-        // Lower bits
-        // Reset mask
-        uint8_t set_mask = (data << bit);
-        uint8_t reset_mask = ~set_mask;
-
-        registers[address].bytes[1] &= reset_mask;
-        registers[address].bytes[1] |= set_mask;
-    }
-
-    return WriteRegister(address) == HAL_OK;
-}
-
-bool AudioChip::SetBits(const uint8_t address, const uint16_t bits, const uint16_t set)
-{
-    if (address > Max_Address)
-    {
-        return false;
-    }
-
-    // ex bits = 0x71F1, set = 0x00F2;
-    // Bits < 0x1FF
-    // masked bits = 0x01F1
-    const uint16_t masked_bits = bits & 0x01FF;
-
-    // reset bits = 0xFE0E
-    const uint16_t reset_bits = ~masked_bits;
-
-    // Only use the bits that we said we would be using in bits.
-    // masked set = 0x00F2 & 0x1FF = 0x00F2 & 0x01F1 = 0x00F0
-    const uint16_t masked_set = masked_bits & (set & 0x1FF);
-
-    registers[address].bytes[0] &= uint8_t(reset_bits >> 8);
-    registers[address].bytes[1] &= uint8_t(reset_bits & 0x00FF);
-
-    registers[address].bytes[0] |= uint8_t(masked_set >> 8);
-    registers[address].bytes[1] |= uint8_t(masked_set & 0x00FF);
-
-    return WriteRegister(address) == HAL_OK;
-}
-
-bool AudioChip::ReadRegister(uint8_t address, uint16_t& value)
-{
-    if (address > Max_Address)
-    {
-        return false;
-    }
-
-    value = (uint16_t)((registers[address].bytes[0] & 0x0001) << 8);
-    value += registers[address].bytes[1];
-    return true;
-}
-
-void AudioChip::TurnOnLeftInput3()
-{
-    EnableLeftMicPGA();
-
-    SetBit(0x20, 7, 1);
-    SetBit(0x20, 8, 1);
-}
-
-void AudioChip::TurnOffLeftInput3()
-{
-    SetBit(0x20, 7, 0);
-}
-
-void AudioChip::TurnOnLeftDifferentialInput()
-{
-    // Turn off single input
-    EnableLeftMicPGA();
-
-    TurnOffLeftInput3();
-
-    SetBit(0x20, 6, 1);
-    SetBit(0x20, 8, 1);
-}
-
-void AudioChip::TurnOffLeftDifferentialInput()
-{
-    SetBit(0x20, 6, 0);
-    SetBit(0x20, 8, 0);
-}
-
-void AudioChip::EnableLeftMicPGA()
-{
-    // Set bits for all left input pgas
-    SetBit(0x19, 5, 1);
-    SetBit(0x2f, 5, 1);
-    SetBit(0x20, 3, 1);
-}
-
-void AudioChip::DisableLeftMicPGA()
-{
-    // Set bits for all left input pgas
-    SetBit(0x19, 5, 0);
-    SetBit(0x2f, 5, 0);
-}
-
-void AudioChip::MuteMic()
-{
-    SetBits(0x00, 0b1'1000'0000, 0b0'1000'0000);
-
-    SetBits(0x2B, 0b0'0000'1110, 0b0'0000'0000);
-
-    SetBit(0x19, 1, 0);
-}
-
-void AudioChip::UnmuteMic()
-{
-    TurnOnLeftDifferentialInput();
-
-    // Disable LINMUTE
-    SetBits(0x00, 0b1'1000'0000, 0b1'0000'0000);
-
-    // Set LIN2BOOST to +0dB
-    SetBits(0x2B, 0b0'0000'1110, 0b0'0000'1010);
-
-    // Enable MIC bias
-    SetBit(0x19, 1, 1);
-}
-
-bool AudioChip::TxBufferReady()
-{
-    return ReadFlag(AudioFlag::Tx_Ready);
-}
-
-bool AudioChip::RxBufferReady()
-{
-    return ReadFlag(AudioFlag::Rx_Ready);
+    HAL_Delay(50);
 }
 
 void AudioChip::StartI2S()
 {
-    // NOTE- Do not remove delay the audio chip needs time to stabilize
-    HAL_Delay(20);
-    auto output =
-        HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Total_Audio_Buffer_Sz);
-
-    if (output == HAL_OK)
+    ClearTxBuffer();
+    if (HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Total_Audio_Buffer_Sz)
+        != HAL_OK)
     {
-        RaiseFlag(AudioChip::Running);
+        UI_LOG_ERROR("Failed to start I2S DMA");
     }
 }
 
 void AudioChip::StopI2S()
 {
     HAL_I2S_DMAStop(i2s);
+}
 
-    LowerFlag(AudioChip::Running);
+void AudioChip::VolumeSet(int16_t value)
+{
+    volume = static_cast<uint8_t>(
+        std::clamp(value, static_cast<int16_t>(Min_Volume), static_cast<int16_t>(Max_Volume)));
+    WriteRegister(Dac_Output_Volume, volume);
+}
+
+void AudioChip::VolumeAdjust(int16_t amount)
+{
+    VolumeSet(static_cast<int16_t>(volume) + amount);
+}
+
+uint8_t AudioChip::Volume() const
+{
+    return volume;
+}
+
+void AudioChip::MicPreampSet(int16_t value)
+{
+    mic_preamp = static_cast<uint8_t>(std::clamp(value, static_cast<int16_t>(Min_Mic_Preamp),
+                                                 static_cast<int16_t>(Max_Mic_Preamp)));
+    WriteRegister(Adc_Gain, mic_preamp);
+}
+
+void AudioChip::MicPreampAdjust(int16_t amount)
+{
+    MicPreampSet(static_cast<int16_t>(mic_preamp) + amount);
+}
+
+uint8_t AudioChip::MicPreamp() const
+{
+    return mic_preamp;
+}
+
+void AudioChip::ISRCallback()
+{
+    const uint16_t offset = second_buffer ? constants::Audio_Buffer_Sz : 0;
+    tx_ptr = tx_buffer + offset;
+    rx_ptr = rx_buffer + offset;
+    second_buffer = !second_buffer;
+}
+
+void AudioChip::ClearTxBuffer()
+{
+    std::memset(tx_buffer, 0, sizeof(tx_buffer));
 }
 
 uint16_t* AudioChip::TxBuffer()
@@ -525,54 +166,14 @@ uint16_t* AudioChip::TxBuffer()
     return tx_ptr;
 }
 
-const uint16_t* AudioChip::RxBuffer()
+const uint16_t* AudioChip::RxBuffer() const
 {
     return rx_ptr;
 }
 
-void AudioChip::ISRCallback()
+bool AudioChip::WriteRegister(uint8_t address, uint8_t value)
 {
-    const uint16_t offset = buff_mod * constants::Audio_Buffer_Sz;
-    tx_ptr = tx_buffer + offset;
-    rx_ptr = rx_buffer + offset;
-    buff_mod = !buff_mod;
-
-    // Clear the transmission buffer
-    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
-    {
-        tx_ptr[i] = 0;
-    }
-
-    RaiseFlag(AudioFlag::Rx_Ready);
-    RaiseFlag(AudioFlag::Tx_Ready);
-}
-
-void AudioChip::ClearTxBuffer()
-{
-    for (uint16_t i = 0; i < constants::Total_Audio_Buffer_Sz; ++i)
-    {
-        tx_buffer[i] = 0;
-    }
-}
-
-inline void AudioChip::RaiseFlag(AudioFlag flag)
-{
-    flags |= 1 << flag;
-}
-
-inline void AudioChip::LowerFlag(AudioFlag flag)
-{
-    flags &= ~(1 << flag);
-}
-
-bool AudioChip::ReadFlag(AudioFlag flag) const
-{
-    return (flags >> flag) & 0x01;
-}
-
-inline bool AudioChip::ReadAndLowerFlag(AudioFlag flag)
-{
-    const bool res = (flags >> flag) & 0x01;
-    LowerFlag(flag);
-    return res;
+    uint8_t message[] = {address, value};
+    return HAL_I2C_Master_Transmit(i2c, Es8311_I2c_Address, message, sizeof(message), 100)
+        == HAL_OK;
 }
