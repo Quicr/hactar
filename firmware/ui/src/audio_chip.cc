@@ -1,3 +1,6 @@
+// TODO sine wave/sawtooth from signal gen
+// turn off all equalizers
+// try to get the gains right.
 #include "audio_chip.hh"
 #include "logger.hh"
 #include <algorithm>
@@ -21,6 +24,9 @@ constexpr uint8_t System_Power_2 = 0x0d;
 constexpr uint8_t System_Power_3 = 0x0e;
 constexpr uint8_t Serial_Data_Port_1 = 0x09;
 constexpr uint8_t Serial_Data_Port_2 = 0x0a;
+constexpr uint8_t System_1 = 0x13;
+constexpr uint8_t System_2 = 0x14;
+constexpr uint8_t ADC_Ramp = 0x15;
 constexpr uint8_t Adc_Power = 0x16;
 constexpr uint8_t Adc_Gain = 0x17;
 constexpr uint8_t Dac_Power = 0x32;
@@ -48,22 +54,22 @@ bool AudioChip::Init()
 
     // The ES8311 receives a fixed 12 MHz MCLK. The codec PLL converts it for an 8 kHz sample rate.
     const uint8_t setup[][2] = {
-        {Reset, 0x80},
-        {Clock_Manager_1, 0x1C},
-        {Clock_Manager_2, 0x00},
+        {Reset, 0xC0},
+        {Clock_Manager_1, 0x3C},
+        {Clock_Manager_2, 0x00}, // 1001'1000
         {Clock_Manager_3, 0x17},
         {Clock_Manager_4, 0x17},
         {Clock_Manager_5, 0x00},
-        {Clock_Manager_6, 0x00},
-        {Clock_Manager_7, 0x00},
-        {Clock_Manager_8, 0xff},
+        {Clock_Manager_6, 0x44},
+        {Clock_Manager_7, 0x01},
+        {Clock_Manager_8, 0x76},
         {System_Power, 0x00},
         {System_Power_2, 0x00},
         {System_Power_3, 0x00},
         // I2S slave, Philips framing, 16-bit data.
-        {Serial_Data_Port_1, 0x0c},
-        {Serial_Data_Port_2, 0x00},
-        {Adc_Power, 0x02},
+        {Serial_Data_Port_1, 0x10}, // 0000'1100
+        {Serial_Data_Port_2, 0x10},
+        {Adc_Power, 0x07},
         {Adc_Gain, mic_preamp},
         {Dac_Power, 0x00},
         {Dac_Output, 0x08},
@@ -91,7 +97,8 @@ bool AudioChip::Init()
 
 void AudioChip::HoldInReset()
 {
-    if (!WriteRegister(Reset, 0xBF))
+    // 0011'1111
+    if (!WriteRegister(Reset, 0x3F))
     {
         UI_LOG_ERROR("ES8311 failed to reest");
     }

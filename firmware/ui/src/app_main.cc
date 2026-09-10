@@ -165,7 +165,7 @@ int app_main()
     // Renderer renderer(screen, keyboard);
 
     audio_chip.Init();
-    audio_chip.StartI2S();
+    // audio_chip.StartI2S();
     // audio_chip.VolumeSet(100);
     // audio_chip.MicPreampSet(60);
 

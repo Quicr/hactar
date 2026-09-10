@@ -35,9 +35,9 @@ private:
     I2S_HandleTypeDef* i2s;
     I2C_HandleTypeDef* i2c;
 
-    uint16_t tx_buffer[constants::Total_Audio_Buffer_Sz] = {};
+    uint16_t tx_buffer[constants::Total_Audio_Buffer_Sz] = {0};
     uint16_t* tx_ptr = tx_buffer;
-    uint16_t rx_buffer[constants::Total_Audio_Buffer_Sz] = {};
+    uint16_t rx_buffer[constants::Total_Audio_Buffer_Sz] = {0};
     uint16_t* rx_ptr = rx_buffer;
     bool second_buffer = false;
 
