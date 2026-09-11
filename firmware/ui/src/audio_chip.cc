@@ -1,4 +1,12 @@
-// TODO sine wave/sawtooth from signal gen
+// In this order
+// Get i2s flowing both ways between devices
+// use all synthetic data like ramp
+//
+// Audio out path - get it play a buzz, watch on scope
+//
+// Audio in path - ADC
+//
+// sine wave/sawtooth from signal gen
 // turn off all equalizers
 // try to get the gains right.
 #include "audio_chip.hh"
@@ -55,14 +63,14 @@ bool AudioChip::Init()
     // The ES8311 receives a fixed 12 MHz MCLK. The codec PLL converts it for an 8 kHz sample rate.
     const uint8_t setup[][2] = {
         {Reset, 0xC0},
-        {Clock_Manager_1, 0x3C},
-        {Clock_Manager_2, 0x00}, // 1001'1000
-        {Clock_Manager_3, 0x17},
-        {Clock_Manager_4, 0x17},
+        {Clock_Manager_1, 0x3F},
+        {Clock_Manager_2, 0x98}, // DIG_MCLK 1001'1000 DIV4+1, MULT8
+        {Clock_Manager_3, 0x19}, // ADC oversampling
+        {Clock_Manager_4, 0x19}, // DAC oversampling
         {Clock_Manager_5, 0x00},
         {Clock_Manager_6, 0x44},
-        {Clock_Manager_7, 0x01},
-        {Clock_Manager_8, 0x76},
+        {Clock_Manager_7, 0x00},
+        {Clock_Manager_8, 0xF9},
         {System_Power, 0x00},
         {System_Power_2, 0x00},
         {System_Power_3, 0x00},
