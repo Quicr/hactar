@@ -131,6 +131,13 @@ Remarks:
 - `SDP_IN_WL` [4:2]: 0 = 24 bit (default); 1 = 20 bit; 2 = 18 bit; 3 = 16 bit; 4 = 32 bit.
 - `SDP_IN_FMT` [1:0]: 0 = I2S (default); 1 = left justified; 2 = reserved; 3 = DSP/PCM.
 
+Remarks: 
+Soft mute exists in this register. 
+We are doing 16 bit on 32 bit frames, could change if needed
+I2S serial audio data format
+
+Set to 0b0|0|0|1'00|00 (0x10)
+
 ## 0x0A SDP Output (default `0x00`)
 
 - `SDP_OUT_MUTE` [6]: 0 = unmute (default); 1 = mute.
@@ -138,15 +145,26 @@ Remarks:
 - `SDP_OUT_WL` [4:2]: 0 = 24 bit (default); 1 = 20 bit; 2 = 18 bit; 3 = 16 bit; 4 = 32 bit.
 - `SDP_OUT_FMT` [1:0]: 0 = I2S (default); 1 = left justified; 2 = reserved; 3 = DSP/PCM.
 
+Remarks:
+Same as above
+
+Set to 0b0|0|0|1'00|00 (0x10)
+
 ## 0x0B System (default `0x00`)
 
 - `PWRUP_A` [7:3]: power-up stage A delay. At 8 kHz, 0-31 corresponds to 120 us-1392 ms.
 - `PWRUP_B[3:1]` [2:0]: upper three bits of power-up stage B delay. At 8 kHz, 0-31 corresponds to 120 us-624 ms.
 
+Remarks:
+Leave at zero
+
 ## 0x0C System (default `0x20`)
 
 - `PWRUP_B[0]` [7]: low bit of power-up stage B delay.
 - `PWRUP_C` [6:0]: power-up stage C delay. At 8 kHz, 0-31 corresponds to 120 us-1401 ms.
+
+Remarks:
+Leave at zero
 
 ## 0x0D System (default `0xFC`)
 
@@ -158,6 +176,9 @@ Remarks:
 - `PDN_VREF` [2]: 0 = disable internal reference; 1 = enable (default).
 - `VMIDSEL` [1:0]: 0 = VMID power down (default); 1 = normal-speed startup; 2 = normal operation; 3 = fast startup.
 
+Remarks:
+0xFE
+
 ## 0x0E System (default `0x6A`)
 
 - `PDN_PGA` [6]: 0 = enable analog PGA; 1 = power down (default).
@@ -165,6 +186,10 @@ Remarks:
 - `RST_MOD` [4]: 0 = normal (default); 1 = reset modulator.
 - `VROI` [3]: 0 = normal impedance; 1 = low impedance (default).
 - `LPVREFBUF` [2]: 0 = normal internal reference mode (default); 1 = low-power mode.
+
+Remarks:
+0b000'1010
+0x0A
 
 ## 0x0F System (default `0x00`)
 
@@ -177,6 +202,9 @@ Remarks:
 - `LPFLASH` [1]: 0 = normal (default); 1 = ADC low-power mode.
 - `LPINT1` [0]: 0 = normal (default); 1 = ADC low-power mode.
 
+Remarks:
+Only need to worry about this when we want to do low power
+
 ## 0x10 System (default `0x13`)
 
 - `SYNCMODE` [7]: 0 = normal (default); 1 = sync mode.
@@ -185,6 +213,8 @@ Remarks:
 - `IBIAS_SW` [3:2]: 0 = bias level 0 (default); 1 = level 1; 2 = level 2; 3 = level 3.
 - `VX2OFF` [1]: 0 = enable internal reference doubler; 1 = off (default).
 - `VX1SEL` [0]: 0 = 1.45 V; 1 = 1.65 V (default).
+
+- Remarks, not sure what sync mode means, but we can leave this for now
 
 ## 0x11 System (default `0x7C`)
 
@@ -195,9 +225,16 @@ Remarks:
 - `PDN_DAC` [1]: 0 = enable DAC; 1 = power down (default).
 - `ENREFR` [0]: 0 = disable DAC output reference (default); 1 = enable it.
 
+Remarks:
+0x01
+
 ## 0x13 System (default `0x40`)
 
 - `HPSW` [4]: 0 = line-output drive (default); 1 = headphone drive.
+
+Remarks:
+We want headphones not line output
+0x50
 
 ## 0x14 System (default `0x10`)
 
@@ -205,10 +242,19 @@ Remarks:
 - `LINSEL` [4]: 0 = no input selection; 1 = select MIC1P-MIC1N.
 - `PGAGAIN` [3:0]: ADC PGA gain: 0 = 0 dB through 10 = 30 dB in 3 dB steps.
 
+Remarks:
+We are using an analog mic 
+0x10
+
 ## 0x15 ADC (default `0x00`)
 
 - `ADC_RAMPRATE` [7:4]: ADC volume-control ramp: 0 = disabled; 1-15 = 0.25 dB per 4-65536 LRCKs.
 - `DMIC_SENSE` [0]: 0 = latch DMIC on positive edge; 1 = negative edge.
+
+Remarks:
+We are not using DMIC 
+Keep the ramp rate at default
+0x00
 
 ## 0x16 ADC (default `0x04`)
 
@@ -217,15 +263,21 @@ Remarks:
 - `ADC_RAMCLR` [3]: clear ADC RAM when LRCK/ADC MCLK is active.
 - `ADC_SCALE` [2:0]: ADC gain scale: 0 = 0 dB; 1 = 6 dB; 2 = 12 dB; 3 = 18 dB; 4 = 24 dB (default); 5 = 30 dB; 6 = 36 dB; 7 = 42 dB.
 
+Remarks: 48khz and 8khz are standard audio clocks so we should keep ADC_SYNC=0
+
 ## 0x17 ADC Volume (default `0x00`)
 
 - `ADC_VOLUME` [7:0]: 0x00 = -95.5 dB; 0x01 = -90.5 dB; then 0.5 dB/step; 0xBE = -0.5 dB; 0xBF = 0 dB; 0xC0 = +0.5 dB; 0xFF = +32 dB. With ALC enabled, this is `MAXGAIN`.
+
+Remarks: Leave as default
 
 ## 0x18 ADC ALC (default `0x00`)
 
 - `ALC_EN` [7]: 0 = disable (default); 1 = enable ADC automatic level control.
 - `ADC_AUTOMUTE_EN` [6]: 0 = disable (default); 1 = enable ADC automute.
 - `ALC_WINSIZE` [3:0]: ALC window: 0 = 0.25 dB/2 LRCK; 1-15 increase through 0.25 dB/65536 LRCK.
+
+Remarks: Leave as default, we don't want the ALC yet
 
 ## 0x19 ADC ALC Level (default `0x00`)
 
@@ -248,7 +300,7 @@ Remarks:
 - `ADC_HPF` [5]: 0 = freeze offset; 1 = dynamic HPF.
 - `ADC_HPFS2` [4:0]: ADC HPF stage-2 coefficient.
 
-## 0x1D ADCEQ B0[29:24] (default `0x00`)
+## 0x1D ADCEQ B0[29:24] (default `0x00`
 
 - `ADCEQ_B0[29:24]` [5:0]: upper six bits of the 30-bit ADCEQ B0 coefficient.
 
