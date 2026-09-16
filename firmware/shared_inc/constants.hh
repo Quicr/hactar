@@ -6,12 +6,13 @@ namespace constants
 enum class SampleRates
 {
     _8khz = 8'000,
-    _16khz = 16'000
+    _16khz = 16'000,
+    _48khz = 48'000
 };
+static constexpr SampleRates Sample_Rate = SampleRates::_48khz;
 
 static constexpr uint16_t Audio_Time_Length_ms = 20;
 static constexpr float Audio_Time_Length_s = Audio_Time_Length_ms / 1000.0;
-static constexpr SampleRates Sample_Rate = SampleRates::_8khz;
 static constexpr uint16_t Stereo = 0;
 static constexpr uint16_t Num_Buffers = 2; // double buff
 // There are always two channels coming from the wm8960, we have to do some processing ourself.

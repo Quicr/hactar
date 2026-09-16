@@ -10,39 +10,42 @@
 // turn off all equalizers
 // try to get the gains right.
 #include "audio_chip.hh"
+#include "constants.hh"
 #include "logger.hh"
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
 
 namespace
 {
 constexpr uint16_t Es8311_I2c_Address = 0x18 << 1;
 
-constexpr uint8_t Reset = 0x00;
-constexpr uint8_t Clock_Manager_1 = 0x01;
-constexpr uint8_t Clock_Manager_2 = 0x02;
-constexpr uint8_t Clock_Manager_3 = 0x03;
-constexpr uint8_t Clock_Manager_4 = 0x04;
-constexpr uint8_t Clock_Manager_5 = 0x05;
-constexpr uint8_t Clock_Manager_6 = 0x06;
-constexpr uint8_t Clock_Manager_7 = 0x07;
-constexpr uint8_t Clock_Manager_8 = 0x08;
-constexpr uint8_t System_Power = 0x0c;
-constexpr uint8_t System_Power_2 = 0x0d;
-constexpr uint8_t System_Power_3 = 0x0e;
-constexpr uint8_t Serial_Data_Port_1 = 0x09;
-constexpr uint8_t Serial_Data_Port_2 = 0x0a;
-constexpr uint8_t System_1 = 0x13;
-constexpr uint8_t System_2 = 0x14;
-constexpr uint8_t ADC_Ramp = 0x15;
-constexpr uint8_t Adc_Power = 0x16;
-constexpr uint8_t Adc_Gain = 0x17;
-constexpr uint8_t Dac_Power = 0x32;
-constexpr uint8_t Dac_Volume = 0x32;
-constexpr uint8_t Dac_Output = 0x37;
-constexpr uint8_t Dac_Output_Volume = 0x38;
-constexpr uint8_t Dac_Mixer = 0x39;
-constexpr uint8_t Dac_Output_Power = 0x44;
+constexpr uint8_t reset_0x00 = 0x00;
+constexpr uint8_t clock_manager_1_0x01 = 0x01;
+constexpr uint8_t clock_manager_2_0x02 = 0x02;
+constexpr uint8_t clock_manager_3_0x03 = 0x03;
+constexpr uint8_t clock_manager_4_0x04 = 0x04;
+constexpr uint8_t clock_manager_5_0x05 = 0x05;
+constexpr uint8_t clock_manager_6_0x06 = 0x06;
+constexpr uint8_t clock_manager_7_0x07 = 0x07;
+constexpr uint8_t clock_manager_8_0x08 = 0x08;
+constexpr uint8_t system_power_0x0c = 0x0c;
+constexpr uint8_t system_power_2_0x0d = 0x0d;
+constexpr uint8_t system_power_3_0x0e = 0x0e;
+constexpr uint8_t serial_data_port_1_0x09 = 0x09;
+constexpr uint8_t serial_data_port_2_0x0a = 0x0a;
+constexpr uint8_t system_dac_en_0x12 = 0x12;
+constexpr uint8_t system_line_input_0x13 = 0x13;
+constexpr uint8_t system_hp_dmic_0x14 = 0x14;
+constexpr uint8_t adc_ramp_0x15 = 0x15;
+constexpr uint8_t adc_power_0x16 = 0x16;
+constexpr uint8_t adc_gain_0x17 = 0x17;
+constexpr uint8_t dac_power_0x32 = 0x32;
+constexpr uint8_t dac_volume_0x32 = 0x32;
+constexpr uint8_t dac_output_0x37 = 0x37;
+constexpr uint8_t dac_output_volume_0x38 = 0x38;
+constexpr uint8_t dac_mixer_0x39 = 0x39;
+constexpr uint8_t gpio_adc_dac_path_0x44 = 0x44;
 
 constexpr uint8_t Min_Volume = 0x00;
 constexpr uint8_t Max_Volume = 0xc0;
@@ -56,34 +59,36 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
 {
 }
 
+// NOTE- there is an internal loopback on register 0x44 ADC-DAC
+
 bool AudioChip::Init()
 {
     HoldInReset();
 
     // The ES8311 receives a fixed 12 MHz MCLK. The codec PLL converts it for an 8 kHz sample rate.
     const uint8_t setup[][2] = {
-        {Reset, 0xC0},
-        {Clock_Manager_1, 0x3F},
-        {Clock_Manager_2, 0x98}, // DIG_MCLK 1001'1000 DIV4+1, MULT8
-        {Clock_Manager_3, 0x19}, // ADC oversampling
-        {Clock_Manager_4, 0x19}, // DAC oversampling
-        {Clock_Manager_5, 0x00},
-        {Clock_Manager_6, 0x44},
-        {Clock_Manager_7, 0x00},
-        {Clock_Manager_8, 0xF9},
-        {System_Power, 0x00},
-        {System_Power_2, 0x00},
-        {System_Power_3, 0x00},
-        // I2S slave, Philips framing, 16-bit data.
-        {Serial_Data_Port_1, 0x10}, // 0000'1100
-        {Serial_Data_Port_2, 0x10},
-        {Adc_Power, 0x07},
-        {Adc_Gain, mic_preamp},
-        {Dac_Power, 0x00},
-        {Dac_Output, 0x08},
-        {Dac_Output_Volume, volume},
-        {Dac_Mixer, 0x00},
-        {Dac_Output_Power, 0x00},
+        {reset_0x00, 0xC0},
+        {clock_manager_1_0x01, 0x3F},
+        {clock_manager_2_0x02, 0x98}, // DIG_MCLK 1001'1000 DIV4+1, MULT8 19.2Mhz
+        {clock_manager_3_0x03, 0x19}, // ADC oversampling
+        {clock_manager_4_0x04, 0x19}, // DAC oversampling
+        {clock_manager_5_0x05, 0x00},
+        {clock_manager_6_0x06, 0x42},
+        {clock_manager_7_0x07, 0x00},    // LRCLK 48Mhz
+        {clock_manager_8_0x08, 0xF9},    // LRCLK 48Mhz
+        {serial_data_port_1_0x09, 0x11}, // 0001'0000
+        {serial_data_port_2_0x0a, 0x11}, // unmute, normal pol, 32 bit frame, i2s format
+        {system_power_0x0c, 0x00},
+        {system_power_2_0x0d, 0xFE},
+        {system_power_3_0x0e, 0x0A},
+        {system_dac_en_0x12, 0x01},
+        {system_line_input_0x13, 0x10}, // enable headphone drive
+        {system_hp_dmic_0x14, 0x50},    // enable headphone drive
+        {adc_power_0x16, 0x04},
+        {adc_gain_0x17, mic_preamp},
+        {dac_power_0x32, 0x00},
+        {dac_output_0x37, 0x08},        // disable eq
+        {gpio_adc_dac_path_0x44, 0x00}, // ADC->DAC loopback disabled, filled both channels
     };
 
     UI_LOG_INFO("ES8311 starting writing registers");
@@ -99,6 +104,15 @@ bool AudioChip::Init()
         HAL_Delay(20);
     }
 
+    tx_buffer[0] = 0b1010'1010'0101'0110;
+    tx_buffer[0] = 0x8001;
+    tx_buffer[0] = 0b1000'0000'0000'0001;
+    for (size_t i = 0; i < constants::Total_Audio_Buffer_Sz; ++i)
+    {
+        // tx_buffer[i] = 0b1010'1010'0101'0110;
+        // tx_buffer[i] = 1;
+    }
+
     HAL_Delay(50);
     return true;
 }
@@ -106,7 +120,7 @@ bool AudioChip::Init()
 void AudioChip::HoldInReset()
 {
     // 0011'1111
-    if (!WriteRegister(Reset, 0x3F))
+    if (!WriteRegister(reset_0x00, 0x3F))
     {
         UI_LOG_ERROR("ES8311 failed to reest");
     }
@@ -116,7 +130,7 @@ void AudioChip::HoldInReset()
 
 void AudioChip::StartI2S()
 {
-    ClearTxBuffer();
+    // ClearTxBuffer();
     if (HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Total_Audio_Buffer_Sz)
         != HAL_OK)
     {
@@ -133,7 +147,7 @@ void AudioChip::VolumeSet(int16_t value)
 {
     volume = static_cast<uint8_t>(
         std::clamp(value, static_cast<int16_t>(Min_Volume), static_cast<int16_t>(Max_Volume)));
-    WriteRegister(Dac_Output_Volume, volume);
+    WriteRegister(dac_output_volume_0x38, volume);
 }
 
 void AudioChip::VolumeAdjust(int16_t amount)
@@ -150,7 +164,7 @@ void AudioChip::MicPreampSet(int16_t value)
 {
     mic_preamp = static_cast<uint8_t>(std::clamp(value, static_cast<int16_t>(Min_Mic_Preamp),
                                                  static_cast<int16_t>(Max_Mic_Preamp)));
-    WriteRegister(Adc_Gain, mic_preamp);
+    WriteRegister(adc_gain_0x17, mic_preamp);
 }
 
 void AudioChip::MicPreampAdjust(int16_t amount)
@@ -165,10 +179,10 @@ uint8_t AudioChip::MicPreamp() const
 
 void AudioChip::ISRCallback()
 {
-    const uint16_t offset = second_buffer ? constants::Audio_Buffer_Sz : 0;
-    tx_ptr = tx_buffer + offset;
-    rx_ptr = rx_buffer + offset;
-    second_buffer = !second_buffer;
+    // const uint16_t offset = second_buffer ? constants::Audio_Buffer_Sz : 0;
+    // tx_ptr = tx_buffer + offset;
+    // rx_ptr = rx_buffer + offset;
+    // second_buffer = !second_buffer;
 }
 
 void AudioChip::ClearTxBuffer()
