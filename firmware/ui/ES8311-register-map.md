@@ -47,12 +47,14 @@ Remarks:
 Digital clock aim is to be some defaulted value provided by the table on page 16 in the User Guide 
 At MCLK 12Mhz 0x00 DIV1, MULT1 - 0b0000'0000, which doesn't make sense, because that gives an internal clock of 12Mhz, which
 according to the User Guide, on page 14, that the clock divider needs to output <10Mhz. Their table is whack.
-roughly, I think given we are running at 3.0V, then we should be no higher than 8.9Mhz, by some crazy math, on the divider.
+Roughly, I think given we are running at 3.0V, then we should be no higher than 8.9Mhz, by some crazy math, on the divider.
 
 Therefore, to get the ratio integral ratio of 16 mentioned on pg 15 of the user guide, we can divide by 5, and multiply by 8
 to get dig_mclk = 19.2Mhz.
 
 This should be acceptable for 8Khz too.
+
+For 19.2Mhz set register to 0x98
 
 ## 0x03 Clock Manager (default `0x10`)
 
@@ -78,7 +80,7 @@ Defaulting to table entry 12mhz 48khz 0x19 - 0b0001'1001
 Remarks:
 The ratio for 48khz with a dig_mclk = 19.2mhz is 400 % 16 = 0
 The ratio for 8Khz with a dig_mclk = 19.2mhz = 2400 % 16 = 0
-This can stay untouched
+This can stay untouched at 0x00
 
 ## 0x06 Clock Manager (default `0x03`)
 
@@ -119,7 +121,7 @@ Remarks:
 - `DIV_LRCK[7:0]` [7:0]: lower eight bits of the master LRCK divider; `LRCK = MCLK / (LRCK_DIV + 1)`. A divider of zero holds LRCK high.
 
 Remarks:
-48Khz DIV_LCK=239
+48Khz DIV_LCK=249
 32Khz DIV_LCK=118
 8Khz DIV_LCK=219
 
