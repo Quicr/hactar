@@ -19,6 +19,7 @@
 #include "tools.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
+#include "wave_signal_generator.hh"
 #include <cmox_crypto.h>
 #include <cmox_init.h>
 #include <cmox_low_level.h>
@@ -197,13 +198,34 @@ int app_main()
             done_booting = true;
         }
 
-        // while (sleeping || HAL_GetTick() - sleep_timeout >= 20)
-        // {
-        //     // LowPowerMode();
-        //     __NOP();
-        // }
+        while (sleeping)
+        {
+            // LowPowerMode();
+            __NOP();
+        }
+
         ticks_ms = HAL_GetTick();
         sleep_timeout = ticks_ms;
+
+        static WaveSignalGenerator sine = {
+            .frequency_hz = 440,
+            .sample_rate_hz = 48'000,
+            .phase = 0,
+            .amplitude = 0x7fff,
+            .duty_cycle = .5f,
+        };
+
+        uint16_t* hp_out_ptr = audio_chip.TxBuffer();
+        for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; i += 2)
+        {
+            const uint16_t sample = SampleSineWave(sine);
+            // Left
+            hp_out_ptr[i] = sample;
+
+            // Right
+            hp_out_ptr[i + 1] = sample;
+        }
+        UI_LOG_INFO("Here");
 
         if (error)
         {

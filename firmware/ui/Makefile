@@ -50,7 +50,7 @@ WHO 				= local
 OCD_DIR    = /usr/share/openocd/scripts
 OCDFLAGS   = -f interface/stlink.cfg -f target/stm32f4x.cfg
 
-.PHONY: all compile upload upload_debugger upload_cube_uart upload_cube_swd docker monitor format
+.PHONY: all compile test wave_csv upload upload_debugger upload_cube_uart upload_cube_swd docker monitor format
 
 # default action: build all
 all: compile
@@ -58,6 +58,12 @@ all: compile
 compile: check_who_compiled CMakeLists.txt
 	cmake -B $(BUILD_DIR)
 	cmake --build $(BUILD_DIR) -j
+
+test:
+	$(MAKE) -C test test
+
+wave_csv:
+	$(MAKE) -C test wave_csv ARGS="$(ARGS)"
 
 upload: compile
 	python3 ../../software/hactar-cli/main.py flash --port=${port} --chip="ui" \

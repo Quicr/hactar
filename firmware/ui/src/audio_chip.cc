@@ -40,7 +40,7 @@ constexpr uint8_t system_hp_dmic_0x14 = 0x14;
 constexpr uint8_t adc_ramp_0x15 = 0x15;
 constexpr uint8_t adc_power_0x16 = 0x16;
 constexpr uint8_t adc_gain_0x17 = 0x17;
-constexpr uint8_t dac_power_0x32 = 0x32;
+constexpr uint8_t dac_power_0x31 = 0x31;
 constexpr uint8_t dac_volume_0x32 = 0x32;
 constexpr uint8_t dac_output_0x37 = 0x37;
 constexpr uint8_t dac_output_volume_0x38 = 0x38;
@@ -86,9 +86,10 @@ bool AudioChip::Init()
         {system_hp_dmic_0x14, 0x50},    // enable headphone drive
         {adc_power_0x16, 0x04},
         {adc_gain_0x17, mic_preamp},
-        {dac_power_0x32, 0x00},
-        {dac_output_0x37, 0x08},        // disable eq
-        {gpio_adc_dac_path_0x44, 0x00}, // ADC->DAC loopback disabled, filled both channels
+        {dac_power_0x31, 0x00},
+        {dac_volume_0x32, 0xBF},
+        {dac_output_0x37, 0x08},               // disable eq
+        {gpio_adc_dac_path_0x44, 0b0110'0000}, // ADC->DAC loopback disabled, filled both channels
     };
 
     UI_LOG_INFO("ES8311 starting writing registers");
@@ -102,15 +103,6 @@ bool AudioChip::Init()
 
         UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", entry[0], entry[1]);
         HAL_Delay(20);
-    }
-
-    tx_buffer[0] = 0b1010'1010'0101'0110;
-    tx_buffer[0] = 0x8001;
-    tx_buffer[0] = 0b1000'0000'0000'0001;
-    for (size_t i = 0; i < constants::Total_Audio_Buffer_Sz; ++i)
-    {
-        // tx_buffer[i] = 0b1010'1010'0101'0110;
-        // tx_buffer[i] = 1;
     }
 
     HAL_Delay(50);
@@ -130,7 +122,7 @@ void AudioChip::HoldInReset()
 
 void AudioChip::StartI2S()
 {
-    // ClearTxBuffer();
+    ClearTxBuffer();
     if (HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Total_Audio_Buffer_Sz)
         != HAL_OK)
     {
@@ -179,10 +171,10 @@ uint8_t AudioChip::MicPreamp() const
 
 void AudioChip::ISRCallback()
 {
-    // const uint16_t offset = second_buffer ? constants::Audio_Buffer_Sz : 0;
-    // tx_ptr = tx_buffer + offset;
-    // rx_ptr = rx_buffer + offset;
-    // second_buffer = !second_buffer;
+    const uint16_t offset = buff_modifier * constants::Audio_Buffer_Sz;
+    tx_ptr = tx_buffer + offset;
+    rx_ptr = rx_buffer + offset;
+    buff_modifier = !buff_modifier;
 }
 
 void AudioChip::ClearTxBuffer()

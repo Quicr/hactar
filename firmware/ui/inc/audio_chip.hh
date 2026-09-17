@@ -39,7 +39,7 @@ private:
     uint16_t* tx_ptr = tx_buffer;
     uint16_t rx_buffer[constants::Total_Audio_Buffer_Sz] = {0};
     uint16_t* rx_ptr = rx_buffer;
-    bool second_buffer = false;
+    uint16_t buff_modifier = false;
 
     uint8_t volume = 0xc0;
     uint8_t mic_preamp = 0x10;
