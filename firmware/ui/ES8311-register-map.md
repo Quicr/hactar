@@ -136,7 +136,13 @@ Remarks:
 Remarks: 
 Soft mute exists in this register. 
 We are doing 16 bit on 32 bit frames, could change if needed
-I2S serial audio data format
+I2S serial audio data format is what we normally use
+
+In the STM32 settings it is set to I2S Phillips, and so should the ES8311,
+but there is an error in the datasheet.
+
+Correction!
+bit[1:0] - 0 = Left justified, 1 = I2S Phillips, 2 = reserved 3 = DSP/PCM
 
 Set to 0b0|0|0|1'00|00 (0x10)
 
