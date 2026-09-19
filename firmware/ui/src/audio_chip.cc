@@ -12,6 +12,7 @@
 #include "audio_chip.hh"
 #include "constants.hh"
 #include "logger.hh"
+#include "stm32f4xx_hal_i2c.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -59,37 +60,52 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
 {
 }
 
+void AudioChip::BootupSequence()
+{
+    Init();
+    HAL_Delay(1000);
+    Reset();
+    HAL_Delay(1000);
+    Init();
+    HAL_Delay(1000);
+    Reset();
+    HAL_Delay(1000);
+    Init();
+}
 // NOTE- there is an internal loopback on register 0x44 ADC-DAC
 
 bool AudioChip::Init()
 {
-    HoldInReset();
+    Reset();
 
     // The ES8311 receives a fixed 12 MHz MCLK. The codec PLL converts it for an 8 kHz sample rate.
     const uint8_t setup[][2] = {
-        {reset_0x00, 0xC0},
-        {clock_manager_1_0x01, 0x3F},
+        {reset_0x00, 0b0110'0000},
         {clock_manager_2_0x02, 0x98}, // DIG_MCLK 1001'1000 DIV4+1, MULT8 19.2Mhz
         {clock_manager_3_0x03, 0x19}, // ADC oversampling
         {clock_manager_4_0x04, 0x19}, // DAC oversampling
         {clock_manager_5_0x05, 0x00},
         {clock_manager_6_0x06, 0x42},
-        {clock_manager_7_0x07, 0x00},    // LRCLK 48Mhz
-        {clock_manager_8_0x08, 0xF9},    // LRCLK 48Mhz
+        {clock_manager_7_0x07, 0x00}, // LRCLK 48Mhz
+        {clock_manager_8_0x08, 0xF9}, // LRCLK 48Mhz
+        {clock_manager_1_0x01, 0x3F},
         {serial_data_port_1_0x09, 0x11}, // 0001'0000
         {serial_data_port_2_0x0a, 0x11}, // unmute, normal pol, 32 bit frame, i2s format
         {system_power_0x0c, 0x00},
-        {system_power_2_0x0d, 0xFE},
-        {system_power_3_0x0e, 0x0A},
-        {system_dac_en_0x12, 0x01},
-        {system_line_input_0x13, 0x10}, // enable headphone drive
-        {system_hp_dmic_0x14, 0x50},    // enable headphone drive
-        {adc_power_0x16, 0x04},
-        {adc_gain_0x17, mic_preamp},
-        {dac_power_0x31, 0x00},
-        {dac_volume_0x32, 0xBF},
+        {dac_power_0x31, 0x60},
+        {dac_volume_0x32, 0x00},
         {dac_output_0x37, 0x08},               // disable eq
         {gpio_adc_dac_path_0x44, 0b0110'0000}, // ADC->DAC loopback disabled, filled both channels
+        {reset_0x00, 0xC0},
+        {system_power_2_0x0d, 0x01},
+        {system_power_3_0x0e, 0x02}, // 0b0000'0010
+        {system_dac_en_0x12, 0x00},
+        {system_line_input_0x13, 0x10}, // enable headphone drive
+                                        // End startup seq
+
+        {system_hp_dmic_0x14, 0x50}, // enable headphone drive
+        {adc_power_0x16, 0x04},
+        {adc_gain_0x17, mic_preamp},
     };
 
     UI_LOG_INFO("ES8311 starting writing registers");
@@ -101,15 +117,20 @@ bool AudioChip::Init()
             return false;
         }
 
-        UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", entry[0], entry[1]);
-        HAL_Delay(20);
+        // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", entry[0], entry[1]);
+        HAL_Delay(50);
     }
 
-    HAL_Delay(50);
+    HAL_Delay(20);
+    WriteRegister(dac_power_0x31, 0x00);
+    HAL_Delay(20);
+    WriteRegister(dac_volume_0x32, 0xFF);
+
+    HAL_Delay(100);
     return true;
 }
 
-void AudioChip::HoldInReset()
+void AudioChip::Reset()
 {
     // 0011'1111
     if (!WriteRegister(reset_0x00, 0x3F))
@@ -117,7 +138,18 @@ void AudioChip::HoldInReset()
         UI_LOG_ERROR("ES8311 failed to reest");
     }
 
-    HAL_Delay(50);
+    HAL_Delay(1000);
+}
+
+void AudioChip::Boot()
+{
+    // 0011'1111HoldInReset
+    if (!WriteRegister(reset_0x00, 0xC0))
+    {
+        UI_LOG_ERROR("ES8311 failed to boot");
+    }
+
+    HAL_Delay(200);
 }
 
 void AudioChip::StartI2S()
@@ -195,6 +227,25 @@ const uint16_t* AudioChip::RxBuffer() const
 bool AudioChip::WriteRegister(uint8_t address, uint8_t value)
 {
     uint8_t message[] = {address, value};
+    // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", address, value);
     return HAL_I2C_Master_Transmit(i2c, Es8311_I2c_Address, message, sizeof(message), 100)
         == HAL_OK;
+}
+
+int16_t AudioChip::ReadRegister(uint8_t address)
+{
+    uint8_t message = address;
+    // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", address, value);
+    if (HAL_I2C_Master_Transmit(i2c, Es8311_I2c_Address, &message, sizeof(message), 100) != HAL_OK)
+    {
+        return -1;
+    }
+
+    // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", address, value);
+    if (HAL_I2C_Master_Receive(i2c, Es8311_I2c_Address, &message, sizeof(message), 100) != HAL_OK)
+    {
+        return -1;
+    }
+
+    return static_cast<int16_t>(message);
 }

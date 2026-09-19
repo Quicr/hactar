@@ -10,7 +10,8 @@ class AudioChip
 public:
     AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c);
 
-    void HoldInReset();
+    void BootupSequence();
+    void Reset();
     bool Init();
     void StartI2S();
     void StopI2S();
@@ -30,7 +31,9 @@ public:
     const uint16_t* RxBuffer() const;
 
 private:
+    void Boot();
     bool WriteRegister(uint8_t address, uint8_t value);
+    int16_t ReadRegister(uint8_t address);
 
     I2S_HandleTypeDef* i2s;
     I2C_HandleTypeDef* i2c;

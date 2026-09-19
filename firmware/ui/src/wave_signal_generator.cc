@@ -29,8 +29,8 @@ uint16_t EncodeWaveform(const WaveSignalGenerator& generator, float waveform)
 {
     constexpr uint16_t Max_Amplitude = 32767;
     const float amplitude = static_cast<float>(std::min(generator.amplitude, Max_Amplitude));
-    const long signed_sample = std::lround(amplitude * std::clamp(waveform, -1.0F, 1.0F));
-    return static_cast<uint16_t>(signed_sample);
+    const float biased_waveform = (std::clamp(waveform, -1.0F, 1.0F) + 1.0F) * 0.5F;
+    return static_cast<uint16_t>(std::lround(amplitude * biased_waveform));
 }
 
 template <typename SampleFunction>

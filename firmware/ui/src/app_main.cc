@@ -165,7 +165,18 @@ int app_main()
     Protector protector(config_storage);
     // Renderer renderer(screen, keyboard);
 
-    audio_chip.Init();
+    audio_chip.BootupSequence();
+    // HAL_Delay(10000);
+    // audio_chip.Init();
+    // HAL_Delay(1000);
+    // audio_chip.HoldInReset();
+    // HAL_Delay(1000);
+    // audio_chip.Init();
+    // HAL_Delay(1000);
+    // audio_chip.HoldInReset();
+    // HAL_Delay(1000);
+    // audio_chip.Init();
+    HAL_Delay(1000);
     audio_chip.StartI2S();
     // audio_chip.VolumeSet(100);
     // audio_chip.MicPreampSet(60);
@@ -206,26 +217,6 @@ int app_main()
 
         ticks_ms = HAL_GetTick();
         sleep_timeout = ticks_ms;
-
-        static WaveSignalGenerator sine = {
-            .frequency_hz = 440,
-            .sample_rate_hz = 48'000,
-            .phase = 0,
-            .amplitude = 0x7fff,
-            .duty_cycle = .5f,
-        };
-
-        uint16_t* hp_out_ptr = audio_chip.TxBuffer();
-        for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; i += 2)
-        {
-            const uint16_t sample = SampleSineWave(sine);
-            // Left
-            hp_out_ptr[i] = sample;
-
-            // Right
-            hp_out_ptr[i + 1] = sample;
-        }
-        UI_LOG_INFO("Here");
 
         if (error)
         {
@@ -317,6 +308,24 @@ inline void CheckFlags()
 inline void AudioCallback()
 {
     audio_chip.ISRCallback();
+    static WaveSignalGenerator sine = {
+        .frequency_hz = 440,
+        .sample_rate_hz = static_cast<float>(constants::Sample_Rate),
+        .phase = 0,
+        .amplitude = 0x7fff,
+        .duty_cycle = .5f,
+    };
+
+    uint16_t* hp_out_ptr = audio_chip.TxBuffer();
+    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; i += 2)
+    {
+        const uint16_t sample = SampleSineWave(sine);
+        // Left
+        hp_out_ptr[i] = sample;
+
+        // Right
+        hp_out_ptr[i + 1] = sample;
+    }
     CheckFlags();
     WakeUp();
 
