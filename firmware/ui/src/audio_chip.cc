@@ -63,13 +63,13 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
 void AudioChip::BootupSequence()
 {
     Init();
-    HAL_Delay(1000);
+    HAL_Delay(10);
     Reset();
-    HAL_Delay(1000);
+    HAL_Delay(10);
     Init();
-    HAL_Delay(1000);
+    HAL_Delay(10);
     Reset();
-    HAL_Delay(1000);
+    HAL_Delay(10);
     Init();
 }
 // NOTE- there is an internal loopback on register 0x44 ADC-DAC
@@ -118,7 +118,7 @@ bool AudioChip::Init()
         }
 
         // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", entry[0], entry[1]);
-        HAL_Delay(50);
+        HAL_Delay(20);
     }
 
     HAL_Delay(20);
