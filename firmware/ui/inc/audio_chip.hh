@@ -30,8 +30,15 @@ public:
     uint16_t* TxBuffer();
     const uint16_t* RxBuffer() const;
 
+    void EnableLoopback();
+    void DisableLoopback();
+
 private:
     void Boot();
+    void HoldInReset();
+    void ClockConfig();
+    void FormatConfig();
+    void AnalogConfig();
     bool WriteRegister(uint8_t address, uint8_t value);
     int16_t ReadRegister(uint8_t address);
 

@@ -153,6 +153,25 @@ int app_main()
 {
     HAL_TIM_Base_Start_IT(&htim2);
 
+    HAL_Delay(1000);
+    audio_chip.BootupSequence();
+
+    // HAL_Delay(10000);
+    // audio_chip.Init();
+    // HAL_Delay(1000);
+    // audio_chip.HoldInReset();
+    // HAL_Delay(1000);
+    // audio_chip.Init();
+    // HAL_Delay(1000);
+    // audio_chip.HoldInReset();
+    // HAL_Delay(1000);
+    // audio_chip.Init();
+    // audio_chip.DisableLoopback();
+    // audio_chip.EnableLoopback();
+
+    audio_chip.VolumeSet(1);
+
+    audio_chip.StartI2S();
     mgmt_serial.StartReceive();
 
     // Enable TLV logging via MGMT serial
@@ -165,19 +184,6 @@ int app_main()
     Protector protector(config_storage);
     // Renderer renderer(screen, keyboard);
 
-    audio_chip.BootupSequence();
-    // HAL_Delay(10000);
-    // audio_chip.Init();
-    // HAL_Delay(1000);
-    // audio_chip.HoldInReset();
-    // HAL_Delay(1000);
-    // audio_chip.Init();
-    // HAL_Delay(1000);
-    // audio_chip.HoldInReset();
-    // HAL_Delay(1000);
-    // audio_chip.Init();
-    HAL_Delay(1000);
-    audio_chip.StartI2S();
     // audio_chip.VolumeSet(100);
     // audio_chip.MicPreampSet(60);
 
@@ -317,14 +323,21 @@ inline void AudioCallback()
     };
 
     uint16_t* hp_out_ptr = audio_chip.TxBuffer();
+    static uint16_t ramp_sample = 0;
     for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; i += 2)
     {
         const uint16_t sample = SampleSineWave(sine);
         // Left
-        hp_out_ptr[i] = sample;
+        hp_out_ptr[i] = ramp_sample;
 
         // Right
-        hp_out_ptr[i + 1] = sample;
+        hp_out_ptr[i + 1] = ramp_sample;
+
+        ramp_sample += 1;
+        if (ramp_sample > 0x7fff)
+        {
+            ramp_sample = 0;
+        }
     }
     CheckFlags();
     WakeUp();
