@@ -13,6 +13,7 @@
 #include "constants.hh"
 #include "logger.hh"
 #include "stm32f4xx_hal_i2c.h"
+#include <math.h>
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -62,6 +63,8 @@ AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
 
 void AudioChip::BootupSequence()
 {
+    Reset();
+    HAL_Delay(10);
     Init();
     HAL_Delay(10);
     Reset();
@@ -76,36 +79,38 @@ void AudioChip::BootupSequence()
 
 bool AudioChip::Init()
 {
-    Reset();
+    // Reset();
 
     // The ES8311 receives a fixed 12 MHz MCLK. The codec PLL converts it for an 8 kHz sample rate.
     const uint8_t setup[][2] = {
-        {reset_0x00, 0b0110'0000},
+        {reset_0x00, 0b0010'0000},
         {clock_manager_2_0x02, 0x98}, // DIG_MCLK 1001'1000 DIV4+1, MULT8 19.2Mhz
         {clock_manager_3_0x03, 0x19}, // ADC oversampling
         {clock_manager_4_0x04, 0x19}, // DAC oversampling
-        {clock_manager_5_0x05, 0x55},
-        {clock_manager_6_0x06, 0x54},
-        {clock_manager_7_0x07, 0x05}, // LRCLK 48Mhz
-        {clock_manager_8_0x08, 0xDB}, // LRCLK 48Mhz
+        {clock_manager_5_0x05, 0x00},
+        {clock_manager_6_0x06, 0x42},
+        {clock_manager_7_0x07, 0x00}, // LRCLK 48Mhz
+        {clock_manager_8_0x08, 0xF9}, // LRCLK 48Mhz
         {clock_manager_1_0x01, 0x3F},
-        {serial_data_port_1_0x09, 0x11}, // 0001'0000
+        {serial_data_port_1_0x09, 0x11}, // 0001'0001
         {serial_data_port_2_0x0a, 0x11}, // unmute, normal pol, 32 bit frame, i2s format
-        {system_power_0x0c, 0x00},
+        {system_power_2_0x0d, 0x05},
+        {system_power_2_0x0d, 0x06},
+        {system_power_3_0x0e, 0x4a}, // 0b0000'0010
+        {0x0F, 0x00},
         {dac_power_0x31, 0x60},
         {dac_volume_0x32, 0x00},
-        {dac_output_0x37, 0x08},               // disable eq
-        {gpio_adc_dac_path_0x44, 0b0110'0000}, // ADC->DAC loopback disabled, filled both channels
+        {dac_output_0x37, 0x08}, // disable eq
+        // channels
         {reset_0x00, 0xC0},
-        {system_power_2_0x0d, 0x01},
-        {system_power_3_0x0e, 0x02}, // 0b0000'0010
-        {system_dac_en_0x12, 0x01},
+        {system_dac_en_0x12, 0x03},
         {system_line_input_0x13, 0x10}, // enable headphone drive
                                         // End startup seq
 
-        {system_hp_dmic_0x14, 0x50}, // enable headphone drive
-        {adc_power_0x16, 0x04},
-        {adc_gain_0x17, mic_preamp},
+        {system_hp_dmic_0x14, 0x10},
+        {adc_power_0x16, 0x00},
+        {adc_gain_0x17, 0x00},
+        {gpio_adc_dac_path_0x44, 0b0000'0000}, // ADC->DAC loopback disabled, filled both
     };
 
     UI_LOG_INFO("ES8311 starting writing registers");
@@ -132,9 +137,16 @@ bool AudioChip::Init()
     }
 
     HAL_Delay(20);
+    WriteRegister(adc_power_0x16, 0x04);
+    HAL_Delay(20);
+    WriteRegister(adc_gain_0x17, 0x0F);
+
+    HAL_Delay(20);
     WriteRegister(dac_power_0x31, 0x00);
     HAL_Delay(20);
     WriteRegister(dac_volume_0x32, 0xFF);
+    HAL_Delay(20);
+    WriteRegister(system_dac_en_0x12, 0x01);
 
     HAL_Delay(100);
     return true;
@@ -148,7 +160,7 @@ void AudioChip::Reset()
         UI_LOG_ERROR("ES8311 failed to reest");
     }
 
-    HAL_Delay(1000);
+    HAL_Delay(20);
 }
 
 void AudioChip::Boot()
@@ -179,9 +191,7 @@ void AudioChip::StopI2S()
 
 void AudioChip::VolumeSet(int16_t value)
 {
-    volume = static_cast<uint8_t>(
-        std::clamp(value, static_cast<int16_t>(Min_Volume), static_cast<int16_t>(Max_Volume)));
-    WriteRegister(dac_output_volume_0x38, volume);
+    // TODO
 }
 
 void AudioChip::VolumeAdjust(int16_t amount)
@@ -196,9 +206,7 @@ uint8_t AudioChip::Volume() const
 
 void AudioChip::MicPreampSet(int16_t value)
 {
-    mic_preamp = static_cast<uint8_t>(std::clamp(value, static_cast<int16_t>(Min_Mic_Preamp),
-                                                 static_cast<int16_t>(Max_Mic_Preamp)));
-    WriteRegister(adc_gain_0x17, mic_preamp);
+    // TODO
 }
 
 void AudioChip::MicPreampAdjust(int16_t amount)
@@ -213,10 +221,17 @@ uint8_t AudioChip::MicPreamp() const
 
 void AudioChip::ISRCallback()
 {
+    // SampleSineWave(tx_ptr, constants::Audio_Buffer_Sz, 0, 1000, 440, phase, true);
+
     const uint16_t offset = buff_modifier * constants::Audio_Buffer_Sz;
     tx_ptr = tx_buffer + offset;
     rx_ptr = rx_buffer + offset;
     buff_modifier = !buff_modifier;
+
+    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
+    {
+        tx_ptr[i] = 0;
+    }
 }
 
 void AudioChip::ClearTxBuffer()
@@ -258,4 +273,54 @@ int16_t AudioChip::ReadRegister(uint8_t address)
     }
 
     return static_cast<int16_t>(message);
+}
+
+void AudioChip::SampleSineWave(uint16_t* buff,
+                               const uint16_t num_samples,
+                               const uint16_t start_idx,
+                               const double amplitude,
+                               const double freq,
+                               double& phase,
+                               const bool stereo)
+{
+    constexpr uint16_t offset = 2000;
+    constexpr double TWO_PI = M_PI * 2;
+    const double angular_freq = TWO_PI * freq;
+    double current_phase = 0.0f;
+    uint16_t samples = num_samples;
+    if (stereo)
+    {
+        samples = samples / 2;
+
+        for (uint16_t i = 0; i < samples; ++i)
+        {
+            const double step = (double)i / (double)constants::Sample_Rate;
+            const double sample = amplitude * sin(angular_freq * step + phase);
+
+            // Add offset to handle negative numbers and overflow back around
+            // to their regular values for the positive numbers
+            const uint16_t int_sample = uint16_t(offset + sample) + 1;
+
+            buff[start_idx + (i * 2)] = int_sample;
+            buff[start_idx + (i * 2 + 1)] = int_sample;
+        }
+    }
+    else
+    {
+        for (uint16_t i = 0; i < samples; ++i)
+        {
+            const double step = (double)i / (double)constants::Sample_Rate;
+            const double sample = amplitude * sin(angular_freq * step + phase);
+
+            // Add offset to handle negative numbers and overflow back around
+            // to their regular values for the positive numbers
+            buff[start_idx + i] = uint16_t(offset + sample);
+        }
+    }
+
+    phase += angular_freq * (double(samples) / (double)constants::Sample_Rate);
+    while (phase > TWO_PI)
+    {
+        phase -= TWO_PI;
+    }
 }

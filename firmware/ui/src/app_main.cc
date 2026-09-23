@@ -54,7 +54,7 @@ extern TIM_HandleTypeDef htim5;
 extern RNG_HandleTypeDef hrng;
 
 // Global variables that need to exist for hardware callbacks
-UiLoopbackMode loopback_mode = UiLoopbackMode::Off;
+UiLoopbackMode loopback_mode = UiLoopbackMode::Raw;
 AudioTransmitMode audio_transmit_mode = AudioTransmitMode::Net;
 AudioReceiveMode audio_receive_mode = AudioReceiveMode::Headphones;
 
@@ -312,19 +312,24 @@ inline void AudioCallback()
         .frequency_hz = 440,
         .sample_rate_hz = static_cast<float>(constants::Sample_Rate),
         .phase = 0,
-        .amplitude = 1,
+        .amplitude = 0x5fff,
         .duty_cycle = .5f,
     };
 
     uint16_t* hp_out_ptr = audio_chip.TxBuffer();
+    const uint16_t* mic_in_ptr = audio_chip.RxBuffer();
     for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; i += 2)
     {
-        const uint16_t sample = SampleSineWave(sine);
+        // const uint16_t sample = SampleSineWave(sine);
         // Left
-        hp_out_ptr[i] = sample;
+        // hp_out_ptr[i] = sample;
+        //
+        // // Right
+        // hp_out_ptr[i + 1] = sample;
+        hp_out_ptr[i] = mic_in_ptr[i];
 
         // Right
-        hp_out_ptr[i + 1] = sample;
+        hp_out_ptr[i + 1] = mic_in_ptr[i + 1];
     }
     CheckFlags();
     WakeUp();

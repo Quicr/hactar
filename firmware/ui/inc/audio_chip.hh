@@ -46,4 +46,13 @@ private:
 
     uint8_t volume = 0xc0;
     uint8_t mic_preamp = 0x10;
+
+    double phase;
+    void SampleSineWave(uint16_t* buff,
+                        const uint16_t num_samples,
+                        const uint16_t start_idx,
+                        const double amplitude,
+                        const double freq,
+                        double& phase,
+                        const bool stereo);
 };
