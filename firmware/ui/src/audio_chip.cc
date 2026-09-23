@@ -84,10 +84,10 @@ bool AudioChip::Init()
         {clock_manager_2_0x02, 0x98}, // DIG_MCLK 1001'1000 DIV4+1, MULT8 19.2Mhz
         {clock_manager_3_0x03, 0x19}, // ADC oversampling
         {clock_manager_4_0x04, 0x19}, // DAC oversampling
-        {clock_manager_5_0x05, 0x00},
-        {clock_manager_6_0x06, 0x42},
-        {clock_manager_7_0x07, 0x00}, // LRCLK 48Mhz
-        {clock_manager_8_0x08, 0xF9}, // LRCLK 48Mhz
+        {clock_manager_5_0x05, 0x55},
+        {clock_manager_6_0x06, 0x54},
+        {clock_manager_7_0x07, 0x05}, // LRCLK 48Mhz
+        {clock_manager_8_0x08, 0xDB}, // LRCLK 48Mhz
         {clock_manager_1_0x01, 0x3F},
         {serial_data_port_1_0x09, 0x11}, // 0001'0000
         {serial_data_port_2_0x0a, 0x11}, // unmute, normal pol, 32 bit frame, i2s format
@@ -99,7 +99,7 @@ bool AudioChip::Init()
         {reset_0x00, 0xC0},
         {system_power_2_0x0d, 0x01},
         {system_power_3_0x0e, 0x02}, // 0b0000'0010
-        {system_dac_en_0x12, 0x00},
+        {system_dac_en_0x12, 0x01},
         {system_line_input_0x13, 0x10}, // enable headphone drive
                                         // End startup seq
 
@@ -114,6 +114,16 @@ bool AudioChip::Init()
         if (!WriteRegister(entry[0], entry[1]))
         {
             UI_LOG_ERROR("ES8311 register 0x%02x write failed", entry[0]);
+            return false;
+        }
+
+        const int16_t val = ReadRegister(entry[0]);
+
+        if (val != entry[1])
+        {
+            UI_LOG_ERROR(
+                "ES8311 register 0x%02x read does not match what we sent read %d expected %d",
+                (int)val, (int)entry[0]);
             return false;
         }
 

@@ -312,7 +312,7 @@ inline void AudioCallback()
         .frequency_hz = 440,
         .sample_rate_hz = static_cast<float>(constants::Sample_Rate),
         .phase = 0,
-        .amplitude = 0x7fff,
+        .amplitude = 1,
         .duty_cycle = .5f,
     };
 
