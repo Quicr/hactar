@@ -12,6 +12,7 @@
 #include "audio_chip.hh"
 #include "constants.hh"
 #include "logger.hh"
+#include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_i2c.h"
 #include <math.h>
 #include <algorithm>
@@ -96,7 +97,7 @@ bool AudioChip::Init()
         {serial_data_port_2_0x0a, 0x11}, // unmute, normal pol, 32 bit frame, i2s format
         {system_power_2_0x0d, 0x05},
         {system_power_2_0x0d, 0x06},
-        {system_power_3_0x0e, 0x4a}, // 0b0000'0010
+        {system_power_3_0x0e, 0x0a}, // 0b0000'1010
         {0x0F, 0x00},
         {dac_power_0x31, 0x60},
         {dac_volume_0x32, 0x00},
@@ -139,12 +140,18 @@ bool AudioChip::Init()
     HAL_Delay(20);
     WriteRegister(adc_power_0x16, 0x04);
     HAL_Delay(20);
-    WriteRegister(adc_gain_0x17, 0x0F);
+    WriteRegister(adc_gain_0x17, 0xbF);
+    HAL_Delay(20);
+    if (ReadRegister(adc_gain_0x17) != 0xbF)
+    {
+        UI_LOG_INFO("Failed to set adc gain");
+        return false;
+    }
 
     HAL_Delay(20);
     WriteRegister(dac_power_0x31, 0x00);
     HAL_Delay(20);
-    WriteRegister(dac_volume_0x32, 0xFF);
+    WriteRegister(dac_volume_0x32, 0xbF);
     HAL_Delay(20);
     WriteRegister(system_dac_en_0x12, 0x01);
 
