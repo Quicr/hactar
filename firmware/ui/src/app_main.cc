@@ -165,18 +165,7 @@ int app_main()
     Protector protector(config_storage);
     // Renderer renderer(screen, keyboard);
 
-    audio_chip.BootupSequence();
-    // HAL_Delay(10000);
-    // audio_chip.Init();
-    // HAL_Delay(1000);
-    // audio_chip.HoldInReset();
-    // HAL_Delay(1000);
-    // audio_chip.Init();
-    // HAL_Delay(1000);
-    // audio_chip.HoldInReset();
-    // HAL_Delay(1000);
-    // audio_chip.Init();
-    HAL_Delay(1000);
+    audio_chip.Init();
     audio_chip.StartI2S();
     // audio_chip.VolumeSet(100);
     // audio_chip.MicPreampSet(60);
@@ -225,24 +214,24 @@ int app_main()
 
         if (volume_up.ShortPress() || volume_up.RepeatedPress())
         {
-            audio_chip.VolumeAdjust(1);
-            UI_LOG_INFO("Volume up %d", (int)audio_chip.Volume());
+            audio_chip.DACVolumeAdjust(1);
+            UI_LOG_INFO("DACVolume up %d", (int)audio_chip.DACVolume());
         }
         else if (volume_up.DoublePress())
         {
-            audio_chip.MicPreampAdjust(1);
-            UI_LOG_INFO("Mic Preamp up %d", (int)audio_chip.MicPreamp());
+            audio_chip.ADCVolumeAdjust(1);
+            UI_LOG_INFO("Mic Preamp up %d", (int)audio_chip.ADCVolume());
         }
 
         if (volume_down.ShortPress() || volume_down.RepeatedPress())
         {
-            audio_chip.VolumeAdjust(-1);
-            UI_LOG_INFO("Volume down %d", (int)audio_chip.Volume());
+            audio_chip.DACVolumeAdjust(-1);
+            UI_LOG_INFO("DACVolume down %d", (int)audio_chip.DACVolume());
         }
         else if (volume_down.DoublePress())
         {
-            audio_chip.MicPreampAdjust(-1);
-            UI_LOG_INFO("Mic Preamp down %d", (int)audio_chip.MicPreamp());
+            audio_chip.ADCVolumeAdjust(-1);
+            UI_LOG_INFO("Mic Preamp down %d", (int)audio_chip.ADCVolume());
         }
 
         CheckPTT(protector, loopback_mode);
@@ -320,7 +309,7 @@ inline void AudioCallback()
     const uint16_t* mic_in_ptr = audio_chip.RxBuffer();
     static bool once = false;
 
-    static double ramp_min = 100;
+    static double ramp_min = 0;
     static double ramp_max = 10000;
     static double ramp = ramp_min;
     static const double freq = 440.0;
@@ -353,10 +342,10 @@ inline void AudioCallback()
         // hp_out_ptr[i + 1] = sample;
         //
         //
-        // hp_out_ptr[i] = mic_in_ptr[i];
+        hp_out_ptr[i] = mic_in_ptr[i];
 
         // Right
-        // hp_out_ptr[i + 1] = mic_in_ptr[i + 1];
+        hp_out_ptr[i + 1] = mic_in_ptr[i + 1];
     }
 
     CheckFlags();

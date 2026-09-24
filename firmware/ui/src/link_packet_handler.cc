@@ -371,7 +371,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
         case CtlToUi::GetVolume:
         {
             UI_LOG_INFO("Get volume");
-            const uint8_t curr_vol = audio_chip.Volume();
+            const uint8_t curr_vol = audio_chip.DACVolume();
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
                               std::span<const uint8_t>(&curr_vol, 1));
             break;
@@ -388,9 +388,9 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
 
             const uint16_t volume = static_cast<uint16_t>(packet->payload[0]);
 
-            audio_chip.VolumeSet(volume);
+            audio_chip.DACVolumeSet(volume);
 
-            const uint8_t curr_vol = audio_chip.Volume();
+            const uint8_t curr_vol = audio_chip.DACVolume();
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
                               std::span<const uint8_t>(&curr_vol, 1));
             break;
@@ -412,12 +412,12 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             {
             case AudioAdjustDirection::Down:
             {
-                audio_chip.VolumeAdjust(-amt);
+                audio_chip.DACVolumeAdjust(-amt);
                 break;
             }
             case AudioAdjustDirection::Up:
             {
-                audio_chip.VolumeAdjust(amt);
+                audio_chip.DACVolumeAdjust(amt);
                 break;
             }
             default:
@@ -428,22 +428,22 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             }
             }
 
-            const uint8_t curr_vol = audio_chip.Volume();
+            const uint8_t curr_vol = audio_chip.DACVolume();
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Volume),
                               std::span<const uint8_t>(&curr_vol, 1));
             break;
         }
         case CtlToUi::GetMicPreamp:
         {
-            UI_LOG_INFO("Get MicPreamp");
-            const uint8_t mic_preamp = audio_chip.MicPreamp();
+            UI_LOG_INFO("Get ADC Volume");
+            const uint8_t mic_preamp = audio_chip.ADCVolume();
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),
                               std::span<const uint8_t>(&mic_preamp, 1));
             break;
         }
         case CtlToUi::SetMicPreamp:
         {
-            UI_LOG_INFO("Set MicPreamp");
+            UI_LOG_INFO("Set ADC Volume");
             if (packet->length < 1)
             {
                 mgmt_serial.ReplyError(static_cast<uint16_t>(UiToCtl::Error),
@@ -453,9 +453,9 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
 
             const uint8_t set_mic_preamp = packet->payload[0];
 
-            audio_chip.MicPreampSet(set_mic_preamp);
+            audio_chip.ADCVolumeSet(set_mic_preamp);
 
-            const uint8_t mic_preamp = audio_chip.MicPreamp();
+            const uint8_t mic_preamp = audio_chip.ADCVolume();
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),
                               std::span<const uint8_t>(&mic_preamp, 1));
             break;
@@ -479,12 +479,12 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             {
             case AudioAdjustDirection::Down:
             {
-                audio_chip.MicPreampAdjust(-amt);
+                audio_chip.ADCVolumeAdjust(-amt);
                 break;
             }
             case AudioAdjustDirection::Up:
             {
-                audio_chip.MicPreampAdjust(amt);
+                audio_chip.ADCVolumeAdjust(amt);
                 break;
             }
             default:
@@ -495,7 +495,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             }
             }
 
-            const uint8_t mic_preamp = audio_chip.MicPreamp();
+            const uint8_t mic_preamp = audio_chip.ADCVolume();
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::MicPreamp),
                               std::span<const uint8_t>(&mic_preamp, 1));
             break;
