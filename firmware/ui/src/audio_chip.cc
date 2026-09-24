@@ -1,14 +1,3 @@
-// In this order
-// Get i2s flowing both ways between devices
-// use all synthetic data like ramp
-//
-// Audio out path - get it play a buzz, watch on scope
-//
-// Audio in path - ADC
-//
-// sine wave/sawtooth from signal gen
-// turn off all equalizers
-// try to get the gains right.
 #include "audio_chip.hh"
 #include "constants.hh"
 #include "logger.hh"
@@ -19,166 +8,36 @@
 #include <cstdint>
 #include <cstring>
 
-namespace
-{
-constexpr uint16_t Es8311_I2c_Address = 0x18 << 1;
-
-constexpr uint8_t reset_0x00 = 0x00;
-constexpr uint8_t clock_manager_1_0x01 = 0x01;
-constexpr uint8_t clock_manager_2_0x02 = 0x02;
-constexpr uint8_t clock_manager_3_0x03 = 0x03;
-constexpr uint8_t clock_manager_4_0x04 = 0x04;
-constexpr uint8_t clock_manager_5_0x05 = 0x05;
-constexpr uint8_t clock_manager_6_0x06 = 0x06;
-constexpr uint8_t clock_manager_7_0x07 = 0x07;
-constexpr uint8_t clock_manager_8_0x08 = 0x08;
-constexpr uint8_t system_power_0x0c = 0x0c;
-constexpr uint8_t system_power_2_0x0d = 0x0d;
-constexpr uint8_t system_power_3_0x0e = 0x0e;
-constexpr uint8_t serial_data_port_1_0x09 = 0x09;
-constexpr uint8_t serial_data_port_2_0x0a = 0x0a;
-constexpr uint8_t system_dac_en_0x12 = 0x12;
-constexpr uint8_t system_line_input_0x13 = 0x13;
-constexpr uint8_t system_hp_dmic_0x14 = 0x14;
-constexpr uint8_t adc_ramp_0x15 = 0x15;
-constexpr uint8_t adc_power_0x16 = 0x16;
-constexpr uint8_t adc_gain_0x17 = 0x17;
-constexpr uint8_t dac_power_0x31 = 0x31;
-constexpr uint8_t dac_volume_0x32 = 0x32;
-constexpr uint8_t dac_output_0x37 = 0x37;
-constexpr uint8_t dac_output_volume_0x38 = 0x38;
-constexpr uint8_t dac_mixer_0x39 = 0x39;
-constexpr uint8_t gpio_adc_dac_path_0x44 = 0x44;
-
-constexpr uint8_t Min_Volume = 0x00;
-constexpr uint8_t Max_Volume = 0xc0;
-constexpr uint8_t Min_Mic_Preamp = 0x00;
-constexpr uint8_t Max_Mic_Preamp = 0x1f;
-} // namespace
-
 AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     i2s(&hi2s),
     i2c(&hi2c)
 {
 }
 
-void AudioChip::BootupSequence()
-{
-    Reset();
-    HAL_Delay(10);
-    Init();
-    HAL_Delay(10);
-    Reset();
-    HAL_Delay(10);
-    Init();
-    HAL_Delay(10);
-    Reset();
-    HAL_Delay(10);
-    Init();
-}
-// NOTE- there is an internal loopback on register 0x44 ADC-DAC
-
 bool AudioChip::Init()
 {
-    // Reset();
+    Reset();
 
-    // The ES8311 receives a fixed 12 MHz MCLK. The codec PLL converts it for an 8 kHz sample rate.
-    const uint8_t setup[][2] = {
-        {reset_0x00, 0b0010'0000},
-        {clock_manager_2_0x02, 0x98}, // DIG_MCLK 1001'1000 DIV4+1, MULT8 19.2Mhz
-        {clock_manager_3_0x03, 0x19}, // ADC oversampling
-        {clock_manager_4_0x04, 0x19}, // DAC oversampling
-        {clock_manager_5_0x05, 0x00},
-        {clock_manager_6_0x06, 0x42},
-        {clock_manager_7_0x07, 0x00}, // LRCLK 48Mhz
-        {clock_manager_8_0x08, 0xF9}, // LRCLK 48Mhz
-        {clock_manager_1_0x01, 0x3F},
-        {serial_data_port_1_0x09, 0x11}, // 0001'0001
-        {serial_data_port_2_0x0a, 0x11}, // unmute, normal pol, 32 bit frame, i2s format
-        {system_power_2_0x0d, 0x05},
-        {system_power_2_0x0d, 0x06},
-        {system_power_3_0x0e, 0x0a}, // 0b0000'1010
-        {0x0F, 0x00},
-        {dac_power_0x31, 0x60},
-        {dac_volume_0x32, 0x00},
-        {dac_output_0x37, 0x08}, // disable eq
-        // channels
-        {reset_0x00, 0xC0},
-        {system_dac_en_0x12, 0x03},
-        {system_line_input_0x13, 0x10}, // enable headphone drive
-                                        // End startup seq
+    PartialResetSequence();
+    InitClockManager();
+    InitSerialData();
+    InitSystemPower();
+    InitDACADC();
+    InitGPIOPath();
+    CompleteResetSequence();
 
-        {system_hp_dmic_0x14, 0x10},
-        {adc_power_0x16, 0x00},
-        {adc_gain_0x17, 0x00},
-        {gpio_adc_dac_path_0x44, 0b0000'0000}, // ADC->DAC loopback disabled, filled both
-    };
-
-    UI_LOG_INFO("ES8311 starting writing registers");
-    for (const auto& entry : setup)
-    {
-        if (!WriteRegister(entry[0], entry[1]))
-        {
-            UI_LOG_ERROR("ES8311 register 0x%02x write failed", entry[0]);
-            return false;
-        }
-
-        const int16_t val = ReadRegister(entry[0]);
-
-        if (val != entry[1])
-        {
-            UI_LOG_ERROR(
-                "ES8311 register 0x%02x read does not match what we sent read %d expected %d",
-                (int)val, (int)entry[0]);
-            return false;
-        }
-
-        // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", entry[0], entry[1]);
-        HAL_Delay(20);
-    }
-
-    HAL_Delay(20);
-    WriteRegister(adc_power_0x16, 0x04);
-    HAL_Delay(20);
-    WriteRegister(adc_gain_0x17, 0xbF);
-    HAL_Delay(20);
-    if (ReadRegister(adc_gain_0x17) != 0xbF)
-    {
-        UI_LOG_INFO("Failed to set adc gain");
-        return false;
-    }
-
-    HAL_Delay(20);
-    WriteRegister(dac_power_0x31, 0x00);
-    HAL_Delay(20);
-    WriteRegister(dac_volume_0x32, 0xbF);
-    HAL_Delay(20);
-    WriteRegister(system_dac_en_0x12, 0x01);
-
-    HAL_Delay(100);
     return true;
 }
 
 void AudioChip::Reset()
 {
     // 0011'1111
-    if (!WriteRegister(reset_0x00, 0x3F))
+    if (!WriteRegisterVerify(reset_0x00, 0x3F))
     {
         UI_LOG_ERROR("ES8311 failed to reest");
     }
 
     HAL_Delay(20);
-}
-
-void AudioChip::Boot()
-{
-    // 0011'1111HoldInReset
-    if (!WriteRegister(reset_0x00, 0xC0))
-    {
-        UI_LOG_ERROR("ES8311 failed to boot");
-    }
-
-    HAL_Delay(200);
 }
 
 void AudioChip::StartI2S()
@@ -196,40 +55,40 @@ void AudioChip::StopI2S()
     HAL_I2S_DMAStop(i2s);
 }
 
-void AudioChip::VolumeSet(int16_t value)
+void AudioChip::DACVolumeSet(uint8_t value)
 {
-    // TODO
+    dac_volume = value;
+    WriteRegisterVerify(dac_volume_0x32, value);
 }
 
-void AudioChip::VolumeAdjust(int16_t amount)
+void AudioChip::DACVolumeAdjust(int16_t amount)
 {
-    VolumeSet(static_cast<int16_t>(volume) + amount);
+    DACVolumeSet(static_cast<int16_t>(dac_volume) + amount);
 }
 
-uint8_t AudioChip::Volume() const
+uint8_t AudioChip::DACVolume() const
 {
-    return volume;
+    return dac_volume;
 }
 
-void AudioChip::MicPreampSet(int16_t value)
+void AudioChip::ADCVolumeSet(uint8_t value)
 {
-    // TODO
+    adc_volume = value;
+    WriteRegisterVerify(adc_gain_0x17, adc_volume);
 }
 
-void AudioChip::MicPreampAdjust(int16_t amount)
+void AudioChip::ADCVolumeAdjust(int16_t amount)
 {
-    MicPreampSet(static_cast<int16_t>(mic_preamp) + amount);
+    ADCVolumeSet(static_cast<int16_t>(adc_volume) + amount);
 }
 
-uint8_t AudioChip::MicPreamp() const
+uint8_t AudioChip::ADCVolume() const
 {
-    return mic_preamp;
+    return adc_volume;
 }
 
 void AudioChip::ISRCallback()
 {
-    // SampleSineWave(tx_ptr, constants::Audio_Buffer_Sz, 0, 1000, 440, phase, true);
-
     const uint16_t offset = buff_modifier * constants::Audio_Buffer_Sz;
     tx_ptr = tx_buffer + offset;
     rx_ptr = rx_buffer + offset;
@@ -264,6 +123,40 @@ bool AudioChip::WriteRegister(uint8_t address, uint8_t value)
         == HAL_OK;
 }
 
+bool AudioChip::WriteRegisterVerify(uint8_t address, uint8_t value)
+{
+    uint8_t message[] = {address, value};
+    // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", address, value);
+    if (HAL_I2C_Master_Transmit(i2c, Es8311_I2c_Address, message, sizeof(message), 100) != HAL_OK)
+    {
+        UI_LOG_ERROR("Failed to transmit to register %d value %d\n", (int)address, (int)value);
+        return false;
+    }
+
+    const int16_t stored_value = ReadRegister(address);
+    if (stored_value != value)
+    {
+        UI_LOG_ERROR("Failed to verify value of address to register %d expected %d actual %d\n",
+                     (int)address, (int)value, (int)stored_value);
+        return false;
+    }
+
+    return true;
+}
+
+bool AudioChip::WriteRegistersVerify(const uint8_t (*registers)[2], const size_t len)
+{
+    for (size_t i = 0; i < len; ++i)
+    {
+        if (!WriteRegisterVerify(registers[i][0], registers[i][1]))
+        {
+            return false;
+        }
+        HAL_Delay(20);
+    }
+    return true;
+}
+
 int16_t AudioChip::ReadRegister(uint8_t address)
 {
     uint8_t message = address;
@@ -280,6 +173,83 @@ int16_t AudioChip::ReadRegister(uint8_t address)
     }
 
     return static_cast<int16_t>(message);
+}
+
+bool AudioChip::PartialResetSequence()
+{
+    return WriteRegisterVerify(reset_0x00, 0b0010'0000);
+}
+
+bool AudioChip::InitClockManager()
+{
+    const uint8_t clock_manager[][2] = {
+        {clock_manager_2_0x02, 0x98}, // DIG_MCLK 1001'1000 DIV4+1, MULT8 19.2Mhz
+        {clock_manager_3_0x03, 0x19}, // ADC oversampling
+        {clock_manager_4_0x04, 0x19}, // DAC oversampling
+        {clock_manager_5_0x05, 0x00}, // ADC/DAC clk divider
+        {clock_manager_6_0x06, 0x42}, // BCLK
+        {clock_manager_7_0x07, 0x00}, // LRCLK 48Mhz
+        {clock_manager_8_0x08, 0xF9}, // LRCLK 48Mhz
+        {clock_manager_1_0x01, 0x3F}, // Enable clocks
+    };
+
+    return WriteRegistersVerify(clock_manager, sizeof(clock_manager) / sizeof(clock_manager[0]));
+}
+
+bool AudioChip::InitSerialData()
+{
+    const uint8_t serial_port[][2] = {
+        {serial_data_port_1_0x09, 0x11}, // 0001'0001
+        {serial_data_port_2_0x0a, 0x11}, // unmute, normal pol, 32 bit frame, i2s format
+    };
+
+    return WriteRegistersVerify(serial_port, sizeof(serial_port) / sizeof(serial_port[0]));
+}
+
+bool AudioChip::InitSystemPower()
+{
+    const uint8_t system_power[][2] = {
+        {system_power_2_0x0d, 0x05},
+        {system_power_2_0x0d, 0x06},
+        {system_power_3_0x0e, 0x0a}, // 0b0000'1010
+        {system_power_4_0x0f, 0x00},
+    };
+
+    return WriteRegistersVerify(system_power, sizeof(system_power) / sizeof(system_power[0]));
+}
+
+bool AudioChip::InitDACADC()
+{
+    const uint8_t dac_adc_config[][2] = {
+        {line_input_0x13, 0x10},       // enable headphone drive
+        {hp_dmic_0x14, 0x10},          //
+        {adc_power_0x16, 0x04},        //
+        {adc_gain_0x17, adc_volume},   //
+        {dac_en_0x12, 0x01},           //
+        {dac_power_0x31, 0x00},        //
+        {dac_volume_0x32, dac_volume}, //
+        {dac_output_0x37, 0x08},       // disable eq
+    };
+
+    return WriteRegistersVerify(dac_adc_config, sizeof(dac_adc_config) / sizeof(dac_adc_config[0]));
+}
+
+bool AudioChip::InitGPIOPath()
+{
+    const bool res = WriteRegisterVerify(gpio_adc_dac_path_0x44, 0x00);
+    HAL_Delay(20);
+    return res;
+}
+
+bool AudioChip::CompleteResetSequence()
+{
+    const bool res = WriteRegisterVerify(reset_0x00, 0xC0);
+    HAL_Delay(20);
+    return res;
+}
+
+void AudioChip::LowPowerMode()
+{
 }
 
 void AudioChip::SampleSineWave(uint16_t* buff,
