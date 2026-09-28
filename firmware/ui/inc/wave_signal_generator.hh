@@ -1,27 +1,48 @@
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
 
-struct WaveSignalGenerator
+enum class WaveType
 {
-    float frequency_hz = 440.0F;
-    float sample_rate_hz = 48000.0F;
-    double phase = 0.0;         // Cycle position in [0, 1); 0.25 is a quarter-cycle shift.
-    uint16_t amplitude = 32767; // Maximum output value, limited to 0x7fff.
-    float duty_cycle = 0.5F;
+    Ramp,
+    Sine,
+    Square,
 };
 
-// Output samples are signed 16-bit PCM represented by their two's-complement bit pattern.
-// Phase is normalized to [0, 1) and is updated after every generated sample.
-uint16_t SampleSineWave(WaveSignalGenerator& generator);
-uint16_t SampleRampWave(WaveSignalGenerator& generator);
-uint16_t SampleSawtoothWave(WaveSignalGenerator& generator);
-uint16_t SampleSquareWave(WaveSignalGenerator& generator);
-uint16_t SampleTriangleWave(WaveSignalGenerator& generator);
+class WaveSignalGenerator
+{
+public:
+    explicit WaveSignalGenerator(WaveType wave_type,
+                                 float frequency_hz = 440.0F,
+                                 float sample_rate_hz = 48000.0F,
+                                 double phase = 0.0,
+                                 uint16_t amplitude = 32767,
+                                 float duty_cycle = 0.5F) :
+        frequency_hz(frequency_hz),
+        sample_rate_hz(sample_rate_hz),
+        phase(phase),
+        amplitude(amplitude),
+        duty_cycle(duty_cycle),
+        wave_type(wave_type)
+    {
+    }
 
-void GenerateSineWave(WaveSignalGenerator& generator, uint16_t* buffer, size_t size);
-void GenerateRampWave(WaveSignalGenerator& generator, uint16_t* buffer, size_t size);
-void GenerateSawtoothWave(WaveSignalGenerator& generator, uint16_t* buffer, size_t size);
-void GenerateSquareWave(WaveSignalGenerator& generator, uint16_t* buffer, size_t size);
-void GenerateTriangleWave(WaveSignalGenerator& generator, uint16_t* buffer, size_t size);
+    // Returns one unsigned, DC-biased sample and advances phase.
+    uint16_t Sample();
+
+    float frequency_hz;
+    float sample_rate_hz;
+    double phase;       // Cycle position in [0, 1); 0.25 is a quarter-cycle shift.
+    uint16_t amplitude; // Maximum output value, limited to 0x7fff.
+    float duty_cycle;
+
+private:
+    static double NormalizePhase(double phase);
+    double CyclesPerSample() const;
+    uint16_t EncodeWaveform(float waveform) const;
+    uint16_t SampleRampWave() const;
+    uint16_t SampleSineWave() const;
+    uint16_t SampleSquareWave() const;
+
+    WaveType wave_type;
+};

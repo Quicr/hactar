@@ -297,56 +297,6 @@ inline void CheckFlags()
 inline void AudioCallback()
 {
     audio_chip.ISRCallback();
-    static WaveSignalGenerator sine = {
-        .frequency_hz = 440,
-        .sample_rate_hz = static_cast<float>(constants::Sample_Rate),
-        .phase = 0,
-        .amplitude = 0x5fff,
-        .duty_cycle = .5f,
-    };
-
-    uint16_t* hp_out_ptr = audio_chip.TxBuffer();
-    const uint16_t* mic_in_ptr = audio_chip.RxBuffer();
-    static bool once = false;
-
-    static double ramp_min = 0;
-    static double ramp_max = 10000;
-    static double ramp = ramp_min;
-    static const double freq = 440.0;
-    static double increment =
-        freq * static_cast<double>(ramp_max) / static_cast<double>(constants::Sample_Rate);
-
-    hp_out_ptr[0] = static_cast<uint16_t>(ramp);
-    hp_out_ptr[1] = static_cast<uint16_t>(ramp);
-    ramp += increment;
-
-    if (ramp >= ramp_max)
-    {
-        ramp = (ramp - ramp_max) + ramp_min;
-    }
-
-    if (!once)
-    {
-        // hp_out_ptr[0] = 0b0110'0101'1001'1011;
-        // hp_out_ptr[1] = 0b1101'0101'0101'0101;
-        once = true;
-    }
-
-    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; i += 2)
-    {
-        // const uint16_t sample = SampleSineWave(sine);
-        // Left
-        // hp_out_ptr[i] = sample;
-        //
-        // // Right
-        // hp_out_ptr[i + 1] = sample;
-        //
-        //
-        hp_out_ptr[i] = mic_in_ptr[i];
-
-        // Right
-        hp_out_ptr[i + 1] = mic_in_ptr[i + 1];
-    }
 
     CheckFlags();
     WakeUp();

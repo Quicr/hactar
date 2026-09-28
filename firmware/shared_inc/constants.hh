@@ -9,7 +9,7 @@ enum class SampleRates
     _16khz = 16'000,
     _48khz = 48'000
 };
-static constexpr SampleRates Sample_Rate = SampleRates::_48khz;
+static constexpr SampleRates Sample_Rate = SampleRates::_8khz;
 
 static constexpr uint16_t Audio_Time_Length_ms = 20;
 static constexpr float Audio_Time_Length_s = Audio_Time_Length_ms / 1000.0;

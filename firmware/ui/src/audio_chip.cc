@@ -94,10 +94,7 @@ void AudioChip::ISRCallback()
     rx_ptr = rx_buffer + offset;
     buff_modifier = !buff_modifier;
 
-    for (uint16_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
-    {
-        tx_ptr[i] = 0;
-    }
+    std::memset(tx_ptr, 0, constants::Audio_Buffer_Sz * sizeof(tx_ptr[0]));
 }
 
 void AudioChip::ClearTxBuffer()
@@ -182,15 +179,43 @@ bool AudioChip::PartialResetSequence()
 
 bool AudioChip::InitClockManager()
 {
+    uint8_t lrclk_high = 0x00;
+    uint8_t lrclk_low = 0x00;
+    uint8_t bclk = 0x40;
+    switch (constants::Sample_Rate)
+    {
+    case (constants::SampleRates::_8khz):
+    {
+        bclk |= 0x14;
+        lrclk_high |= 0x05;
+        lrclk_low |= 0xDB;
+        break;
+    }
+    case (constants::SampleRates::_16khz):
+    {
+        bclk |= 0x0A;
+        lrclk_high |= 0x02;
+        lrclk_low |= 0xEE;
+        break;
+    }
+    case (constants::SampleRates::_48khz):
+    {
+        bclk |= 0x02;
+        lrclk_high |= 0x00;
+        lrclk_low |= 0xF9;
+        break;
+    }
+    }
+
     const uint8_t clock_manager[][2] = {
-        {clock_manager_2_0x02, 0x98}, // DIG_MCLK 1001'1000 DIV4+1, MULT8 19.2Mhz
-        {clock_manager_3_0x03, 0x19}, // ADC oversampling
-        {clock_manager_4_0x04, 0x19}, // DAC oversampling
-        {clock_manager_5_0x05, 0x00}, // ADC/DAC clk divider
-        {clock_manager_6_0x06, 0x42}, // BCLK
-        {clock_manager_7_0x07, 0x00}, // LRCLK 48Mhz
-        {clock_manager_8_0x08, 0xF9}, // LRCLK 48Mhz
-        {clock_manager_1_0x01, 0x3F}, // Enable clocks
+        {clock_manager_2_0x02, 0x98},       // DIG_MCLK 1001'1000 DIV4+1, MULT8 19.2Mhz
+        {clock_manager_3_0x03, 0x19},       // ADC oversampling
+        {clock_manager_4_0x04, 0x19},       // DAC oversampling
+        {clock_manager_5_0x05, 0x00},       // ADC/DAC clk divider
+        {clock_manager_6_0x06, bclk},       // BCLK
+        {clock_manager_7_0x07, lrclk_high}, // LRCLK 48Mhz
+        {clock_manager_8_0x08, lrclk_low},  // LRCLK 48Mhz
+        {clock_manager_1_0x01, 0x3F},       // Enable clocks
     };
 
     return WriteRegistersVerify(clock_manager, sizeof(clock_manager) / sizeof(clock_manager[0]));
