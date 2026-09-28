@@ -2,126 +2,67 @@
 #include <algorithm>
 #include <cmath>
 
-namespace
-{
 constexpr float Two_Pi = 6.28318530717958647692F;
 
-double NormalizePhase(double phase)
+double WaveSignalGenerator::NormalizePhase(double phase)
 {
     phase -= std::floor(phase);
     return phase < 0.0 ? phase + 1.0 : phase;
 }
 
-double CyclesPerSample(const WaveSignalGenerator& generator)
+double WaveSignalGenerator::CyclesPerSample() const
 {
-    if (!std::isfinite(generator.frequency_hz) || !std::isfinite(generator.sample_rate_hz)
-        || generator.sample_rate_hz <= 0.0F)
+    if (!std::isfinite(frequency_hz) || !std::isfinite(sample_rate_hz) || sample_rate_hz <= 0.0F)
     {
         return 0.0;
     }
 
-    const double cycles_per_sample =
-        static_cast<double>(generator.frequency_hz) / generator.sample_rate_hz;
+    const double cycles_per_sample = static_cast<double>(frequency_hz) / sample_rate_hz;
     return std::isfinite(cycles_per_sample) ? cycles_per_sample : 0.0;
 }
 
-uint16_t EncodeWaveform(const WaveSignalGenerator& generator, float waveform)
+uint16_t WaveSignalGenerator::EncodeWaveform(float waveform) const
 {
     constexpr uint16_t Max_Amplitude = 32767;
-    const float amplitude = static_cast<float>(std::min(generator.amplitude, Max_Amplitude));
+    const float clamped_amplitude = static_cast<float>(std::min(amplitude, Max_Amplitude));
     const float biased_waveform = (std::clamp(waveform, -1.0F, 1.0F) + 1.0F) * 0.5F;
-    return static_cast<uint16_t>(std::lround(amplitude * biased_waveform));
+    return static_cast<uint16_t>(std::lround(clamped_amplitude * biased_waveform));
 }
 
-template <typename SampleFunction>
-void GenerateWave(WaveSignalGenerator& generator,
-                  uint16_t* buffer,
-                  size_t size,
-                  SampleFunction sample_function)
+uint16_t WaveSignalGenerator::Sample()
 {
-    if (buffer == nullptr || size == 0)
+    phase = std::isfinite(phase) ? NormalizePhase(phase) : 0.0;
+
+    uint16_t sample = 0;
+    switch (wave_type)
     {
-        return;
+    case WaveType::Ramp:
+        sample = SampleRampWave();
+        break;
+    case WaveType::Sine:
+        sample = SampleSineWave();
+        break;
+    case WaveType::Square:
+        sample = SampleSquareWave();
+        break;
     }
 
-    double phase_cycles = std::isfinite(generator.phase) ? NormalizePhase(generator.phase) : 0.0;
-    const double cycles_per_sample = CyclesPerSample(generator);
-
-    for (size_t i = 0; i < size; ++i)
-    {
-        const float waveform = sample_function(phase_cycles);
-        buffer[i] = EncodeWaveform(generator, waveform);
-        phase_cycles = NormalizePhase(phase_cycles + cycles_per_sample);
-    }
-
-    generator.phase = phase_cycles;
-}
-} // namespace
-
-void GenerateSineWave(WaveSignalGenerator& generator, uint16_t* buffer, size_t size)
-{
-    GenerateWave(generator, buffer, size,
-                 [](float phase_cycles) { return std::sin(Two_Pi * phase_cycles); });
-}
-
-void GenerateRampWave(WaveSignalGenerator& generator, uint16_t* buffer, size_t size)
-{
-    GenerateWave(generator, buffer, size,
-                 [](float phase_cycles) { return 2.0F * phase_cycles - 1.0F; });
-}
-
-void GenerateSawtoothWave(WaveSignalGenerator& generator, uint16_t* buffer, size_t size)
-{
-    GenerateWave(generator, buffer, size,
-                 [](float phase_cycles) { return 1.0F - 2.0F * phase_cycles; });
-}
-
-void GenerateSquareWave(WaveSignalGenerator& generator, uint16_t* buffer, size_t size)
-{
-    const float duty_cycle = std::clamp(generator.duty_cycle, 0.0F, 1.0F);
-    GenerateWave(generator, buffer, size, [duty_cycle](float phase_cycles) {
-        return phase_cycles < duty_cycle ? 1.0F : -1.0F;
-    });
-}
-
-void GenerateTriangleWave(WaveSignalGenerator& generator, uint16_t* buffer, size_t size)
-{
-    GenerateWave(generator, buffer, size, [](float phase_cycles) {
-        return phase_cycles < 0.5F ? 4.0F * phase_cycles - 1.0F : 3.0F - 4.0F * phase_cycles;
-    });
-}
-
-uint16_t SampleSineWave(WaveSignalGenerator& generator)
-{
-    uint16_t sample = 0;
-    GenerateSineWave(generator, &sample, 1);
+    phase = NormalizePhase(phase + CyclesPerSample());
     return sample;
 }
 
-uint16_t SampleRampWave(WaveSignalGenerator& generator)
+uint16_t WaveSignalGenerator::SampleRampWave() const
 {
-    uint16_t sample = 0;
-    GenerateRampWave(generator, &sample, 1);
-    return sample;
+    return EncodeWaveform(2.0F * static_cast<float>(phase) - 1.0F);
 }
 
-uint16_t SampleSawtoothWave(WaveSignalGenerator& generator)
+uint16_t WaveSignalGenerator::SampleSineWave() const
 {
-    uint16_t sample = 0;
-    GenerateSawtoothWave(generator, &sample, 1);
-    return sample;
+    return EncodeWaveform(std::sin(Two_Pi * static_cast<float>(phase)));
 }
 
-uint16_t SampleSquareWave(WaveSignalGenerator& generator)
+uint16_t WaveSignalGenerator::SampleSquareWave() const
 {
-    uint16_t sample = 0;
-    GenerateSquareWave(generator, &sample, 1);
-    return sample;
-}
-
-uint16_t SampleTriangleWave(WaveSignalGenerator& generator)
-{
-    uint16_t sample = 0;
-    GenerateTriangleWave(generator, &sample, 1);
-    return sample;
+    const float clamped_duty_cycle = std::clamp(duty_cycle, 0.0F, 1.0F);
+    return EncodeWaveform(phase < clamped_duty_cycle ? 1.0F : -1.0F);
 }
