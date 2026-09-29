@@ -9,6 +9,7 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "logger.hh"
+#include "net_mgmt_link.h"
 #include "nvs_flash.h"
 #include "serial.hh"
 #include "spdlog/spdlog.h"
@@ -107,7 +108,7 @@ struct Blaster
 
 struct Diagnostics
 {
-    bool loopback = false;
+    NetLoopbackMode loopback = NetLoopbackMode::Off;
     bool logs_disabled = false;
     spdlog::level::level_enum last_spd_log_level =
         static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL);

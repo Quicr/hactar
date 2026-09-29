@@ -99,7 +99,7 @@ void HandleQuicrPackets(Serial& mgmt_serial,
         {
             AudioCodec::ALawExpand(audio_chunk->chunk_data, constants::Audio_Phonic_Sz,
                                    audio.HpOutPtr(), constants::Audio_Buffer_Sz, constants::Stereo,
-                                   false);
+                                   true);
             break;
         }
         default:

@@ -12,7 +12,8 @@ public:
     UiLinkHandler(Serial& ui_layer,
                   Serial& mgmt_layer,
                   MoqContext& moq_context,
-                  const Runtime& runtime);
+                  const Runtime& runtime,
+                  const Diagnostics& diagnostics);
 
     ~UiLinkHandler();
 
@@ -28,6 +29,7 @@ private:
     Serial& mgmt_layer;
     MoqContext& moq_context;
     const Runtime& runtime;
+    const Diagnostics& diagnostics;
 
     TaskHandle_t read_handle;
     StaticTask_t read_buffer;

@@ -10,7 +10,15 @@
 
 AudioChip::AudioChip(I2S_HandleTypeDef& hi2s, I2C_HandleTypeDef& hi2c) :
     i2s(&hi2s),
-    i2c(&hi2c)
+    i2c(&hi2c),
+    hp_out_buffer{0},
+    hp_out_ptr(hp_out_buffer),
+    mic_in_buffer{0},
+    mic_in_ptr{mic_in_buffer},
+    buff_modifier(0),
+    dac_volume(0xAF),
+    adc_volume(0xE0),
+    flags(0)
 {
 }
 
@@ -48,17 +56,37 @@ void AudioChip::StartI2S()
         != HAL_OK)
     {
         UI_LOG_ERROR("Failed to start I2S DMA");
+        return;
     }
+
+    RaiseFlag(AudioChip::Running);
 }
 
 void AudioChip::StopI2S()
 {
     HAL_I2S_DMAStop(i2s);
+    LowerFlag(AudioChip::Running);
 }
 
 void AudioChip::DACVolumeSet(uint8_t value)
 {
+    if (value >= Max_DAC_Volume)
+    {
+        value = Max_DAC_Volume;
+    }
+
+    if (value <= Min_DAC_Volume)
+    {
+        value = Min_DAC_Volume;
+    }
+
+    if (dac_volume == value)
+    {
+        return;
+    }
+
     dac_volume = value;
+
     WriteRegisterVerify(dac_volume_0x32, value);
 }
 
@@ -74,6 +102,21 @@ uint8_t AudioChip::DACVolume() const
 
 void AudioChip::ADCVolumeSet(uint8_t value)
 {
+    if (value >= Max_ADC_Volume)
+    {
+        value = Max_ADC_Volume;
+    }
+
+    if (value <= Min_ADC_Volume)
+    {
+        value = Min_ADC_Volume;
+    }
+
+    if (adc_volume == value)
+    {
+        return;
+    }
+
     adc_volume = value;
     WriteRegisterVerify(adc_gain_0x17, adc_volume);
 }
@@ -210,8 +253,8 @@ bool AudioChip::InitClockManager()
 
     const uint8_t clock_manager[][2] = {
         {clock_manager_2_0x02, 0x98},       // DIG_MCLK 1001'1000 DIV4+1, MULT8 19.2Mhz
-        {clock_manager_3_0x03, 0x19},       // ADC oversampling
-        {clock_manager_4_0x04, 0x19},       // DAC oversampling
+        {clock_manager_3_0x03, 0x10},       // ADC oversampling
+        {clock_manager_4_0x04, 0x10},       // DAC oversampling
         {clock_manager_5_0x05, 0x00},       // ADC/DAC clk divider
         {clock_manager_6_0x06, bclk},       // BCLK
         {clock_manager_7_0x07, lrclk_high}, // LRCLK 48Mhz
@@ -278,52 +321,24 @@ void AudioChip::LowPowerMode()
 {
 }
 
-void AudioChip::SampleSineWave(uint16_t* buff,
-                               const uint16_t num_samples,
-                               const uint16_t start_idx,
-                               const double amplitude,
-                               const double freq,
-                               double& phase,
-                               const bool stereo)
+bool AudioChip::ReadFlag(AudioFlag flag) const
 {
-    constexpr uint16_t offset = 2000;
-    constexpr double TWO_PI = M_PI * 2;
-    const double angular_freq = TWO_PI * freq;
-    double current_phase = 0.0f;
-    uint16_t samples = num_samples;
-    if (stereo)
-    {
-        samples = samples / 2;
+    return (flags >> flag) & 0x01;
+}
 
-        for (uint16_t i = 0; i < samples; ++i)
-        {
-            const double step = (double)i / (double)constants::Sample_Rate;
-            const double sample = amplitude * sin(angular_freq * step + phase);
+inline void AudioChip::RaiseFlag(AudioFlag flag)
+{
+    flags |= 1 << flag;
+}
 
-            // Add offset to handle negative numbers and overflow back around
-            // to their regular values for the positive numbers
-            const uint16_t int_sample = uint16_t(offset + sample) + 1;
+inline void AudioChip::LowerFlag(AudioFlag flag)
+{
+    flags &= ~(1 << flag);
+}
 
-            buff[start_idx + (i * 2)] = int_sample;
-            buff[start_idx + (i * 2 + 1)] = int_sample;
-        }
-    }
-    else
-    {
-        for (uint16_t i = 0; i < samples; ++i)
-        {
-            const double step = (double)i / (double)constants::Sample_Rate;
-            const double sample = amplitude * sin(angular_freq * step + phase);
-
-            // Add offset to handle negative numbers and overflow back around
-            // to their regular values for the positive numbers
-            buff[start_idx + i] = uint16_t(offset + sample);
-        }
-    }
-
-    phase += angular_freq * (double(samples) / (double)constants::Sample_Rate);
-    while (phase > TWO_PI)
-    {
-        phase -= TWO_PI;
-    }
+inline bool AudioChip::ReadAndLowerFlag(AudioFlag flag)
+{
+    const bool res = (flags >> flag) & 0x01;
+    LowerFlag(flag);
+    return res;
 }

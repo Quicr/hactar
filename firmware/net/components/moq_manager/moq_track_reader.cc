@@ -8,6 +8,7 @@
 #include "macros.hh"
 #include "moq_session.hh"
 #include "net.hh"
+#include "net_mgmt_link.h"
 #include "task_helpers.hh"
 #include "ui_net_link.hh"
 #include "utils.hh"
@@ -94,7 +95,7 @@ void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers,
         NET_LOG_INFO("%s Received %llu", Stringify(GetFullTrackName()).c_str(), num_recv);
     }
 
-    if (!diagnostics.loopback && headers.group_id == runtime.device_id)
+    if (diagnostics.loopback != NetLoopbackMode::Moq && headers.group_id == runtime.device_id)
     {
         return;
     }
