@@ -4,6 +4,7 @@
 #include "stm32.h"
 #include "stm32f4xx_hal_i2c.h"
 #include "stm32f4xx_hal_i2s.h"
+#include <cstdint>
 
 class AudioChip
 {
@@ -29,6 +30,17 @@ public:
     uint16_t* HpOutPtr();
     const uint16_t* MicInPtr() const;
 
+    enum AudioFlag
+    {
+        Running = 0,
+        Tx_Ready,
+        Rx_Ready,
+        Stereo,
+        Mic_Mute
+    };
+
+    bool ReadFlag(AudioFlag flag) const;
+
 private:
     bool WriteRegister(uint8_t address, uint8_t value);
     bool WriteRegisterVerify(uint8_t address, uint8_t value);
@@ -45,27 +57,23 @@ private:
 
     void LowPowerMode();
 
+    void RaiseFlag(AudioFlag flag);
+    void LowerFlag(AudioFlag flag);
+    bool ReadAndLowerFlag(AudioFlag flag);
+
     I2S_HandleTypeDef* i2s;
     I2C_HandleTypeDef* i2c;
 
-    uint16_t hp_out_buffer[constants::Total_Audio_Buffer_Sz] = {0};
-    uint16_t* hp_out_ptr = hp_out_buffer;
-    uint16_t mic_in_buffer[constants::Total_Audio_Buffer_Sz] = {0};
-    uint16_t* mic_in_ptr = mic_in_buffer;
-    uint16_t buff_modifier = false;
+    uint16_t hp_out_buffer[constants::Total_Audio_Buffer_Sz];
+    uint16_t* hp_out_ptr;
+    uint16_t mic_in_buffer[constants::Total_Audio_Buffer_Sz];
+    uint16_t* mic_in_ptr;
+    uint16_t buff_modifier;
 
-    uint8_t dac_volume = 0xBF;
-    uint8_t adc_volume = 0xCF;
+    uint8_t dac_volume;
+    uint8_t adc_volume;
 
-    // TODO move out into wave signal generator
-    double phase;
-    void SampleSineWave(uint16_t* buff,
-                        const uint16_t num_samples,
-                        const uint16_t start_idx,
-                        const double amplitude,
-                        const double freq,
-                        double& phase,
-                        const bool stereo);
+    uint32_t flags;
 
     static constexpr uint16_t Es8311_I2c_Address = 0x18 << 1;
 
@@ -97,8 +105,8 @@ private:
     static constexpr uint8_t dac_mixer_0x39 = 0x39;
     static constexpr uint8_t gpio_adc_dac_path_0x44 = 0x44;
 
-    static constexpr uint8_t Min_DAC_Volume = 0x00;
-    static constexpr uint8_t Max_DAC_Volume = 0xFF;
-    static constexpr uint8_t Min_ADC_Volume = 0x00;
+    static constexpr uint8_t Min_DAC_Volume = 0x78;
+    static constexpr uint8_t Max_DAC_Volume = 0xC8;
+    static constexpr uint8_t Min_ADC_Volume = 0xBF;
     static constexpr uint8_t Max_ADC_Volume = 0xFF;
 };

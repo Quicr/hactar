@@ -83,7 +83,7 @@ extern "C" void app_main(void)
     InitializeUIReadyISR(GpioIsrRisingHandler);
 
     Diagnostics diagnostics = {
-        .loopback = false,
+        .loopback = NetLoopbackMode::Off,
         .logs_disabled = false,
         .last_spd_log_level = static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL),
         .blaster = {false, nullptr, 1},
@@ -107,7 +107,7 @@ extern "C" void app_main(void)
 
     Wifi wifi(storage);
     MoqContext moq_context(ui_layer, runtime_ctx, diagnostics);
-    UiLinkHandler ui_link_handler(ui_layer, mgmt_layer, moq_context, runtime_ctx);
+    UiLinkHandler ui_link_handler(ui_layer, mgmt_layer, moq_context, runtime_ctx, diagnostics);
     MgmtLinkHandler mgmt_link_handler(mgmt_layer, ui_layer, wifi, storage, config, diagnostics,
                                       moq_context, runtime_ctx);
 

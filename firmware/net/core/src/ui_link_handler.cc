@@ -1,15 +1,18 @@
 #include "ui_link_handler.hh"
+#include "net.hh"
 #include "net_mgmt_link.h"
 #include "ui_net_link.hh"
 
 UiLinkHandler::UiLinkHandler(Serial& ui_layer,
                              Serial& mgmt_layer,
                              MoqContext& moq_context,
-                             const Runtime& runtime) :
+                             const Runtime& runtime,
+                             const Diagnostics& diagnostics) :
     ui_layer(ui_layer),
     mgmt_layer(mgmt_layer),
     moq_context(moq_context),
     runtime(runtime),
+    diagnostics(diagnostics),
     read_handle(nullptr),
     read_buffer(),
     read_stack(),
@@ -109,8 +112,25 @@ void UiLinkHandler::LinkPacketTask(void* arg)
             // Remove the bytes already read from the payload length (channel_id)
             length -= ext_bytes;
 
-            handler->moq_context.PushAudioFrame(channel_id, packet->payload.data() + 1, length,
-                                                handler->runtime.curr_audio_isr_time);
+            if (handler->diagnostics.loopback == NetLoopbackMode::Off
+                || handler->diagnostics.loopback == NetLoopbackMode::Moq)
+            {
+
+                handler->moq_context.PushAudioFrame(channel_id, packet->payload.data() + 1, length,
+                                                    handler->runtime.curr_audio_isr_time);
+            }
+            else if (handler->diagnostics.loopback == NetLoopbackMode::Raw)
+            {
+                // TODO there is a bug somewhere in this, causing an error in the sync word
+                // not sure what exactly or why
+                handler->ui_layer.Write(link_packet_t::Sync_Word, sizeof(link_packet_t::Sync_Word));
+                const uint16_t type = static_cast<uint16_t>(ui_net_link::NetToUi::AudioFrame);
+                handler->ui_layer.Write((uint8_t*)&type, sizeof(type));
+                const uint32_t len = length + 1;
+                handler->ui_layer.Write((uint8_t*)&len, sizeof(len));
+                handler->ui_layer.Write(0); // todo Channel id
+                handler->ui_layer.Write(packet->payload.data() + 1, len);
+            }
         }
     }
 }

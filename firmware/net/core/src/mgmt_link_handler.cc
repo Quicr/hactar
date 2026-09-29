@@ -261,8 +261,7 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
             }
             case CtlToNet::GetLoopback:
             {
-                uint8_t mode = static_cast<uint8_t>(
-                    handler->diagnostics.loopback ? NetLoopbackMode::Moq : NetLoopbackMode::Off);
+                uint8_t mode = static_cast<uint8_t>(handler->diagnostics.loopback);
                 handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Loopback),
                                       std::span<const uint8_t>(&mode, 1));
                 break;
@@ -279,18 +278,19 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                 switch (mode)
                 {
                 case NetLoopbackMode::Off:
-                    handler->diagnostics.loopback = false;
+                    handler->diagnostics.loopback = NetLoopbackMode::Off;
                     NET_LOG_INFO("Loopback set to: off");
                     handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
                                           std::span<const uint8_t>{});
                     break;
                 case NetLoopbackMode::Raw:
-                    NET_LOG_WARN("Loopback mode 'raw' not supported");
-                    handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                    handler->diagnostics.loopback = NetLoopbackMode::Raw;
+                    NET_LOG_INFO("Loopback set to: raw");
+                    handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Ack),
                                                "Raw loopback not supported");
                     break;
                 case NetLoopbackMode::Moq:
-                    handler->diagnostics.loopback = true;
+                    handler->diagnostics.loopback = NetLoopbackMode::Moq;
                     NET_LOG_INFO("Loopback set to: moq");
                     handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
                                           std::span<const uint8_t>{});

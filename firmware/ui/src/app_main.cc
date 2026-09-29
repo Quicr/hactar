@@ -167,11 +167,9 @@ int app_main()
 
     audio_chip.Init();
     audio_chip.StartI2S();
-    // audio_chip.VolumeSet(100);
-    // audio_chip.MicPreampSet(60);
 
     // Test in case the audio chip settings change and something looks suspicious
-    // CountNumAudioInterrupts(audio_chip, sleeping);
+    CountNumAudioInterrupts(audio_chip, sleeping);
 
     // InitScreen(screen);
     Leds(LOW, LOW, LOW);
