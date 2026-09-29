@@ -24,7 +24,7 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio)
                                ? constants::Audio_Phonic_Sz
                                : response->chunk_length;
 
-        AudioCodec::ALawExpand(response->chunk_data, len, audio.TxBuffer(),
+        AudioCodec::ALawExpand(response->chunk_data, len, audio.HpOutPtr(),
                                constants::Audio_Buffer_Sz, constants::Stereo, true);
         break;
     }
@@ -91,15 +91,15 @@ void HandleQuicrPackets(Serial& mgmt_serial,
         {
             ForwardToMgmt(mgmt_serial, packet, audio_chunk->last_chunk);
             AudioCodec::ALawExpand(audio_chunk->chunk_data, constants::Audio_Phonic_Sz,
-                                   audio.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                                   audio.HpOutPtr(), constants::Audio_Buffer_Sz, constants::Stereo,
                                    true);
             break;
         }
         case AudioReceiveMode::Headphones:
         {
             AudioCodec::ALawExpand(audio_chunk->chunk_data, constants::Audio_Phonic_Sz,
-                                   audio.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
-                                   true);
+                                   audio.HpOutPtr(), constants::Audio_Buffer_Sz, constants::Stereo,
+                                   false);
             break;
         }
         default:
@@ -556,7 +556,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             ui_net_link::Chunk* audio_chunk =
                 static_cast<ui_net_link::Chunk*>(static_cast<void*>(packet->payload.data() + 1));
             AudioCodec::ALawExpand(audio_chunk->chunk_data, constants::Audio_Phonic_Sz,
-                                   audio_chip.TxBuffer(), constants::Audio_Buffer_Sz,
+                                   audio_chip.HpOutPtr(), constants::Audio_Buffer_Sz,
                                    constants::Stereo, true);
             break;
         }

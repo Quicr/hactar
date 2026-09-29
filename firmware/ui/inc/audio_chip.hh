@@ -24,10 +24,10 @@ public:
     uint8_t ADCVolume() const;
 
     void ISRCallback();
-    void ClearTxBuffer();
+    void ClearHpOutBuffer();
 
-    uint16_t* TxBuffer();
-    const uint16_t* RxBuffer() const;
+    uint16_t* HpOutPtr();
+    const uint16_t* MicInPtr() const;
 
 private:
     bool WriteRegister(uint8_t address, uint8_t value);
@@ -48,14 +48,14 @@ private:
     I2S_HandleTypeDef* i2s;
     I2C_HandleTypeDef* i2c;
 
-    uint16_t tx_buffer[constants::Total_Audio_Buffer_Sz] = {0};
-    uint16_t* tx_ptr = tx_buffer;
-    uint16_t rx_buffer[constants::Total_Audio_Buffer_Sz] = {0};
-    uint16_t* rx_ptr = rx_buffer;
+    uint16_t hp_out_buffer[constants::Total_Audio_Buffer_Sz] = {0};
+    uint16_t* hp_out_ptr = hp_out_buffer;
+    uint16_t mic_in_buffer[constants::Total_Audio_Buffer_Sz] = {0};
+    uint16_t* mic_in_ptr = mic_in_buffer;
     uint16_t buff_modifier = false;
 
     uint8_t dac_volume = 0xBF;
-    uint8_t adc_volume = 0xBF;
+    uint8_t adc_volume = 0xCF;
 
     // TODO move out into wave signal generator
     double phase;
