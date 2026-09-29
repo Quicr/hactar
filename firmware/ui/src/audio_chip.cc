@@ -42,8 +42,9 @@ void AudioChip::Reset()
 
 void AudioChip::StartI2S()
 {
-    ClearTxBuffer();
-    if (HAL_I2SEx_TransmitReceive_DMA(i2s, tx_buffer, rx_buffer, constants::Total_Audio_Buffer_Sz)
+    ClearHpOutBuffer();
+    if (HAL_I2SEx_TransmitReceive_DMA(i2s, hp_out_buffer, mic_in_buffer,
+                                      constants::Total_Audio_Buffer_Sz)
         != HAL_OK)
     {
         UI_LOG_ERROR("Failed to start I2S DMA");
@@ -90,26 +91,26 @@ uint8_t AudioChip::ADCVolume() const
 void AudioChip::ISRCallback()
 {
     const uint16_t offset = buff_modifier * constants::Audio_Buffer_Sz;
-    tx_ptr = tx_buffer + offset;
-    rx_ptr = rx_buffer + offset;
+    hp_out_ptr = hp_out_buffer + offset;
+    mic_in_ptr = mic_in_buffer + offset;
     buff_modifier = !buff_modifier;
 
-    std::memset(tx_ptr, 0, constants::Audio_Buffer_Sz * sizeof(tx_ptr[0]));
+    std::memset(hp_out_ptr, 0, constants::Audio_Buffer_Sz * sizeof(hp_out_ptr[0]));
 }
 
-void AudioChip::ClearTxBuffer()
+void AudioChip::ClearHpOutBuffer()
 {
-    std::memset(tx_buffer, 0, sizeof(tx_buffer));
+    std::memset(hp_out_buffer, 0, sizeof(hp_out_buffer));
 }
 
-uint16_t* AudioChip::TxBuffer()
+uint16_t* AudioChip::HpOutPtr()
 {
-    return tx_ptr;
+    return hp_out_ptr;
 }
 
-const uint16_t* AudioChip::RxBuffer() const
+const uint16_t* AudioChip::MicInPtr() const
 {
-    return rx_ptr;
+    return mic_in_ptr;
 }
 
 bool AudioChip::WriteRegister(uint8_t address, uint8_t value)

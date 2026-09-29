@@ -54,7 +54,7 @@ extern TIM_HandleTypeDef htim5;
 extern RNG_HandleTypeDef hrng;
 
 // Global variables that need to exist for hardware callbacks
-UiLoopbackMode loopback_mode = UiLoopbackMode::Raw;
+UiLoopbackMode loopback_mode = UiLoopbackMode::Off;
 AudioTransmitMode audio_transmit_mode = AudioTransmitMode::Net;
 AudioReceiveMode audio_receive_mode = AudioReceiveMode::Headphones;
 
@@ -387,14 +387,14 @@ void SendAudio(Protector& protector,
                bool last,
                const UiLoopbackMode loopback_mode)
 {
-    const uint16_t* rx_buff = audio_chip.RxBuffer();
+    const uint16_t* mic_in_ptr = audio_chip.MicInPtr();
     if (loopback_mode == UiLoopbackMode::Raw)
     {
-        uint16_t* tx_buff = audio_chip.TxBuffer();
+        uint16_t* hp_out_ptr = audio_chip.HpOutPtr();
 
         for (size_t i = 0; i < constants::Audio_Buffer_Sz; ++i)
         {
-            tx_buff[i] = rx_buff[i];
+            hp_out_ptr[i] = mic_in_ptr[i];
         }
     }
 
@@ -440,14 +440,14 @@ void SendAudio(Protector& protector,
 
     audio_packet.length = offset + constants::Audio_Phonic_Sz;
 
-    AudioCodec::ALawCompand(rx_buff, constants::Audio_Buffer_Sz,
+    AudioCodec::ALawCompand(mic_in_ptr, constants::Audio_Buffer_Sz,
                             audio_packet.payload.data() + offset, constants::Audio_Phonic_Sz, true,
                             constants::Stereo);
 
     if (loopback_mode == UiLoopbackMode::Alaw)
     {
         AudioCodec::ALawExpand(audio_packet.payload.data() + offset, constants::Audio_Phonic_Sz,
-                               audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                               audio_chip.HpOutPtr(), constants::Audio_Buffer_Sz, constants::Stereo,
                                true);
     }
 
@@ -491,7 +491,7 @@ void SendAudio(Protector& protector,
         }
 
         AudioCodec::ALawExpand(audio_packet.payload.data() + offset, constants::Audio_Phonic_Sz,
-                               audio_chip.TxBuffer(), constants::Audio_Buffer_Sz, constants::Stereo,
+                               audio_chip.HpOutPtr(), constants::Audio_Buffer_Sz, constants::Stereo,
                                true);
     }
 }
