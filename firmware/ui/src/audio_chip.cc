@@ -268,7 +268,6 @@ bool AudioChip::InitClockManager()
     }
     }
 
-    /* clang-format off */ 
     // Please refer to the es8311-register-map.md
     const uint8_t clock_manager[][2] = {
         {clock_manager_2_0x02, 0x98},     
@@ -280,27 +279,23 @@ bool AudioChip::InitClockManager()
         {clock_manager_8_0x08, lrclk_low}, 
         {clock_manager_1_0x01, 0x3F},
     };
-    /* clang-format on */
 
     return WriteRegistersVerify(clock_manager, sizeof(clock_manager) / sizeof(clock_manager[0]));
 }
 
 bool AudioChip::InitSerialData()
 {
-    /* clang-format off */ 
     // Please refer to the es8311-register-map.md
     const uint8_t serial_port[][2] = {
         {serial_data_port_1_0x09, 0x11},
         {serial_data_port_2_0x0a, 0x11},
     };
-    /* clang-format on */
 
     return WriteRegistersVerify(serial_port, sizeof(serial_port) / sizeof(serial_port[0]));
 }
 
 bool AudioChip::InitSystemPower()
 {
-    /* clang-format off */ 
     // Please refer to the es8311-register-map.md
     const uint8_t system_power[][2] = {
         {system_power_2_0x0d, 0x05},
@@ -308,14 +303,12 @@ bool AudioChip::InitSystemPower()
         {system_power_3_0x0e, 0x0a},
         {system_power_4_0x0f, 0x00},
     };
-    /* clang-format on */
 
     return WriteRegistersVerify(system_power, sizeof(system_power) / sizeof(system_power[0]));
 }
 
 bool AudioChip::InitDACADC()
 {
-    /* clang-format off */ 
     // Please refer to the es8311-register-map.md
     const uint8_t dac_adc_config[][2] = {
         {line_input_0x13, 0x10},       
@@ -327,7 +320,6 @@ bool AudioChip::InitDACADC()
         {dac_volume_0x32, dac_volume}, 
         {dac_output_0x37, 0x08},       
     };
-    /* clang-format on*/
 
     return WriteRegistersVerify(dac_adc_config, sizeof(dac_adc_config) / sizeof(dac_adc_config[0]));
 }
