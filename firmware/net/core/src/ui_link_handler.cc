@@ -105,31 +105,27 @@ void UiLinkHandler::LinkPacketTask(void* arg)
                 continue;
             }
 
-            uint8_t channel_id = packet->payload[0];
-            uint32_t ext_bytes = 1;
-            uint32_t length = packet->length;
+            if (packet->length < 1)
+            {
+                NET_LOG_ERROR("Got audio frame without channel id");
+                continue;
+            }
 
-            // Remove the bytes already read from the payload length (channel_id)
-            length -= ext_bytes;
+            if (handler->diagnostics.loopback == NetLoopbackMode::Raw)
+            {
+                packet->type = static_cast<uint16_t>(ui_net_link::NetToUi::AudioFrame);
+                handler->ui_layer.Write(*packet);
+                continue;
+            }
+
+            uint8_t channel_id = packet->payload[0];
+            uint32_t length = packet->length - 1;
 
             if (handler->diagnostics.loopback == NetLoopbackMode::Off
                 || handler->diagnostics.loopback == NetLoopbackMode::Moq)
             {
-
                 handler->moq_context.PushAudioFrame(channel_id, packet->payload.data() + 1, length,
                                                     handler->runtime.curr_audio_isr_time);
-            }
-            else if (handler->diagnostics.loopback == NetLoopbackMode::Raw)
-            {
-                // TODO there is a bug somewhere in this, causing an error in the sync word
-                // not sure what exactly or why
-                handler->ui_layer.Write(link_packet_t::Sync_Word, sizeof(link_packet_t::Sync_Word));
-                const uint16_t type = static_cast<uint16_t>(ui_net_link::NetToUi::AudioFrame);
-                handler->ui_layer.Write((uint8_t*)&type, sizeof(type));
-                const uint32_t len = length + 1;
-                handler->ui_layer.Write((uint8_t*)&len, sizeof(len));
-                handler->ui_layer.Write(0); // todo Channel id
-                handler->ui_layer.Write(packet->payload.data() + 1, len);
             }
         }
     }
