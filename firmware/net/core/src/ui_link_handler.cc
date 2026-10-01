@@ -120,6 +120,7 @@ void UiLinkHandler::LinkPacketTask(void* arg)
                 break;
             }
             case NetLoopbackMode::Off:
+                [[fallthrough]];
             case NetLoopbackMode::Moq:
             {
                 const uint8_t channel_id = packet->payload[0];
@@ -131,8 +132,8 @@ void UiLinkHandler::LinkPacketTask(void* arg)
             }
             default:
             {
-                NET_LOG_INFO("LinkPacketTask: Error, unhandled NetLoopbackMode %d",
-                             (int)handler->diagnostics.loopback);
+                NET_LOG_ERROR("LinkPacketTask: Error, unhandled NetLoopbackMode %d",
+                              (int)handler->diagnostics.loopback);
                 break;
             }
             };
