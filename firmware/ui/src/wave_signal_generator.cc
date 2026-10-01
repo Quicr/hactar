@@ -1,8 +1,9 @@
 #include "wave_signal_generator.hh"
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 
-constexpr float Two_Pi = 6.28318530717958647692F;
+constexpr float Two_Pi = std::numbers::pi * 2;
 
 double WaveSignalGenerator::NormalizePhase(double phase)
 {

@@ -111,22 +111,31 @@ void UiLinkHandler::LinkPacketTask(void* arg)
                 continue;
             }
 
-            if (handler->diagnostics.loopback == NetLoopbackMode::Raw)
+            switch (handler->diagnostics.loopback)
+            {
+            case NetLoopbackMode::Raw:
             {
                 packet->type = static_cast<uint16_t>(ui_net_link::NetToUi::AudioFrame);
                 handler->ui_layer.Write(*packet);
-                continue;
+                break;
             }
-
-            uint8_t channel_id = packet->payload[0];
-            uint32_t length = packet->length - 1;
-
-            if (handler->diagnostics.loopback == NetLoopbackMode::Off
-                || handler->diagnostics.loopback == NetLoopbackMode::Moq)
+            case NetLoopbackMode::Off:
+            case NetLoopbackMode::Moq:
             {
+                const uint8_t channel_id = packet->payload[0];
+                const uint32_t length = packet->length - 1;
                 handler->moq_context.PushAudioFrame(channel_id, packet->payload.data() + 1, length,
                                                     handler->runtime.curr_audio_isr_time);
+
+                break;
             }
+            default:
+            {
+                NET_LOG_INFO("LinkPacketTask: Error, unhandled NetLoopbackMode %d",
+                             (int)handler->diagnostics.loopback);
+                break;
+            }
+            };
         }
     }
 }

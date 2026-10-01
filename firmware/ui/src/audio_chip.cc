@@ -26,20 +26,53 @@ bool AudioChip::Init()
 {
     Reset();
 
-    PartialResetSequence();
-    InitClockManager();
-    InitSerialData();
-    InitSystemPower();
-    InitDACADC();
-    InitGPIOPath();
-    CompleteResetSequence();
+    if (!PartialResetSequence())
+    {
+        UI_LOG_ERROR("AudioChip::Init - Failed to init partial reset sequence");
+        return false;
+    }
+
+    if (!InitClockManager())
+    {
+        UI_LOG_ERROR("AudioChip::Init - Failed to init clock manager");
+        return false;
+    }
+
+    if (!InitSerialData())
+    {
+        UI_LOG_ERROR("AudioChip::Init - Failed to init the i2s registers");
+        return false;
+    }
+
+    if (!InitSystemPower())
+    {
+        UI_LOG_ERROR("AudioChip::Init - Failed to init system power");
+        return false;
+    }
+
+    if (!InitDACADC())
+    {
+        UI_LOG_ERROR("AudioChip::Init - Failed to init ADC and DAC registers");
+        return false;
+    }
+
+    if (!InitGPIOPath())
+    {
+        UI_LOG_ERROR("AudioChip::Init - Failed to init gpio path registers");
+        return false;
+    }
+
+    if (!CompleteResetSequence())
+    {
+        UI_LOG_ERROR("AudioChip::Init - Failed to init finish reset sequence");
+        return false;
+    }
 
     return true;
 }
 
 void AudioChip::Reset()
 {
-    // 0011'1111
     if (!WriteRegisterVerify(reset_0x00, 0x3F))
     {
         UI_LOG_ERROR("ES8311 failed to reest");
@@ -70,15 +103,7 @@ void AudioChip::StopI2S()
 
 void AudioChip::DACVolumeSet(uint8_t value)
 {
-    if (value >= Max_DAC_Volume)
-    {
-        value = Max_DAC_Volume;
-    }
-
-    if (value <= Min_DAC_Volume)
-    {
-        value = Min_DAC_Volume;
-    }
+    value = std::clamp(value, Min_DAC_Volume, Max_DAC_Volume);
 
     if (dac_volume == value)
     {
@@ -102,15 +127,7 @@ uint8_t AudioChip::DACVolume() const
 
 void AudioChip::ADCVolumeSet(uint8_t value)
 {
-    if (value >= Max_ADC_Volume)
-    {
-        value = Max_ADC_Volume;
-    }
-
-    if (value <= Min_ADC_Volume)
-    {
-        value = Min_ADC_Volume;
-    }
+    value = std::clamp(value, Min_ADC_Volume, Max_ADC_Volume);
 
     if (adc_volume == value)
     {
@@ -159,7 +176,7 @@ const uint16_t* AudioChip::MicInPtr() const
 bool AudioChip::WriteRegister(uint8_t address, uint8_t value)
 {
     uint8_t message[] = {address, value};
-    // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", address, value);
+    UI_LOG_DEBUG("ES8311 register 0x%02x = 0x%02x", address, value);
     return HAL_I2C_Master_Transmit(i2c, Es8311_I2c_Address, message, sizeof(message), 100)
         == HAL_OK;
 }
@@ -167,7 +184,7 @@ bool AudioChip::WriteRegister(uint8_t address, uint8_t value)
 bool AudioChip::WriteRegisterVerify(uint8_t address, uint8_t value)
 {
     uint8_t message[] = {address, value};
-    // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", address, value);
+    UI_LOG_DEBUG("ES8311 register 0x%02x = 0x%02x", address, value);
     if (HAL_I2C_Master_Transmit(i2c, Es8311_I2c_Address, message, sizeof(message), 100) != HAL_OK)
     {
         UI_LOG_ERROR("Failed to transmit to register %d value %d\n", (int)address, (int)value);
@@ -201,16 +218,16 @@ bool AudioChip::WriteRegistersVerify(const uint8_t (*registers)[2], const size_t
 int16_t AudioChip::ReadRegister(uint8_t address)
 {
     uint8_t message = address;
-    // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", address, value);
+    UI_LOG_DEBUG("ES8311 read register 0x%02x", address);
     if (HAL_I2C_Master_Transmit(i2c, Es8311_I2c_Address, &message, sizeof(message), 100) != HAL_OK)
     {
         return -1;
     }
 
-    // UI_LOG_INFO("ES8311 register 0x%02x = 0x%02x", address, value);
     if (HAL_I2C_Master_Receive(i2c, Es8311_I2c_Address, &message, sizeof(message), 100) != HAL_OK)
     {
         return -1;
+        UI_LOG_DEBUG("ES8311 read register retrieved 0x%02x = 0x%02x", address, message);
     }
 
     return static_cast<int16_t>(message);
@@ -319,11 +336,12 @@ bool AudioChip::CompleteResetSequence()
 
 void AudioChip::LowPowerMode()
 {
+    // TODO
 }
 
 bool AudioChip::ReadFlag(AudioFlag flag) const
 {
-    return (flags >> flag) & 0x01;
+    return (flags & flag) != 0;
 }
 
 inline void AudioChip::RaiseFlag(AudioFlag flag)
@@ -338,7 +356,7 @@ inline void AudioChip::LowerFlag(AudioFlag flag)
 
 inline bool AudioChip::ReadAndLowerFlag(AudioFlag flag)
 {
-    const bool res = (flags >> flag) & 0x01;
+    const bool res = ReadFlag(flag);
     LowerFlag(flag);
     return res;
 }
