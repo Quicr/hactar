@@ -345,7 +345,7 @@ void AudioChip::LowPowerMode()
 
 bool AudioChip::ReadFlag(AudioFlag flag) const
 {
-    return (flags & flag) != 0;
+    return (flags >> flag) & 0x01;
 }
 
 inline void AudioChip::RaiseFlag(AudioFlag flag)
