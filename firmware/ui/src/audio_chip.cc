@@ -227,8 +227,8 @@ int16_t AudioChip::ReadRegister(uint8_t address)
     if (HAL_I2C_Master_Receive(i2c, Es8311_I2c_Address, &message, sizeof(message), 100) != HAL_OK)
     {
         return -1;
-        UI_LOG_DEBUG("ES8311 read register retrieved 0x%02x = 0x%02x", address, message);
     }
+    UI_LOG_DEBUG("ES8311 read register retrieved 0x%02x = 0x%02x", address, message);
 
     return static_cast<int16_t>(message);
 }
@@ -268,54 +268,66 @@ bool AudioChip::InitClockManager()
     }
     }
 
+    /* clang-format off */ 
+    // Please refer to the es8311-register-map.md
     const uint8_t clock_manager[][2] = {
-        {clock_manager_2_0x02, 0x98},       // DIG_MCLK 1001'1000 DIV4+1, MULT8 19.2Mhz
-        {clock_manager_3_0x03, 0x10},       // ADC oversampling
-        {clock_manager_4_0x04, 0x10},       // DAC oversampling
-        {clock_manager_5_0x05, 0x00},       // ADC/DAC clk divider
-        {clock_manager_6_0x06, bclk},       // BCLK
-        {clock_manager_7_0x07, lrclk_high}, // LRCLK 48Mhz
-        {clock_manager_8_0x08, lrclk_low},  // LRCLK 48Mhz
-        {clock_manager_1_0x01, 0x3F},       // Enable clocks
+        {clock_manager_2_0x02, 0x98},     
+        {clock_manager_3_0x03, 0x10},
+        {clock_manager_4_0x04, 0x10},      
+        {clock_manager_5_0x05, 0x00},
+        {clock_manager_6_0x06, bclk},     
+        {clock_manager_7_0x07, lrclk_high},
+        {clock_manager_8_0x08, lrclk_low}, 
+        {clock_manager_1_0x01, 0x3F},
     };
+    /* clang-format on */
 
     return WriteRegistersVerify(clock_manager, sizeof(clock_manager) / sizeof(clock_manager[0]));
 }
 
 bool AudioChip::InitSerialData()
 {
+    /* clang-format off */ 
+    // Please refer to the es8311-register-map.md
     const uint8_t serial_port[][2] = {
-        {serial_data_port_1_0x09, 0x11}, // 0001'0001
-        {serial_data_port_2_0x0a, 0x11}, // unmute, normal pol, 32 bit frame, i2s format
+        {serial_data_port_1_0x09, 0x11},
+        {serial_data_port_2_0x0a, 0x11},
     };
+    /* clang-format on */
 
     return WriteRegistersVerify(serial_port, sizeof(serial_port) / sizeof(serial_port[0]));
 }
 
 bool AudioChip::InitSystemPower()
 {
+    /* clang-format off */ 
+    // Please refer to the es8311-register-map.md
     const uint8_t system_power[][2] = {
         {system_power_2_0x0d, 0x05},
         {system_power_2_0x0d, 0x06},
-        {system_power_3_0x0e, 0x0a}, // 0b0000'1010
+        {system_power_3_0x0e, 0x0a},
         {system_power_4_0x0f, 0x00},
     };
+    /* clang-format on */
 
     return WriteRegistersVerify(system_power, sizeof(system_power) / sizeof(system_power[0]));
 }
 
 bool AudioChip::InitDACADC()
 {
+    /* clang-format off */ 
+    // Please refer to the es8311-register-map.md
     const uint8_t dac_adc_config[][2] = {
-        {line_input_0x13, 0x10},       // enable headphone drive
-        {hp_dmic_0x14, 0x10},          //
-        {adc_power_0x16, 0x04},        //
-        {adc_gain_0x17, adc_volume},   //
-        {dac_en_0x12, 0x01},           //
-        {dac_power_0x31, 0x00},        //
-        {dac_volume_0x32, dac_volume}, //
-        {dac_output_0x37, 0x08},       // disable eq
+        {line_input_0x13, 0x10},       
+        {hp_dmic_0x14, 0x10},          
+        {adc_power_0x16, 0x04},        
+        {adc_gain_0x17, adc_volume},   
+        {dac_en_0x12, 0x01},           
+        {dac_power_0x31, 0x00},        
+        {dac_volume_0x32, dac_volume}, 
+        {dac_output_0x37, 0x08},       
     };
+    /* clang-format on*/
 
     return WriteRegistersVerify(dac_adc_config, sizeof(dac_adc_config) / sizeof(dac_adc_config[0]));
 }
