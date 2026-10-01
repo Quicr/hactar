@@ -75,9 +75,4 @@ struct link_packet_t
         }
     }
 } __attribute__((packed));
-
-// These are whack
-// static_assert(sizeof(link_packet_t) == link_packet_t::Packet_Size + sizeof(bool));
-// static_assert(link_packet_t::Packet_Size == 650 /* sync + header + 640 value */);
-
 #endif
