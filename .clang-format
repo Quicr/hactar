@@ -19,7 +19,7 @@ AlignConsecutiveDeclarations: None
 AlignOperands: AlignAfterOperator
 BinPackArguments: true
 BinPackParameters: false
-Cpp11BraceListStyle: true
+Cpp11BracedListStyle: true
 
 # --- SPACING ---
 PackConstructorInitializers: Never
