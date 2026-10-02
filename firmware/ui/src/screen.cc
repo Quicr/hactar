@@ -51,101 +51,101 @@ void Screen::Init()
     Select();
     Reset();
 
-    WriteCommand(SF_RST);
+    WriteCommand(Software_Reset);
     HAL_Delay(5); // wait 5ms
 
     // Set power control A
-    WriteCommand(PWRC_A);
+    WriteCommand(Power_Control_A);
     uint8_t power_a_data[5] = {0x39, 0x2C, 0x00, 0x34, 0x02};
     WriteDataWithSet(power_a_data, 5);
 
     // Set power control B
-    WriteCommand(PWRC_B);
+    WriteCommand(Power_Control_B);
     uint8_t power_b_data[3] = {0x00, 0xC1, 0x30};
     WriteDataWithSet(power_b_data, 3);
 
     // Driver timing control A
-    WriteCommand(TIMC_A);
+    WriteCommand(Driver_Timing_Control_A);
     uint8_t timer_a_data[3] = {0x85, 0x00, 0x78};
     WriteDataWithSet(timer_a_data, 3);
 
     // Driver timing control B
-    WriteCommand(TIMC_B);
+    WriteCommand(Driver_Timing_Control_B);
     uint8_t timer_b_data[2] = {0x00, 0x00};
     WriteDataWithSet(timer_b_data, 2);
 
     // Power on sequence control
-    WriteCommand(PWR_ON);
+    WriteCommand(Power_On_Sequence_Control);
     uint8_t power_data[4] = {0x64, 0x03, 0x12, 0x81};
     WriteDataWithSet(power_data, 4);
 
     // Pump ratio control
-    WriteCommand(PMP_RA);
+    WriteCommand(Pump_Ratio_Control);
     WriteDataWithSet(0x20);
 
     // Power control VRH[5:0]
-    WriteCommand(PC_VRH); // 0xC0
+    WriteCommand(Power_Control_VRH);
     WriteDataWithSet(0x23);
 
     // Power control SAP[2:0];BT[3:0]
-    WriteCommand(PC_SAP); // 0xC1
+    WriteCommand(Power_Control_SAP_BT);
     WriteDataWithSet(0x10);
 
     // VCM Control 1
-    WriteCommand(VCM_C1);
+    WriteCommand(VCOM_Control_1);
     uint8_t vcm_control[2] = {0x3E, 0x28};
     WriteDataWithSet(vcm_control, 2);
 
     // VCM Control 2
-    WriteCommand(VCM_C2);
+    WriteCommand(VCOM_Control_2);
     WriteDataWithSet(0x86);
 
     // Memory access control
-    WriteCommand(MEM_CR);
+    WriteCommand(Memory_Access_Control);
     WriteDataWithSet(0x48);
 
     // Pixel format
-    WriteCommand(PIX_FM);
+    WriteCommand(Pixel_Format);
     WriteDataWithSet(0x55);
 
     // Frame ratio control. RGB Color
-    WriteCommand(FR_CTL); // 0xB1
+    WriteCommand(Frame_Rate_Control);
     uint8_t fr_control_data[2] = {0x00, 0x18};
     WriteDataWithSet(fr_control_data, 2);
 
     // Display function control
-    WriteCommand(DIS_CT); // 0xB6
+    WriteCommand(Display_Function_Control);
     uint8_t df_control_data[3] = {0x08, 0x82, 0x27};
     WriteDataWithSet(df_control_data, 3);
 
     // 3Gamma function
-    WriteCommand(GAMM_3); // 0xF2
+    WriteCommand(Gamma_Function_3);
     WriteDataWithSet(0x00);
 
     // Gamma curve selected
-    WriteCommand(GAMM_C); // 0x26
+    WriteCommand(Gamma_Curve_Select);
     WriteDataWithSet(0x01);
 
     // Positive Gamma correction
-    WriteCommand(GAM_PC); // 0xE0
+    WriteCommand(Positive_Gamma_Correction);
     uint8_t positive_gamma_correction_data[15] = {0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1,
                                                   0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00};
     WriteDataWithSet(positive_gamma_correction_data, 15);
 
     // Negative gamma correction
-    WriteCommand(GAM_NC);
+    WriteCommand(Negative_Gamma_Correction);
     uint8_t negative_gamma_correction_data[15] = {0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1,
                                                   0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F};
     WriteDataWithSet(negative_gamma_correction_data, 15);
 
-    WriteCommand(NORON); // 0x13
+    WriteCommand(Normal_Display_Mode_On);
     // Exit sleep
-    WriteCommand(END_SL); // 0x11
+    WriteCommand(Exit_Sleep);
 
     HAL_Delay(120);
 
     // Display on
-    WriteCommand(DIS_ON); // 0x29
+    WriteCommand(Display_On);
 
     // Set the orientation of the screen
     SetOrientation(orientation);
@@ -331,13 +331,13 @@ void Screen::SetWriteablePixels(const int16_t x1,
         static_cast<uint8_t>(y2),
     };
 
-    WriteCommand(CA_SET);
+    WriteCommand(Column_Address_Set);
     WriteDataWithSet(col_data, sizeof(col_data));
 
-    WriteCommand(RA_SET);
+    WriteCommand(Row_Address_Set);
     WriteDataWithSet(scan_window, sizeof(scan_window));
 
-    WriteCommand(WR_RAM);
+    WriteCommand(Memory_Write);
     SetPinToData();
 }
 
@@ -351,29 +351,29 @@ void Screen::SetOrientation(const Screen::Orientation orientation)
         view_width = WIDTH;
         view_height = HEIGHT;
 
-        WriteCommand(MAD_CT);
-        WriteDataWithSet(PORTRAIT_DATA);
+        WriteCommand(Memory_Access_Control);
+        WriteDataWithSet(Portrait_Data);
         break;
     case Orientation::flipped_portrait:
         view_width = WIDTH;
         view_height = HEIGHT;
 
-        WriteCommand(MAD_CT);
-        WriteDataWithSet(FLIPPED_PORTRAIT_DATA);
+        WriteCommand(Memory_Access_Control);
+        WriteDataWithSet(Flipped_Portrait_Data);
         break;
     case Orientation::left_landscape:
         view_width = HEIGHT;
         view_height = WIDTH;
 
-        WriteCommand(MAD_CT);
-        WriteDataWithSet(LEFT_LANDSCAPE_DATA);
+        WriteCommand(Memory_Access_Control);
+        WriteDataWithSet(Left_Landscape_Data);
         break;
     case Orientation::right_landscape:
         view_width = HEIGHT;
         view_height = WIDTH;
 
-        WriteCommand(MAD_CT);
-        WriteDataWithSet(RIGHT_LANDSCAPE_DATA);
+        WriteCommand(Memory_Access_Control);
+        WriteDataWithSet(Right_Landscape_Data);
         break;
     default:
         // Do nothing
@@ -466,7 +466,7 @@ void Screen::DefineScrollArea(const uint16_t tfa_idx,
             static_cast<uint8_t>(vsa_idx >> 8), static_cast<uint8_t>(vsa_idx),
             static_cast<uint8_t>(bfa_idx >> 8), static_cast<uint8_t>(bfa_idx),
         };
-        WriteCommand(VSCRDEF);
+        WriteCommand(Vertical_Scroll_Definition);
         WriteDataWithSet(vert_scroll_def_data, 6);
 
         break;
@@ -479,7 +479,7 @@ void Screen::DefineScrollArea(const uint16_t tfa_idx,
             static_cast<uint8_t>(vsa_idx >> 8), static_cast<uint8_t>(vsa_idx),
             static_cast<uint8_t>(tfa_idx >> 8), static_cast<uint8_t>(tfa_idx),
         };
-        WriteCommand(VSCRDEF);
+        WriteCommand(Vertical_Scroll_Definition);
         WriteDataWithSet(vert_scroll_def_data, 6);
 
         break;
@@ -533,7 +533,7 @@ void Screen::ScrollScreen(const uint16_t scroll_idx, bool up)
     uint8_t vert_scroll_idx_data[] = {static_cast<uint8_t>(scroll_d >> 8),
                                       static_cast<uint8_t>(scroll_d)};
 
-    WriteCommand(VSCRSADD);
+    WriteCommand(Vertical_Scroll_Start_Address);
     WriteDataWithSet(vert_scroll_idx_data, 2);
 }
 

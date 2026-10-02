@@ -5,85 +5,6 @@
 #include "stm32.h"
 #include <type_traits>
 
-// TODO move into screen as constexpr
-#define SF_RST 0x01U // Software reset
-#define PWRC_A 0xCBU // Power control A
-#define PWRC_B 0xCFU // Power control B
-#define TIMC_A 0xE8U // Timer control A
-#define TIMC_B 0xEAU // Timer control B
-#define PWR_ON 0xEDU // Power on sequence control
-#define PMP_RA 0xF7U // Pump ratio command
-#define PC_VRH 0xC0U // Power control VRH[5:0]
-#define PC_SAP 0xC1U // Power control SAP[2:0];BT[3:0]
-#define VCM_C1 0xC5U // VCM Control 1
-#define VCM_C2 0xC7U // VCM Control 2
-#define MEM_CR 0x36U // Memory access control
-#define PIX_FM 0x3AU // Pixel format
-#define FR_CTL 0xB1U // Frame ratio control. RGB Color
-#define DIS_CT 0xB6U // Display function control
-#define GAMM_3 0xF2U // 3 Gamma function display
-#define GAMM_C 0x26U // Gamma curve selected
-#define GAM_PC 0xE0U // Positive gamma correction
-#define GAM_NC 0xE1U // Negative gamma correction
-#define END_SL 0x11U // Exit sleep
-#define DIS_ON 0x29U // Display on
-#define MAD_CT 0x36U // Rotation control
-
-#define CA_SET 0x2AU // Column address set
-#define RA_SET 0x2BU // Row address set
-#define WR_RAM 0x2CU // Write to RAM
-
-#define NORON 0x13U
-
-#define MAD_CTL_MY 0x80U
-#define MAD_CTL_MX 0x40U
-#define MAD_CTL_MV 0x20U
-#define MAD_CTL_ML 0x10U
-#define MAD_CTL_RGB 0x00U
-#define MAD_CTL_BGR 0x08U
-#define MAD_CTL_MH 0x04U
-
-// Vertical scroll definition
-#define VSCRDEF 0x33U
-
-// Vertical scroll address
-#define VSCRSADD 0x37U
-
-// Some basic colours
-#define C_BLACK 0x0000U
-#define C_WHITE 0xFFFFU
-#define C_BLUE 0x001FU
-#define C_RED 0xF800U
-#define C_LIGHT_GREEN 0x3626U
-#define C_GREEN 0x07E0U
-#define C_CYAN 0x07FFU
-#define C_MAGENTA 0xF81FU
-#define C_YELLOW 0xFFE0U
-#define C_GREY 0xCE59U
-
-// Default orientation
-#define WIDTH uint16_t(240)
-#define HEIGHT uint16_t(320)
-#define PORTRAIT_DATA (MAD_CTL_MX | MAD_CTL_BGR)
-#define FLIPPED_PORTRAIT_DATA (MAD_CTL_MY | MAD_CTL_BGR)
-#define LEFT_LANDSCAPE_DATA (MAD_CTL_MV | MAD_CTL_BGR)
-#define RIGHT_LANDSCAPE_DATA (MAD_CTL_MX | MAD_CTL_MY | MAD_CTL_MV | MAD_CTL_BGR)
-
-// enum Colour: uint16_t
-// {
-//     NOP = 0x0000U,
-//     Black = 0x0001U,
-//     White = 0xFFFFU,
-//     Red = 0xF800U,
-//     Blue = 0x001FU,
-//     Light_Green = 0x3626U,
-//     Green = 0x07E0U,
-//     Cyan = 0x07FFU,
-//     Magenta = 0xF81FU,
-//     Yellow = 0xFFE0U,
-//     Grey = 0xCE59U,
-// };
-
 enum class Colour : uint8_t
 {
     Black = 0,
@@ -101,6 +22,22 @@ enum class Colour : uint8_t
 class Screen
 {
 public:
+    // Some basic colours (RGB565)
+    static constexpr uint16_t C_BLACK = 0x0000U;
+    static constexpr uint16_t C_WHITE = 0xFFFFU;
+    static constexpr uint16_t C_BLUE = 0x001FU;
+    static constexpr uint16_t C_RED = 0xF800U;
+    static constexpr uint16_t C_LIGHT_GREEN = 0x3626U;
+    static constexpr uint16_t C_GREEN = 0x07E0U;
+    static constexpr uint16_t C_CYAN = 0x07FFU;
+    static constexpr uint16_t C_MAGENTA = 0xF81FU;
+    static constexpr uint16_t C_YELLOW = 0xFFE0U;
+    static constexpr uint16_t C_GREY = 0xCE59U;
+
+    // Default orientation
+    static constexpr uint8_t WIDTH = 240;
+    static constexpr uint16_t HEIGHT = 320;
+
     static constexpr uint32_t Num_Rows = 10;
     // TODO find a sweet spot for num memories
     static constexpr uint32_t Num_Memories = 50;
@@ -364,6 +301,49 @@ private:
     // Window: 308-320px
     char usr_buffer[Max_Characters];
     char usr_buffer_idx;
+
+    static constexpr uint8_t Software_Reset = 0x01U;
+    static constexpr uint8_t Power_Control_A = 0xCBU;
+    static constexpr uint8_t Power_Control_B = 0xCFU;
+    static constexpr uint8_t Driver_Timing_Control_A = 0xE8U;
+    static constexpr uint8_t Driver_Timing_Control_B = 0xEAU;
+    static constexpr uint8_t Power_On_Sequence_Control = 0xEDU;
+    static constexpr uint8_t Pump_Ratio_Control = 0xF7U;
+    static constexpr uint8_t Power_Control_VRH = 0xC0U;
+    static constexpr uint8_t Power_Control_SAP_BT = 0xC1U;
+    static constexpr uint8_t VCOM_Control_1 = 0xC5U;
+    static constexpr uint8_t VCOM_Control_2 = 0xC7U;
+    static constexpr uint8_t Memory_Access_Control = 0x36U;
+    static constexpr uint8_t Pixel_Format = 0x3AU;
+    static constexpr uint8_t Frame_Rate_Control = 0xB1U;
+    static constexpr uint8_t Display_Function_Control = 0xB6U;
+    static constexpr uint8_t Gamma_Function_3 = 0xF2U;
+    static constexpr uint8_t Gamma_Curve_Select = 0x26U;
+    static constexpr uint8_t Positive_Gamma_Correction = 0xE0U;
+    static constexpr uint8_t Negative_Gamma_Correction = 0xE1U;
+    static constexpr uint8_t Exit_Sleep = 0x11U;
+    static constexpr uint8_t Display_On = 0x29U;
+
+    static constexpr uint8_t Column_Address_Set = 0x2AU;
+    static constexpr uint8_t Row_Address_Set = 0x2BU;
+    static constexpr uint8_t Memory_Write = 0x2CU;
+    static constexpr uint8_t Normal_Display_Mode_On = 0x13U;
+    static constexpr uint8_t Vertical_Scroll_Definition = 0x33U;
+    static constexpr uint8_t Vertical_Scroll_Start_Address = 0x37U;
+
+    // Memory access control bits
+    static constexpr uint8_t Mirror_Y = 0x80U;
+    static constexpr uint8_t Mirror_X = 0x40U;
+    static constexpr uint8_t Swap_XY = 0x20U;
+    static constexpr uint8_t Vertical_Refresh_Order = 0x10U;
+    static constexpr uint8_t RGB_Order = 0x00U;
+    static constexpr uint8_t BGR_Order = 0x08U;
+    static constexpr uint8_t Horizontal_Refresh_Order = 0x04U;
+
+    static constexpr uint8_t Portrait_Data = Mirror_X | BGR_Order;
+    static constexpr uint8_t Flipped_Portrait_Data = Mirror_Y | BGR_Order;
+    static constexpr uint8_t Left_Landscape_Data = Swap_XY | BGR_Order;
+    static constexpr uint8_t Right_Landscape_Data = Mirror_X | Mirror_Y | Swap_XY | BGR_Order;
 };
 
 // 44226 bytes approximately.

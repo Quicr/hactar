@@ -7,7 +7,7 @@ void InitScreen(Screen& screen)
 {
     screen.Init();
     // Do the first draw
-    screen.FillRectangle(0, WIDTH, 0, HEIGHT, Colour::Black);
+    screen.FillRectangle(0, Screen::WIDTH, 0, Screen::HEIGHT, Colour::Black);
     for (int i = 0; i < 320; i += Screen::Num_Rows)
     {
         screen.Draw(0xFFFF);

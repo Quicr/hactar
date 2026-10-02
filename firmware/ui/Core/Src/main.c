@@ -653,7 +653,7 @@ static void MX_DMA_Init(void)
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
   /* DMA2_Stream3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
   /* DMA2_Stream5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream5_IRQn, 1, 0);
@@ -687,7 +687,10 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, KB_COL1_Pin|KB_COL2_Pin|KB_COL3_Pin|KB_COL4_Pin
-                          |DISP_DC_Pin|DISP_RST_Pin, GPIO_PIN_RESET);
+                          |DISP_CS_Pin|DISP_DC_Pin|DISP_RST_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(DISP_BL_GPIO_Port, DISP_BL_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : KB_ROW5_Pin KB_ROW6_Pin KB_ROW1_Pin KB_ROW2_Pin
                            KB_ROW3_Pin KB_ROW4_Pin */
@@ -729,13 +732,20 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : KB_COL1_Pin KB_COL2_Pin KB_COL3_Pin KB_COL4_Pin
-                           DISP_DC_Pin DISP_RST_Pin */
+                           DISP_CS_Pin DISP_DC_Pin DISP_RST_Pin */
   GPIO_InitStruct.Pin = KB_COL1_Pin|KB_COL2_Pin|KB_COL3_Pin|KB_COL4_Pin
-                          |DISP_DC_Pin|DISP_RST_Pin;
+                          |DISP_CS_Pin|DISP_DC_Pin|DISP_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : DISP_BL_Pin */
+  GPIO_InitStruct.Pin = DISP_BL_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(DISP_BL_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : UI_STAT_Pin */
   GPIO_InitStruct.Pin = UI_STAT_Pin;

@@ -4,6 +4,7 @@
 #include "button.hh"
 #include "config_storage.hh"
 #include "constants.hh"
+#include "graphics.hh"
 #include "keyboard.hh"
 #include "keyboard_display.hh"
 #include "led_control.hh"
@@ -88,42 +89,38 @@ static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_rx_buff_sz,
                           false);
 
-#if 0
-// Screen screen(hspi1,
-//               DISP_CS_GPIO_Port,
-//               DISP_CS_Pin,
-//               DISP_DC_GPIO_Port,
-//               DISP_DC_Pin,
-//               DISP_RST_GPIO_Port,
-//               DISP_RST_Pin,
-//               DISP_BL_GPIO_Port,
-//               DISP_BL_Pin,
-//               Screen::Orientation::flipped_portrait);
-//
-// GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
-//     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port,
-//     KB_COL5_GPIO_Port,
-// };
-//
-// uint16_t col_pins[Keyboard::Q10_Cols] = {
-//     KB_COL1_Pin, KB_COL2_Pin, KB_COL3_Pin, KB_COL4_Pin, KB_COL5_Pin,
-// };
-//
-// GPIO_TypeDef* row_ports[Keyboard::Q10_Rows] = {
-//     KB_ROW1_GPIO_Port, KB_ROW2_GPIO_Port, KB_ROW3_GPIO_Port, KB_ROW4_GPIO_Port,
-//     KB_ROW5_GPIO_Port, KB_ROW6_GPIO_Port, KB_ROW7_GPIO_Port,
-// };
+Screen screen(hspi1,
+              DISP_CS_GPIO_Port,
+              DISP_CS_Pin,
+              DISP_DC_GPIO_Port,
+              DISP_DC_Pin,
+              DISP_RST_GPIO_Port,
+              DISP_RST_Pin,
+              DISP_BL_GPIO_Port,
+              DISP_BL_Pin,
+              Screen::Orientation::flipped_portrait);
 
-// uint16_t row_pins[Keyboard::Q10_Rows] = {
-//     KB_ROW1_Pin, KB_ROW2_Pin, KB_ROW3_Pin, KB_ROW4_Pin, KB_ROW5_Pin, KB_ROW6_Pin, KB_ROW7_Pin,
-// }
-// ;
+GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
+    KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
+};
 
-// static constexpr uint16_t kb_ring_buff_sz = 5;
-// RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
-//
-// Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
-#endif
+uint16_t col_pins[Keyboard::Q10_Cols] = {
+    KB_COL1_Pin, KB_COL2_Pin, KB_COL3_Pin, KB_COL4_Pin, KB_COL5_Pin,
+};
+
+GPIO_TypeDef* row_ports[Keyboard::Q10_Rows] = {
+    KB_ROW1_GPIO_Port, KB_ROW2_GPIO_Port, KB_ROW3_GPIO_Port, KB_ROW4_GPIO_Port,
+    KB_ROW5_GPIO_Port, KB_ROW6_GPIO_Port, KB_ROW7_GPIO_Port,
+};
+
+uint16_t row_pins[Keyboard::Q10_Rows] = {
+    KB_ROW1_Pin, KB_ROW2_Pin, KB_ROW3_Pin, KB_ROW4_Pin, KB_ROW5_Pin, KB_ROW6_Pin, KB_ROW7_Pin,
+};
+
+static constexpr uint16_t kb_ring_buff_sz = 5;
+RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
+
+Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
 
 volatile bool sleeping = true;
 volatile bool error = false;
@@ -163,7 +160,7 @@ int app_main()
     uint32_t ticks_ms = 0;
     ConfigStorage config_storage(hi2c1);
     Protector protector(config_storage);
-    // Renderer renderer(screen, keyboard);
+    Renderer renderer(screen, keyboard);
 
     audio_chip.Init();
     audio_chip.StartI2S();
@@ -171,7 +168,7 @@ int app_main()
     // Test in case the audio chip settings change and something looks suspicious
     CountNumAudioInterrupts(audio_chip, sleeping);
 
-    // InitScreen(screen);
+    InitScreen(screen);
     Leds(LOW, LOW, LOW);
     net_serial.StartReceive();
 
@@ -192,7 +189,7 @@ int app_main()
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
-            // renderer.ChangeView(Renderer::View::Chat);
+            renderer.ChangeView(Renderer::View::Chat);
             done_booting = true;
         }
 
@@ -241,7 +238,7 @@ int app_main()
         HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
                               audio_transmit_mode, audio_receive_mode);
 
-        // renderer.Render(ticks_ms);
+        renderer.Render(ticks_ms);
         // TODO remove?
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
@@ -550,6 +547,11 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
+{
+    UNUSED(hspi);
+}
+
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
 {
     UNUSED(hspi);
 }
