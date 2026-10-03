@@ -108,57 +108,57 @@ public:
 
     bool Rasterize(Shape& shape,
                    uint8_t* buff,
-                   size_t size,
-                   const uint16_t window_x1,
+                   const size_t width,
+                   const size_t height,
                    const uint16_t window_y1,
-                   const uint16_t window_x2,
                    const uint16_t window_y2);
 
     bool RasterizePixel(Shape& shape,
                         uint8_t* buff,
-                        size_t size,
-                        const uint16_t window_x1,
+                        const size_t width,
+                        const size_t height,
                         const uint16_t window_y1,
-                        const uint16_t window_x2,
                         const uint16_t window_y2);
 
     bool RasterizeLine(Shape& shape,
                        uint8_t* buff,
-                       size_t size,
-                       const uint16_t window_x1,
+                       const size_t width,
+                       const size_t height,
                        const uint16_t window_y1,
-                       const uint16_t window_x2,
                        const uint16_t window_y2);
 
     bool RasterizeRectangle(Shape& shape,
                             uint8_t* buff,
-                            size_t size,
-                            const uint16_t window_x1,
+                            const size_t width,
+                            const size_t height,
                             const uint16_t window_y1,
-                            const uint16_t window_x2,
                             const uint16_t window_y2);
 
     bool RasterizeCircle(Shape& shape,
                          uint8_t* buff,
-                         size_t size,
-                         const uint16_t window_x1,
+                         const size_t width,
+                         const size_t height,
                          const uint16_t window_y1,
-                         const uint16_t window_x2,
                          const uint16_t window_y2);
 
     bool RasterizeString(Shape& shape,
                          uint8_t* buff,
-                         size_t size,
-                         const uint16_t window_x1,
+                         const size_t width,
+                         const size_t height,
                          const uint16_t window_y1,
-                         const uint16_t window_x2,
                          const uint16_t window_y2);
 
     bool RasterizeBitmap(Shape& shape,
                          uint8_t* buff,
-                         size_t size,
-                         const uint16_t window_x1,
+                         const size_t width,
+                         const size_t height,
                          const uint16_t window_y1,
-                         const uint16_t window_x2,
                          const uint16_t window_y2);
+
+    inline void SetPixel(uint8_t* buff,
+                         const size_t width,
+                         const uint16_t x,
+                         const uint16_t y,
+                         const uint8_t colour_high,
+                         const uint8_t colour_low);
 };

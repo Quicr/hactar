@@ -1,42 +1,60 @@
 #include "graphics.hh"
+#include "logger.hh"
+#include <algorithm>
 
 bool Graphics::Rasterize(Shape& shape,
                          uint8_t* buff,
-                         size_t size,
-                         const uint16_t window_x1,
+                         const size_t width,
+                         const size_t height,
                          const uint16_t window_y1,
-                         const uint16_t window_x2,
                          const uint16_t window_y2)
 {
+    switch (shape.type)
+    {
+    case Graphics::ShapeType::Rectangle:
+    {
+        return RasterizeRectangle(shape, buff, width, height, window_y1, window_y2);
+        break;
+    }
+    default:
+    {
+        UI_LOG_ERROR("Graphics::Rasterize: Unknown shape type %d", (int)shape.type);
+        return false;
+    }
+    }
 }
 
-// bool Graphics::RasterizeRectangle(Shape& shape,
-//                                   uint8_t* buff,
-//                                   size_t size,
-//                                   const uint16_t window_x1,
-//                                   const uint16_t window_y1,
-//                                   const uint16_t window_x2,
-//                                   const uint16_t window_y2)
-// {
-//     if (shape.pixel.x < window_x1 || shape.pixel.x > window_x2)
-//
-//         // Get the y bounds
-//         YBound bound = GetYBounds(y1, y2, memory.y1, memory.y2);
-//
-//     uint8_t colour_high = (uint8_t)memory.colour << 4;
-//     uint8_t colour_low = (uint8_t)memory.colour & 0x0F;
-//
-//     for (uint16_t i = bound.y1; i < bound.y2; ++i)
-//     {
-//         for (uint16_t j = memory.x1; j < memory.x2; ++j)
-//         {
-//             FillMatrixAtIdx(matrix, i, j, colour_high, colour_low);
-//         }
-//     }
-//
-//     return true;
-// }
-//
+bool Graphics::RasterizeRectangle(Shape& shape,
+                                  uint8_t* buff,
+                                  const size_t width,
+                                  const size_t height,
+                                  const uint16_t window_y1,
+                                  const uint16_t window_y2)
+{
+    if (shape.rectangle.y1 < window_y2 || shape.rectangle.y2 > window_y1)
+    {
+        return false;
+    }
+
+    // Get the y bounds
+    const uint8_t colour_high = static_cast<uint8_t>(shape.pixel.colour) << 4;
+    const uint8_t colour_low = static_cast<uint8_t>(shape.pixel.colour) & 0x0F;
+
+    const uint16_t y_min = std::max(shape.rectangle.y1, window_y1);
+    const uint16_t y_max = std::min(shape.rectangle.y2, window_y2);
+    const uint16_t x_max = std::min(shape.rectangle.x2, static_cast<uint16_t>(width));
+
+    for (uint16_t y = y_min; y < y_max; ++y)
+    {
+        for (uint16_t x = shape.rectangle.x1; x < x_max; ++x)
+        {
+            SetPixel(buff, width, x, y, colour_high, colour_low);
+        }
+    }
+
+    return window_y1 >= shape.rectangle.y2;
+}
+
 // void Screen::DrawRectangleProcedure(const int16_t x1,
 //                                     const int16_t x2,
 //                                     const int16_t y1,
@@ -321,36 +339,25 @@ bool Graphics::Rasterize(Shape& shape,
 //     }
 // }
 //
-// // TODO colour HIGH and colour LOW to save calculating it everytime.
-// // Each byte stores two pixels of colour.
-// // The first half is the "even" pixel and the second half is the "odd" pixel
-// inline void Screen::FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-//                                     const uint16_t i,
-//                                     const uint16_t j,
-//                                     const uint8_t colour_high,
-//                                     const uint8_t colour_low)
-// {
-//     const uint16_t idx = j / 2;
-//     if (j & 0x0001)
-//     {
-//         matrix[i][idx] = (matrix[i][idx] & 0xF0) | colour_low;
-//     }
-//     else
-//     {
-//         matrix[i][idx] = (matrix[i][idx] & 0x0F) | colour_high;
-//     }
-// }
-//
-// inline Screen::YBound Screen::GetYBounds(const uint16_t y1,
-//                                          const uint16_t y2,
-//                                          const uint16_t mem_y1,
-//                                          const uint16_t mem_y2)
-// {
-//     const uint16_t y_start = y1 > mem_y1 ? y1 : mem_y1;
-//     const uint16_t y_end = y2 < mem_y2 ? y2 : mem_y2;
-//
-//     // const uint16_t y_start = y1 > mem_y1 ? 0 : mem_y1 - y1;
-//     // const uint16_t y_end = y2 < mem_y2 ? y2 - y1 : mem_y2 - y1;
-//
-//     return {y_start, y_end};
-// }
+
+inline void Graphics::SetPixel(uint8_t* buff,
+                               const size_t width,
+                               const uint16_t x,
+                               const uint16_t y,
+                               const uint8_t colour_high,
+                               const uint8_t colour_low)
+{
+    const uint16_t idx = x / 2;
+    const size_t addr = idx + y * width;
+    uint8_t& pixel = buff[addr];
+
+    // Odd pixels is in the low bits, even pixels in the high bits
+    if (x & 0x0001)
+    {
+        pixel = (pixel & 0xF0) | colour_low;
+    }
+    else
+    {
+        pixel = (pixel & 0x0F) | colour_high;
+    }
+}

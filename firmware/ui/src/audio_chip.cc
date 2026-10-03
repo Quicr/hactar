@@ -270,14 +270,10 @@ bool AudioChip::InitClockManager()
 
     // Please refer to the es8311-register-map.md
     const uint8_t clock_manager[][2] = {
-        {clock_manager_2_0x02, 0x98},     
-        {clock_manager_3_0x03, 0x10},
-        {clock_manager_4_0x04, 0x10},      
-        {clock_manager_5_0x05, 0x00},
-        {clock_manager_6_0x06, bclk},     
-        {clock_manager_7_0x07, lrclk_high},
-        {clock_manager_8_0x08, lrclk_low}, 
-        {clock_manager_1_0x01, 0x3F},
+        {clock_manager_2_0x02, 0x98},      {clock_manager_3_0x03, 0x10},
+        {clock_manager_4_0x04, 0x10},      {clock_manager_5_0x05, 0x00},
+        {clock_manager_6_0x06, bclk},      {clock_manager_7_0x07, lrclk_high},
+        {clock_manager_8_0x08, lrclk_low}, {clock_manager_1_0x01, 0x3F},
     };
 
     return WriteRegistersVerify(clock_manager, sizeof(clock_manager) / sizeof(clock_manager[0]));
@@ -311,14 +307,9 @@ bool AudioChip::InitDACADC()
 {
     // Please refer to the es8311-register-map.md
     const uint8_t dac_adc_config[][2] = {
-        {line_input_0x13, 0x10},       
-        {hp_dmic_0x14, 0x10},          
-        {adc_power_0x16, 0x04},        
-        {adc_gain_0x17, adc_volume},   
-        {dac_en_0x12, 0x01},           
-        {dac_power_0x31, 0x00},        
-        {dac_volume_0x32, dac_volume}, 
-        {dac_output_0x37, 0x08},       
+        {line_input_0x13, 0x10},       {hp_dmic_0x14, 0x10},    {adc_power_0x16, 0x04},
+        {adc_gain_0x17, adc_volume},   {dac_en_0x12, 0x01},     {dac_power_0x31, 0x00},
+        {dac_volume_0x32, dac_volume}, {dac_output_0x37, 0x08},
     };
 
     return WriteRegistersVerify(dac_adc_config, sizeof(dac_adc_config) / sizeof(dac_adc_config[0]));
