@@ -1,4 +1,5 @@
 #include "renderer.hh"
+#include "graphics.hh"
 
 Renderer::Renderer(Screen& screen, Keyboard& keyboard) :
     screen(screen),
@@ -57,7 +58,7 @@ void Renderer::StartupView(const uint32_t ticks) noexcept
 {
     if (change_view)
     {
-        screen.FillScreen(Colour::Black);
+        screen.FillScreen(Graphics::Colour::Black);
         screen.UpdateTitle("Loading", 7);
         change_view = false;
     }
@@ -67,7 +68,7 @@ void Renderer::ChatView(const uint32_t ticks) noexcept
 {
     if (change_view)
     {
-        screen.FillScreen(Colour::Black);
+        screen.FillScreen(Graphics::Colour::Black);
         screen.UpdateTitle("Chat room", 9);
 
         change_view = false;
@@ -78,7 +79,7 @@ void Renderer::MainMenuView(const uint32_t ticks) noexcept
 {
     if (change_view)
     {
-        screen.FillScreen(Colour::Black);
+        screen.FillScreen(Graphics::Colour::Black);
         screen.UpdateTitle("Main menu", 9);
 
         screen.CommitText("1. Chat", 7);

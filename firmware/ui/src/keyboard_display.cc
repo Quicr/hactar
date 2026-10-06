@@ -1,17 +1,13 @@
 #include "keyboard_display.hh"
+#include "graphics.hh"
 #include "main.h"
 #include "ui_net_link.hh"
 #include <cstring>
 
 void InitScreen(Screen& screen)
 {
-    screen.Init();
-    // Do the first draw
-    screen.FillRectangle(0, Screen::WIDTH, 0, Screen::HEIGHT, Colour::Black);
-    for (int i = 0; i < 320; i += Screen::Num_Rows)
-    {
-        screen.Draw(0xFFFF);
-    }
+    screen.FillScreen(Graphics::Colour::Black);
+    screen.Draw(0);
     screen.EnableBacklight();
 }
 

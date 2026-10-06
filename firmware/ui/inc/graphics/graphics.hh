@@ -53,112 +53,115 @@ public:
         {
             struct
             {
-                uint16_t x;
-                uint16_t y;
-                Colour colour;
+                const uint16_t x;
+                const uint16_t y;
+                const Colour colour;
             } pixel;
 
             struct
             {
-                uint16_t x1;
-                uint16_t y1;
-                uint16_t x2;
-                uint16_t y2;
-                Colour colour;
+                const uint16_t x1;
+                const uint16_t y1;
+                const uint16_t x2;
+                const uint16_t y2;
+                const Colour colour;
                 uint8_t flags;
             } line;
 
             struct
             {
-                uint16_t x1;
-                uint16_t y1;
-                uint16_t x2;
-                uint16_t y2;
-                Colour colour;
+                const uint16_t x1;
+                const uint16_t y1;
+                const uint16_t x2;
+                const uint16_t y2;
+                const Colour colour;
                 uint8_t flags;
             } rectangle;
 
             struct
             {
-                uint16_t x;
-                uint16_t y;
-                uint16_t r;
-                Colour colour;
+                const uint16_t x;
+                const uint16_t y;
+                const uint16_t r;
+                const Colour colour;
                 uint8_t flags;
             } circle;
 
             struct
             {
-                uint16_t x;
-                uint16_t y;
-                Font& font;
-                Colour foreground;
-                Colour background;
+                const char* str;
+                const uint16_t len;
+                const uint16_t x;
+                const uint16_t y;
+                const Font& font;
+                const Colour foreground;
+                const Colour background;
                 uint8_t flags;
             } string;
 
             struct
             {
-                uint16_t x;
-                uint16_t y;
+                const uint16_t x;
+                const uint16_t y;
                 BitmapData* map;
             } bitmap;
         };
     };
 
-    bool Rasterize(Shape& shape,
-                   uint8_t* buff,
-                   const size_t width,
-                   const size_t height,
-                   const uint16_t window_y1,
-                   const uint16_t window_y2);
+    static bool Rasterize(Shape& shape,
+                          uint8_t* buff,
+                          const size_t width,
+                          const size_t height,
+                          const uint16_t window_y1,
+                          const uint16_t window_y2);
 
-    bool RasterizePixel(Shape& shape,
-                        uint8_t* buff,
-                        const size_t width,
-                        const size_t height,
-                        const uint16_t window_y1,
-                        const uint16_t window_y2);
+    static bool RasterizePixel(Shape& shape,
+                               uint8_t* buff,
+                               const size_t width,
+                               const size_t height,
+                               const uint16_t window_y1,
+                               const uint16_t window_y2);
 
-    bool RasterizeLine(Shape& shape,
-                       uint8_t* buff,
-                       const size_t width,
-                       const size_t height,
-                       const uint16_t window_y1,
-                       const uint16_t window_y2);
+    static bool RasterizeLine(Shape& shape,
+                              uint8_t* buff,
+                              const size_t width,
+                              const size_t height,
+                              const uint16_t window_y1,
+                              const uint16_t window_y2);
 
-    bool RasterizeRectangle(Shape& shape,
-                            uint8_t* buff,
-                            const size_t width,
-                            const size_t height,
-                            const uint16_t window_y1,
-                            const uint16_t window_y2);
+    static bool RasterizeRectangle(Shape& shape,
+                                   uint8_t* buff,
+                                   const size_t width,
+                                   const size_t height,
+                                   const uint16_t window_y1,
+                                   const uint16_t window_y2);
 
-    bool RasterizeCircle(Shape& shape,
-                         uint8_t* buff,
-                         const size_t width,
-                         const size_t height,
-                         const uint16_t window_y1,
-                         const uint16_t window_y2);
+    static bool RasterizeCircle(Shape& shape,
+                                uint8_t* buff,
+                                const size_t width,
+                                const size_t height,
+                                const uint16_t window_y1,
+                                const uint16_t window_y2);
 
-    bool RasterizeString(Shape& shape,
-                         uint8_t* buff,
-                         const size_t width,
-                         const size_t height,
-                         const uint16_t window_y1,
-                         const uint16_t window_y2);
+    static bool RasterizeString(Shape& shape,
+                                uint8_t* buff,
+                                const size_t width,
+                                const size_t height,
+                                const uint16_t window_y1,
+                                const uint16_t window_y2);
 
-    bool RasterizeBitmap(Shape& shape,
-                         uint8_t* buff,
-                         const size_t width,
-                         const size_t height,
-                         const uint16_t window_y1,
-                         const uint16_t window_y2);
+    static bool RasterizeBitmap(Shape& shape,
+                                uint8_t* buff,
+                                const size_t width,
+                                const size_t height,
+                                const uint16_t window_y1,
+                                const uint16_t window_y2);
 
-    inline void SetPixel(uint8_t* buff,
-                         const size_t width,
-                         const uint16_t x,
-                         const uint16_t y,
-                         const uint8_t colour_high,
-                         const uint8_t colour_low);
+private:
+    static inline void SetPixel(uint8_t* buff,
+                                const size_t width,
+                                const uint16_t x,
+                                const uint16_t y,
+                                const uint8_t colour_high,
+                                const uint8_t colour_low);
 };

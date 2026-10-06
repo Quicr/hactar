@@ -339,6 +339,13 @@ bool Graphics::RasterizeRectangle(Shape& shape,
 //     }
 // }
 //
+// inline uint8_t* Screen::GetCharAddr(uint8_t* font_data,
+//                                     const uint8_t ch,
+//                                     const uint16_t font_width,
+//                                     const uint16_t font_height)
+// {
+//     return font_data + ((ch - 32) * font_height * (font_width / 8 + 1));
+// }
 
 inline void Graphics::SetPixel(uint8_t* buff,
                                const size_t width,

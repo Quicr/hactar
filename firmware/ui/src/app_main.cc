@@ -89,7 +89,21 @@ static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_rx_buff_sz,
                           false);
 
-Screen screen(hspi1,
+static constexpr uint16_t Quantization_Bits = 2;
+static constexpr uint16_t Screen_Width = 320 / Quantization_Bits;
+static constexpr uint16_t Screen_Height = 240;
+static constexpr uint16_t Num_Scan_Lines = 20;
+
+uint8_t scanline_buff[Screen_Width * Screen_Height * 2];
+uint8_t render_buff[Screen_Width * Screen_Height];
+
+Screen screen(scanline_buff,
+              Num_Scan_Lines,
+              Screen_Width* Screen_Height,
+              render_buff,
+              Screen_Width,
+              Screen_Height,
+              hspi1,
               DISP_CS_GPIO_Port,
               DISP_CS_Pin,
               DISP_DC_GPIO_Port,
@@ -98,7 +112,7 @@ Screen screen(hspi1,
               DISP_RST_Pin,
               DISP_BL_GPIO_Port,
               DISP_BL_Pin,
-              Screen::Orientation::flipped_portrait);
+              ILI9341::Orientation::Landscape);
 
 GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
