@@ -24,7 +24,9 @@ public:
     {
         Pixel,
         Line,
+        FillRectangle,
         Rectangle,
+        FillCircle,
         Circle,
         String,
         Bitmap
@@ -44,7 +46,6 @@ public:
         enum Flags : uint8_t
         {
             Done = 1 << 0,
-            Filled = 1 << 1,
         };
 
         ShapeType type;
@@ -76,6 +77,17 @@ public:
                 const uint16_t y2;
                 const Colour colour;
                 uint8_t flags;
+            } fill_rectangle;
+
+            struct
+            {
+                const uint16_t x1;
+                const uint16_t y1;
+                const uint16_t x2;
+                const uint16_t y2;
+                const uint16_t thickness;
+                const Colour colour;
+                uint8_t flags;
             } rectangle;
 
             struct
@@ -83,6 +95,16 @@ public:
                 const uint16_t x;
                 const uint16_t y;
                 const uint16_t r;
+                const Colour colour;
+                uint8_t flags;
+            } fill_circle;
+
+            struct
+            {
+                const uint16_t x;
+                const uint16_t y;
+                const uint16_t r;
+                const uint16_t thickness;
                 const Colour colour;
                 uint8_t flags;
             } circle;
@@ -129,12 +151,26 @@ public:
                               const uint16_t window_y1,
                               const uint16_t window_y2);
 
+    static bool RasterizeFillRectangle(Shape& shape,
+                                       uint8_t* buff,
+                                       const size_t width,
+                                       const size_t height,
+                                       const uint16_t window_y1,
+                                       const uint16_t window_y2);
+
     static bool RasterizeRectangle(Shape& shape,
                                    uint8_t* buff,
                                    const size_t width,
                                    const size_t height,
                                    const uint16_t window_y1,
                                    const uint16_t window_y2);
+
+    static bool RasterizeFillCircle(Shape& shape,
+                                    uint8_t* buff,
+                                    const size_t width,
+                                    const size_t height,
+                                    const uint16_t window_y1,
+                                    const uint16_t window_y2);
 
     static bool RasterizeCircle(Shape& shape,
                                 uint8_t* buff,

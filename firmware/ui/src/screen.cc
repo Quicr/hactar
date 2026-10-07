@@ -5,12 +5,16 @@
 #include "ili9341.hh"
 #include <math.h>
 
-Screen::Screen(uint8_t* scanline_buffer,
+Screen::Screen(uint16_t* scanline_buffer,
                const uint16_t num_lines,
-               const uint16_t total_size,
+               const uint16_t num_cols,
+               const uint16_t num_buffs,
                uint8_t* data_buff,
                const uint16_t width,
                const uint16_t height,
+               const uint16_t quantization,
+               const uint16_t screen_width_pixels,
+               const uint16_t screen_height_pixels,
                SPI_HandleTypeDef& hspi,
                GPIO_TypeDef* cs_port,
                const uint16_t cs_pin,
@@ -23,10 +27,14 @@ Screen::Screen(uint8_t* scanline_buffer,
                ILI9341::Orientation orientation) :
     scanline_buffer(scanline_buffer),
     num_lines(num_lines),
-    total_size(total_size),
-    ili9341(data_buff,
-            width,
-            height,
+    num_cols(num_cols),
+    num_buffs(num_buffs),
+    data_buff(data_buff),
+    width(width),
+    height(height),
+    quantization(quantization),
+    ili9341(screen_width_pixels,
+            screen_height_pixels,
             hspi,
             cs_port,
             cs_pin,
@@ -37,6 +45,7 @@ Screen::Screen(uint8_t* scanline_buffer,
             bl_port,
             bl_pin,
             orientation),
+    scanline_ptr(scanline_buffer),
     row(0),
     end_row(0),
     title_buffer{0},
@@ -47,17 +56,17 @@ Screen::Screen(uint8_t* scanline_buffer,
     usr_buffer{0},
     usr_buffer_idx(0),
     title_x1(0),
-    title_x2(width),
+    title_x2(screen_width_pixels),
     icons_x_offset(0),
     scroll_area_height(0),
     usr_text_y_offset(0),
     flags(0)
 {
-    if (total_size / num_lines / 2 != width)
-    {
-        Error("Screen constructor", "The number of lines does not match the width of the buffer");
-    }
+}
 
+void Screen::Init()
+{
+    ili9341.Init();
     CalculateDrawAreas();
 }
 
@@ -67,8 +76,43 @@ void Screen::Draw(uint32_t timeout)
 
     if (flags & FlagType::Title_Dirty)
     {
-        ili9341.SetRenderRegion(title_x1, Title_y1, title_x2, Title_y1 + font11x16.height);
+        UI_LOG_INFO("Title dirty");
+        row = Title_y1;
+        end_row = Title_y1 + font11x16.height;
+        ili9341.SetRenderRegion(title_x1, row, title_x2, end_row);
         LowerFlag(FlagType::Title_Dirty);
+        RaiseFlag(FlagType::Title_Rendering);
+    }
+    else if (flags & FlagType::Title_Rendering)
+    {
+        UI_LOG_INFO("Title rendering");
+        // TODO Move to a render function
+        const uint16_t quantization_divisor = 8 / quantization;
+        const uint16_t y2 = end_row;
+        for (uint16_t y1 = row; y1 < y2; ++y1)
+        {
+            for (uint16_t x1 = title_x1; x1 < title_x2; ++x1)
+            {
+                const uint16_t data_buff_idx = (x1 / quantization_divisor) + (y1 * width);
+                if (x1 & 0x0001)
+                {
+                    // Upper
+                    const uint8_t quant_colour = data_buff[data_buff_idx] & 0x0F;
+                    const uint16_t real_colour = Colour_Map[quant_colour];
+                    scanline_ptr[x1] = real_colour;
+                }
+                else
+                {
+                    // Lower
+                    const uint8_t quant_colour = data_buff[data_buff_idx] >> 4;
+                    const uint16_t real_colour = Colour_Map[quant_colour];
+                    scanline_ptr[x1] = real_colour;
+                }
+            }
+            // TODO use dma
+            ili9341.WriteData(reinterpret_cast<const uint8_t*>(scanline_ptr + title_x1),
+                              (title_x2 - title_x1));
+        }
     }
     else if (flags & FlagType::Icons_Dirty)
     {
@@ -79,6 +123,16 @@ void Screen::Draw(uint32_t timeout)
     else if (flags & FlagType::Usr_Text_Dirty)
     {
     }
+}
+
+void Screen::EnableBacklight()
+{
+    ili9341.EnableBacklight();
+}
+
+void Screen::DisableBacklight()
+{
+    ili9341.DisableBacklight();
 }
 
 void Screen::ScrollScreen(const uint16_t scroll_idx, bool up)
@@ -128,6 +182,25 @@ void Screen::ScrollScreen(const uint16_t scroll_idx, bool up)
     // WriteDataWithSet(vert_scroll_idx_data, 2);
 }
 
+void Screen::FillScreen(const Graphics::Colour colour)
+{
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = 0,
+                .y1 = 0,
+                .x2 = ili9341.GetWidth(),
+                .y2 = ili9341.GetHeight(),
+                .colour = colour,
+                .flags = 0,
+            },
+    };
+
+    Graphics::Rasterize(rec, data_buff, width, height, 0, ili9341.GetHeight());
+    RaiseFlag(FlagType::Whole_Screen_Dirty);
+}
+
 void Screen::UpdateTitle(const char* title, const uint32_t len)
 {
     // TODO calculate left padding to center the text
@@ -139,19 +212,19 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
 
     // Clear the Title section
     Graphics::Shape clear_rec = {
-        .type = Graphics::ShapeType::Rectangle,
-        .rectangle =
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
             {
                 .x1 = title_x1,
                 .y1 = Title_y1,
                 .x2 = title_x2,
                 .y2 = Title_y1 + static_cast<const uint16_t>(title_font.height),
-                .colour = Graphics::Colour::White,
-                .flags = Graphics::Shape::Flags::Filled,
+                .colour = Graphics::Colour::Black,
+                .flags = 0,
             },
     };
-    Graphics::RasterizeRectangle(clear_rec, scanline_buffer, total_size / num_lines, num_lines, 0,
-                                 Top_Fixed_Height);
+
+    Graphics::Rasterize(clear_rec, data_buff, width, height, 0, Top_Fixed_Height);
 
     // TODO calculate the x1 based on how long the string is
     Graphics::Shape title_shape = {
@@ -169,8 +242,8 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
             },
     };
 
-    Graphics::RasterizeString(title_shape, scanline_buffer, total_size / num_lines, num_lines,
-                              Title_y1, Title_y1 + title_font.height);
+    Graphics::Rasterize(title_shape, data_buff, width, height, Title_y1,
+                        Title_y1 + title_font.height);
 
     RaiseFlag(FlagType::Title_Dirty);
 }

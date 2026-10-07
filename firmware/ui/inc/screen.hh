@@ -12,7 +12,6 @@
 class Screen
 {
 public:
-    static constexpr uint32_t Num_Rows = 10;
     static constexpr uint16_t Title_y1 = 2;
     static constexpr uint32_t Title_Length = 21;
     static constexpr uint32_t Max_Texts = 35;
@@ -36,6 +35,7 @@ private:
     };
 
     // Some basic colours (RGB565)
+    // should this be in ili9341?
     static constexpr uint16_t C_BLACK = 0x0000U;
     static constexpr uint16_t C_WHITE = 0xFFFFU;
     static constexpr uint16_t C_BLUE = 0x001FU;
@@ -50,12 +50,16 @@ private:
                                            C_GREEN, C_CYAN,  C_MAGENTA, C_YELLOW, C_GREY};
 
 public:
-    Screen(uint8_t* scanline_buffer,
+    Screen(uint16_t* scanline_buffer,
            const uint16_t num_lines,
-           const uint16_t total_size,
+           const uint16_t num_cols,
+           const uint16_t num_buffs,
            uint8_t* data_buff,
            const uint16_t width,
            const uint16_t height,
+           const uint16_t quantization,
+           const uint16_t screen_width_pixels,
+           const uint16_t screen_height_pixels,
            SPI_HandleTypeDef& hspi,
            GPIO_TypeDef* cs_port,
            const uint16_t cs_pin,
@@ -67,6 +71,7 @@ public:
            const uint16_t bl_pin,
            ILI9341::Orientation orientation);
 
+    void Init();
     void Draw(uint32_t timeout);
     void Reset();
     void Sleep();
@@ -97,10 +102,16 @@ public:
 private:
     enum FlagType : uint32_t
     {
-        Title_Dirty = 1 << 0,
-        Icons_Dirty = 1 << 1,
-        Text_Area_Dirty = 1 << 2,
-        Usr_Text_Dirty = 1 << 3,
+        Whole_Screen_Dirty = 1 << 0,
+        Whole_Screen_Rendering = 1 << 1,
+        Title_Dirty = 1 << 2,
+        Title_Rendering = 1 << 3,
+        Icons_Dirty = 1 << 4,
+        Icons_Rendering = 1 << 5,
+        Text_Area_Dirty = 1 << 6,
+        Text_Area_Rendering = 1 << 7,
+        Usr_Text_Dirty = 1 << 8,
+        Usr_Text_Rendering = 1 << 9,
     };
 
     void RotateScreen(ILI9341::Orientation orientation);
@@ -113,11 +124,19 @@ private:
     const Font& text_font = font5x8;
 
     // Variables
-    uint8_t* scanline_buffer;
+    uint16_t* scanline_buffer;
     const uint16_t num_lines;
-    const uint16_t total_size;
+    const uint16_t num_cols;
+    const uint16_t num_buffs;
+
+    uint8_t* data_buff;
+    const uint16_t width;
+    const uint16_t height;
+    const uint16_t quantization;
 
     ILI9341 ili9341;
+
+    uint16_t* scanline_ptr;
 
     uint16_t row;
     uint16_t end_row;

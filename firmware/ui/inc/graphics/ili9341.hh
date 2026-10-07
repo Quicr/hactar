@@ -14,8 +14,7 @@ public:
         Landscape_Inverted,
     };
 
-    ILI9341(uint8_t* buff,
-            const uint16_t width,
+    ILI9341(const uint16_t width,
             const uint16_t height,
             SPI_HandleTypeDef& spi,
             GPIO_TypeDef* cs_port,
@@ -42,6 +41,8 @@ public:
 
     uint16_t GetWidth() const;
     uint16_t GetHeight() const;
+
+    void WriteData(const uint8_t* data, uint16_t size);
 
 private:
     static constexpr uint8_t Software_Reset = 0x01U;
@@ -81,7 +82,6 @@ private:
     void Select();
     void Deselect();
     void WriteCommand(uint8_t command);
-    void WriteData(const uint8_t* data, uint16_t size);
 
     const uint16_t width;
     const uint16_t height;
@@ -97,4 +97,6 @@ private:
     GPIO_TypeDef* bl_port;
     uint16_t bl_pin;
     volatile bool spi_busy;
+
+    Orientation orientation;
 };

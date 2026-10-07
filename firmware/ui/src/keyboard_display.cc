@@ -6,9 +6,9 @@
 
 void InitScreen(Screen& screen)
 {
-    screen.FillScreen(Graphics::Colour::Black);
-    screen.Draw(0);
-    screen.EnableBacklight();
+    // screen.FillScreen(Graphics::Colour::Black);
+    // screen.Draw(0);
+    // screen.EnableBacklight();
 }
 
 void HandleChatMessages(Screen& screen, link_packet_t* packet)

@@ -1,7 +1,7 @@
 #include "ili9341.hh"
+#include "logger.hh"
 
-ILI9341::ILI9341(uint8_t* buff,
-                 uint16_t width,
+ILI9341::ILI9341(uint16_t width,
                  uint16_t height,
                  SPI_HandleTypeDef& spi,
                  GPIO_TypeDef* cs_port,
@@ -26,10 +26,9 @@ ILI9341::ILI9341(uint8_t* buff,
     reset_pin(reset_pin),
     bl_port(bl_port),
     bl_pin(bl_pin),
-    spi_busy(false)
+    spi_busy(false),
+    orientation(orientation)
 {
-    Rotate(orientation);
-    Init();
 }
 
 void ILI9341::Init()
@@ -113,7 +112,7 @@ void ILI9341::Init()
     WriteCommand(Sleep_Out);
     HAL_Delay(120U);
     WriteCommand(Display_On);
-    Rotate(Orientation::Portrait);
+    Rotate(this->orientation);
 }
 
 void ILI9341::Reset()
@@ -138,27 +137,28 @@ void ILI9341::Rotate(Orientation orientation)
 {
     uint8_t value = BGR_Order;
 
-    switch (orientation)
+    this->orientation = orientation;
+    switch (this->orientation)
     {
     case Orientation::Portrait:
         value |= Mirror_X;
-        view_width = width;
-        view_height = height;
+        view_width = height;
+        view_height = width;
         break;
     case Orientation::Landscape:
         value |= Swap_XY;
-        view_width = height;
-        view_height = width;
-        break;
-    case Orientation::Portrait_Inverted:
-        value |= Mirror_Y;
         view_width = width;
         view_height = height;
         break;
-    case Orientation::Landscape_Inverted:
-        value |= Mirror_X | Mirror_Y | Swap_XY;
+    case Orientation::Portrait_Inverted:
+        value |= Mirror_Y;
         view_width = height;
         view_height = width;
+        break;
+    case Orientation::Landscape_Inverted:
+        value |= Mirror_X | Mirror_Y | Swap_XY;
+        view_width = width;
+        view_height = height;
         break;
     }
 
@@ -188,6 +188,7 @@ void ILI9341::SetRenderRegion(uint16_t x_start, uint16_t y_start, uint16_t x_end
     const uint8_t page[] = {static_cast<uint8_t>(y_start >> 8U), static_cast<uint8_t>(y_start),
                             static_cast<uint8_t>(y_end >> 8U), static_cast<uint8_t>(y_end)};
 
+    UI_LOG_INFO("Set render region (%d, %d) (%d %d)", x_start, y_start, x_end, y_end);
     WriteCommand(Column_Address_Set);
     WriteData(column, sizeof(column));
     WriteCommand(Page_Address_Set);

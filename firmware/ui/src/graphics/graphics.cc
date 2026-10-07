@@ -11,9 +11,14 @@ bool Graphics::Rasterize(Shape& shape,
 {
     switch (shape.type)
     {
-    case Graphics::ShapeType::Rectangle:
+    case Graphics::ShapeType::FillRectangle:
     {
-        return RasterizeRectangle(shape, buff, width, height, window_y1, window_y2);
+        return RasterizeFillRectangle(shape, buff, width, height, window_y1, window_y2);
+        break;
+    }
+    case Graphics::ShapeType::String:
+    {
+        return false;
         break;
     }
     default:
@@ -24,47 +29,37 @@ bool Graphics::Rasterize(Shape& shape,
     }
 }
 
-bool Graphics::RasterizeRectangle(Shape& shape,
-                                  uint8_t* buff,
-                                  const size_t width,
-                                  const size_t height,
-                                  const uint16_t window_y1,
-                                  const uint16_t window_y2)
+bool Graphics::RasterizeFillRectangle(Shape& shape,
+                                      uint8_t* buff,
+                                      const size_t width,
+                                      const size_t height,
+                                      const uint16_t window_y1,
+                                      const uint16_t window_y2)
 {
-    if (shape.rectangle.y1 < window_y2 || shape.rectangle.y2 > window_y1)
+    if (window_y1 > shape.fill_rectangle.y2 || window_y2 < shape.fill_rectangle.y1)
     {
         return false;
     }
+    UI_LOG_INFO("fill_rectangle");
 
-    // Get the y bounds
-    const uint8_t colour_high = static_cast<uint8_t>(shape.pixel.colour) << 4;
-    const uint8_t colour_low = static_cast<uint8_t>(shape.pixel.colour) & 0x0F;
+    const uint8_t colour_high = static_cast<uint8_t>(shape.fill_rectangle.colour) << 4;
+    const uint8_t colour_low = static_cast<uint8_t>(shape.fill_rectangle.colour) & 0x0F;
 
-    const uint16_t y_min = std::max(shape.rectangle.y1, window_y1);
-    const uint16_t y_max = std::min(shape.rectangle.y2, window_y2);
-    const uint16_t x_max = std::min(shape.rectangle.x2, static_cast<uint16_t>(width));
+    const uint16_t y1 = std::max(shape.fill_rectangle.y1, window_y1);
+    const uint16_t y2 = std::min(shape.fill_rectangle.y2, window_y2);
+    const uint16_t x2 = std::min(shape.fill_rectangle.x2, static_cast<uint16_t>(width));
 
-    for (uint16_t y = y_min; y < y_max; ++y)
+    for (uint16_t y = y1; y < y2; ++y)
     {
-        for (uint16_t x = shape.rectangle.x1; x < x_max; ++x)
+        for (uint16_t x = shape.fill_rectangle.x1; x < x2; ++x)
         {
             SetPixel(buff, width, x, y, colour_high, colour_low);
         }
     }
 
-    return window_y1 >= shape.rectangle.y2;
+    return shape.fill_rectangle.y2 >= y2;
 }
 
-// void Screen::DrawRectangleProcedure(const int16_t x1,
-//                                     const int16_t x2,
-//                                     const int16_t y1,
-//                                     const int16_t y2,
-//                                     const uint16_t thickness,
-//                                     const Colour colour)
-// {
-//     // TODO flash fill of matrix
-// }
-//
 // bool Screen::DrawRectangleProcedure(DrawMemory& memory,
 //                                     uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
 //                                     const int16_t y1,

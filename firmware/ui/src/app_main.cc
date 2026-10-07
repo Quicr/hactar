@@ -89,18 +89,26 @@ static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_rx_buff_sz,
                           false);
 
-static constexpr uint16_t Quantization_Bits = 2;
-static constexpr uint16_t Screen_Width = 320 / Quantization_Bits;
+static constexpr uint16_t Screen_Width = 320;
 static constexpr uint16_t Screen_Height = 240;
-static constexpr uint16_t Num_Scan_Lines = 20;
+static constexpr uint16_t Bit_Quantization = 4;
+static constexpr uint16_t Quantized_Width = Screen_Width / (8 / Bit_Quantization);
+// TODO maybe reduce scanlines to 1 or 2?
+static constexpr uint16_t Num_Scan_Lines = 1;
+static constexpr uint16_t Num_Scanline_Buffs = 2;
+static constexpr uint16_t Scanline_Buff_Size = Screen_Width * Num_Scan_Lines * Num_Scanline_Buffs;
 
-uint8_t scanline_buff[Screen_Width * Screen_Height * 2];
-uint8_t render_buff[Screen_Width * Screen_Height];
+static uint16_t scanline_buff[Scanline_Buff_Size];
+static uint8_t render_buff[Quantized_Width * Screen_Height];
 
 Screen screen(scanline_buff,
               Num_Scan_Lines,
-              Screen_Width* Screen_Height,
+              Screen_Width,
+              Num_Scanline_Buffs,
               render_buff,
+              Quantized_Width,
+              Screen_Height,
+              Bit_Quantization,
               Screen_Width,
               Screen_Height,
               hspi1,
@@ -174,7 +182,17 @@ int app_main()
     uint32_t ticks_ms = 0;
     ConfigStorage config_storage(hi2c1);
     Protector protector(config_storage);
-    Renderer renderer(screen, keyboard);
+    // Renderer renderer(screen, keyboard);
+    screen.Init();
+    screen.EnableBacklight();
+    // screen.FillScreen(Graphics::Colour::Blue);
+    // screen.Draw(0);
+    screen.UpdateTitle("Test", 4);
+
+    for (int i = 0; i < 50; ++i)
+    {
+        screen.Draw(0);
+    }
 
     audio_chip.Init();
     audio_chip.StartI2S();
@@ -203,7 +221,7 @@ int app_main()
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
-            renderer.ChangeView(Renderer::View::Chat);
+            // renderer.ChangeView(Renderer::View::Chat);
             done_booting = true;
         }
 
@@ -252,7 +270,7 @@ int app_main()
         HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
                               audio_transmit_mode, audio_receive_mode);
 
-        renderer.Render(ticks_ms);
+        // renderer.Render(ticks_ms);
         // TODO remove?
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
@@ -286,7 +304,6 @@ inline void LowPowerMode()
 
 inline void WakeUp()
 {
-
     HAL_ResumeTick();
     sleeping = false;
 }
@@ -334,7 +351,6 @@ void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode)
 
 void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
 {
-
     // Send talk start and sot packets
     if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET
         && ptt_ai_state != Ptt_Btn_State::Pressed)
@@ -372,7 +388,6 @@ void ConstructPacketHeader(link_packet_t& message_packet,
 
 void SendAudioToMgmt(link_packet_t& packet, const bool last)
 {
-
     static bool first = true;
 
     if (first)
