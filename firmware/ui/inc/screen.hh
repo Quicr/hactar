@@ -102,22 +102,19 @@ public:
 private:
     enum FlagType : uint32_t
     {
-        Whole_Screen_Dirty = 1 << 0,
-        Whole_Screen_Rendering = 1 << 1,
+        Rendering = 1 << 0,
+        Whole_Screen_Dirty = 1 << 1,
         Title_Dirty = 1 << 2,
-        Title_Rendering = 1 << 3,
-        Icons_Dirty = 1 << 4,
-        Icons_Rendering = 1 << 5,
-        Text_Area_Dirty = 1 << 6,
-        Text_Area_Rendering = 1 << 7,
-        Usr_Text_Dirty = 1 << 8,
-        Usr_Text_Rendering = 1 << 9,
+        Icons_Dirty = 1 << 3,
+        Text_Area_Dirty = 1 << 4,
+        Usr_Text_Dirty = 1 << 5,
     };
 
     void RotateScreen(ILI9341::Orientation orientation);
     void CalculateDrawAreas();
     void RaiseFlag(const FlagType flag);
     void LowerFlag(const FlagType flag);
+    uint32_t TakeFlag();
 
     // Private functions
     const Font& title_font = font11x16;
@@ -130,16 +127,18 @@ private:
     const uint16_t num_buffs;
 
     uint8_t* data_buff;
-    const uint16_t width;
-    const uint16_t height;
+    const uint16_t data_buff_width;
+    const uint16_t data_buff_height;
     const uint16_t quantization;
 
     ILI9341 ili9341;
 
     uint16_t* scanline_ptr;
 
-    uint16_t row;
-    uint16_t end_row;
+    uint16_t draw_x1;
+    uint16_t draw_y1;
+    uint16_t draw_x2;
+    uint16_t draw_y2;
 
     // Window: 0-20px
     // Max 21 characters

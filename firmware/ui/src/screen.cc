@@ -10,8 +10,8 @@ Screen::Screen(uint16_t* scanline_buffer,
                const uint16_t num_cols,
                const uint16_t num_buffs,
                uint8_t* data_buff,
-               const uint16_t width,
-               const uint16_t height,
+               const uint16_t data_buff_width,
+               const uint16_t data_buff_height,
                const uint16_t quantization,
                const uint16_t screen_width_pixels,
                const uint16_t screen_height_pixels,
@@ -30,8 +30,8 @@ Screen::Screen(uint16_t* scanline_buffer,
     num_cols(num_cols),
     num_buffs(num_buffs),
     data_buff(data_buff),
-    width(width),
-    height(height),
+    data_buff_width(data_buff_width),
+    data_buff_height(data_buff_height),
     quantization(quantization),
     ili9341(screen_width_pixels,
             screen_height_pixels,
@@ -46,8 +46,10 @@ Screen::Screen(uint16_t* scanline_buffer,
             bl_pin,
             orientation),
     scanline_ptr(scanline_buffer),
-    row(0),
-    end_row(0),
+    draw_x1(0),
+    draw_y1(0),
+    draw_x2(0),
+    draw_y2(0),
     title_buffer{0},
     text_idx(0),
     texts_in_use(0),
@@ -74,54 +76,78 @@ void Screen::Draw(uint32_t timeout)
 {
     UNUSED(timeout);
 
-    if (flags & FlagType::Title_Dirty)
+    const uint32_t flag = TakeFlag();
+
+    switch (flag)
     {
-        UI_LOG_INFO("Title dirty");
-        row = Title_y1;
-        end_row = Title_y1 + font11x16.height;
-        ili9341.SetRenderRegion(title_x1, row, title_x2, end_row);
-        LowerFlag(FlagType::Title_Dirty);
-        RaiseFlag(FlagType::Title_Rendering);
-    }
-    else if (flags & FlagType::Title_Rendering)
+    case FlagType::Rendering:
     {
-        UI_LOG_INFO("Title rendering");
+        UI_LOG_INFO("rendering");
         // TODO Move to a render function
         const uint16_t quantization_divisor = 8 / quantization;
-        const uint16_t y2 = end_row;
-        for (uint16_t y1 = row; y1 < y2; ++y1)
+        for (uint16_t y = draw_y1; y < draw_y2; ++y)
         {
-            for (uint16_t x1 = title_x1; x1 < title_x2; ++x1)
+            for (uint16_t x = draw_x1; x < draw_x2; ++x)
             {
-                const uint16_t data_buff_idx = (x1 / quantization_divisor) + (y1 * width);
-                if (x1 & 0x0001)
+                const uint16_t data_buff_idx = (x / quantization_divisor) + (y * data_buff_width);
+                if (x & 0x0001)
                 {
                     // Upper
                     const uint8_t quant_colour = data_buff[data_buff_idx] & 0x0F;
                     const uint16_t real_colour = Colour_Map[quant_colour];
-                    scanline_ptr[x1] = real_colour;
+                    scanline_ptr[x] = real_colour;
                 }
                 else
                 {
                     // Lower
                     const uint8_t quant_colour = data_buff[data_buff_idx] >> 4;
                     const uint16_t real_colour = Colour_Map[quant_colour];
-                    scanline_ptr[x1] = real_colour;
+                    scanline_ptr[x] = real_colour;
                 }
             }
             // TODO use dma
-            ili9341.WriteData(reinterpret_cast<const uint8_t*>(scanline_ptr + title_x1),
-                              (title_x2 - title_x1));
+            ili9341.WriteData(reinterpret_cast<const uint8_t*>(scanline_ptr + draw_x1),
+                              (draw_x2 - draw_x1) * 2);
         }
+        // TODO this needs to be only once y1 == y2
+        // and everything needs to be put into a dma
+        LowerFlag(Rendering);
+        break;
     }
-    else if (flags & FlagType::Icons_Dirty)
+    case FlagType::Whole_Screen_Dirty:
     {
+        UI_LOG_INFO("Whole screen is dirty");
+        draw_x1 = 0;
+        draw_y1 = 0;
+        draw_x2 = ili9341.GetWidth();
+        draw_y2 = ili9341.GetHeight();
+        ili9341.SetRenderRegion(draw_x1, draw_y1, draw_x2, draw_y2);
+        RaiseFlag(Rendering);
+        break;
     }
-    else if (flags & FlagType::Text_Area_Dirty)
+    case FlagType::Title_Dirty:
     {
+        UI_LOG_INFO("Title dirty");
+        draw_x1 = title_x1;
+        draw_y1 = Title_y1;
+        draw_x2 = title_x2;
+        draw_y2 = Title_y1 + font11x16.height;
+        ili9341.SetRenderRegion(draw_x1, draw_y1, draw_x2, draw_y2);
+        RaiseFlag(Rendering);
+        break;
     }
-    else if (flags & FlagType::Usr_Text_Dirty)
+    case FlagType::Icons_Dirty:
     {
+        break;
+    }
+    case FlagType::Text_Area_Dirty:
+    {
+        break;
+    }
+    case FlagType::Usr_Text_Dirty:
+    {
+        break;
+    }
     }
 }
 
@@ -197,7 +223,7 @@ void Screen::FillScreen(const Graphics::Colour colour)
             },
     };
 
-    Graphics::Rasterize(rec, data_buff, width, height, 0, ili9341.GetHeight());
+    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, 0, ili9341.GetHeight());
     RaiseFlag(FlagType::Whole_Screen_Dirty);
 }
 
@@ -224,7 +250,8 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
             },
     };
 
-    Graphics::Rasterize(clear_rec, data_buff, width, height, 0, Top_Fixed_Height);
+    Graphics::Rasterize(clear_rec, data_buff, data_buff_width, data_buff_height, 0,
+                        Top_Fixed_Height);
 
     // TODO calculate the x1 based on how long the string is
     Graphics::Shape title_shape = {
@@ -242,7 +269,7 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
             },
     };
 
-    Graphics::Rasterize(title_shape, data_buff, width, height, Title_y1,
+    Graphics::Rasterize(title_shape, data_buff, data_buff_width, data_buff_height, Title_y1,
                         Title_y1 + title_font.height);
 
     RaiseFlag(FlagType::Title_Dirty);
@@ -318,7 +345,8 @@ void Screen::AppendUserText(const char* text, const uint32_t len)
     // }
     //
     // DrawString(usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
-    //            usr_buffer + usr_buffer_idx, num_char, font7x12, Colour::White, Colour::Black);
+    //            usr_buffer + usr_buffer_idx, num_char, font7x12, Colour::White,
+    //            Colour::Black);
     //
     // usr_buffer_idx += num_char;
 }
@@ -391,6 +419,13 @@ void Screen::RaiseFlag(const FlagType flag)
 void Screen::LowerFlag(const FlagType flag)
 {
     flags &= ~flag;
+}
+
+uint32_t Screen::TakeFlag()
+{
+    const uint32_t flag = flags & (~flags + 1);
+    LowerFlag(static_cast<FlagType>(flag));
+    return flag;
 }
 
 // inline void Screen::WaitForSPIComplete()

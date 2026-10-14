@@ -47,7 +47,7 @@ bool Graphics::RasterizeFillRectangle(Shape& shape,
 
     const uint16_t y1 = std::max(shape.fill_rectangle.y1, window_y1);
     const uint16_t y2 = std::min(shape.fill_rectangle.y2, window_y2);
-    const uint16_t x2 = std::min(shape.fill_rectangle.x2, static_cast<uint16_t>(width));
+    const uint16_t x2 = std::min(shape.fill_rectangle.x2, static_cast<uint16_t>(width * 2));
 
     for (uint16_t y = y1; y < y2; ++y)
     {
@@ -185,105 +185,107 @@ bool Graphics::RasterizeFillRectangle(Shape& shape,
 //     return true;
 // }
 //
-// bool Screen::DrawStringProcedure(DrawMemory& memory,
-//                                  uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-//                                  const int16_t y1,
-//                                  const int16_t y2)
-// {
-//     // TODO put into function
-//     if (y1 >= memory.y2 || y2 <= memory.y1)
-//     {
-//         return false;
-//     }
-//
-//     const uint8_t bg = PullMemoryParameter<uint8_t>(memory);
-//     const uint8_t* str = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
-//     const uint8_t font_width = PullMemoryParameter<uint8_t>(memory);
-//     const uint8_t font_height = PullMemoryParameter<uint8_t>(memory);
-//     uint8_t* font_data = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
-//
-//     const uint16_t bytes_per_char = (font_width / 8) + 1;
-//
-//     uint16_t ch_idx = 0;
-//     uint8_t* ch_ptr = nullptr;
-//
-//     // How many iterations we've been at the same character
-//     // If it exceeds the font width that means we are on the next
-//     // character in the string
-//     uint16_t x_char_iter = 0;
-//     uint16_t w_off = 0;
-//
-//     // Get the current number of scan line already passed
-//     uint16_t y_char_iter = 0;
-//     if (y1 > memory.y1)
-//     {
-//         // We have done some line
-//         y_char_iter = (y1 - memory.y1);
-//     }
-//
-//     YBound bounds = GetYBounds(y1, y2, memory.y1, memory.y2);
-//
-//     uint8_t fg_high = (uint8_t)memory.colour << 4;
-//     uint8_t fg_low = (uint8_t)memory.colour & 0x0F;
-//     uint8_t bg_high = bg << 4;
-//     uint8_t bg_low = bg & 0x0F;
-//
-//     for (uint16_t i = bounds.y1; i < bounds.y2; ++i)
-//     {
-//         x_char_iter = 0;
-//         w_off = 0;
-//         ch_idx = 0;
-//         ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width, font_height)
-//                + (y_char_iter * bytes_per_char);
-//
-//         for (uint16_t j = memory.x1; j < memory.x2; ++j)
-//         {
-//             if ((*ch_ptr << w_off) & 0x80)
-//             {
-//                 FillMatrixAtIdx(matrix, i, j, fg_high, fg_low);
-//             }
-//             else
-//             {
-//                 FillMatrixAtIdx(matrix, i, j, bg_high, bg_low);
-//             }
-//
-//             ++w_off;
-//             ++x_char_iter;
-//
-//             // Check if we are on the next character
-//             if (x_char_iter >= font_width)
-//             {
-//                 x_char_iter = 0;
-//
-//                 // Get the character
-//                 ++ch_idx;
-//                 ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width, font_height)
-//                        + (y_char_iter * bytes_per_char);
-//
-//                 // Next character and reset w_off
-//                 w_off = 0;
-//             }
-//
-//             if (w_off >= 8)
-//             {
-//                 w_off = 0;
-//
-//                 // At the end of the byte's bits, if a font > 8 bits
-//                 // then we need to slide to the next byte. which is in the same
-//                 // column
-//                 ++ch_ptr;
-//             }
-//         }
-//
-//         // Slide the pointer is the next row
-//         ++y_char_iter;
-//     }
-//
-//     ch_ptr = nullptr;
-//     font_data = nullptr;
-//
-//     return true;
-// }
+bool Graphics::RasterizeString(Shape& shape,
+                               uint8_t* buff,
+                               const size_t width,
+                               const size_t height,
+                               const uint16_t window_y1,
+                               const uint16_t window_y2)
+{
+    //     // TODO put into function
+    //     if (y1 >= memory.y2 || y2 <= memory.y1)
+    //     {
+    //         return false;
+    //     }
+    //
+    //     const uint8_t bg = PullMemoryParameter<uint8_t>(memory);
+    //     const uint8_t* str = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
+    //     const uint8_t font_width = PullMemoryParameter<uint8_t>(memory);
+    //     const uint8_t font_height = PullMemoryParameter<uint8_t>(memory);
+    //     uint8_t* font_data = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
+    //
+    //     const uint16_t bytes_per_char = (font_width / 8) + 1;
+    //
+    //     uint16_t ch_idx = 0;
+    //     uint8_t* ch_ptr = nullptr;
+    //
+    //     // How many iterations we've been at the same character
+    //     // If it exceeds the font width that means we are on the next
+    //     // character in the string
+    //     uint16_t x_char_iter = 0;
+    //     uint16_t w_off = 0;
+    //
+    //     // Get the current number of scan line already passed
+    //     uint16_t y_char_iter = 0;
+    //     if (y1 > memory.y1)
+    //     {
+    //         // We have done some line
+    //         y_char_iter = (y1 - memory.y1);
+    //     }
+    //
+    //     YBound bounds = GetYBounds(y1, y2, memory.y1, memory.y2);
+    //
+    //     uint8_t fg_high = (uint8_t)memory.colour << 4;
+    //     uint8_t fg_low = (uint8_t)memory.colour & 0x0F;
+    //     uint8_t bg_high = bg << 4;
+    //     uint8_t bg_low = bg & 0x0F;
+    //
+    //     for (uint16_t i = bounds.y1; i < bounds.y2; ++i)
+    //     {
+    //         x_char_iter = 0;
+    //         w_off = 0;
+    //         ch_idx = 0;
+    //         ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width, font_height)
+    //                + (y_char_iter * bytes_per_char);
+    //
+    //         for (uint16_t j = memory.x1; j < memory.x2; ++j)
+    //         {
+    //             if ((*ch_ptr << w_off) & 0x80)
+    //             {
+    //                 FillMatrixAtIdx(matrix, i, j, fg_high, fg_low);
+    //             }
+    //             else
+    //             {
+    //                 FillMatrixAtIdx(matrix, i, j, bg_high, bg_low);
+    //             }
+    //
+    //             ++w_off;
+    //             ++x_char_iter;
+    //
+    //             // Check if we are on the next character
+    //             if (x_char_iter >= font_width)
+    //             {
+    //                 x_char_iter = 0;
+    //
+    //                 // Get the character
+    //                 ++ch_idx;
+    //                 ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width, font_height)
+    //                        + (y_char_iter * bytes_per_char);
+    //
+    //                 // Next character and reset w_off
+    //                 w_off = 0;
+    //             }
+    //
+    //             if (w_off >= 8)
+    //             {
+    //                 w_off = 0;
+    //
+    //                 // At the end of the byte's bits, if a font > 8 bits
+    //                 // then we need to slide to the next byte. which is in the same
+    //                 // column
+    //                 ++ch_ptr;
+    //             }
+    //         }
+    //
+    //         // Slide the pointer is the next row
+    //         ++y_char_iter;
+    //     }
+    //
+    //     ch_ptr = nullptr;
+    //     font_data = nullptr;
+    //
+    //     return true;
+}
 //
 // void Screen::HandleBounds(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
 // {

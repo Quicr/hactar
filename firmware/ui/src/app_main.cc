@@ -96,7 +96,9 @@ static constexpr uint16_t Quantized_Width = Screen_Width / (8 / Bit_Quantization
 // TODO maybe reduce scanlines to 1 or 2?
 static constexpr uint16_t Num_Scan_Lines = 1;
 static constexpr uint16_t Num_Scanline_Buffs = 2;
-static constexpr uint16_t Scanline_Buff_Size = Screen_Width * Num_Scan_Lines * Num_Scanline_Buffs;
+static constexpr uint16_t Colour_Depth = sizeof(uint16_t);
+static constexpr uint16_t Scanline_Buff_Size =
+    Screen_Width * Num_Scan_Lines * Num_Scanline_Buffs * Colour_Depth;
 
 static uint16_t scanline_buff[Scanline_Buff_Size];
 static uint8_t render_buff[Quantized_Width * Screen_Height];
@@ -187,9 +189,10 @@ int app_main()
     screen.EnableBacklight();
     // screen.FillScreen(Graphics::Colour::Blue);
     // screen.Draw(0);
-    screen.UpdateTitle("Test", 4);
+    screen.FillScreen(Graphics::Colour::Blue);
+    // screen.UpdateTitle("Test", 4);
 
-    for (int i = 0; i < 50; ++i)
+    for (int i = 0; i < 240; ++i)
     {
         screen.Draw(0);
     }
@@ -200,7 +203,6 @@ int app_main()
     // Test in case the audio chip settings change and something looks suspicious
     CountNumAudioInterrupts(audio_chip, sleeping);
 
-    InitScreen(screen);
     Leds(LOW, LOW, LOW);
     net_serial.StartReceive();
 
