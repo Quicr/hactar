@@ -11,15 +11,25 @@ bool Graphics::Rasterize(Shape& shape,
 {
     switch (shape.type)
     {
+    case Graphics::ShapeType::Pixel:
+    {
+        return RasterizePixel(shape, buff, width, height, window_y1, window_y2);
+    }
+    case Graphics::ShapeType::Line:
+    {
+        return RasterizeLine(shape, buff, width, height, window_y1, window_y2);
+    }
     case Graphics::ShapeType::FillRectangle:
     {
         return RasterizeFillRectangle(shape, buff, width, height, window_y1, window_y2);
-        break;
+    }
+    case Graphics::ShapeType::Rectangle:
+    {
+        return RasterizeRectangle(shape, buff, width, height, window_y1, window_y2);
     }
     case Graphics::ShapeType::String:
     {
-        return false;
-        break;
+        return RasterizeString(shape, buff, width, height, window_y1, window_y2);
     }
     default:
     {
@@ -44,6 +54,7 @@ bool Graphics::RasterizeFillRectangle(Shape& shape,
 
     const uint8_t colour_high = static_cast<uint8_t>(shape.fill_rectangle.colour) << 4;
     const uint8_t colour_low = static_cast<uint8_t>(shape.fill_rectangle.colour) & 0x0F;
+    UI_LOG_INFO("colour high %d, colour low %d", (int)colour_high, (int)colour_low);
 
     const uint16_t y1 = std::max(shape.fill_rectangle.y1, window_y1);
     const uint16_t y2 = std::min(shape.fill_rectangle.y2, window_y2);
@@ -60,131 +71,72 @@ bool Graphics::RasterizeFillRectangle(Shape& shape,
     return shape.fill_rectangle.y2 >= y2;
 }
 
-// bool Screen::DrawRectangleProcedure(DrawMemory& memory,
-//                                     uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-//                                     const int16_t y1,
-//                                     const int16_t y2)
-// {
-//     // See if rectangle is in the current scan line
-//     if (y1 >= memory.y2 || y2 <= memory.y1)
-//     {
-//         return false;
-//     }
-//
-//     const uint16_t thickness = PullMemoryParameter<uint16_t>(memory);
-//
-//     // Get the y bounds
-//     YBound bound = GetYBounds(y1, y2, memory.y1, memory.y2);
-//
-//     uint8_t colour_high = (uint8_t)memory.colour << 4;
-//     uint8_t colour_low = (uint8_t)memory.colour & 0x0F;
-//
-//     // Check for the "top rectangle"
-//     if (y1 <= memory.y1)
-//     {
-//         const uint16_t y1_thick = bound.y1 + thickness < bound.y2 ? bound.y1 + thickness :
-//         bound.y2;
-//         // In the bounds of the top rectangle
-//         for (uint16_t i = bound.y1; i < y1_thick; ++i)
-//         {
-//             for (uint16_t j = memory.x1; j < memory.x2; ++j)
-//             {
-//                 FillMatrixAtIdx(matrix, i, j, colour_high, colour_low);
-//             }
-//         }
-//     }
-//
-//     // Check for the "bottom rectangle"
-//     if (y2 >= memory.y2)
-//     {
-//         const uint16_t y2_thick = bound.y2 - thickness > bound.y1 ? bound.y2 - thickness :
-//         bound.y1;
-//         // In the bounds of the top rectangle
-//         for (uint16_t i = y2_thick; i < bound.y2; ++i)
-//         {
-//             for (uint16_t j = memory.x1; j < memory.x2; ++j)
-//             {
-//                 FillMatrixAtIdx(matrix, i, j, colour_high, colour_low);
-//             }
-//         }
-//     }
-//
-//     const uint16_t x1_thick = memory.x1 + thickness;
-//     const uint16_t x2_thick = memory.x2 - thickness;
-//     // Do the side rectangles
-//     for (uint16_t i = bound.y1; i < bound.y2; ++i)
-//     {
-//         uint16_t left_v = memory.x1;
-//         uint16_t right_v = x2_thick;
-//         while (left_v < x1_thick)
-//         {
-//             FillMatrixAtIdx(matrix, i, left_v, colour_high, colour_low);
-//             FillMatrixAtIdx(matrix, i, right_v, colour_high, colour_low);
-//             ++right_v;
-//             ++left_v;
-//         }
-//     }
-//
-//     return true;
-// }
-//
-// bool Screen::DrawCharacterProcedure(DrawMemory& memory,
-//                                     uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-//                                     const int16_t y1,
-//                                     const int16_t y2)
-// {
-//     if (y1 >= memory.y2 || y2 <= memory.y1)
-//     {
-//         return false;
-//     }
-//
-//     const uint8_t bg = PullMemoryParameter<uint8_t>(memory);
-//     uint8_t* ch_ptr = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
-//
-//     uint16_t w_off = 0;
-//
-//     YBound bounds = GetYBounds(y1, y2, memory.y1, memory.y2);
-//
-//     uint8_t fg_high = (uint8_t)memory.colour << 4;
-//     uint8_t fg_low = (uint8_t)memory.colour & 0x0F;
-//     uint8_t bg_high = bg << 4;
-//     uint8_t bg_low = bg & 0x0F;
-//
-//     for (uint16_t i = bounds.y1; i < bounds.y2; ++i)
-//     {
-//         w_off = 0;
-//         for (uint16_t j = memory.x1; j < memory.x2; ++j)
-//         {
-//             if ((*ch_ptr << w_off) & 0x80)
-//             {
-//                 FillMatrixAtIdx(matrix, i, j, fg_high, fg_low);
-//             }
-//             else
-//             {
-//                 FillMatrixAtIdx(matrix, i, j, bg_high, bg_low);
-//             }
-//
-//             ++w_off;
-//             if (w_off >= 8)
-//             {
-//                 w_off = 0;
-//
-//                 // At the end of the byte's bits, if a font > 8 bits
-//                 // then we need to slide to the next byte. which is in the same
-//                 // column
-//                 ++ch_ptr;
-//             }
-//         }
-//
-//         // Slide the pointer to the next row byte
-//         ++ch_ptr;
-//     }
-//
-//     ch_ptr = nullptr;
-//
-//     return true;
-// }
-//
+bool Graphics::RasterizeRectangle(Shape& shape,
+                                  uint8_t* buff,
+                                  const size_t width,
+                                  const size_t height,
+                                  const uint16_t window_y1,
+                                  const uint16_t window_y2)
+{
+    const auto& rectangle = shape.rectangle;
+    if (buff == nullptr || rectangle.thickness == 0 || rectangle.x1 >= rectangle.x2
+        || rectangle.y1 >= rectangle.y2)
+    {
+        return false;
+    }
+
+    const size_t x2 = std::min(static_cast<size_t>(rectangle.x2), width * 2);
+    const size_t y1 = std::max(static_cast<size_t>(rectangle.y1), static_cast<size_t>(window_y1));
+    const size_t y2 =
+        std::min({static_cast<size_t>(rectangle.y2), static_cast<size_t>(window_y2), height});
+
+    if (rectangle.x1 >= x2 || y1 >= y2)
+    {
+        return false;
+    }
+
+    const uint8_t colour_high = static_cast<uint8_t>(rectangle.colour) << 4;
+    const uint8_t colour_low = static_cast<uint8_t>(rectangle.colour) & 0x0F;
+
+    for (size_t y = y1; y < y2; ++y)
+    {
+        for (size_t x = rectangle.x1; x < x2; ++x)
+        {
+            // Test against the original edges so clipping does not create new borders.
+            if (x - rectangle.x1 < rectangle.thickness
+                || rectangle.x2 - 1U - x < rectangle.thickness
+                || y - rectangle.y1 < rectangle.thickness
+                || rectangle.y2 - 1U - y < rectangle.thickness)
+            {
+                SetPixel(buff, width, static_cast<uint16_t>(x), static_cast<uint16_t>(y),
+                         colour_high, colour_low);
+            }
+        }
+    }
+
+    return true;
+}
+
+bool Graphics::RasterizePixel(Shape& shape,
+                              uint8_t* buff,
+                              const size_t width,
+                              const size_t height,
+                              const uint16_t window_y1,
+                              const uint16_t window_y2)
+{
+    const auto& pixel = shape.pixel;
+    if (buff == nullptr || pixel.x >= width * 2 || pixel.y >= height || pixel.y < window_y1
+        || pixel.y >= window_y2)
+    {
+        return false;
+    }
+
+    const uint8_t colour_high = static_cast<uint8_t>(pixel.colour) << 4;
+    const uint8_t colour_low = static_cast<uint8_t>(pixel.colour) & 0x0F;
+    SetPixel(buff, width, pixel.x, pixel.y, colour_high, colour_low);
+    return true;
+}
+
 bool Graphics::RasterizeString(Shape& shape,
                                uint8_t* buff,
                                const size_t width,
@@ -192,157 +144,73 @@ bool Graphics::RasterizeString(Shape& shape,
                                const uint16_t window_y1,
                                const uint16_t window_y2)
 {
-    //     // TODO put into function
-    //     if (y1 >= memory.y2 || y2 <= memory.y1)
-    //     {
-    //         return false;
-    //     }
-    //
-    //     const uint8_t bg = PullMemoryParameter<uint8_t>(memory);
-    //     const uint8_t* str = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
-    //     const uint8_t font_width = PullMemoryParameter<uint8_t>(memory);
-    //     const uint8_t font_height = PullMemoryParameter<uint8_t>(memory);
-    //     uint8_t* font_data = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
-    //
-    //     const uint16_t bytes_per_char = (font_width / 8) + 1;
-    //
-    //     uint16_t ch_idx = 0;
-    //     uint8_t* ch_ptr = nullptr;
-    //
-    //     // How many iterations we've been at the same character
-    //     // If it exceeds the font width that means we are on the next
-    //     // character in the string
-    //     uint16_t x_char_iter = 0;
-    //     uint16_t w_off = 0;
-    //
-    //     // Get the current number of scan line already passed
-    //     uint16_t y_char_iter = 0;
-    //     if (y1 > memory.y1)
-    //     {
-    //         // We have done some line
-    //         y_char_iter = (y1 - memory.y1);
-    //     }
-    //
-    //     YBound bounds = GetYBounds(y1, y2, memory.y1, memory.y2);
-    //
-    //     uint8_t fg_high = (uint8_t)memory.colour << 4;
-    //     uint8_t fg_low = (uint8_t)memory.colour & 0x0F;
-    //     uint8_t bg_high = bg << 4;
-    //     uint8_t bg_low = bg & 0x0F;
-    //
-    //     for (uint16_t i = bounds.y1; i < bounds.y2; ++i)
-    //     {
-    //         x_char_iter = 0;
-    //         w_off = 0;
-    //         ch_idx = 0;
-    //         ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width, font_height)
-    //                + (y_char_iter * bytes_per_char);
-    //
-    //         for (uint16_t j = memory.x1; j < memory.x2; ++j)
-    //         {
-    //             if ((*ch_ptr << w_off) & 0x80)
-    //             {
-    //                 FillMatrixAtIdx(matrix, i, j, fg_high, fg_low);
-    //             }
-    //             else
-    //             {
-    //                 FillMatrixAtIdx(matrix, i, j, bg_high, bg_low);
-    //             }
-    //
-    //             ++w_off;
-    //             ++x_char_iter;
-    //
-    //             // Check if we are on the next character
-    //             if (x_char_iter >= font_width)
-    //             {
-    //                 x_char_iter = 0;
-    //
-    //                 // Get the character
-    //                 ++ch_idx;
-    //                 ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width, font_height)
-    //                        + (y_char_iter * bytes_per_char);
-    //
-    //                 // Next character and reset w_off
-    //                 w_off = 0;
-    //             }
-    //
-    //             if (w_off >= 8)
-    //             {
-    //                 w_off = 0;
-    //
-    //                 // At the end of the byte's bits, if a font > 8 bits
-    //                 // then we need to slide to the next byte. which is in the same
-    //                 // column
-    //                 ++ch_ptr;
-    //             }
-    //         }
-    //
-    //         // Slide the pointer is the next row
-    //         ++y_char_iter;
-    //     }
-    //
-    //     ch_ptr = nullptr;
-    //     font_data = nullptr;
-    //
-    //     return true;
+    const auto& text = shape.string;
+    if (buff == nullptr || text.str == nullptr || text.font.data == nullptr || text.len == 0
+        || text.font.width == 0 || text.font.height == 0)
+    {
+        return false;
+    }
+
+    // Intersect the string's pixel bounds with this render window and the buffer dimensions.
+    const size_t y1 = std::max(static_cast<size_t>(text.y), static_cast<size_t>(window_y1));
+    const size_t y2 = std::min(
+        {static_cast<size_t>(text.y) + text.font.height, static_cast<size_t>(window_y2), height});
+    const size_t x2 = std::min(static_cast<size_t>(text.x) + text.len * text.font.width, width * 2);
+
+    if (y1 >= y2 || text.x >= x2)
+    {
+        return false;
+    }
+
+    const size_t bytes_per_ch = (text.font.width + 7) / 8;
+
+    const uint8_t fg_high = static_cast<uint8_t>(text.foreground) << 4;
+    const uint8_t fg_low = static_cast<uint8_t>(text.foreground) & 0x0F;
+    const uint8_t bg_high = static_cast<uint8_t>(text.background) << 4;
+    const uint8_t bg_low = static_cast<uint8_t>(text.background) & 0x0F;
+    bool foreground = false;
+
+    for (size_t y = y1; y < y2; ++y)
+    {
+        const size_t pixel_y_offset = y - text.y;
+        for (size_t x = text.x; x < x2; ++x)
+        {
+            const size_t pixel_x_offset = x - text.x;
+            const size_t font_col = pixel_x_offset % text.font.width;
+
+            const size_t char_idx = pixel_x_offset / text.font.width;
+            const uint8_t ch = static_cast<uint8_t>(text.str[char_idx]);
+
+            if (ch >= 32 && ch <= 126)
+            {
+                // Find the glyph's row byte, then test its column's bit from left to right.
+                // We find the character offset starting at ' ', and map it from zero.
+                // then we multiply by the number of rows per character gets
+                // plus the current row we are rasterizing, times of the offset for the number of
+                // bytes per character plus the offset of which byte we are reading from for a
+                // character
+                const size_t byte_idx =
+                    (static_cast<size_t>(ch - 32) * text.font.height + pixel_y_offset)
+                        * bytes_per_ch
+                    + font_col / 8;
+                foreground = (text.font.data[byte_idx] & (0x80U >> (font_col % 8))) != 0;
+
+                if (foreground)
+                {
+                    SetPixel(buff, width, static_cast<uint16_t>(x), static_cast<uint16_t>(y),
+                             fg_high, fg_low);
+                }
+                else
+                {
+                    SetPixel(buff, width, static_cast<uint16_t>(x), static_cast<uint16_t>(y),
+                             bg_high, bg_low);
+                }
+            }
+        }
+    }
+
+    return true;
 }
-//
-// void Screen::HandleBounds(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
-// {
-//     if (x1 >= view_width || y1 >= view_height)
-//     {
-//         return;
-//     }
-//
-//     if (x2 >= view_width)
-//     {
-//         x2 = view_width;
-//     }
-//
-//     if (x1 > x2)
-//     {
-//         const uint16_t tmp = x1;
-//         x1 = x2;
-//         x2 = tmp;
-//     }
-//
-//     if (y1 > y2)
-//     {
-//         const uint16_t tmp = y1;
-//         y1 = y2;
-//         y2 = tmp;
-//     }
-// }
-//
-// inline uint8_t* Screen::GetCharAddr(uint8_t* font_data,
-//                                     const uint8_t ch,
-//                                     const uint16_t font_width,
-//                                     const uint16_t font_height)
-// {
-//     return font_data + ((ch - 32) * font_height * (font_width / 8 + 1));
-// }
-//
-// inline void
-// Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val, const int16_t num_bytes)
-// {
-//     const int16_t bytes = num_bytes < 4 ? num_bytes : 4;
-//
-//     uint8_t& idx = memory.write_idx;
-//     for (int16_t i = 0; i < bytes; ++i)
-//     {
-//         // We are relying on truncation to save a cycle
-//         memory.parameters[idx] = (val >> (8 * i));
-//         ++idx;
-//     }
-// }
-//
-// inline uint8_t* Screen::GetCharAddr(uint8_t* font_data,
-//                                     const uint8_t ch,
-//                                     const uint16_t font_width,
-//                                     const uint16_t font_height)
-// {
-//     return font_data + ((ch - 32) * font_height * (font_width / 8 + 1));
-// }
 
 inline void Graphics::SetPixel(uint8_t* buff,
                                const size_t width,

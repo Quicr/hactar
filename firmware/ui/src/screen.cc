@@ -51,6 +51,7 @@ Screen::Screen(uint16_t* scanline_buffer,
     draw_x2(0),
     draw_y2(0),
     title_buffer{0},
+    title_len(0),
     text_idx(0),
     texts_in_use(0),
     scroll_offset(0),
@@ -58,7 +59,7 @@ Screen::Screen(uint16_t* scanline_buffer,
     usr_buffer{0},
     usr_buffer_idx(0),
     title_x1(0),
-    title_x2(screen_width_pixels),
+    title_x2(0),
     icons_x_offset(0),
     scroll_area_height(0),
     usr_text_y_offset(0),
@@ -83,36 +84,8 @@ void Screen::Draw(uint32_t timeout)
     case FlagType::Rendering:
     {
         UI_LOG_INFO("rendering");
-        // TODO Move to a render function
-        const uint16_t quantization_divisor = 8 / quantization;
-        for (uint16_t y = draw_y1; y < draw_y2; ++y)
-        {
-            for (uint16_t x = draw_x1; x < draw_x2; ++x)
-            {
-                const uint16_t data_buff_idx = (x / quantization_divisor) + (y * data_buff_width);
-                if (x & 0x0001)
-                {
-                    // Upper
-                    const uint8_t quant_colour = data_buff[data_buff_idx] & 0x0F;
-                    const uint16_t real_colour = Colour_Map[quant_colour];
-                    scanline_ptr[x] = real_colour;
-                }
-                else
-                {
-                    // Lower
-                    const uint8_t quant_colour = data_buff[data_buff_idx] >> 4;
-                    const uint16_t real_colour = Colour_Map[quant_colour];
-                    scanline_ptr[x] = real_colour;
-                }
-            }
-            // TODO use dma
-            ili9341.WriteData(reinterpret_cast<const uint8_t*>(scanline_ptr + draw_x1),
-                              (draw_x2 - draw_x1) * 2);
-        }
-        // TODO this needs to be only once y1 == y2
-        // and everything needs to be put into a dma
-        LowerFlag(Rendering);
-        break;
+        Render();
+        return;
     }
     case FlagType::Whole_Screen_Dirty:
     {
@@ -121,8 +94,6 @@ void Screen::Draw(uint32_t timeout)
         draw_y1 = 0;
         draw_x2 = ili9341.GetWidth();
         draw_y2 = ili9341.GetHeight();
-        ili9341.SetRenderRegion(draw_x1, draw_y1, draw_x2, draw_y2);
-        RaiseFlag(Rendering);
         break;
     }
     case FlagType::Title_Dirty:
@@ -132,8 +103,6 @@ void Screen::Draw(uint32_t timeout)
         draw_y1 = Title_y1;
         draw_x2 = title_x2;
         draw_y2 = Title_y1 + font11x16.height;
-        ili9341.SetRenderRegion(draw_x1, draw_y1, draw_x2, draw_y2);
-        RaiseFlag(Rendering);
         break;
     }
     case FlagType::Icons_Dirty:
@@ -148,7 +117,39 @@ void Screen::Draw(uint32_t timeout)
     {
         break;
     }
+    default:
+    {
+        return;
     }
+    }
+
+    RaiseFlag(Rendering);
+    ili9341.SetRenderRegion(draw_x1, draw_y1, draw_x2 - 1, draw_y2 - 1);
+    Render();
+}
+
+void Screen::Render()
+{
+    // TODO Move to a render function
+    const uint16_t quantization_divisor = 8 / quantization;
+    for (uint16_t y = draw_y1; y < draw_y2; ++y)
+    {
+        for (uint16_t x = draw_x1; x < draw_x2; ++x)
+        {
+            const uint16_t data_buff_idx = (x / quantization_divisor) + (y * data_buff_width);
+            const uint8_t quant_colour =
+                (data_buff[data_buff_idx] >> (4 * ((x ^ 0x0001) & 0x0001))) & 0x0F;
+            const uint16_t real_colour = Colour_Map[quant_colour];
+
+            scanline_ptr[x] = real_colour;
+        }
+        // TODO use dma
+        ili9341.WriteData(reinterpret_cast<const uint8_t*>(scanline_ptr + draw_x1),
+                          (draw_x2 - draw_x1) * 2);
+    }
+    // TODO this needs to be only once y1 == y2
+    // and everything needs to be put into a dma
+    LowerFlag(Rendering);
 }
 
 void Screen::EnableBacklight()
@@ -229,9 +230,8 @@ void Screen::FillScreen(const Graphics::Colour colour)
 
 void Screen::UpdateTitle(const char* title, const uint32_t len)
 {
-    // TODO calculate left padding to center the text
-    const uint16_t actual_len = len < Title_Length ? len : Title_Length;
-    for (uint16_t i = 0; i < actual_len; ++i)
+    const uint16_t title_len = len < Max_Title_Length ? len : Max_Title_Length;
+    for (uint16_t i = 0; i < title_len; ++i)
     {
         title_buffer[i] = title[i];
     }
@@ -253,13 +253,15 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
     Graphics::Rasterize(clear_rec, data_buff, data_buff_width, data_buff_height, 0,
                         Top_Fixed_Height);
 
-    // TODO calculate the x1 based on how long the string is
+    const uint16_t next_x2 = title_x1 + title_len * title_font.width;
+    title_x2 = next_x2 > title_x2 ? next_x2 : title_x2;
+
     Graphics::Shape title_shape = {
         .type = Graphics::ShapeType::String,
         .string =
             {
                 .str = title_buffer,
-                .len = actual_len,
+                .len = title_len,
                 .x = title_x1,
                 .y = Title_y1,
                 .font = title_font,

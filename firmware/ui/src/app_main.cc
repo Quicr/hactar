@@ -189,8 +189,8 @@ int app_main()
     screen.EnableBacklight();
     // screen.FillScreen(Graphics::Colour::Blue);
     // screen.Draw(0);
-    screen.FillScreen(Graphics::Colour::Blue);
-    // screen.UpdateTitle("Test", 4);
+    screen.FillScreen(Graphics::Colour::Black);
+    screen.UpdateTitle("Test", 4);
 
     for (int i = 0; i < 240; ++i)
     {

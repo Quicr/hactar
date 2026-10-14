@@ -13,7 +13,7 @@ class Screen
 {
 public:
     static constexpr uint16_t Title_y1 = 2;
-    static constexpr uint32_t Title_Length = 21;
+    static constexpr uint32_t Max_Title_Length = 21;
     static constexpr uint32_t Max_Texts = 35;
     static constexpr uint32_t Max_Characters = 48;
     static constexpr uint16_t Top_Fixed_Height = 20;
@@ -36,16 +36,16 @@ private:
 
     // Some basic colours (RGB565)
     // should this be in ili9341?
-    static constexpr uint16_t C_BLACK = 0x0000U;
-    static constexpr uint16_t C_WHITE = 0xFFFFU;
-    static constexpr uint16_t C_BLUE = 0x001FU;
-    static constexpr uint16_t C_RED = 0xF800U;
-    static constexpr uint16_t C_LIGHT_GREEN = 0x3626U;
-    static constexpr uint16_t C_GREEN = 0x07E0U;
-    static constexpr uint16_t C_CYAN = 0x07FFU;
-    static constexpr uint16_t C_MAGENTA = 0xF81FU;
-    static constexpr uint16_t C_YELLOW = 0xFFE0U;
-    static constexpr uint16_t C_GREY = 0xCE59U;
+    static constexpr uint16_t C_BLACK = __builtin_bswap16(0x0000U);
+    static constexpr uint16_t C_WHITE = __builtin_bswap16(0xFFFFU);
+    static constexpr uint16_t C_BLUE = __builtin_bswap16(0x001FU);
+    static constexpr uint16_t C_RED = __builtin_bswap16(0xF800U);
+    static constexpr uint16_t C_LIGHT_GREEN = __builtin_bswap16(0x3626U);
+    static constexpr uint16_t C_GREEN = __builtin_bswap16(0x07E0U);
+    static constexpr uint16_t C_CYAN = __builtin_bswap16(0x07FFU);
+    static constexpr uint16_t C_MAGENTA = __builtin_bswap16(0xF81FU);
+    static constexpr uint16_t C_YELLOW = __builtin_bswap16(0xFFE0U);
+    static constexpr uint16_t C_GREY = __builtin_bswap16(0xCE59U);
     static constexpr uint16_t Colour_Map[]{C_BLACK, C_WHITE, C_BLUE,    C_RED,    C_LIGHT_GREEN,
                                            C_GREEN, C_CYAN,  C_MAGENTA, C_YELLOW, C_GREY};
 
@@ -112,6 +112,8 @@ private:
 
     void RotateScreen(ILI9341::Orientation orientation);
     void CalculateDrawAreas();
+    void Render();
+
     void RaiseFlag(const FlagType flag);
     void LowerFlag(const FlagType flag);
     uint32_t TakeFlag();
@@ -142,7 +144,8 @@ private:
 
     // Window: 0-20px
     // Max 21 characters
-    char title_buffer[Title_Length];
+    char title_buffer[Max_Title_Length];
+    size_t title_len;
 
     // Window: 20 - 308px
     uint32_t text_idx;
@@ -157,6 +160,7 @@ private:
 
     uint16_t title_x1;
     uint16_t title_x2;
+
     uint16_t icons_x_offset;
     uint16_t scroll_area_height;
     uint16_t usr_text_y_offset;
