@@ -189,8 +189,20 @@ int app_main()
     screen.EnableBacklight();
     // screen.FillScreen(Graphics::Colour::Blue);
     // screen.Draw(0);
+    Graphics::Shape circle = {
+        .type = Graphics::ShapeType::FillCircle,
+        .fill_circle =
+            {
+                .x = 100,
+                .y = 100,
+                .r = 20,
+                .colour = Graphics::Colour::Blue,
+                .flags = 0,
+            },
+    };
     screen.FillScreen(Graphics::Colour::Black);
     screen.UpdateTitle("Test", 4);
+    screen.PushShape(circle);
 
     for (int i = 0; i < 240; ++i)
     {

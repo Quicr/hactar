@@ -99,6 +99,8 @@ public:
     const char* UserText() const noexcept;
     uint16_t UserTextLength() const noexcept;
 
+    void PushShape(Graphics::Shape shape);
+
 private:
     enum FlagType : uint32_t
     {

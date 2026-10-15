@@ -430,54 +430,8 @@ uint32_t Screen::TakeFlag()
     return flag;
 }
 
-// inline void Screen::WaitForSPIComplete()
-// {
-//     while (spi->State != HAL_SPI_STATE_READY)
-//     {
-//         __NOP();
-//     }
-// }
-//
-// inline void Screen::SetPinToCommand()
-// {
-//     HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_RESET);
-// }
-//
-// inline void Screen::SetPinToData()
-// {
-//     HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
-// }
-//
-// void Screen::WriteCommand(uint8_t cmd)
-// {
-//     WaitForSPIComplete();
-//     SetPinToCommand();
-//     HAL_SPI_Transmit_DMA(spi, &cmd, sizeof(cmd));
-// }
-//
-// void Screen::WriteCommand(uint8_t cmd, uint8_t* data, const uint32_t sz)
-// {
-//     WriteCommand(cmd);
-//     WriteData(data, sz);
-// }
-//
-// // SetPinToData needs to be called before this function
-// void Screen::WriteData(uint8_t* data, const uint32_t data_size)
-// {
-//     WaitForSPIComplete();
-//     HAL_SPI_Transmit_DMA(spi, data, data_size);
-// }
-//
-// void Screen::WriteDataWithSet(uint8_t data)
-// {
-//     WaitForSPIComplete();
-//     SetPinToData();
-//     HAL_SPI_Transmit_DMA(spi, &data, sizeof(data));
-// }
-//
-// void Screen::WriteDataWithSet(uint8_t* data, const uint32_t data_size)
-// {
-//     WaitForSPIComplete();
-//     SetPinToData();
-//     HAL_SPI_Transmit_DMA(spi, data, data_size);
-// }
+void Screen::PushShape(Graphics::Shape shape)
+{
+    Graphics::Rasterize(shape, data_buff, data_buff_width, data_buff_height, 0,
+                        ili9341.GetHeight());
+}
