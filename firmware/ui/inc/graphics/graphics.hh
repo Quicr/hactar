@@ -65,6 +65,7 @@ public:
                 const uint16_t y1;
                 const uint16_t x2;
                 const uint16_t y2;
+                const uint16_t thickness;
                 const Colour colour;
                 uint8_t flags;
             } line;
@@ -200,4 +201,13 @@ private:
                                 const uint16_t y,
                                 const uint8_t colour_high,
                                 const uint8_t colour_low);
+
+    static inline void FillRectangle(uint8_t* buff,
+                                     const size_t width,
+                                     const size_t height,
+                                     const uint16_t x1,
+                                     const uint16_t y1,
+                                     const uint16_t x2,
+                                     const uint16_t y2,
+                                     const Colour colour);
 };

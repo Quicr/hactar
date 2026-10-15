@@ -63,21 +63,12 @@ bool Graphics::RasterizeFillRectangle(Shape& shape,
     }
     UI_LOG_INFO("fill_rectangle");
 
-    const uint8_t colour_high = static_cast<uint8_t>(shape.fill_rectangle.colour) << 4;
-    const uint8_t colour_low = static_cast<uint8_t>(shape.fill_rectangle.colour) & 0x0F;
-    UI_LOG_INFO("colour high %d, colour low %d", (int)colour_high, (int)colour_low);
-
     const uint16_t y1 = std::max(shape.fill_rectangle.y1, window_y1);
     const uint16_t y2 = std::min(shape.fill_rectangle.y2, window_y2);
     const uint16_t x2 = std::min(shape.fill_rectangle.x2, static_cast<uint16_t>(width * 2));
 
-    for (uint16_t y = y1; y < y2; ++y)
-    {
-        for (uint16_t x = shape.fill_rectangle.x1; x < x2; ++x)
-        {
-            SetPixel(buff, width, x, y, colour_high, colour_low);
-        }
-    }
+    FillRectangle(buff, width, height, shape.fill_rectangle.x1, y1, x2, y2,
+                  shape.fill_rectangle.colour);
 
     return shape.fill_rectangle.y2 >= y2;
 }
@@ -155,37 +146,57 @@ bool Graphics::RasterizeLine(Shape& shape,
                              const uint16_t window_y1,
                              const uint16_t window_y2)
 {
-    if (buff == nullptr || window_y1 >= window_y2)
+    const auto& line = shape.line;
+    if (buff == nullptr || window_y1 >= window_y2 || line.thickness == 0)
     {
         return false;
     }
 
-    const auto& line = shape.line;
     int32_t x = line.x1;
     int32_t y = line.y1;
-    const int32_t x2 = line.x2;
-    const int32_t y2 = line.y2;
-    const int32_t dx = x2 > x ? x2 - x : x - x2;
-    const int32_t dy = y2 > y ? y2 - y : y - y2;
-    const int32_t step_x = x < x2 ? 1 : -1;
-    const int32_t step_y = y < y2 ? 1 : -1;
+    const int32_t end_x = line.x2;
+    const int32_t end_y = line.y2;
+    const int32_t dx = end_x > x ? end_x - x : x - end_x;
+    const int32_t dy = end_y > y ? end_y - y : y - end_y;
+    const int32_t step_x = x < end_x ? 1 : -1;
+    const int32_t step_y = y < end_y ? 1 : -1;
     int32_t error = dx - dy;
 
-    const size_t pixel_width = std::min(width, size_t{32768}) * 2;
+    const int32_t pixel_width = static_cast<int32_t>(std::min(width, size_t{32768}) * 2);
+    const int32_t pixel_height = static_cast<int32_t>(std::min(height, size_t{65536}));
+    const int32_t offset = -static_cast<int32_t>((line.thickness - 1) / 2);
     const uint8_t colour_high = static_cast<uint8_t>(line.colour) << 4;
     const uint8_t colour_low = static_cast<uint8_t>(line.colour) & 0x0F;
     bool drawn = false;
 
     for (;;)
     {
-        if (static_cast<size_t>(x) < pixel_width && static_cast<size_t>(y) < height
-            && y >= window_y1 && y < window_y2)
+        // A shallow line gets a vertical span; a steep line gets a horizontal one.
+        if (dx >= dy && x < pixel_width)
         {
-            SetPixel(buff, width, static_cast<uint16_t>(x), static_cast<uint16_t>(y), colour_high,
-                     colour_low);
-            drawn = true;
+            const int32_t first = std::max<int32_t>({0, window_y1, y + offset});
+            const int32_t last =
+                std::min<int32_t>({pixel_height, window_y2, y + offset + line.thickness});
+            for (int32_t row = first; row < last; ++row)
+            {
+                SetPixel(buff, width, static_cast<uint16_t>(x), static_cast<uint16_t>(row),
+                         colour_high, colour_low);
+                drawn = true;
+            }
         }
-        if (x == x2 && y == y2)
+        else if (dy > dx && y >= window_y1 && y < window_y2 && y < pixel_height)
+        {
+            const int32_t first = std::max<int32_t>(0, x + offset);
+            const int32_t last = std::min(pixel_width, x + offset + line.thickness);
+            for (int32_t col = first; col < last; ++col)
+            {
+                SetPixel(buff, width, static_cast<uint16_t>(col), static_cast<uint16_t>(y),
+                         colour_high, colour_low);
+                drawn = true;
+            }
+        }
+
+        if (x == end_x && y == end_y)
         {
             break;
         }
@@ -265,76 +276,41 @@ bool Graphics::RasterizeCircle(Shape& shape,
     }
 
     const auto& circle = shape.circle;
-    const int32_t radius = circle.r;
-    const int32_t center_y = circle.y;
-    const int32_t y1 = std::max<int32_t>({0, int32_t(window_y1), center_y - radius});
-    const int32_t bottom = static_cast<int32_t>(std::min(height, size_t{65536}));
-    const int32_t y2 = std::min({center_y + radius + 1, int32_t(window_y2), bottom});
-    const int32_t pixel_width = static_cast<int32_t>(std::min(width, size_t{32768}) * 2);
 
-    if (y1 >= y2 || pixel_width == 0)
-    {
-        return false;
-    }
+    const size_t fp_width = width * 2;
 
-    const int64_t radius_squared = static_cast<int64_t>(radius) * radius;
-    const bool has_hole = circle.thickness < circle.r;
-    const int32_t inner_radius = radius - circle.thickness;
-    const int64_t inner_squared = static_cast<int64_t>(inner_radius) * inner_radius;
+    const int16_t x1 = std::max(circle.x - circle.r, 0);
+    const int16_t x2 = std::min<int16_t>(circle.x + circle.r, fp_width);
+    const int16_t y1 = std::max(circle.y - circle.r, 0);
+    const int16_t y2 = std::min<int16_t>({circle.y + circle.r, height, window_y2});
+
     const uint8_t colour_high = static_cast<uint8_t>(circle.colour) << 4;
     const uint8_t colour_low = static_cast<uint8_t>(circle.colour) & 0x0F;
-    bool drawn = false;
 
-    for (int32_t y = y1; y < y2; ++y)
+    const int16_t thickness = std::min(circle.r, circle.thickness);
+    const int16_t outer_r_2 = circle.r * circle.r;
+    const int16_t inner_r_2 = (circle.r - thickness) * (circle.r - thickness);
+
+    for (int16_t y = y1 + 1; y < y2; ++y)
     {
-        const int64_t dy = static_cast<int64_t>(y) - circle.y;
-        const int64_t distance_squared = radius_squared - dy * dy;
-        int32_t outer = static_cast<int32_t>(std::sqrt(static_cast<double>(distance_squared)));
-        while (static_cast<int64_t>(outer + 1) * (outer + 1) <= distance_squared)
-        {
-            ++outer;
-        }
-        while (static_cast<int64_t>(outer) * outer > distance_squared)
-        {
-            --outer;
-        }
+        const int16_t dy =
+            (y - y1 - static_cast<int16_t>(circle.r)) * (y - y1 - static_cast<int16_t>(circle.r));
 
-        int32_t inner = -1;
-        if (has_hole && dy * dy <= inner_squared)
+        for (int16_t x = x1 + 1; x < x2; ++x)
         {
-            const int64_t hole_squared = inner_squared - dy * dy;
-            inner = static_cast<int32_t>(std::sqrt(static_cast<double>(hole_squared)));
-            while (static_cast<int64_t>(inner + 1) * (inner + 1) <= hole_squared)
-            {
-                ++inner;
-            }
-            while (static_cast<int64_t>(inner) * inner > hole_squared)
-            {
-                --inner;
-            }
-        }
+            const int16_t dx = (x - x1 - static_cast<int16_t>(circle.r))
+                             * (x - x1 - static_cast<int16_t>(circle.r));
 
-        // Each scanline has up to two spans, one on either side of the inner disc.
-        const int32_t left = static_cast<int32_t>(circle.x) - outer;
-        const int32_t right = static_cast<int32_t>(circle.x) + outer;
-        const int32_t left_end = inner < 0 ? right : static_cast<int32_t>(circle.x) - inner - 1;
-        const int32_t right_start =
-            inner < 0 ? right + 1 : static_cast<int32_t>(circle.x) + inner + 1;
-        for (int32_t x = std::max(int32_t{0}, left); x <= left_end && x < pixel_width; ++x)
-        {
-            SetPixel(buff, width, static_cast<uint16_t>(x), static_cast<uint16_t>(y), colour_high,
-                     colour_low);
-            drawn = true;
-        }
-        for (int32_t x = std::max(int32_t{0}, right_start); x <= right && x < pixel_width; ++x)
-        {
-            SetPixel(buff, width, static_cast<uint16_t>(x), static_cast<uint16_t>(y), colour_high,
-                     colour_low);
-            drawn = true;
+            const int32_t distance = dx + dy;
+
+            if (distance <= outer_r_2 && distance >= inner_r_2)
+            {
+                SetPixel(buff, width, x, y, colour_high, colour_low);
+            }
         }
     }
 
-    return drawn;
+    return true;
 }
 
 bool Graphics::RasterizeString(Shape& shape,
@@ -386,9 +362,9 @@ bool Graphics::RasterizeString(Shape& shape,
                 // Find the glyph's row byte, then test its column's bit from left to right.
                 // We find the character offset starting at ' ', and map it from zero.
                 // then we multiply by the number of rows per character gets
-                // plus the current row we are rasterizing, times of the offset for the number of
-                // bytes per character plus the offset of which byte we are reading from for a
-                // character
+                // plus the current row we are rasterizing, times of the offset for the number
+                // of bytes per character plus the offset of which byte we are reading from for
+                // a character
                 const size_t byte_idx =
                     (static_cast<size_t>(ch - 32) * text.font.height + pixel_y_offset)
                         * bytes_per_ch
@@ -431,5 +407,26 @@ inline void Graphics::SetPixel(uint8_t* buff,
     else
     {
         pixel = (pixel & 0x0F) | colour_high;
+    }
+}
+
+inline void Graphics::FillRectangle(uint8_t* buff,
+                                    const size_t width,
+                                    const size_t height,
+                                    const uint16_t x1,
+                                    const uint16_t y1,
+                                    const uint16_t x2,
+                                    const uint16_t y2,
+                                    const Colour colour)
+{
+    const uint8_t colour_high = static_cast<uint8_t>(colour) << 4;
+    const uint8_t colour_low = static_cast<uint8_t>(colour) & 0x0F;
+
+    for (uint16_t y = y1; y < y2; ++y)
+    {
+        for (uint16_t x = x1; x < x2; ++x)
+        {
+            SetPixel(buff, width, x, y, colour_high, colour_low);
+        }
     }
 }

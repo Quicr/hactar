@@ -187,9 +187,8 @@ int app_main()
     // Renderer renderer(screen, keyboard);
     screen.Init();
     screen.EnableBacklight();
-    // screen.FillScreen(Graphics::Colour::Blue);
-    // screen.Draw(0);
-    Graphics::Shape circle = {
+
+    Graphics::Shape fill_circle = {
         .type = Graphics::ShapeType::FillCircle,
         .fill_circle =
             {
@@ -200,9 +199,24 @@ int app_main()
                 .flags = 0,
             },
     };
+
+    Graphics::Shape circle = {
+        .type = Graphics::ShapeType::Circle,
+        .circle =
+            {
+                .x = 100,
+                .y = 150,
+                .r = 20,
+                .thickness = 5,
+                .colour = Graphics::Colour::Red,
+                .flags = 0,
+            },
+    };
+
     screen.FillScreen(Graphics::Colour::Black);
-    screen.UpdateTitle("Test", 4);
+    screen.PushShape(fill_circle);
     screen.PushShape(circle);
+    screen.UpdateTitle("Test", 4);
 
     for (int i = 0; i < 240; ++i)
     {
