@@ -217,6 +217,11 @@ int app_main()
     screen.PushShape(fill_circle);
     screen.PushShape(circle);
     screen.UpdateTitle("Test", 4);
+    screen.AppendUserText('>');
+    screen.AppendUserText(' ');
+    screen.AppendUserText('h');
+    screen.AppendUserText('i');
+    screen.AppendUserText(" test123", 8);
 
     for (int i = 0; i < 240; ++i)
     {

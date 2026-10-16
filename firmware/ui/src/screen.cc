@@ -94,6 +94,9 @@ void Screen::Draw(uint32_t timeout)
         draw_y1 = 0;
         draw_x2 = ili9341.GetWidth();
         draw_y2 = ili9341.GetHeight();
+
+        // Drop all flags, as this will cover all areas
+        flags = 0;
         break;
     }
     case FlagType::Title_Dirty:
@@ -111,6 +114,7 @@ void Screen::Draw(uint32_t timeout)
     }
     case FlagType::Text_Area_Dirty:
     {
+
         break;
     }
     case FlagType::Usr_Text_Dirty:
@@ -335,37 +339,69 @@ void Screen::CommitText(const char* text, const uint32_t len)
 
 void Screen::AppendUserText(const char* text, const uint32_t len)
 {
-    // if (usr_buffer_idx >= Max_Characters)
-    // {
-    //     return;
-    // }
-    //
-    // const uint32_t num_char = std::min(len, Max_Characters - usr_buffer_idx);
-    // for (uint32_t i = 0; i < num_char; ++i)
-    // {
-    //     usr_buffer[usr_buffer_idx + i] = text[i];
-    // }
-    //
-    // DrawString(usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
-    //            usr_buffer + usr_buffer_idx, num_char, font7x12, Colour::White,
-    //            Colour::Black);
-    //
-    // usr_buffer_idx += num_char;
+    if (usr_buffer_idx >= Max_Characters)
+    {
+        return;
+    }
+
+    const uint32_t last_idx = usr_buffer_idx;
+    const uint32_t num_char = std::min(len, Max_Characters - usr_buffer_idx);
+    for (uint32_t i = 0; i < num_char; ++i)
+    {
+        usr_buffer[usr_buffer_idx + i] = text[i];
+    }
+
+    Graphics::Shape str = {
+        .type = Graphics::ShapeType::String,
+        .string =
+            {
+                .str = usr_buffer + last_idx,
+                .len = static_cast<uint16_t>(num_char),
+                .x = static_cast<uint16_t>(last_idx * text_font.width),
+                .y = usr_text_y_offset,
+                .font = text_font,
+                .foreground = Graphics::Colour::White,
+                .background = Graphics::Colour::Black,
+                .flags = 0,
+            },
+    };
+
+    Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
+                        usr_text_y_offset + text_font.height);
+
+    usr_buffer_idx += num_char;
+    RaiseFlag(FlagType::Usr_Text_Dirty);
 }
 
 void Screen::AppendUserText(const char ch)
 {
-    // if (usr_buffer_idx >= Max_Characters)
-    // {
-    //     return;
-    // }
-    //
-    // usr_buffer[usr_buffer_idx] = ch;
-    //
-    // DrawString(usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
-    //            usr_buffer + usr_buffer_idx, 1, font7x12, Colour::White, Colour::Black);
-    //
-    // ++usr_buffer_idx;
+    if (usr_buffer_idx >= Max_Characters)
+    {
+        return;
+    }
+
+    usr_buffer[usr_buffer_idx] = ch;
+
+    Graphics::Shape str = {
+        .type = Graphics::ShapeType::String,
+        .string =
+            {
+                .str = usr_buffer + usr_buffer_idx,
+                .len = static_cast<uint16_t>(1),
+                .x = static_cast<uint16_t>(usr_buffer_idx * text_font.width),
+                .y = usr_text_y_offset,
+                .font = text_font,
+                .foreground = Graphics::Colour::White,
+                .background = Graphics::Colour::Black,
+                .flags = 0,
+            },
+    };
+
+    Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
+                        usr_text_y_offset + text_font.height);
+
+    ++usr_buffer_idx;
+    RaiseFlag(FlagType::Usr_Text_Dirty);
 }
 
 void Screen::BackspaceUserText()
@@ -409,7 +445,7 @@ void Screen::RotateScreen(ILI9341::Orientation orientation)
 
 void Screen::CalculateDrawAreas()
 {
-    usr_text_y_offset = ili9341.GetHeight() - Bottom_Fixed_Height;
+    usr_text_y_offset = ili9341.GetHeight() - text_font.height;
     scroll_area_height = usr_text_y_offset - Top_Fixed_Height;
 }
 

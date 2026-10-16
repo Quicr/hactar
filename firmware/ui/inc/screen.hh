@@ -158,7 +158,7 @@ private:
 
     // Window: 308-320px
     char usr_buffer[Max_Characters];
-    char usr_buffer_idx;
+    size_t usr_buffer_idx;
 
     uint16_t title_x1;
     uint16_t title_x2;
