@@ -1,0 +1,25 @@
+Print collection:
+1 ev19-talktar-case-top.step
+1 ev19-talktar-case-bottom.step
+1 ev19-talktar-case-power-switch.step
+4 ev19-talktar-case-side-buttons.step
+
+How to print: 
+- Print everything flat
+- supports should be enabled only for the bottom half of the case 
+- Bambu labs 0.20mm Standard @BBL X1C
+- Let er rip!
+
+What you need:
+4 M2x10 to close the case. 
+Precision acrew driver
+
+Steps: 
+1. Plug in the battery to the EV19 board
+2. Tape battery cable flat on top of the battery.
+3. Attach the power switch 3D print to the power switch such that the little hole will be near the bottom of the EV19 board.
+4. Put EV19 board, power switch, and battery into the bottom of the case. The battery cable should be coming out of the battery on the left hand side with the battery protection circuit face up.
+5. Put both buttons into the button imprints on the left side of the case.
+6. Carefully place the top onto the bottom make sure the buttons and the power switch are aligned to the holes.
+7. Tightly hold the top and bottom case closed and use 4 M2x14 or M2x15 screws to attach the bottom and top together, the screw should slide into the hole until it hits the top screw holes where it will need to be driven into the plastic.
+8. Congratulations! Enjoy your EV19.
