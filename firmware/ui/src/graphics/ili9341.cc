@@ -1,5 +1,7 @@
 #include "ili9341.hh"
+#include "gsl/gsl-lite.hpp"
 #include "logger.hh"
+#include <cstdint>
 
 ILI9341::ILI9341(uint16_t width,
                  uint16_t height,
@@ -286,4 +288,62 @@ void ILI9341::WriteData(const uint8_t* data, uint16_t size)
     HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
     HAL_SPI_Transmit(spi, data, size, Spi_Timeout);
     Deselect();
+}
+
+void ILI9341::SetScrollArea(const uint16_t y1, const uint16_t y2, const uint16_t height)
+{
+    const uint8_t vert_scroll_def_data[] = {
+        static_cast<uint8_t>(y1 >> 8),     static_cast<uint8_t>(y1),
+        static_cast<uint8_t>(height >> 8), static_cast<uint8_t>(height),
+        static_cast<uint8_t>(y2 >> 8),     static_cast<uint8_t>(y2),
+    };
+
+    WriteCommand(Vertical_Definition_Address);
+    WriteData(vert_scroll_def_data, sizeof(vert_scroll_def_data) / sizeof(vert_scroll_def_data[0]));
+}
+
+void ILI9341::ScrollScreen(const uint16_t scroll_idx, bool up)
+{
+    uint16_t scroll_d = scroll_idx;
+
+    // switch (orientation)
+    // {
+    // case Orientation::portrait:
+    // case Orientation::left_landscape:
+    // {
+    //     if (up)
+    //     {
+    //         scroll_d = scroll_idx;
+    //     }
+    //     else
+    //     {
+    //         scroll_d = ili9341.GetHeignt() - scroll_idx;
+    //     }
+    //     break;
+    // }
+    // case Orientation::flipped_portrait:
+    // case Orientation::right_landscape:
+    // {
+    //     if (up)
+    //     {
+    //         scroll_d = view_height - scroll_idx;
+    //     }
+    //     else
+    //     {
+    //         scroll_d = scroll_idx;
+    //     }
+    //     break;
+    // }
+    // default:
+    // {
+    //     scroll_d = 0;
+    //     return;
+    // }
+    // }
+
+    const uint8_t vert_scroll_idx_data[] = {static_cast<uint8_t>(scroll_d >> 8),
+                                            static_cast<uint8_t>(scroll_d)};
+
+    WriteCommand(Vertical_Scroll_Start_Address);
+    WriteData(vert_scroll_idx_data, sizeof(vert_scroll_idx_data) / sizeof(vert_scroll_idx_data[0]));
 }

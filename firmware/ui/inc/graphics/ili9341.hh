@@ -2,6 +2,7 @@
 
 #include "stm32.h"
 #include <cstddef>
+#include <cstdint>
 
 class ILI9341
 {
@@ -38,6 +39,8 @@ public:
     void OnSpiTransmitComplete(SPI_HandleTypeDef* completed_spi);
     void Sleep();
     void Wake();
+    void SetScrollArea(const uint16_t y1, const uint16_t y2, const uint16_t height);
+    void ScrollScreen(const uint16_t scroll_idx, bool up);
 
     uint16_t GetWidth() const;
     uint16_t GetHeight() const;
@@ -72,6 +75,9 @@ private:
     static constexpr uint8_t Positive_Gamma_Correction = 0xE0U;
     static constexpr uint8_t Negative_Gamma_Correction = 0xE1U;
     static constexpr uint8_t Normal_Display_Mode_On = 0x13U;
+
+    static constexpr uint8_t Vertical_Definition_Address = 0x33U;
+    static constexpr uint8_t Vertical_Scroll_Start_Address = 0x37U;
 
     static constexpr uint8_t BGR_Order = 0x08U;
     static constexpr uint8_t Mirror_X = 0x40U;

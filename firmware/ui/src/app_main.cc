@@ -52,6 +52,7 @@ extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim5;
+extern TIM_HandleTypeDef htim6;
 extern RNG_HandleTypeDef hrng;
 
 // Global variables that need to exist for hardware callbacks
@@ -144,7 +145,7 @@ uint16_t row_pins[Keyboard::Q10_Rows] = {
 static constexpr uint16_t kb_ring_buff_sz = 5;
 RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
 
-Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
+Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 200, 300);
 
 volatile bool sleeping = true;
 volatile bool error = false;
@@ -172,7 +173,13 @@ Button
 
 int app_main()
 {
+    InitScreen(screen);
+    Renderer renderer(screen, keyboard);
+    renderer.ChangeView(Renderer::View::Startup);
+    renderer.Render(HAL_GetTick());
+
     HAL_TIM_Base_Start_IT(&htim2);
+    HAL_TIM_Base_Start_IT(&htim6);
 
     mgmt_serial.StartReceive();
 
@@ -184,49 +191,6 @@ int app_main()
     uint32_t ticks_ms = 0;
     ConfigStorage config_storage(hi2c1);
     Protector protector(config_storage);
-    // Renderer renderer(screen, keyboard);
-    screen.Init();
-    screen.EnableBacklight();
-
-    Graphics::Shape fill_circle = {
-        .type = Graphics::ShapeType::FillCircle,
-        .fill_circle =
-            {
-                .x = 100,
-                .y = 100,
-                .r = 20,
-                .colour = Graphics::Colour::Blue,
-                .flags = 0,
-            },
-    };
-
-    Graphics::Shape circle = {
-        .type = Graphics::ShapeType::Circle,
-        .circle =
-            {
-                .x = 100,
-                .y = 150,
-                .r = 20,
-                .thickness = 5,
-                .colour = Graphics::Colour::Red,
-                .flags = 0,
-            },
-    };
-
-    screen.FillScreen(Graphics::Colour::Black);
-    screen.PushShape(fill_circle);
-    screen.PushShape(circle);
-    screen.UpdateTitle("Test", 4);
-    screen.AppendUserText('>');
-    screen.AppendUserText(' ');
-    screen.AppendUserText('h');
-    screen.AppendUserText('i');
-    screen.AppendUserText(" test123", 8);
-
-    for (int i = 0; i < 240; ++i)
-    {
-        screen.Draw(0);
-    }
 
     audio_chip.Init();
     audio_chip.StartI2S();
@@ -247,6 +211,12 @@ int app_main()
     constexpr uint32_t Volume_Button_Debounce_ms = 200;
 
     uint32_t sleep_timeout = 0;
+
+    // renderer.ChangeView(Renderer::View::Chat);
+    // renderer.Render(HAL_GetTick());
+
+    screen.CommitText("Test1", 5);
+    screen.CommitText("Test2", 5);
 
     while (1)
     {
@@ -297,13 +267,14 @@ int app_main()
         CheckPTT(protector, loopback_mode);
         CheckPTTAI(protector, loopback_mode);
 
-        // HandleKeypress(screen, keyboard, net_serial, protector);
+        HandleKeypress(screen, keyboard, net_serial, protector);
 
         HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode);
         HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
                               audio_transmit_mode, audio_receive_mode);
 
-        // renderer.Render(ticks_ms);
+        renderer.Render(ticks_ms);
+
         // TODO remove?
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
@@ -623,7 +594,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        // keyboard.Scan(HAL_GetTick());
         ptt.Update(HAL_GetTick());
         mic_ptt.Update(HAL_GetTick());
         ptt_ai.Update(HAL_GetTick());
@@ -648,6 +618,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
         HAL_TIM_Base_Stop(&htim5);
         ptt_ai_state = Ptt_Btn_State::Last_Send;
         LedBOff();
+    }
+    else if (htim->Instance == TIM6)
+    {
+        keyboard.Scan(HAL_GetTick());
     }
 }
 

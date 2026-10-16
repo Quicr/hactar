@@ -12,14 +12,13 @@
 class Screen
 {
 public:
+    // TODO revist these offsets
     static constexpr uint16_t Title_y1 = 2;
     static constexpr uint32_t Max_Title_Length = 21;
-    static constexpr uint32_t Max_Texts = 35;
-    static constexpr uint32_t Max_Characters = 48;
+    static constexpr uint32_t Max_Characters = 320 / 5;
     static constexpr uint16_t Top_Fixed_Height = 20;
     static constexpr uint16_t Bottom_Fixed_Height = 20;
-
-    // TODO calculate
+    static constexpr uint32_t Max_Texts = (240 - Top_Fixed_Height - Bottom_Fixed_Height) / 8;
 
 private:
     struct YBound
@@ -81,8 +80,6 @@ public:
     inline void Select();
     inline void Deselect();
 
-    void ScrollScreen(const uint16_t scroll_idx, bool up);
-
     void FillScreen(const Graphics::Colour colour);
     void UpdateTitle(const char* title, const uint32_t len);
 
@@ -114,6 +111,9 @@ private:
 
     void RotateScreen(ILI9341::Orientation orientation);
     void CalculateDrawAreas();
+    void DefineScrollArea();
+    void ScrollText();
+    void Update();
     void Render();
 
     void RaiseFlag(const FlagType flag);
@@ -155,6 +155,7 @@ private:
     uint32_t scroll_offset;
     char text_buffer[Max_Texts][Max_Characters];
     char text_lens[Max_Texts];
+    size_t max_texts;
 
     // Window: 308-320px
     char usr_buffer[Max_Characters];

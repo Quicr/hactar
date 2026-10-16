@@ -6,9 +6,10 @@
 
 void InitScreen(Screen& screen)
 {
-    // screen.FillScreen(Graphics::Colour::Black);
-    // screen.Draw(0);
-    // screen.EnableBacklight();
+    screen.Init();
+    screen.FillScreen(Graphics::Colour::Black);
+    screen.Draw(0);
+    screen.EnableBacklight();
 }
 
 void HandleChatMessages(Screen& screen, link_packet_t* packet)
@@ -25,7 +26,7 @@ void HandleChatMessages(Screen& screen, link_packet_t* packet)
 
 void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, Protector& protector)
 {
-    while (keyboard.NumAvailable() > 0)
+    while (keyboard.NumAvailable())
     {
         const uint8_t ch = keyboard.Read();
 
@@ -35,6 +36,11 @@ void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, Protecto
         {
         case Keyboard::Ent:
         {
+            if (screen.UserTextLength() == 0)
+            {
+                return;
+            }
+
             link_packet_t packet;
             ui_net_link::Serialize(ui_net_link::Channel_Id::Chat, screen.UserText(),
                                    screen.UserTextLength(), packet);

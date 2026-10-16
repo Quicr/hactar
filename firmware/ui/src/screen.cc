@@ -4,6 +4,7 @@
 #include "graphics.hh"
 #include "ili9341.hh"
 #include <math.h>
+#include <cstring>
 
 Screen::Screen(uint16_t* scanline_buffer,
                const uint16_t num_lines,
@@ -56,6 +57,8 @@ Screen::Screen(uint16_t* scanline_buffer,
     texts_in_use(0),
     scroll_offset(0),
     text_buffer{},
+    text_lens{},
+    max_texts(Max_Texts),
     usr_buffer{0},
     usr_buffer_idx(0),
     title_x1(0),
@@ -114,11 +117,21 @@ void Screen::Draw(uint32_t timeout)
     }
     case FlagType::Text_Area_Dirty:
     {
-
+        UI_LOG_INFO("Text area dirty");
+        draw_x1 = 0;
+        draw_x2 = ili9341.GetWidth();
+        draw_y1 = usr_text_y_offset - text_font.height * text_idx;
+        draw_y1 = 0;
+        draw_y2 = usr_text_y_offset;
         break;
     }
     case FlagType::Usr_Text_Dirty:
     {
+        UI_LOG_INFO("User text area dirty");
+        draw_x1 = 0;
+        draw_x2 = ili9341.GetWidth();
+        draw_y1 = usr_text_y_offset;
+        draw_y2 = usr_text_y_offset + text_font.height;
         break;
     }
     default:
@@ -130,6 +143,10 @@ void Screen::Draw(uint32_t timeout)
     RaiseFlag(Rendering);
     ili9341.SetRenderRegion(draw_x1, draw_y1, draw_x2 - 1, draw_y2 - 1);
     Render();
+}
+
+void Screen::Update()
+{
 }
 
 void Screen::Render()
@@ -164,53 +181,6 @@ void Screen::EnableBacklight()
 void Screen::DisableBacklight()
 {
     ili9341.DisableBacklight();
-}
-
-void Screen::ScrollScreen(const uint16_t scroll_idx, bool up)
-{
-    // TODO, move into ili9341
-    // static uint16_t scroll_d = 0;
-    //
-    // switch (orientation)
-    // {
-    // case Orientation::portrait:
-    // case Orientation::left_landscape:
-    // {
-    //     if (up)
-    //     {
-    //         scroll_d = scroll_idx;
-    //     }
-    //     else
-    //     {
-    //         scroll_d = ili9341.GetHeignt() - scroll_idx;
-    //     }
-    //     break;
-    // }
-    // case Orientation::flipped_portrait:
-    // case Orientation::right_landscape:
-    // {
-    //     if (up)
-    //     {
-    //         scroll_d = view_height - scroll_idx;
-    //     }
-    //     else
-    //     {
-    //         scroll_d = scroll_idx;
-    //     }
-    //     break;
-    // }
-    // default:
-    // {
-    //     scroll_d = 0;
-    //     return;
-    // }
-    // }
-    //
-    // uint8_t vert_scroll_idx_data[] = {static_cast<uint8_t>(scroll_d >> 8),
-    //                                   static_cast<uint8_t>(scroll_d)};
-    //
-    // WriteCommand(Vertical_Scroll_Start_Address);
-    // WriteDataWithSet(vert_scroll_idx_data, 2);
 }
 
 void Screen::FillScreen(const Graphics::Colour colour)
@@ -297,38 +267,30 @@ void Screen::AppendText(const char* text, const uint32_t len)
 
 void Screen::CommitText()
 {
-    // const uint16_t y = Top_Fixed_Area + font5x8.height * text_idx;
-    // // Send a scroll text command if we have a full text buff
-    // if (texts_in_use >= Max_Texts)
-    // {
-    //
-    //     FillRectangle(0, view_width, y, y + font5x8.height, Colour::Black);
-    //     DrawString(0, y, text_buffer[text_idx], text_lens[text_idx], font5x8, Colour::White,
-    //                Colour::Black);
-    //
-    //     scroll_offset += font5x8.height;
-    //     if (scroll_offset >= Scroll_Area_Height)
-    //     {
-    //         scroll_offset = 0;
-    //     }
-    //     ScrollScreen(Top_Fixed_Area + scroll_offset, true);
-    //
-    //     // Draw a rectangle to remove the text from the screen.
-    //     // TODO replace colour with a class variable
-    // }
-    // else
-    // {
-    //     ++texts_in_use;
-    //     // Enqueue the string draw
-    //     DrawString(0, y, text_buffer[text_idx], text_lens[text_idx], font5x8, Colour::White,
-    //                Colour::Black);
-    // }
-    //
-    // if (++text_idx >= Max_Texts)
-    // {
-    //     text_idx = 0;
-    // }
-    // text_lens[text_idx] = 0;
+    ScrollText();
+
+    Graphics::Shape str = {
+        .type = Graphics::ShapeType::String,
+        .string =
+            {
+                .str = text_buffer[text_idx],
+                .len = text_lens[text_idx],
+                .x = 0,
+                .y = static_cast<uint16_t>(usr_text_y_offset - text_font.height),
+                .font = text_font,
+                .foreground = Graphics::Colour::White,
+                .background = Graphics::Colour::Black,
+                .flags = 0,
+            },
+    };
+
+    Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, 0, ili9341.GetHeight());
+    RaiseFlag(FlagType::Text_Area_Dirty);
+
+    if (text_idx < Max_Texts)
+    {
+        ++text_idx;
+    }
 }
 
 void Screen::CommitText(const char* text, const uint32_t len)
@@ -406,24 +368,53 @@ void Screen::AppendUserText(const char ch)
 
 void Screen::BackspaceUserText()
 {
-    // if (usr_buffer_idx == 0)
-    // {
-    //     return;
-    // }
-    //
-    // --usr_buffer_idx;
-    //
-    // FillRectangle(usr_buffer_idx * font7x12.width, (usr_buffer_idx + 1) * font7x12.width,
-    //               User_Text_Height_Offset, User_Text_Height_Offset + font7x12.height,
-    //               Colour::Black);
+    if (usr_buffer_idx == 0)
+    {
+        return;
+    }
+
+    usr_buffer[--usr_buffer_idx] = '\0';
+
+    const uint16_t x1 = usr_buffer_idx * text_font.width;
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = x1,
+                .y1 = usr_text_y_offset,
+                .x2 = static_cast<uint16_t>(x1 + text_font.width),
+                .y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height),
+                .colour = Graphics::Colour::Black,
+                .flags = 0,
+            },
+    };
+
+    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
+                        usr_text_y_offset + text_font.height);
+    RaiseFlag(FlagType::Usr_Text_Dirty);
 }
 
 void Screen::ClearUserText()
 {
-    // FillRectangle(0, usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
-    //               User_Text_Height_Offset + font7x12.height, Colour::Black);
-    //
-    // usr_buffer_idx = 0;
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = 0,
+                .y1 = usr_text_y_offset,
+                .x2 = static_cast<uint16_t>(ili9341.GetWidth()),
+                .y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height),
+                .colour = Graphics::Colour::Black,
+                .flags = 0,
+            },
+    };
+
+    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
+                        usr_text_y_offset + text_font.height);
+
+    std::memset(usr_buffer, 0, usr_buffer_idx);
+    usr_buffer_idx = 0;
+    RaiseFlag(FlagType::Usr_Text_Dirty);
 }
 
 const char* Screen::UserText() const noexcept
@@ -447,6 +438,7 @@ void Screen::CalculateDrawAreas()
 {
     usr_text_y_offset = ili9341.GetHeight() - text_font.height;
     scroll_area_height = usr_text_y_offset - Top_Fixed_Height;
+    max_texts = scroll_area_height / text_font.height;
 }
 
 void Screen::RaiseFlag(const FlagType flag)
@@ -470,4 +462,24 @@ void Screen::PushShape(Graphics::Shape shape)
 {
     Graphics::Rasterize(shape, data_buff, data_buff_width, data_buff_height, 0,
                         ili9341.GetHeight());
+}
+
+void Screen::ScrollText()
+{
+    const uint16_t dest_idx = text_idx < max_texts ? text_idx + 1 : text_idx;
+    const uint16_t src_idx = text_idx < max_texts ? text_idx : text_idx - 1;
+
+    uint16_t dest_y = usr_text_y_offset - dest_idx * text_font.height;
+    const uint16_t src_y1 = usr_text_y_offset - src_idx * text_font.height;
+    const uint16_t src_y2 = usr_text_y_offset;
+
+    for (uint16_t src_y = src_y1; src_y < src_y2; src_y += text_font.height)
+    {
+        std::memcpy(data_buff + dest_y * data_buff_width, data_buff + src_y * data_buff_width,
+                    text_font.height * data_buff_width);
+        dest_y += text_font.height;
+    }
+
+    std::memset(data_buff + (usr_text_y_offset - text_font.height) * data_buff_width, 0,
+                data_buff_width * text_font.height);
 }
