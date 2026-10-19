@@ -62,6 +62,7 @@ void HandleQuicrPackets(Serial& mgmt_serial,
                         Protector& protector,
                         AudioChip& audio,
                         const AudioReceiveMode audio_receive_mode,
+                        Screen& screen,
                         link_packet_t* packet)
 {
     // Send to mgmt, and then handle locally
@@ -71,7 +72,9 @@ void HandleQuicrPackets(Serial& mgmt_serial,
         return;
     }
 
+    UI_LOG_INFO("Here?");
     const auto message_type = static_cast<ui_net_link::MessageType>(packet->payload[1]);
+    UI_LOG_INFO("Message type %d", message_type);
 
     switch (message_type)
     {
@@ -120,7 +123,8 @@ void HandleQuicrPackets(Serial& mgmt_serial,
     }
     case ui_net_link::MessageType::Chat:
     {
-        // HandleChatMessages(screen, packet);
+        UI_LOG_INFO("Got chat message");
+        HandleChatMessages(screen, packet);
         break;
     }
     default:
@@ -135,7 +139,8 @@ void HandleNetLinkPackets(Serial& net_serial,
                           Serial& mgmt_serial,
                           Protector& protector,
                           AudioChip& audio,
-                          const AudioReceiveMode audio_receive_mode)
+                          const AudioReceiveMode audio_receive_mode,
+                          Screen& screen)
 {
     while (true)
     {
@@ -144,6 +149,8 @@ void HandleNetLinkPackets(Serial& net_serial,
         {
             return;
         }
+        UI_LOG_INFO("Got quicr message");
+        UI_LOG_ERROR("packet type %d", (int)packet->type);
 
         switch (static_cast<ui_net_link::NetToUi>(packet->type))
         {
@@ -156,7 +163,7 @@ void HandleNetLinkPackets(Serial& net_serial,
         }
         case ui_net_link::NetToUi::AudioFrame:
         {
-            HandleQuicrPackets(mgmt_serial, protector, audio, audio_receive_mode, packet);
+            HandleQuicrPackets(mgmt_serial, protector, audio, audio_receive_mode, screen, packet);
             break;
         }
         default:

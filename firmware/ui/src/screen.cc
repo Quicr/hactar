@@ -267,6 +267,8 @@ void Screen::AppendText(const char* text, const uint32_t len)
 
 void Screen::CommitText()
 {
+    // TODO actual texts need to be moved in memory, or we instead use an array of structs that has
+    // the text order in their meta data
     ScrollText();
 
     Graphics::Shape str = {

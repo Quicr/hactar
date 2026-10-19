@@ -269,7 +269,8 @@ int app_main()
 
         HandleKeypress(screen, keyboard, net_serial, protector);
 
-        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode);
+        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode,
+                             screen);
         HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
                               audio_transmit_mode, audio_receive_mode);
 

@@ -12,7 +12,8 @@ void HandleNetLinkPackets(Serial& net_serial,
                           Serial& mgmt_serial,
                           Protector& protector,
                           AudioChip& audio,
-                          const AudioReceiveMode audio_receive_mode);
+                          const AudioReceiveMode audio_receive_mode,
+                          Screen& screen);
 void HandleMgmtLinkPackets(Serial& mgmt_serial,
                            Serial& net_serial,
                            ConfigStorage& storage,

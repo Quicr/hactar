@@ -2,6 +2,7 @@
 #include "graphics.hh"
 #include "main.h"
 #include "ui_net_link.hh"
+#include <cstdint>
 #include <cstring>
 
 void InitScreen(Screen& screen)
@@ -14,13 +15,13 @@ void InitScreen(Screen& screen)
 
 void HandleChatMessages(Screen& screen, link_packet_t* packet)
 {
-    UI_LOG_INFO("Got text message");
 
     // Ignore the first bytes, which are just header information
     // +1 channel id, +1 message type, +4 length
     constexpr uint8_t payload_offset = 6;
     char* text = (char*)(packet->payload.data() + payload_offset);
 
+    UI_LOG_INFO("Got text message of len %d", packet->length - payload_offset);
     screen.CommitText(text, packet->length - payload_offset);
 }
 
@@ -42,8 +43,22 @@ void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, Protecto
             }
 
             link_packet_t packet;
-            ui_net_link::Serialize(ui_net_link::Channel_Id::Chat, screen.UserText(),
-                                   screen.UserTextLength(), packet);
+            uint32_t offset = 0;
+            const uint32_t text_len = screen.UserTextLength();
+
+            packet.type = static_cast<uint16_t>(ui_net_link::UiToNet::AudioFrame);
+            packet.payload[offset] = static_cast<uint8_t>(ui_net_link::Channel_Id::Chat);
+            offset += sizeof(uint8_t);
+
+            packet.payload[offset] = static_cast<uint8_t>(ui_net_link::MessageType::Chat);
+            offset += sizeof(uint8_t);
+
+            memcpy(packet.payload.data() + offset, &text_len, sizeof(uint32_t));
+            offset += sizeof(uint32_t);
+
+            packet.length = offset + text_len;
+
+            memcpy(packet.payload.data() + offset, screen.UserText(), text_len);
 
             if (!protector.TryProtect(&packet))
             {
@@ -54,7 +69,7 @@ void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, Protecto
             UI_LOG_INFO("Transmit text message");
             serial.Write(packet);
 
-            screen.CommitText(screen.UserText(), screen.UserTextLength());
+            screen.CommitText(screen.UserText(), text_len);
             screen.ClearUserText();
             break;
         }
