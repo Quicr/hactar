@@ -71,7 +71,10 @@ public:
            ILI9341::Orientation orientation);
 
     void Init();
-    void Draw(uint32_t timeout);
+
+    void AnimationUpdate(const uint32_t ticks_ms);
+    void Draw(const uint32_t ticks_ms);
+
     void Reset();
     void Sleep();
     void Wake();
@@ -109,16 +112,28 @@ private:
         Usr_Text_Dirty = 1 << 5,
     };
 
+    enum AnimationFlags : uint32_t
+    {
+        CursorSolid = 1 << 0
+    };
+
     void RotateScreen(ILI9341::Orientation orientation);
     void CalculateDrawAreas();
     void DefineScrollArea();
     void ScrollText();
-    void Update();
     void Render();
 
-    void RaiseFlag(const FlagType flag);
-    void LowerFlag(const FlagType flag);
-    uint32_t TakeFlag();
+    // TODO should make a flag helper class, as we have a lot of flag raising
+    // through out the program
+    void RaiseFlag(uint32_t& flags, const uint32_t flag);
+    void LowerFlag(uint32_t& flags, const uint32_t flag);
+    uint32_t ReadFlag(const uint32_t flags, const uint32_t flag);
+    uint32_t TakeFlag(uint32_t& flags);
+
+    void DrawTitleLine();
+    void DrawUserLine();
+    void DrawUserArrow();
+    void DrawCursor(const bool solid);
 
     // Private functions
     const Font& title_font = font11x16;
@@ -168,7 +183,12 @@ private:
     uint16_t scroll_area_height;
     uint16_t usr_text_y_offset;
 
-    uint32_t flags;
+    uint32_t last_ticks_ms;
+
+    uint32_t last_animation_ticks_ms;
+    uint32_t animation_flags;
+
+    uint32_t render_flags;
 };
 
 // 44226 bytes approximately.

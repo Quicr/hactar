@@ -212,8 +212,8 @@ int app_main()
 
     uint32_t sleep_timeout = 0;
 
-    // renderer.ChangeView(Renderer::View::Chat);
-    // renderer.Render(HAL_GetTick());
+    renderer.ChangeView(Renderer::View::Chat);
+    renderer.Render(HAL_GetTick());
 
     screen.CommitText("Test1", 5);
     screen.CommitText("Test2", 5);

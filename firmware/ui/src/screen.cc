@@ -66,7 +66,10 @@ Screen::Screen(uint16_t* scanline_buffer,
     icons_x_offset(0),
     scroll_area_height(0),
     usr_text_y_offset(0),
-    flags(0)
+    last_ticks_ms(0),
+    last_animation_ticks_ms(0),
+    animation_flags(0),
+    render_flags(0)
 {
 }
 
@@ -76,11 +79,11 @@ void Screen::Init()
     CalculateDrawAreas();
 }
 
-void Screen::Draw(uint32_t timeout)
+void Screen::Draw(const uint32_t timeout)
 {
     UNUSED(timeout);
 
-    const uint32_t flag = TakeFlag();
+    const FlagType flag = static_cast<FlagType>(TakeFlag(render_flags));
 
     switch (flag)
     {
@@ -99,7 +102,7 @@ void Screen::Draw(uint32_t timeout)
         draw_y2 = ili9341.GetHeight();
 
         // Drop all flags, as this will cover all areas
-        flags = 0;
+        render_flags = 0;
         break;
     }
     case FlagType::Title_Dirty:
@@ -140,13 +143,22 @@ void Screen::Draw(uint32_t timeout)
     }
     }
 
-    RaiseFlag(Rendering);
+    RaiseFlag(render_flags, Rendering);
     ili9341.SetRenderRegion(draw_x1, draw_y1, draw_x2 - 1, draw_y2 - 1);
     Render();
 }
 
-void Screen::Update()
+// TODO could maybe just use some HAL_GetTick
+void Screen::AnimationUpdate(const uint32_t ticks_ms)
 {
+    last_ticks_ms = ticks_ms;
+    // NOTE- this is updated by a timer
+    if (last_ticks_ms - last_animation_ticks_ms >= 1000)
+    {
+        const uint32_t solid = ReadFlag(animation_flags, AnimationFlags::CursorSolid);
+        DrawCursor(solid);
+        RaiseFlag(render_flags, FlagType::Usr_Text_Dirty);
+    }
 }
 
 void Screen::Render()
@@ -170,7 +182,7 @@ void Screen::Render()
     }
     // TODO this needs to be only once y1 == y2
     // and everything needs to be put into a dma
-    LowerFlag(Rendering);
+    LowerFlag(render_flags, Rendering);
 }
 
 void Screen::EnableBacklight()
@@ -199,7 +211,7 @@ void Screen::FillScreen(const Graphics::Colour colour)
     };
 
     Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, 0, ili9341.GetHeight());
-    RaiseFlag(FlagType::Whole_Screen_Dirty);
+    RaiseFlag(render_flags, FlagType::Whole_Screen_Dirty);
 }
 
 void Screen::UpdateTitle(const char* title, const uint32_t len)
@@ -248,7 +260,7 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
     Graphics::Rasterize(title_shape, data_buff, data_buff_width, data_buff_height, Title_y1,
                         Title_y1 + title_font.height);
 
-    RaiseFlag(FlagType::Title_Dirty);
+    RaiseFlag(render_flags, FlagType::Title_Dirty);
 }
 
 void Screen::AppendText(const char* text, const uint32_t len)
@@ -287,7 +299,7 @@ void Screen::CommitText()
     };
 
     Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, 0, ili9341.GetHeight());
-    RaiseFlag(FlagType::Text_Area_Dirty);
+    RaiseFlag(render_flags, FlagType::Text_Area_Dirty);
 
     if (text_idx < Max_Texts)
     {
@@ -332,9 +344,9 @@ void Screen::AppendUserText(const char* text, const uint32_t len)
 
     Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
                         usr_text_y_offset + text_font.height);
-
+    DrawCursor(true);
     usr_buffer_idx += num_char;
-    RaiseFlag(FlagType::Usr_Text_Dirty);
+    RaiseFlag(render_flags, FlagType::Usr_Text_Dirty);
 }
 
 void Screen::AppendUserText(const char ch)
@@ -363,9 +375,10 @@ void Screen::AppendUserText(const char ch)
 
     Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
                         usr_text_y_offset + text_font.height);
+    DrawCursor(true);
 
     ++usr_buffer_idx;
-    RaiseFlag(FlagType::Usr_Text_Dirty);
+    RaiseFlag(render_flags, FlagType::Usr_Text_Dirty);
 }
 
 void Screen::BackspaceUserText()
@@ -393,7 +406,9 @@ void Screen::BackspaceUserText()
 
     Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
                         usr_text_y_offset + text_font.height);
-    RaiseFlag(FlagType::Usr_Text_Dirty);
+    DrawCursor(true);
+
+    RaiseFlag(render_flags, FlagType::Usr_Text_Dirty);
 }
 
 void Screen::ClearUserText()
@@ -413,10 +428,11 @@ void Screen::ClearUserText()
 
     Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
                         usr_text_y_offset + text_font.height);
+    DrawCursor(true);
 
     std::memset(usr_buffer, 0, usr_buffer_idx);
     usr_buffer_idx = 0;
-    RaiseFlag(FlagType::Usr_Text_Dirty);
+    RaiseFlag(render_flags, FlagType::Usr_Text_Dirty);
 }
 
 const char* Screen::UserText() const noexcept
@@ -443,21 +459,77 @@ void Screen::CalculateDrawAreas()
     max_texts = scroll_area_height / text_font.height;
 }
 
-void Screen::RaiseFlag(const FlagType flag)
+void Screen::RaiseFlag(uint32_t& flags, const uint32_t flag)
 {
     flags |= flag;
 }
 
-void Screen::LowerFlag(const FlagType flag)
+void Screen::LowerFlag(uint32_t& flags, const uint32_t flag)
 {
     flags &= ~flag;
 }
 
-uint32_t Screen::TakeFlag()
+uint32_t Screen::ReadFlag(const uint32_t flags, const uint32_t flag)
+{
+    return flags & flag;
+}
+
+uint32_t Screen::TakeFlag(uint32_t& flags)
 {
     const uint32_t flag = flags & (~flags + 1);
-    LowerFlag(static_cast<FlagType>(flag));
+    LowerFlag(flags, flag);
     return flag;
+}
+
+void Screen::DrawCursor(const bool solid)
+{
+    const uint16_t x1 = static_cast<uint16_t>(usr_buffer_idx * text_font.width);
+    const uint16_t x2 = std::min<uint16_t>(x1 + text_font.width, ili9341.GetWidth());
+    const uint16_t y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height);
+
+    // Clear or fill in
+    // we can probably just do a solid, but change the colour
+    // so aren't rendering two rectangles
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = x1,
+                .y1 = usr_text_y_offset,
+                .x2 = x2,
+                .y2 = y2,
+                .colour = solid ? Graphics::Colour::White : Graphics::Colour::Black,
+                .flags = 0,
+            },
+    };
+    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
+                        usr_text_y_offset + text_font.height);
+
+    if (solid)
+    {
+        LowerFlag(animation_flags, AnimationFlags::CursorSolid);
+    }
+    else
+    {
+        Graphics::Shape rec = {
+            .type = Graphics::ShapeType::Rectangle,
+            .rectangle =
+                {
+                    .x1 = x1,
+                    .y1 = usr_text_y_offset,
+                    .x2 = x2,
+                    .y2 = y2,
+                    .thickness = 1,
+                    .colour = Graphics::Colour::White,
+                    .flags = 0,
+                },
+        };
+        Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
+                            usr_text_y_offset + text_font.height);
+        RaiseFlag(animation_flags, AnimationFlags::CursorSolid);
+    }
+
+    last_animation_ticks_ms = last_ticks_ms;
 }
 
 void Screen::PushShape(Graphics::Shape shape)

@@ -44,7 +44,7 @@ void Renderer::Render(const uint32_t ticks) noexcept
     }
     }
 
-    // Do other stuff.
+    screen.AnimationUpdate(ticks);
     screen.Draw(ticks);
 }
 
