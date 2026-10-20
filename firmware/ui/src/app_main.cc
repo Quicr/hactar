@@ -1,6 +1,7 @@
 #include "app_main.hh"
 #include "audio_chip.hh"
 #include "audio_codec.hh"
+#include "battery_bitmap.hh"
 #include "button.hh"
 #include "config_storage.hh"
 #include "constants.hh"
@@ -212,11 +213,25 @@ int app_main()
 
     uint32_t sleep_timeout = 0;
 
-    renderer.ChangeView(Renderer::View::Chat);
-    renderer.Render(HAL_GetTick());
+    // renderer.ChangeView(Renderer::View::Chat);
+    // renderer.Render(HAL_GetTick());
 
     screen.CommitText("Test1", 5);
     screen.CommitText("Test2", 5);
+
+    Graphics::Shape bitmap = {
+        .type = Graphics::ShapeType::Bitmap,
+        .bitmap =
+            {
+                .x = 100,
+                .y = 20,
+                .map = &Battery_24x16::bitmap,
+                .foreground = Graphics::Colour::White,
+                .background = Graphics::Colour::Black,
+            },
+    };
+
+    screen.PushShape(bitmap);
 
     while (1)
     {

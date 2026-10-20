@@ -83,17 +83,17 @@ void Screen::Draw(const uint32_t timeout)
 {
     UNUSED(timeout);
 
-    const FlagType flag = static_cast<FlagType>(TakeFlag(render_flags));
+    const RenderFlags flag = static_cast<RenderFlags>(TakeFlag(render_flags));
 
     switch (flag)
     {
-    case FlagType::Rendering:
+    case RenderFlags::Rendering:
     {
         UI_LOG_INFO("rendering");
         Render();
         return;
     }
-    case FlagType::Whole_Screen_Dirty:
+    case RenderFlags::Whole_Screen_Dirty:
     {
         UI_LOG_INFO("Whole screen is dirty");
         draw_x1 = 0;
@@ -105,7 +105,7 @@ void Screen::Draw(const uint32_t timeout)
         render_flags = 0;
         break;
     }
-    case FlagType::Title_Dirty:
+    case RenderFlags::Title_Dirty:
     {
         UI_LOG_INFO("Title dirty");
         draw_x1 = title_x1;
@@ -114,11 +114,11 @@ void Screen::Draw(const uint32_t timeout)
         draw_y2 = Title_y1 + font11x16.height;
         break;
     }
-    case FlagType::Icons_Dirty:
+    case RenderFlags::Icons_Dirty:
     {
         break;
     }
-    case FlagType::Text_Area_Dirty:
+    case RenderFlags::Text_Area_Dirty:
     {
         UI_LOG_INFO("Text area dirty");
         draw_x1 = 0;
@@ -128,7 +128,7 @@ void Screen::Draw(const uint32_t timeout)
         draw_y2 = usr_text_y_offset;
         break;
     }
-    case FlagType::Usr_Text_Dirty:
+    case RenderFlags::Usr_Text_Dirty:
     {
         UI_LOG_INFO("User text area dirty");
         draw_x1 = 0;
@@ -157,7 +157,7 @@ void Screen::AnimationUpdate(const uint32_t ticks_ms)
     {
         const uint32_t solid = ReadFlag(animation_flags, AnimationFlags::CursorSolid);
         DrawCursor(solid);
-        RaiseFlag(render_flags, FlagType::Usr_Text_Dirty);
+        RaiseFlag(render_flags, RenderFlags::Usr_Text_Dirty);
     }
 }
 
@@ -211,7 +211,7 @@ void Screen::FillScreen(const Graphics::Colour colour)
     };
 
     Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, 0, ili9341.GetHeight());
-    RaiseFlag(render_flags, FlagType::Whole_Screen_Dirty);
+    RaiseFlag(render_flags, RenderFlags::Whole_Screen_Dirty);
 }
 
 void Screen::UpdateTitle(const char* title, const uint32_t len)
@@ -260,7 +260,7 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
     Graphics::Rasterize(title_shape, data_buff, data_buff_width, data_buff_height, Title_y1,
                         Title_y1 + title_font.height);
 
-    RaiseFlag(render_flags, FlagType::Title_Dirty);
+    RaiseFlag(render_flags, RenderFlags::Title_Dirty);
 }
 
 void Screen::AppendText(const char* text, const uint32_t len)
@@ -281,6 +281,9 @@ void Screen::CommitText()
 {
     // TODO actual texts need to be moved in memory, or we instead use an array of structs that has
     // the text order in their meta data
+    // just switch to a ring buffer, or roll the index
+    //
+    // another todo, give the user text more space
     ScrollText();
 
     Graphics::Shape str = {
@@ -290,7 +293,8 @@ void Screen::CommitText()
                 .str = text_buffer[text_idx],
                 .len = text_lens[text_idx],
                 .x = 0,
-                .y = static_cast<uint16_t>(usr_text_y_offset - text_font.height),
+                .y = static_cast<uint16_t>(ili9341.GetHeight() - Bottom_Fixed_Height
+                                           - text_font.height),
                 .font = text_font,
                 .foreground = Graphics::Colour::White,
                 .background = Graphics::Colour::Black,
@@ -299,7 +303,7 @@ void Screen::CommitText()
     };
 
     Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, 0, ili9341.GetHeight());
-    RaiseFlag(render_flags, FlagType::Text_Area_Dirty);
+    RaiseFlag(render_flags, RenderFlags::Text_Area_Dirty);
 
     if (text_idx < Max_Texts)
     {
@@ -344,9 +348,10 @@ void Screen::AppendUserText(const char* text, const uint32_t len)
 
     Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
                         usr_text_y_offset + text_font.height);
-    DrawCursor(true);
     usr_buffer_idx += num_char;
-    RaiseFlag(render_flags, FlagType::Usr_Text_Dirty);
+
+    DrawCursor(true);
+    RaiseFlag(render_flags, RenderFlags::Usr_Text_Dirty);
 }
 
 void Screen::AppendUserText(const char ch)
@@ -375,10 +380,11 @@ void Screen::AppendUserText(const char ch)
 
     Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
                         usr_text_y_offset + text_font.height);
-    DrawCursor(true);
 
     ++usr_buffer_idx;
-    RaiseFlag(render_flags, FlagType::Usr_Text_Dirty);
+
+    DrawCursor(true);
+    RaiseFlag(render_flags, RenderFlags::Usr_Text_Dirty);
 }
 
 void Screen::BackspaceUserText()
@@ -388,16 +394,15 @@ void Screen::BackspaceUserText()
         return;
     }
 
-    usr_buffer[--usr_buffer_idx] = '\0';
-
     const uint16_t x1 = usr_buffer_idx * text_font.width;
+    const uint16_t x2 = std::min<uint16_t>(x1 + text_font.width * 2, ili9341.GetWidth());
     Graphics::Shape rec = {
         .type = Graphics::ShapeType::FillRectangle,
         .fill_rectangle =
             {
                 .x1 = x1,
                 .y1 = usr_text_y_offset,
-                .x2 = static_cast<uint16_t>(x1 + text_font.width),
+                .x2 = x2,
                 .y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height),
                 .colour = Graphics::Colour::Black,
                 .flags = 0,
@@ -406,9 +411,11 @@ void Screen::BackspaceUserText()
 
     Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
                         usr_text_y_offset + text_font.height);
-    DrawCursor(true);
 
-    RaiseFlag(render_flags, FlagType::Usr_Text_Dirty);
+    usr_buffer[--usr_buffer_idx] = '\0';
+
+    DrawCursor(true);
+    RaiseFlag(render_flags, RenderFlags::Usr_Text_Dirty);
 }
 
 void Screen::ClearUserText()
@@ -428,11 +435,12 @@ void Screen::ClearUserText()
 
     Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
                         usr_text_y_offset + text_font.height);
-    DrawCursor(true);
 
     std::memset(usr_buffer, 0, usr_buffer_idx);
     usr_buffer_idx = 0;
-    RaiseFlag(render_flags, FlagType::Usr_Text_Dirty);
+
+    DrawCursor(true);
+    RaiseFlag(render_flags, RenderFlags::Usr_Text_Dirty);
 }
 
 const char* Screen::UserText() const noexcept
@@ -481,6 +489,52 @@ uint32_t Screen::TakeFlag(uint32_t& flags)
     return flag;
 }
 
+void Screen::DrawTitleLine()
+{
+    constexpr uint16_t line_x1 = 0;
+    constexpr uint16_t line_y1 = Top_Fixed_Height - 1;
+    const uint16_t line_x2 = ili9341.GetWidth();
+    constexpr uint16_t line_y2 = Top_Fixed_Height;
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = line_x1,
+                .y1 = line_y1,
+                .x2 = line_x2,
+                .y2 = line_y2,
+                .colour = Graphics::Colour::White,
+                .flags = 0,
+            },
+    };
+
+    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, line_y1, line_y2);
+    RaiseFlag(render_flags, RenderFlags::Title_Dirty);
+}
+
+void Screen::DrawUserLine()
+{
+    constexpr uint16_t line_x1 = 0;
+    const uint16_t line_y1 = ili9341.GetHeight() - Bottom_Fixed_Height;
+    const uint16_t line_x2 = ili9341.GetWidth();
+    const uint16_t line_y2 = ili9341.GetHeight() - Bottom_Fixed_Height + 1;
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = line_x1,
+                .y1 = line_y1,
+                .x2 = line_x2,
+                .y2 = line_y2,
+                .colour = Graphics::Colour::White,
+                .flags = 0,
+            },
+    };
+
+    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, line_y1, line_y2);
+    RaiseFlag(render_flags, RenderFlags::Text_Area_Dirty);
+}
+
 void Screen::DrawCursor(const bool solid)
 {
     const uint16_t x1 = static_cast<uint16_t>(usr_buffer_idx * text_font.width);
@@ -488,8 +542,6 @@ void Screen::DrawCursor(const bool solid)
     const uint16_t y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height);
 
     // Clear or fill in
-    // we can probably just do a solid, but change the colour
-    // so aren't rendering two rectangles
     Graphics::Shape rec = {
         .type = Graphics::ShapeType::FillRectangle,
         .fill_rectangle =

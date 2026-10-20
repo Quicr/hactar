@@ -60,6 +60,8 @@ void Renderer::StartupView(const uint32_t ticks) noexcept
     {
         screen.FillScreen(Graphics::Colour::Black);
         screen.UpdateTitle("Loading", 7);
+        screen.DrawTitleLine();
+        screen.DrawUserLine();
         change_view = false;
     }
 }
@@ -70,6 +72,8 @@ void Renderer::ChatView(const uint32_t ticks) noexcept
     {
         screen.FillScreen(Graphics::Colour::Black);
         screen.UpdateTitle("Chat room", 9);
+        screen.DrawTitleLine();
+        screen.DrawUserLine();
 
         change_view = false;
     }
@@ -81,6 +85,8 @@ void Renderer::MainMenuView(const uint32_t ticks) noexcept
     {
         screen.FillScreen(Graphics::Colour::Black);
         screen.UpdateTitle("Main menu", 9);
+        screen.DrawTitleLine();
+        screen.DrawUserLine();
 
         screen.CommitText("1. Chat", 7);
         screen.CommitText("2. Wifi", 7);

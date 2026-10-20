@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bitmap.hh"
 #include "font.hh"
 #include <cstdint>
 
@@ -30,15 +31,6 @@ public:
         Circle,
         String,
         Bitmap
-    };
-
-    struct BitmapData
-    {
-        // Note, that our colours are 4 bit quantized, so width is acutally 32
-        static constexpr size_t width = 16;
-        static constexpr size_t height = 32;
-
-        uint8_t data[height][width];
     };
 
     struct Shape
@@ -126,7 +118,9 @@ public:
             {
                 const uint16_t x;
                 const uint16_t y;
-                BitmapData* map;
+                const Bitmap* map;
+                const Colour foreground;
+                const Colour background;
             } bitmap;
         };
     };

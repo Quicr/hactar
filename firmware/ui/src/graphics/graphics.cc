@@ -42,6 +42,10 @@ bool Graphics::Rasterize(Shape& shape,
     {
         return RasterizeString(shape, buff, width, height, window_y1, window_y2);
     }
+    case Graphics::ShapeType::Bitmap:
+    {
+        return RasterizeBitmap(shape, buff, width, height, window_y1, window_y2);
+    }
     default:
     {
         UI_LOG_ERROR("Graphics::Rasterize: Unknown shape type %d", (int)shape.type);
@@ -381,6 +385,70 @@ bool Graphics::RasterizeString(Shape& shape,
                     SetPixel(buff, width, static_cast<uint16_t>(x), static_cast<uint16_t>(y),
                              bg_high, bg_low);
                 }
+            }
+        }
+    }
+
+    return true;
+}
+
+bool Graphics::RasterizeBitmap(Shape& shape,
+                               uint8_t* buff,
+                               const size_t width,
+                               const size_t height,
+                               const uint16_t window_y1,
+                               const uint16_t window_y2)
+{
+    const auto& bitmap = shape.bitmap;
+    if (buff == nullptr || bitmap.map->data == nullptr || bitmap.map->width == 0
+        || bitmap.map->height == 0)
+    {
+        return false;
+    }
+
+    // Intersect the string's pixel bounds with this render window and the buffer dimensions.
+    const size_t y1 = std::max(static_cast<size_t>(bitmap.y), static_cast<size_t>(window_y1));
+    const size_t y2 = std::min({static_cast<size_t>(bitmap.y) + bitmap.map->height,
+                                static_cast<size_t>(window_y2), height});
+    const size_t x2 = std::min(static_cast<size_t>(bitmap.x) + bitmap.map->width, width * 2);
+
+    if (y1 >= y2 || bitmap.x >= x2)
+    {
+        return false;
+    }
+
+    const size_t bytes_per_row = (bitmap.map->width + 7) / 8;
+
+    const uint8_t fg_high = static_cast<uint8_t>(bitmap.foreground) << 4;
+    const uint8_t fg_low = static_cast<uint8_t>(bitmap.foreground) & 0x0F;
+    const uint8_t bg_high = static_cast<uint8_t>(bitmap.background) << 4;
+    const uint8_t bg_low = static_cast<uint8_t>(bitmap.background) & 0x0F;
+    bool foreground = false;
+
+    for (size_t y = y1; y < y2; ++y)
+    {
+        const size_t pixel_y_offset = y - bitmap.y;
+        for (size_t x = bitmap.x; x < x2; ++x)
+        {
+            const size_t pixel_x_offset = x - bitmap.x;
+            const size_t col_pixel = pixel_x_offset % bitmap.map->width;
+            const size_t col_byte = col_pixel / 8;
+
+            const size_t pixel_mask = col_pixel % 8;
+
+            const size_t byte_idx = col_byte + pixel_y_offset * bytes_per_row;
+
+            foreground = (bitmap.map->data[byte_idx] & (0x80U >> pixel_mask)) != 0;
+
+            if (foreground)
+            {
+                SetPixel(buff, width, static_cast<uint16_t>(x), static_cast<uint16_t>(y), fg_high,
+                         fg_low);
+            }
+            else
+            {
+                SetPixel(buff, width, static_cast<uint16_t>(x), static_cast<uint16_t>(y), bg_high,
+                         bg_low);
             }
         }
     }

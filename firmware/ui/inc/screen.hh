@@ -3,7 +3,9 @@
 #include "app_main.hh"
 #include "font.hh"
 #include "graphics.hh"
+#include "gsl/gsl-lite.hpp"
 #include "ili9341.hh"
+#include "ring_buffer.hh"
 #include "stm32.h"
 #include "ui_net_link.hh"
 #include <cstdint>
@@ -21,12 +23,6 @@ public:
     static constexpr uint32_t Max_Texts = (240 - Top_Fixed_Height - Bottom_Fixed_Height) / 8;
 
 private:
-    struct YBound
-    {
-        uint16_t y1 = 0;
-        uint16_t y2 = 0;
-    };
-
     enum class MemoryStatus : uint8_t
     {
         Free = 0,
@@ -101,8 +97,11 @@ public:
 
     void PushShape(Graphics::Shape shape);
 
+    void DrawTitleLine();
+    void DrawUserLine();
+
 private:
-    enum FlagType : uint32_t
+    enum RenderFlags : uint32_t
     {
         Rendering = 1 << 0,
         Whole_Screen_Dirty = 1 << 1,
@@ -130,9 +129,6 @@ private:
     uint32_t ReadFlag(const uint32_t flags, const uint32_t flag);
     uint32_t TakeFlag(uint32_t& flags);
 
-    void DrawTitleLine();
-    void DrawUserLine();
-    void DrawUserArrow();
     void DrawCursor(const bool solid);
 
     // Private functions
@@ -168,6 +164,16 @@ private:
     uint32_t text_idx;
     uint32_t texts_in_use;
     uint32_t scroll_offset;
+
+    // Move into a ring buffer
+    struct text_message
+    {
+        char buff[Max_Characters];
+        size_t len;
+    };
+
+    // RingBuffer<jk>
+
     char text_buffer[Max_Texts][Max_Characters];
     char text_lens[Max_Texts];
     size_t max_texts;
