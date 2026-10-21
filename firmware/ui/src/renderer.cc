@@ -62,6 +62,8 @@ void Renderer::StartupView(const uint32_t ticks) noexcept
         screen.UpdateTitle("Loading", 7);
         screen.DrawTitleLine();
         screen.DrawUserLine();
+        screen.DrawBatteryBitmap();
+        screen.UpdateBatteryChargeLevel(100);
         change_view = false;
     }
 }
@@ -74,6 +76,7 @@ void Renderer::ChatView(const uint32_t ticks) noexcept
         screen.UpdateTitle("Chat room", 9);
         screen.DrawTitleLine();
         screen.DrawUserLine();
+        screen.DrawBatteryBitmap();
 
         change_view = false;
     }

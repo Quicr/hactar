@@ -1,4 +1,5 @@
 #include "screen.hh"
+#include "battery_bitmap.hh"
 #include "font.hh"
 #include "graphics.hh"
 #include "ili9341.hh"
@@ -70,6 +71,7 @@ Screen::Screen(uint16_t* scanline_buffer,
     last_ticks_ms(0),
     last_animation_ticks_ms(0),
     animation_flags(0),
+    battery_level(0),
     render_flags(0)
 {
 }
@@ -117,6 +119,9 @@ void Screen::Draw(const uint32_t timeout)
     }
     case RenderFlags::Icons_Dirty:
     {
+        UI_LOG_INFO("Icons dirty");
+        draw_bound = icon_bound;
+        ResetBound(icon_bound);
         break;
     }
     case RenderFlags::Text_Area_Dirty:
@@ -557,6 +562,61 @@ void Screen::DrawUserLine()
     RaiseFlag(render_flags, RenderFlags::Text_Area_Dirty);
 }
 
+void Screen::DrawBatteryBitmap()
+{
+    Graphics::Shape bitmap = {
+        .type = Graphics::ShapeType::Bitmap,
+        .bitmap =
+            {
+                .x = Battery_Position_X1,
+                .y = Battery_Position_Y1,
+                .map = &Battery_24x16::bitmap,
+                .foreground = Graphics::Colour::White,
+                .background = Graphics::Colour::Black,
+            },
+    };
+
+    Graphics::Rasterize(bitmap, data_buff, data_buff_width, data_buff_height, Battery_Position_Y1,
+                        Battery_Position_Y2);
+    battery_level = 0;
+    ExpandBound(icon_bound, Battery_Position_X1, Battery_Position_Y1, Battery_Position_X2,
+                Battery_Position_Y2);
+    RaiseFlag(render_flags, RenderFlags::Icons_Dirty);
+}
+
+void Screen::UpdateBatteryChargeLevel(const uint8_t percentage)
+{
+    const uint8_t next_level = std::min<uint8_t>(percentage, 100);
+    const uint16_t width = Battery_Charge_Position_X2 - Battery_Charge_Position_X1;
+    const uint16_t previous_x2 = Battery_Charge_Position_X1 + width * battery_level / 100;
+    const uint16_t next_x2 = Battery_Charge_Position_X1 + width * next_level / 100;
+    battery_level = next_level;
+
+    if (previous_x2 == next_x2)
+    {
+        return;
+    }
+
+    const uint16_t x1 = std::min(previous_x2, next_x2);
+    const uint16_t x2 = std::max(previous_x2, next_x2);
+    Graphics::Shape change = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = x1,
+                .y1 = Battery_Charge_Position_Y1,
+                .x2 = x2,
+                .y2 = Battery_Charge_Position_Y2,
+                .colour = next_x2 > previous_x2 ? Graphics::Colour::Green : Graphics::Colour::Red,
+                .flags = 0,
+            },
+    };
+    Graphics::Rasterize(change, data_buff, data_buff_width, data_buff_height,
+                        Battery_Charge_Position_Y1, Battery_Charge_Position_Y2);
+    ExpandBound(icon_bound, x1, Battery_Charge_Position_Y1, x2, Battery_Charge_Position_Y2);
+    RaiseFlag(render_flags, RenderFlags::Icons_Dirty);
+}
+
 void Screen::DrawCursor(const bool solid)
 {
     const uint16_t x1 = static_cast<uint16_t>(usr_buffer_idx * text_font.width);
@@ -629,6 +689,8 @@ void Screen::PushShape(Graphics::Shape shape)
 {
     Graphics::Rasterize(shape, data_buff, data_buff_width, data_buff_height, 0,
                         ili9341.GetHeight());
+
+    RaiseFlag(render_flags, RenderFlags::Whole_Screen_Dirty);
 }
 
 void Screen::ScrollText()

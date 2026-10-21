@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app_main.hh"
+#include "battery_bitmap.hh"
 #include "font.hh"
 #include "graphics.hh"
 #include "gsl/gsl-lite.hpp"
@@ -21,6 +22,18 @@ public:
     static constexpr uint16_t Top_Fixed_Height = 20;
     static constexpr uint16_t Bottom_Fixed_Height = 12;
     static constexpr uint32_t Max_Texts = (240 - Top_Fixed_Height - Bottom_Fixed_Height) / 8;
+
+    // TODO this needs to be calculated because we may have it in portrait mode
+    static constexpr uint16_t Battery_Position_X1 = 320 - Battery_24x16::bitmap.width;
+    static constexpr uint16_t Battery_Position_Y1 = Title_y1;
+    static constexpr uint16_t Battery_Position_X2 =
+        Battery_Position_X1 + Battery_24x16::bitmap.width;
+    static constexpr uint16_t Battery_Position_Y2 = Title_y1 + Battery_24x16::bitmap.height;
+
+    static constexpr uint16_t Battery_Charge_Position_X1 = Battery_Position_X1 + 4;
+    static constexpr uint16_t Battery_Charge_Position_Y1 = Battery_Position_Y1 + 4;
+    static constexpr uint16_t Battery_Charge_Position_X2 = Battery_Position_X2 - 6;
+    static constexpr uint16_t Battery_Charge_Position_Y2 = Battery_Position_Y2 - 4;
 
 private:
     enum class MemoryStatus : uint8_t
@@ -99,6 +112,8 @@ public:
 
     void DrawTitleLine();
     void DrawUserLine();
+    void DrawBatteryBitmap();
+    void UpdateBatteryChargeLevel(const uint8_t percentage);
 
 private:
     struct bound_t
@@ -198,6 +213,8 @@ private:
 
     uint32_t last_animation_ticks_ms;
     uint32_t animation_flags;
+
+    uint8_t battery_level;
 
     uint32_t render_flags;
 };
