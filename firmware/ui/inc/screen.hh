@@ -19,7 +19,7 @@ public:
     static constexpr uint32_t Max_Title_Length = 21;
     static constexpr uint32_t Max_Characters = 320 / 5;
     static constexpr uint16_t Top_Fixed_Height = 20;
-    static constexpr uint16_t Bottom_Fixed_Height = 20;
+    static constexpr uint16_t Bottom_Fixed_Height = 12;
     static constexpr uint32_t Max_Texts = (240 - Top_Fixed_Height - Bottom_Fixed_Height) / 8;
 
 private:
@@ -101,6 +101,14 @@ public:
     void DrawUserLine();
 
 private:
+    struct bound_t
+    {
+        uint16_t x1;
+        uint16_t y1;
+        uint16_t x2;
+        uint16_t y2;
+    };
+
     enum RenderFlags : uint32_t
     {
         Rendering = 1 << 0,
@@ -130,6 +138,9 @@ private:
     uint32_t TakeFlag(uint32_t& flags);
 
     void DrawCursor(const bool solid);
+    void ExpandBound(
+        bound_t& bound, const uint16_t x1, const uint16_t y1, const uint16_t x2, const uint16_t y2);
+    void ResetBound(bound_t& bound);
 
     // Private functions
     const Font& title_font = font11x16;
@@ -150,10 +161,13 @@ private:
 
     uint16_t* scanline_ptr;
 
-    uint16_t draw_x1;
-    uint16_t draw_y1;
-    uint16_t draw_x2;
-    uint16_t draw_y2;
+    bound_t draw_bound;
+    bound_t icon_bound;
+    bound_t text_bound;
+    bound_t usr_bound;
+
+    uint16_t title_x1;
+    uint16_t title_x2;
 
     // Window: 0-20px
     // Max 21 characters
@@ -161,19 +175,12 @@ private:
     size_t title_len;
 
     // Window: 20 - 308px
-    uint32_t text_idx;
+    uint32_t text_write;
+    uint32_t text_read;
     uint32_t texts_in_use;
     uint32_t scroll_offset;
 
     // Move into a ring buffer
-    struct text_message
-    {
-        char buff[Max_Characters];
-        size_t len;
-    };
-
-    // RingBuffer<jk>
-
     char text_buffer[Max_Texts][Max_Characters];
     char text_lens[Max_Texts];
     size_t max_texts;
@@ -182,12 +189,10 @@ private:
     char usr_buffer[Max_Characters];
     size_t usr_buffer_idx;
 
-    uint16_t title_x1;
-    uint16_t title_x2;
-
     uint16_t icons_x_offset;
-    uint16_t scroll_area_height;
     uint16_t usr_text_y_offset;
+    uint16_t texts_area_y_offset;
+    uint16_t scroll_area_height;
 
     uint32_t last_ticks_ms;
 
