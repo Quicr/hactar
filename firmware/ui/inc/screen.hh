@@ -1,14 +1,19 @@
 #pragma once
 
 #include "app_main.hh"
-#include "battery_bitmap.hh"
+#include "audio_icon.hh"
+#include "battery_icon.hh"
+#include "bitmap.hh"
 #include "font.hh"
 #include "graphics.hh"
 #include "gsl/gsl-lite.hpp"
 #include "ili9341.hh"
+#include "mic_icon.hh"
+#include "moq_icon.hh"
 #include "ring_buffer.hh"
 #include "stm32.h"
 #include "ui_net_link.hh"
+#include "wifi_icon.hh"
 #include <cstdint>
 #include <type_traits>
 
@@ -16,7 +21,7 @@ class Screen
 {
 public:
     // TODO revist these offsets
-    static constexpr uint16_t Title_y1 = 2;
+    static constexpr uint16_t Title_y1 = 1;
     static constexpr uint32_t Max_Title_Length = 21;
     static constexpr uint32_t Max_Characters = 320 / 5;
     static constexpr uint16_t Top_Fixed_Height = 20;
@@ -24,24 +29,15 @@ public:
     static constexpr uint32_t Max_Texts = (240 - Top_Fixed_Height - Bottom_Fixed_Height) / 8;
 
     // TODO this needs to be calculated because we may have it in portrait mode
-    static constexpr uint16_t Battery_Position_X1 = 320 - Battery_24x16::bitmap.width;
     static constexpr uint16_t Battery_Position_Y1 = Title_y1;
-    static constexpr uint16_t Battery_Position_X2 =
-        Battery_Position_X1 + Battery_24x16::bitmap.width;
-    static constexpr uint16_t Battery_Position_Y2 = Title_y1 + Battery_24x16::bitmap.height;
+    static constexpr uint16_t Battery_Position_Y2 = Title_y1 + Battery_20x18::bitmap.height;
 
-    static constexpr uint16_t Battery_Charge_Position_X1 = Battery_Position_X1 + 4;
+    static constexpr uint16_t Battery_Level_X1_Margin = 7;
+    static constexpr uint16_t Battery_Level_X2_Margin = 4;
     static constexpr uint16_t Battery_Charge_Position_Y1 = Battery_Position_Y1 + 4;
-    static constexpr uint16_t Battery_Charge_Position_X2 = Battery_Position_X2 - 6;
     static constexpr uint16_t Battery_Charge_Position_Y2 = Battery_Position_Y2 - 4;
 
 private:
-    enum class MemoryStatus : uint8_t
-    {
-        Free = 0,
-        In_Progress,
-    };
-
     // Some basic colours (RGB565)
     // should this be in ili9341?
     static constexpr uint16_t C_BLACK = __builtin_bswap16(0x0000U);
@@ -79,6 +75,15 @@ public:
            const uint16_t bl_pin,
            ILI9341::Orientation orientation);
 
+    enum class IconType
+    {
+        Mic,
+        Speaker,
+        Moq,
+        Wifi,
+        Battery
+    };
+
     void Init();
 
     void AnimationUpdate(const uint32_t ticks_ms);
@@ -89,8 +94,7 @@ public:
     void Wake();
     void EnableBacklight();
     void DisableBacklight();
-    inline void Select();
-    inline void Deselect();
+    void FullRefresh();
 
     void FillScreen(const Graphics::Colour colour);
     void UpdateTitle(const char* title, const uint32_t len);
@@ -112,8 +116,9 @@ public:
 
     void DrawTitleLine();
     void DrawUserLine();
-    void DrawBatteryBitmap();
-    void UpdateBatteryChargeLevel(const uint8_t percentage);
+
+    void DrawIcon(const IconType icon_type, const bool flag);
+    void BatteryLevel(const uint8_t percentage);
 
 private:
     struct bound_t
@@ -214,7 +219,10 @@ private:
     uint32_t last_animation_ticks_ms;
     uint32_t animation_flags;
 
+    // NOTE- if we need to compress, we are only using 7 bits (0-100), and the 8th could
+    // be the charging status
     uint8_t battery_level;
+    bool battery_status;
 
     uint32_t render_flags;
 };

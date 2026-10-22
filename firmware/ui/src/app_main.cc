@@ -1,7 +1,6 @@
 #include "app_main.hh"
 #include "audio_chip.hh"
 #include "audio_codec.hh"
-#include "battery_bitmap.hh"
 #include "button.hh"
 #include "config_storage.hh"
 #include "constants.hh"
@@ -219,23 +218,42 @@ int app_main()
     screen.CommitText("Test1", 5);
     screen.CommitText("Test2", 5);
 
-    Graphics::Shape bitmap = {
-        .type = Graphics::ShapeType::Bitmap,
-        .bitmap =
-            {
-                .x = 100,
-                .y = 20,
-                .map = &Battery_24x16::bitmap,
-                .foreground = Graphics::Colour::White,
-                .background = Graphics::Colour::Black,
-            },
-    };
+    // Graphics::Shape bitmap = {
+    //     .type = Graphics::ShapeType::Bitmap,
+    //     .bitmap =
+    //         {
+    //             .x = 100,
+    //             .y = 20,
+    //             .map = &Battery_24x16::bitmap,
+    //             .foreground = Graphics::Colour::White,
+    //             .background = Graphics::Colour::Black,
+    //         },
+    // };
+    //
+    // screen.PushShape(bitmap);
 
-    screen.PushShape(bitmap);
-
+    uint32_t timeout = HAL_GetTick();
     while (1)
     {
         Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+
+        if (HAL_GetTick() - timeout >= 100)
+        {
+            static int val = 100;
+            static int inc = -1;
+            screen.BatteryLevel(val);
+            val += inc;
+            if (val <= 0)
+            {
+                inc = 1;
+            }
+            else if (val >= 100)
+            {
+                inc = -1;
+            }
+
+            timeout = HAL_GetTick();
+        }
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {

@@ -1,9 +1,13 @@
 #include "screen.hh"
-#include "battery_bitmap.hh"
+#include "audio_icon.hh"
+#include "battery_icon.hh"
 #include "font.hh"
 #include "graphics.hh"
 #include "ili9341.hh"
+#include "moq_icon.hh"
+#include "wifi_icon.hh"
 #include <math.h>
+#include <cstdint>
 #include <cstring>
 
 Screen::Screen(uint16_t* scanline_buffer,
@@ -194,6 +198,11 @@ void Screen::EnableBacklight()
 void Screen::DisableBacklight()
 {
     ili9341.DisableBacklight();
+}
+
+void Screen::FullRefresh()
+{
+    RaiseFlag(render_flags, RenderFlags::Whole_Screen_Dirty);
 }
 
 void Screen::FillScreen(const Graphics::Colour colour)
@@ -562,44 +571,109 @@ void Screen::DrawUserLine()
     RaiseFlag(render_flags, RenderFlags::Text_Area_Dirty);
 }
 
-void Screen::DrawBatteryBitmap()
+void Screen::DrawIcon(const IconType icon_type, const bool flag)
 {
-    Graphics::Shape bitmap = {
+    const Bitmap* map = nullptr;
+    constexpr uint16_t margin = 2;
+    uint16_t x = ili9341.GetWidth();
+
+    switch (icon_type)
+    {
+    case IconType::Speaker:
+        x -= (Audio_Up_20x18::bitmap.width + margin + Mic_Up_20x18::bitmap.width + margin
+              + Moq_Up_20x18::bitmap.width + margin + Wifi_Up_20x18::bitmap.width + margin
+              + Battery_20x18::bitmap.width + margin);
+        map = flag ? &Audio_Up_20x18::bitmap : &Audio_Down_20x18::bitmap;
+        break;
+    case IconType::Mic:
+        x -= (Mic_Up_20x18::bitmap.width + margin + Moq_Up_20x18::bitmap.width + margin
+              + Wifi_Up_20x18::bitmap.width + margin + Battery_20x18::bitmap.width + margin);
+        map = flag ? &Mic_Up_20x18::bitmap : &Mic_Down_20x18::bitmap;
+        break;
+    case IconType::Moq:
+        x -= (Moq_Up_20x18::bitmap.width + margin + Wifi_Up_20x18::bitmap.width + margin
+              + Battery_20x18::bitmap.width + margin);
+        map = flag ? &Moq_Up_20x18::bitmap : &Moq_Down_20x18::bitmap;
+        break;
+    case IconType::Wifi:
+        x -= (Wifi_Up_20x18::bitmap.width + margin + Battery_20x18::bitmap.width + margin);
+        map = flag ? &Wifi_Up_20x18::bitmap : &Wifi_Down_20x18::bitmap;
+        break;
+    case IconType::Battery:
+        x -= (Battery_20x18::bitmap.width + margin);
+        if (flag)
+        {
+            battery_status = false;
+            map = &Battery_Charging_20x18::bitmap;
+        }
+        else
+        {
+            battery_status = true;
+            map = &Battery_20x18::bitmap;
+        }
+        break;
+    default:
+        return;
+    }
+
+    const uint16_t y = Battery_Position_Y1;
+    Graphics::Shape shape = {
         .type = Graphics::ShapeType::Bitmap,
         .bitmap =
             {
-                .x = Battery_Position_X1,
-                .y = Battery_Position_Y1,
-                .map = &Battery_24x16::bitmap,
+                .x = x,
+                .y = y,
+                .map = map,
                 .foreground = Graphics::Colour::White,
                 .background = Graphics::Colour::Black,
             },
     };
 
-    Graphics::Rasterize(bitmap, data_buff, data_buff_width, data_buff_height, Battery_Position_Y1,
-                        Battery_Position_Y2);
-    battery_level = 0;
-    ExpandBound(icon_bound, Battery_Position_X1, Battery_Position_Y1, Battery_Position_X2,
-                Battery_Position_Y2);
-    RaiseFlag(render_flags, RenderFlags::Icons_Dirty);
+    Graphics::Rasterize(shape, data_buff, data_buff_width, data_buff_height, y, y + map->height);
+    ExpandBound(icon_bound, x, y, x + map->width, y + map->height);
+
+    if (icon_type == IconType::Battery)
+    {
+        BatteryLevel(battery_level);
+    }
+    else
+    {
+        RaiseFlag(render_flags, RenderFlags::Icons_Dirty);
+    }
 }
 
-void Screen::UpdateBatteryChargeLevel(const uint8_t percentage)
+// void Screen::DrawBatteryIcon()
+// {
+//     Graphics::Shape bitmap = {
+//         .type = Graphics::ShapeType::Bitmap,
+//         .bitmap =
+//             {
+//                 .x = Battery_Position_X1,
+//                 .y = Battery_Position_Y1,
+//                 .map = &Battery_20x18::bitmap,
+//                 .foreground = Graphics::Colour::White,
+//                 .background = Graphics::Colour::Black,
+//             },
+//     };
+//
+//     Graphics::Rasterize(bitmap, data_buff, data_buff_width, data_buff_height,
+//     Battery_Position_Y1,
+//                         Battery_Position_Y2);
+//     ExpandBound(icon_bound, Battery_Position_X1, Battery_Position_Y1, Battery_Position_X2,
+//                 Battery_Position_Y2);
+//
+//     BatteryLevel(battery_level);
+// }
+
+void Screen::BatteryLevel(const uint8_t percentage)
 {
-    const uint8_t next_level = std::min<uint8_t>(percentage, 100);
-    const uint16_t width = Battery_Charge_Position_X2 - Battery_Charge_Position_X1;
-    const uint16_t previous_x2 = Battery_Charge_Position_X1 + width * battery_level / 100;
-    const uint16_t next_x2 = Battery_Charge_Position_X1 + width * next_level / 100;
-    battery_level = next_level;
+    battery_level = std::min<uint8_t>(percentage, 100);
 
-    if (previous_x2 == next_x2)
-    {
-        return;
-    }
-
-    const uint16_t x1 = std::min(previous_x2, next_x2);
-    const uint16_t x2 = std::max(previous_x2, next_x2);
-    Graphics::Shape change = {
+    // Clear
+    const uint16_t x2 = ili9341.GetWidth() - Battery_Level_X2_Margin;
+    const uint16_t x1 =
+        static_cast<uint16_t>((x2 - Battery_20x18::bitmap.width) + Battery_Level_X1_Margin);
+    Graphics::Shape clear = {
         .type = Graphics::ShapeType::FillRectangle,
         .fill_rectangle =
             {
@@ -607,11 +681,29 @@ void Screen::UpdateBatteryChargeLevel(const uint8_t percentage)
                 .y1 = Battery_Charge_Position_Y1,
                 .x2 = x2,
                 .y2 = Battery_Charge_Position_Y2,
-                .colour = next_x2 > previous_x2 ? Graphics::Colour::Green : Graphics::Colour::Red,
+                .colour = Graphics::Colour::Black,
                 .flags = 0,
             },
     };
-    Graphics::Rasterize(change, data_buff, data_buff_width, data_buff_height,
+
+    Graphics::Rasterize(clear, data_buff, data_buff_width, data_buff_height,
+                        Battery_Charge_Position_Y1, Battery_Charge_Position_Y2);
+
+    const uint16_t width = x2 - x1;
+    const uint16_t level_x1 = x2 - width * battery_level / 100;
+    Graphics::Shape level = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = level_x1,
+                .y1 = Battery_Charge_Position_Y1,
+                .x2 = x2,
+                .y2 = Battery_Charge_Position_Y2,
+                .colour = Graphics::Colour::White,
+                .flags = 0,
+            },
+    };
+    Graphics::Rasterize(level, data_buff, data_buff_width, data_buff_height,
                         Battery_Charge_Position_Y1, Battery_Charge_Position_Y2);
     ExpandBound(icon_bound, x1, Battery_Charge_Position_Y1, x2, Battery_Charge_Position_Y2);
     RaiseFlag(render_flags, RenderFlags::Icons_Dirty);

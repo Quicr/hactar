@@ -58,13 +58,7 @@ void Renderer::StartupView(const uint32_t ticks) noexcept
 {
     if (change_view)
     {
-        screen.FillScreen(Graphics::Colour::Black);
-        screen.UpdateTitle("Loading", 7);
-        screen.DrawTitleLine();
-        screen.DrawUserLine();
-        screen.DrawBatteryBitmap();
-        screen.UpdateBatteryChargeLevel(100);
-        change_view = false;
+        Refresh("Loading", 7, ticks);
     }
 }
 
@@ -72,13 +66,7 @@ void Renderer::ChatView(const uint32_t ticks) noexcept
 {
     if (change_view)
     {
-        screen.FillScreen(Graphics::Colour::Black);
-        screen.UpdateTitle("Chat room", 9);
-        screen.DrawTitleLine();
-        screen.DrawUserLine();
-        screen.DrawBatteryBitmap();
-
-        change_view = false;
+        Refresh("Chat", 4, ticks);
     }
 }
 
@@ -104,4 +92,19 @@ void Renderer::RoomsView(const uint32_t ticks) noexcept
 
 void Renderer::WifiView(const uint32_t ticks) noexcept
 {
+}
+
+void Renderer::Refresh(const char* title, const size_t title_len, const uint32_t ticks) noexcept
+{
+    screen.FillScreen(Graphics::Colour::Black);
+    screen.UpdateTitle(title, title_len);
+    screen.DrawTitleLine();
+    screen.DrawUserLine();
+    screen.DrawIcon(Screen::IconType::Battery, false);
+    screen.DrawIcon(Screen::IconType::Wifi, false);
+    screen.DrawIcon(Screen::IconType::Moq, false);
+    screen.DrawIcon(Screen::IconType::Speaker, false);
+    screen.DrawIcon(Screen::IconType::Mic, false);
+    screen.BatteryLevel(100);
+    change_view = false;
 }
