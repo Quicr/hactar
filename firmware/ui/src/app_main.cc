@@ -275,6 +275,11 @@ int app_main()
             // Error("Main loop", "Flags did not match expected");
         }
 
+        // Reset the speaker, if there is packet, by time we get to render this will be redrawn
+        // the other option we can do is all icons get a timer, and if the DrawIcon on their type
+        // doesn't come it it will default to off.
+        screen.DrawIcon(Screen::IconType::Speaker, false);
+
         if (volume_up.ShortPress() || volume_up.RepeatedPress())
         {
             audio_chip.DACVolumeAdjust(1);
@@ -378,11 +383,13 @@ void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode)
     if ((ptt.IsHeld() || mic_ptt.IsHeld()))
     {
         pressed = true;
+        screen.DrawIcon(Screen::IconType::Mic, true);
         SendAudio(protector, ui_net_link::Channel_Id::Ptt, false, loopback_mode);
     }
     else if (pressed && (!ptt.IsHeld() && !ptt.IsHeld()))
     {
         pressed = false;
+        screen.DrawIcon(Screen::IconType::Mic, false);
         SendAudio(protector, ui_net_link::Channel_Id::Ptt, true, loopback_mode);
     }
 }
@@ -394,6 +401,7 @@ void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
         && ptt_ai_state != Ptt_Btn_State::Pressed)
     {
         HAL_TIM_Base_Stop(&htim5);
+        screen.DrawIcon(Screen::IconType::Mic, true);
         ptt_ai_state = Ptt_Btn_State::Pressed;
         LedBOn();
     }
@@ -412,6 +420,7 @@ void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
     if (ptt_ai_state == Ptt_Btn_State::Last_Send)
     {
         SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, true, loopback_mode);
+        screen.DrawIcon(Screen::IconType::Mic, false);
         ptt_ai_state = Ptt_Btn_State::Released;
     }
 }

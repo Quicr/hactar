@@ -72,9 +72,7 @@ void HandleQuicrPackets(Serial& mgmt_serial,
         return;
     }
 
-    UI_LOG_INFO("Here?");
     const auto message_type = static_cast<ui_net_link::MessageType>(packet->payload[1]);
-    UI_LOG_INFO("Message type %d", message_type);
 
     switch (message_type)
     {
@@ -82,6 +80,8 @@ void HandleQuicrPackets(Serial& mgmt_serial,
     {
         ui_net_link::Chunk* audio_chunk =
             static_cast<ui_net_link::Chunk*>(static_cast<void*>(packet->payload.data() + 1));
+
+        screen.DrawIcon(Screen::IconType::Speaker, !audio_chunk->last_chunk);
 
         switch (audio_receive_mode)
         {
