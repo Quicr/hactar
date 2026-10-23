@@ -286,8 +286,8 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                 case NetLoopbackMode::Raw:
                     handler->diagnostics.loopback = NetLoopbackMode::Raw;
                     NET_LOG_INFO("Loopback set to: raw");
-                    handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Ack),
-                                               "Raw loopback not supported");
+                    handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                          std::span<const uint8_t>{});
                     break;
                 case NetLoopbackMode::Moq:
                     handler->diagnostics.loopback = NetLoopbackMode::Moq;
