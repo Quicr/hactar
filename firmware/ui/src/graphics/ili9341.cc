@@ -190,7 +190,6 @@ void ILI9341::SetRenderRegion(uint16_t x_start, uint16_t y_start, uint16_t x_end
     const uint8_t page[] = {static_cast<uint8_t>(y_start >> 8U), static_cast<uint8_t>(y_start),
                             static_cast<uint8_t>(y_end >> 8U), static_cast<uint8_t>(y_end)};
 
-    UI_LOG_INFO("Set render region (%d, %d) (%d %d)", x_start, y_start, x_end, y_end);
     WriteCommand(Column_Address_Set);
     WriteData(column, sizeof(column));
     WriteCommand(Page_Address_Set);

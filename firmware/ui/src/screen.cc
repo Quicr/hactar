@@ -96,13 +96,11 @@ void Screen::Draw(const uint32_t timeout)
     {
     case RenderFlags::Rendering:
     {
-        UI_LOG_INFO("rendering");
         Render();
         return;
     }
     case RenderFlags::Whole_Screen_Dirty:
     {
-        UI_LOG_INFO("Whole screen is dirty");
         draw_bound.x1 = 0;
         draw_bound.y1 = 0;
         draw_bound.x2 = ili9341.GetWidth();
@@ -114,7 +112,6 @@ void Screen::Draw(const uint32_t timeout)
     }
     case RenderFlags::Title_Dirty:
     {
-        UI_LOG_INFO("Title dirty");
         draw_bound.x1 = title_x1;
         draw_bound.y1 = Title_y1;
         draw_bound.x2 = title_x2;
@@ -123,21 +120,18 @@ void Screen::Draw(const uint32_t timeout)
     }
     case RenderFlags::Icons_Dirty:
     {
-        UI_LOG_INFO("Icons dirty");
         draw_bound = icon_bound;
         ResetBound(icon_bound);
         break;
     }
     case RenderFlags::Text_Area_Dirty:
     {
-        UI_LOG_INFO("Text area dirty");
         draw_bound = text_bound;
         ResetBound(text_bound);
         break;
     }
     case RenderFlags::Usr_Text_Dirty:
     {
-        UI_LOG_INFO("User text area dirty");
         draw_bound = usr_bound;
         ResetBound(usr_bound);
         break;

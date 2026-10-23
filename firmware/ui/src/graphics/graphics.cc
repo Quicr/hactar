@@ -65,7 +65,6 @@ bool Graphics::RasterizeFillRectangle(Shape& shape,
     {
         return false;
     }
-    UI_LOG_INFO("fill_rectangle");
 
     const uint16_t y1 = std::max(shape.fill_rectangle.y1, window_y1);
     const uint16_t y2 = std::min(shape.fill_rectangle.y2, window_y2);
