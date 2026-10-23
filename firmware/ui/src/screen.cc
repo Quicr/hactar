@@ -51,10 +51,8 @@ Screen::Screen(uint16_t* scanline_buffer,
             bl_pin,
             orientation),
     scanline_ptr(scanline_buffer),
+    rasterize_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
     draw_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
-    icon_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
-    text_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
-    usr_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
     title_x1(0),
     title_x2(0),
     title_buffer{0},
@@ -68,6 +66,7 @@ Screen::Screen(uint16_t* scanline_buffer,
     max_texts(Max_Texts),
     usr_buffer{0},
     usr_buffer_idx(0),
+    shapes(20),
     icons_x_offset(0),
     usr_text_y_offset(0),
     texts_area_y_offset(0),
@@ -90,79 +89,65 @@ void Screen::Draw(const uint32_t timeout)
 {
     UNUSED(timeout);
 
-    const RenderFlags flag = static_cast<RenderFlags>(TakeFlag(render_flags));
-
-    switch (flag)
-    {
-    case RenderFlags::Rendering:
+    if (ReadFlag(render_flags, RenderFlags::Rendering))
     {
         Render();
         return;
     }
-    case RenderFlags::Whole_Screen_Dirty:
-    {
-        draw_bound.x1 = 0;
-        draw_bound.y1 = 0;
-        draw_bound.x2 = ili9341.GetWidth();
-        draw_bound.y2 = ili9341.GetHeight();
 
-        // Drop all flags, as this will cover all areas
-        render_flags = 0;
-        break;
-    }
-    case RenderFlags::Title_Dirty:
+    if (shapes.Unread())
     {
-        draw_bound.x1 = title_x1;
-        draw_bound.y1 = Title_y1;
-        draw_bound.x2 = title_x2;
-        draw_bound.y2 = Title_y1 + font11x16.height;
-        break;
+
+        UI_LOG_INFO("Shapes to rasterize! %d", shapes.Unread());
+        // Empty the queue
+        while (shapes.Unread())
+        {
+            Graphics::Shape& shape = shapes.Read();
+            if (shape.done)
+            {
+                continue;
+            }
+
+            Graphics::Graphics::bound_t bound = Graphics::GetBounds(shape);
+            RasterizeShape(shape, bound);
+        }
+
+        RaiseFlag(render_flags, RenderFlags::Rasterized);
     }
-    case RenderFlags::Icons_Dirty:
-    {
-        draw_bound = icon_bound;
-        ResetBound(icon_bound);
-        break;
-    }
-    case RenderFlags::Text_Area_Dirty:
-    {
-        draw_bound = text_bound;
-        ResetBound(text_bound);
-        break;
-    }
-    case RenderFlags::Usr_Text_Dirty:
-    {
-        draw_bound = usr_bound;
-        ResetBound(usr_bound);
-        break;
-    }
-    default:
+
+    if (!TakeFlag(render_flags, RenderFlags::Rasterized))
     {
         return;
     }
+
+    draw_bound = rasterize_bound;
+    ResetBound(rasterize_bound);
+
+    draw_bound.x2 = std::min<uint16_t>(draw_bound.x2, ili9341.GetWidth());
+    draw_bound.y2 = std::min<uint16_t>(draw_bound.y2, ili9341.GetHeight());
+    if (draw_bound.x1 >= draw_bound.x2 || draw_bound.y1 >= draw_bound.y2)
+    {
+        return;
     }
 
     RaiseFlag(render_flags, Rendering);
     ili9341.SetRenderRegion(draw_bound.x1, draw_bound.y1, draw_bound.x2 - 1, draw_bound.y2 - 1);
+
     Render();
 }
 
-// TODO could maybe just use some HAL_GetTick
 void Screen::AnimationUpdate(const uint32_t ticks_ms)
 {
     last_ticks_ms = ticks_ms;
-    // NOTE- this is updated by a timer
     if (last_ticks_ms - last_animation_ticks_ms >= 1000)
     {
         const uint32_t solid = ReadFlag(animation_flags, AnimationFlags::CursorSolid);
         DrawCursor(solid);
-        RaiseFlag(render_flags, RenderFlags::Usr_Text_Dirty);
     }
 }
 
 void Screen::Render()
 {
-    // TODO Move to a render function
     const uint16_t quantization_divisor = 8 / quantization;
     for (uint16_t y = draw_bound.y1; y < draw_bound.y2; ++y)
     {
@@ -196,7 +181,13 @@ void Screen::DisableBacklight()
 
 void Screen::FullRefresh()
 {
-    RaiseFlag(render_flags, RenderFlags::Whole_Screen_Dirty);
+    Graphics::ExpandBound(rasterize_bound, {
+                                               .x1 = 0,
+                                               .y1 = 0,
+                                               .x2 = ili9341.GetWidth(),
+                                               .y2 = ili9341.GetHeight(),
+                                           });
+    RaiseFlag(render_flags, RenderFlags::Rasterized);
 }
 
 void Screen::FillScreen(const Graphics::Colour colour)
@@ -210,12 +201,10 @@ void Screen::FillScreen(const Graphics::Colour colour)
                 .x2 = ili9341.GetWidth(),
                 .y2 = ili9341.GetHeight(),
                 .colour = colour,
-                .flags = 0,
             },
     };
 
-    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, 0, ili9341.GetHeight());
-    RaiseFlag(render_flags, RenderFlags::Whole_Screen_Dirty);
+    SubmitShape(rec);
 }
 
 void Screen::UpdateTitle(const char* title, const uint32_t len)
@@ -236,12 +225,10 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
                 .x2 = title_x2,
                 .y2 = static_cast<const uint16_t>(Title_y1 + title_font.height),
                 .colour = Graphics::Colour::Black,
-                .flags = 0,
             },
     };
 
-    Graphics::Rasterize(clear_rec, data_buff, data_buff_width, data_buff_height, 0,
-                        Top_Fixed_Height);
+    SubmitShape(clear_rec);
 
     const uint16_t next_x2 = title_x1 + title_len * title_font.width;
     title_x2 = next_x2 > title_x2 ? next_x2 : title_x2;
@@ -254,17 +241,13 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
                 .len = title_len,
                 .x = title_x1,
                 .y = Title_y1,
-                .font = title_font,
+                .font = &title_font,
                 .foreground = Graphics::Colour::White,
                 .background = Graphics::Colour::Black,
-                .flags = 0,
             },
     };
 
-    Graphics::Rasterize(title_shape, data_buff, data_buff_width, data_buff_height, Title_y1,
-                        Title_y1 + title_font.height);
-
-    RaiseFlag(render_flags, RenderFlags::Title_Dirty);
+    SubmitShape(title_shape);
 }
 
 void Screen::AppendText(const char* text, const uint32_t len)
@@ -293,15 +276,13 @@ void Screen::CommitText()
                 .len = text_lens[text_read],
                 .x = 0,
                 .y = static_cast<uint16_t>(texts_area_y_offset - text_font.height),
-                .font = text_font,
+                .font = &text_font,
                 .foreground = Graphics::Colour::White,
                 .background = Graphics::Colour::Black,
-                .flags = 0,
             },
     };
 
-    Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, 0, ili9341.GetHeight());
-    RaiseFlag(render_flags, RenderFlags::Text_Area_Dirty);
+    SubmitShape(str);
 
     if (texts_in_use < max_texts)
     {
@@ -354,23 +335,17 @@ void Screen::AppendUserText(const char* text, const uint32_t len)
                 .len = static_cast<uint16_t>(num_char),
                 .x = x1,
                 .y = usr_text_y_offset,
-                .font = text_font,
+                .font = &text_font,
                 .foreground = Graphics::Colour::White,
                 .background = Graphics::Colour::Black,
-                .flags = 0,
             },
     };
 
-    const uint16_t y2 = usr_text_y_offset + text_font.height;
-
-    Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, usr_text_y_offset, y2);
-
-    ExpandBound(usr_bound, x1, usr_text_y_offset, x1 + text_font.width, y2);
+    SubmitShape(str);
 
     usr_buffer_idx += num_char;
 
     DrawCursor(true);
-    RaiseFlag(render_flags, RenderFlags::Usr_Text_Dirty);
 }
 
 void Screen::AppendUserText(const char ch)
@@ -391,22 +366,17 @@ void Screen::AppendUserText(const char ch)
                 .len = static_cast<uint16_t>(1),
                 .x = x1,
                 .y = usr_text_y_offset,
-                .font = text_font,
+                .font = &text_font,
                 .foreground = Graphics::Colour::White,
                 .background = Graphics::Colour::Black,
-                .flags = 0,
             },
     };
 
-    const uint16_t y2 = usr_text_y_offset + text_font.height;
-    Graphics::Rasterize(str, data_buff, data_buff_width, data_buff_height, usr_text_y_offset, y2);
+    SubmitShape(str);
 
     ++usr_buffer_idx;
 
-    ExpandBound(usr_bound, x1, usr_text_y_offset, x1 + text_font.width, y2);
-
     DrawCursor(true);
-    RaiseFlag(render_flags, RenderFlags::Usr_Text_Dirty);
 }
 
 void Screen::BackspaceUserText()
@@ -428,18 +398,14 @@ void Screen::BackspaceUserText()
                 .x2 = x2,
                 .y2 = y2,
                 .colour = Graphics::Colour::Black,
-                .flags = 0,
             },
     };
 
-    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset, y2);
+    SubmitShape(rec);
 
     usr_buffer[--usr_buffer_idx] = '\0';
 
-    ExpandBound(usr_bound, x1, usr_text_y_offset, x2, y2);
-
     DrawCursor(true);
-    RaiseFlag(render_flags, RenderFlags::Usr_Text_Dirty);
 }
 
 void Screen::ClearUserText()
@@ -455,20 +421,15 @@ void Screen::ClearUserText()
                 .x2 = x2,
                 .y2 = y2,
                 .colour = Graphics::Colour::Black,
-                .flags = 0,
             },
     };
 
-    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset, y2);
+    SubmitShape(rec);
 
     std::memset(usr_buffer, 0, usr_buffer_idx);
     usr_buffer_idx = 0;
 
     DrawCursor(true);
-
-    ExpandBound(usr_bound, 0, usr_text_y_offset, x2, y2);
-
-    RaiseFlag(render_flags, RenderFlags::Usr_Text_Dirty);
 }
 
 const char* Screen::UserText() const noexcept
@@ -519,6 +480,13 @@ uint32_t Screen::TakeFlag(uint32_t& flags)
     return flag;
 }
 
+uint32_t Screen::TakeFlag(uint32_t& flags, const uint32_t flag)
+{
+    const uint32_t f = ReadFlag(flags, flag);
+    LowerFlag(flags, flag);
+    return f;
+}
+
 void Screen::DrawTitleLine()
 {
     constexpr uint16_t line_x1 = 0;
@@ -534,12 +502,10 @@ void Screen::DrawTitleLine()
                 .x2 = line_x2,
                 .y2 = line_y2,
                 .colour = Graphics::Colour::White,
-                .flags = 0,
             },
     };
 
-    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, line_y1, line_y2);
-    RaiseFlag(render_flags, RenderFlags::Title_Dirty);
+    SubmitShape(rec);
 }
 
 void Screen::DrawUserLine()
@@ -557,12 +523,10 @@ void Screen::DrawUserLine()
                 .x2 = line_x2,
                 .y2 = line_y2,
                 .colour = Graphics::Colour::White,
-                .flags = 0,
             },
     };
 
-    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, line_y1, line_y2);
-    RaiseFlag(render_flags, RenderFlags::Text_Area_Dirty);
+    SubmitShape(rec);
 }
 
 void Screen::DrawIcon(const IconType icon_type, const bool flag)
@@ -623,41 +587,13 @@ void Screen::DrawIcon(const IconType icon_type, const bool flag)
             },
     };
 
-    Graphics::Rasterize(shape, data_buff, data_buff_width, data_buff_height, y, y + map->height);
-    ExpandBound(icon_bound, x, y, x + map->width, y + map->height);
+    SubmitShape(shape);
 
     if (icon_type == IconType::Battery)
     {
         BatteryLevel(battery_level);
     }
-    else
-    {
-        RaiseFlag(render_flags, RenderFlags::Icons_Dirty);
-    }
 }
-
-// void Screen::DrawBatteryIcon()
-// {
-//     Graphics::Shape bitmap = {
-//         .type = Graphics::ShapeType::Bitmap,
-//         .bitmap =
-//             {
-//                 .x = Battery_Position_X1,
-//                 .y = Battery_Position_Y1,
-//                 .map = &Battery_20x18::bitmap,
-//                 .foreground = Graphics::Colour::White,
-//                 .background = Graphics::Colour::Black,
-//             },
-//     };
-//
-//     Graphics::Rasterize(bitmap, data_buff, data_buff_width, data_buff_height,
-//     Battery_Position_Y1,
-//                         Battery_Position_Y2);
-//     ExpandBound(icon_bound, Battery_Position_X1, Battery_Position_Y1, Battery_Position_X2,
-//                 Battery_Position_Y2);
-//
-//     BatteryLevel(battery_level);
-// }
 
 void Screen::BatteryLevel(const uint8_t percentage)
 {
@@ -676,12 +612,10 @@ void Screen::BatteryLevel(const uint8_t percentage)
                 .x2 = x2,
                 .y2 = Battery_Charge_Position_Y2,
                 .colour = Graphics::Colour::Black,
-                .flags = 0,
             },
     };
 
-    Graphics::Rasterize(clear, data_buff, data_buff_width, data_buff_height,
-                        Battery_Charge_Position_Y1, Battery_Charge_Position_Y2);
+    SubmitShape(clear);
 
     const uint16_t width = x2 - x1;
     const uint16_t level_x1 = x2 - width * battery_level / 100;
@@ -694,13 +628,10 @@ void Screen::BatteryLevel(const uint8_t percentage)
                 .x2 = x2,
                 .y2 = Battery_Charge_Position_Y2,
                 .colour = Graphics::Colour::White,
-                .flags = 0,
             },
     };
-    Graphics::Rasterize(level, data_buff, data_buff_width, data_buff_height,
-                        Battery_Charge_Position_Y1, Battery_Charge_Position_Y2);
-    ExpandBound(icon_bound, x1, Battery_Charge_Position_Y1, x2, Battery_Charge_Position_Y2);
-    RaiseFlag(render_flags, RenderFlags::Icons_Dirty);
+
+    SubmitShape(level);
 }
 
 void Screen::DrawCursor(const bool solid)
@@ -719,11 +650,10 @@ void Screen::DrawCursor(const bool solid)
                 .x2 = x2,
                 .y2 = y2,
                 .colour = solid ? Graphics::Colour::White : Graphics::Colour::Black,
-                .flags = 0,
             },
     };
-    Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
-                        usr_text_y_offset + text_font.height);
+
+    SubmitShape(rec);
 
     if (solid)
     {
@@ -741,29 +671,16 @@ void Screen::DrawCursor(const bool solid)
                     .y2 = y2,
                     .thickness = 1,
                     .colour = Graphics::Colour::White,
-                    .flags = 0,
                 },
         };
-        Graphics::Rasterize(rec, data_buff, data_buff_width, data_buff_height, usr_text_y_offset,
-                            usr_text_y_offset + text_font.height);
+        SubmitShape(rec);
         RaiseFlag(animation_flags, AnimationFlags::CursorSolid);
     }
-
-    ExpandBound(usr_bound, x1, usr_text_y_offset, x2, y2);
 
     last_animation_ticks_ms = last_ticks_ms;
 }
 
-void Screen::ExpandBound(
-    bound_t& bound, const uint16_t x1, const uint16_t y1, const uint16_t x2, const uint16_t y2)
-{
-    bound.x1 = std::min(bound.x1, x1);
-    bound.y1 = std::min(bound.y1, y1);
-    bound.x2 = std::max(bound.x2, x2);
-    bound.y2 = std::max(bound.y2, y2);
-}
-
-void Screen::ResetBound(bound_t& bound)
+void Screen::ResetBound(Graphics::bound_t& bound)
 {
     bound.x1 = ili9341.GetWidth();
     bound.y1 = ili9341.GetHeight();
@@ -771,12 +688,38 @@ void Screen::ResetBound(bound_t& bound)
     bound.y2 = 0;
 }
 
-void Screen::PushShape(Graphics::Shape shape)
+bool Screen::SubmitShape(Graphics::Shape& shape)
 {
-    Graphics::Rasterize(shape, data_buff, data_buff_width, data_buff_height, 0,
-                        ili9341.GetHeight());
+    const Graphics::Graphics::bound_t bound = Graphics::GetBounds(shape);
+    if (!ReadFlag(render_flags, RenderFlags::Rendering))
+    {
+        RasterizeShape(shape, bound);
+        RaiseFlag(render_flags, RenderFlags::Rasterized);
+    }
+    else
+    {
+        if (Graphics::Intersecting(bound, draw_bound))
+        {
+            if (shapes.IsFull())
+            {
+                UI_LOG_ERROR("Screen::SubmitShape: shape queue full; submission rejected");
+                return false;
+            }
+            shapes.Write(shape);
+        }
+        else
+        {
+            RasterizeShape(shape, bound);
+            RaiseFlag(render_flags, RenderFlags::Rasterized);
+        }
+    }
+    return true;
+}
 
-    RaiseFlag(render_flags, RenderFlags::Whole_Screen_Dirty);
+void Screen::RasterizeShape(Graphics::Shape& shape, const Graphics::bound_t& bound)
+{
+    Graphics::Rasterize(shape, data_buff, data_buff_width, data_buff_height);
+    Graphics::ExpandBound(rasterize_bound, bound);
 }
 
 void Screen::ScrollText()
@@ -788,16 +731,18 @@ void Screen::ScrollText()
     const uint16_t src_y1 = texts_area_y_offset - src_idx * text_font.height;
     const uint16_t src_y2 = texts_area_y_offset;
 
-    ExpandBound(text_bound, 0, dest_y, ili9341.GetWidth(), src_y2);
+    Graphics::Shape mem = {
+        .type = Graphics::ShapeType::Mem,
+        .mem =
+            {
+                .x1 = 0,
+                .x2 = data_buff_width * 2,
+                .dest_y = dest_y,
+                .src_y1 = src_y1,
+                .src_y2 = src_y2,
+                .y_step = text_font.height,
+            },
+    };
 
-    // Scroll the colour data
-    for (uint16_t src_y = src_y1; src_y < src_y2; src_y += text_font.height)
-    {
-        std::memcpy(data_buff + dest_y * data_buff_width, data_buff + src_y * data_buff_width,
-                    text_font.height * data_buff_width);
-        dest_y += text_font.height;
-    }
-
-    std::memset(data_buff + (texts_area_y_offset - text_font.height) * data_buff_width, 0,
-                data_buff_width * text_font.height);
+    SubmitShape(mem);
 }

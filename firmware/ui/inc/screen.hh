@@ -112,7 +112,8 @@ public:
     const char* UserText() const noexcept;
     uint16_t UserTextLength() const noexcept;
 
-    void PushShape(Graphics::Shape shape);
+    // False means the deferred queue was full; the shape was not submitted.
+    bool SubmitShape(Graphics::Shape& shape);
 
     void DrawTitleLine();
     void DrawUserLine();
@@ -121,22 +122,10 @@ public:
     void BatteryLevel(const uint8_t percentage);
 
 private:
-    struct bound_t
-    {
-        uint16_t x1;
-        uint16_t y1;
-        uint16_t x2;
-        uint16_t y2;
-    };
-
     enum RenderFlags : uint32_t
     {
         Rendering = 1 << 0,
-        Whole_Screen_Dirty = 1 << 1,
-        Title_Dirty = 1 << 2,
-        Icons_Dirty = 1 << 3,
-        Text_Area_Dirty = 1 << 4,
-        Usr_Text_Dirty = 1 << 5,
+        Rasterized = 1 << 1,
     };
 
     enum AnimationFlags : uint32_t
@@ -156,11 +145,12 @@ private:
     void LowerFlag(uint32_t& flags, const uint32_t flag);
     uint32_t ReadFlag(const uint32_t flags, const uint32_t flag);
     uint32_t TakeFlag(uint32_t& flags);
+    uint32_t TakeFlag(uint32_t& flags, const uint32_t flag);
 
     void DrawCursor(const bool solid);
-    void ExpandBound(
-        bound_t& bound, const uint16_t x1, const uint16_t y1, const uint16_t x2, const uint16_t y2);
-    void ResetBound(bound_t& bound);
+    void ResetBound(Graphics::bound_t& bound);
+
+    void RasterizeShape(Graphics::Shape& shape, const Graphics::bound_t& bound);
 
     // Private functions
     const Font& title_font = font11x16;
@@ -181,10 +171,8 @@ private:
 
     uint16_t* scanline_ptr;
 
-    bound_t draw_bound;
-    bound_t icon_bound;
-    bound_t text_bound;
-    bound_t usr_bound;
+    Graphics::bound_t rasterize_bound;
+    Graphics::bound_t draw_bound;
 
     uint16_t title_x1;
     uint16_t title_x2;
@@ -208,6 +196,8 @@ private:
     // Window: 308-320px
     char usr_buffer[Max_Characters];
     size_t usr_buffer_idx;
+
+    RingBuffer<Graphics::Shape> shapes;
 
     uint16_t icons_x_offset;
     uint16_t usr_text_y_offset;
