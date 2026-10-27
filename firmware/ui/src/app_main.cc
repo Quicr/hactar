@@ -94,12 +94,9 @@ static constexpr uint16_t Screen_Width = 320;
 static constexpr uint16_t Screen_Height = 240;
 static constexpr uint16_t Bit_Quantization = 4;
 static constexpr uint16_t Quantized_Width = Screen_Width / (8 / Bit_Quantization);
-// TODO maybe reduce scanlines to 1 or 2?
-static constexpr uint16_t Num_Scan_Lines = 1;
+static constexpr uint16_t Num_Scan_Lines = 20;
 static constexpr uint16_t Num_Scanline_Buffs = 2;
-static constexpr uint16_t Colour_Depth = sizeof(uint16_t);
-static constexpr uint16_t Scanline_Buff_Size =
-    Screen_Width * Num_Scan_Lines * Num_Scanline_Buffs * Colour_Depth;
+static constexpr uint16_t Scanline_Buff_Size = Screen_Width * Num_Scan_Lines * Num_Scanline_Buffs;
 
 static uint16_t scanline_buff[Scanline_Buff_Size];
 static uint8_t render_buff[Quantized_Width * Screen_Height];
@@ -223,23 +220,23 @@ int app_main()
     {
         Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
 
-        if (HAL_GetTick() - timeout >= 100)
-        {
-            static int val = 100;
-            static int inc = -1;
-            screen.BatteryLevel(val);
-            val += inc;
-            if (val <= 0)
-            {
-                inc = 1;
-            }
-            else if (val >= 100)
-            {
-                inc = -1;
-            }
-
-            timeout = HAL_GetTick();
-        }
+        // if (HAL_GetTick() - timeout >= 100)
+        // {
+        //     static int val = 100;
+        //     static int inc = -1;
+        //     screen.BatteryLevel(val);
+        //     val += inc;
+        //     if (val <= 0)
+        //     {
+        //         inc = 1;
+        //     }
+        //     else if (val >= 100)
+        //     {
+        //         inc = -1;
+        //     }
+        //
+        //     timeout = HAL_GetTick();
+        // }
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
@@ -296,7 +293,7 @@ int app_main()
         HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode,
                              screen);
         HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
-                              audio_transmit_mode, audio_receive_mode);
+                              audio_transmit_mode, audio_receive_mode, screen);
 
         renderer.Render(ticks_ms);
 
@@ -608,9 +605,14 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
     AudioCallback();
 }
 
+void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef* hspi)
+{
+    screen.Render();
+}
+
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
-    UNUSED(hspi);
+    screen.Transfer();
 }
 
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
@@ -650,7 +652,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     }
     else if (htim->Instance == TIM6)
     {
-        keyboard.Scan(HAL_GetTick());
+        // keyboard.Scan(HAL_GetTick());
     }
 }
 

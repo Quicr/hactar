@@ -29,7 +29,9 @@ enum class CtlToUi : uint16_t
     SetAudioReceiveMode,
     AudioFrame,
     AudioStart,
-    AudioEnd
+    AudioEnd,
+    BlasterSend,
+    BatteryLevel,
 };
 
 enum class UiToCtl : uint16_t

@@ -26,7 +26,7 @@ public:
     static constexpr uint32_t Max_Characters = 320 / 5;
     static constexpr uint16_t Top_Fixed_Height = 20;
     static constexpr uint16_t Bottom_Fixed_Height = 12;
-    static constexpr uint32_t Max_Texts = (240 - Top_Fixed_Height - Bottom_Fixed_Height) / 8;
+    static constexpr uint32_t Max_Texts = (320 - Top_Fixed_Height - Bottom_Fixed_Height) / 8;
 
     // TODO this needs to be calculated because we may have it in portrait mode
     static constexpr uint16_t Battery_Position_Y1 = Title_y1;
@@ -88,6 +88,8 @@ public:
 
     void AnimationUpdate(const uint32_t ticks_ms);
     void Draw(const uint32_t ticks_ms);
+    void Render();
+    void Transfer();
 
     void Reset();
     void Sleep();
@@ -137,7 +139,6 @@ private:
     void CalculateDrawAreas();
     void DefineScrollArea();
     void ScrollText();
-    void Render();
 
     // TODO should make a flag helper class, as we have a lot of flag raising
     // through out the program
@@ -170,9 +171,11 @@ private:
     ILI9341 ili9341;
 
     uint16_t* scanline_ptr;
+    size_t scanline_idx;
 
     Graphics::bound_t rasterize_bound;
     Graphics::bound_t draw_bound;
+    uint16_t render_height;
 
     uint16_t title_x1;
     uint16_t title_x2;

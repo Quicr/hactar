@@ -4,7 +4,9 @@
 #include "font.hh"
 #include "graphics.hh"
 #include "ili9341.hh"
+#include "main.h"
 #include "moq_icon.hh"
+#include "stm32f4xx_hal_gpio.h"
 #include "wifi_icon.hh"
 #include <math.h>
 #include <cstdint>
@@ -51,8 +53,10 @@ Screen::Screen(uint16_t* scanline_buffer,
             bl_pin,
             orientation),
     scanline_ptr(scanline_buffer),
+    scanline_idx(0),
     rasterize_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
     draw_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
+    render_height(0),
     title_x1(0),
     title_x2(0),
     title_buffer{0},
@@ -91,7 +95,6 @@ void Screen::Draw(const uint32_t timeout)
 
     if (ReadFlag(render_flags, RenderFlags::Rendering))
     {
-        Render();
         return;
     }
 
@@ -132,8 +135,10 @@ void Screen::Draw(const uint32_t timeout)
 
     RaiseFlag(render_flags, Rendering);
     ili9341.SetRenderRegion(draw_bound.x1, draw_bound.y1, draw_bound.x2 - 1, draw_bound.y2 - 1);
+    ili9341.Select();
 
     Render();
+    Transfer();
 }
 
 void Screen::AnimationUpdate(const uint32_t ticks_ms)
@@ -148,25 +153,89 @@ void Screen::AnimationUpdate(const uint32_t ticks_ms)
 
 void Screen::Render()
 {
-    const uint16_t quantization_divisor = 8 / quantization;
-    for (uint16_t y = draw_bound.y1; y < draw_bound.y2; ++y)
+    if (draw_bound.y1 >= draw_bound.y2)
     {
-        for (uint16_t x = draw_bound.x1; x < draw_bound.x2; ++x)
+        return;
+    }
+
+    scanline_ptr = &scanline_buffer[scanline_idx * num_lines * num_cols];
+    render_height = std::min<const uint16_t>(draw_bound.y2 - draw_bound.y1, num_lines);
+    const uint16_t render_width = draw_bound.x2 - draw_bound.x1;
+
+    const uint16_t quantization_divisor = 8 / quantization;
+    uint16_t x_start = draw_bound.x1;
+    uint16_t x_end = draw_bound.x2;
+    uint16_t y_start = draw_bound.y1;
+    for (uint16_t y = 0; y < render_height; ++y)
+    {
+        const uint16_t y_offset = y_start * data_buff_width;
+
+        // Determine if the x1 is a odd value
+        if (x_start & 0x01)
         {
-            const uint16_t data_buff_idx = (x / quantization_divisor) + (y * data_buff_width);
+            const uint16_t data_buff_idx = (x_start / quantization_divisor) + y_offset;
             const uint8_t quant_colour =
-                (data_buff[data_buff_idx] >> (4 * ((x ^ 0x0001) & 0x0001))) & 0x0F;
+                (data_buff[data_buff_idx] >> (4 * ((x_start ^ 0x0001) & 0x0001))) & 0x0F;
             const uint16_t real_colour = Colour_Map[quant_colour];
 
-            scanline_ptr[x] = real_colour;
+            scanline_ptr[(x_start - draw_bound.x1) + y * render_width] = real_colour;
+
+            --x_start;
         }
-        // TODO use dma
-        ili9341.WriteData(reinterpret_cast<const uint8_t*>(scanline_ptr + draw_bound.x1),
-                          (draw_bound.x2 - draw_bound.x1) * 2);
+
+        if (x_end & 0x01)
+        {
+            const uint16_t data_buff_idx = (x_end / quantization_divisor) + y_offset;
+            const uint8_t quant_colour =
+                (data_buff[data_buff_idx] >> (4 * ((x_end ^ 0x0001) & 0x0001))) & 0x0F;
+            const uint16_t real_colour = Colour_Map[quant_colour];
+
+            scanline_ptr[(x_end - draw_bound.x1) + y * render_width] = real_colour;
+
+            --x_end;
+        }
+
+        const uint16_t y_render_offset = y * render_width;
+        for (uint16_t x = x_start; x < x_end; x += 2)
+        {
+            const uint16_t data_buff_idx = (x / quantization_divisor) + y_offset;
+            const uint8_t quant_colour = data_buff[data_buff_idx];
+            const uint16_t upper_colour = Colour_Map[quant_colour >> 4];
+            const uint16_t lower_colour = Colour_Map[quant_colour & 0x0F];
+
+            scanline_ptr[(x - x_start) + y_render_offset] = upper_colour;
+            scanline_ptr[(x + 1 - x_start) + y_render_offset] = lower_colour;
+        }
+
+        ++y_start;
     }
-    // TODO this needs to be only once y1 == y2
-    // and everything needs to be put into a dma
-    LowerFlag(render_flags, Rendering);
+}
+
+void Screen::Transfer()
+{
+    if (draw_bound.y1 >= draw_bound.y2)
+    {
+        LowerFlag(render_flags, RenderFlags::Rendering);
+        ili9341.Deselect();
+        HAL_GPIO_WritePin(KB_COL5_GPIO_Port, KB_COL5_Pin, GPIO_PIN_SET);
+        return;
+    }
+
+    const uint16_t render_width = draw_bound.x2 - draw_bound.x1;
+    const uint16_t render_height =
+        std::min<const uint16_t>(draw_bound.y2 - draw_bound.y1, num_lines);
+
+    scanline_ptr = &scanline_buffer[scanline_idx * num_lines * num_cols];
+    ili9341.WriteDataDMA(reinterpret_cast<const uint8_t*>(scanline_ptr),
+                         render_width * sizeof(uint16_t) * render_height);
+
+    draw_bound.y1 += render_height;
+
+    ++scanline_idx;
+    if (scanline_idx >= num_buffs)
+    {
+        scanline_idx = 0;
+    }
 }
 
 void Screen::EnableBacklight()
@@ -442,7 +511,6 @@ uint16_t Screen::UserTextLength() const noexcept
     return usr_buffer_idx;
 }
 
-// Private functions
 void Screen::RotateScreen(ILI9341::Orientation orientation)
 {
     ili9341.Rotate(orientation);
@@ -693,8 +761,15 @@ bool Screen::SubmitShape(Graphics::Shape& shape)
     const Graphics::Graphics::bound_t bound = Graphics::GetBounds(shape);
     if (!ReadFlag(render_flags, RenderFlags::Rendering))
     {
-        RasterizeShape(shape, bound);
-        RaiseFlag(render_flags, RenderFlags::Rasterized);
+        if (shapes.Unread() > 0)
+        {
+            shapes.Write(shape);
+        }
+        else
+        {
+            RasterizeShape(shape, bound);
+            RaiseFlag(render_flags, RenderFlags::Rasterized);
+        }
     }
     else
     {

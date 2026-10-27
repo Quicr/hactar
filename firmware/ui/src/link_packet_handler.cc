@@ -181,7 +181,8 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
                            AudioChip& audio_chip,
                            UiLoopbackMode& loopback,
                            AudioTransmitMode& audio_transmit_mode,
-                           AudioReceiveMode& audio_receive_mode)
+                           AudioReceiveMode& audio_receive_mode,
+                           Screen& screen)
 {
     while (true)
     {
@@ -569,6 +570,28 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
         }
         case CtlToUi::AudioStart:
         {
+            break;
+        }
+        case CtlToUi::AudioEnd:
+        {
+            break;
+        }
+        case CtlToUi::BlasterSend:
+        {
+            break;
+        }
+        case CtlToUi::BatteryLevel:
+        {
+            if (packet->length < 1)
+            {
+                break;
+            }
+
+            const uint8_t battery_level = packet->payload.data()[0];
+
+            UI_LOG_INFO("Battery level from mgmt %d", battery_level);
+            screen.BatteryLevel(battery_level);
+
             break;
         }
         default:

@@ -1,6 +1,7 @@
 #include "ili9341.hh"
 #include "gsl/gsl-lite.hpp"
 #include "logger.hh"
+#include "stm32f4xx_hal_spi.h"
 #include <cstdint>
 
 ILI9341::ILI9341(uint16_t width,
@@ -287,6 +288,17 @@ void ILI9341::WriteData(const uint8_t* data, uint16_t size)
     HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
     HAL_SPI_Transmit(spi, data, size, Spi_Timeout);
     Deselect();
+}
+
+void ILI9341::WriteDataDMA(const uint8_t* data, uint16_t size)
+{
+    if (size == 0U)
+    {
+        return;
+    }
+
+    HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
+    HAL_SPI_Transmit_DMA(spi, data, size);
 }
 
 void ILI9341::SetScrollArea(const uint16_t y1, const uint16_t y2, const uint16_t height)

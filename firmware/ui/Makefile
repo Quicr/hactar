@@ -59,6 +59,10 @@ compile: check_who_compiled CMakeLists.txt
 	cmake -B $(BUILD_DIR)
 	cmake --build $(BUILD_DIR) -j
 
+release: check_who_compiled CMakeLists.txt
+	cmake -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=release
+	cmake --build $(BUILD_DIR) -j
+
 test:
 	$(MAKE) -C test test
 

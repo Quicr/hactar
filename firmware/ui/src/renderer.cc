@@ -105,6 +105,6 @@ void Renderer::Refresh(const char* title, const size_t title_len, const uint32_t
     screen.DrawIcon(Screen::IconType::Moq, false);
     screen.DrawIcon(Screen::IconType::Speaker, false);
     screen.DrawIcon(Screen::IconType::Mic, false);
-    screen.BatteryLevel(100);
+    screen.BatteryLevel(0);
     change_view = false;
 }

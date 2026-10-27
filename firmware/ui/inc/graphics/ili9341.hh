@@ -46,6 +46,9 @@ public:
     uint16_t GetHeight() const;
 
     void WriteData(const uint8_t* data, uint16_t size);
+    void WriteDataDMA(const uint8_t* data, uint16_t size);
+    void Select();
+    void Deselect();
 
 private:
     static constexpr uint8_t Software_Reset = 0x01U;
@@ -85,8 +88,6 @@ private:
     static constexpr uint8_t Swap_XY = 0x20U;
     static constexpr uint32_t Spi_Timeout = 1000U;
 
-    void Select();
-    void Deselect();
     void WriteCommand(uint8_t command);
 
     const uint16_t width;
