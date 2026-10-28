@@ -123,6 +123,8 @@ public:
     void DrawIcon(const IconType icon_type, const bool flag);
     void BatteryLevel(const uint8_t percentage);
 
+    bool IsRendering();
+
 private:
     enum RenderFlags : uint32_t
     {

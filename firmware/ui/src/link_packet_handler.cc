@@ -594,6 +594,20 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
 
             break;
         }
+        case CtlToUi::UsbConnected:
+        {
+            if (packet->length < 1)
+            {
+                break;
+            }
+
+            const uint8_t usb_detected = packet->payload.data()[0];
+
+            UI_LOG_INFO("Battery level from mgmt %d", usb_detected);
+            screen.BatteryLevel(usb_detected);
+
+            break;
+        }
         default:
         {
             UI_LOG_ERROR("ERR. No handler for packet type 0x%04x", packet->type);

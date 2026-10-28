@@ -210,7 +210,7 @@ bool AudioChip::WriteRegistersVerify(const uint8_t (*registers)[2], const size_t
         {
             return false;
         }
-        HAL_Delay(20);
+        HAL_Delay(1);
     }
     return true;
 }

@@ -58,6 +58,13 @@ void Renderer::StartupView(const uint32_t ticks) noexcept
 {
     if (change_view)
     {
+        screen.FillScreen(Graphics::Colour::Black);
+        screen.DrawIcon(Screen::IconType::Battery, false);
+        screen.DrawIcon(Screen::IconType::Wifi, false);
+        screen.DrawIcon(Screen::IconType::Moq, false);
+        screen.DrawIcon(Screen::IconType::Speaker, false);
+        screen.DrawIcon(Screen::IconType::Mic, false);
+        screen.BatteryLevel(0);
         Refresh("Loading", 7, ticks);
     }
 }
@@ -96,15 +103,8 @@ void Renderer::WifiView(const uint32_t ticks) noexcept
 
 void Renderer::Refresh(const char* title, const size_t title_len, const uint32_t ticks) noexcept
 {
-    screen.FillScreen(Graphics::Colour::Black);
     screen.UpdateTitle(title, title_len);
     screen.DrawTitleLine();
     screen.DrawUserLine();
-    screen.DrawIcon(Screen::IconType::Battery, false);
-    screen.DrawIcon(Screen::IconType::Wifi, false);
-    screen.DrawIcon(Screen::IconType::Moq, false);
-    screen.DrawIcon(Screen::IconType::Speaker, false);
-    screen.DrawIcon(Screen::IconType::Mic, false);
-    screen.BatteryLevel(0);
     change_view = false;
 }

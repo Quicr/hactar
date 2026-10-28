@@ -170,6 +170,8 @@ Button
 
 int app_main()
 {
+    mgmt_serial.StartReceive();
+
     InitScreen(screen);
     Renderer renderer(screen, keyboard);
     renderer.ChangeView(Renderer::View::Startup);
@@ -177,8 +179,6 @@ int app_main()
 
     HAL_TIM_Base_Start_IT(&htim2);
     HAL_TIM_Base_Start_IT(&htim6);
-
-    mgmt_serial.StartReceive();
 
     // Enable TLV logging via MGMT serial
     Logger::SetLogSender([](uint16_t type, const uint8_t* data, size_t len) {
@@ -188,6 +188,10 @@ int app_main()
     uint32_t ticks_ms = 0;
     ConfigStorage config_storage(hi2c1);
     Protector protector(config_storage);
+
+    HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
+                          audio_transmit_mode, audio_receive_mode, screen);
+    renderer.Render(HAL_GetTick());
 
     audio_chip.Init();
     audio_chip.StartI2S();
@@ -210,7 +214,6 @@ int app_main()
     uint32_t sleep_timeout = 0;
 
     renderer.ChangeView(Renderer::View::Chat);
-    renderer.Render(HAL_GetTick());
 
     screen.CommitText("Test1", 5);
     screen.CommitText("Test2", 5);
@@ -219,24 +222,6 @@ int app_main()
     while (1)
     {
         Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
-
-        // if (HAL_GetTick() - timeout >= 100)
-        // {
-        //     static int val = 100;
-        //     static int inc = -1;
-        //     screen.BatteryLevel(val);
-        //     val += inc;
-        //     if (val <= 0)
-        //     {
-        //         inc = 1;
-        //     }
-        //     else if (val >= 100)
-        //     {
-        //         inc = -1;
-        //     }
-        //
-        //     timeout = HAL_GetTick();
-        // }
 
         if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
         {
@@ -652,7 +637,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     }
     else if (htim->Instance == TIM6)
     {
-        // keyboard.Scan(HAL_GetTick());
+        keyboard.Scan(HAL_GetTick());
     }
 }
 

@@ -702,6 +702,11 @@ void Screen::BatteryLevel(const uint8_t percentage)
     SubmitShape(level);
 }
 
+bool Screen::IsRendering()
+{
+    return ReadFlag(render_flags, RenderFlags::Rendering);
+}
+
 void Screen::DrawCursor(const bool solid)
 {
     const uint16_t x1 = static_cast<uint16_t>(usr_buffer_idx * text_font.width);
