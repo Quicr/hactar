@@ -20,6 +20,7 @@ Screen::Screen(uint16_t* scanline_buffer,
                const uint16_t data_buff_width,
                const uint16_t data_buff_height,
                const uint16_t quantization,
+               const Battery& battery,
                const uint16_t screen_width_pixels,
                const uint16_t screen_height_pixels,
                SPI_HandleTypeDef& hspi,
@@ -40,6 +41,7 @@ Screen::Screen(uint16_t* scanline_buffer,
     data_buff_width(data_buff_width),
     data_buff_height(data_buff_height),
     quantization(quantization),
+    battery(battery),
     ili9341(screen_width_pixels,
             screen_height_pixels,
             hspi,
@@ -76,9 +78,8 @@ Screen::Screen(uint16_t* scanline_buffer,
     texts_area_y_offset(0),
     scroll_area_height(0),
     last_ticks_ms(0),
-    last_animation_ticks_ms(0),
-    animation_flags(0),
-    battery_level(0),
+    last_update_ticks_ms(0),
+    update_flags(0),
     render_flags(0)
 {
 }
@@ -141,12 +142,12 @@ void Screen::Draw(const uint32_t timeout)
     Transfer();
 }
 
-void Screen::AnimationUpdate(const uint32_t ticks_ms)
+void Screen::Update(const uint32_t ticks_ms)
 {
     last_ticks_ms = ticks_ms;
-    if (last_ticks_ms - last_animation_ticks_ms >= 1000)
+    if (last_ticks_ms - last_update_ticks_ms >= 1000)
     {
-        const uint32_t solid = ReadFlag(animation_flags, AnimationFlags::CursorSolid);
+        const uint32_t solid = ReadFlag(update_flags, UpdateFlags::CursorSolid);
         DrawCursor(solid);
     }
 }
@@ -163,11 +164,11 @@ void Screen::Render()
     const uint16_t render_width = draw_bound.x2 - draw_bound.x1;
 
     const uint16_t quantization_divisor = 8 / quantization;
-    uint16_t x_start = draw_bound.x1;
-    uint16_t x_end = draw_bound.x2;
     uint16_t y_start = draw_bound.y1;
     for (uint16_t y = 0; y < render_height; ++y)
     {
+        uint16_t x_start = draw_bound.x1;
+        uint16_t x_end = draw_bound.x2;
         const uint16_t y_offset = y_start * data_buff_width;
 
         // Determine if the x1 is a odd value
@@ -180,19 +181,19 @@ void Screen::Render()
 
             scanline_ptr[(x_start - draw_bound.x1) + y * render_width] = real_colour;
 
-            --x_start;
+            ++x_start;
         }
 
         if (x_end & 0x01)
         {
+            --x_end;
+
             const uint16_t data_buff_idx = (x_end / quantization_divisor) + y_offset;
             const uint8_t quant_colour =
                 (data_buff[data_buff_idx] >> (4 * ((x_end ^ 0x0001) & 0x0001))) & 0x0F;
             const uint16_t real_colour = Colour_Map[quant_colour];
 
             scanline_ptr[(x_end - draw_bound.x1) + y * render_width] = real_colour;
-
-            --x_end;
         }
 
         const uint16_t y_render_offset = y * render_width;
@@ -203,8 +204,8 @@ void Screen::Render()
             const uint16_t upper_colour = Colour_Map[quant_colour >> 4];
             const uint16_t lower_colour = Colour_Map[quant_colour & 0x0F];
 
-            scanline_ptr[(x - x_start) + y_render_offset] = upper_colour;
-            scanline_ptr[(x + 1 - x_start) + y_render_offset] = lower_colour;
+            scanline_ptr[(x - draw_bound.x1) + y_render_offset] = upper_colour;
+            scanline_ptr[(x + 1 - draw_bound.x1) + y_render_offset] = lower_colour;
         }
 
         ++y_start;
@@ -217,7 +218,6 @@ void Screen::Transfer()
     {
         LowerFlag(render_flags, RenderFlags::Rendering);
         ili9341.Deselect();
-        HAL_GPIO_WritePin(KB_COL5_GPIO_Port, KB_COL5_Pin, GPIO_PIN_SET);
         return;
     }
 
@@ -608,41 +608,33 @@ void Screen::DrawIcon(const IconType icon_type, const bool flag)
     case IconType::Speaker:
         x -= (Audio_Up_20x18::bitmap.width + margin + Mic_Up_20x18::bitmap.width + margin
               + Moq_Up_20x18::bitmap.width + margin + Wifi_Up_20x18::bitmap.width + margin
-              + Battery_20x18::bitmap.width + margin);
+              + Battery_Critical_20x18::bitmap.width + margin);
         map = flag ? &Audio_Up_20x18::bitmap : &Audio_Down_20x18::bitmap;
         break;
     case IconType::Mic:
         x -= (Mic_Up_20x18::bitmap.width + margin + Moq_Up_20x18::bitmap.width + margin
-              + Wifi_Up_20x18::bitmap.width + margin + Battery_20x18::bitmap.width + margin);
+              + Wifi_Up_20x18::bitmap.width + margin + Battery_Critical_20x18::bitmap.width
+              + margin);
         map = flag ? &Mic_Up_20x18::bitmap : &Mic_Down_20x18::bitmap;
         break;
     case IconType::Moq:
         x -= (Moq_Up_20x18::bitmap.width + margin + Wifi_Up_20x18::bitmap.width + margin
-              + Battery_20x18::bitmap.width + margin);
+              + Battery_Critical_20x18::bitmap.width + margin);
         map = flag ? &Moq_Up_20x18::bitmap : &Moq_Down_20x18::bitmap;
         break;
     case IconType::Wifi:
-        x -= (Wifi_Up_20x18::bitmap.width + margin + Battery_20x18::bitmap.width + margin);
+        x -= (Wifi_Up_20x18::bitmap.width + margin + Battery_Critical_20x18::bitmap.width + margin);
         map = flag ? &Wifi_Up_20x18::bitmap : &Wifi_Down_20x18::bitmap;
         break;
     case IconType::Battery:
-        x -= (Battery_20x18::bitmap.width + margin);
-        if (flag)
-        {
-            battery_status = false;
-            map = &Battery_Charging_20x18::bitmap;
-        }
-        else
-        {
-            battery_status = true;
-            map = &Battery_20x18::bitmap;
-        }
+        x -= (Battery_Critical_20x18::bitmap.width + margin);
+        map = battery.GetIcon();
         break;
     default:
         return;
     }
 
-    const uint16_t y = Battery_Position_Y1;
+    const uint16_t y = Icon_Position_Y1;
     Graphics::Shape shape = {
         .type = Graphics::ShapeType::Bitmap,
         .bitmap =
@@ -656,55 +648,21 @@ void Screen::DrawIcon(const IconType icon_type, const bool flag)
     };
 
     SubmitShape(shape);
-
-    if (icon_type == IconType::Battery)
-    {
-        BatteryLevel(battery_level);
-    }
-}
-
-void Screen::BatteryLevel(const uint8_t percentage)
-{
-    battery_level = std::min<uint8_t>(percentage, 100);
-
-    // Clear
-    const uint16_t x2 = ili9341.GetWidth() - Battery_Level_X2_Margin;
-    const uint16_t x1 =
-        static_cast<uint16_t>((x2 - Battery_20x18::bitmap.width) + Battery_Level_X1_Margin);
-    Graphics::Shape clear = {
-        .type = Graphics::ShapeType::FillRectangle,
-        .fill_rectangle =
-            {
-                .x1 = x1,
-                .y1 = Battery_Charge_Position_Y1,
-                .x2 = x2,
-                .y2 = Battery_Charge_Position_Y2,
-                .colour = Graphics::Colour::Black,
-            },
-    };
-
-    SubmitShape(clear);
-
-    const uint16_t width = x2 - x1;
-    const uint16_t level_x1 = x2 - width * battery_level / 100;
-    Graphics::Shape level = {
-        .type = Graphics::ShapeType::FillRectangle,
-        .fill_rectangle =
-            {
-                .x1 = level_x1,
-                .y1 = Battery_Charge_Position_Y1,
-                .x2 = x2,
-                .y2 = Battery_Charge_Position_Y2,
-                .colour = Graphics::Colour::White,
-            },
-    };
-
-    SubmitShape(level);
 }
 
 bool Screen::IsRendering()
 {
     return ReadFlag(render_flags, RenderFlags::Rendering);
+}
+
+uint16_t Screen::PixelWidth()
+{
+    return ili9341.GetWidth();
+}
+
+uint16_t Screen::PixelHeight()
+{
+    return ili9341.GetHeight();
 }
 
 void Screen::DrawCursor(const bool solid)
@@ -730,7 +688,7 @@ void Screen::DrawCursor(const bool solid)
 
     if (solid)
     {
-        LowerFlag(animation_flags, AnimationFlags::CursorSolid);
+        LowerFlag(update_flags, UpdateFlags::CursorSolid);
     }
     else
     {
@@ -747,10 +705,10 @@ void Screen::DrawCursor(const bool solid)
                 },
         };
         SubmitShape(rec);
-        RaiseFlag(animation_flags, AnimationFlags::CursorSolid);
+        RaiseFlag(update_flags, UpdateFlags::CursorSolid);
     }
 
-    last_animation_ticks_ms = last_ticks_ms;
+    last_update_ticks_ms = last_ticks_ms;
 }
 
 void Screen::ResetBound(Graphics::bound_t& bound)

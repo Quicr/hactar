@@ -37,11 +37,11 @@ public:
     };
 };
 
-class Battery_20x18
+class Battery_Critical_20x18
 {
 private:
     // clang-format off
-    static constexpr uint8_t battery_20x18[] = {
+    static constexpr uint8_t battery_critical_20x18[] = {
         0b00000000, 0b00000000, 0b00000000,
         0b00000000, 0b00000000, 0b00000000,
         0b00001111, 0b11111111, 0b11100000,
@@ -67,7 +67,7 @@ public:
     static constexpr Bitmap bitmap = {
         .width = 20,
         .height = 18,
-        .data = battery_20x18,
+        .data = battery_critical_20x18,
     };
 };
 

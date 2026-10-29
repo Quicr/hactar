@@ -2,6 +2,7 @@
 
 #include "app_main.hh"
 #include "audio_icon.hh"
+#include "battery.hh"
 #include "battery_icon.hh"
 #include "bitmap.hh"
 #include "font.hh"
@@ -29,13 +30,13 @@ public:
     static constexpr uint32_t Max_Texts = (320 - Top_Fixed_Height - Bottom_Fixed_Height) / 8;
 
     // TODO this needs to be calculated because we may have it in portrait mode
-    static constexpr uint16_t Battery_Position_Y1 = Title_y1;
-    static constexpr uint16_t Battery_Position_Y2 = Title_y1 + Battery_20x18::bitmap.height;
+    static constexpr uint16_t Icon_Position_Y1 = Title_y1;
+    static constexpr uint16_t Icon_Position_Y2 = Title_y1 + Battery_Critical_20x18::bitmap.height;
 
     static constexpr uint16_t Battery_Level_X1_Margin = 7;
     static constexpr uint16_t Battery_Level_X2_Margin = 4;
-    static constexpr uint16_t Battery_Charge_Position_Y1 = Battery_Position_Y1 + 4;
-    static constexpr uint16_t Battery_Charge_Position_Y2 = Battery_Position_Y2 - 4;
+    static constexpr uint16_t Battery_Charge_Position_Y1 = Icon_Position_Y1 + 4;
+    static constexpr uint16_t Battery_Charge_Position_Y2 = Icon_Position_Y2 - 4;
 
 private:
     // Some basic colours (RGB565)
@@ -62,6 +63,7 @@ public:
            const uint16_t width,
            const uint16_t height,
            const uint16_t quantization,
+           const Battery& battery,
            const uint16_t screen_width_pixels,
            const uint16_t screen_height_pixels,
            SPI_HandleTypeDef& hspi,
@@ -81,12 +83,12 @@ public:
         Speaker,
         Moq,
         Wifi,
-        Battery
+        Battery,
     };
 
     void Init();
 
-    void AnimationUpdate(const uint32_t ticks_ms);
+    void Update(const uint32_t ticks_ms);
     void Draw(const uint32_t ticks_ms);
     void Render();
     void Transfer();
@@ -125,6 +127,9 @@ public:
 
     bool IsRendering();
 
+    uint16_t PixelWidth();
+    uint16_t PixelHeight();
+
 private:
     enum RenderFlags : uint32_t
     {
@@ -132,7 +137,7 @@ private:
         Rasterized = 1 << 1,
     };
 
-    enum AnimationFlags : uint32_t
+    enum UpdateFlags : uint32_t
     {
         CursorSolid = 1 << 0
     };
@@ -169,6 +174,8 @@ private:
     const uint16_t data_buff_width;
     const uint16_t data_buff_height;
     const uint16_t quantization;
+
+    const Battery& battery;
 
     ILI9341 ili9341;
 
@@ -211,13 +218,8 @@ private:
 
     uint32_t last_ticks_ms;
 
-    uint32_t last_animation_ticks_ms;
-    uint32_t animation_flags;
-
-    // NOTE- if we need to compress, we are only using 7 bits (0-100), and the 8th could
-    // be the charging status
-    uint8_t battery_level;
-    bool battery_status;
+    uint32_t last_update_ticks_ms;
+    uint32_t update_flags;
 
     uint32_t render_flags;
 };

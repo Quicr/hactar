@@ -21,5 +21,6 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
                            UiLoopbackMode& loopback,
                            AudioTransmitMode& audio_transmit_mode,
                            AudioReceiveMode& audio_receive_mode,
-                           Screen& screen);
+                           Screen& screen,
+                           Battery& battery);
 };

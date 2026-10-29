@@ -1,7 +1,9 @@
 #include "app_main.hh"
 #include "audio_chip.hh"
 #include "audio_codec.hh"
+#include "battery.hh"
 #include "button.hh"
+#include "cmsis_gcc.h"
 #include "config_storage.hh"
 #include "constants.hh"
 #include "graphics.hh"
@@ -101,6 +103,8 @@ static constexpr uint16_t Scanline_Buff_Size = Screen_Width * Num_Scan_Lines * N
 static uint16_t scanline_buff[Scanline_Buff_Size];
 static uint8_t render_buff[Quantized_Width * Screen_Height];
 
+static Battery battery;
+
 Screen screen(scanline_buff,
               Num_Scan_Lines,
               Screen_Width,
@@ -109,6 +113,7 @@ Screen screen(scanline_buff,
               Quantized_Width,
               Screen_Height,
               Bit_Quantization,
+              battery,
               Screen_Width,
               Screen_Height,
               hspi1,
@@ -190,7 +195,7 @@ int app_main()
     Protector protector(config_storage);
 
     HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
-                          audio_transmit_mode, audio_receive_mode, screen);
+                          audio_transmit_mode, audio_receive_mode, screen, battery);
     renderer.Render(HAL_GetTick());
 
     audio_chip.Init();
@@ -278,7 +283,7 @@ int app_main()
         HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode,
                              screen);
         HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
-                              audio_transmit_mode, audio_receive_mode, screen);
+                              audio_transmit_mode, audio_receive_mode, screen, battery);
 
         renderer.Render(ticks_ms);
 
@@ -592,7 +597,9 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 
 void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef* hspi)
 {
+    __disable_irq();
     screen.Render();
+    __enable_irq();
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)

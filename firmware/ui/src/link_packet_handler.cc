@@ -1,6 +1,7 @@
 #include "link_packet_handler.hh"
 #include "audio_chip.hh"
 #include "audio_codec.hh"
+#include "battery.hh"
 #include "keyboard_display.hh"
 #include "link_packet_t.hh"
 #include "logger.hh"
@@ -182,7 +183,8 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
                            UiLoopbackMode& loopback,
                            AudioTransmitMode& audio_transmit_mode,
                            AudioReceiveMode& audio_receive_mode,
-                           Screen& screen)
+                           Screen& screen,
+                           Battery& battery)
 {
     while (true)
     {
@@ -588,9 +590,10 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             }
 
             const uint8_t battery_level = packet->payload.data()[0];
+            battery.ChargeLevel(battery_level);
+            screen.DrawIcon(Screen::IconType::Battery, false);
 
             UI_LOG_INFO("Battery level from mgmt %d", battery_level);
-            screen.BatteryLevel(battery_level);
 
             break;
         }
@@ -602,9 +605,18 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             }
 
             const uint8_t usb_detected = packet->payload.data()[0];
+            UI_LOG_INFO("usb detected from mgmt %d", usb_detected);
 
-            UI_LOG_INFO("Battery level from mgmt %d", usb_detected);
-            screen.BatteryLevel(usb_detected);
+            if (usb_detected)
+            {
+                UI_LOG_INFO("drawing charging");
+                battery.Charging();
+                screen.DrawIcon(Screen::IconType::Battery, false);
+            }
+            else
+            {
+                battery.Draining();
+            }
 
             break;
         }
