@@ -167,6 +167,32 @@ void HandleNetLinkPackets(Serial& net_serial,
             HandleQuicrPackets(mgmt_serial, protector, audio, audio_receive_mode, screen, packet);
             break;
         }
+        case ui_net_link::NetToUi::WifiStatus:
+        {
+            if (packet->length < 1)
+            {
+                break;
+            }
+
+            const uint8_t wifi_status = packet->payload.data()[0];
+            UI_LOG_INFO("wifi status from net %d", wifi_status);
+
+            screen.DrawIcon(Screen::IconType::Wifi, wifi_status);
+            break;
+        }
+        case ui_net_link::NetToUi::MoqStatus:
+        {
+            if (packet->length < 1)
+            {
+                break;
+            }
+
+            const uint8_t moq_status = packet->payload.data()[0];
+            UI_LOG_INFO("wifi status from net %d", moq_status);
+
+            screen.DrawIcon(Screen::IconType::Moq, moq_status);
+            break;
+        }
         default:
         {
             UI_LOG_ERROR("Unhandled packet type %d", (int)packet->type);
@@ -590,10 +616,15 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             }
 
             const uint8_t battery_level = packet->payload.data()[0];
-            battery.ChargeLevel(battery_level);
-            screen.DrawIcon(Screen::IconType::Battery, false);
-
             UI_LOG_INFO("Battery level from mgmt %d", battery_level);
+
+            const Battery::State prev = battery.GetState();
+            battery.ChargeLevel(battery_level);
+
+            if (prev != battery.GetState())
+            {
+                screen.DrawIcon(Screen::IconType::Battery, false);
+            }
 
             break;
         }

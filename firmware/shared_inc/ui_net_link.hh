@@ -13,14 +13,16 @@ namespace ui_net_link
 enum struct UiToNet : uint16_t
 {
     CircularPing = 0x0060,
-    AudioFrame = 0x0061,
+    AudioFrame,
 };
 
 // NET to UI packet types
 enum struct NetToUi : uint16_t
 {
     CircularPing = 0x0070,
-    AudioFrame = 0x0071,
+    AudioFrame,
+    WifiStatus,
+    MoqStatus,
 };
 
 enum class Channel_Id : uint8_t

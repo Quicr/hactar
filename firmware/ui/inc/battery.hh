@@ -22,6 +22,7 @@ public:
     void ChargeLevel(const uint8_t charge_level);
     uint8_t ChargeLevel();
     bool IsCritical();
+    State GetState();
 
 private:
     static constexpr uint8_t Critical_Level = 10;
