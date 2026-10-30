@@ -121,18 +121,34 @@ void MoqContext::UpdateChannelTracks(ConfigState& config)
 {
     const std::string lang = config.language.Load();
 
-    if (config.channel_ns.empty() || lang.empty())
+    if (config.ptt_channel_ns.empty() || lang.empty())
     {
-        NET_LOG_WARN("Cannot update channel tracks: namespace or language empty");
+        NET_LOG_WARN("Cannot update ptt channel tracks: namespace or language empty");
         return;
     }
 
-    if (auto writer = CreateWriteTrack("channel", config.channel_ns, lang, "pcm", config))
+    if (auto writer = CreateWriteTrack("channel", config.ptt_channel_ns, lang, "pcm", config))
     {
         writer->Start();
     }
 
-    if (auto reader = CreateReadTrack("channel", config.channel_ns, lang, "pcm"))
+    if (auto reader = CreateReadTrack("channel", config.ptt_channel_ns, lang, "pcm"))
+    {
+        reader->Start();
+    }
+
+    if (config.chat_channel_ns.empty() || lang.empty())
+    {
+        NET_LOG_WARN("Cannot update chat channel tracks: namespace or language empty");
+        return;
+    }
+
+    if (auto writer = CreateWriteTrack("channel", config.chat_channel_ns, lang, "ascii", config))
+    {
+        writer->Start();
+    }
+
+    if (auto reader = CreateReadTrack("channel", config.chat_channel_ns, lang, "ascii"))
     {
         reader->Start();
     }

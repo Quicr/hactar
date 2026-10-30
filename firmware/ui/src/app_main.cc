@@ -1,9 +1,12 @@
 #include "app_main.hh"
 #include "audio_chip.hh"
 #include "audio_codec.hh"
+#include "battery.hh"
 #include "button.hh"
+#include "cmsis_gcc.h"
 #include "config_storage.hh"
 #include "constants.hh"
+#include "graphics.hh"
 #include "keyboard.hh"
 #include "keyboard_display.hh"
 #include "led_control.hh"
@@ -51,6 +54,7 @@ extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim5;
+extern TIM_HandleTypeDef htim6;
 extern RNG_HandleTypeDef hrng;
 
 // Global variables that need to exist for hardware callbacks
@@ -88,42 +92,62 @@ static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_rx_buff_sz,
                           false);
 
-#if 0
-// Screen screen(hspi1,
-//               DISP_CS_GPIO_Port,
-//               DISP_CS_Pin,
-//               DISP_DC_GPIO_Port,
-//               DISP_DC_Pin,
-//               DISP_RST_GPIO_Port,
-//               DISP_RST_Pin,
-//               DISP_BL_GPIO_Port,
-//               DISP_BL_Pin,
-//               Screen::Orientation::flipped_portrait);
-//
-// GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
-//     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port,
-//     KB_COL5_GPIO_Port,
-// };
-//
-// uint16_t col_pins[Keyboard::Q10_Cols] = {
-//     KB_COL1_Pin, KB_COL2_Pin, KB_COL3_Pin, KB_COL4_Pin, KB_COL5_Pin,
-// };
-//
-// GPIO_TypeDef* row_ports[Keyboard::Q10_Rows] = {
-//     KB_ROW1_GPIO_Port, KB_ROW2_GPIO_Port, KB_ROW3_GPIO_Port, KB_ROW4_GPIO_Port,
-//     KB_ROW5_GPIO_Port, KB_ROW6_GPIO_Port, KB_ROW7_GPIO_Port,
-// };
+static constexpr uint16_t Screen_Width = 320;
+static constexpr uint16_t Screen_Height = 240;
+static constexpr uint16_t Bit_Quantization = 4;
+static constexpr uint16_t Quantized_Width = Screen_Width / (8 / Bit_Quantization);
+static constexpr uint16_t Num_Scan_Lines = 20;
+static constexpr uint16_t Num_Scanline_Buffs = 2;
+static constexpr uint16_t Scanline_Buff_Size = Screen_Width * Num_Scan_Lines * Num_Scanline_Buffs;
 
-// uint16_t row_pins[Keyboard::Q10_Rows] = {
-//     KB_ROW1_Pin, KB_ROW2_Pin, KB_ROW3_Pin, KB_ROW4_Pin, KB_ROW5_Pin, KB_ROW6_Pin, KB_ROW7_Pin,
-// }
-// ;
+static uint16_t scanline_buff[Scanline_Buff_Size];
+static uint8_t render_buff[Quantized_Width * Screen_Height];
 
-// static constexpr uint16_t kb_ring_buff_sz = 5;
-// RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
-//
-// Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 150, 150);
-#endif
+static Battery battery;
+
+Screen screen(scanline_buff,
+              Num_Scan_Lines,
+              Screen_Width,
+              Num_Scanline_Buffs,
+              render_buff,
+              Quantized_Width,
+              Screen_Height,
+              Bit_Quantization,
+              battery,
+              Screen_Width,
+              Screen_Height,
+              hspi1,
+              DISP_CS_GPIO_Port,
+              DISP_CS_Pin,
+              DISP_DC_GPIO_Port,
+              DISP_DC_Pin,
+              DISP_RST_GPIO_Port,
+              DISP_RST_Pin,
+              DISP_BL_GPIO_Port,
+              DISP_BL_Pin,
+              ILI9341::Orientation::Landscape);
+
+GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
+    KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
+};
+
+uint16_t col_pins[Keyboard::Q10_Cols] = {
+    KB_COL1_Pin, KB_COL2_Pin, KB_COL3_Pin, KB_COL4_Pin, KB_COL5_Pin,
+};
+
+GPIO_TypeDef* row_ports[Keyboard::Q10_Rows] = {
+    KB_ROW1_GPIO_Port, KB_ROW2_GPIO_Port, KB_ROW3_GPIO_Port, KB_ROW4_GPIO_Port,
+    KB_ROW5_GPIO_Port, KB_ROW6_GPIO_Port, KB_ROW7_GPIO_Port,
+};
+
+uint16_t row_pins[Keyboard::Q10_Rows] = {
+    KB_ROW1_Pin, KB_ROW2_Pin, KB_ROW3_Pin, KB_ROW4_Pin, KB_ROW5_Pin, KB_ROW6_Pin, KB_ROW7_Pin,
+};
+
+static constexpr uint16_t kb_ring_buff_sz = 5;
+RingBuffer<uint8_t> kb_buff(kb_ring_buff_sz);
+
+Keyboard keyboard(col_ports, col_pins, row_ports, row_pins, kb_buff, 200, 300);
 
 volatile bool sleeping = true;
 volatile bool error = false;
@@ -151,9 +175,15 @@ Button
 
 int app_main()
 {
-    HAL_TIM_Base_Start_IT(&htim2);
-
     mgmt_serial.StartReceive();
+
+    InitScreen(screen);
+    Renderer renderer(screen, keyboard);
+    renderer.ChangeView(Renderer::View::Startup);
+    renderer.Render(HAL_GetTick());
+
+    HAL_TIM_Base_Start_IT(&htim2);
+    HAL_TIM_Base_Start_IT(&htim6);
 
     // Enable TLV logging via MGMT serial
     Logger::SetLogSender([](uint16_t type, const uint8_t* data, size_t len) {
@@ -163,7 +193,10 @@ int app_main()
     uint32_t ticks_ms = 0;
     ConfigStorage config_storage(hi2c1);
     Protector protector(config_storage);
-    // Renderer renderer(screen, keyboard);
+
+    HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
+                          audio_transmit_mode, audio_receive_mode, screen, battery);
+    renderer.Render(HAL_GetTick());
 
     audio_chip.Init();
     audio_chip.StartI2S();
@@ -171,7 +204,6 @@ int app_main()
     // Test in case the audio chip settings change and something looks suspicious
     CountNumAudioInterrupts(audio_chip, sleeping);
 
-    // InitScreen(screen);
     Leds(LOW, LOW, LOW);
     net_serial.StartReceive();
 
@@ -186,6 +218,12 @@ int app_main()
 
     uint32_t sleep_timeout = 0;
 
+    renderer.ChangeView(Renderer::View::Chat);
+
+    screen.CommitText("Test1", 5);
+    screen.CommitText("Test2", 5);
+
+    uint32_t timeout = HAL_GetTick();
     while (1)
     {
         Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
@@ -209,6 +247,11 @@ int app_main()
         {
             // Error("Main loop", "Flags did not match expected");
         }
+
+        // Reset the speaker, if there is packet, by time we get to render this will be redrawn
+        // the other option we can do is all icons get a timer, and if the DrawIcon on their type
+        // doesn't come it it will default to off.
+        screen.DrawIcon(Screen::IconType::Speaker, false);
 
         if (volume_up.ShortPress() || volume_up.RepeatedPress())
         {
@@ -235,13 +278,15 @@ int app_main()
         CheckPTT(protector, loopback_mode);
         CheckPTTAI(protector, loopback_mode);
 
-        // HandleKeypress(screen, keyboard, net_serial, protector);
+        HandleKeypress(screen, keyboard, net_serial, protector);
 
-        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode);
+        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode,
+                             screen);
         HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
-                              audio_transmit_mode, audio_receive_mode);
+                              audio_transmit_mode, audio_receive_mode, screen, battery);
 
-        // renderer.Render(ticks_ms);
+        renderer.Render(ticks_ms);
+
         // TODO remove?
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
@@ -275,7 +320,6 @@ inline void LowPowerMode()
 
 inline void WakeUp()
 {
-
     HAL_ResumeTick();
     sleeping = false;
 }
@@ -312,23 +356,25 @@ void CheckPTT(Protector& protector, const UiLoopbackMode loopback_mode)
     if ((ptt.IsHeld() || mic_ptt.IsHeld()))
     {
         pressed = true;
+        screen.DrawIcon(Screen::IconType::Mic, true);
         SendAudio(protector, ui_net_link::Channel_Id::Ptt, false, loopback_mode);
     }
     else if (pressed && (!ptt.IsHeld() && !ptt.IsHeld()))
     {
         pressed = false;
+        screen.DrawIcon(Screen::IconType::Mic, false);
         SendAudio(protector, ui_net_link::Channel_Id::Ptt, true, loopback_mode);
     }
 }
 
 void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
 {
-
     // Send talk start and sot packets
     if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_SET
         && ptt_ai_state != Ptt_Btn_State::Pressed)
     {
         HAL_TIM_Base_Stop(&htim5);
+        screen.DrawIcon(Screen::IconType::Mic, true);
         ptt_ai_state = Ptt_Btn_State::Pressed;
         LedBOn();
     }
@@ -347,6 +393,7 @@ void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
     if (ptt_ai_state == Ptt_Btn_State::Last_Send)
     {
         SendAudio(protector, ui_net_link::Channel_Id::Ptt_Ai, true, loopback_mode);
+        screen.DrawIcon(Screen::IconType::Mic, false);
         ptt_ai_state = Ptt_Btn_State::Released;
     }
 }
@@ -361,7 +408,6 @@ void ConstructPacketHeader(link_packet_t& message_packet,
 
 void SendAudioToMgmt(link_packet_t& packet, const bool last)
 {
-
     static bool first = true;
 
     if (first)
@@ -549,7 +595,19 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
     AudioCallback();
 }
 
+void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef* hspi)
+{
+    __disable_irq();
+    screen.Render();
+    __enable_irq();
+}
+
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
+{
+    screen.Transfer();
+}
+
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
 {
     UNUSED(hspi);
 }
@@ -559,7 +617,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     // Keyboard timer callback!
     if (htim->Instance == TIM2)
     {
-        // keyboard.Scan(HAL_GetTick());
         ptt.Update(HAL_GetTick());
         mic_ptt.Update(HAL_GetTick());
         ptt_ai.Update(HAL_GetTick());
@@ -584,6 +641,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
         HAL_TIM_Base_Stop(&htim5);
         ptt_ai_state = Ptt_Btn_State::Last_Send;
         LedBOff();
+    }
+    else if (htim->Instance == TIM6)
+    {
+        keyboard.Scan(HAL_GetTick());
     }
 }
 

@@ -1,7 +1,29 @@
 #include "screen.hh"
+#include "audio_icon.hh"
+#include "battery_icon.hh"
+#include "font.hh"
+#include "graphics.hh"
+#include "ili9341.hh"
+#include "main.h"
+#include "moq_icon.hh"
+#include "stm32f4xx_hal_gpio.h"
+#include "wifi_icon.hh"
 #include <math.h>
+#include <cstdint>
+#include <cstring>
 
-Screen::Screen(SPI_HandleTypeDef& hspi,
+Screen::Screen(uint16_t* scanline_buffer,
+               const uint16_t num_lines,
+               const uint16_t num_cols,
+               const uint16_t num_buffs,
+               uint8_t* data_buff,
+               const uint16_t data_buff_width,
+               const uint16_t data_buff_height,
+               const uint16_t quantization,
+               const Battery& battery,
+               const uint16_t screen_width_pixels,
+               const uint16_t screen_height_pixels,
+               SPI_HandleTypeDef& hspi,
                GPIO_TypeDef* cs_port,
                const uint16_t cs_pin,
                GPIO_TypeDef* dc_port,
@@ -10,554 +32,309 @@ Screen::Screen(SPI_HandleTypeDef& hspi,
                const uint16_t rst_pin,
                GPIO_TypeDef* bl_port,
                const uint16_t bl_pin,
-               Orientation orientation) :
-    spi(&hspi),
-    cs_port(cs_port),
-    cs_pin(cs_pin),
-    dc_port(dc_port),
-    dc_pin(dc_pin),
-    rst_port(rst_port),
-    rst_pin(rst_pin),
-    bl_port(bl_port),
-    bl_pin(bl_pin),
-    orientation(orientation),
-    view_height(HEIGHT),
-    view_width(WIDTH),
-    memories{0},
-    memory_read_idx(0),
-    memories_in_use(0),
-    memory_write_idx(0),
-    row(0),
-    end_row(0),
-    row_start_update(0xFFFF),
-    row_end_update(0),
-    updating(false),
-    restart_update(false),
-    scan_window{0},
+               ILI9341::Orientation orientation) :
+    scanline_buffer(scanline_buffer),
+    num_lines(num_lines),
+    num_cols(num_cols),
+    num_buffs(num_buffs),
+    data_buff(data_buff),
+    data_buff_width(data_buff_width),
+    data_buff_height(data_buff_height),
+    quantization(quantization),
+    battery(battery),
+    ili9341(screen_width_pixels,
+            screen_height_pixels,
+            hspi,
+            cs_port,
+            cs_pin,
+            dc_port,
+            dc_pin,
+            rst_port,
+            rst_pin,
+            bl_port,
+            bl_pin,
+            orientation),
+    scanline_ptr(scanline_buffer),
+    scanline_idx(0),
+    rasterize_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
+    draw_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
+    render_height(0),
+    title_x1(0),
+    title_x2(0),
     title_buffer{0},
-    text_idx(0),
+    title_len(0),
+    text_write(0),
+    text_read(0),
     texts_in_use(0),
     scroll_offset(0),
-    text_buffer{0},
+    text_buffer{},
+    text_lens{},
+    max_texts(Max_Texts),
     usr_buffer{0},
-    usr_buffer_idx(0)
+    usr_buffer_idx(0),
+    shapes(20),
+    icons_x_offset(0),
+    usr_text_y_offset(0),
+    texts_area_y_offset(0),
+    scroll_area_height(0),
+    last_ticks_ms(0),
+    last_update_ticks_ms(0),
+    update_flags(0),
+    render_flags(0)
 {
 }
 
-// NOTE, we never deselect the screen because its the only
-// thing on our spi bus.
 void Screen::Init()
 {
-    Select();
-    Reset();
-
-    WriteCommand(SF_RST);
-    HAL_Delay(5); // wait 5ms
-
-    // Set power control A
-    WriteCommand(PWRC_A);
-    uint8_t power_a_data[5] = {0x39, 0x2C, 0x00, 0x34, 0x02};
-    WriteDataWithSet(power_a_data, 5);
-
-    // Set power control B
-    WriteCommand(PWRC_B);
-    uint8_t power_b_data[3] = {0x00, 0xC1, 0x30};
-    WriteDataWithSet(power_b_data, 3);
-
-    // Driver timing control A
-    WriteCommand(TIMC_A);
-    uint8_t timer_a_data[3] = {0x85, 0x00, 0x78};
-    WriteDataWithSet(timer_a_data, 3);
-
-    // Driver timing control B
-    WriteCommand(TIMC_B);
-    uint8_t timer_b_data[2] = {0x00, 0x00};
-    WriteDataWithSet(timer_b_data, 2);
-
-    // Power on sequence control
-    WriteCommand(PWR_ON);
-    uint8_t power_data[4] = {0x64, 0x03, 0x12, 0x81};
-    WriteDataWithSet(power_data, 4);
-
-    // Pump ratio control
-    WriteCommand(PMP_RA);
-    WriteDataWithSet(0x20);
-
-    // Power control VRH[5:0]
-    WriteCommand(PC_VRH); // 0xC0
-    WriteDataWithSet(0x23);
-
-    // Power control SAP[2:0];BT[3:0]
-    WriteCommand(PC_SAP); // 0xC1
-    WriteDataWithSet(0x10);
-
-    // VCM Control 1
-    WriteCommand(VCM_C1);
-    uint8_t vcm_control[2] = {0x3E, 0x28};
-    WriteDataWithSet(vcm_control, 2);
-
-    // VCM Control 2
-    WriteCommand(VCM_C2);
-    WriteDataWithSet(0x86);
-
-    // Memory access control
-    WriteCommand(MEM_CR);
-    WriteDataWithSet(0x48);
-
-    // Pixel format
-    WriteCommand(PIX_FM);
-    WriteDataWithSet(0x55);
-
-    // Frame ratio control. RGB Color
-    WriteCommand(FR_CTL); // 0xB1
-    uint8_t fr_control_data[2] = {0x00, 0x18};
-    WriteDataWithSet(fr_control_data, 2);
-
-    // Display function control
-    WriteCommand(DIS_CT); // 0xB6
-    uint8_t df_control_data[3] = {0x08, 0x82, 0x27};
-    WriteDataWithSet(df_control_data, 3);
-
-    // 3Gamma function
-    WriteCommand(GAMM_3); // 0xF2
-    WriteDataWithSet(0x00);
-
-    // Gamma curve selected
-    WriteCommand(GAMM_C); // 0x26
-    WriteDataWithSet(0x01);
-
-    // Positive Gamma correction
-    WriteCommand(GAM_PC); // 0xE0
-    uint8_t positive_gamma_correction_data[15] = {0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1,
-                                                  0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00};
-    WriteDataWithSet(positive_gamma_correction_data, 15);
-
-    // Negative gamma correction
-    WriteCommand(GAM_NC);
-    uint8_t negative_gamma_correction_data[15] = {0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1,
-                                                  0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F};
-    WriteDataWithSet(negative_gamma_correction_data, 15);
-
-    WriteCommand(NORON); // 0x13
-    // Exit sleep
-    WriteCommand(END_SL); // 0x11
-
-    HAL_Delay(120);
-
-    // Display on
-    WriteCommand(DIS_ON); // 0x29
-
-    // Set the orientation of the screen
-    SetOrientation(orientation);
+    ili9341.Init();
+    CalculateDrawAreas();
 }
 
-// TODO use different draw code based on the orientation?
-// FIX - need to change where we start reading memories from the oldest
-void Screen::Draw(uint32_t timeout)
+void Screen::Draw(const uint32_t timeout)
 {
     UNUSED(timeout);
-    if (restart_update)
-    {
-        row = row_start_update;
-        end_row = row_end_update;
-        row_start_update = 0xFFFF;
-        row_end_update = 0;
-        restart_update = false;
-        updating = true;
-    }
 
-    if (!updating)
+    if (ReadFlag(render_flags, RenderFlags::Rendering))
     {
         return;
     }
 
-    // Go through all of the memories
-    const uint16_t y1 = row;
-    const uint16_t y2 = (end_row - row) < (uint16_t)Num_Rows ? end_row : row + Num_Rows;
-
-    uint32_t memories_read = 0;
-    uint32_t num_memories_used = memories_in_use;
-    bool buff_updated = false;
-    uint16_t x1 = view_width;
-    uint16_t x2 = 0;
-    for (uint16_t j = 0; j < Num_Memories && memories_read < num_memories_used; ++j)
+    if (shapes.Unread())
     {
-        // Get a memory
-        DrawMemory& memory = memories[j];
 
-        switch (memory.status)
+        UI_LOG_INFO("Shapes to rasterize! %d", shapes.Unread());
+        // Empty the queue
+        while (shapes.Unread())
         {
-        case MemoryStatus::Free:
-        {
-            continue;
-            break;
-        }
-        case MemoryStatus::In_Progress:
-        {
-            ++memories_read;
-            if (memory.callback(memory, matrix, y1, y2))
+            Graphics::Shape& shape = shapes.Read();
+            if (shape.done)
             {
-                if (memory.x1 < x1)
-                {
-                    x1 = memory.x1;
-                }
-
-                if (memory.x2 > x2)
-                {
-                    x2 = memory.x2;
-                }
-
-                buff_updated = true;
+                continue;
             }
 
-            if (y2 >= memory.y2)
-            {
-                memory.status = MemoryStatus::Free;
-                memory.read_idx = 0;
-                memory.write_idx = 0;
-                --memories_in_use;
-            }
+            Graphics::Graphics::bound_t bound = Graphics::GetBounds(shape);
+            RasterizeShape(shape, bound);
+        }
 
-            break;
-        }
-        default:
-        {
-            // Should never be able to get here.
-            Error("Screen Draw", "Should be impossible to get here!");
-            break;
-        }
-        }
+        RaiseFlag(render_flags, RenderFlags::Rasterized);
     }
 
-    row += Num_Rows;
-    if (row >= end_row)
-    {
-        row = 0;
-        updating = false;
-    }
-
-    if (!buff_updated)
+    if (!TakeFlag(render_flags, RenderFlags::Rasterized))
     {
         return;
     }
 
-    // Buffer mod variable
-    uint32_t mod = 0;
-    uint32_t x1_offset = x1 * 2;
-    SetWriteablePixels(x1, x2 - 1, y1, y2 - 1);
-    for (uint16_t i = y1; i < y2; ++i)
+    draw_bound = rasterize_bound;
+    ResetBound(rasterize_bound);
+
+    draw_bound.x2 = std::min<uint16_t>(draw_bound.x2, ili9341.GetWidth());
+    draw_bound.y2 = std::min<uint16_t>(draw_bound.y2, ili9341.GetHeight());
+    if (draw_bound.x1 >= draw_bound.x2 || draw_bound.y1 >= draw_bound.y2)
     {
-        const uint16_t mod_offset = mod * Width_Pixel_Size;
-        for (uint16_t j = x1; j < x2; ++j)
-        {
-            // Convert matrix into scan window update
-            const uint16_t mat_idx = j / 2;
-            const uint16_t scan_idx = mod_offset + (j * 2);
-            if (j & 0x0001)
-            {
-                // Second half
-                uint8_t c = (matrix[i][mat_idx] & 0x0F);
-                uint16_t colour_v = Colour_Map[c];
-                scan_window[scan_idx] = colour_v >> 8;
-                scan_window[scan_idx + 1] = colour_v & 0x00FF;
-            }
-            else
-            {
-                // First half
-                uint8_t c = matrix[i][mat_idx] >> 4;
-                uint16_t colour_v = Colour_Map[c];
-                scan_window[scan_idx] = colour_v >> 8;
-                scan_window[scan_idx + 1] = colour_v & 0x00FF;
-            }
-        }
-        WriteDataWithSet((scan_window + mod_offset) + x1_offset, (x2 - x1) * 2);
-        mod = !mod;
+        return;
+    }
+
+    RaiseFlag(render_flags, Rendering);
+    ili9341.SetRenderRegion(draw_bound.x1, draw_bound.y1, draw_bound.x2 - 1, draw_bound.y2 - 1);
+    ili9341.Select();
+
+    Render();
+    Transfer();
+}
+
+void Screen::Update(const uint32_t ticks_ms)
+{
+    last_ticks_ms = ticks_ms;
+    if (last_ticks_ms - last_update_ticks_ms >= 1000)
+    {
+        const uint32_t solid = ReadFlag(update_flags, UpdateFlags::CursorSolid);
+        DrawCursor(solid);
     }
 }
 
-void Screen::Sleep()
+void Screen::Render()
 {
-    // TODO
+    if (draw_bound.y1 >= draw_bound.y2)
+    {
+        return;
+    }
+
+    scanline_ptr = &scanline_buffer[scanline_idx * num_lines * num_cols];
+    render_height = std::min<const uint16_t>(draw_bound.y2 - draw_bound.y1, num_lines);
+    const uint16_t render_width = draw_bound.x2 - draw_bound.x1;
+
+    const uint16_t quantization_divisor = 8 / quantization;
+    uint16_t y_start = draw_bound.y1;
+    for (uint16_t y = 0; y < render_height; ++y)
+    {
+        uint16_t x_start = draw_bound.x1;
+        uint16_t x_end = draw_bound.x2;
+        const uint16_t y_offset = y_start * data_buff_width;
+
+        // Determine if the x1 is a odd value
+        if (x_start & 0x01)
+        {
+            const uint16_t data_buff_idx = (x_start / quantization_divisor) + y_offset;
+            const uint8_t quant_colour =
+                (data_buff[data_buff_idx] >> (4 * ((x_start ^ 0x0001) & 0x0001))) & 0x0F;
+            const uint16_t real_colour = Colour_Map[quant_colour];
+
+            scanline_ptr[(x_start - draw_bound.x1) + y * render_width] = real_colour;
+
+            ++x_start;
+        }
+
+        if (x_end & 0x01)
+        {
+            --x_end;
+
+            const uint16_t data_buff_idx = (x_end / quantization_divisor) + y_offset;
+            const uint8_t quant_colour =
+                (data_buff[data_buff_idx] >> (4 * ((x_end ^ 0x0001) & 0x0001))) & 0x0F;
+            const uint16_t real_colour = Colour_Map[quant_colour];
+
+            scanline_ptr[(x_end - draw_bound.x1) + y * render_width] = real_colour;
+        }
+
+        const uint16_t y_render_offset = y * render_width;
+        for (uint16_t x = x_start; x < x_end; x += 2)
+        {
+            const uint16_t data_buff_idx = (x / quantization_divisor) + y_offset;
+            const uint8_t quant_colour = data_buff[data_buff_idx];
+            const uint16_t upper_colour = Colour_Map[quant_colour >> 4];
+            const uint16_t lower_colour = Colour_Map[quant_colour & 0x0F];
+
+            scanline_ptr[(x - draw_bound.x1) + y_render_offset] = upper_colour;
+            scanline_ptr[(x + 1 - draw_bound.x1) + y_render_offset] = lower_colour;
+        }
+
+        ++y_start;
+    }
 }
 
-void Screen::Wake()
+void Screen::Transfer()
 {
-    // TODO
-}
+    if (draw_bound.y1 >= draw_bound.y2)
+    {
+        LowerFlag(render_flags, RenderFlags::Rendering);
+        ili9341.Deselect();
+        return;
+    }
 
-void Screen::Reset()
-{
-    HAL_GPIO_WritePin(rst_port, rst_pin, GPIO_PIN_RESET);
-    HAL_Delay(50);
-    HAL_GPIO_WritePin(rst_port, rst_pin, GPIO_PIN_SET);
-}
+    const uint16_t render_width = draw_bound.x2 - draw_bound.x1;
+    const uint16_t render_height =
+        std::min<const uint16_t>(draw_bound.y2 - draw_bound.y1, num_lines);
 
-void Screen::Select()
-{
-    HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
-}
+    scanline_ptr = &scanline_buffer[scanline_idx * num_lines * num_cols];
+    auto res = ili9341.WriteDataDMA(reinterpret_cast<const uint8_t*>(scanline_ptr),
+                                    render_width * sizeof(uint16_t) * render_height);
 
-void Screen::Deselect()
-{
-    HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
+    if (res == HAL_OK)
+    {
+        draw_bound.y1 += render_height;
+
+        ++scanline_idx;
+        if (scanline_idx >= num_buffs)
+        {
+            scanline_idx = 0;
+        }
+    }
+    else
+    {
+        UI_LOG_ERROR("Failed to start screen DMA transfer");
+        LowerFlag(render_flags, RenderFlags::Rendering);
+        ili9341.Deselect();
+        FullRefresh();
+    }
 }
 
 void Screen::EnableBacklight()
 {
-    HAL_GPIO_WritePin(bl_port, bl_pin, GPIO_PIN_SET);
+    ili9341.EnableBacklight();
 }
 
 void Screen::DisableBacklight()
 {
-    HAL_GPIO_WritePin(bl_port, bl_pin, GPIO_PIN_RESET);
+    ili9341.DisableBacklight();
 }
 
-void Screen::SetWriteablePixels(const int16_t x1,
-                                const int16_t x2,
-                                const int16_t y1,
-                                const int16_t y2)
+void Screen::FullRefresh()
 {
-    uint8_t col_data[] = {
-        static_cast<uint8_t>(x1 >> 8),
-        static_cast<uint8_t>(x1),
-        static_cast<uint8_t>(x2 >> 8),
-        static_cast<uint8_t>(x2),
+    Graphics::ExpandBound(rasterize_bound, {
+                                               .x1 = 0,
+                                               .y1 = 0,
+                                               .x2 = ili9341.GetWidth(),
+                                               .y2 = ili9341.GetHeight(),
+                                           });
+    RaiseFlag(render_flags, RenderFlags::Rasterized);
+}
+
+void Screen::FillScreen(const Graphics::Colour colour)
+{
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = 0,
+                .y1 = 0,
+                .x2 = ili9341.GetWidth(),
+                .y2 = ili9341.GetHeight(),
+                .colour = colour,
+            },
     };
 
-    uint8_t scan_window[] = {
-        static_cast<uint8_t>(y1 >> 8),
-        static_cast<uint8_t>(y1),
-        static_cast<uint8_t>(y2 >> 8),
-        static_cast<uint8_t>(y2),
-    };
-
-    WriteCommand(CA_SET);
-    WriteDataWithSet(col_data, sizeof(col_data));
-
-    WriteCommand(RA_SET);
-    WriteDataWithSet(scan_window, sizeof(scan_window));
-
-    WriteCommand(WR_RAM);
-    SetPinToData();
-}
-
-void Screen::SetOrientation(const Screen::Orientation orientation)
-{
-    // TODO fix
-    // TODO add scroll area math
-    switch (orientation)
-    {
-    case Orientation::portrait:
-        view_width = WIDTH;
-        view_height = HEIGHT;
-
-        WriteCommand(MAD_CT);
-        WriteDataWithSet(PORTRAIT_DATA);
-        break;
-    case Orientation::flipped_portrait:
-        view_width = WIDTH;
-        view_height = HEIGHT;
-
-        WriteCommand(MAD_CT);
-        WriteDataWithSet(FLIPPED_PORTRAIT_DATA);
-        break;
-    case Orientation::left_landscape:
-        view_width = HEIGHT;
-        view_height = WIDTH;
-
-        WriteCommand(MAD_CT);
-        WriteDataWithSet(LEFT_LANDSCAPE_DATA);
-        break;
-    case Orientation::right_landscape:
-        view_width = HEIGHT;
-        view_height = WIDTH;
-
-        WriteCommand(MAD_CT);
-        WriteDataWithSet(RIGHT_LANDSCAPE_DATA);
-        break;
-    default:
-        // Do nothing
-        break;
-    }
-
-    row_bytes = view_width * 2;
-    this->orientation = orientation;
-
-    DefineScrollArea(Top_Fixed_Area, Scroll_Area_Height, Bottom_Fixed_Area);
-}
-
-void Screen::FillRectangle(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, const Colour colour)
-{
-    HandleBounds(x1, x2, y1, y2);
-
-    AllocateMemory(x1, x2, y1, y2, colour, FillRectangleProcedure);
-}
-
-void Screen::FillScreen(const Colour colour)
-{
-    FillRectangle(0, view_width, 0, view_height, colour);
-}
-
-void Screen::DrawRectangle(uint16_t x1,
-                           uint16_t x2,
-                           uint16_t y1,
-                           uint16_t y2,
-                           const uint16_t thickness,
-                           const Colour colour)
-{
-    HandleBounds(x1, x2, y1, y2);
-
-    DrawMemory& memory = AllocateMemory(x1, x2, y1, y2, colour, DrawRectangleProcedure);
-
-    PushMemoryParameter(memory, thickness, 2);
-}
-
-void Screen::DrawCharacter(
-    uint16_t x, uint16_t y, const char ch, const Font& font, const Colour fg, const Colour bg)
-{
-    const uint16_t x2 = x + font.width;
-    const uint16_t y2 = y + font.height;
-    const uint16_t offset = (ch - 32) * font.height * (font.width / 8 + 1);
-    const uintptr_t ch_addr = (uintptr_t)(font.data + offset);
-
-    DrawMemory& memory = AllocateMemory(x, x2, y, y2, fg, DrawCharacterProcedure);
-
-    PushMemoryParameter(memory, (uint32_t)bg, 1);
-    PushMemoryParameter(memory, ch_addr, 4);
-}
-
-void Screen::DrawString(uint16_t x,
-                        uint16_t y,
-                        const char* str,
-                        const uint16_t length,
-                        const Font& font,
-                        const Colour fg,
-                        const Colour bg)
-{
-    // Get the maximum num of characters for a single line
-    const uint16_t len =
-        x + length * static_cast<uint16_t>(font.width) > WIDTH ? (WIDTH - x) / font.width : length;
-    const uint16_t width = len * font.width;
-
-    const uint16_t x2 = x + width;
-    const uint16_t y2 = y + font.height;
-
-    DrawMemory& memory = AllocateMemory(x, x2, y, y2, fg, DrawStringProcedure);
-
-    PushMemoryParameter(memory, (uint32_t)bg, 1);
-    PushMemoryParameter(memory, (uint32_t)str, 4);
-    PushMemoryParameter(memory, font.width, 1);
-    PushMemoryParameter(memory, font.height, 1);
-    PushMemoryParameter(memory, (uint32_t)font.data, 4);
-}
-
-void Screen::DefineScrollArea(const uint16_t tfa_idx,
-                              const uint16_t vsa_idx,
-                              const uint16_t bfa_idx)
-{
-    switch (orientation)
-    {
-    // TODO note- I have no idea if flipped portrait is the same as portrait
-    case Orientation::portrait:
-    case Orientation::left_landscape:
-    {
-        uint8_t vert_scroll_def_data[] = {
-            static_cast<uint8_t>(tfa_idx >> 8), static_cast<uint8_t>(tfa_idx),
-            static_cast<uint8_t>(vsa_idx >> 8), static_cast<uint8_t>(vsa_idx),
-            static_cast<uint8_t>(bfa_idx >> 8), static_cast<uint8_t>(bfa_idx),
-        };
-        WriteCommand(VSCRDEF);
-        WriteDataWithSet(vert_scroll_def_data, 6);
-
-        break;
-    }
-    case Orientation::flipped_portrait:
-    case Orientation::right_landscape:
-    {
-        uint8_t vert_scroll_def_data[] = {
-            static_cast<uint8_t>(bfa_idx >> 8), static_cast<uint8_t>(bfa_idx),
-            static_cast<uint8_t>(vsa_idx >> 8), static_cast<uint8_t>(vsa_idx),
-            static_cast<uint8_t>(tfa_idx >> 8), static_cast<uint8_t>(tfa_idx),
-        };
-        WriteCommand(VSCRDEF);
-        WriteDataWithSet(vert_scroll_def_data, 6);
-
-        break;
-    }
-    default:
-    {
-        return;
-    }
-    }
-}
-
-void Screen::ScrollScreen(const uint16_t scroll_idx, bool up)
-{
-    static uint16_t scroll_d = 0;
-
-    switch (orientation)
-    {
-    case Orientation::portrait:
-    case Orientation::left_landscape:
-    {
-        if (up)
-        {
-            scroll_d = scroll_idx;
-        }
-        else
-        {
-            scroll_d = view_height - scroll_idx;
-        }
-        break;
-    }
-    case Orientation::flipped_portrait:
-    case Orientation::right_landscape:
-    {
-        if (up)
-        {
-            scroll_d = view_height - scroll_idx;
-        }
-        else
-        {
-            scroll_d = scroll_idx;
-        }
-        break;
-    }
-    default:
-    {
-        scroll_d = 0;
-        return;
-    }
-    }
-
-    uint8_t vert_scroll_idx_data[] = {static_cast<uint8_t>(scroll_d >> 8),
-                                      static_cast<uint8_t>(scroll_d)};
-
-    WriteCommand(VSCRSADD);
-    WriteDataWithSet(vert_scroll_idx_data, 2);
+    SubmitShape(rec);
 }
 
 void Screen::UpdateTitle(const char* title, const uint32_t len)
 {
-    // TODO calculate left padding to center the text
-    const uint32_t actual_len = len < Title_Length ? len : Title_Length;
-    for (uint32_t i = 0; i < actual_len; ++i)
+    const uint16_t title_len = len < Max_Title_Length ? len : Max_Title_Length;
+    for (uint16_t i = 0; i < title_len; ++i)
     {
         title_buffer[i] = title[i];
     }
 
     // Clear the Title section
-    // TODO constexpr of magic numbers
-    FillRectangle(0, view_width, 0, 20, Colour::Black);
-    DrawString(5, 2, title_buffer, actual_len, title_font, Colour::White, Colour::Black);
+    Graphics::Shape clear_rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = title_x1,
+                .y1 = Title_y1,
+                .x2 = title_x2,
+                .y2 = static_cast<const uint16_t>(Title_y1 + title_font.height),
+                .colour = Graphics::Colour::Black,
+            },
+    };
+
+    SubmitShape(clear_rec);
+
+    const uint16_t next_x2 = title_x1 + title_len * title_font.width;
+    title_x2 = next_x2 > title_x2 ? next_x2 : title_x2;
+
+    Graphics::Shape title_shape = {
+        .type = Graphics::ShapeType::String,
+        .string =
+            {
+                .str = title_buffer,
+                .len = title_len,
+                .x = title_x1,
+                .y = Title_y1,
+                .font = &title_font,
+                .foreground = Graphics::Colour::White,
+                .background = Graphics::Colour::Black,
+            },
+    };
+
+    SubmitShape(title_shape);
 }
 
 void Screen::AppendText(const char* text, const uint32_t len)
 {
     // Work our way down
     const uint32_t num_bytes = Max_Characters < len ? Max_Characters : len;
-    char* text_buf = text_buffer[text_idx];
-    char& text_len = text_lens[text_idx];
+    char* text_buf = text_buffer[text_write];
+    char& text_len = text_lens[text_write];
 
     size_t idx = 0;
     while (text_len < Max_Characters && idx < num_bytes)
@@ -568,38 +345,45 @@ void Screen::AppendText(const char* text, const uint32_t len)
 
 void Screen::CommitText()
 {
-    const uint16_t y = Top_Fixed_Area + font5x8.height * text_idx;
-    // Send a scroll text command if we have a full text buff
-    if (texts_in_use >= Max_Texts)
+    ScrollText();
+
+    Graphics::Shape str = {
+        .type = Graphics::ShapeType::String,
+        .string =
+            {
+                .str = text_buffer[text_read],
+                .len = text_lens[text_read],
+                .x = 0,
+                .y = static_cast<uint16_t>(texts_area_y_offset - text_font.height),
+                .font = &text_font,
+                .foreground = Graphics::Colour::White,
+                .background = Graphics::Colour::Black,
+            },
+    };
+
+    SubmitShape(str);
+
+    if (texts_in_use < max_texts)
     {
-
-        FillRectangle(0, view_width, y, y + font5x8.height, Colour::Black);
-        DrawString(0, y, text_buffer[text_idx], text_lens[text_idx], font5x8, Colour::White,
-                   Colour::Black);
-
-        scroll_offset += font5x8.height;
-        if (scroll_offset >= Scroll_Area_Height)
-        {
-            scroll_offset = 0;
-        }
-        ScrollScreen(Top_Fixed_Area + scroll_offset, true);
-
-        // Draw a rectangle to remove the text from the screen.
-        // TODO replace colour with a class variable
+        ++texts_in_use;
     }
     else
     {
-        ++texts_in_use;
-        // Enqueue the string draw
-        DrawString(0, y, text_buffer[text_idx], text_lens[text_idx], font5x8, Colour::White,
-                   Colour::Black);
     }
 
-    if (++text_idx >= Max_Texts)
+    ++text_write;
+    if (text_write >= max_texts)
     {
-        text_idx = 0;
+        text_write = 0;
     }
-    text_lens[text_idx] = 0;
+    ++text_read;
+    if (text_read >= max_texts)
+    {
+        text_read = 0;
+    }
+
+    // Clear the next write
+    text_lens[text_write] = '\0';
 }
 
 void Screen::CommitText(const char* text, const uint32_t len)
@@ -621,10 +405,26 @@ void Screen::AppendUserText(const char* text, const uint32_t len)
         usr_buffer[usr_buffer_idx + i] = text[i];
     }
 
-    DrawString(usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
-               usr_buffer + usr_buffer_idx, num_char, font7x12, Colour::White, Colour::Black);
+    const uint16_t x1 = static_cast<uint16_t>(usr_buffer_idx * text_font.width);
+    Graphics::Shape str = {
+        .type = Graphics::ShapeType::String,
+        .string =
+            {
+                .str = usr_buffer + usr_buffer_idx,
+                .len = static_cast<uint16_t>(num_char),
+                .x = x1,
+                .y = usr_text_y_offset,
+                .font = &text_font,
+                .foreground = Graphics::Colour::White,
+                .background = Graphics::Colour::Black,
+            },
+    };
+
+    SubmitShape(str);
 
     usr_buffer_idx += num_char;
+
+    DrawCursor(true);
 }
 
 void Screen::AppendUserText(const char ch)
@@ -636,10 +436,26 @@ void Screen::AppendUserText(const char ch)
 
     usr_buffer[usr_buffer_idx] = ch;
 
-    DrawString(usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
-               usr_buffer + usr_buffer_idx, 1, font7x12, Colour::White, Colour::Black);
+    const uint16_t x1 = static_cast<uint16_t>(usr_buffer_idx * text_font.width);
+    Graphics::Shape str = {
+        .type = Graphics::ShapeType::String,
+        .string =
+            {
+                .str = usr_buffer + usr_buffer_idx,
+                .len = static_cast<uint16_t>(1),
+                .x = x1,
+                .y = usr_text_y_offset,
+                .font = &text_font,
+                .foreground = Graphics::Colour::White,
+                .background = Graphics::Colour::Black,
+            },
+    };
+
+    SubmitShape(str);
 
     ++usr_buffer_idx;
+
+    DrawCursor(true);
 }
 
 void Screen::BackspaceUserText()
@@ -649,19 +465,50 @@ void Screen::BackspaceUserText()
         return;
     }
 
-    --usr_buffer_idx;
+    const uint16_t x1 = usr_buffer_idx * text_font.width;
+    const uint16_t x2 = std::min<uint16_t>(x1 + text_font.width * 2, ili9341.GetWidth());
+    const uint16_t y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height);
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = x1,
+                .y1 = usr_text_y_offset,
+                .x2 = x2,
+                .y2 = y2,
+                .colour = Graphics::Colour::Black,
+            },
+    };
 
-    FillRectangle(usr_buffer_idx * font7x12.width, (usr_buffer_idx + 1) * font7x12.width,
-                  User_Text_Height_Offset, User_Text_Height_Offset + font7x12.height,
-                  Colour::Black);
+    SubmitShape(rec);
+
+    usr_buffer[--usr_buffer_idx] = '\0';
+
+    DrawCursor(true);
 }
 
 void Screen::ClearUserText()
 {
-    FillRectangle(0, usr_buffer_idx * font7x12.width, User_Text_Height_Offset,
-                  User_Text_Height_Offset + font7x12.height, Colour::Black);
+    const uint16_t x2 = static_cast<uint16_t>(ili9341.GetWidth());
+    const uint16_t y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height);
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = 0,
+                .y1 = usr_text_y_offset,
+                .x2 = x2,
+                .y2 = y2,
+                .colour = Graphics::Colour::Black,
+            },
+    };
 
+    SubmitShape(rec);
+
+    std::memset(usr_buffer, 0, usr_buffer_idx);
     usr_buffer_idx = 0;
+
+    DrawCursor(true);
 }
 
 const char* Screen::UserText() const noexcept
@@ -674,447 +521,276 @@ uint16_t Screen::UserTextLength() const noexcept
     return usr_buffer_idx;
 }
 
-// Private functions
-
-inline void Screen::WaitForSPIComplete()
+void Screen::RotateScreen(ILI9341::Orientation orientation)
 {
-    while (spi->State != HAL_SPI_STATE_READY)
-    {
-        __NOP();
-    }
+    ili9341.Rotate(orientation);
+    CalculateDrawAreas();
 }
 
-inline void Screen::SetPinToCommand()
+void Screen::CalculateDrawAreas()
 {
-    HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_RESET);
+    usr_text_y_offset = ili9341.GetHeight() - text_font.height;
+    texts_area_y_offset = ili9341.GetHeight() - Bottom_Fixed_Height;
+    scroll_area_height = texts_area_y_offset - Top_Fixed_Height;
+
+    max_texts = scroll_area_height / text_font.height;
 }
 
-inline void Screen::SetPinToData()
+void Screen::RaiseFlag(uint32_t& flags, const uint32_t flag)
 {
-    HAL_GPIO_WritePin(dc_port, dc_pin, GPIO_PIN_SET);
+    flags |= flag;
 }
 
-void Screen::WriteCommand(uint8_t cmd)
+void Screen::LowerFlag(uint32_t& flags, const uint32_t flag)
 {
-    WaitForSPIComplete();
-    SetPinToCommand();
-    HAL_SPI_Transmit_DMA(spi, &cmd, sizeof(cmd));
+    flags &= ~flag;
 }
 
-void Screen::WriteCommand(uint8_t cmd, uint8_t* data, const uint32_t sz)
+uint32_t Screen::ReadFlag(const uint32_t flags, const uint32_t flag)
 {
-    WriteCommand(cmd);
-    WriteData(data, sz);
+    return flags & flag;
 }
 
-// SetPinToData needs to be called before this function
-void Screen::WriteData(uint8_t* data, const uint32_t data_size)
+uint32_t Screen::TakeFlag(uint32_t& flags)
 {
-    WaitForSPIComplete();
-    HAL_SPI_Transmit_DMA(spi, data, data_size);
+    const uint32_t flag = flags & (~flags + 1);
+    LowerFlag(flags, flag);
+    return flag;
 }
 
-void Screen::WriteDataWithSet(uint8_t data)
+uint32_t Screen::TakeFlag(uint32_t& flags, const uint32_t flag)
 {
-    WaitForSPIComplete();
-    SetPinToData();
-    HAL_SPI_Transmit_DMA(spi, &data, sizeof(data));
+    const uint32_t f = ReadFlag(flags, flag);
+    LowerFlag(flags, flag);
+    return f;
 }
 
-void Screen::WriteDataWithSet(uint8_t* data, const uint32_t data_size)
+void Screen::DrawTitleLine()
 {
-    WaitForSPIComplete();
-    SetPinToData();
-    HAL_SPI_Transmit_DMA(spi, data, data_size);
-}
-
-Screen::DrawMemory& Screen::AllocateMemory(const uint16_t x1,
-                                           const uint16_t x2,
-                                           const uint16_t y1,
-                                           const uint16_t y2,
-                                           const Colour colour,
-                                           MemoryCallback callback)
-{
-    if (memories_in_use >= Num_Memories)
-    {
-        Error("Screen Draw", "Num memories overflow");
-    }
-
-    if (memory_write_idx >= Num_Memories)
-    {
-        memory_write_idx = 0;
-    }
-
-    Screen::DrawMemory& memory = memories[memory_write_idx++];
-
-    restart_update = true;
-    ++memories_in_use;
-    memory.status = MemoryStatus::In_Progress;
-
-    memory.x1 = x1;
-    memory.x2 = x2;
-    memory.y1 = y1;
-    memory.y2 = y2;
-    memory.colour = colour;
-    memory.callback = callback;
-
-    if (y1 < row_start_update)
-    {
-        row_start_update = y1;
-    }
-    if (y2 > row_end_update)
-    {
-        row_end_update = y2;
-    }
-
-    return memory;
-}
-
-void Screen::NormalMode()
-{
-    // Send a dma command
-}
-
-bool Screen::FillRectangleProcedure(DrawMemory& memory,
-                                    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-                                    const int16_t y1,
-                                    const int16_t y2)
-{
-    // See if rectangle is in the current scan line
-    if (y1 >= memory.y2 || y2 <= memory.y1)
-    {
-        return false;
-    }
-
-    // Get the y bounds
-    YBound bound = GetYBounds(y1, y2, memory.y1, memory.y2);
-
-    uint8_t colour_high = (uint8_t)memory.colour << 4;
-    uint8_t colour_low = (uint8_t)memory.colour & 0x0F;
-
-    for (uint16_t i = bound.y1; i < bound.y2; ++i)
-    {
-        for (uint16_t j = memory.x1; j < memory.x2; ++j)
-        {
-            FillMatrixAtIdx(matrix, i, j, colour_high, colour_low);
-        }
-    }
-
-    return true;
-}
-
-void Screen::DrawRectangleProcedure(const int16_t x1,
-                                    const int16_t x2,
-                                    const int16_t y1,
-                                    const int16_t y2,
-                                    const uint16_t thickness,
-                                    const Colour colour)
-{
-    // TODO flash fill of matrix
-}
-
-bool Screen::DrawRectangleProcedure(DrawMemory& memory,
-                                    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-                                    const int16_t y1,
-                                    const int16_t y2)
-{
-    // See if rectangle is in the current scan line
-    if (y1 >= memory.y2 || y2 <= memory.y1)
-    {
-        return false;
-    }
-
-    const uint16_t thickness = PullMemoryParameter<uint16_t>(memory);
-
-    // Get the y bounds
-    YBound bound = GetYBounds(y1, y2, memory.y1, memory.y2);
-
-    uint8_t colour_high = (uint8_t)memory.colour << 4;
-    uint8_t colour_low = (uint8_t)memory.colour & 0x0F;
-
-    // Check for the "top rectangle"
-    if (y1 <= memory.y1)
-    {
-        const uint16_t y1_thick = bound.y1 + thickness < bound.y2 ? bound.y1 + thickness : bound.y2;
-        // In the bounds of the top rectangle
-        for (uint16_t i = bound.y1; i < y1_thick; ++i)
-        {
-            for (uint16_t j = memory.x1; j < memory.x2; ++j)
+    constexpr uint16_t line_x1 = 0;
+    constexpr uint16_t line_y1 = Top_Fixed_Height - 1;
+    const uint16_t line_x2 = ili9341.GetWidth();
+    constexpr uint16_t line_y2 = Top_Fixed_Height;
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
             {
-                FillMatrixAtIdx(matrix, i, j, colour_high, colour_low);
-            }
-        }
-    }
+                .x1 = line_x1,
+                .y1 = line_y1,
+                .x2 = line_x2,
+                .y2 = line_y2,
+                .colour = Graphics::Colour::White,
+            },
+    };
 
-    // Check for the "bottom rectangle"
-    if (y2 >= memory.y2)
-    {
-        const uint16_t y2_thick = bound.y2 - thickness > bound.y1 ? bound.y2 - thickness : bound.y1;
-        // In the bounds of the top rectangle
-        for (uint16_t i = y2_thick; i < bound.y2; ++i)
-        {
-            for (uint16_t j = memory.x1; j < memory.x2; ++j)
-            {
-                FillMatrixAtIdx(matrix, i, j, colour_high, colour_low);
-            }
-        }
-    }
-
-    const uint16_t x1_thick = memory.x1 + thickness;
-    const uint16_t x2_thick = memory.x2 - thickness;
-    // Do the side rectangles
-    for (uint16_t i = bound.y1; i < bound.y2; ++i)
-    {
-        uint16_t left_v = memory.x1;
-        uint16_t right_v = x2_thick;
-        while (left_v < x1_thick)
-        {
-            FillMatrixAtIdx(matrix, i, left_v, colour_high, colour_low);
-            FillMatrixAtIdx(matrix, i, right_v, colour_high, colour_low);
-            ++right_v;
-            ++left_v;
-        }
-    }
-
-    return true;
+    SubmitShape(rec);
 }
 
-bool Screen::DrawCharacterProcedure(DrawMemory& memory,
-                                    uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-                                    const int16_t y1,
-                                    const int16_t y2)
+void Screen::DrawUserLine()
 {
-    if (y1 >= memory.y2 || y2 <= memory.y1)
-    {
-        return false;
-    }
-
-    const uint8_t bg = PullMemoryParameter<uint8_t>(memory);
-    uint8_t* ch_ptr = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
-
-    uint16_t w_off = 0;
-
-    YBound bounds = GetYBounds(y1, y2, memory.y1, memory.y2);
-
-    uint8_t fg_high = (uint8_t)memory.colour << 4;
-    uint8_t fg_low = (uint8_t)memory.colour & 0x0F;
-    uint8_t bg_high = bg << 4;
-    uint8_t bg_low = bg & 0x0F;
-
-    for (uint16_t i = bounds.y1; i < bounds.y2; ++i)
-    {
-        w_off = 0;
-        for (uint16_t j = memory.x1; j < memory.x2; ++j)
-        {
-            if ((*ch_ptr << w_off) & 0x80)
+    constexpr uint16_t line_x1 = 0;
+    const uint16_t line_y1 = ili9341.GetHeight() - Bottom_Fixed_Height;
+    const uint16_t line_x2 = ili9341.GetWidth();
+    const uint16_t line_y2 = ili9341.GetHeight() - Bottom_Fixed_Height + 1;
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
             {
-                FillMatrixAtIdx(matrix, i, j, fg_high, fg_low);
-            }
-            else
-            {
-                FillMatrixAtIdx(matrix, i, j, bg_high, bg_low);
-            }
+                .x1 = line_x1,
+                .y1 = line_y1,
+                .x2 = line_x2,
+                .y2 = line_y2,
+                .colour = Graphics::Colour::White,
+            },
+    };
 
-            ++w_off;
-            if (w_off >= 8)
-            {
-                w_off = 0;
-
-                // At the end of the byte's bits, if a font > 8 bits
-                // then we need to slide to the next byte. which is in the same
-                // column
-                ++ch_ptr;
-            }
-        }
-
-        // Slide the pointer to the next row byte
-        ++ch_ptr;
-    }
-
-    ch_ptr = nullptr;
-
-    return true;
+    SubmitShape(rec);
 }
 
-bool Screen::DrawStringProcedure(DrawMemory& memory,
-                                 uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-                                 const int16_t y1,
-                                 const int16_t y2)
+void Screen::DrawIcon(const IconType icon_type, const bool flag)
 {
-    // TODO put into function
-    if (y1 >= memory.y2 || y2 <= memory.y1)
+    const Bitmap* map = nullptr;
+    constexpr uint16_t margin = 2;
+    uint16_t x = ili9341.GetWidth();
+
+    switch (icon_type)
     {
-        return false;
-    }
-
-    const uint8_t bg = PullMemoryParameter<uint8_t>(memory);
-    const uint8_t* str = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
-    const uint8_t font_width = PullMemoryParameter<uint8_t>(memory);
-    const uint8_t font_height = PullMemoryParameter<uint8_t>(memory);
-    uint8_t* font_data = (uint8_t*)PullMemoryParameter<uint32_t>(memory);
-
-    const uint16_t bytes_per_char = (font_width / 8) + 1;
-
-    uint16_t ch_idx = 0;
-    uint8_t* ch_ptr = nullptr;
-
-    // How many iterations we've been at the same character
-    // If it exceeds the font width that means we are on the next
-    // character in the string
-    uint16_t x_char_iter = 0;
-    uint16_t w_off = 0;
-
-    // Get the current number of scan line already passed
-    uint16_t y_char_iter = 0;
-    if (y1 > memory.y1)
-    {
-        // We have done some line
-        y_char_iter = (y1 - memory.y1);
-    }
-
-    YBound bounds = GetYBounds(y1, y2, memory.y1, memory.y2);
-
-    uint8_t fg_high = (uint8_t)memory.colour << 4;
-    uint8_t fg_low = (uint8_t)memory.colour & 0x0F;
-    uint8_t bg_high = bg << 4;
-    uint8_t bg_low = bg & 0x0F;
-
-    for (uint16_t i = bounds.y1; i < bounds.y2; ++i)
-    {
-        x_char_iter = 0;
-        w_off = 0;
-        ch_idx = 0;
-        ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width, font_height)
-               + (y_char_iter * bytes_per_char);
-
-        for (uint16_t j = memory.x1; j < memory.x2; ++j)
-        {
-            if ((*ch_ptr << w_off) & 0x80)
-            {
-                FillMatrixAtIdx(matrix, i, j, fg_high, fg_low);
-            }
-            else
-            {
-                FillMatrixAtIdx(matrix, i, j, bg_high, bg_low);
-            }
-
-            ++w_off;
-            ++x_char_iter;
-
-            // Check if we are on the next character
-            if (x_char_iter >= font_width)
-            {
-                x_char_iter = 0;
-
-                // Get the character
-                ++ch_idx;
-                ch_ptr = GetCharAddr(font_data, str[ch_idx], font_width, font_height)
-                       + (y_char_iter * bytes_per_char);
-
-                // Next character and reset w_off
-                w_off = 0;
-            }
-
-            if (w_off >= 8)
-            {
-                w_off = 0;
-
-                // At the end of the byte's bits, if a font > 8 bits
-                // then we need to slide to the next byte. which is in the same
-                // column
-                ++ch_ptr;
-            }
-        }
-
-        // Slide the pointer is the next row
-        ++y_char_iter;
-    }
-
-    ch_ptr = nullptr;
-    font_data = nullptr;
-
-    return true;
-}
-
-void Screen::HandleBounds(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
-{
-    if (x1 >= view_width || y1 >= view_height)
-    {
+    case IconType::Speaker:
+        x -= (Audio_Up_20x18::bitmap.width + margin + Mic_Up_20x18::bitmap.width + margin
+              + Moq_Up_20x18::bitmap.width + margin + Wifi_Up_20x18::bitmap.width + margin
+              + Battery_Critical_20x18::bitmap.width + margin);
+        map = flag ? &Audio_Up_20x18::bitmap : &Audio_Down_20x18::bitmap;
+        break;
+    case IconType::Mic:
+        x -= (Mic_Up_20x18::bitmap.width + margin + Moq_Up_20x18::bitmap.width + margin
+              + Wifi_Up_20x18::bitmap.width + margin + Battery_Critical_20x18::bitmap.width
+              + margin);
+        map = flag ? &Mic_Up_20x18::bitmap : &Mic_Down_20x18::bitmap;
+        break;
+    case IconType::Moq:
+        x -= (Moq_Up_20x18::bitmap.width + margin + Wifi_Up_20x18::bitmap.width + margin
+              + Battery_Critical_20x18::bitmap.width + margin);
+        map = flag ? &Moq_Up_20x18::bitmap : &Moq_Down_20x18::bitmap;
+        break;
+    case IconType::Wifi:
+        x -= (Wifi_Up_20x18::bitmap.width + margin + Battery_Critical_20x18::bitmap.width + margin);
+        map = flag ? &Wifi_Up_20x18::bitmap : &Wifi_Down_20x18::bitmap;
+        break;
+    case IconType::Battery:
+        x -= (Battery_Critical_20x18::bitmap.width + margin);
+        map = battery.GetIcon();
+        break;
+    default:
         return;
     }
 
-    if (x2 >= view_width)
-    {
-        x2 = view_width;
-    }
+    const uint16_t y = Icon_Position_Y1;
+    Graphics::Shape shape = {
+        .type = Graphics::ShapeType::Bitmap,
+        .bitmap =
+            {
+                .x = x,
+                .y = y,
+                .map = map,
+                .foreground = Graphics::Colour::White,
+                .background = Graphics::Colour::Black,
+            },
+    };
 
-    if (x1 > x2)
-    {
-        const uint16_t tmp = x1;
-        x1 = x2;
-        x2 = tmp;
-    }
-
-    if (y1 > y2)
-    {
-        const uint16_t tmp = y1;
-        y1 = y2;
-        y2 = tmp;
-    }
+    SubmitShape(shape);
 }
 
-inline uint8_t* Screen::GetCharAddr(uint8_t* font_data,
-                                    const uint8_t ch,
-                                    const uint16_t font_width,
-                                    const uint16_t font_height)
+bool Screen::IsRendering()
 {
-    return font_data + ((ch - 32) * font_height * (font_width / 8 + 1));
+    return ReadFlag(render_flags, RenderFlags::Rendering);
 }
 
-inline void
-Screen::PushMemoryParameter(DrawMemory& memory, const uint32_t val, const int16_t num_bytes)
+uint16_t Screen::PixelWidth()
 {
-    const int16_t bytes = num_bytes < 4 ? num_bytes : 4;
-
-    uint8_t& idx = memory.write_idx;
-    for (int16_t i = 0; i < bytes; ++i)
-    {
-        // We are relying on truncation to save a cycle
-        memory.parameters[idx] = (val >> (8 * i));
-        ++idx;
-    }
+    return ili9341.GetWidth();
 }
 
-// TODO colour HIGH and colour LOW to save calculating it everytime.
-// Each byte stores two pixels of colour.
-// The first half is the "even" pixel and the second half is the "odd" pixel
-inline void Screen::FillMatrixAtIdx(uint8_t matrix[HEIGHT][Half_Width_Pixel_Size],
-                                    const uint16_t i,
-                                    const uint16_t j,
-                                    const uint8_t colour_high,
-                                    const uint8_t colour_low)
+uint16_t Screen::PixelHeight()
 {
-    const uint16_t idx = j / 2;
-    if (j & 0x0001)
+    return ili9341.GetHeight();
+}
+
+void Screen::DrawCursor(const bool solid)
+{
+    const uint16_t x1 = static_cast<uint16_t>(usr_buffer_idx * text_font.width);
+    const uint16_t x2 = std::min<uint16_t>(x1 + text_font.width, ili9341.GetWidth());
+    const uint16_t y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height);
+
+    // Clear or fill in
+    Graphics::Shape rec = {
+        .type = Graphics::ShapeType::FillRectangle,
+        .fill_rectangle =
+            {
+                .x1 = x1,
+                .y1 = usr_text_y_offset,
+                .x2 = x2,
+                .y2 = y2,
+                .colour = solid ? Graphics::Colour::White : Graphics::Colour::Black,
+            },
+    };
+
+    SubmitShape(rec);
+
+    if (solid)
     {
-        matrix[i][idx] = (matrix[i][idx] & 0xF0) | colour_low;
+        LowerFlag(update_flags, UpdateFlags::CursorSolid);
     }
     else
     {
-        matrix[i][idx] = (matrix[i][idx] & 0x0F) | colour_high;
+        Graphics::Shape rec = {
+            .type = Graphics::ShapeType::Rectangle,
+            .rectangle =
+                {
+                    .x1 = x1,
+                    .y1 = usr_text_y_offset,
+                    .x2 = x2,
+                    .y2 = y2,
+                    .thickness = 1,
+                    .colour = Graphics::Colour::White,
+                },
+        };
+        SubmitShape(rec);
+        RaiseFlag(update_flags, UpdateFlags::CursorSolid);
     }
+
+    last_update_ticks_ms = last_ticks_ms;
 }
 
-inline Screen::YBound Screen::GetYBounds(const uint16_t y1,
-                                         const uint16_t y2,
-                                         const uint16_t mem_y1,
-                                         const uint16_t mem_y2)
+void Screen::ResetBound(Graphics::bound_t& bound)
 {
-    const uint16_t y_start = y1 > mem_y1 ? y1 : mem_y1;
-    const uint16_t y_end = y2 < mem_y2 ? y2 : mem_y2;
+    bound.x1 = ili9341.GetWidth();
+    bound.y1 = ili9341.GetHeight();
+    bound.x2 = 0;
+    bound.y2 = 0;
+}
 
-    // const uint16_t y_start = y1 > mem_y1 ? 0 : mem_y1 - y1;
-    // const uint16_t y_end = y2 < mem_y2 ? y2 - y1 : mem_y2 - y1;
+bool Screen::SubmitShape(Graphics::Shape& shape)
+{
+    const Graphics::Graphics::bound_t bound = Graphics::GetBounds(shape);
+    if (!ReadFlag(render_flags, RenderFlags::Rendering))
+    {
+        if (shapes.Unread() > 0)
+        {
+            shapes.Write(shape);
+        }
+        else
+        {
+            RasterizeShape(shape, bound);
+            RaiseFlag(render_flags, RenderFlags::Rasterized);
+        }
+    }
+    else
+    {
+        if (Graphics::Intersecting(bound, draw_bound))
+        {
+            if (shapes.IsFull())
+            {
+                UI_LOG_ERROR("Screen::SubmitShape: shape queue full; submission rejected");
+                return false;
+            }
+            shapes.Write(shape);
+        }
+        else
+        {
+            RasterizeShape(shape, bound);
+            RaiseFlag(render_flags, RenderFlags::Rasterized);
+        }
+    }
+    return true;
+}
 
-    return {y_start, y_end};
+void Screen::RasterizeShape(Graphics::Shape& shape, const Graphics::bound_t& bound)
+{
+    Graphics::Rasterize(shape, data_buff, data_buff_width, data_buff_height);
+    Graphics::ExpandBound(rasterize_bound, bound);
+}
+
+void Screen::ScrollText()
+{
+    const uint16_t dest_idx = texts_in_use < max_texts ? texts_in_use + 1 : texts_in_use;
+    const uint16_t src_idx = texts_in_use < max_texts ? texts_in_use : texts_in_use - 1;
+
+    uint16_t dest_y = texts_area_y_offset - dest_idx * text_font.height;
+    const uint16_t src_y1 = texts_area_y_offset - src_idx * text_font.height;
+    const uint16_t src_y2 = texts_area_y_offset;
+
+    Graphics::Shape mem = {
+        .type = Graphics::ShapeType::Mem,
+        .mem =
+            {
+                .x1 = 0,
+                .x2 = data_buff_width * 2,
+                .dest_y = dest_y,
+                .src_y1 = src_y1,
+                .src_y2 = src_y2,
+                .y_step = text_font.height,
+            },
+    };
+
+    SubmitShape(mem);
 }

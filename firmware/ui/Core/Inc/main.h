@@ -115,6 +115,8 @@ void Error_Handler(void);
 #define UI_LED_B_GPIO_Port GPIOC
 #define KB_ROW3_Pin GPIO_PIN_9
 #define KB_ROW3_GPIO_Port GPIOC
+#define DISP_BL_Pin GPIO_PIN_8
+#define DISP_BL_GPIO_Port GPIOA
 #define UI_TX1_MGMT_Pin GPIO_PIN_9
 #define UI_TX1_MGMT_GPIO_Port GPIOA
 #define UI_RX1_MGMT_Pin GPIO_PIN_10
@@ -129,6 +131,8 @@ void Error_Handler(void);
 #define KB_ROW4_GPIO_Port GPIOC
 #define VOLUME_DOWN_Pin GPIO_PIN_2
 #define VOLUME_DOWN_GPIO_Port GPIOD
+#define DISP_CS_Pin GPIO_PIN_3
+#define DISP_CS_GPIO_Port GPIOB
 #define I2S_ADCDAT_Pin GPIO_PIN_4
 #define I2S_ADCDAT_GPIO_Port GPIOB
 #define I2S_DACDAT_Pin GPIO_PIN_5

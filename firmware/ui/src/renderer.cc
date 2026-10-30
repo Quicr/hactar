@@ -1,4 +1,6 @@
 #include "renderer.hh"
+#include "graphics.hh"
+#include "splash_logo.hh"
 
 Renderer::Renderer(Screen& screen, Keyboard& keyboard) :
     screen(screen),
@@ -43,7 +45,7 @@ void Renderer::Render(const uint32_t ticks) noexcept
     }
     }
 
-    // Do other stuff.
+    screen.Update(ticks);
     screen.Draw(ticks);
 }
 
@@ -57,9 +59,23 @@ void Renderer::StartupView(const uint32_t ticks) noexcept
 {
     if (change_view)
     {
-        screen.FillScreen(Colour::Black);
-        screen.UpdateTitle("Loading", 7);
-        change_view = false;
+        const uint16_t x = (screen.PixelWidth() - Splash_Logo_240x120::bitmap.width) / 2;
+        const uint16_t y = (screen.PixelHeight() - Splash_Logo_240x120::bitmap.height) / 2;
+        screen.FillScreen(Graphics::Colour::Black);
+        Graphics::Shape logo = {
+            .done = false,
+            .type = Graphics::ShapeType::Bitmap,
+            .bitmap =
+                {
+                    .x = x,
+                    .y = y,
+                    .map = &Splash_Logo_240x120::bitmap,
+                    .foreground = Graphics::Colour::White,
+                    .background = Graphics::Colour::Black,
+                },
+        };
+
+        screen.SubmitShape(logo);
     }
 }
 
@@ -67,10 +83,7 @@ void Renderer::ChatView(const uint32_t ticks) noexcept
 {
     if (change_view)
     {
-        screen.FillScreen(Colour::Black);
-        screen.UpdateTitle("Chat room", 9);
-
-        change_view = false;
+        Refresh("Chat", 4, ticks);
     }
 }
 
@@ -78,8 +91,10 @@ void Renderer::MainMenuView(const uint32_t ticks) noexcept
 {
     if (change_view)
     {
-        screen.FillScreen(Colour::Black);
+        screen.FillScreen(Graphics::Colour::Black);
         screen.UpdateTitle("Main menu", 9);
+        screen.DrawTitleLine();
+        screen.DrawUserLine();
 
         screen.CommitText("1. Chat", 7);
         screen.CommitText("2. Wifi", 7);
@@ -94,4 +109,18 @@ void Renderer::RoomsView(const uint32_t ticks) noexcept
 
 void Renderer::WifiView(const uint32_t ticks) noexcept
 {
+}
+
+void Renderer::Refresh(const char* title, const size_t title_len, const uint32_t ticks) noexcept
+{
+    screen.FillScreen(Graphics::Colour::Black);
+    screen.UpdateTitle(title, title_len);
+    screen.DrawTitleLine();
+    screen.DrawUserLine();
+    screen.DrawIcon(Screen::IconType::Wifi, false);
+    screen.DrawIcon(Screen::IconType::Moq, false);
+    screen.DrawIcon(Screen::IconType::Speaker, false);
+    screen.DrawIcon(Screen::IconType::Mic, false);
+    screen.DrawIcon(Screen::IconType::Battery, false);
+    change_view = false;
 }

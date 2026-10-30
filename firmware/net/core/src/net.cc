@@ -145,9 +145,13 @@ extern "C" void app_main(void)
     // Log warnings if namespaces are not configured (no defaults - must be configured via
     // fl-identity)
     // TODO maybe we should loop forever at this point?
-    if (config.channel_ns.empty())
+    if (config.ptt_channel_ns.empty())
     {
-        NET_LOG_WARN("Channel namespace not configured - device needs configuration");
+        NET_LOG_WARN("PTT Channel namespace not configured - device needs configuration");
+    }
+    if (config.chat_channel_ns.empty())
+    {
+        NET_LOG_WARN("Chat channel namespace not configured - device needs configuration");
     }
     if (config.ai_query_ns.empty() || config.ai_audio_response_ns.empty()
         || config.ai_cmd_response_ns.empty())
@@ -226,6 +230,12 @@ extern "C" void app_main(void)
                 {
                     moq_context.RestartSession(moq_config);
                 }
+
+                link_packet_t packet;
+                packet.type = static_cast<uint16_t>(ui_net_link::NetToUi::WifiStatus);
+                packet.length = 1;
+                packet.payload[0] = 0;
+                ui_layer.Write(packet);
                 break;
             }
             case Wifi::State::Initialized:
@@ -236,6 +246,12 @@ extern "C" void app_main(void)
             {
                 gpio_set_level(NET_LED_R, 1);
                 gpio_set_level(NET_LED_G, 0);
+
+                link_packet_t packet;
+                packet.type = static_cast<uint16_t>(ui_net_link::NetToUi::WifiStatus);
+                packet.length = 1;
+                packet.payload[0] = 1;
+                ui_layer.Write(packet);
                 break;
             }
             default:
@@ -258,6 +274,12 @@ extern "C" void app_main(void)
                 moq_context.UpdateAITracks(config);
                 moq_context.StartTracks();
 
+                link_packet_t packet;
+                packet.type = static_cast<uint16_t>(ui_net_link::NetToUi::MoqStatus);
+                packet.length = 1;
+                packet.payload[0] = 1;
+                ui_layer.Write(packet);
+
                 break;
             }
             case moq::Session::Status::kNotConnected:
@@ -269,6 +291,12 @@ extern "C" void app_main(void)
             }
             case moq::Session::Status::kNotReady:
             {
+                link_packet_t packet;
+                packet.type = static_cast<uint16_t>(ui_net_link::NetToUi::MoqStatus);
+                packet.length = 1;
+                packet.payload[0] = 0;
+                ui_layer.Write(packet);
+
                 NET_LOG_INFO("MOQ Transport Calling Connect");
 
                 if (!moq_context.Connect())

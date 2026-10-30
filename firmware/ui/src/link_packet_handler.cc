@@ -1,6 +1,7 @@
 #include "link_packet_handler.hh"
 #include "audio_chip.hh"
 #include "audio_codec.hh"
+#include "battery.hh"
 #include "keyboard_display.hh"
 #include "link_packet_t.hh"
 #include "logger.hh"
@@ -62,6 +63,7 @@ void HandleQuicrPackets(Serial& mgmt_serial,
                         Protector& protector,
                         AudioChip& audio,
                         const AudioReceiveMode audio_receive_mode,
+                        Screen& screen,
                         link_packet_t* packet)
 {
     // Send to mgmt, and then handle locally
@@ -79,6 +81,8 @@ void HandleQuicrPackets(Serial& mgmt_serial,
     {
         ui_net_link::Chunk* audio_chunk =
             static_cast<ui_net_link::Chunk*>(static_cast<void*>(packet->payload.data() + 1));
+
+        screen.DrawIcon(Screen::IconType::Speaker, !audio_chunk->last_chunk);
 
         switch (audio_receive_mode)
         {
@@ -120,7 +124,8 @@ void HandleQuicrPackets(Serial& mgmt_serial,
     }
     case ui_net_link::MessageType::Chat:
     {
-        // HandleChatMessages(screen, packet);
+        UI_LOG_INFO("Got chat message");
+        HandleChatMessages(screen, packet);
         break;
     }
     default:
@@ -135,7 +140,8 @@ void HandleNetLinkPackets(Serial& net_serial,
                           Serial& mgmt_serial,
                           Protector& protector,
                           AudioChip& audio,
-                          const AudioReceiveMode audio_receive_mode)
+                          const AudioReceiveMode audio_receive_mode,
+                          Screen& screen)
 {
     while (true)
     {
@@ -144,6 +150,8 @@ void HandleNetLinkPackets(Serial& net_serial,
         {
             return;
         }
+        UI_LOG_INFO("Got quicr message");
+        UI_LOG_ERROR("packet type %d", (int)packet->type);
 
         switch (static_cast<ui_net_link::NetToUi>(packet->type))
         {
@@ -156,7 +164,33 @@ void HandleNetLinkPackets(Serial& net_serial,
         }
         case ui_net_link::NetToUi::AudioFrame:
         {
-            HandleQuicrPackets(mgmt_serial, protector, audio, audio_receive_mode, packet);
+            HandleQuicrPackets(mgmt_serial, protector, audio, audio_receive_mode, screen, packet);
+            break;
+        }
+        case ui_net_link::NetToUi::WifiStatus:
+        {
+            if (packet->length < 1)
+            {
+                break;
+            }
+
+            const uint8_t wifi_status = packet->payload.data()[0];
+            UI_LOG_INFO("wifi status from net %d", wifi_status);
+
+            screen.DrawIcon(Screen::IconType::Wifi, wifi_status);
+            break;
+        }
+        case ui_net_link::NetToUi::MoqStatus:
+        {
+            if (packet->length < 1)
+            {
+                break;
+            }
+
+            const uint8_t moq_status = packet->payload.data()[0];
+            UI_LOG_INFO("wifi status from net %d", moq_status);
+
+            screen.DrawIcon(Screen::IconType::Moq, moq_status);
             break;
         }
         default:
@@ -174,7 +208,9 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
                            AudioChip& audio_chip,
                            UiLoopbackMode& loopback,
                            AudioTransmitMode& audio_transmit_mode,
-                           AudioReceiveMode& audio_receive_mode)
+                           AudioReceiveMode& audio_receive_mode,
+                           Screen& screen,
+                           Battery& battery)
 {
     while (true)
     {
@@ -562,6 +598,57 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
         }
         case CtlToUi::AudioStart:
         {
+            break;
+        }
+        case CtlToUi::AudioEnd:
+        {
+            break;
+        }
+        case CtlToUi::BlasterSend:
+        {
+            break;
+        }
+        case CtlToUi::BatteryLevel:
+        {
+            if (packet->length < 1)
+            {
+                break;
+            }
+
+            const uint8_t battery_level = packet->payload.data()[0];
+            UI_LOG_INFO("Battery level from mgmt %d", battery_level);
+
+            const Battery::State prev = battery.GetState();
+            battery.ChargeLevel(battery_level);
+
+            if (prev != battery.GetState())
+            {
+                screen.DrawIcon(Screen::IconType::Battery, false);
+            }
+
+            break;
+        }
+        case CtlToUi::UsbConnected:
+        {
+            if (packet->length < 1)
+            {
+                break;
+            }
+
+            const uint8_t usb_detected = packet->payload.data()[0];
+            UI_LOG_INFO("usb detected from mgmt %d", usb_detected);
+
+            if (usb_detected)
+            {
+                UI_LOG_INFO("drawing charging");
+                battery.Charging();
+                screen.DrawIcon(Screen::IconType::Battery, false);
+            }
+            else
+            {
+                battery.Draining();
+            }
+
             break;
         }
         default:

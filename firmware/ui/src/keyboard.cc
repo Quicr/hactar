@@ -1,4 +1,5 @@
 #include "keyboard.hh"
+#include "logger.hh"
 
 Keyboard::Keyboard(GPIO_TypeDef* col_ports[Q10_Cols],
                    uint16_t col_pins[Q10_Cols],
@@ -177,6 +178,7 @@ void Keyboard::KeyPress(const int16_t col, const int16_t row, const uint8_t latc
         // Lowercase
         ch_ring.Write(Base_Char_Map[col][row] + CHR_OFFSET);
     }
+    UI_LOG_INFO("Key was pressed %c num %d", Base_Char_Map[col][row], ch_ring.Unread());
 }
 
 void Keyboard::KeyRelease(const int16_t col, const int16_t row, const uint8_t latch_bit)
@@ -184,4 +186,5 @@ void Keyboard::KeyRelease(const int16_t col, const int16_t row, const uint8_t la
     latches[col] &= ~latch_bit;
 
     FlagRelease(col, row);
+    UI_LOG_INFO("Key was released %c", Base_Char_Map[col][row]);
 }

@@ -18,13 +18,15 @@ public:
     StoredValue<uint64_t> user_id;
     StoredValue<std::string> user_name;
     StoredValue<std::string> language;
-    StoredValue<std::string> channel_ns_json;
+    StoredValue<std::string> ptt_channel_ns_json;
+    StoredValue<std::string> chat_channel_ns_json;
     StoredValue<std::string> ai_query_ns_json;
     StoredValue<std::string> ai_audio_response_ns_json;
     StoredValue<std::string> ai_cmd_response_ns_json;
 
     // In-memory namespace caches (decoded from JSON)
-    std::vector<std::string> channel_ns;
+    std::vector<std::string> ptt_channel_ns;
+    std::vector<std::string> chat_channel_ns;
     std::vector<std::string> ai_query_ns;
     std::vector<std::string> ai_audio_response_ns;
     std::vector<std::string> ai_cmd_response_ns;
@@ -34,15 +36,16 @@ public:
         user_id(storage, "config", "user_id"),
         user_name(storage, "config", "user_name"),
         language(storage, "config", "language"),
-        channel_ns_json(storage, "config", "channel_ns"),
+        ptt_channel_ns_json(storage, "config", "ptt_ns"),
+        chat_channel_ns_json(storage, "config", "cht_ns"),
         ai_query_ns_json(storage, "config", "ai_qry_ns"),
         ai_audio_response_ns_json(storage, "config", "ai_aud_ns"),
         ai_cmd_response_ns_json(storage, "config", "ai_cmd_ns"),
-        channel_ns(),
+        ptt_channel_ns(),
+        chat_channel_ns(),
         ai_query_ns(),
         ai_audio_response_ns(),
         ai_cmd_response_ns()
-
     {
     }
 
@@ -99,7 +102,8 @@ public:
             ns = parsed.value_or(std::vector<std::string>{});
         };
 
-        load_ns(channel_ns_json, channel_ns);
+        load_ns(ptt_channel_ns_json, ptt_channel_ns);
+        load_ns(chat_channel_ns_json, chat_channel_ns);
         load_ns(ai_query_ns_json, ai_query_ns);
         load_ns(ai_audio_response_ns_json, ai_audio_response_ns);
         load_ns(ai_cmd_response_ns_json, ai_cmd_response_ns);
