@@ -226,15 +226,25 @@ void Screen::Transfer()
         std::min<const uint16_t>(draw_bound.y2 - draw_bound.y1, num_lines);
 
     scanline_ptr = &scanline_buffer[scanline_idx * num_lines * num_cols];
-    ili9341.WriteDataDMA(reinterpret_cast<const uint8_t*>(scanline_ptr),
-                         render_width * sizeof(uint16_t) * render_height);
+    auto res = ili9341.WriteDataDMA(reinterpret_cast<const uint8_t*>(scanline_ptr),
+                                    render_width * sizeof(uint16_t) * render_height);
 
-    draw_bound.y1 += render_height;
-
-    ++scanline_idx;
-    if (scanline_idx >= num_buffs)
+    if (res == HAL_OK)
     {
-        scanline_idx = 0;
+        draw_bound.y1 += render_height;
+
+        ++scanline_idx;
+        if (scanline_idx >= num_buffs)
+        {
+            scanline_idx = 0;
+        }
+    }
+    else
+    {
+        UI_LOG_ERROR("Failed to start screen DMA transfer");
+        LowerFlag(render_flags, RenderFlags::Rendering);
+        ili9341.Deselect();
+        FullRefresh();
     }
 }
 

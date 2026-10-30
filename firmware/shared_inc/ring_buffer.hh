@@ -15,6 +15,7 @@ public:
         size(size),
         read_idx(0),
         write_idx(0),
+        unread(0),
         buffer(nullptr),
         busy(false)
     {
@@ -42,6 +43,8 @@ public:
 
         T& out = buffer[write_idx++];
 
+        IncrementUnread();
+
         BusyReset();
         return out;
     }
@@ -52,7 +55,11 @@ public:
         buffer[write_idx++] = std::move(d_in);
 
         if (write_idx >= size)
+        {
             write_idx = 0;
+        }
+
+        IncrementUnread();
 
         BusyReset();
     }
@@ -82,6 +89,12 @@ public:
             buffer[write_idx++] = std::move(input[i]);
         }
 
+        unread += count;
+        if (unread >= size)
+        {
+            unread = size;
+        }
+
         BusyReset();
     }
 
@@ -95,6 +108,8 @@ public:
         {
             read_idx = 0;
         }
+
+        DecrementUnread();
 
         BusyReset();
         return d_out;
@@ -111,6 +126,8 @@ public:
             read_idx = 0;
         }
 
+        DecrementUnread();
+
         BusyReset();
         return d_out;
     }
@@ -126,6 +143,8 @@ public:
             read_idx = 0;
         }
 
+        DecrementUnread();
+
         is_end = read_idx == write_idx;
         BusyReset();
     }
@@ -137,19 +156,12 @@ public:
 
     uint16_t Unread() const
     {
-        if (write_idx >= read_idx)
-        {
-            return write_idx - read_idx;
-        }
-        else
-        {
-            return size - read_idx + write_idx;
-        }
+        return unread;
     }
 
     bool IsFull() const
     {
-        return size == Unread();
+        return size == unread;
     }
 
     T* Buffer()
@@ -168,6 +180,23 @@ public:
     }
 
 private:
+    inline void IncrementUnread()
+    {
+        ++unread;
+        if (unread >= size)
+        {
+            unread = size;
+        }
+    }
+
+    inline void DecrementUnread()
+    {
+        if (unread <= 0)
+        {
+            return;
+        }
+        --unread;
+    }
     inline void BusySet()
     {
         if (busy)
@@ -187,6 +216,7 @@ private:
     uint16_t size;
     uint16_t read_idx;  // start
     uint16_t write_idx; // end
+    uint16_t unread;
     T* buffer;
     bool busy;
 };

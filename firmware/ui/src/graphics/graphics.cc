@@ -24,6 +24,17 @@ bool Graphics::Intersecting(const bound_t& b1, const bound_t& b2)
 
 void Graphics::ExpandBound(bound_t& to, const bound_t& from)
 {
+    if (from.x1 >= from.x2 || from.y1 >= from.y2)
+    {
+        return;
+    }
+
+    if (to.x1 >= to.x2 || to.y1 >= to.y2)
+    {
+        to = from;
+        return;
+    }
+
     to.x1 = std::min<uint16_t>(to.x1, from.x1);
     to.y1 = std::min<uint16_t>(to.y1, from.y1);
     to.x2 = std::max<uint16_t>(to.x2, from.x2);
@@ -360,23 +371,24 @@ void Graphics::RasterizeFillCircle(Shape& shape,
 
     const size_t fp_width = width * 2;
 
-    const int16_t x1 = std::max<int16_t>(circle.x - circle.r, 0);
-    const int16_t x2 = std::min<int16_t>(circle.x + circle.r, fp_width);
-    const int16_t y1 = std::max<int16_t>(circle.y - circle.r, 0);
-    const int16_t y2 = std::min<int16_t>(circle.y + circle.r, height);
+    const int16_t radii = std::min<int16_t>(circle.r, 180); // 181 overflows int16_t when doubled.
+    const int16_t x1 = std::max<int16_t>(circle.x - radii, 0);
+    const int16_t x2 = std::min<int16_t>(circle.x + radii, fp_width);
+    const int16_t y1 = std::max<int16_t>(circle.y - radii, 0);
+    const int16_t y2 = std::min<int16_t>(circle.y + radii, height);
 
     const uint8_t colour_high = static_cast<uint8_t>(circle.colour) << 4;
     const uint8_t colour_low = static_cast<uint8_t>(circle.colour) & 0x0F;
 
-    const int16_t r_2 = circle.r * circle.r;
+    const int16_t r_2 = radii * radii;
 
     for (int16_t y = y1 + 1; y < y2; ++y)
     {
-        const int16_t v_dis = (y - y1 - circle.r) * (y - y1 - circle.r);
+        const int16_t v_dis = (y - y1 - radii) * (y - y1 - radii);
 
         for (int16_t x = x1 + 1; x < x2; ++x)
         {
-            const int16_t h_dis = (x - x1 - circle.r) * (x - x1 - circle.r);
+            const int16_t h_dis = (x - x1 - radii) * (x - x1 - radii);
 
             if (h_dis + v_dis <= r_2)
             {
@@ -554,12 +566,24 @@ void Graphics::RasterizeBitmap(Shape& shape, uint8_t* buff, const size_t width, 
 
 void Graphics::RasterizeMem(Shape& shape, uint8_t* buff, const size_t width, const size_t height)
 {
-
     const auto& mem = shape.mem;
-    uint16_t dest_y = mem.dest_y;
+
+    if (buff == nullptr || width == 0 || mem.src_y1 > mem.src_y2 || mem.src_y2 > height)
+    {
+        UI_LOG_ERROR("Graphics::RasterizeMem: invalid scroll range");
+        return;
+    }
+
+    uint16_t dest_y = std::min<uint16_t>(mem.dest_y, height);
+
     // Scroll the colour data
     for (uint16_t src_y = mem.src_y1; src_y < mem.src_y2; src_y += mem.y_step)
     {
+        if (dest_y >= height)
+        {
+            break;
+        }
+
         std::memcpy(buff + dest_y * width, buff + src_y * width, mem.y_step * width);
         dest_y += mem.y_step;
     }

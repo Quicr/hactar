@@ -46,7 +46,7 @@ public:
     uint16_t GetHeight() const;
 
     void WriteData(const uint8_t* data, uint16_t size);
-    void WriteDataDMA(const uint8_t* data, uint16_t size);
+    HAL_StatusTypeDef WriteDataDMA(const uint8_t* data, uint16_t size);
     void Select();
     void Deselect();
 
