@@ -165,13 +165,15 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                 handler->config.user_id = 0;
                 handler->config.user_name.stored.clear();
                 handler->config.language.stored.clear();
-                handler->config.channel_ns_json.stored.clear();
+                handler->config.ptt_channel_ns_json.stored.clear();
+                handler->config.chat_channel_ns_json.stored.clear();
                 handler->config.ai_query_ns_json.stored.clear();
                 handler->config.ai_audio_response_ns_json.stored.clear();
                 handler->config.ai_cmd_response_ns_json.stored.clear();
 
                 // Clear in-memory namespace vectors
-                handler->config.channel_ns.clear();
+                handler->config.ptt_channel_ns.clear();
+                handler->config.chat_channel_ns.clear();
                 handler->config.ai_query_ns.clear();
                 handler->config.ai_audio_response_ns.clear();
                 handler->config.ai_cmd_response_ns.clear();
@@ -358,28 +360,57 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
             case CtlToNet::SetChannel:
             {
                 std::string json_str((char*)packet->payload.data(), packet->length);
-                auto parsed = ConfigState::JsonToNamespace(json_str);
-                if (!parsed.has_value())
+                try
                 {
-                    NET_LOG_ERROR("Failed to parse channel namespace JSON");
-                    handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
-                                               "Invalid channel namespace JSON");
-                    break;
-                }
+                    json channel_config = json::parse(json_str);
+                    if (!channel_config.is_object() || !channel_config.contains("audio")
+                        || !channel_config.contains("chat"))
+                    {
+                        NET_LOG_ERROR("Channel config must be object with audio, chat fields");
+                        handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                                   "Channel config requires audio, chat fields");
+                        break;
+                    }
 
-                handler->config.channel_ns = parsed.value();
-                handler->config.channel_ns_json = json_str;
-                NET_LOG_INFO("Channel namespace set (%zu parts)",
-                             handler->config.channel_ns.size());
-                handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
-                                      std::span<const uint8_t>{});
-                handler->moq_context.UpdateChannelTracks(handler->config);
+                    auto audio_parsed =
+                        ConfigState::JsonToNamespace(channel_config["audio"].dump());
+                    auto chat_parsed = ConfigState::JsonToNamespace(channel_config["chat"].dump());
+
+                    if (!audio_parsed || !chat_parsed)
+                    {
+                        NET_LOG_ERROR("Failed to parse channel namespace arrays");
+                        handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                                   "Invalid channel namespace arrays");
+                        break;
+                    }
+
+                    handler->config.ptt_channel_ns = audio_parsed.value();
+                    handler->config.chat_channel_ns = chat_parsed.value();
+
+                    handler->config.ptt_channel_ns_json = channel_config["audio"].dump();
+                    handler->config.chat_channel_ns_json = channel_config["chat"].dump();
+
+                    NET_LOG_INFO("Channel namespaces set (audio=%zu, chat=%zu parts)",
+                                 handler->config.ptt_channel_ns.size(),
+                                 handler->config.chat_channel_ns.size());
+                    handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                          std::span<const uint8_t>{});
+                    handler->moq_context.UpdateChannelTracks(handler->config);
+                }
+                catch (const std::exception& ex)
+                {
+                    NET_LOG_ERROR("Failed to parse channel config JSON: %s", ex.what());
+                    handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
+                                               "Invalid channel config JSON");
+                }
                 break;
             }
             case CtlToNet::GetChannel:
             {
-                handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Channel),
-                                      handler->config.channel_ns_json.Load());
+                json response;
+                response["audio"] = handler->config.ptt_channel_ns;
+                response["chat"] = handler->config.chat_channel_ns;
+                handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Channel), response.dump());
                 break;
             }
             case CtlToNet::GetAi:

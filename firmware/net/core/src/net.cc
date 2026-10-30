@@ -145,9 +145,13 @@ extern "C" void app_main(void)
     // Log warnings if namespaces are not configured (no defaults - must be configured via
     // fl-identity)
     // TODO maybe we should loop forever at this point?
-    if (config.channel_ns.empty())
+    if (config.ptt_channel_ns.empty())
     {
-        NET_LOG_WARN("Channel namespace not configured - device needs configuration");
+        NET_LOG_WARN("PTT Channel namespace not configured - device needs configuration");
+    }
+    if (config.chat_channel_ns.empty())
+    {
+        NET_LOG_WARN("Chat channel namespace not configured - device needs configuration");
     }
     if (config.ai_query_ns.empty() || config.ai_audio_response_ns.empty()
         || config.ai_cmd_response_ns.empty())
