@@ -150,8 +150,8 @@ void HandleNetLinkPackets(Serial& net_serial,
         {
             return;
         }
-        UI_LOG_INFO("Got quicr message");
-        UI_LOG_ERROR("packet type %d", (int)packet->type);
+        // UI_LOG_INFO("Got quicr message");
+        // UI_LOG_ERROR("packet type %d", (int)packet->type);
 
         switch (static_cast<ui_net_link::NetToUi>(packet->type))
         {
@@ -616,7 +616,6 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             }
 
             const uint8_t battery_level = packet->payload.data()[0];
-            UI_LOG_INFO("Battery level from mgmt %d", battery_level);
 
             const Battery::State prev = battery.GetState();
             battery.ChargeLevel(battery_level);
@@ -636,11 +635,9 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
             }
 
             const uint8_t usb_detected = packet->payload.data()[0];
-            UI_LOG_INFO("usb detected from mgmt %d", usb_detected);
 
             if (usb_detected)
             {
-                UI_LOG_INFO("drawing charging");
                 battery.Charging();
                 screen.DrawIcon(Screen::IconType::Battery, false);
             }

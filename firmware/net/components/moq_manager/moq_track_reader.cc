@@ -3,12 +3,15 @@
 
 #include "moq_track_reader.hh"
 #include "chunk.hh"
+#include "freertos/idf_additions.h"
+#include "freertos/projdefs.h"
 #include "link_packet_t.hh"
 #include "logger.hh"
 #include "macros.hh"
 #include "moq_session.hh"
 #include "net.hh"
 #include "net_mgmt_link.h"
+#include "portmacro.h"
 #include "task_helpers.hh"
 #include "ui_net_link.hh"
 #include "utils.hh"
@@ -101,6 +104,8 @@ void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers,
     }
 
     byte_buffer.emplace(data.begin(), data.end());
+
+    xTaskNotifyGive(task_handle);
 }
 
 void TrackReader::StatusChanged(TrackReader::Status status)
@@ -225,33 +230,59 @@ void TrackReader::TransmitAudio()
     NET_LOG_INFO("Track reader %s", codec.c_str());
     while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
-        // TODO use notifies and then drain the entire moq objs
-        vTaskDelay(2 / portTICK_PERIOD_MS);
+        if (!ulTaskNotifyTake(pdTRUE, portMAX_DELAY))
+        {
+            continue;
+        }
 
-        AudioPlay();
         if (AudioNumAvailable() == 0)
         {
-            AudioPause();
             continue;
         }
 
-        if (!AudioPlaying())
+        // Lock the shared audio transmit sempr
+        while (!xSemaphoreTake(runtime.audio_lock_sempr, portMAX_DELAY))
         {
             continue;
         }
 
-        if (!xSemaphoreTake(runtime.audio_req_smpr, 0))
+        // NET_LOG_INFO("Taking sempr to sync");
+        while (!xSemaphoreTake(runtime.audio_req_smpr, portMAX_DELAY))
         {
             continue;
         }
 
-        auto data = AudioPopFront();
-        if (!data.has_value())
+        // NET_LOG_INFO("Track reader %s has audio", codec.c_str());
+        while (true)
         {
-            continue;
+            AudioPlay();
+            if (AudioNumAvailable() == 0)
+            {
+                AudioPause();
+                break;
+            }
+
+            if (!AudioPlaying())
+            {
+                break;
+            }
+
+            NET_LOG_INFO("Taking sempr");
+            if (!xSemaphoreTake(runtime.audio_req_smpr, pdMS_TO_TICKS(20)))
+            {
+                continue;
+            }
+
+            auto data = AudioPopFront();
+            if (!data.has_value())
+            {
+                continue;
+            }
+
+            WriteToSerial(data);
         }
 
-        WriteToSerial(data);
+        xSemaphoreGive(runtime.audio_lock_sempr);
     }
 }
 
@@ -270,7 +301,7 @@ void TrackReader::TransmitText()
         }
 
         // Only delay when buffer is empty
-        vTaskDelay(1 / portTICK_PERIOD_MS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
 

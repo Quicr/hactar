@@ -4,6 +4,7 @@
 #ifndef __MOQ_TRACK_READER__
 #define __MOQ_TRACK_READER__
 
+#include "freertos/idf_additions.h"
 #include "net.hh"
 #include "serial.hh"
 #include <quicr/client.h>

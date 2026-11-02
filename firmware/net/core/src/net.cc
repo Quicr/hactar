@@ -11,6 +11,7 @@
 #include "freertos/task.h"
 #include "link_packet_t.hh"
 #include "logger.hh"
+#include "macros.hh"
 #include "mgmt_link_handler.hh"
 #include "moq_context.hh"
 #include "net_mgmt_link.h"
@@ -32,6 +33,7 @@
 static Runtime runtime_ctx{
     .device_id = 0,
     .audio_req_smpr = xSemaphoreCreateBinary(),
+    .audio_lock_sempr = xSemaphoreCreateMutex(),
     .curr_audio_isr_time = 0,
     .last_audio_isr_time = 0,
 };
@@ -47,12 +49,15 @@ static Runtime runtime_ctx{
 #include "wifi_creds.hh"
 #endif
 
+static int cnt = 0;
+
 static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
     int gpio_num = (int)arg;
 
     if (gpio_num == UI_READY)
     {
+        ++cnt;
         runtime_ctx.last_audio_isr_time = runtime_ctx.curr_audio_isr_time;
         runtime_ctx.curr_audio_isr_time = esp_timer_get_time();
         xSemaphoreGiveFromISR(runtime_ctx.audio_req_smpr, NULL);
@@ -205,8 +210,15 @@ extern "C" void app_main(void)
 
     moq::Session::Status prev_status = moq::Session::Status::kNotConnected;
     Wifi::State prev_wifi_state = Wifi::State::Connected;
+
+    uint64_t status_timeout esp_timer_get_time_ms();
     while (true)
     {
+        if (esp_timer_get_time_ms() - status_timeout >= 1000)
+        {
+            NET_LOG_INFO("Num interupts so far %d", cnt);
+        }
+
         moq::Session::Status status = moq_context.GetStatus();
 
         Wifi::State wifi_state = wifi.GetState();
