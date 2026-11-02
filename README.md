@@ -18,10 +18,9 @@ Hardware design for test device
     3. [Network](#network)
     4. [STM32 Toolchain](#stm32-toolchain-installation)
     5. [ESP32 Toolchain](#esp32-toolchain-installation)
-8. [Software](#software)
-    1. [Hactar-cli](#hactar-cli)
-9. [Hactar Setup](#hactar_setup)
-10. [Troubleshooting](#troubleshooting)
+8. [Hactar Setup](#hactar_setup)
+9. [Troubleshooting](#troubleshooting)
+
 
 ## License
 
@@ -469,42 +468,6 @@ The following tools are used for the Network.
 - [Debian](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32/get-started/linux-macos-setup.html)
 - [MacOS](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32/get-started/linux-macos-setup.html)
 
-## Software 
-
-### Hactar-cli
-
-Hactar-cli is a multi-faceted tool, where it can flash, monitor, and send commands. We ship a version of python that includes pyserial with it.
-
-#### Flasher
-
-Generally the flasher is used automatically in the Makefile. However, you can flash whatever binary you want onto a chip that the flasher is designed for by running it as python script in the firmware/flasher folder.
-
-ex.
-
-```sh
-python3 main.py flash --port=<port> --baud=<baudrate> --chip="<chip>" -bin="./build/app.bin"
-```
-
-You can omit passing a port and the flasher will attempt to find a Hactar board by searching your active usb serial ports.
-
-```sh
-python3 main.py flash --baud=115200 --chip="ui" -bin="./build/ui.bin"
-```
-
-#### Monitor
-
-The serial monitor is a very simple serial monitor that allows a user to send commands to the mgmt chip as well as read serial logs.
-
-This monitor can be used by the following command:
-
-```sh
-python main.py monitor --port=<port> --baud=<baudrate>
-```
-
-Ex.
-```sh
-python main.py monitor --port=/dev/ttyUSB0
-```
 
 ### Hactar Setup
 
@@ -529,6 +492,7 @@ The simplest way to set up a Hactar device is to flash all chips at once from th
 
 ```bash
 # Build everything
+cd hactar
 make all
 
 # Flash all chips (MGMT, UI, NET)
@@ -560,20 +524,6 @@ make flash-net
 Note: The NET chip firmware is large and takes about 4 minutes to upload.
 
 *Debug mode example*
-
-- Prerequisites
-    - Python3
-        - **pyserial** - download using `pip3 install pyserial`
-    - make
-    - USB-C Cable
-- Have your hactar board programmed and plugged in using a USB-C cable
-- Navigate to either `hactar/firmware/ui` or `hactar/firmware/net`
-    - **NOTE** - Update your ports appropriately in the makefile
-- Enter `make py_monitor` into your terminal
-- You should see a serial monitor open in your terminal requesting a command. Enter `debug` to put the hactar board into debugging mode.
-    - See [Management Commands](#management_commands) for more commands that can be sent to the hactar board.
-- The first and third LED from the left will turn blue indicating debug mode and your console will receive serial debug messages from the UI and Net chips.
-- Enter `exit` to leave the monitor
 
 ## Troubleshooting
 
