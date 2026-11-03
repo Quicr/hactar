@@ -291,6 +291,12 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                     handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
                                           std::span<const uint8_t>{});
                     break;
+                case NetLoopbackMode::MiddleMan:
+                    handler->diagnostics.loopback = NetLoopbackMode::MiddleMan;
+                    NET_LOG_INFO("Loopback set to: middleman");
+                    handler->serial.Reply(static_cast<uint16_t>(NetToCtl::Ack),
+                                          std::span<const uint8_t>{});
+                    break;
                 case NetLoopbackMode::Moq:
                     handler->diagnostics.loopback = NetLoopbackMode::Moq;
                     NET_LOG_INFO("Loopback set to: moq");

@@ -207,41 +207,27 @@ int app_main()
     Leds(LOW, LOW, LOW);
     net_serial.StartReceive();
 
-    // TODO remove once we have a proper loading screen/view implementation
-    const uint32_t loading_done_timeout = HAL_GetTick();
-    bool done_booting = false;
-
     UI_LOG_INFO("Starting main loop");
-
-    uint32_t volume_button_press_ms = 0;
-    constexpr uint32_t Volume_Button_Debounce_ms = 200;
-
-    uint32_t sleep_timeout = 0;
 
     renderer.ChangeView(Renderer::View::Chat);
 
     screen.CommitText("Test1", 5);
     screen.CommitText("Test2", 5);
 
-    uint32_t timeout = HAL_GetTick();
     while (1)
     {
-        Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
-
-        if (!done_booting && HAL_GetTick() - loading_done_timeout >= 2000)
-        {
-            // renderer.ChangeView(Renderer::View::Chat);
-            done_booting = true;
-        }
+        // Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
 
         while (sleeping)
         {
             // LowPowerMode();
             __NOP();
         }
-
+        sleeping = true;
         ticks_ms = HAL_GetTick();
-        sleep_timeout = ticks_ms;
+        // Highest priority
+        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode,
+                             screen);
 
         if (error)
         {
@@ -280,8 +266,6 @@ int app_main()
 
         HandleKeypress(screen, keyboard, net_serial, protector);
 
-        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode,
-                             screen);
         HandleMgmtLinkPackets(mgmt_serial, net_serial, config_storage, audio_chip, loopback_mode,
                               audio_transmit_mode, audio_receive_mode, screen, battery);
 
@@ -291,8 +275,6 @@ int app_main()
         RaiseFlag(Rx_Audio_Companded);
         RaiseFlag(Rx_Audio_Transmitted);
         RaiseFlag(Draw_Complete);
-
-        sleeping = true;
     }
 
     return 0;
