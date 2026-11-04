@@ -134,6 +134,8 @@ void Screen::Draw(const uint32_t timeout)
         return;
     }
 
+    // UI_LOG_INFO("draw bounds (%d, %d), (%d, %d)", draw_bound.x1, draw_bound.y1, draw_bound.x2,
+    //             draw_bound.y2);
     RaiseFlag(render_flags, Rendering);
     ili9341.SetRenderRegion(draw_bound.x1, draw_bound.y1, draw_bound.x2 - 1, draw_bound.y2 - 1);
     ili9341.Select();
@@ -203,9 +205,10 @@ void Screen::Render()
             const uint8_t quant_colour = data_buff[data_buff_idx];
             const uint16_t upper_colour = Colour_Map[quant_colour >> 4];
             const uint16_t lower_colour = Colour_Map[quant_colour & 0x0F];
+            const size_t idx = (x - draw_bound.x1) + y_render_offset;
 
-            scanline_ptr[(x - draw_bound.x1) + y_render_offset] = upper_colour;
-            scanline_ptr[(x + 1 - draw_bound.x1) + y_render_offset] = lower_colour;
+            scanline_ptr[idx] = upper_colour;
+            scanline_ptr[idx + 1] = lower_colour;
         }
 
         ++y_start;

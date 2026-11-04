@@ -210,6 +210,7 @@ int app_main()
     UI_LOG_INFO("Starting main loop");
 
     renderer.ChangeView(Renderer::View::Chat);
+    renderer.Render(ticks_ms);
 
     screen.CommitText("Test1", 5);
     screen.CommitText("Test2", 5);
@@ -223,6 +224,7 @@ int app_main()
             // LowPowerMode();
             __NOP();
         }
+        // screen.DrawIcon(Screen::IconType::Speaker, false);
         sleeping = true;
         ticks_ms = HAL_GetTick();
         // Highest priority
@@ -237,7 +239,6 @@ int app_main()
         // Reset the speaker, if there is packet, by time we get to render this will be redrawn
         // the other option we can do is all icons get a timer, and if the DrawIcon on their type
         // doesn't come it it will default to off.
-        screen.DrawIcon(Screen::IconType::Speaker, false);
 
         if (volume_up.ShortPress() || volume_up.RepeatedPress())
         {

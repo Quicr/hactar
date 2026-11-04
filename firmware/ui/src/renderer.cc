@@ -76,6 +76,7 @@ void Renderer::StartupView(const uint32_t ticks) noexcept
         };
 
         screen.SubmitShape(logo);
+        change_view = false;
     }
 }
 
