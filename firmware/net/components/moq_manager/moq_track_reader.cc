@@ -326,14 +326,36 @@ void TrackReader::TransmitText()
 
     while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
-        // Drain all available packets
-        // while (moq_objs_len.Unread())
-        // {
-        //     WriteToSerial(&moq_objs_len.Read(), moq_objs_len.Read());
-        // }
+        // This is awfully similar to TransmitAudio
+        if (!ulTaskNotifyTake(pdTRUE, portMAX_DELAY))
+        {
+            continue;
+        }
 
-        // Only delay when buffer is empty
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        if (moq_objs_len.Unread() == 0)
+        {
+            continue;
+        }
+
+        // Lock the shared audio transmit sempr
+        while (!xSemaphoreTake(runtime.audio_lock_sempr, portMAX_DELAY))
+        {
+            continue;
+        }
+
+        // Drain all available packets
+        while (moq_objs_len.Unread())
+        {
+            const size_t len = moq_objs_len.Read();
+            WriteToSerial(moq_objs + read_idx, len);
+            read_idx += link_packet_t::Packet_Size;
+            if (read_idx >= Moq_Objs_Size)
+            {
+                read_idx = 0;
+            }
+        }
+
+        xSemaphoreGive(runtime.audio_lock_sempr);
     }
 }
 
