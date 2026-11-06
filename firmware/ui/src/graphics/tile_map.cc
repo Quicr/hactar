@@ -168,6 +168,15 @@ Graphics::bound_t TileMap::GetNext()
     return rect;
 }
 
+void TileMap::MarkAll()
+{
+    has_dirty = true;
+    for (size_t i = 0; i < size; ++i)
+    {
+        tiles[i] = 0xFF;
+    }
+}
+
 void TileMap::FlipOrientation()
 {
     // TODO rotate any tiles

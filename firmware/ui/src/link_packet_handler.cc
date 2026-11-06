@@ -82,7 +82,7 @@ void HandleQuicrPackets(Serial& mgmt_serial,
         ui_net_link::Chunk* audio_chunk =
             static_cast<ui_net_link::Chunk*>(static_cast<void*>(packet->payload.data() + 1));
 
-        // screen.DrawIcon(Screen::IconType::Speaker, !audio_chunk->last_chunk);
+        screen.DrawIcon(Screen::IconType::Speaker, !audio_chunk->last_chunk);
 
         switch (audio_receive_mode)
         {

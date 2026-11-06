@@ -1,4 +1,5 @@
 #include "renderer.hh"
+#include "app_main.hh"
 #include "graphics.hh"
 #include "splash_logo.hh"
 

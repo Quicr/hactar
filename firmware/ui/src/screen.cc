@@ -4,7 +4,9 @@
 #include "font.hh"
 #include "graphics.hh"
 #include "ili9341.hh"
+#include "logger.hh"
 #include "main.h"
+#include "mic_icon.hh"
 #include "moq_icon.hh"
 #include "stm32f4xx_hal_gpio.h"
 #include "wifi_icon.hh"
@@ -58,7 +60,6 @@ Screen::Screen(uint16_t* scanline_buffer,
             orientation),
     scanline_ptr(scanline_buffer),
     scanline_idx(0),
-    rasterize_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
     draw_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
     render_height(0),
     title_x1(0),
@@ -126,13 +127,19 @@ void Screen::Draw(const uint32_t timeout)
         return;
     }
 
-    draw_bound = rasterize_bound;
-    ResetBound(rasterize_bound);
+    StartRender();
+}
+
+void Screen::StartRender()
+{
+    draw_bound = tile_map.GetNext();
 
     draw_bound.x2 = std::min<uint16_t>(draw_bound.x2, ili9341.GetWidth());
     draw_bound.y2 = std::min<uint16_t>(draw_bound.y2, ili9341.GetHeight());
     if (draw_bound.x1 >= draw_bound.x2 || draw_bound.y1 >= draw_bound.y2)
     {
+        LowerFlag(render_flags, RenderFlags::Rendering);
+        ili9341.Deselect();
         return;
     }
 
@@ -144,6 +151,8 @@ void Screen::Draw(const uint32_t timeout)
 
     Render();
     Transfer();
+
+    return;
 }
 
 void Screen::Update(const uint32_t ticks_ms)
@@ -221,8 +230,7 @@ void Screen::Transfer()
 {
     if (draw_bound.y1 >= draw_bound.y2)
     {
-        LowerFlag(render_flags, RenderFlags::Rendering);
-        ili9341.Deselect();
+        StartRender();
         return;
     }
 
@@ -265,12 +273,7 @@ void Screen::DisableBacklight()
 
 void Screen::FullRefresh()
 {
-    Graphics::ExpandBound(rasterize_bound, {
-                                               .x1 = 0,
-                                               .y1 = 0,
-                                               .x2 = ili9341.GetWidth(),
-                                               .y2 = ili9341.GetHeight(),
-                                           });
+    tile_map.MarkAll();
     RaiseFlag(render_flags, RenderFlags::Rasterized);
 }
 
@@ -726,14 +729,6 @@ void Screen::DrawCursor(const bool solid)
     last_update_ticks_ms = last_ticks_ms;
 }
 
-void Screen::ResetBound(Graphics::bound_t& bound)
-{
-    bound.x1 = ili9341.GetWidth();
-    bound.y1 = ili9341.GetHeight();
-    bound.x2 = 0;
-    bound.y2 = 0;
-}
-
 bool Screen::SubmitShape(Graphics::Shape& shape)
 {
     const Graphics::Graphics::bound_t bound = Graphics::GetBounds(shape);
@@ -772,7 +767,8 @@ bool Screen::SubmitShape(Graphics::Shape& shape)
 void Screen::RasterizeShape(Graphics::Shape& shape, const Graphics::bound_t& bound)
 {
     Graphics::Rasterize(shape, data_buff, data_buff_width, data_buff_height);
-    Graphics::ExpandBound(rasterize_bound, bound);
+
+    tile_map.Mark(bound);
 }
 
 void Screen::ScrollText()
@@ -789,7 +785,7 @@ void Screen::ScrollText()
         .mem =
             {
                 .x1 = 0,
-                .x2 = data_buff_width * 2,
+                .x2 = static_cast<uint16_t>(data_buff_width * 2),
                 .dest_y = dest_y,
                 .src_y1 = src_y1,
                 .src_y2 = src_y2,

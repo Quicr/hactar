@@ -16,6 +16,7 @@ public:
 
     void Mark(Graphics::bound_t rect);
     void Mark(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
+    void MarkAll();
     Graphics::bound_t GetNext();
     void FlipOrientation();
     bool HasDirty() const;

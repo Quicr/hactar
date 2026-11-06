@@ -236,21 +236,18 @@ int app_main()
             // LowPowerMode();
             __NOP();
         }
-        // screen.DrawIcon(Screen::IconType::Speaker, false);
         sleeping = true;
         ticks_ms = HAL_GetTick();
-        // Highest priority
-        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode,
-                             screen);
 
         if (error)
         {
             // Error("Main loop", "Flags did not match expected");
         }
 
-        // Reset the speaker, if there is packet, by time we get to render this will be redrawn
-        // the other option we can do is all icons get a timer, and if the DrawIcon on their type
-        // doesn't come it it will default to off.
+        screen.DrawIcon(Screen::IconType::Speaker, false);
+        // Highest priority
+        HandleNetLinkPackets(net_serial, mgmt_serial, protector, audio_chip, audio_receive_mode,
+                             screen);
 
         if (volume_up.ShortPress() || volume_up.RepeatedPress())
         {

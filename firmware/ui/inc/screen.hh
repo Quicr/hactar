@@ -10,6 +10,7 @@
 #include "stm32.h"
 #include "tile_map.hh"
 #include <cstdint>
+#include <istream>
 
 class Screen
 {
@@ -84,6 +85,7 @@ public:
 
     void Update(const uint32_t ticks_ms);
     void Draw(const uint32_t ticks_ms);
+    void StartRender();
     void Render();
     void Transfer();
 
@@ -150,7 +152,6 @@ private:
     uint32_t TakeFlag(uint32_t& flags, const uint32_t flag);
 
     void DrawCursor(const bool solid);
-    void ResetBound(Graphics::bound_t& bound);
 
     void RasterizeShape(Graphics::Shape& shape, const Graphics::bound_t& bound);
 
@@ -177,7 +178,6 @@ private:
     uint16_t* scanline_ptr;
     size_t scanline_idx;
 
-    Graphics::bound_t rasterize_bound;
     Graphics::bound_t draw_bound;
     uint16_t render_height;
 
