@@ -19,6 +19,7 @@
 #include "screen.hh"
 #include "serial.hh"
 #include "stm32f4xx_hal_gpio.h"
+#include "tile_map.hh"
 #include "tools.hh"
 #include "ui_mgmt_link.h"
 #include "ui_net_link.hh"
@@ -105,6 +106,16 @@ static uint8_t render_buff[Quantized_Width * Screen_Height];
 
 static Battery battery;
 
+static constexpr uint16_t Tile_Size = 16;
+static constexpr uint16_t Tile_Cols =
+    ((Screen_Width / Tile_Size) + (sizeof(uint8_t) * 8 - 1)) / (sizeof(uint8_t) * 8);
+static constexpr uint16_t Tile_Rows = Screen_Height / Tile_Size;
+static constexpr uint16_t Tile_Arr_Size = Tile_Cols * Tile_Rows;
+
+static uint8_t tiles[Tile_Cols * Tile_Rows]{0};
+
+static TileMap tile_map(tiles, Tile_Arr_Size, Screen_Width, Screen_Height, Tile_Size);
+
 Screen screen(scanline_buff,
               Num_Scan_Lines,
               Screen_Width,
@@ -114,6 +125,7 @@ Screen screen(scanline_buff,
               Screen_Height,
               Bit_Quantization,
               battery,
+              tile_map,
               Screen_Width,
               Screen_Height,
               hspi1,

@@ -1,22 +1,15 @@
 #pragma once
 
-#include "app_main.hh"
-#include "audio_icon.hh"
 #include "battery.hh"
 #include "battery_icon.hh"
 #include "bitmap.hh"
 #include "font.hh"
 #include "graphics.hh"
-#include "gsl/gsl-lite.hpp"
 #include "ili9341.hh"
-#include "mic_icon.hh"
-#include "moq_icon.hh"
 #include "ring_buffer.hh"
 #include "stm32.h"
-#include "ui_net_link.hh"
-#include "wifi_icon.hh"
+#include "tile_map.hh"
 #include <cstdint>
-#include <type_traits>
 
 class Screen
 {
@@ -64,6 +57,7 @@ public:
            const uint16_t height,
            const uint16_t quantization,
            const Battery& battery,
+           TileMap& tile_map,
            const uint16_t screen_width_pixels,
            const uint16_t screen_height_pixels,
            SPI_HandleTypeDef& hspi,
@@ -176,6 +170,7 @@ private:
     const uint16_t quantization;
 
     const Battery& battery;
+    TileMap& tile_map;
 
     ILI9341 ili9341;
 
