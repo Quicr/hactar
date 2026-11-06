@@ -119,6 +119,11 @@ void UiLinkHandler::LinkPacketTask(void* arg)
                 handler->ui_layer.Write(*packet);
                 break;
             }
+            case NetLoopbackMode::MiddleMan:
+            {
+
+                break;
+            }
             case NetLoopbackMode::Off:
                 [[fallthrough]];
             case NetLoopbackMode::Moq:

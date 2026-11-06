@@ -4,9 +4,13 @@
 #ifndef __MOQ_TRACK_READER__
 #define __MOQ_TRACK_READER__
 
+#include "freertos/idf_additions.h"
+#include "link_packet_t.hh"
 #include "net.hh"
+#include "ring_buffer.hh"
 #include "serial.hh"
 #include <quicr/client.h>
+#include <cstdint>
 #include <cwchar>
 #include <deque>
 
@@ -15,6 +19,11 @@ namespace moq
 
 class TrackReader : public quicr::SubscribeTrackHandler
 {
+private:
+    static constexpr size_t Jitter_Buff_Size = 5;
+    static constexpr size_t Moq_Objs_Packet_Num = Jitter_Buff_Size * 2;
+    static constexpr size_t Moq_Objs_Size = link_packet_t::Packet_Size * Moq_Objs_Packet_Num;
+
 public:
     TrackReader(const quicr::FullTrackName& full_track_name,
                 Serial& serial,
@@ -43,10 +52,10 @@ public:
 
     bool AudioPlaying() const noexcept;
 
-    quicr::BytesSpan AudioFront() noexcept;
-    void AudioPop() noexcept;
-    std::optional<std::vector<uint8_t>> AudioPopFront() noexcept;
-    size_t AudioNumAvailable() noexcept;
+    // quicr::BytesSpan AudioFront() noexcept;
+    // void AudioPop() noexcept;
+    // std::optional<std::vector<uint8_t>> AudioPopFront() noexcept;
+    // size_t AudioNumAvailable() noexcept;
 
     const std::string& GetTrackName() const noexcept;
 
@@ -56,7 +65,7 @@ private:
     void TransmitAudio();
     void TransmitText();
 
-    void WriteToSerial(std::optional<quicr::Bytes> data);
+    void WriteToSerial(const uint8_t* data, const size_t len);
 
     Serial& serial;
     const std::string codec;
@@ -65,7 +74,15 @@ private:
 
     std::string track_name;
     // TODO rename to link_packet_buffer
-    std::queue<std::vector<uint8_t>> byte_buffer;
+
+    // std::queue<std::vector<uint8_t>> byte_buffer;
+
+    // TODO num
+    // RingBuffer<uint8_t> moq_objs;
+    uint8_t moq_objs[Moq_Objs_Size];
+    size_t write_idx;
+    size_t read_idx;
+    RingBuffer<size_t> moq_objs_len;
 
     std::mutex task_mutex;
 
@@ -82,6 +99,7 @@ private:
     uint64_t num_recv;
 
     bool is_running;
+    std::mutex packet_mux;
 };
 
 } // namespace moq

@@ -3,15 +3,20 @@
 
 #include "moq_track_reader.hh"
 #include "chunk.hh"
+#include "esp_timer.h"
+#include "freertos/idf_additions.h"
+#include "freertos/projdefs.h"
 #include "link_packet_t.hh"
 #include "logger.hh"
 #include "macros.hh"
 #include "moq_session.hh"
 #include "net.hh"
 #include "net_mgmt_link.h"
+#include "portmacro.h"
 #include "task_helpers.hh"
 #include "ui_net_link.hh"
 #include "utils.hh"
+#include <cstdint>
 
 using namespace moq;
 
@@ -27,10 +32,13 @@ TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
     diagnostics(diagnostics),
     track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end())
                + std::string(full_track_name.name.begin(), full_track_name.name.end())),
-    byte_buffer(),
+    moq_objs{},
+    write_idx(0),
+    read_idx(0),
+    moq_objs_len(Moq_Objs_Packet_Num),
     task_mutex(),
     audio_playing(false),
-    audio_min_depth(5),
+    audio_min_depth(Jitter_Buff_Size),
     audio_max_depth(std::numeric_limits<size_t>::max()),
     task_handle(nullptr),
     task_buffer{},
@@ -88,19 +96,39 @@ void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers,
 {
     ++num_print;
 
-    if ((codec == "pcm" && num_print >= 20) || codec == "ascii" || codec == "ai_cmd_response:json")
-    {
-        num_recv += num_print;
-        num_print = 0;
-        NET_LOG_INFO("%s Received %llu", Stringify(GetFullTrackName()).c_str(), num_recv);
-    }
+    // if ((codec == "pcm" && num_print >= 20) || codec == "ascii" || codec ==
+    // "ai_cmd_response:json")
+    // {
+    //     num_recv += num_print;
+    //     num_print = 0;
+    //     NET_LOG_INFO("%s Received %llu", Stringify(GetFullTrackName()).c_str(), num_recv);
+    // }
 
     if (diagnostics.loopback != NetLoopbackMode::Moq && headers.group_id == runtime.device_id)
     {
         return;
     }
 
-    byte_buffer.emplace(data.begin(), data.end());
+    // moq_objs_len.emplace(data.begin(), data.end());
+    // std::lock_guard _(packet_mux);
+
+    // -1 because we will be sending a packet with +1 at the end for channel id
+    if (data.size() > link_packet_t::Packet_Size - 1)
+    {
+        NET_LOG_ERROR("Received object was larger than can be handled by link packet");
+        return;
+    }
+
+    memcpy(moq_objs + write_idx, data.data(), data.size());
+    write_idx += link_packet_t::Packet_Size;
+    if (write_idx >= Moq_Objs_Size)
+    {
+        write_idx = 0;
+    }
+
+    moq_objs_len.Write(data.size());
+
+    xTaskNotifyGive(task_handle);
 }
 
 void TrackReader::StatusChanged(TrackReader::Status status)
@@ -124,7 +152,7 @@ void TrackReader::StatusChanged(TrackReader::Status status)
 void TrackReader::AudioPlay()
 {
     audio_playing =
-        audio_playing || (!byte_buffer.empty() && byte_buffer.size() >= audio_min_depth);
+        audio_playing || (moq_objs_len.Unread() && moq_objs_len.Unread() >= audio_min_depth);
 }
 
 void TrackReader::AudioPause()
@@ -137,37 +165,23 @@ bool TrackReader::AudioPlaying() const noexcept
     return audio_playing;
 }
 
-quicr::BytesSpan TrackReader::AudioFront() noexcept
-{
-    if (!audio_playing || byte_buffer.empty())
-    {
-        return quicr::BytesSpan();
-    }
-
-    return byte_buffer.front();
-}
-
-void TrackReader::AudioPop() noexcept
-{
-    byte_buffer.pop();
-}
-
-std::optional<std::vector<uint8_t>> TrackReader::AudioPopFront() noexcept
-{
-    if (!audio_playing || byte_buffer.empty())
-    {
-        return std::optional<std::vector<uint8_t>>();
-    }
-
-    std::optional<std::vector<uint8_t>> value = std::move(byte_buffer.front());
-    byte_buffer.pop();
-    return value;
-}
-
-size_t TrackReader::AudioNumAvailable() noexcept
-{
-    return byte_buffer.size();
-}
+// std::optional<std::vector<uint8_t>> TrackReader::AudioPopFront() noexcept
+// {
+//     if (!audio_playing || moq_objs_len.empty())
+//     {
+//         return std::nullopt;
+//     }
+//
+//     std::optional<std::vector<uint8_t>> value;
+//
+//     {
+//         std::lock_guard _(packet_mux);
+//         value = std::move(moq_objs_len.front());
+//         moq_objs_len.pop();
+//     }
+//
+//     return value;
+// }
 
 const std::string& TrackReader::GetTrackName() const noexcept
 {
@@ -225,33 +239,84 @@ void TrackReader::TransmitAudio()
     NET_LOG_INFO("Track reader %s", codec.c_str());
     while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
-        // TODO use notifies and then drain the entire moq objs
-        vTaskDelay(2 / portTICK_PERIOD_MS);
-
-        AudioPlay();
-        if (AudioNumAvailable() == 0)
-        {
-            AudioPause();
-            continue;
-        }
-
-        if (!AudioPlaying())
+        if (!ulTaskNotifyTake(pdTRUE, portMAX_DELAY))
         {
             continue;
         }
 
-        if (!xSemaphoreTake(runtime.audio_req_smpr, 0))
+        if (moq_objs_len.Unread() == 0)
         {
             continue;
         }
 
-        auto data = AudioPopFront();
-        if (!data.has_value())
+        // Lock the shared audio transmit sempr
+        while (!xSemaphoreTake(runtime.audio_lock_sempr, portMAX_DELAY))
         {
             continue;
         }
 
-        WriteToSerial(data);
+        NET_LOG_INFO("Taking sempr to sync");
+        while (!xSemaphoreTake(runtime.audio_req_smpr, portMAX_DELAY))
+        {
+            continue;
+        }
+        uint64_t last_intr = esp_timer_get_time_ms();
+
+        NET_LOG_INFO("Track reader %s has audio", codec.c_str());
+        uint16_t miss = 0;
+        uint64_t intr_timing = 0;
+        uint64_t num_interrupts = 0;
+        while (true)
+        {
+            if (miss >= 5)
+            {
+                AudioPause();
+                if (num_interrupts > 0)
+                {
+
+                    NET_LOG_INFO("avgi %lld n %lld", intr_timing / num_interrupts, num_interrupts);
+                }
+                else
+                {
+                    NET_LOG_INFO("No interrupts occured before 5 misses happened");
+                }
+                break;
+            }
+
+            AudioPlay();
+            if (moq_objs_len.Unread() == 0)
+            {
+                ++miss;
+                continue;
+            }
+
+            if (!AudioPlaying())
+            {
+                ++miss;
+                continue;
+            }
+
+            // NET_LOG_INFO("Taking sempr");
+            while (!xSemaphoreTake(runtime.audio_req_smpr, portMAX_DELAY))
+            {
+                continue;
+            }
+            uint64_t intr = esp_timer_get_time_ms();
+            // NET_LOG_INFO("Intr %d %d", last_intr, intr);
+            intr_timing += intr - last_intr;
+            ++num_interrupts;
+            last_intr = intr;
+
+            const size_t len = moq_objs_len.Read();
+            WriteToSerial(moq_objs + read_idx, len);
+            read_idx += link_packet_t::Packet_Size;
+            if (read_idx >= Moq_Objs_Size)
+            {
+                read_idx = 0;
+            }
+        }
+
+        xSemaphoreGive(runtime.audio_lock_sempr);
     }
 }
 
@@ -261,26 +326,46 @@ void TrackReader::TransmitText()
 
     while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
-        // Drain all available packets
-        while (!byte_buffer.empty())
+        // This is awfully similar to TransmitAudio
+        if (!ulTaskNotifyTake(pdTRUE, portMAX_DELAY))
         {
-            std::optional<std::vector<uint8_t>> data = std::move(byte_buffer.front());
-            byte_buffer.pop();
-            WriteToSerial(data);
+            continue;
         }
 
-        // Only delay when buffer is empty
-        vTaskDelay(1 / portTICK_PERIOD_MS);
+        if (moq_objs_len.Unread() == 0)
+        {
+            continue;
+        }
+
+        // Lock the shared audio transmit sempr
+        while (!xSemaphoreTake(runtime.audio_lock_sempr, portMAX_DELAY))
+        {
+            continue;
+        }
+
+        // Drain all available packets
+        while (moq_objs_len.Unread())
+        {
+            const size_t len = moq_objs_len.Read();
+            WriteToSerial(moq_objs + read_idx, len);
+            read_idx += link_packet_t::Packet_Size;
+            if (read_idx >= Moq_Objs_Size)
+            {
+                read_idx = 0;
+            }
+        }
+
+        xSemaphoreGive(runtime.audio_lock_sempr);
     }
 }
 
-void TrackReader::WriteToSerial(std::optional<quicr::Bytes> data)
+void TrackReader::WriteToSerial(const uint8_t* data, const size_t len)
 {
     serial.Write(link_packet_t::Sync_Word, sizeof(link_packet_t::Sync_Word));
     const uint16_t type = static_cast<uint16_t>(ui_net_link::NetToUi::AudioFrame);
     serial.Write((uint8_t*)&type, sizeof(type));
-    const uint32_t len = data->size() + 1;
-    serial.Write((uint8_t*)&len, sizeof(len));
+    const uint32_t ext_len = len + 1;
+    serial.Write((uint8_t*)&ext_len, sizeof(ext_len));
     serial.Write(0); // todo Channel id
-    serial.Write(data->data(), data->size());
+    serial.Write(data, len);
 }

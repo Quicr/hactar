@@ -9,8 +9,10 @@
 #include "freertos/projdefs.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
+#include "hal/gpio_types.h"
 #include "link_packet_t.hh"
 #include "logger.hh"
+#include "macros.hh"
 #include "mgmt_link_handler.hh"
 #include "moq_context.hh"
 #include "net_mgmt_link.h"
@@ -32,6 +34,7 @@
 static Runtime runtime_ctx{
     .device_id = 0,
     .audio_req_smpr = xSemaphoreCreateBinary(),
+    .audio_lock_sempr = xSemaphoreCreateMutex(),
     .curr_audio_isr_time = 0,
     .last_audio_isr_time = 0,
 };
@@ -47,12 +50,28 @@ static Runtime runtime_ctx{
 #include "wifi_creds.hh"
 #endif
 
-static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
+static int cnt = 0;
+
+// static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
+// {
+//     int gpio_num = (int)arg;
+//
+//     if (gpio_num == UI_READY)
+//     {
+//         ++cnt;
+//         runtime_ctx.last_audio_isr_time = runtime_ctx.curr_audio_isr_time;
+//         runtime_ctx.curr_audio_isr_time = esp_timer_get_time();
+//         xSemaphoreGiveFromISR(runtime_ctx.audio_req_smpr, NULL);
+//     }
+// }
+
+static void IRAM_ATTR GpioIsrFallingHandler(void* arg)
 {
     int gpio_num = (int)arg;
 
     if (gpio_num == UI_READY)
     {
+        ++cnt;
         runtime_ctx.last_audio_isr_time = runtime_ctx.curr_audio_isr_time;
         runtime_ctx.curr_audio_isr_time = esp_timer_get_time();
         xSemaphoreGiveFromISR(runtime_ctx.audio_req_smpr, NULL);
@@ -80,7 +99,16 @@ extern "C" void app_main(void)
     PrintRAM();
     InitializeGPIO();
     IntitializeLEDs();
-    InitializeUIReadyISR(GpioIsrRisingHandler);
+    // InitializeUIReadyISR(GpioIsrRisingHandler);
+
+    gpio_config_t io_conf = {.pin_bit_mask = UI_READY_MASK,
+                             .mode = GPIO_MODE_INPUT,
+                             .pull_up_en = GPIO_PULLUP_DISABLE,
+                             .pull_down_en = GPIO_PULLDOWN_ENABLE,
+                             .intr_type = GPIO_INTR_NEGEDGE};
+    gpio_config(&io_conf);
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(UI_READY, GpioIsrFallingHandler, (void*)UI_READY);
 
     Diagnostics diagnostics = {
         .loopback = NetLoopbackMode::Off,
@@ -145,9 +173,13 @@ extern "C" void app_main(void)
     // Log warnings if namespaces are not configured (no defaults - must be configured via
     // fl-identity)
     // TODO maybe we should loop forever at this point?
-    if (config.channel_ns.empty())
+    if (config.ptt_channel_ns.empty())
     {
-        NET_LOG_WARN("Channel namespace not configured - device needs configuration");
+        NET_LOG_WARN("PTT Channel namespace not configured - device needs configuration");
+    }
+    if (config.chat_channel_ns.empty())
+    {
+        NET_LOG_WARN("Chat channel namespace not configured - device needs configuration");
     }
     if (config.ai_query_ns.empty() || config.ai_audio_response_ns.empty()
         || config.ai_cmd_response_ns.empty())
@@ -201,8 +233,15 @@ extern "C" void app_main(void)
 
     moq::Session::Status prev_status = moq::Session::Status::kNotConnected;
     Wifi::State prev_wifi_state = Wifi::State::Connected;
+
+    uint64_t status_timeout esp_timer_get_time_ms();
     while (true)
     {
+        if (esp_timer_get_time_ms() - status_timeout >= 1000)
+        {
+            NET_LOG_INFO("Num interupts so far %d", cnt);
+        }
+
         moq::Session::Status status = moq_context.GetStatus();
 
         Wifi::State wifi_state = wifi.GetState();
@@ -226,6 +265,12 @@ extern "C" void app_main(void)
                 {
                     moq_context.RestartSession(moq_config);
                 }
+
+                link_packet_t packet;
+                packet.type = static_cast<uint16_t>(ui_net_link::NetToUi::WifiStatus);
+                packet.length = 1;
+                packet.payload[0] = 0;
+                ui_layer.Write(packet);
                 break;
             }
             case Wifi::State::Initialized:
@@ -236,6 +281,12 @@ extern "C" void app_main(void)
             {
                 gpio_set_level(NET_LED_R, 1);
                 gpio_set_level(NET_LED_G, 0);
+
+                link_packet_t packet;
+                packet.type = static_cast<uint16_t>(ui_net_link::NetToUi::WifiStatus);
+                packet.length = 1;
+                packet.payload[0] = 1;
+                ui_layer.Write(packet);
                 break;
             }
             default:
@@ -258,6 +309,12 @@ extern "C" void app_main(void)
                 moq_context.UpdateAITracks(config);
                 moq_context.StartTracks();
 
+                link_packet_t packet;
+                packet.type = static_cast<uint16_t>(ui_net_link::NetToUi::MoqStatus);
+                packet.length = 1;
+                packet.payload[0] = 1;
+                ui_layer.Write(packet);
+
                 break;
             }
             case moq::Session::Status::kNotConnected:
@@ -269,6 +326,12 @@ extern "C" void app_main(void)
             }
             case moq::Session::Status::kNotReady:
             {
+                link_packet_t packet;
+                packet.type = static_cast<uint16_t>(ui_net_link::NetToUi::MoqStatus);
+                packet.length = 1;
+                packet.payload[0] = 0;
+                ui_layer.Write(packet);
+
                 NET_LOG_INFO("MOQ Transport Calling Connect");
 
                 if (!moq_context.Connect())
