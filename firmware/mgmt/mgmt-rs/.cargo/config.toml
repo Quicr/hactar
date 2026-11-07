@@ -1,0 +1,2 @@
+[build]
+target = "thumbv6em-none-eabi"
