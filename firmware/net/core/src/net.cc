@@ -52,20 +52,7 @@ static Runtime runtime_ctx{
 
 static int cnt = 0;
 
-// static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
-// {
-//     int gpio_num = (int)arg;
-//
-//     if (gpio_num == UI_READY)
-//     {
-//         ++cnt;
-//         runtime_ctx.last_audio_isr_time = runtime_ctx.curr_audio_isr_time;
-//         runtime_ctx.curr_audio_isr_time = esp_timer_get_time();
-//         xSemaphoreGiveFromISR(runtime_ctx.audio_req_smpr, NULL);
-//     }
-// }
-
-static void IRAM_ATTR GpioIsrFallingHandler(void* arg)
+static void IRAM_ATTR GpioIsrRisingHandler(void* arg)
 {
     int gpio_num = (int)arg;
 
@@ -99,16 +86,7 @@ extern "C" void app_main(void)
     PrintRAM();
     InitializeGPIO();
     IntitializeLEDs();
-    // InitializeUIReadyISR(GpioIsrRisingHandler);
-
-    gpio_config_t io_conf = {.pin_bit_mask = UI_READY_MASK,
-                             .mode = GPIO_MODE_INPUT,
-                             .pull_up_en = GPIO_PULLUP_DISABLE,
-                             .pull_down_en = GPIO_PULLDOWN_ENABLE,
-                             .intr_type = GPIO_INTR_NEGEDGE};
-    gpio_config(&io_conf);
-    gpio_install_isr_service(0);
-    gpio_isr_handler_add(UI_READY, GpioIsrFallingHandler, (void*)UI_READY);
+    InitializeUIReadyISR(GpioIsrRisingHandler);
 
     Diagnostics diagnostics = {
         .loopback = NetLoopbackMode::Off,
@@ -234,7 +212,7 @@ extern "C" void app_main(void)
     moq::Session::Status prev_status = moq::Session::Status::kNotConnected;
     Wifi::State prev_wifi_state = Wifi::State::Connected;
 
-    uint64_t status_timeout esp_timer_get_time_ms();
+    uint64_t status_timeout = esp_timer_get_time_ms();
     while (true)
     {
         if (esp_timer_get_time_ms() - status_timeout >= 1000)

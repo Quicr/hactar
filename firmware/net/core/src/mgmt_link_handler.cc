@@ -378,11 +378,11 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                         break;
                     }
 
-                    auto audio_parsed =
+                    auto parsed_audio =
                         ConfigState::JsonToNamespace(channel_config["audio"].dump());
-                    auto chat_parsed = ConfigState::JsonToNamespace(channel_config["chat"].dump());
+                    auto parsed_chat = ConfigState::JsonToNamespace(channel_config["chat"].dump());
 
-                    if (!audio_parsed || !chat_parsed)
+                    if (!parsed_audio || !parsed_chat)
                     {
                         NET_LOG_ERROR("Failed to parse channel namespace arrays");
                         handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
@@ -390,8 +390,8 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                         break;
                     }
 
-                    handler->config.ptt_channel_ns = audio_parsed.value();
-                    handler->config.chat_channel_ns = chat_parsed.value();
+                    handler->config.ptt_channel_ns = parsed_audio.value();
+                    handler->config.chat_channel_ns = parsed_chat.value();
 
                     handler->config.ptt_channel_ns_json = channel_config["audio"].dump();
                     handler->config.chat_channel_ns_json = channel_config["chat"].dump();
@@ -444,10 +444,10 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                     }
 
                     auto query_parsed = ConfigState::JsonToNamespace(ai_config["query"].dump());
-                    auto audio_parsed = ConfigState::JsonToNamespace(ai_config["audio"].dump());
+                    auto parsed_audio = ConfigState::JsonToNamespace(ai_config["audio"].dump());
                     auto cmd_parsed = ConfigState::JsonToNamespace(ai_config["cmd"].dump());
 
-                    if (!query_parsed || !audio_parsed || !cmd_parsed)
+                    if (!query_parsed || !parsed_audio || !cmd_parsed)
                     {
                         NET_LOG_ERROR("Failed to parse AI namespace arrays");
                         handler->serial.ReplyError(static_cast<uint16_t>(NetToCtl::Error),
@@ -456,7 +456,7 @@ void MgmtLinkHandler::LinkPacketTask(void* arg)
                     }
 
                     handler->config.ai_query_ns = query_parsed.value();
-                    handler->config.ai_audio_response_ns = audio_parsed.value();
+                    handler->config.ai_audio_response_ns = parsed_audio.value();
                     handler->config.ai_cmd_response_ns = cmd_parsed.value();
 
                     handler->config.ai_query_ns_json = ai_config["query"].dump();

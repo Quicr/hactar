@@ -32,7 +32,7 @@ TrackReader::TrackReader(const quicr::FullTrackName& full_track_name,
     diagnostics(diagnostics),
     track_name(std::string(full_track_name.name_space.begin(), full_track_name.name_space.end())
                + std::string(full_track_name.name.begin(), full_track_name.name.end())),
-    moq_packets(Moq_Objs_Packet_Num),
+    moq_packets(Moq_Objects_Packet_Num),
     task_mutex(),
     audio_playing(false),
     audio_min_depth(Jitter_Buff_Size),
@@ -93,20 +93,19 @@ void TrackReader::ObjectReceived(const quicr::ObjectHeaders& headers,
 {
     ++num_print;
 
-    // if ((codec == "pcm" && num_print >= 20) || codec == "ascii" || codec ==
-    // "ai_cmd_response:json")
-    // {
-    //     num_recv += num_print;
-    //     num_print = 0;
-    //     NET_LOG_INFO("%s Received %llu", Stringify(GetFullTrackName()).c_str(), num_recv);
-    // }
+    if ((codec == "pcm" && num_print >= 20) || codec == "ascii" || codec == "ai_cmd_response:json")
+    {
+        num_recv += num_print;
+        num_print = 0;
+        NET_LOG_DEBUG("%s Received %llu", Stringify(GetFullTrackName()).c_str(), num_recv);
+    }
 
     if (diagnostics.loopback != NetLoopbackMode::Moq && headers.group_id == runtime.device_id)
     {
         return;
     }
 
-    if (data.size() > Moq_Objs_Size)
+    if (data.size() > Moq_Objects_Size)
     {
         NET_LOG_ERROR("Received object was larger than can be handled by link packet");
         return;
@@ -143,7 +142,7 @@ void TrackReader::StatusChanged(TrackReader::Status status)
 void TrackReader::AudioPlay()
 {
     audio_playing =
-        audio_playing || (moq_packets.Unread() && moq_packets.Unread() >= audio_min_depth);
+        audio_playing || (moq_packets.Unread() > 0 && moq_packets.Unread() >= audio_min_depth);
 }
 
 void TrackReader::AudioPause()
@@ -209,15 +208,10 @@ void TrackReader::SubscribeTask(void* param)
 
 void TrackReader::TransmitAudio()
 {
-    NET_LOG_INFO("Track reader %s", codec.c_str());
+    NET_LOG_INFO("Track reader %s - audio mode", track_name.c_str());
     while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
-        if (!ulTaskNotifyTake(pdTRUE, portMAX_DELAY))
-        {
-            continue;
-        }
-
-        if (moq_packets.Unread() == 0)
+        if (!ulTaskNotifyTake(pdTRUE, portMAX_DELAY) || moq_packets.Unread() == 0)
         {
             continue;
         }
@@ -228,60 +222,34 @@ void TrackReader::TransmitAudio()
             continue;
         }
 
-        NET_LOG_INFO("Taking sempr to sync");
+        // Sync the audio interrupt, by eating the stale request
         while (!xSemaphoreTake(runtime.audio_req_smpr, portMAX_DELAY))
         {
             continue;
         }
-        uint64_t last_intr = esp_timer_get_time_ms();
 
-        NET_LOG_INFO("Track reader %s has audio", codec.c_str());
         uint16_t miss = 0;
-        uint64_t intr_timing = 0;
-        uint64_t num_interrupts = 0;
         while (true)
         {
             if (miss >= 5)
             {
                 AudioPause();
-                if (num_interrupts > 0)
-                {
-
-                    NET_LOG_INFO("avgi %lld n %lld", intr_timing / num_interrupts, num_interrupts);
-                }
-                else
-                {
-                    NET_LOG_INFO("No interrupts occured before 5 misses happened");
-                }
                 break;
             }
 
             AudioPlay();
-            if (moq_packets.Unread() == 0)
+            if (moq_packets.Unread() == 0 || !AudioPlaying())
             {
                 ++miss;
                 continue;
             }
 
-            if (!AudioPlaying())
-            {
-                ++miss;
-                continue;
-            }
-
-            // NET_LOG_INFO("Taking sempr");
             while (!xSemaphoreTake(runtime.audio_req_smpr, portMAX_DELAY))
             {
                 continue;
             }
-            uint64_t intr = esp_timer_get_time_ms();
-            // NET_LOG_INFO("Intr %d %d", last_intr, intr);
-            intr_timing += intr - last_intr;
-            ++num_interrupts;
-            last_intr = intr;
 
-            const moq_packet_t& moq_packet = moq_packets.Read();
-            WriteToSerial(moq_packet);
+            WriteToSerial(moq_packets.Read());
         }
 
         xSemaphoreGive(runtime.audio_lock_sempr);
@@ -290,17 +258,11 @@ void TrackReader::TransmitAudio()
 
 void TrackReader::TransmitText()
 {
-    NET_LOG_INFO("Track reader - text mode");
+    NET_LOG_INFO("Track reader %s - text mode", track_name.c_str());
 
     while (GetStatus() == TrackReader::Status::kOk && is_running)
     {
-        // This is awfully similar to TransmitAudio
-        if (!ulTaskNotifyTake(pdTRUE, portMAX_DELAY))
-        {
-            continue;
-        }
-
-        if (moq_packets.Unread() == 0)
+        if (!ulTaskNotifyTake(pdTRUE, portMAX_DELAY) || moq_packets.Unread() == 0)
         {
             continue;
         }
@@ -312,10 +274,9 @@ void TrackReader::TransmitText()
         }
 
         // Drain all available packets
-        while (moq_packets.Unread())
+        while (moq_packets.Unread() > 0)
         {
-            const moq_packet_t& moq_packet = moq_packets.Read();
-            WriteToSerial(moq_packet);
+            WriteToSerial(moq_packets.Read());
         }
 
         xSemaphoreGive(runtime.audio_lock_sempr);

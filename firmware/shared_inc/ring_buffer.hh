@@ -140,7 +140,7 @@ public:
         uint16_t tmp_read = read_idx;
         read_idx += adv;
 
-        return buffer + read_idx;
+        return buffer + tmp_read;
     }
 
     void Read(T& d_out, bool& is_end)
@@ -199,7 +199,7 @@ private:
 
     inline void DecrementUnread()
     {
-        if (unread <= 0)
+        if (unread == 0)
         {
             return;
         }

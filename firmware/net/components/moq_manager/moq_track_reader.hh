@@ -21,8 +21,8 @@ class TrackReader : public quicr::SubscribeTrackHandler
 {
 private:
     static constexpr size_t Jitter_Buff_Size = 5;
-    static constexpr size_t Moq_Objs_Packet_Num = Jitter_Buff_Size * 2;
-    static constexpr size_t Moq_Objs_Size = link_packet_t::Packet_Size - 1;
+    static constexpr size_t Moq_Objects_Packet_Num = Jitter_Buff_Size * 2;
+    static constexpr size_t Moq_Objects_Size = link_packet_t::Packet_Size - 1;
 
 public:
     TrackReader(const quicr::FullTrackName& full_track_name,
@@ -52,17 +52,12 @@ public:
 
     bool AudioPlaying() const noexcept;
 
-    // quicr::BytesSpan AudioFront() noexcept;
-    // void AudioPop() noexcept;
-    // std::optional<std::vector<uint8_t>> AudioPopFront() noexcept;
-    // size_t AudioNumAvailable() noexcept;
-
     const std::string& GetTrackName() const noexcept;
 
 private:
     struct moq_packet_t
     {
-        uint8_t data[Moq_Objs_Size];
+        uint8_t data[Moq_Objects_Size];
         size_t len;
     };
 
