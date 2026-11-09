@@ -88,6 +88,19 @@ public:
         }
     }
 
+    T* BorrowWrite()
+    {
+        return &buffer[write_idx];
+    }
+
+    void AdvWrite(uint16_t amt = 1)
+    {
+        write_idx = (static_cast<uint32_t>(write_idx) + amt) % size;
+
+        const uint32_t total = static_cast<uint32_t>(unread) + amt;
+        unread = total > size ? size : static_cast<uint16_t>(total);
+    }
+
     T Take() noexcept
     {
         T d_out = std::move(buffer[read_idx++]);

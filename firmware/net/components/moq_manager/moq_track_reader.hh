@@ -22,7 +22,7 @@ class TrackReader : public quicr::SubscribeTrackHandler
 private:
     static constexpr size_t Jitter_Buff_Size = 5;
     static constexpr size_t Moq_Objs_Packet_Num = Jitter_Buff_Size * 2;
-    static constexpr size_t Moq_Objs_Size = link_packet_t::Packet_Size * Moq_Objs_Packet_Num;
+    static constexpr size_t Moq_Objs_Size = link_packet_t::Packet_Size - 1;
 
 public:
     TrackReader(const quicr::FullTrackName& full_track_name,
@@ -60,12 +60,18 @@ public:
     const std::string& GetTrackName() const noexcept;
 
 private:
+    struct moq_packet_t
+    {
+        uint8_t data[Moq_Objs_Size];
+        size_t len;
+    };
+
     static void SubscribeTask(void* param);
 
     void TransmitAudio();
     void TransmitText();
 
-    void WriteToSerial(const uint8_t* data, const size_t len);
+    void WriteToSerial(const moq_packet_t& moq_packet);
 
     Serial& serial;
     const std::string codec;
@@ -73,16 +79,8 @@ private:
     const Diagnostics& diagnostics;
 
     std::string track_name;
-    // TODO rename to link_packet_buffer
 
-    // std::queue<std::vector<uint8_t>> byte_buffer;
-
-    // TODO num
-    // RingBuffer<uint8_t> moq_objs;
-    uint8_t moq_objs[Moq_Objs_Size];
-    size_t write_idx;
-    size_t read_idx;
-    RingBuffer<size_t> moq_objs_len;
+    RingBuffer<moq_packet_t> moq_packets;
 
     std::mutex task_mutex;
 
