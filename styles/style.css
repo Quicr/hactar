@@ -27,7 +27,7 @@ html.no-transition *, html.no-transition {
 }
 
 html, body {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
   padding: 0;
   font-family: system-ui, sans-serif;
@@ -121,6 +121,24 @@ button:hover {
 .hidden {
   display: none;
 }
+
+fieldset {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid #8886;
+  border-radius: 0.5rem;
+}
+
+fieldset label, .manual-option { cursor: pointer; }
+small { opacity: 0.7; margin-left: 0.5rem; }
+.notice { font-size: 0.875rem; line-height: 1.5; opacity: 0.8; }
+progress { width: 100%; accent-color: var(--button-bg); }
+#status { line-height: 1.5; overflow-wrap: anywhere; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.manual-option { display: block; line-height: 1.5; }
+.console { height: 220px; overflow-wrap: anywhere; }
 
 .theme-toggle {
   font-size: 0.9rem;

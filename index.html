@@ -15,7 +15,7 @@
             <div class="theme-switch-wrapper">
                 <span>☀️</span>
                 <label class="theme-switch">
-                    <input type="checkbox" id="themeToggle" />
+                    <input type="checkbox" id="themeToggle" aria-label="Dark theme" />
                     <span class="slider"></span>
                 </label>
                 <span>🌙</span>
@@ -23,9 +23,20 @@
 
         </div>
 
-        <p>Connect your device and click the button below to begin the update process.</p>
+        <p>Connect your device over USB, choose the chips to update, and select its serial port.</p>
+
+        <p id="compatibility" class="notice">Requires desktop Chrome or Edge over HTTPS or localhost. Close other programs using the serial port.</p>
+
+        <fieldset id="chipSelection">
+            <legend>Firmware to flash</legend>
+            <label><input type="checkbox" name="chip" value="mgmt" checked /> MGMT <small>STM32F072</small></label>
+            <label><input type="checkbox" name="chip" value="ui" checked /> UI <small>STM32F405</small></label>
+            <label><input type="checkbox" name="chip" value="net" checked /> NET <small>ESP32-S3</small></label>
+        </fieldset>
 
         <button id="updateButton">🔄 Update Device</button>
+        <p id="status" role="status" aria-live="polite">Ready to update.</p>
+        <progress id="progress" max="100" value="0" aria-label="Current flashing phase"></progress>
 
         <div class="advanced-toggle">
             <label>
@@ -35,13 +46,10 @@
         </div>
 
         <section id="advancedSection" class="hidden">
-            <h2>Debug Console</h2>
-            <div id="console" class="console"></div>
-
-            <div class="debug-input">
-                <input type="text" id="debugInput" placeholder="Enter debug command..." />
-                <button id="sendButton">📤 Send</button>
-            </div>
+            <label class="manual-option"><input type="checkbox" id="manualBoot" /> MGMT is already in bootloader mode (manual reset)</label>
+            <p class="notice">For boards without automatic reset: set MGMT BOOT0 high and reset before updating. Release BOOT0 after the update, then reset to run normally.</p>
+            <h2>Update log</h2>
+            <div id="console" class="console" role="log" aria-label="Update log"></div>
         </section>
     </main>
 

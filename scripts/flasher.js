@@ -1,134 +1,112 @@
-import axios from 'https://cdn.skypack.dev/axios'
-import Sleep from "./sleep.js";
-// import { ACK, READY, NACK, NO_REPLY } from "./uart_utils.js";
-// import Serial from "./classes/serial.js";
-// import logger from "./logger.js";
-// import stm32_flasher from "./stm32_flasher.js";
-// import stm32_serial from "./stm32_serial.js";
-// import esp32_flasher from "./esp32_flasher.js";
+import { SerialConnection, Management, sleep } from "./serial.js";
+import { STM32 } from "./stm32.js";
+import { ESP32 } from "./esp32.js";
 
-class HactarFlasher {
-    constructor() {
-        this.logs = [];
-        // this.serial = new Serial();
-        this.stm_flasher = null;
-        this.esp_flasher = null;
+const FILES = {
+    mgmt: [{ path: "mgmt/mgmt.bin", max: 128 * 1024 }],
+    ui: [{ path: "ui/ui.bin", max: 1024 * 1024 }],
+    net: [
+        { path: "net/bootloader.bin", address: 0, max: 0x8000 },
+        { path: "net/partition-table.bin", address: 0x8000, max: 0x1000 },
+        { path: "net/net.bin", address: 0x10000, max: 8 * 1024 * 1024 - 0x10000 },
+    ],
+};
+
+export class HactarFlasher {
+    constructor({ log, progress }) { this.log = log; this.progress = progress; }
+
+    async binaries(chips) {
+        const result = {};
+        for (const chip of chips) {
+            result[chip] = await Promise.all(FILES[chip].map(async file => {
+                const response = await fetch(new URL(`../build/${file.path}`, import.meta.url), { cache: "no-store" });
+                if (!response.ok) throw new Error(`Could not load build/${file.path}: HTTP ${response.status}.`);
+                const data = new Uint8Array(await response.arrayBuffer());
+                if (!data.length || data.length > file.max || response.headers.get("content-type")?.includes("text/html")) throw new Error(`Invalid firmware file: build/${file.path}.`);
+                this.log(`Loaded ${file.path} (${data.length.toLocaleString()} bytes).`);
+                return { ...file, name: file.path.split("/").pop(), data };
+            }));
+        }
+        return result;
     }
 
-    async GetBinary(firmware) {
-        const res = await fetch(`https://quicr.github.io/hactar/build/ui/ui.bin`);
-        console.log(res)
-        return res.data;
+    async resetMGMT(serial, bootloader) {
+        await serial.port.setSignals({ dataTerminalReady: false, requestToSend: false });
+        await sleep(100);
+        await serial.port.setSignals({ requestToSend: bootloader });
+        await sleep(50);
+        await serial.port.setSignals({ dataTerminalReady: true });
+        await sleep(50);
+        await serial.port.setSignals({ dataTerminalReady: false });
+        await sleep(100);
     }
 
-    async Flash(mode = "ui+net") {
+    async flash(chips, port, manualBoot = false) {
+        // Fetch all selected files before putting any chip into its bootloader.
+        const firmware = await this.binaries(chips);
+        const serial = new SerialConnection(port);
+        const report = chip => (phase, done, total) => this.progress(chip, phase, done, total);
         try {
-            let sleep_before_net_upload = false;
-
-            if (mode.includes("mgmt")) {
-                const binary = await this.GetBinary("mgmt");
-                await this.SendUploadSelectionCommand("mgmt_upload");
-                // await stm32_flasher.FlashSTM(this.serial, binary, true);
-                // await this.serial.ClosePortAndNull();
-                return;
-            }
-
-            if (mode.includes("ui")) {
-                const binary = await this.GetBinary("ui");
-                await this.SendUploadSelectionCommand("ui_upload");
-                // await stm32_flasher.FlashSTM(this.serial, binary);
-                // await this.serial.ClosePort();
-                sleep_before_net_upload = true;
-            }
-
-            if (mode.includes("net")) {
-                if (sleep_before_net_upload) {
-                    await Sleep(2000);
+            await serial.open(chips.includes("mgmt") ? 115200 : 1000000);
+            if (chips.includes("mgmt")) {
+                this.log("Entering MGMT bootloader (115200 baud, even parity)…");
+                if (!manualBoot) await this.resetMGMT(serial, true);
+                await serial.drain();
+                const stm = new STM32(serial);
+                try { await stm.init(); }
+                catch (error) {
+                    throw new Error(`MGMT bootloader did not respond. For boards without automatic reset, set MGMT BOOT0 high, reset the device, then retry with manual bootloader mode. ${error.message}`);
                 }
-
-                const binaries = await this.GetBinary("net");
-                if (binaries.length === 0) {
-                    console.log("No net binaries received");
-                    return;
-                }
-
-                await this.SendUploadSelectionCommand("net_upload");
-                // await esp32_flasher.FlashESP(this.serial, binaries);
+                await stm.flash(firmware.mgmt[0].data, "mgmt", report("mgmt"));
+                await stm.go();
+                if (!manualBoot) await this.resetMGMT(serial, false);
+                this.log("MGMT flashed and verified.");
+                // Web Serial requires closing/reopening to change the baud rate.
+                await serial.close();
+                if (chips.length > 1) { await sleep(1000); await serial.open(1000000); }
             }
 
-            // await this.serial.ClosePortAndNull();
-        } catch (exception) {
-            // await this.serial.ClosePortAndNull();
-            console.error(exception);
-        }
+            if (chips.some(chip => chip !== "mgmt")) {
+                const mgmt = new Management(serial);
+                this.log("Waiting for MGMT (1000000 baud, even parity)…");
+                await mgmt.ready();
+                if (chips.includes("ui")) {
+                    this.log("Entering UI bootloader through MGMT…");
+                    try {
+                        await mgmt.uiBaud(115200);
+                        await mgmt.pin(4, 0);
+                        await mgmt.resetUI(true);
+                        await sleep(100); await serial.drain();
+                        const stm = new STM32(mgmt.tunnel("ui"));
+                        await stm.init();
+                        await stm.flash(firmware.ui[0].data, "ui", report("ui"));
+                    } finally {
+                        await this.restore([() => mgmt.uiBaud(1000000), () => mgmt.resetUI(), () => mgmt.resetNET()]);
+                    }
+                    this.log("UI flashed and verified.");
+                }
+                if (chips.includes("net")) {
+                    this.log("Entering NET ROM bootloader through MGMT…");
+                    try {
+                        await mgmt.pin(2, 0);
+                        await mgmt.resetNET(true);
+                        await sleep(100); await serial.drain();
+                        await new ESP32(mgmt.tunnel("net")).flash(firmware.net, report("net"));
+                    } finally {
+                        await this.restore([() => mgmt.resetNET(), () => mgmt.resetUI()]);
+                    }
+                    this.log("NET flashed and verified.");
+                }
+            }
+        } finally { await serial.close(); }
     }
 
-    async SendUploadSelectionCommand(command) {
-        // await this.serial.OpenPort("none");
-
-        if (!["mgmt_upload", "ui_upload", "net_upload"].includes(command)) {
-            logger.Error(`Error. ${command} is an invalid command`);
-            throw `Error. ${command} is an invalid command`;
+    async restore(steps) {
+        let failure;
+        for (const step of steps) {
+            try { await step(); }
+            catch (error) { failure ??= error; this.log(`Reset failed: ${error.message}`); }
         }
-
-        if (command === "mgmt_upload") {
-            // await this.serial.OpenPort("even");
-            this.PulseSignals(false, false);
-            logger.Info("Activating MGMT Upload Mode: SUCCESS");
-            logger.Debug("Update uart to parity: EVEN");
-            return;
-        }
-
-        const enc = new TextEncoder();
-        // let reply = await stm32_serial.WriteBytesWaitForACK(this.serial, enc.encode(command), 4000, 5);
-
-        if (reply === NO_REPLY) {
-            logger.Error("Failed to move Hactar into upload mode");
-            throw "Failed to move Hactar into upload mode";
-        }
-
-        if (command === "ui_upload") {
-            // await this.serial.OpenPort("even");
-            for (let i = 0; i < 5; i++) {
-                reply = await this.serial.ReadByte(5000);
-                if (reply === READY) break;
-                logger.Warning("Failed to get Hactar into ui upload mode, retrying...");
-            }
-            if (reply === NO_REPLY) {
-                logger.Error("Hactar took too long to get ready");
-                throw "Hactar took too long to get ready";
-            }
-
-            logger.Info("Activating UI Upload Mode: SUCCESS");
-            logger.Info("Update uart to parity: EVEN");
-        } else if (command === "net_upload") {
-            for (let i = 0; i < 5; i++) {
-                reply = await this.serial.ReadByte(5000);
-                if (reply === READY) break;
-                logger.Warning("Failed to get Hactar into net upload mode, retrying...");
-            }
-
-            if (reply === NO_REPLY) {
-                logger.Error("Hactar took too long to get ready");
-                throw "Hactar took too long to get ready";
-            }
-
-            logger.Info("Activating NET Upload Mode: SUCCESS");
-            logger.Info("Update uart to parity: NONE");
-        }
-    }
-
-    async PulseSignals(rts = false, dtr = false, toggle_speed_ms = 1) {
-        // await this.serial.port.setSignals({ requestToSend: rts });
-        // await this.serial.port.setSignals({ dataTerminalReady: dtr });
-        // await new Promise(resolve => setTimeout(resolve, toggle_speed_ms));
-        // await this.serial.port.setSignals({ requestToSend: !rts });
-        // await this.serial.port.setSignals({ dataTerminalReady: !dtr });
-        // await new Promise(resolve => setTimeout(resolve, toggle_speed_ms));
-        // await this.serial.port.setSignals({ requestToSend: rts });
-        // await this.serial.port.setSignals({ dataTerminalReady: dtr });
+        if (failure) throw failure;
     }
 }
-
-export default HactarFlasher;
-export const flasher = new HactarFlasher();
