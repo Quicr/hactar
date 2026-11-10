@@ -74,6 +74,8 @@ class STMROM extends Queue {
     constructor(id, extended = true, corrupt = false) {
         super(); this.id = id; this.extended = extended; this.corrupt = corrupt;
         this.memory = new Uint8Array(1024 * 1024).fill(255);
+        this.options = Uint8Array.from([0xaa, 0x55, 0xff, 0, 0xff, 0, 0x34, 0xcb, 0xff, 0, 0xff, 0, 0xff, 0, 0xff, 0]);
+        this.optionWrites = 0;
         this.erased = []; this.state = "init";
     }
     async write(input) {
@@ -96,18 +98,26 @@ class STMROM extends Queue {
             this.state = "command";
         } else if (this.state === "address") {
             assert.equal(bytes.length, 5); assert.equal(xor, 0);
-            this.address = new DataView(bytes.buffer).getUint32(0) - 0x08000000;
+            const address = new DataView(bytes.buffer).getUint32(0);
+            this.optionAccess = address === 0x1ffff800;
+            this.address = this.optionAccess ? 0 : address - 0x08000000;
             this.state = this.command === 0x21 ? "command" : "data";
         } else if (this.state === "data") {
             const length = bytes[0] + 1;
             this.state = "command";
             if (this.command === 0x31) {
                 assert.equal(xor, 0); assert.equal(length % 4, 0); assert.equal(bytes.length, length + 2);
-                this.memory.set(bytes.slice(1, -1), this.address);
+                if (this.optionAccess) {
+                    assert.equal(length, 16);
+                    this.options.set(bytes.slice(1, -1));
+                    this.optionWrites++;
+                    this.state = "init"; // Option-byte programming resets the ROM session.
+                } else this.memory.set(bytes.slice(1, -1), this.address);
             } else {
                 assert.equal(xor, 255);
-                const data = this.memory.slice(this.address, this.address + length);
+                const data = (this.optionAccess ? this.options : this.memory).slice(this.address, this.address + length);
                 if (this.corrupt) data[0] ^= 1;
+                if (this.optionAccess && this.optionWrites && this.corruptOptions) data[4] ^= 1;
                 this.push([0x79, ...data]); return;
             }
         }
@@ -140,6 +150,28 @@ test("STM32 refuses wrong chip and detects corrupted readback", async () => {
     const corrupt = new STM32(new STMROM(0x448, true, true));
     await corrupt.init();
     await assert.rejects(corrupt.flash(Uint8Array.of(1), "mgmt", () => {}), /Verification failed/);
+});
+
+for (const version of [16, 17]) {
+    test(`MGMT DATA0=${version} preserves all other option bytes and verifies after reinitialization`, async () => {
+        const rom = new STMROM(0x448), loader = new STM32(rom);
+        const expected = rom.options.slice();
+        expected[4] = version; expected[5] = version ^ 255;
+        await loader.init();
+        await loader.setMgmtVersion(version, () => loader.init());
+        assert.deepEqual(rom.options, expected);
+        assert.equal(rom.optionWrites, 1);
+        // Selecting an already matching version does not reprogram option bytes.
+        await loader.setMgmtVersion(version, () => assert.fail("Unnecessary ROM reset"));
+        assert.equal(rom.optionWrites, 1);
+    });
+}
+
+test("MGMT option-byte readback corruption fails verification", async () => {
+    const rom = new STMROM(0x448), loader = new STM32(rom);
+    rom.corruptOptions = true;
+    await loader.init();
+    await assert.rejects(loader.setMgmtVersion(17, () => loader.init()), /option-byte verification failed/);
 });
 
 function slip(data) {
@@ -243,6 +275,9 @@ class DevicePort {
     netPending = new Uint8Array();
     async open(options) {
         this.baud = options.baudRate; this.opened.push(this.baud);
+        // Model a USB serial driver asserting both lines on every open,
+        // including the baud-rate reopen after flashing MGMT.
+        this.signals = { dataTerminalReady: true, requestToSend: true };
         this.readable = new ReadableStream({ start: c => { this.controller = c; } });
         this.writable = new WritableStream({ write: data => this.write(data) });
     }
@@ -258,7 +293,11 @@ class DevicePort {
         const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
         const type = view.getUint16(4, true), payload = data.slice(10);
         assert.equal(view.getUint32(6, true), payload.length);
-        if (type === 3) this.emit(frame(0x14, payload.map((b, i) => b ^ [76, 73, 78, 75][i])));
+        if (type === 3) {
+            assert.equal(this.signals.requestToSend, false, "Release MGMT BOOT0 after opening the port");
+            assert.equal(this.signals.dataTerminalReady, false, "Release MGMT reset after opening the port");
+            this.emit(frame(0x14, payload.map((b, i) => b ^ [76, 73, 78, 75][i])));
+        }
         else if (type === 4) { this.pins[payload[0]] = payload[1]; this.emit(frame(0x13)); }
         else if (type === 5) { this.uiBaud = new DataView(payload.buffer).getUint32(0, true); this.emit(frame(0x13)); }
         else if (type === 1) {
@@ -296,6 +335,8 @@ test("complete default update sequences MGMT → UI → NET and restores both ch
         assert.equal(port.signals.dataTerminalReady, false);
         assert.deepEqual(logs.filter(m => m.includes("flashed and verified")), ["MGMT flashed and verified.", "UI flashed and verified.", "NET flashed and verified."]);
         assert.equal(port.readable.locked, false);
+        assert.equal(port.mgmt.options[4], 17);
+        assert.equal(port.mgmt.options[5], 17 ^ 255);
     } finally { globalThis.fetch = original; }
 });
 
@@ -309,4 +350,60 @@ test("failed UI verification still restores baud, resets UI/NET and closes the p
         assert.equal(port.uiBaud, 1000000);
         assert.equal(port.readable.locked, false);
     } finally { globalThis.fetch = original; }
+});
+
+test("normal-mode initialization releases BOOT0 before reset", async () => {
+    const calls = [];
+    await new HactarFlasher({ log() {}, progress() {} }).initMGMT({
+        port: { async setSignals(signals) { calls.push(signals); } },
+    });
+    assert.deepEqual(calls, [{ requestToSend: false }, { dataTerminalReady: false }]);
+});
+
+test("manual MGMT flashing preserves user-controlled bootloader signals", async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = async () => new Response(randomBytes(259));
+    const port = new DevicePort();
+    port.setSignals = async () => assert.fail("Do not change signals during manual MGMT flashing");
+    try {
+        await new HactarFlasher({ log() {}, progress() {} }).flash(["mgmt"], port, true);
+        assert.deepEqual(port.opened, [115200]);
+        assert.equal(port.mgmt.optionWrites, 1);
+        assert.equal(port.mgmt.options[4], 17);
+        assert.equal(port.mgmt.options[5], 17 ^ 255);
+    } finally { globalThis.fetch = original; }
+});
+
+test("setting MGMT version in manual mode reinitializes without changing signals", async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = async () => new Response(randomBytes(259));
+    const port = new DevicePort();
+    port.setSignals = async () => assert.fail("Do not change manual bootloader signals");
+    try {
+        await new HactarFlasher({ log() {}, progress() {} }).flash(["mgmt"], port, true, 16);
+        assert.equal(port.mgmt.options[4], 16);
+        assert.equal(port.mgmt.optionWrites, 1);
+    } finally { globalThis.fetch = original; }
+});
+
+test("invalid MGMT version selection fails before opening the port", async () => {
+    const loader = new HactarFlasher({ log() {}, progress() {} });
+    const port = { open() { assert.fail("Must not open the port"); } };
+    await assert.rejects(loader.flash(["mgmt"], port, false, 18), /version 16 or 17/);
+    await assert.rejects(loader.flash(["mgmt"], port, false, null), /version 16 or 17/);
+    await assert.rejects(loader.flash(["ui"], port, false, 17), /requires selecting MGMT/);
+});
+
+test("failed MGMT handshake reports retries, received bytes and last error", async () => {
+    const logs = [], writes = [];
+    const mgmt = new Management({
+        receivedBytes: 0,
+        async drain() {},
+        async write(data) { writes.push(data); },
+        async read() { throw new Error("Timed out waiting for the device."); },
+    }, message => logs.push(message));
+    await assert.rejects(mgmt.ready(), /BOOT0 is low.*Last handshake error: Timed out/);
+    assert.equal(writes.length, 10);
+    assert.equal(logs.length, 11);
+    assert.equal(logs.at(-1), "Received 0 serial bytes during the MGMT handshake.");
 });

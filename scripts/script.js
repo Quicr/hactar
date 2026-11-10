@@ -7,6 +7,8 @@ const consoleDiv = document.getElementById("console");
 const themeToggle = document.getElementById("themeToggle");
 const selection = document.getElementById("chipSelection");
 const manualBoot = document.getElementById("manualBoot");
+const versionOptions = document.getElementById("mgmtVersionOptions");
+const mgmtVersion = document.getElementById("mgmtVersion");
 const status = document.getElementById("status");
 const progress = document.getElementById("progress");
 
@@ -46,6 +48,7 @@ if (!supported) {
 }
 function updateSelection() {
     updateButton.disabled = !supported || !selection.querySelector("input:checked");
+    versionOptions.disabled = selection.disabled || !selection.querySelector('input[value="mgmt"]:checked');
 }
 selection.addEventListener("change", updateSelection);
 updateSelection();
@@ -55,6 +58,7 @@ updateButton.addEventListener("click", async () => {
     if (!chips.length) return;
     updateButton.disabled = true;
     selection.disabled = true;
+    versionOptions.disabled = true;
     manualBoot.disabled = true;
     progress.value = 0;
     lastPhase = null;
@@ -63,7 +67,8 @@ updateButton.addEventListener("click", async () => {
         const port = await navigator.serial.requestPort();
         status.textContent = "Loading firmware…";
         log(`Starting update: ${chips.join(" → ").toUpperCase()}.`);
-        await flasher.flash(chips, port, manualBoot.checked);
+        const version = chips.includes("mgmt") ? Number(mgmtVersion.value) : null;
+        await flasher.flash(chips, port, manualBoot.checked, version);
         progress.value = 100;
         status.textContent = "Update complete. All selected firmware has been verified.";
         log(status.textContent);

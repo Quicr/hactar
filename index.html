@@ -34,6 +34,16 @@
             <label><input type="checkbox" name="chip" value="net" checked /> NET <small>ESP32-S3</small></label>
         </fieldset>
 
+        <fieldset id="mgmtVersionOptions">
+            <legend>MGMT board version</legend>
+            <label for="mgmtVersion">Board revision</label>
+            <select id="mgmtVersion">
+                <option value="16">EV16 and older</option>
+                <option value="17" selected>EV17 and newer</option>
+            </select>
+            <small>The selected board version is always applied and verified when flashing MGMT.</small>
+        </fieldset>
+
         <button id="updateButton">🔄 Update Device</button>
         <p id="status" role="status" aria-live="polite">Ready to update.</p>
         <progress id="progress" max="100" value="0" aria-label="Current flashing phase"></progress>

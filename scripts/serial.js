@@ -7,6 +7,7 @@ export class SerialConnection {
     async open(baudRate) {
         await this.port.open({ baudRate, dataBits: 8, stopBits: 1, parity: "even", flowControl: "none", bufferSize: 16384 });
         this.buffer = new Uint8Array();
+        this.receivedBytes = 0;
         this.error = null;
         this.reader = this.port.readable.getReader();
         this.writer = this.port.writable.getWriter();
@@ -18,6 +19,7 @@ export class SerialConnection {
             while (true) {
                 const { value, done } = await this.reader.read();
                 if (done) break;
+                this.receivedBytes += value.length;
                 this.buffer = concat(this.buffer, value);
                 if (this.buffer.length > 1024 * 1024) throw new Error("Serial receive buffer overflow.");
                 this.wake?.();
@@ -89,7 +91,7 @@ export function frame(type, value = []) {
 }
 
 export class Management {
-    constructor(serial) { this.serial = serial; }
+    constructor(serial, log = () => {}) { this.serial = serial; this.log = log; }
 
     async receive(timeout = 3000) {
         const deadline = Date.now() + timeout;
@@ -119,15 +121,24 @@ export class Management {
     }
 
     async ready() {
+        const receivedBefore = this.serial.receivedBytes ?? 0;
+        let lastError;
         for (let attempt = 0; attempt < 10; attempt++) {
             await this.serial.drain();
             const challenge = crypto.getRandomValues(new Uint8Array(4));
             try {
                 const reply = await this.request(3, challenge, 0x14, 500);
                 if (reply.length === 4 && reply.every((b, i) => b === (challenge[i] ^ [76, 73, 78, 75][i]))) return;
-            } catch (error) { if (this.serial.error) throw error; }
+                lastError = new Error("MGMT Hello reply did not match the challenge.");
+            } catch (error) {
+                if (this.serial.error) throw error;
+                lastError = error;
+            }
+            this.log(`MGMT handshake ${attempt + 1}/10 failed: ${lastError.message}`);
         }
-        throw new Error("MGMT is not responding to LINK commands. Flash compatible MGMT firmware first.");
+        const received = (this.serial.receivedBytes ?? 0) - receivedBefore;
+        this.log(`Received ${received} serial bytes during the MGMT handshake.`);
+        throw new Error(`MGMT is not responding to LINK commands at 1000000 baud, 8E1. Check that MGMT BOOT0 is low and reset is released, and that the selected port belongs to the device. Last handshake error: ${lastError?.message}`);
     }
 
     pin(pin, value) { return this.request(4, [pin, value]); }

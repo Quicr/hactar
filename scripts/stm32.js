@@ -56,6 +56,24 @@ export class STM32 {
 
     async go() { await this.command(0x21); await this.address(BASE); }
 
+    async setMgmtVersion(version, reinitialize) {
+        if (version !== 16 && version !== 17) throw new Error("MGMT version must be 16 or 17.");
+        // Match ctl's DATA0 setter: preserve all 16 option bytes, including
+        // read/write protection and boot configuration, and update nDATA0 too.
+        const base = 0x1ffff800;
+        const options = await this.read(base, 16);
+        const complement = version ^ 255;
+        if (options[4] === version && options[5] === complement) return;
+        options[4] = version;
+        options[5] = complement;
+        await this.write(base, options);
+        // Programming option bytes may reset MGMT. Establish a new bootloader
+        // session before verification, as ctl does for the same operation.
+        await reinitialize();
+        const actual = await this.read(base, 16);
+        if (!actual.every((byte, i) => byte === options[i])) throw new Error("MGMT version option-byte verification failed.");
+    }
+
     async flash(binary, chip, progress) {
         const isMgmt = chip === "mgmt";
         await this.identify(isMgmt ? 0x448 : 0x413);
