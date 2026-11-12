@@ -6,6 +6,7 @@ const advancedSection = document.getElementById("advancedSection");
 const consoleDiv = document.getElementById("console");
 const themeToggle = document.getElementById("themeToggle");
 const selection = document.getElementById("chipSelection");
+const selectAllButton = document.getElementById("selectAllButton");
 const manualBoot = document.getElementById("manualBoot");
 const versionOptions = document.getElementById("mgmtVersionOptions");
 const mgmtVersion = document.getElementById("mgmtVersion");
@@ -51,6 +52,10 @@ function updateSelection() {
     versionOptions.disabled = selection.disabled || !selection.querySelector('input[value="mgmt"]:checked');
 }
 selection.addEventListener("change", updateSelection);
+selectAllButton.addEventListener("click", () => {
+    selection.querySelectorAll('input[name="chip"]').forEach(input => input.checked = true);
+    updateSelection();
+});
 updateSelection();
 
 updateButton.addEventListener("click", async () => {

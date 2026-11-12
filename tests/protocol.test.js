@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
-import { SerialConnection, Management, concat, frame, words } from "../scripts/serial.js";
+import { SerialConnection, Management, SerialTimeoutError, concat, frame, words } from "../scripts/serial.js";
 import { STM32 } from "../scripts/stm32.js";
 import { ESP32 } from "../scripts/esp32.js";
 import { md5 } from "../scripts/md5.js";
@@ -256,6 +256,58 @@ test("ESP32 verification failure is reported", async () => {
     await assert.rejects(new ESP32(rom).flash([{ address: 0x10000, name: "app", data: randomBytes(50) }], () => {}), /verification failed/);
 });
 
+test("NET synchronization retries missed startup requests through the LINK tunnel", async () => {
+    const rom = new ESPROM(), serial = new Queue(), logs = [];
+    let attempts = 0;
+    serial.write = async packet => {
+        assert.equal(new DataView(packet.buffer).getUint16(4, true), 2);
+        if (++attempts < 3) return; // ROM is not ready for auto-baud yet.
+        await rom.write(packet.slice(10));
+        serial.push(frame(0x12, await rom.read(rom.buffer.length)));
+    };
+    const read = serial.read.bind(serial);
+    serial.read = async length => {
+        if (!serial.buffer.length) throw new SerialTimeoutError("Timed out waiting for the device.");
+        return read(length);
+    };
+    await new ESP32(new Management(serial).tunnel("net"), message => logs.push(message)).sync();
+    assert.equal(attempts, 3);
+    assert.equal(logs.filter(message => message.includes("timed out")).length, 2);
+    assert.match(logs.at(-1), /synchronized on attempt 3\/10/);
+});
+
+test("NET synchronization stops after ten timeouts and does not retry USB failures", async () => {
+    let writes = 0;
+    const port = {
+        async write() { writes++; },
+        async read() { throw new SerialTimeoutError("Timed out waiting for the device."); },
+    };
+    await assert.rejects(new ESP32(port).sync(), /NET ROM did not respond to SYNC after 10 attempts/);
+    assert.equal(writes, 10);
+    writes = 0;
+    port.read = async () => { throw new Error("USB disconnected"); };
+    await assert.rejects(new ESP32(port).sync(), /USB disconnected/);
+    assert.equal(writes, 1);
+});
+
+test("NET write timeout identifies the image and block without retrying FLASH_DATA", async () => {
+    const rom = new ESPROM();
+    const write = rom.write.bind(rom), read = rom.read.bind(rom);
+    let flashWrites = 0;
+    rom.write = async packet => {
+        if (packet[2] === 3) { flashWrites++; return; }
+        await write(packet);
+    };
+    rom.read = async length => {
+        if (!rom.buffer.length) throw new SerialTimeoutError("Timed out waiting for the device.");
+        return read(length);
+    };
+    await assert.rejects(new ESP32(rom).flash([
+        { address: 0x10000, name: "net.bin", data: randomBytes(2048) },
+    ], () => {}), /net.bin at 0x10000 \(block 1\/2\): NET FLASH_DATA \(0x3\): Timed out/);
+    assert.equal(flashWrites, 1);
+});
+
 test("missing firmware prevents opening or erasing a device", async () => {
     const original = globalThis.fetch;
     globalThis.fetch = async () => new Response("Missing", { status: 404 });
@@ -358,6 +410,51 @@ test("normal-mode initialization releases BOOT0 before reset", async () => {
         port: { async setSignals(signals) { calls.push(signals); } },
     });
     assert.deepEqual(calls, [{ requestToSend: false }, { dataTerminalReady: false }]);
+});
+
+test("MGMT control timeout identifies the exact pin and requested level", async () => {
+    const logs = [];
+    const mgmt = new Management({
+        async write() {},
+        async read() { throw new SerialTimeoutError("Timed out waiting for the device."); },
+    }, message => logs.push(message));
+    await assert.rejects(mgmt.pin(4, 0), /MGMT setting NET reset LOW: Timed out waiting for the device/);
+    await assert.rejects(mgmt.uiBaud(115200), /MGMT setting UI UART to 115200 baud: Timed out/);
+    assert.match(logs[0], /NET reset LOW/);
+});
+
+test("cleanup tries all resets and preserves the original NET failure", async () => {
+    const logs = [], calls = [];
+    const loader = new HactarFlasher({ log: message => logs.push(message), progress() {} });
+    const failure = new Error("NET FLASH_DATA (0x3): Timed out waiting for the device.");
+    const steps = [
+        async () => { calls.push("net"); throw new Error("NET reset timeout"); },
+        async () => { calls.push("ui"); throw new Error("UI reset timeout"); },
+    ];
+    await assert.rejects((async () => {
+        try { throw failure; }
+        finally { await loader.restore(steps, failure); }
+    })(), error => error === failure);
+    assert.deepEqual(calls, ["net", "ui"]);
+    assert.equal(logs.length, 2);
+    // A reset failure after otherwise successful flashing must still be reported.
+    await assert.rejects(loader.restore(steps), /NET reset timeout/);
+});
+
+test("NET failure survives a serial-port close error and is logged before cleanup", async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = async () => new Response(randomBytes(17));
+    const port = new DevicePort(), logs = [];
+    port.net.corrupt = true;
+    port.close = async () => { throw new Error("USB disconnected during close"); };
+    try {
+        await assert.rejects(new HactarFlasher({ log: message => logs.push(message), progress() {} }).flash(["net"], port), /NET verification failed/);
+        const failureIndex = logs.findIndex(message => message.startsWith("NET update failed:"));
+        const cleanupIndex = logs.findIndex((message, index) => index > failureIndex && message.includes("setting NET BOOT HIGH"));
+        assert.ok(failureIndex >= 0 && cleanupIndex > failureIndex);
+        assert.match(logs.at(-1), /Closing serial port failed: USB disconnected during close/);
+        assert.deepEqual(port.pins, [0, 1, 1, 1, 1]);
+    } finally { globalThis.fetch = original; }
 });
 
 test("manual MGMT flashing preserves user-controlled bootloader signals", async () => {

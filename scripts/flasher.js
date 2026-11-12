@@ -60,6 +60,7 @@ export class HactarFlasher {
         const firmware = await this.binaries(chips);
         const serial = new SerialConnection(port);
         const report = chip => (phase, done, total) => this.progress(chip, phase, done, total);
+        let updateError;
         try {
             await serial.open(chips.includes("mgmt") ? 115200 : 1000000);
             if (chips.includes("mgmt")) {
@@ -98,6 +99,8 @@ export class HactarFlasher {
                 await mgmt.ready();
                 if (chips.includes("ui")) {
                     this.log("Entering UI bootloader through MGMT…");
+                    report("ui")("Entering bootloader through MGMT", 0, 1);
+                    let flashError;
                     try {
                         await mgmt.uiBaud(115200);
                         await mgmt.pin(4, 0);
@@ -106,33 +109,52 @@ export class HactarFlasher {
                         const stm = new STM32(mgmt.tunnel("ui"));
                         await stm.init();
                         await stm.flash(firmware.ui[0].data, "ui", report("ui"));
+                    } catch (error) {
+                        flashError = error;
+                        this.log(`UI update failed: ${error.message}`);
+                        throw error;
                     } finally {
-                        await this.restore([() => mgmt.uiBaud(1000000), () => mgmt.resetUI(), () => mgmt.resetNET()]);
+                        await this.restore([() => mgmt.uiBaud(1000000), () => mgmt.resetUI(), () => mgmt.resetNET()], flashError);
                     }
                     this.log("UI flashed and verified.");
                 }
                 if (chips.includes("net")) {
                     this.log("Entering NET ROM bootloader through MGMT…");
+                    report("net")("Entering bootloader through MGMT", 0, 1);
+                    let flashError;
                     try {
                         await mgmt.pin(2, 0);
                         await mgmt.resetNET(true);
                         await sleep(100); await serial.drain();
-                        await new ESP32(mgmt.tunnel("net")).flash(firmware.net, report("net"));
+                        await new ESP32(mgmt.tunnel("net"), this.log).flash(firmware.net, report("net"));
+                    } catch (error) {
+                        flashError = error;
+                        this.log(`NET update failed: ${error.message}`);
+                        throw error;
                     } finally {
-                        await this.restore([() => mgmt.resetNET(), () => mgmt.resetUI()]);
+                        await this.restore([() => mgmt.resetNET(), () => mgmt.resetUI()], flashError);
                     }
                     this.log("NET flashed and verified.");
                 }
             }
-        } finally { await serial.close(); }
+        } catch (error) {
+            updateError = error;
+            throw error;
+        } finally {
+            try { await serial.close(); }
+            catch (error) {
+                this.log(`Closing serial port failed: ${error.message}`);
+                if (!updateError) throw error;
+            }
+        }
     }
 
-    async restore(steps) {
+    async restore(steps, updateError) {
         let failure;
         for (const step of steps) {
             try { await step(); }
             catch (error) { failure ??= error; this.log(`Reset failed: ${error.message}`); }
         }
-        if (failure) throw failure;
+        if (failure && !updateError) throw failure;
     }
 }

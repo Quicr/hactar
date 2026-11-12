@@ -1,9 +1,14 @@
-import { concat, words } from "./serial.js";
+import { concat, words, SerialTimeoutError } from "./serial.js";
 import { md5 } from "./md5.js";
+
+const COMMANDS = {
+    2: "FLASH_BEGIN", 3: "FLASH_DATA", 4: "FLASH_END", 8: "SYNC",
+    10: "READ_REG", 11: "SPI_SET_PARAMS", 13: "SPI_ATTACH", 19: "SPI_FLASH_MD5",
+};
 
 // ESP32-S3 ROM protocol: no stub upload or baud-rate changes through the tunnel.
 export class ESP32 {
-    constructor(port) { this.port = port; }
+    constructor(port, log = () => {}) { this.port = port; this.log = log; }
 
     async send(opcode, data, checksum = 0) {
         const header = new Uint8Array(8);
@@ -24,7 +29,7 @@ export class ESP32 {
     async response(opcode, timeout) {
         const deadline = Date.now() + timeout;
         const byte = async () => {
-            if (Date.now() >= deadline) throw new Error("ESP32 bootloader response timed out.");
+            if (Date.now() >= deadline) throw new SerialTimeoutError("ESP32 bootloader response timed out.");
             return (await this.port.read(1, deadline - Date.now()))[0];
         };
         let packet = [], started = false, escaped = false;
@@ -53,22 +58,47 @@ export class ESP32 {
     }
 
     async command(opcode, data, checksum = 0, timeout = 3000) {
-        await this.send(opcode, data, checksum);
-        return this.response(opcode, timeout);
+        try {
+            await this.send(opcode, data, checksum);
+            return await this.response(opcode, timeout);
+        } catch (error) {
+            throw new Error(`NET ${COMMANDS[opcode] ?? "command"} (0x${opcode.toString(16)}): ${error.message}`, { cause: error });
+        }
+    }
+
+    async sync() {
+        const data = concat(Uint8Array.of(7, 7, 18, 32), new Uint8Array(32).fill(0x55));
+        for (let attempt = 1; attempt <= 10; attempt++) {
+            // Resend SYNC while the ROM starts and detects the tunnel's baud rate.
+            // Only the handshake is retried; flash commands must not be replayed.
+            await this.send(8, data);
+            try {
+                await this.response(8, 1000);
+                this.log(`NET ROM synchronized on attempt ${attempt}/10.`);
+                return;
+            } catch (error) {
+                if (!(error instanceof SerialTimeoutError)) throw error;
+                this.log(`NET ROM synchronization ${attempt}/10 timed out.`);
+                if (attempt === 10) {
+                    throw new Error(`NET ROM did not respond to SYNC after 10 attempts. Check NET BOOT and reset control and the MGMT–NET UART connection. ${error.message}`, { cause: error });
+                }
+            }
+        }
     }
 
     async init() {
-        const sync = concat(Uint8Array.of(7, 7, 18, 32), new Uint8Array(32).fill(0x55));
         // SYNC returns eight replies; subsequent commands skip leftover replies.
-        await this.command(8, sync, 0, 5000);
+        await this.sync();
         const chip = await this.command(0x0a, words(0x40001000));
         if (chip.value !== 0x00000009) throw new Error("NET is not an ESP32-S3.");
+        this.log("NET ESP32-S3 detected; attaching SPI flash.");
         await this.command(0x0d, words(0, 0)); // SPI_ATTACH (default flash pins)
         // Match the existing ESP-IDF image's 8 MB flash geometry.
         await this.command(0x0b, words(0, 8 * 1024 * 1024, 65536, 4096, 256, 0xffff));
     }
 
     async flash(images, progress) {
+        progress("Connecting to ROM bootloader", 0, 1);
         await this.init();
         const total = images.reduce((sum, image) => sum + image.data.length, 0);
         let written = 0;
@@ -82,7 +112,11 @@ export class ESP32 {
                 const part = data.slice(sequence * 1024, (sequence + 1) * 1024);
                 chunk.set(part);
                 const checksum = chunk.reduce((value, byte) => value ^ byte, 0xef);
-                await this.command(3, concat(words(1024, sequence, 0, 0), chunk), checksum, 10000);
+                try {
+                    await this.command(3, concat(words(1024, sequence, 0, 0), chunk), checksum, 10000);
+                } catch (error) {
+                    throw new Error(`${name} at 0x${(address + sequence * 1024).toString(16)} (block ${sequence + 1}/${blocks}): ${error.message}`, { cause: error });
+                }
                 written += part.length;
                 progress(`Writing ${name}`, written, total);
             }

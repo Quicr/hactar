@@ -1,5 +1,7 @@
 export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+export class SerialTimeoutError extends Error {}
+
 // A persistent reader ensures timed-out requests cannot steal later replies.
 export class SerialConnection {
     constructor(port) { this.port = port; }
@@ -34,7 +36,7 @@ export class SerialConnection {
         while (this.buffer.length < length) {
             if (this.error) throw this.error;
             const remaining = deadline - Date.now();
-            if (remaining <= 0) throw new Error("Timed out waiting for the device.");
+            if (remaining <= 0) throw new SerialTimeoutError("Timed out waiting for the device.");
             await new Promise(resolve => {
                 const finish = () => { clearTimeout(timer); this.wake = null; resolve(); };
                 const timer = setTimeout(finish, remaining);
@@ -99,7 +101,7 @@ export class Management {
         const sync = [0x4c, 0x49, 0x4e, 0x4b];
         let matched = 0;
         while (matched < 4) {
-            if (Date.now() >= deadline) throw new Error("Timed out waiting for a LINK frame.");
+            if (Date.now() >= deadline) throw new SerialTimeoutError("Timed out waiting for a LINK frame.");
             const byte = (await read(1))[0];
             matched = byte === sync[matched] ? matched + 1 : (byte === sync[0] ? 1 : 0);
         }
@@ -141,8 +143,17 @@ export class Management {
         throw new Error(`MGMT is not responding to LINK commands at 1000000 baud, 8E1. Check that MGMT BOOT0 is low and reset is released, and that the selected port belongs to the device. Last handshake error: ${lastError?.message}`);
     }
 
-    pin(pin, value) { return this.request(4, [pin, value]); }
-    uiBaud(baud) { return this.request(5, words(baud)); }
+    async control(type, value, description) {
+        this.log(`MGMT: ${description}…`);
+        try { return await this.request(type, value); }
+        catch (error) { throw new Error(`MGMT ${description}: ${error.message}`, { cause: error }); }
+    }
+
+    pin(pin, value) {
+        const name = ["UI BOOT0", "UI BOOT1", "UI reset", "NET BOOT", "NET reset"][pin] ?? `pin ${pin}`;
+        return this.control(4, [pin, value], `setting ${name} ${value ? "HIGH" : "LOW"}`);
+    }
+    uiBaud(baud) { return this.control(5, words(baud), `setting UI UART to ${baud} baud`); }
 
     async resetUI(bootloader = false) {
         await this.pin(0, bootloader ? 1 : 0);
@@ -175,7 +186,7 @@ export class Management {
             read: async (length, timeout = 3000) => {
                 const deadline = Date.now() + timeout;
                 while (buffer.length < length) {
-                    if (Date.now() >= deadline) throw new Error(`Timed out waiting for ${chip.toUpperCase()}.`);
+                    if (Date.now() >= deadline) throw new SerialTimeoutError(`Timed out waiting for ${chip.toUpperCase()}.`);
                     const reply = await this.receive(deadline - Date.now());
                     if (reply.type === incoming) buffer = concat(buffer, reply.value);
                 }

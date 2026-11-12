@@ -4,55 +4,102 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Device Updater</title>
+    <title>Hactar updater</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
     <link rel="stylesheet" href="styles/style.css" />
 </head>
 
 <body>
-    <main class="container">
-        <div class="header">
-            <h1>Device Updater</h1>
-            <div class="theme-switch-wrapper">
-                <span>☀️</span>
-                <label class="theme-switch">
-                    <input type="checkbox" id="themeToggle" aria-label="Dark theme" />
-                    <span class="slider"></span>
-                </label>
-                <span>🌙</span>
-            </div>
+    <header class="site-header">
+        <div class="brand">
+            <svg class="cisco-logo" viewBox="0 0 100 58" role="img" aria-labelledby="cisco-title">
+                <title id="cisco-title">Cisco</title>
+                <g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round">
+                    <path d="M6 19v7 M17 13v13 M28 5v26 M39 13v13 M50 19v7 M61 13v13 M72 5v26 M83 13v13 M94 19v7" />
+                </g>
+                <text x="50" y="55" text-anchor="middle" fill="currentColor" font-family="Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="4">cisco</text>
+            </svg>
+            <span class="brand-divider" aria-hidden="true"></span>
+            <span class="brand-label">Device tools</span>
+        </div>
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch">
+                <input type="checkbox" id="themeToggle" aria-label="Dark theme" />
+                <span class="slider"></span>
+            </label>
+            <span>Dark mode</span>
+        </div>
+    </header>
 
+    <main class="container">
+        <div class="page-heading">
+            <h1>Hactar updater</h1>
         </div>
 
-        <p>Connect your device over USB, choose the chips to update, and select its serial port.</p>
+        <div class="updater-panel">
+            <div class="panel-heading">
+                <h2>Configure your update</h2>
+            </div>
+            <div class="configuration">
+                <fieldset id="chipSelection">
+                    <legend>Select firmware</legend>
+                    <div class="selection-toolbar">
+                        <p class="field-help">Choose the chips to update.</p>
+                        <button id="selectAllButton" class="select-all-button" type="button"><i class="fa-solid fa-check-double" aria-hidden="true"></i> Select all</button>
+                    </div>
+                    <div class="chip-options">
+                        <div class="chip-card chip-mgmt">
+                            <label class="chip-main">
+                                <input type="checkbox" name="chip" value="mgmt" checked />
+                                <span class="chip-details"><i class="fa-solid fa-microchip" aria-hidden="true"></i><strong>MGMT</strong></span>
+                                <span class="chip-description">Management</span>
+                            </label>
+                            <fieldset id="mgmtVersionOptions">
+                                <label for="mgmtVersion" class="select-label">Board version</label>
+                                <select id="mgmtVersion">
+                                    <option value="16">EV16 and older</option>
+                                    <option value="17" selected>EV17 and newer</option>
+                                </select>
+                            </fieldset>
+                        </div>
+                        <label class="chip-card chip-ui">
+                            <input type="checkbox" name="chip" value="ui" checked />
+                            <span class="chip-details"><i class="fa-solid fa-display" aria-hidden="true"></i><strong>UI</strong></span>
+                            <span class="chip-description">User interface</span>
+                        </label>
+                        <label class="chip-card chip-net">
+                            <input type="checkbox" name="chip" value="net" checked />
+                            <span class="chip-details"><i class="fa-solid fa-wifi" aria-hidden="true"></i><strong>NET</strong></span>
+                            <span class="chip-description">Network</span>
+                        </label>
+                    </div>
+                </fieldset>
+            </div>
 
-        <p id="compatibility" class="notice">Requires desktop Chrome or Edge over HTTPS or localhost. Close other programs using the serial port.</p>
+            <div class="update-area">
+                <div class="update-action">
+                    <div class="status-block">
+                        <span class="section-label">UPDATE STATUS</span>
+                        <p id="status" role="status" aria-live="polite">Ready.</p>
+                    </div>
+                    <button id="updateButton"><i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i> Update device</button>
+                </div>
+                <progress id="progress" max="100" value="0" aria-label="Current flashing phase"></progress>
+                <p class="action-help">You’ll be asked to select a serial port before the update starts.</p>
+            </div>
+        </div>
 
-        <fieldset id="chipSelection">
-            <legend>Firmware to flash</legend>
-            <label><input type="checkbox" name="chip" value="mgmt" checked /> MGMT <small>STM32F072</small></label>
-            <label><input type="checkbox" name="chip" value="ui" checked /> UI <small>STM32F405</small></label>
-            <label><input type="checkbox" name="chip" value="net" checked /> NET <small>ESP32-S3</small></label>
-        </fieldset>
-
-        <fieldset id="mgmtVersionOptions">
-            <legend>MGMT board version</legend>
-            <label for="mgmtVersion">Board revision</label>
-            <select id="mgmtVersion">
-                <option value="16">EV16 and older</option>
-                <option value="17" selected>EV17 and newer</option>
-            </select>
-            <small>The selected board version is always applied and verified when flashing MGMT.</small>
-        </fieldset>
-
-        <button id="updateButton">🔄 Update Device</button>
-        <p id="status" role="status" aria-live="polite">Ready to update.</p>
-        <progress id="progress" max="100" value="0" aria-label="Current flashing phase"></progress>
+        <div class="compatibility-note">
+            <i class="fa-solid fa-circle-info info-icon" aria-hidden="true"></i>
+            <p id="compatibility" class="notice">Use desktop Chrome or Edge over HTTPS or localhost. Close other programs using the serial port.</p>
+        </div>
 
         <div class="advanced-toggle">
             <label>
                 <input type="checkbox" id="advancedToggle" />
-                Show Advanced Options
+                Advanced options
             </label>
+            <span>Manual boot &amp; update log</span>
         </div>
 
         <section id="advancedSection" class="hidden">
@@ -61,6 +108,7 @@
             <h2>Update log</h2>
             <div id="console" class="console" role="log" aria-label="Update log"></div>
         </section>
+        <footer class="page-footer">Device tools <span aria-hidden="true">/</span> Hactar updater</footer>
     </main>
 
     <script type="module" src="scripts/script.js"></script>
