@@ -56,13 +56,10 @@ jobs:
           ref = metadata['ref']
           if ref.startswith('refs/heads/'):
               name = ref.removeprefix('refs/heads/')
-              folder = quote(name, safe='')
-              # Reserve this namespace for tags, including a branch named "tags".
-              if folder == 'tags':
-                  folder = '%74ags'
+              folder = 'main' if name == 'main' else 'branch-' + quote(name, safe='')
           elif ref.startswith('refs/tags/'):
               name = ref.removeprefix('refs/tags/')
-              folder = 'tags/' + quote(name, safe='')
+              folder = 'tag-' + quote(name, safe='')
           else:
               raise ValueError('Expected a branch or tag ref')
           assert name and not any(c.isspace() or ord(c) < 32 for c in name), 'Invalid ref name'
@@ -107,7 +104,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Stage firmware and source manifest
+      - name: Publish firmware and update folder index
         if: steps.publication.outputs.publish == 'true'
         shell: bash
         env:
@@ -115,6 +112,13 @@ jobs:
           METADATA: ${{ runner.temp }}/publication/publication.json
           BUILD_FOLDER: ${{ steps.publication.outputs.folder }}
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            # Rebuild the publication on the latest destination, including its index.
+            # This is a disposable runner checkout; firmware is stored in runner.temp.
+            git fetch origin gh-pages
+            git reset --hard origin/gh-pages
           python3 - <<'PY'
           import json
           import os
@@ -122,7 +126,12 @@ jobs:
           from pathlib import Path
 
           source = Path(os.environ['FIRMWARE'])
-          destination = Path('build') / os.environ['BUILD_FOLDER']
+          folder = os.environ['BUILD_FOLDER']
+          destination = Path('build') / folder
+          index_path = Path('build/manifest.json')
+          folders = json.loads(index_path.read_text()) if index_path.exists() else []
+          if not isinstance(folders, list) or not all(isinstance(item, str) for item in folders):
+              raise ValueError('build/manifest.json must be a JSON array of folder names')
           files = {
               'mgmt': ['mgmt.bin'],
               'ui': ['ui.bin', 'ui.elf', 'ui.hex'],
@@ -136,24 +145,16 @@ jobs:
                   shutil.copyfile(source / chip / path, target / Path(path).name)
           metadata = json.loads(Path(os.environ['METADATA']).read_text())
           (destination / 'manifest.json').write_text(json.dumps(metadata, indent=2) + '\n')
+          if folder not in folders:
+              folders.append(folder)
+              index_path.write_text(json.dumps(folders, indent=2) + '\n')
           PY
-
-      - name: Commit and push binaries
-        if: steps.publication.outputs.publish == 'true'
-        shell: bash
-        env:
-          BUILD_FOLDER: ${{ steps.publication.outputs.folder }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -- "build/$BUILD_FOLDER"
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          git commit -m "Update firmware in build/$BUILD_FOLDER"
-          for attempt in 1 2 3; do
-            git pull --rebase origin gh-pages
+            git add -- "build/$BUILD_FOLDER" build/manifest.json
+            if git diff --cached --quiet; then
+              echo "No changes to commit"
+              exit 0
+            fi
+            git commit -m "Update firmware in build/$BUILD_FOLDER"
             if git push origin gh-pages; then
               exit 0
             fi
