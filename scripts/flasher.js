@@ -30,15 +30,31 @@ export class HactarFlasher {
         return result;
     }
 
+    async setMGMTSignals(serial, signals) {
+        if (serial.signalControlError) return false;
+        try {
+            await serial.port.setSignals(signals);
+            return true;
+        } catch (error) {
+            // Some USB serial bridges reject modem-line control but still carry
+            // UART data. Let the ROM/LINK handshake check communication instead.
+            if (error.name !== "NetworkError" && error.name !== "NotSupportedError") throw error;
+            serial.signalControlError = error;
+            this.log(`USB port rejected DTR/RTS control; continuing without automatic MGMT reset. ${error.message}`);
+            return false;
+        }
+    }
+
     async resetMGMT(serial, bootloader) {
-        await serial.port.setSignals({ dataTerminalReady: false, requestToSend: false });
+        if (!await this.setMGMTSignals(serial, { dataTerminalReady: false, requestToSend: false })) return false;
         await sleep(100);
-        await serial.port.setSignals({ requestToSend: bootloader });
+        if (!await this.setMGMTSignals(serial, { requestToSend: bootloader })) return false;
         await sleep(50);
-        await serial.port.setSignals({ dataTerminalReady: true });
+        if (!await this.setMGMTSignals(serial, { dataTerminalReady: true })) return false;
         await sleep(50);
-        await serial.port.setSignals({ dataTerminalReady: false });
+        if (!await this.setMGMTSignals(serial, { dataTerminalReady: false })) return false;
         await sleep(100);
+        return true;
     }
 
     async initMGMT(serial) {
@@ -46,9 +62,9 @@ export class HactarFlasher {
         // On EV16, RTS selects BOOT0 and DTR holds MGMT in reset. Release
         // BOOT0 first so releasing reset starts the application, not the ROM.
         this.log("Releasing MGMT BOOT0 (RTS) and reset (DTR)…");
-        await serial.port.setSignals({ requestToSend: false });
+        if (!await this.setMGMTSignals(serial, { requestToSend: false })) return;
         await sleep(50);
-        await serial.port.setSignals({ dataTerminalReady: false });
+        if (!await this.setMGMTSignals(serial, { dataTerminalReady: false })) return;
         await sleep(200);
     }
 
@@ -70,13 +86,15 @@ export class HactarFlasher {
                 const stm = new STM32(serial);
                 try { await stm.init(); }
                 catch (error) {
+                    if (serial.signalControlError) {
+                        throw new Error(`MGMT bootloader did not respond and this USB port rejected automatic reset control. Set MGMT BOOT0 high, manually reset MGMT, then retry with manual bootloader mode in Advanced options. ${error.message}`, { cause: error });
+                    }
                     throw new Error(`MGMT bootloader did not respond. For boards without automatic reset, set MGMT BOOT0 high, reset the device, then retry with manual bootloader mode. ${error.message}`);
                 }
                 await stm.flash(firmware.mgmt[0].data, "mgmt", report("mgmt"));
                 report("mgmt")("Setting board version", 0, 1);
                 await stm.setMgmtVersion(mgmtVersion, async () => {
-                    if (!manualBoot) await this.resetMGMT(serial, true);
-                    else await sleep(100);
+                    if (manualBoot || !await this.resetMGMT(serial, true)) await sleep(100);
                     await serial.drain();
                     await stm.init();
                 });

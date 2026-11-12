@@ -17,19 +17,19 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #202928;
-  --surface: #283331;
+  --bg: #181a1b;
+  --surface: #222527;
   --text: #e8ece4;
   --muted: #aebbb3;
-  --line: #45514b;
-  --blue: #324b57;
-  --sage: #3b4d3a;
-  --peach: #55463b;
+  --line: #383d40;
+  --blue: #2c3942;
+  --sage: #343e33;
+  --peach: #443a33;
   --accent: #c2d9cd;
   --accent-hover: #d5e5db;
   --logo: #8bc8dc;
-  --track: #45514b;
-  --console-bg: #202928;
+  --track: #383d40;
+  --console-bg: #1c1f21;
 }
 
 * { box-sizing: border-box; }

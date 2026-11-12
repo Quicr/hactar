@@ -2,7 +2,7 @@ import { concat, words, SerialTimeoutError } from "./serial.js";
 import { md5 } from "./md5.js";
 
 const COMMANDS = {
-    2: "FLASH_BEGIN", 3: "FLASH_DATA", 4: "FLASH_END", 8: "SYNC",
+    2: "FLASH_BEGIN", 3: "FLASH_DATA", 8: "SYNC",
     10: "READ_REG", 11: "SPI_SET_PARAMS", 13: "SPI_ATTACH", 19: "SPI_FLASH_MD5",
 };
 
@@ -124,6 +124,8 @@ export class ESP32 {
             const checksum = await this.command(0x13, words(address, data.length, 0, 0), 0, 30000);
             if (new TextDecoder().decode(checksum.data).toLowerCase() !== md5(data)) throw new Error(`NET verification failed for ${name}.`);
         }
-        await this.command(4, words(1)); // Stay in ROM until MGMT resets NET.
+        // All writes have been acknowledged and every image verified. Leave the
+        // ROM running until HactarFlasher resets NET through MGMT; FLASH_END is
+        // unnecessary for that path and some ROMs reject it after verification.
     }
 }

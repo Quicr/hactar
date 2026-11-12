@@ -214,15 +214,19 @@ class ESPROM extends Queue {
         } else if (opcode === 0x13) {
             const start = params.getUint32(0, true), size = params.getUint32(4, true);
             response = new TextEncoder().encode(this.corrupt ? "0".repeat(32) : createHash("md5").update(this.memory.slice(start, start + size)).digest("hex"));
-        } else assert.ok([0x0d, 0x0b, 4].includes(opcode));
+        } else if (opcode === 4) {
+            // Reproduce the EV16 NET ROM's rejection of the final FLASH_END.
+            this.reply(opcode, 0, new Uint8Array(), Uint8Array.of(1, 6, 0, 0));
+            return;
+        } else assert.ok([0x0d, 0x0b].includes(opcode));
         this.reply(opcode, value, response);
     }
-    reply(opcode, value, data = new Uint8Array()) {
+    reply(opcode, value, data = new Uint8Array(), status = new Uint8Array(4)) {
         const header = new Uint8Array(8);
         header[0] = 1; header[1] = opcode;
         const view = new DataView(header.buffer);
         view.setUint16(2, data.length + 4, true); view.setUint32(4, value, true);
-        this.push(slip(concat(header, data, new Uint8Array(4))));
+        this.push(slip(concat(header, data, status)));
     }
 }
 
@@ -248,7 +252,9 @@ test("ESP32-S3 ROM flashes and independently verifies all images through fragmen
     await new ESP32(new Management(serial).tunnel("net")).flash(images, () => {});
     assert.deepEqual(rom.begins, [0, 0x8000, 0x10000]);
     for (const { address, data } of images) assert.deepEqual(rom.memory.slice(address, address + data.length), new Uint8Array(data));
-    assert.equal(rom.commands.at(-1), 4);
+    assert.equal(rom.commands.at(-1), 0x13);
+    assert.equal(rom.commands.filter(opcode => opcode === 0x13).length, images.length);
+    assert.equal(rom.commands.includes(4), false);
 });
 
 test("ESP32 verification failure is reported", async () => {
@@ -404,12 +410,77 @@ test("failed UI verification still restores baud, resets UI/NET and closes the p
     } finally { globalThis.fetch = original; }
 });
 
+test("EV16 MGMT and NET update completes with verified images and a hardware reset", async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = async () => new Response(randomBytes(123));
+    const port = new DevicePort(), logs = [];
+    try {
+        await new HactarFlasher({ log: message => logs.push(message), progress() {} }).flash(["mgmt", "net"], port, false, 16);
+        assert.equal(port.mgmt.options[4], 16);
+        assert.equal(port.net.commands.filter(opcode => opcode === 0x13).length, 3);
+        assert.equal(port.net.commands.includes(4), false);
+        assert.deepEqual(port.pins, [0, 1, 1, 1, 1]);
+        assert.equal(port.readable.locked, false);
+        assert.equal(logs.at(-1), "NET flashed and verified.");
+    } finally { globalThis.fetch = original; }
+});
+
 test("normal-mode initialization releases BOOT0 before reset", async () => {
     const calls = [];
     await new HactarFlasher({ log() {}, progress() {} }).initMGMT({
         port: { async setSignals(signals) { calls.push(signals); } },
     });
     assert.deepEqual(calls, [{ requestToSend: false }, { dataTerminalReady: false }]);
+});
+
+class NoSignalPort extends DevicePort {
+    signalCalls = 0;
+    async open(options) {
+        await super.open(options);
+        // This bridge carries serial data, but has no usable modem controls.
+        this.signals = { dataTerminalReady: false, requestToSend: false };
+    }
+    async setSignals() {
+        this.signalCalls++;
+        throw new DOMException("Failed to set control signals.", "NetworkError");
+    }
+}
+
+for (const chips of [["ui", "net"], ["mgmt", "ui", "net"]]) {
+    test(`${chips.join(" → ")} update works when the USB bridge rejects setSignals`, async () => {
+        const original = globalThis.fetch;
+        globalThis.fetch = async () => new Response(randomBytes(123));
+        const port = new NoSignalPort(), logs = [];
+        try {
+            await new HactarFlasher({ log: message => logs.push(message), progress() {} }).flash(chips, port);
+            assert.equal(port.signalCalls, 1, "Do not keep sending rejected controls, including after a baud-rate reopen");
+            assert.equal(logs.filter(message => message.includes("USB port rejected")).length, 1);
+            assert.deepEqual(logs.filter(message => message.includes("flashed and verified")), chips.map(chip => `${chip.toUpperCase()} flashed and verified.`));
+            assert.deepEqual(port.pins, [0, 1, 1, 1, 1]);
+            assert.equal(port.readable.locked, false);
+        } finally { globalThis.fetch = original; }
+    });
+}
+
+test("rejected automatic reset gives manual MGMT bootloader instructions if ROM is not active", async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = async () => new Response(randomBytes(123));
+    const port = new NoSignalPort();
+    // A running application does not acknowledge STM32 ROM auto-baud.
+    port.write = async () => {};
+    try {
+        await assert.rejects(new HactarFlasher({ log() {}, progress() {} }).flash(["mgmt"], port), /USB port rejected automatic reset control.*manually reset MGMT.*manual bootloader mode/);
+        assert.equal(port.signalCalls, 1);
+        assert.equal(port.readable.locked, false);
+    } finally { globalThis.fetch = original; }
+});
+
+test("invalid serial-port state is not treated as unsupported control signals", async () => {
+    const failure = new DOMException("The port is closed.", "InvalidStateError");
+    const loader = new HactarFlasher({ log() {}, progress() {} });
+    await assert.rejects(loader.initMGMT({
+        port: { async setSignals() { throw failure; } },
+    }), error => error === failure);
 });
 
 test("MGMT control timeout identifies the exact pin and requested level", async () => {

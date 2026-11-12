@@ -28,6 +28,12 @@ sequence. For boards without automatic reset, set MGMT BOOT0 high, reset the
 device, and enable **MGMT is already in bootloader mode** before starting.
 After a manual update, release BOOT0 and reset the device to boot normally.
 
+If the browser's serial port rejects DTR/RTS control (`setSignals`), the updater
+continues using serial data without automatic MGMT reset. UI and NET updates
+still use MGMT's LINK commands to control their boot and reset pins. For MGMT,
+enter its bootloader manually if it is not already active; the updater reports
+the manual-reset steps if the bootloader does not respond.
+
 Before talking to running MGMT firmware, the updater explicitly releases RTS
 (BOOT0) and then DTR (reset), including after reopening the port to change baud
 rate. Some serial drivers assert those lines when opening the port.
