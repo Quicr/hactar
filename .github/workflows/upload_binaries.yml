@@ -1,42 +1,162 @@
 name: Upload Binaries
 on:
-  workflow_dispatch:
   workflow_run:
     workflows: [Build Firmware CI]
-    branches: [main]
     types:
       - completed
 
 permissions:
+  actions: read
   contents: write
+
+# All publications write to the same branch, even when building different refs.
+concurrency:
+  group: publish-firmware-gh-pages
+  cancel-in-progress: false
 
 jobs:
   on-success:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') }}
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')
     steps:
+      - name: Download publication metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: publication
+          path: ${{ runner.temp }}/publication
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Read publication metadata
+        id: publication
+        shell: bash
+        env:
+          METADATA: ${{ runner.temp }}/publication/publication.json
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_EVENT: ${{ github.event.workflow_run.event }}
+          SOURCE_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+          from urllib.parse import quote
+
+          metadata = json.loads(Path(os.environ['METADATA']).read_text())
+          assert str(metadata['run_id']) == os.environ['SOURCE_RUN_ID'], 'Incorrect source run'
+          assert isinstance(metadata['publish'], bool), 'Invalid publish flag'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"publish={str(metadata['publish']).lower()}\n")
+          if not metadata['publish']:
+              raise SystemExit(0)
+
+          ref = metadata['ref']
+          if ref.startswith('refs/heads/'):
+              name = ref.removeprefix('refs/heads/')
+              folder = quote(name, safe='')
+              # Reserve this namespace for tags, including a branch named "tags".
+              if folder == 'tags':
+                  folder = '%74ags'
+          elif ref.startswith('refs/tags/'):
+              name = ref.removeprefix('refs/tags/')
+              folder = 'tags/' + quote(name, safe='')
+          else:
+              raise ValueError('Expected a branch or tag ref')
+          assert name and not any(c.isspace() or ord(c) < 32 for c in name), 'Invalid ref name'
+          assert not any(part in ('', '.', '..') for part in name.split('/')), 'Invalid ref path'
+          assert re.fullmatch(r'[0-9a-f]{40}', metadata['sha']), 'Invalid commit SHA'
+          if os.environ['SOURCE_EVENT'] == 'push':
+              assert ref == 'refs/heads/main' and os.environ['SOURCE_BRANCH'] == 'main'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'folder={folder}\n')
+          PY
+
       - name: Checkout gh-pages branch
+        if: steps.publication.outputs.publish == 'true'
         uses: actions/checkout@v4
         with:
           ref: gh-pages
-      - name: Download hactar binaries
+
+      - name: Download MGMT artifacts
+        if: steps.publication.outputs.publish == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: mgmt
+          path: ${{ runner.temp }}/firmware/mgmt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Download UI artifacts
+        if: steps.publication.outputs.publish == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: ui
+          path: ${{ runner.temp }}/firmware/ui
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Download NET artifacts
+        if: steps.publication.outputs.publish == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: net
+          path: ${{ runner.temp }}/firmware/net
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Stage firmware and source manifest
+        if: steps.publication.outputs.publish == 'true'
         shell: bash
-        run: |
-          mkdir -p build/main/mgmt
-          mkdir -p build/main/net
-          mkdir -p build/main/ui
-          gh release download nightly -p 'mgmt.bin' -D build/main/mgmt --clobber
-          gh release download nightly -p 'net.bin' -D build/main/net --clobber
-          gh release download nightly -p 'bootloader.bin' -D build/main/net --clobber
-          gh release download nightly -p 'partition-table.bin' -D build/main/net --clobber
-          gh release download nightly -p 'ui.bin' -D build/main/ui --clobber
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FIRMWARE: ${{ runner.temp }}/firmware
+          METADATA: ${{ runner.temp }}/publication/publication.json
+          BUILD_FOLDER: ${{ steps.publication.outputs.folder }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          source = Path(os.environ['FIRMWARE'])
+          destination = Path('build') / os.environ['BUILD_FOLDER']
+          files = {
+              'mgmt': ['mgmt.bin'],
+              'ui': ['ui.bin', 'ui.elf', 'ui.hex'],
+              'net': ['net.bin', 'net.elf', 'bootloader/bootloader.bin',
+                      'partition_table/partition-table.bin'],
+          }
+          for chip, paths in files.items():
+              target = destination / chip
+              target.mkdir(parents=True, exist_ok=True)
+              for path in paths:
+                  shutil.copyfile(source / chip / path, target / Path(path).name)
+          metadata = json.loads(Path(os.environ['METADATA']).read_text())
+          (destination / 'manifest.json').write_text(json.dumps(metadata, indent=2) + '\n')
+          PY
+
       - name: Commit and push binaries
+        if: steps.publication.outputs.publish == 'true'
         shell: bash
+        env:
+          BUILD_FOLDER: ${{ steps.publication.outputs.folder }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add build/main
-          git commit -m "Update binaries from Nightly build" || echo "No changes to commit"
-          git push origin gh-pages
+          git add -- "build/$BUILD_FOLDER"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Update firmware in build/$BUILD_FOLDER"
+          for attempt in 1 2 3; do
+            git pull --rebase origin gh-pages
+            if git push origin gh-pages; then
+              exit 0
+            fi
+            sleep "$attempt"
+          done
+          exit 1

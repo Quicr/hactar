@@ -5,23 +5,96 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: "Branch or tag to build (blank uses selected workflow ref; refs/tags/NAME selects a tag explicitly)"
+        type: string
+        required: false
+      publish:
+        description: "Publish binaries to gh-pages"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
 
 jobs:
   changes:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: read
     outputs:
-      link: ${{ steps.filter.outputs.link }}
-      net: ${{ steps.filter.outputs.net }}
-      ui: ${{ steps.filter.outputs.ui }}
+      link: ${{ github.event_name == 'workflow_dispatch' || steps.source.outputs.publish == 'true' || steps.filter.outputs.link == 'true' }}
+      net: ${{ github.event_name == 'workflow_dispatch' || steps.source.outputs.publish == 'true' || steps.filter.outputs.net == 'true' }}
+      ui: ${{ github.event_name == 'workflow_dispatch' || steps.source.outputs.publish == 'true' || steps.filter.outputs.ui == 'true' }}
+      sha: ${{ steps.source.outputs.sha }}
+      ref: ${{ steps.source.outputs.ref }}
     steps:
+    - name: Resolve source branch or tag
+      id: source
+      uses: actions/github-script@v7
+      env:
+        SOURCE_REF: ${{ inputs.source_ref }}
+        PUBLISH: ${{ inputs.publish }}
+      with:
+        script: |
+          const fs = require('fs');
+          let ref = context.ref;
+          let sha = context.sha;
+          if (context.eventName === 'workflow_dispatch') {
+            const requested = process.env.SOURCE_REF.trim();
+            if (requested) {
+              const candidates = requested.startsWith('refs/')
+                ? [requested]
+                : [`refs/heads/${requested}`, `refs/tags/${requested}`];
+              ref = null;
+              for (const candidate of candidates) {
+                if (!/^refs\/(heads|tags)\//.test(candidate)) {
+                  throw new Error('Choose a branch or tag, not another type of Git ref');
+                }
+                try {
+                  await github.rest.git.getRef({
+                    ...context.repo, ref: candidate.slice('refs/'.length)
+                  });
+                  ref = candidate;
+                  break;
+                } catch (error) {
+                  if (error.status !== 404) throw error;
+                }
+              }
+              if (!ref) throw new Error(`Branch or tag not found: ${requested}`);
+            }
+            const commit = await github.rest.repos.getCommit({...context.repo, ref});
+            sha = commit.data.sha;
+          }
+          const publish = (context.eventName === 'push' && ref === 'refs/heads/main') ||
+            (context.eventName === 'workflow_dispatch' && process.env.PUBLISH === 'true');
+          core.setOutput('sha', sha);
+          core.setOutput('ref', ref);
+          core.setOutput('publish', String(publish));
+          fs.writeFileSync('publication.json', JSON.stringify({
+            ref, sha, publish, run_id: context.runId
+          }, null, 2) + '\n');
+
+    - name: Upload publication metadata
+      uses: actions/upload-artifact@v4
+      with:
+        name: publication
+        path: publication.json
+        if-no-files-found: error
+
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ steps.source.outputs.sha }}
     - uses: dorny/paths-filter@v3
+      if: github.event_name != 'workflow_dispatch'
       id: filter
       with:
         filters: |
           link:
+            - 'link'
             - 'link/**'
           net:
             - 'firmware/net/**'
@@ -37,6 +110,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        ref: ${{ needs.changes.outputs.sha }}
         submodules: recursive
 
     - name: Install Rust
@@ -58,6 +132,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        ref: ${{ needs.changes.outputs.sha }}
         submodules: recursive
 
     - name: Install Rust
@@ -79,11 +154,14 @@ jobs:
         path: link/ctl/target/release/ctl
 
   build-mgmt:
+    needs: changes
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ needs.changes.outputs.sha }}
 
     - name: Initialize Link submodule
       run: git submodule update --init link
@@ -109,7 +187,7 @@ jobs:
         if-no-files-found: error
 
     - name: Upload mgmt binary
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.event_name == 'push' && needs.changes.outputs.ref == 'refs/heads/main'
       uses: ncipollo/release-action@v1
       with:
         tag: nightly
@@ -125,11 +203,14 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.net == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: espressif/idf:v5.5.3
     steps:
     - uses: actions/checkout@v4
       with:
+        ref: ${{ needs.changes.outputs.sha }}
         submodules: recursive
 
     - name: Install Dependencies
@@ -148,6 +229,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: net
+        if-no-files-found: error
         path: |
           firmware/net/build/bootloader/bootloader.bin
           firmware/net/build/partition_table/partition-table.bin
@@ -155,7 +237,7 @@ jobs:
           firmware/net/build/net.elf
 
     - name: Upload net binary
-      if: github.ref_name == 'main'
+      if: github.event_name == 'push' && needs.changes.outputs.ref == 'refs/heads/main'
       uses: ncipollo/release-action@v1
       with:
         tag: nightly
@@ -174,9 +256,12 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.ui == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v4
       with:
+        ref: ${{ needs.changes.outputs.sha }}
         submodules: recursive
 
     - name: Install Dependencies
@@ -194,13 +279,14 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ui
+        if-no-files-found: error
         path: |
           firmware/ui/build/ui.bin
           firmware/ui/build/ui.elf
           firmware/ui/build/ui.hex
 
     - name: Upload ui binary
-      if: github.ref_name == 'main'
+      if: github.event_name == 'push' && needs.changes.outputs.ref == 'refs/heads/main'
       uses: ncipollo/release-action@v1
       with:
         tag: nightly
