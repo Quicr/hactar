@@ -46,6 +46,46 @@ make flash-net
 
 For new developers looking to start developing on Hactar quickly there are quick start python scripts located in etc/quick-start, that will automatically download and setup your dev environment.
 
+### Publishing firmware to GitHub Pages
+
+In GitHub, open **Actions → Build Firmware CI → Run workflow**. Use the
+workflow from `main`, enter the branch or tag in **Branch or tag to build**,
+leave **Publish binaries to gh-pages** checked, and click **Run workflow**.
+Leave the source field blank to build the selected workflow ref. If a branch
+and tag share a name, use `refs/tags/<name>` to select the tag explicitly.
+Uncheck the publish option to build without updating Pages.
+
+Publication builds all three firmware targets from one resolved commit and
+downloads artifacts from that exact run. After a successful build, **Upload
+Binaries** commits them to the `gh-pages` branch:
+
+```text
+build/<folder>/mgmt/mgmt.bin
+build/<folder>/ui/{ui.bin,ui.elf,ui.hex}
+build/<folder>/net/{net.bin,net.elf,bootloader.bin,partition-table.bin}
+build/<folder>/manifest.json
+```
+
+The folder is `main` for the main branch, `branch-<name>` for other branches,
+and `tag-<name>` for tags. For example, `my-feature-branch` publishes to
+`build/branch-my-feature-branch/`, and tag `v1.2.3` publishes to
+`build/tag-v1.2.3/`. Slashes and other special characters in names are
+percent-encoded into a single directory name; for example, branch
+`feature/audio` uses `build/branch-feature%2Faudio/`. When constructing a URL,
+URL-encode these directory names (a literal `%` becomes `%25`).
+The manifest records the full source ref, commit SHA, and build run ID.
+
+The shared `build/manifest.json` is a JSON array of published folder names,
+for example `["main", "branch-my-feature-branch", "tag-v1.2.3"]`. Publication appends a
+folder only when it is missing and creates the array if the file does not exist.
+Publishing an existing folder updates its binaries and source manifest without
+adding a duplicate or rewriting its entry in the shared index.
+
+Pushes to `main` continue to publish automatically to `build/main/` and update
+the `nightly` release. Other branches and tags publish only when manually requested.
+The workflow changes must be on the default branch for the manual button and
+the follow-up publication workflow to be available.
+
 ## Where To Find Things
 
 - etc - Extra files
