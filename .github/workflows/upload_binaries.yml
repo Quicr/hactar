@@ -22,14 +22,14 @@ jobs:
       - name: Download hactar binaries
         shell: bash
         run: |
-          mkdir -p build/mgmt
-          mkdir -p build/net
-          mkdir -p build/ui
-          gh release download nightly -p 'mgmt.bin' -D build/mgmt --clobber
-          gh release download nightly -p 'net.bin' -D build/net --clobber
-          gh release download nightly -p 'bootloader.bin' -D build/net --clobber
-          gh release download nightly -p 'partition-table.bin' -D build/net --clobber
-          gh release download nightly -p 'ui.bin' -D build/ui --clobber
+          mkdir -p build/main/mgmt
+          mkdir -p build/main/net
+          mkdir -p build/main/ui
+          gh release download nightly -p 'mgmt.bin' -D build/main/mgmt --clobber
+          gh release download nightly -p 'net.bin' -D build/main/net --clobber
+          gh release download nightly -p 'bootloader.bin' -D build/main/net --clobber
+          gh release download nightly -p 'partition-table.bin' -D build/main/net --clobber
+          gh release download nightly -p 'ui.bin' -D build/main/ui --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Commit and push binaries
@@ -37,6 +37,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add build
+          git add build/main
           git commit -m "Update binaries from Nightly build" || echo "No changes to commit"
           git push origin gh-pages
