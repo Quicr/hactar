@@ -5,6 +5,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hactar updater</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
     <link rel="stylesheet" href="styles/style.css" />
 </head>
@@ -37,14 +40,17 @@
         </div>
 
         <div class="updater-panel">
-            <div class="panel-heading">
-                <h2>Configure your update</h2>
-            </div>
             <div class="configuration">
+                <div class="firmware-folder-option">
+                    <label for="firmwareFolder" class="select-label">Firmware version</label>
+                    <select id="firmwareFolder" disabled>
+                        <option value="main" selected>main</option>
+                    </select>
+                    <p id="firmwareFolderNotice" class="notice hidden" role="status"></p>
+                </div>
                 <fieldset id="chipSelection">
-                    <legend>Select firmware</legend>
+                    <legend>Choose which chips to update</legend>
                     <div class="selection-toolbar">
-                        <p class="field-help">Choose the chips to update.</p>
                         <button id="selectAllButton" class="select-all-button" type="button"><i class="fa-solid fa-check-double" aria-hidden="true"></i> Select all</button>
                     </div>
                     <div class="chip-options">
@@ -52,7 +58,6 @@
                             <label class="chip-main">
                                 <input type="checkbox" name="chip" value="mgmt" checked />
                                 <span class="chip-details"><i class="fa-solid fa-microchip" aria-hidden="true"></i><strong>MGMT</strong></span>
-                                <span class="chip-description">Management</span>
                             </label>
                             <fieldset id="mgmtVersionOptions">
                                 <label for="mgmtVersion" class="select-label">Board version</label>
@@ -65,12 +70,10 @@
                         <label class="chip-card chip-ui">
                             <input type="checkbox" name="chip" value="ui" checked />
                             <span class="chip-details"><i class="fa-solid fa-display" aria-hidden="true"></i><strong>UI</strong></span>
-                            <span class="chip-description">User interface</span>
                         </label>
                         <label class="chip-card chip-net">
                             <input type="checkbox" name="chip" value="net" checked />
                             <span class="chip-details"><i class="fa-solid fa-wifi" aria-hidden="true"></i><strong>NET</strong></span>
-                            <span class="chip-description">Network</span>
                         </label>
                     </div>
                 </fieldset>

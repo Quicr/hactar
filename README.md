@@ -9,6 +9,10 @@ Open the site in desktop Chrome or Edge, connect the device over USB, select the
 chips, and click **Update Device**. Select the device's USB serial port. Close
 `ctl`, serial monitors, and other programs using that port first.
 
+Choose a **Firmware version** to select the firmware set under `build/`. The
+default is **main**. All chips in an update use the selected folder, and the
+selection is locked until the update finishes.
+
 The default update order is **MGMT → UI → NET**. Individual chips can also be
 selected. UI and NET updates require MGMT firmware implementing the LINK protocol
 from `~/code/link`. The update log is available under **Advanced Options**.
@@ -41,20 +45,37 @@ rate. Some serial drivers assert those lines when opening the port.
 If MGMT does not answer, open **Advanced Options** for handshake retry details
 and the number of serial bytes received. Verify that the selected port is the
 device's port and that a manually asserted BOOT0 pin has been released. To
-install a replacement `build/mgmt/mgmt.bin` on the device, select **MGMT** when
+install a replacement `build/main/mgmt/mgmt.bin` on the device, select **MGMT** when
 updating; UI/NET-only updates use the MGMT firmware already on the device.
 
 ## Firmware files
 
-Publish these files alongside `index.html`:
+Publish these files alongside `index.html` for the default `main` firmware set:
 
 | Chip | File | Flash address |
 | --- | --- | --- |
-| MGMT (STM32F072CB) | `build/mgmt/mgmt.bin` | `0x08000000` |
-| UI (STM32F405RG) | `build/ui/ui.bin` | `0x08000000` |
-| NET (ESP32-S3) | `build/net/bootloader.bin` | `0x0000` |
-| NET | `build/net/partition-table.bin` | `0x8000` |
-| NET | `build/net/net.bin` | `0x10000` |
+| MGMT (STM32F072CB) | `build/main/mgmt/mgmt.bin` | `0x08000000` |
+| UI (STM32F405RG) | `build/main/ui/ui.bin` | `0x08000000` |
+| NET (ESP32-S3) | `build/main/net/bootloader.bin` | `0x0000` |
+| NET | `build/main/net/partition-table.bin` | `0x8000` |
+| NET | `build/main/net/net.bin` | `0x10000` |
+
+Additional firmware sets use the same layout in another immediate subfolder,
+for example `build/preview/mgmt/mgmt.bin`, `build/preview/ui/ui.bin`, and
+`build/preview/net/...`.
+
+The dropdown reads `build/manifest.json`, since GitHub Pages does not provide
+directory listings. After adding or removing firmware folders, regenerate and
+publish the manifest along with the binaries:
+
+```sh
+python3 scripts/generate-firmware-manifest.py
+```
+
+The script discovers immediate, non-hidden directories under `build/` and places
+`main` first. Include this command in the firmware publishing job when automating
+uploads. Missing files in a selected folder stop the update before opening the
+serial port; the updater never substitutes binaries from another folder.
 
 NET addresses follow the existing ESP-IDF build's `flasher_args.json`. Its app
 must occupy the partition starting at `0x10000`; if the firmware layout changes,

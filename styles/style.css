@@ -38,7 +38,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -70,15 +70,15 @@ body {
 .section-label { font-size: 10px; font-weight: 700; letter-spacing: 1.8px; color: var(--muted); }
 h1 { margin: 0; font-size: clamp(34px, 5vw, 48px); font-weight: 600; line-height: 1.15; letter-spacing: -1.9px; }
 .updater-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.panel-heading { padding: 22px 28px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
 .configuration { padding: 29px 28px 31px; }
+.firmware-folder-option { margin-bottom: 25px; }
+.firmware-folder-option select { max-width: 270px; }
+.firmware-folder-option .notice { margin-top: 8px; overflow-wrap: anywhere; }
 fieldset { min-width: 0; border: 0; margin: 0; padding: 0; }
 legend { padding: 0; font-size: 14px; font-weight: 600; }
 .step-number { margin-right: 9px; font-size: 11px; color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
-.field-help { margin: 8px 0 18px; color: var(--muted); font-size: 13px; }
-.selection-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 18px; }
-.selection-toolbar .field-help { margin: 0; }
+.selection-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin: 8px 0 18px; }
 button.select-all-button { padding: 7px 10px; gap: 7px; background: transparent; color: var(--text); border: 1px solid var(--line); font-size: 12px; }
 button.select-all-button:hover { background: var(--sage); }
 .chip-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -96,7 +96,6 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .chip-details { display: flex; flex-direction: column; gap: 12px; padding-right: 24px; }
 .chip-details > i { font-size: 19px; }
 .chip-details strong { font-size: 17px; letter-spacing: 0.3px; font-weight: 600; }
-.chip-description { display: block; margin-top: 24px; font-size: 12px; }
 #mgmtVersionOptions { margin-top: 18px; }
 .select-label { display: block; margin-bottom: 7px; font-size: 12px; font-weight: 600; }
 select { width: 100%; min-width: 0; min-height: 39px; padding: 8px; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 5px; font: inherit; font-size: 12px; cursor: pointer; }
@@ -122,7 +121,7 @@ progress::-moz-progress-bar { background: var(--accent); border-radius: 4px; }
 #advancedSection { padding: 22px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
 .manual-option { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; }
 #advancedSection .notice { margin: 12px 0 24px; }
-.console { margin-top: 12px; padding: 16px; height: 220px; overflow-y: auto; background: var(--console-bg); color: var(--text); border: 1px solid var(--line); border-radius: 5px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.console { margin-top: 12px; padding: 16px; height: 220px; overflow-y: auto; background: var(--console-bg); color: var(--text); border: 1px solid var(--line); border-radius: 5px; font-family: inherit; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .page-footer { display: flex; gap: 12px; margin: 26px 0 30px; color: var(--muted); font-size: 10px; }
 .page-footer span { color: var(--line); }
 .hidden { display: none; }
@@ -133,13 +132,12 @@ progress::-moz-progress-bar { background: var(--accent); border-radius: 4px; }
   .brand { gap: 15px; }
   .brand-label { font-size: 12px; }
   .container { margin-top: 26px; padding: 0 24px; }
-  .panel-heading, .configuration, .update-area { padding-left: 20px; padding-right: 20px; }
+  .configuration, .update-area { padding-left: 20px; padding-right: 20px; }
   .chip-options { grid-template-columns: 1fr; gap: 8px; }
   .chip-card { padding: 14px 11px; }
   .chip-card input { top: 14px; right: 10px; width: 14px; height: 14px; }
   .chip-details { padding-right: 15px; }
   .chip-details strong { font-size: 14px; }
-  .chip-description { font-size: 10px; margin-top: 18px; }
   .update-action { flex-direction: column; align-items: stretch; gap: 18px; }
   .advanced-toggle > span { display: none; }
 }
@@ -149,7 +147,6 @@ progress::-moz-progress-bar { background: var(--accent); border-radius: 4px; }
   .selection-toolbar { align-items: flex-start; }
   .container { padding: 0 16px; }
   .chip-options { grid-template-columns: 1fr; }
-  .chip-description { margin-top: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

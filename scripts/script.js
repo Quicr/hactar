@@ -1,4 +1,5 @@
 import { HactarFlasher } from "./flasher.js";
+import { loadFirmwareFolders } from "./firmware.js";
 
 const updateButton = document.getElementById("updateButton");
 const advancedToggle = document.getElementById("advancedToggle");
@@ -12,6 +13,9 @@ const versionOptions = document.getElementById("mgmtVersionOptions");
 const mgmtVersion = document.getElementById("mgmtVersion");
 const status = document.getElementById("status");
 const progress = document.getElementById("progress");
+const firmwareFolder = document.getElementById("firmwareFolder");
+const firmwareFolderNotice = document.getElementById("firmwareFolderNotice");
+let firmwareFoldersLoading = true;
 
 let savedTheme;
 try { savedTheme = localStorage.getItem("theme"); } catch { /* Storage may be disabled. */ }
@@ -48,7 +52,7 @@ if (!supported) {
     status.textContent = "This browser cannot flash the device.";
 }
 function updateSelection() {
-    updateButton.disabled = !supported || !selection.querySelector("input:checked");
+    updateButton.disabled = !supported || firmwareFoldersLoading || selection.disabled || !selection.querySelector("input:checked");
     versionOptions.disabled = selection.disabled || !selection.querySelector('input[value="mgmt"]:checked');
 }
 selection.addEventListener("change", updateSelection);
@@ -58,22 +62,40 @@ selectAllButton.addEventListener("click", () => {
 });
 updateSelection();
 
+async function populateFirmwareFolders() {
+    try {
+        const folders = await loadFirmwareFolders();
+        firmwareFolder.replaceChildren(...folders.map(folder => new Option(folder, folder, folder === "main", folder === "main")));
+    } catch (error) {
+        firmwareFolderNotice.textContent = `${error.message} Using main.`;
+        firmwareFolderNotice.classList.remove("hidden");
+        log(error.message);
+    } finally {
+        firmwareFoldersLoading = false;
+        firmwareFolder.disabled = false;
+        updateSelection();
+    }
+}
+populateFirmwareFolders();
+
 updateButton.addEventListener("click", async () => {
     const chips = [...selection.querySelectorAll("input:checked")].map(input => input.value);
-    if (!chips.length) return;
+    if (!chips.length || firmwareFoldersLoading || selection.disabled) return;
+    const folder = firmwareFolder.value;
     updateButton.disabled = true;
     selection.disabled = true;
     versionOptions.disabled = true;
     manualBoot.disabled = true;
+    firmwareFolder.disabled = true;
     progress.value = 0;
     lastPhase = null;
     try {
         // Port selection must happen within the user's click activation.
         const port = await navigator.serial.requestPort();
         status.textContent = "Loading firmware…";
-        log(`Starting update: ${chips.join(" → ").toUpperCase()}.`);
+        log(`Starting update from build/${folder}: ${chips.join(" → ").toUpperCase()}.`);
         const version = chips.includes("mgmt") ? Number(mgmtVersion.value) : null;
-        await flasher.flash(chips, port, manualBoot.checked, version);
+        await flasher.flash(chips, port, manualBoot.checked, version, folder);
         progress.value = 100;
         status.textContent = "Update complete. All selected firmware has been verified.";
         log(status.textContent);
@@ -85,6 +107,7 @@ updateButton.addEventListener("click", async () => {
     } finally {
         selection.disabled = false;
         manualBoot.disabled = false;
+        firmwareFolder.disabled = false;
         updateSelection();
     }
 });

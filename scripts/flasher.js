@@ -1,6 +1,7 @@
 import { SerialConnection, Management, sleep } from "./serial.js";
 import { STM32 } from "./stm32.js";
 import { ESP32 } from "./esp32.js";
+import { DEFAULT_FIRMWARE_FOLDER, validateFirmwareFolder } from "./firmware.js";
 
 const FILES = {
     mgmt: [{ path: "mgmt/mgmt.bin", max: 128 * 1024 }],
@@ -15,15 +16,17 @@ const FILES = {
 export class HactarFlasher {
     constructor({ log, progress }) { this.log = log; this.progress = progress; }
 
-    async binaries(chips) {
+    async binaries(chips, folder = DEFAULT_FIRMWARE_FOLDER) {
+        validateFirmwareFolder(folder);
+        const base = `../build/${encodeURIComponent(folder)}/`;
         const result = {};
         for (const chip of chips) {
             result[chip] = await Promise.all(FILES[chip].map(async file => {
-                const response = await fetch(new URL(`../build/${file.path}`, import.meta.url), { cache: "no-store" });
-                if (!response.ok) throw new Error(`Could not load build/${file.path}: HTTP ${response.status}.`);
+                const response = await fetch(new URL(`${base}${file.path}`, import.meta.url), { cache: "no-store" });
+                if (!response.ok) throw new Error(`Could not load build/${folder}/${file.path}: HTTP ${response.status}.`);
                 const data = new Uint8Array(await response.arrayBuffer());
-                if (!data.length || data.length > file.max || response.headers.get("content-type")?.includes("text/html")) throw new Error(`Invalid firmware file: build/${file.path}.`);
-                this.log(`Loaded ${file.path} (${data.length.toLocaleString()} bytes).`);
+                if (!data.length || data.length > file.max || response.headers.get("content-type")?.includes("text/html")) throw new Error(`Invalid firmware file: build/${folder}/${file.path}.`);
+                this.log(`Loaded ${folder}/${file.path} (${data.length.toLocaleString()} bytes).`);
                 return { ...file, name: file.path.split("/").pop(), data };
             }));
         }
@@ -68,12 +71,12 @@ export class HactarFlasher {
         await sleep(200);
     }
 
-    async flash(chips, port, manualBoot = false, mgmtVersion = chips.includes("mgmt") ? 17 : null) {
+    async flash(chips, port, manualBoot = false, mgmtVersion = chips.includes("mgmt") ? 17 : null, folder = DEFAULT_FIRMWARE_FOLDER) {
         if (chips.includes("mgmt") ? ![16, 17].includes(mgmtVersion) : mgmtVersion !== null) {
             throw new Error("Setting MGMT version requires selecting MGMT and version 16 or 17.");
         }
         // Fetch all selected files before putting any chip into its bootloader.
-        const firmware = await this.binaries(chips);
+        const firmware = await this.binaries(chips, folder);
         const serial = new SerialConnection(port);
         const report = chip => (phase, done, total) => this.progress(chip, phase, done, total);
         let updateError;

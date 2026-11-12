@@ -375,17 +375,20 @@ class DevicePort {
     }
 }
 
-test("complete default update sequences MGMT → UI → NET and restores both chips", async () => {
+test("complete update uses the selected firmware folder for MGMT → UI → NET and restores both chips", async () => {
     const original = globalThis.fetch;
     const images = new Map([
         ["mgmt/mgmt.bin", randomBytes(259)], ["ui/ui.bin", randomBytes(513)],
         ["net/bootloader.bin", randomBytes(123)], ["net/partition-table.bin", randomBytes(1024)],
         ["net/net.bin", randomBytes(1025)],
     ]);
-    globalThis.fetch = async url => new Response(images.get(url.pathname.split("/build/")[1]));
+    globalThis.fetch = async url => {
+        assert.ok(url.pathname.includes("/build/preview/"));
+        return new Response(images.get(url.pathname.split("/build/preview/")[1]));
+    };
     const port = new DevicePort(), logs = [];
     try {
-        await new HactarFlasher({ log: m => logs.push(m), progress() {} }).flash(["mgmt", "ui", "net"], port);
+        await new HactarFlasher({ log: m => logs.push(m), progress() {} }).flash(["mgmt", "ui", "net"], port, false, 17, "preview");
         assert.deepEqual(port.opened, [115200, 1000000]);
         assert.deepEqual(port.pins, [0, 1, 1, 1, 1]);
         assert.equal(port.uiBaud, 1000000);
