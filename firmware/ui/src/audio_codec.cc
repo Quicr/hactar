@@ -1,5 +1,5 @@
 #include "audio_codec.hh"
-#include <math.h>
+#include "alaw_lookup_tables.h"
 
 void AudioCodec::ALawCompand(const uint16_t* input,
                              const size_t input_len,
@@ -13,7 +13,7 @@ void AudioCodec::ALawCompand(const uint16_t* input,
         const size_t min_len = input_len < output_len ? input_len : output_len;
         for (size_t i = 0; i < min_len; ++i)
         {
-            output[i] = ALawCompand(input[i]);
+            output[i] = ALawCompandLookup(input[i]);
         }
     }
     else if (input_stereo && !output_stereo)
@@ -23,7 +23,7 @@ void AudioCodec::ALawCompand(const uint16_t* input,
         size_t j = 0;
         while (i < input_len && j < output_len)
         {
-            companded = ALawCompand(input[i] + input[i + 1]);
+            companded = ALawCompandLookup(input[i] + input[i + 1]);
             output[j] = companded;
 
             i += 2;
@@ -37,7 +37,7 @@ void AudioCodec::ALawCompand(const uint16_t* input,
         size_t j = 0;
         while (i < input_len && j < output_len)
         {
-            companded = ALawCompand(input[i]);
+            companded = ALawCompandLookup(input[i]);
             output[j] = companded;
             output[j + 1] = companded;
 
@@ -202,4 +202,21 @@ inline uint16_t AudioCodec::ALawExpand(uint8_t sample)
     {
         return mantissa;
     }
+}
+
+uint8_t AudioCodec::ALawCompandLookup(const uint16_t sample)
+{
+    if ((sample & 0x8000) == 0)
+    {
+        return alaw_compand_lookup[sample >> 3];
+    }
+    else
+    {
+        return alaw_compand_lookup[static_cast<uint16_t>(-(sample + 1)) >> 3] ^ 0x80;
+    }
+}
+
+uint16_t AudioCodec::ALawExpandLookup(const uint8_t sample)
+{
+    return alaw_expand_lookup[sample];
 }
