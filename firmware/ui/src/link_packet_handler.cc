@@ -150,8 +150,6 @@ void HandleNetLinkPackets(Serial& net_serial,
         {
             return;
         }
-        // UI_LOG_INFO("Got quicr message");
-        // UI_LOG_ERROR("packet type %d", (int)packet->type);
 
         switch (static_cast<ui_net_link::NetToUi>(packet->type))
         {
