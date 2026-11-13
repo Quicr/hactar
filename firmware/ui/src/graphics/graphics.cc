@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 
 namespace
 {
@@ -158,9 +159,10 @@ Graphics::bound_t Graphics::GetBitmapBounds(Shape& shape)
     {
         return {};
     }
-    return MakeBounds(bitmap.x, bitmap.y,
-                      bitmap.x + std::min<size_t>(bitmap.map->width, UINT16_MAX),
-                      bitmap.y + std::min<size_t>(bitmap.map->height, UINT16_MAX));
+    return MakeBounds(
+        bitmap.x, bitmap.y,
+        bitmap.x + std::min<size_t>(bitmap.map->width, std::numeric_limits<uint16_t>::max()),
+        bitmap.y + std::min<size_t>(bitmap.map->height, std::numeric_limits<uint16_t>::max()));
 }
 
 Graphics::bound_t Graphics::GetMemBounds(Shape& shape)
@@ -308,8 +310,8 @@ void Graphics::RasterizeLine(Shape& shape, uint8_t* buff, const size_t width, co
     const int32_t step_y = y < end_y ? 1 : -1;
     int32_t error = dx - dy;
 
-    const int32_t pixel_width = std::min<size_t>(width, INT16_MAX) * 2;
-    const int32_t pixel_height = std::min<size_t>(height, UINT16_MAX);
+    const int32_t pixel_width = std::min<size_t>(width, std::numeric_limits<int16_t>::max()) * 2;
+    const int32_t pixel_height = std::min<size_t>(height, std::numeric_limits<uint16_t>::max());
     const int32_t offset = -((line.thickness - 1) / 2);
     const uint8_t colour_high = static_cast<uint8_t>(line.colour) << 4;
     const uint8_t colour_low = static_cast<uint8_t>(line.colour) & 0x0F;
