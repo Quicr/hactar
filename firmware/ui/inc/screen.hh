@@ -12,6 +12,14 @@
 #include <cstdint>
 #include <istream>
 
+namespace
+{
+static constexpr uint16_t swap_u16(const uint16_t val)
+{
+    return static_cast<uint16_t>(((val << 8) & 0xFF00) | ((val >> 8) & 0x00FF));
+}
+} // namespace
+
 class Screen
 {
 public:
@@ -33,20 +41,26 @@ public:
     static constexpr uint16_t Battery_Charge_Position_Y2 = Icon_Position_Y2 - 4;
 
 private:
-    // Some basic colours (RGB565)
-    // should this be in ili9341?
-    static constexpr uint16_t C_BLACK = __builtin_bswap16(0x0000U);
-    static constexpr uint16_t C_WHITE = __builtin_bswap16(0xFFFFU);
-    static constexpr uint16_t C_BLUE = __builtin_bswap16(0x001FU);
-    static constexpr uint16_t C_RED = __builtin_bswap16(0xF800U);
-    static constexpr uint16_t C_LIGHT_GREEN = __builtin_bswap16(0x3626U);
-    static constexpr uint16_t C_GREEN = __builtin_bswap16(0x07E0U);
-    static constexpr uint16_t C_CYAN = __builtin_bswap16(0x07FFU);
-    static constexpr uint16_t C_MAGENTA = __builtin_bswap16(0xF81FU);
-    static constexpr uint16_t C_YELLOW = __builtin_bswap16(0xFFE0U);
-    static constexpr uint16_t C_GREY = __builtin_bswap16(0xCE59U);
-    static constexpr uint16_t Colour_Map[]{C_BLACK, C_WHITE, C_BLUE,    C_RED,    C_LIGHT_GREEN,
-                                           C_GREEN, C_CYAN,  C_MAGENTA, C_YELLOW, C_GREY};
+    enum class Colour : uint16_t
+    {
+        Black = swap_u16(0x0000U),
+        White = swap_u16(0xFFFFU),
+        Blue = swap_u16(0x001FU),
+        Red = swap_u16(0xF800U),
+        Light_Green = swap_u16(0x3626U),
+        Green = swap_u16(0x07E0U),
+        Cyan = swap_u16(0x07FFU),
+        Magenta = swap_u16(0xF81FU),
+        Yellow = swap_u16(0xFFE0U),
+        Grey = swap_u16(0xCE59U),
+    };
+
+    static constexpr uint16_t Colour_Map[]{
+        static_cast<uint16_t>(Colour::Black),       static_cast<uint16_t>(Colour::White),
+        static_cast<uint16_t>(Colour::Blue),        static_cast<uint16_t>(Colour::Red),
+        static_cast<uint16_t>(Colour::Light_Green), static_cast<uint16_t>(Colour::Green),
+        static_cast<uint16_t>(Colour::Cyan),        static_cast<uint16_t>(Colour::Magenta),
+        static_cast<uint16_t>(Colour::Yellow),      static_cast<uint16_t>(Colour::Grey)};
 
 public:
     Screen(uint16_t* scanline_buffer,

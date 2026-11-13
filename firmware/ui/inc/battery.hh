@@ -21,7 +21,6 @@ public:
     void Draining();
     void ChargeLevel(const uint8_t charge_level);
     uint8_t ChargeLevel();
-    bool IsCritical();
     State GetState();
 
 private:

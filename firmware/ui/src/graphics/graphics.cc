@@ -6,20 +6,20 @@
 
 namespace
 {
-Graphics::bound_t MakeBounds(int64_t x1, int64_t y1, int64_t x2, int64_t y2)
+Graphics::bound_t MakeBounds(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
-    const auto clamp = [](int64_t value) {
-        return static_cast<uint16_t>(std::clamp<int64_t>(value, 0, UINT16_MAX));
-    };
-    const Graphics::bound_t bounds = {clamp(x1), clamp(y1), clamp(x2), clamp(y2)};
+    const Graphics::bound_t bounds = {x1, y1, x2, y2};
     return bounds.x1 < bounds.x2 && bounds.y1 < bounds.y2 ? bounds : Graphics::bound_t{};
 }
 } // namespace
 
 bool Graphics::Intersecting(const bound_t& b1, const bound_t& b2)
 {
-    return b1.x1 < b1.x2 && b1.y1 < b1.y2 && b2.x1 < b2.x2 && b2.y1 < b2.y2 && b1.x1 < b2.x2
-        && b2.x1 < b1.x2 && b1.y1 < b2.y2 && b2.y1 < b1.y2;
+    const bool top = b1.y2 < b2.y1;
+    const bool left = b1.x2 < b2.x1;
+    const bool right = b1.x1 > b2.x2;
+    const bool bottom = b1.y1 > b2.y2;
+    return !(top || left || right || bottom);
 }
 
 void Graphics::ExpandBound(bound_t& to, const bound_t& from)
@@ -308,8 +308,8 @@ void Graphics::RasterizeLine(Shape& shape, uint8_t* buff, const size_t width, co
     const int32_t step_y = y < end_y ? 1 : -1;
     int32_t error = dx - dy;
 
-    const int32_t pixel_width = std::min<size_t>(width, 32768) * 2;
-    const int32_t pixel_height = std::min<size_t>(height, 65536);
+    const int32_t pixel_width = std::min<size_t>(width, INT16_MAX) * 2;
+    const int32_t pixel_height = std::min<size_t>(height, UINT16_MAX);
     const int32_t offset = -((line.thickness - 1) / 2);
     const uint8_t colour_high = static_cast<uint8_t>(line.colour) << 4;
     const uint8_t colour_low = static_cast<uint8_t>(line.colour) & 0x0F;

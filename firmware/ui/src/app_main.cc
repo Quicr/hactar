@@ -224,12 +224,9 @@ int app_main()
     renderer.ChangeView(Renderer::View::Chat);
     renderer.Render(ticks_ms);
 
-    screen.CommitText("Test1", 5);
-    screen.CommitText("Test2", 5);
-
     while (1)
     {
-        // Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+        Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
 
         while (sleeping)
         {

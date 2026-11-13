@@ -40,7 +40,6 @@ public:
     void Sleep();
     void Wake();
     void SetScrollArea(const uint16_t y1, const uint16_t y2, const uint16_t height);
-    void ScrollScreen(const uint16_t scroll_idx, bool up);
 
     uint16_t GetWidth() const;
     uint16_t GetHeight() const;

@@ -72,11 +72,6 @@ uint8_t Battery::ChargeLevel()
     return charge;
 }
 
-bool Battery::IsCritical()
-{
-    return charge < Critical_Level;
-}
-
 Battery::State Battery::GetState()
 {
     return state;
