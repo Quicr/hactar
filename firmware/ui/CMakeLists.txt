@@ -3,13 +3,6 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gcc-arm-none-eabi.cmake")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-#
-# This file is generated only once,
-# and is not re-generated if converter is called multiple times.
-#
-# User is free to modify the file as much as necessary
-#
-
 # Setup compiler settings
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -71,6 +64,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc
   ${CMAKE_CURRENT_SOURCE_DIR}/inc
   ${CMAKE_CURRENT_SOURCE_DIR}/inc/fonts
+  ${CMAKE_CURRENT_SOURCE_DIR}/inc/graphics
+  ${CMAKE_CURRENT_SOURCE_DIR}/inc/graphics/icons
   ${CMAKE_CURRENT_SOURCE_DIR}/../shared_inc
   ${CMAKE_CURRENT_SOURCE_DIR}/../shared/
 )

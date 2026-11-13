@@ -15,8 +15,8 @@ public:
         size(size),
         read_idx(0),
         write_idx(0),
-        buffer(nullptr),
-        busy(false)
+        unread(0),
+        buffer(nullptr)
     {
         // Don't allow a zero for buffer size
         if (this->size == 0)
@@ -34,7 +34,6 @@ public:
 
     T& Write() noexcept
     {
-        BusySet();
         if (write_idx >= size)
         {
             write_idx = 0;
@@ -42,25 +41,25 @@ public:
 
         T& out = buffer[write_idx++];
 
-        BusyReset();
+        IncrementUnread();
+
         return out;
     }
 
     void Write(T d_in) noexcept
     {
-        BusySet();
         buffer[write_idx++] = std::move(d_in);
 
         if (write_idx >= size)
+        {
             write_idx = 0;
+        }
 
-        BusyReset();
+        IncrementUnread();
     }
 
-    void Write(T* input, const uint16_t count)
+    void Write(const T* input, const uint16_t count)
     {
-        BusySet();
-
         size_t input_off = 0;
 
         // Buffer is nearly full so we need to wrap around to the front
@@ -82,13 +81,28 @@ public:
             buffer[write_idx++] = std::move(input[i]);
         }
 
-        BusyReset();
+        unread += count;
+        if (unread >= size)
+        {
+            unread = size;
+        }
+    }
+
+    T* BorrowWrite()
+    {
+        return &buffer[write_idx];
+    }
+
+    void AdvWrite(uint16_t amt = 1)
+    {
+        write_idx = (static_cast<uint32_t>(write_idx) + amt) % size;
+
+        const uint32_t total = static_cast<uint32_t>(unread) + amt;
+        unread = total > size ? size : static_cast<uint16_t>(total);
     }
 
     T Take() noexcept
     {
-        BusySet();
-
         T d_out = std::move(buffer[read_idx++]);
 
         if (read_idx >= size)
@@ -96,14 +110,12 @@ public:
             read_idx = 0;
         }
 
-        BusyReset();
+        DecrementUnread();
         return d_out;
     }
 
     T& Read() noexcept
     {
-        BusySet();
-
         T& d_out = buffer[read_idx++];
 
         if (read_idx >= size)
@@ -111,14 +123,28 @@ public:
             read_idx = 0;
         }
 
-        BusyReset();
+        DecrementUnread();
+
         return d_out;
+    }
+
+    T* ReadPtr(const uint16_t adv) noexcept
+    {
+        if (read_idx >= size)
+        {
+            read_idx = 0;
+        }
+
+        DecrementUnread();
+
+        uint16_t tmp_read = read_idx;
+        read_idx += adv;
+
+        return buffer + tmp_read;
     }
 
     void Read(T& d_out, bool& is_end)
     {
-        BusySet();
-
         d_out = buffer[read_idx++];
 
         if (read_idx >= size)
@@ -126,8 +152,9 @@ public:
             read_idx = 0;
         }
 
+        DecrementUnread();
+
         is_end = read_idx == write_idx;
-        BusyReset();
     }
 
     const T& Peek() const
@@ -137,19 +164,12 @@ public:
 
     uint16_t Unread() const
     {
-        if (write_idx >= read_idx)
-        {
-            return write_idx - read_idx;
-        }
-        else
-        {
-            return size - read_idx + write_idx;
-        }
+        return unread;
     }
 
     bool IsFull() const
     {
-        return size == Unread();
+        return size == unread;
     }
 
     T* Buffer()
@@ -168,25 +188,28 @@ public:
     }
 
 private:
-    inline void BusySet()
+    inline void IncrementUnread()
     {
-        if (busy)
+        ++unread;
+        if (unread >= size)
         {
-            while (true)
-            {
-            }
+            unread = size;
         }
-        busy = true;
     }
 
-    inline void BusyReset()
+    inline void DecrementUnread()
     {
-        busy = false;
+        if (unread == 0)
+        {
+            return;
+        }
+        --unread;
     }
 
     uint16_t size;
     uint16_t read_idx;  // start
     uint16_t write_idx; // end
+    uint16_t unread;
     T* buffer;
     bool busy;
 };

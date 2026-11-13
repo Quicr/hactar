@@ -56,5 +56,6 @@ enum struct NetLoopbackMode : uint8_t
 {
     Off = 0,
     Raw,
+    MiddleMan,
     Moq,
 };

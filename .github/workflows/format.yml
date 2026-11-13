@@ -7,6 +7,26 @@ on:
     branches: [ "main" ]
 
 jobs:
+  case-collision-check:
+    name: Case Collision Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject case-conflicting paths
+        shell: bash
+        run: |
+          mapfile -d '' collisions < <(
+            git ls-files -z | LC_ALL=C sort -fz | uniq -diz
+          )
+
+          if (( ${#collisions[@]} )); then
+            printf 'Case-conflicting tracked path: %s\n' "${collisions[@]}" >&2
+            exit 1
+          fi
+
   format-check:
     name: Format Check
     runs-on: ubuntu-latest

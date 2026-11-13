@@ -119,6 +119,7 @@ struct Runtime
 {
     uint64_t device_id;
     SemaphoreHandle_t audio_req_smpr;
+    SemaphoreHandle_t audio_lock_sempr;
     uint64_t curr_audio_isr_time;
     uint64_t last_audio_isr_time;
 };
