@@ -6,7 +6,11 @@
 #include "font.hh"
 #include "graphics.hh"
 #include "ili9341.hh"
+#include "jetbrainsmono_10x16.hh"
+#include "jetbrainsmono_15x20.hh"
+#include "quantized_data_buff.hh"
 #include "ring_buffer.hh"
+#include "scanline_buff.hh"
 #include "stm32.h"
 #include "tile_map.hh"
 #include <cstdint>
@@ -26,10 +30,11 @@ public:
     // TODO revist these offsets
     static constexpr uint16_t Title_y1 = 1;
     static constexpr uint32_t Max_Title_Length = 21;
-    static constexpr uint32_t Max_Characters = 320 / 5;
-    static constexpr uint16_t Top_Fixed_Height = 20;
-    static constexpr uint16_t Bottom_Fixed_Height = 12;
-    static constexpr uint32_t Max_Texts = (320 - Top_Fixed_Height - Bottom_Fixed_Height) / 8;
+    static constexpr uint32_t Max_Characters = 320 / JetBrainsMono10x16::font.width;
+    static constexpr uint16_t Top_Fixed_Height = JetBrainsMono15x20::font.height;
+    static constexpr uint16_t Bottom_Fixed_Height = JetBrainsMono10x16::font.height + 2;
+    static constexpr uint32_t Max_Texts =
+        (320 - Top_Fixed_Height - Bottom_Fixed_Height) / JetBrainsMono10x16::font.height;
 
     // TODO this needs to be calculated because we may have it in portrait mode
     static constexpr uint16_t Icon_Position_Y1 = Title_y1;
@@ -63,14 +68,8 @@ private:
         static_cast<uint16_t>(Colour::Yellow),      static_cast<uint16_t>(Colour::Grey)};
 
 public:
-    Screen(uint16_t* scanline_buffer,
-           const uint16_t num_lines,
-           const uint16_t num_cols,
-           const uint16_t num_buffs,
-           uint8_t* data_buff,
-           const uint16_t width,
-           const uint16_t height,
-           const uint16_t quantization,
+    Screen(ScanlineBuffer* scan_line_buff,
+           QuantizedBuffer* data_buff,
            const Battery& battery,
            TileMap& tile_map,
            const uint16_t screen_width_pixels,
@@ -170,19 +169,13 @@ private:
     void RasterizeShape(Graphics::Shape& shape, const Graphics::bound_t& bound);
 
     // Private functions
-    const Font& title_font = font11x16;
-    const Font& text_font = font5x8;
+    const Font& title_font = JetBrainsMono15x20::font;
+    const Font& text_font = JetBrainsMono10x16::font;
 
     // Variables
-    uint16_t* scanline_buffer;
-    const uint16_t num_lines;
-    const uint16_t num_cols;
-    const uint16_t num_buffs;
+    ScanlineBuffer* const scan_line_buff;
 
-    uint8_t* data_buff;
-    const uint16_t data_buff_width;
-    const uint16_t data_buff_height;
-    const uint16_t quantization;
+    QuantizedBuffer* const data_buff;
 
     const Battery& battery;
     TileMap& tile_map;
