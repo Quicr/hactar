@@ -1,8 +1,6 @@
 #pragma once
 
-#include <cstdint>
-#include <iostream>
-#include <map>
+#include <stm32.h>
 
 class AudioCodec
 {
@@ -29,6 +27,9 @@ public:
 
     static uint8_t ALawCompand(const uint16_t sample);
     static uint16_t ALawExpand(uint8_t sample);
+
+    static uint8_t ALawCompandLookup(const uint16_t sample);
+    static uint16_t ALawExpandLookup(const uint8_t sample);
 
 private:
 };
