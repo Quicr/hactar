@@ -8,9 +8,8 @@
 #include "ili9341.hh"
 #include "jetbrainsmono_10x16.hh"
 #include "jetbrainsmono_15x20.hh"
-#include "quantized_data_buff.hh"
 #include "ring_buffer.hh"
-#include "scanline_buff.hh"
+#include "screen_buffers.hh"
 #include "stm32.h"
 #include "tile_map.hh"
 #include <cstdint>
@@ -68,8 +67,7 @@ private:
         static_cast<uint16_t>(Colour::Yellow),      static_cast<uint16_t>(Colour::Grey)};
 
 public:
-    Screen(ScanlineBuffer* scan_line_buff,
-           QuantizedBuffer* data_buff,
+    Screen(ScreenBuffers* buffers,
            const Battery& battery,
            TileMap& tile_map,
            const uint16_t screen_width_pixels,
@@ -173,17 +171,12 @@ private:
     const Font& text_font = JetBrainsMono10x16::font;
 
     // Variables
-    ScanlineBuffer* const scan_line_buff;
-
-    QuantizedBuffer* const data_buff;
+    ScreenBuffers* const buffers;
 
     const Battery& battery;
     TileMap& tile_map;
 
     ILI9341 ili9341;
-
-    uint16_t* scanline_ptr;
-    size_t scanline_idx;
 
     Graphics::bound_t draw_bound;
     uint16_t render_height;
