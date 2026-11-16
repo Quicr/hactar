@@ -39,6 +39,10 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc;
+
+DAC_HandleTypeDef hdac;
+
 TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart1;
@@ -63,9 +67,56 @@ static void MX_TIM3_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_ADC_Init(void);
+static void MX_DAC_Init(void);
 /* USER CODE BEGIN PFP */
 
-void app_main(void);
+GPIO_TypeDef* PortA()
+{
+    return GPIOA;
+}
+
+GPIO_TypeDef* PortB()
+{
+    return GPIOB;
+}
+
+GPIO_TypeDef* PortC()
+{
+    return GPIOC;
+}
+
+const gpio_t led_r()
+{
+    return (gpio_t){MGMT_LED_R_GPIO_Port, MGMT_LED_R_Pin};
+}
+
+const gpio_t led_g()
+{
+    return (gpio_t){MGMT_LED_G_GPIO_Port, MGMT_LED_G_Pin};
+}
+
+const gpio_t led_b()
+{
+    return (gpio_t){MGMT_LED_B_GPIO_Port, MGMT_LED_B_Pin};
+}
+
+UART_HandleTypeDef* usb_uart()
+{
+    return &huart1;
+}
+
+UART_HandleTypeDef* ui_uart()
+{
+    return &huart2;
+}
+
+UART_HandleTypeDef* net_uart()
+{
+    return &huart3;
+}
+
+int app_main(void);
 
 /* USER CODE END PFP */
 
@@ -108,6 +159,8 @@ int main(void)
     MX_USART2_UART_Init();
     MX_USART3_UART_Init();
     MX_USART1_UART_Init();
+    MX_ADC_Init();
+    MX_DAC_Init();
     /* USER CODE BEGIN 2 */
 
     /* USER CODE END 2 */
@@ -115,6 +168,9 @@ int main(void)
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
 
+    HAL_GPIO_WritePin(MGMT_LED_R_GPIO_Port, MGMT_LED_R_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(MGMT_LED_G_GPIO_Port, MGMT_LED_G_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(MGMT_LED_B_GPIO_Port, MGMT_LED_B_Pin, GPIO_PIN_SET);
     while (1)
     {
         /* USER CODE END WHILE */
@@ -138,8 +194,10 @@ void SystemClock_Config(void)
     /** Initializes the RCC Oscillators according to the specified parameters
      * in the RCC_OscInitTypeDef structure.
      */
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI14 | RCC_OSCILLATORTYPE_HSE;
     RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.HSI14State = RCC_HSI14_ON;
+    RCC_OscInitStruct.HSI14CalibrationValue = 16;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
     RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
     RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL3;
@@ -167,7 +225,124 @@ void SystemClock_Config(void)
     {
         Error_Handler();
     }
-    HAL_RCC_MCOConfig(RCC_MCO, RCC_MCO1SOURCE_PLLCLK_DIV2, RCC_MCODIV_4);
+    HAL_RCC_MCOConfig(RCC_MCO, RCC_MCO1SOURCE_PLLCLK_DIV2, RCC_MCODIV_1);
+}
+
+/**
+ * @brief ADC Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_ADC_Init(void)
+{
+
+    /* USER CODE BEGIN ADC_Init 0 */
+
+    /* USER CODE END ADC_Init 0 */
+
+    ADC_ChannelConfTypeDef sConfig = {0};
+
+    /* USER CODE BEGIN ADC_Init 1 */
+
+    /* USER CODE END ADC_Init 1 */
+
+    /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of
+     * conversion)
+     */
+    hadc.Instance = ADC1;
+    hadc.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
+    hadc.Init.Resolution = ADC_RESOLUTION_12B;
+    hadc.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+    hadc.Init.ScanConvMode = ADC_SCAN_DIRECTION_FORWARD;
+    hadc.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+    hadc.Init.LowPowerAutoWait = DISABLE;
+    hadc.Init.LowPowerAutoPowerOff = DISABLE;
+    hadc.Init.ContinuousConvMode = DISABLE;
+    hadc.Init.DiscontinuousConvMode = DISABLE;
+    hadc.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+    hadc.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+    hadc.Init.DMAContinuousRequests = DISABLE;
+    hadc.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+    if (HAL_ADC_Init(&hadc) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    /** Configure for the selected ADC regular channel to be converted.
+     */
+    sConfig.Channel = ADC_CHANNEL_4;
+    sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
+    sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+    if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    /** Configure for the selected ADC regular channel to be converted.
+     */
+    sConfig.Channel = ADC_CHANNEL_6;
+    if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    /** Configure for the selected ADC regular channel to be converted.
+     */
+    sConfig.Channel = ADC_CHANNEL_7;
+    if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    /** Configure for the selected ADC regular channel to be converted.
+     */
+    sConfig.Channel = ADC_CHANNEL_8;
+    if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    /* USER CODE BEGIN ADC_Init 2 */
+
+    /* USER CODE END ADC_Init 2 */
+}
+
+/**
+ * @brief DAC Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_DAC_Init(void)
+{
+
+    /* USER CODE BEGIN DAC_Init 0 */
+
+    /* USER CODE END DAC_Init 0 */
+
+    DAC_ChannelConfTypeDef sConfig = {0};
+
+    /* USER CODE BEGIN DAC_Init 1 */
+
+    /* USER CODE END DAC_Init 1 */
+
+    /** DAC Initialization
+     */
+    hdac.Instance = DAC;
+    if (HAL_DAC_Init(&hdac) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    /** DAC channel OUT2 config
+     */
+    sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
+    sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+    if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_2) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    /* USER CODE BEGIN DAC_Init 2 */
+
+    /* USER CODE END DAC_Init 2 */
 }
 
 /**
@@ -353,48 +528,28 @@ static void MX_GPIO_Init(void)
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOA, LEDA_R_Pin | MGMT_DEBUG_1_Pin | LEDA_G_Pin | LEDA_B_Pin | UI_BOOT0_Pin,
-                      GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, NET_NRST_Pin | MGMT_DEBUG_1_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(GPIOB,
-                      LEDB_R_Pin | MGMT_DEBUG_2_Pin | LEDB_B_Pin | UI_NRST_Pin | NET_NRST_Pin
-                          | NET_BOOT_Pin | LEDB_G_Pin | UI_BOOT1_Pin,
+                      MGMT_LED_B_Pin | MGMT_DEBUG_2_Pin | UI_NRST_Pin | MGMT_LED_G_Pin
+                          | MGMT_LED_R_Pin | NET_BOOT_Pin | UI_BOOT1_Pin,
                       GPIO_PIN_RESET);
 
-    /*Configure GPIO pins : USB_CC2_DETECT_Pin USB_CC1_DETECT_Pin */
-    GPIO_InitStruct.Pin = USB_CC2_DETECT_Pin | USB_CC1_DETECT_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    /*Configure GPIO pins : NET_NRST_Pin MGMT_DEBUG_1_Pin */
+    GPIO_InitStruct.Pin = NET_NRST_Pin | MGMT_DEBUG_1_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : CTS_NOT_NEEDED_Pin RTS_NOT_NEEDED_Pin MISTAKE_Pin MISTAKEA12_Pin */
-    GPIO_InitStruct.Pin = CTS_NOT_NEEDED_Pin | RTS_NOT_NEEDED_Pin | MISTAKE_Pin | MISTAKEA12_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : LEDA_R_Pin MGMT_DEBUG_1_Pin LEDA_G_Pin LEDA_B_Pin
-                             UI_BOOT0_Pin */
-    GPIO_InitStruct.Pin = LEDA_R_Pin | MGMT_DEBUG_1_Pin | LEDA_G_Pin | LEDA_B_Pin | UI_BOOT0_Pin;
+    /*Configure GPIO pins : MGMT_LED_B_Pin MGMT_DEBUG_2_Pin UI_NRST_Pin MGMT_LED_G_Pin
+                             MGMT_LED_R_Pin NET_BOOT_Pin UI_BOOT1_Pin */
+    GPIO_InitStruct.Pin = MGMT_LED_B_Pin | MGMT_DEBUG_2_Pin | UI_NRST_Pin | MGMT_LED_G_Pin
+                        | MGMT_LED_R_Pin | NET_BOOT_Pin | UI_BOOT1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : LEDB_R_Pin MGMT_DEBUG_2_Pin LEDB_B_Pin UI_NRST_Pin
-                             NET_NRST_Pin NET_BOOT_Pin LEDB_G_Pin UI_BOOT1_Pin */
-    GPIO_InitStruct.Pin = LEDB_R_Pin | MGMT_DEBUG_2_Pin | LEDB_B_Pin | UI_NRST_Pin | NET_NRST_Pin
-                        | NET_BOOT_Pin | LEDB_G_Pin | UI_BOOT1_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : USB_DTR_MGMT_Pin NET_STAT_Pin UI_STAT_Pin */
-    GPIO_InitStruct.Pin = USB_DTR_MGMT_Pin | NET_STAT_Pin | UI_STAT_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
     /*Configure GPIO pin : MCLK_Pin */
@@ -404,6 +559,18 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
     HAL_GPIO_Init(MCLK_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : UI_BOOT0_Pin */
+    GPIO_InitStruct.Pin = UI_BOOT0_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(UI_BOOT0_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pins : NET_STAT_Pin UI_STAT_Pin */
+    GPIO_InitStruct.Pin = NET_STAT_Pin | UI_STAT_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
     /* USER CODE BEGIN MX_GPIO_Init_2 */
     /* USER CODE END MX_GPIO_Init_2 */
@@ -420,24 +587,8 @@ static void MX_GPIO_Init(void)
 void Error_Handler(void)
 {
     /* USER CODE BEGIN Error_Handler_Debug */
-    // Set LEDS for ui
-    HAL_GPIO_WritePin(LEDB_R_GPIO_Port, LEDB_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_G_GPIO_Port, LEDB_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDB_B_GPIO_Port, LEDB_B_Pin, GPIO_PIN_SET);
-
-    // Set LEDS for net
-    HAL_GPIO_WritePin(LEDA_R_GPIO_Port, LEDA_R_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_G_GPIO_Port, LEDA_G_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LEDA_B_GPIO_Port, LEDA_B_Pin, GPIO_PIN_SET);
-    uint32_t blink_r = 0;
     while (1)
     {
-        if (HAL_GetTick() > blink_r)
-        {
-            HAL_GPIO_TogglePin(LEDA_R_GPIO_Port, LEDA_R_Pin);
-            HAL_GPIO_TogglePin(LEDB_R_GPIO_Port, LEDB_R_Pin);
-            blink_r = HAL_GetTick() + 200;
-        }
     }
     /* USER CODE END Error_Handler_Debug */
 }

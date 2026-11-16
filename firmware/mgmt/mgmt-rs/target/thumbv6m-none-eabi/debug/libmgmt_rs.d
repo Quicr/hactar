@@ -1,1 +1,1 @@
-/mnt/cisco/code/hactar/firmware/mgmt/mgmt-rs/target/thumbv6m-none-eabi/debug/libmgmt_rs.a: /mnt/cisco/code/hactar/firmware/mgmt/mgmt-rs/src/lib.rs
+/mnt/cisco/code/hactar/firmware/mgmt/mgmt-rs/target/thumbv6m-none-eabi/debug/libmgmt_rs.a: /mnt/cisco/code/hactar/firmware/mgmt/mgmt-rs/build.rs /mnt/cisco/code/hactar/firmware/mgmt/mgmt-rs/src/drivers/gpio.rs /mnt/cisco/code/hactar/firmware/mgmt/mgmt-rs/src/drivers/uart.rs /mnt/cisco/code/hactar/firmware/mgmt/mgmt-rs/src/drivers.rs /mnt/cisco/code/hactar/firmware/mgmt/mgmt-rs/src/lib.rs
