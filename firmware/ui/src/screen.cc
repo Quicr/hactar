@@ -14,8 +14,7 @@
 #include <cstdint>
 #include <cstring>
 
-Screen::Screen(ScanlineBuffer* scan_line_buff,
-               QuantizedBuffer* data_buff,
+Screen::Screen(ScreenBuffers* buffers,
                const Battery& battery,
                TileMap& tile_map,
                const uint16_t screen_width_pixels,
@@ -30,8 +29,7 @@ Screen::Screen(ScanlineBuffer* scan_line_buff,
                GPIO_TypeDef* bl_port,
                const uint16_t bl_pin,
                ILI9341::Orientation orientation) :
-    scan_line_buff(scan_line_buff),
-    data_buff(data_buff),
+    buffers(buffers),
     battery(battery),
     tile_map(tile_map),
     ili9341(screen_width_pixels,
@@ -46,8 +44,6 @@ Screen::Screen(ScanlineBuffer* scan_line_buff,
             bl_port,
             bl_pin,
             orientation),
-    scanline_ptr(scan_line_buff->buffer),
-    scanline_idx(0),
     draw_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
     render_height(0),
     title_x1(0),
@@ -160,27 +156,26 @@ void Screen::Render()
         return;
     }
 
-    scanline_ptr =
-        &scan_line_buff
-             ->buffer[scanline_idx * scan_line_buff->num_lines * scan_line_buff->num_cols];
+    uint16_t* const scanline_ptr = buffers->scanline->Current();
     render_height =
-        std::min<const uint16_t>(draw_bound.y2 - draw_bound.y1, scan_line_buff->num_lines);
+        std::min<const uint16_t>(draw_bound.y2 - draw_bound.y1, buffers->scanline->num_lines);
     const uint16_t render_width = draw_bound.x2 - draw_bound.x1;
 
-    const uint16_t quantization_divisor = 8 / data_buff->quantization;
+    const uint16_t quantization_divisor = 8 / buffers->data->quantization;
     uint16_t y_start = draw_bound.y1;
     for (uint16_t y = 0; y < render_height; ++y)
     {
         uint16_t x_start = draw_bound.x1;
         uint16_t x_end = draw_bound.x2;
-        const uint16_t y_offset = y_start * data_buff->width;
+        const uint16_t y_offset = y_start * buffers->data->width;
 
         // Determine if the x1 is a odd value
         if (x_start & 0x01)
         {
             const uint16_t data_buff_idx = (x_start / quantization_divisor) + y_offset;
             const uint8_t quant_colour =
-                (data_buff->buffer[data_buff_idx] >> (4 * ((x_start ^ 0x0001) & 0x0001))) & 0x0F;
+                (buffers->data->buffer[data_buff_idx] >> (4 * ((x_start ^ 0x0001) & 0x0001)))
+                & 0x0F;
             const uint16_t real_colour = Colour_Map[quant_colour];
 
             scanline_ptr[(x_start - draw_bound.x1) + y * render_width] = real_colour;
@@ -194,7 +189,7 @@ void Screen::Render()
 
             const uint16_t data_buff_idx = (x_end / quantization_divisor) + y_offset;
             const uint8_t quant_colour =
-                (data_buff->buffer[data_buff_idx] >> (4 * ((x_end ^ 0x0001) & 0x0001))) & 0x0F;
+                (buffers->data->buffer[data_buff_idx] >> (4 * ((x_end ^ 0x0001) & 0x0001))) & 0x0F;
             const uint16_t real_colour = Colour_Map[quant_colour];
 
             scanline_ptr[(x_end - draw_bound.x1) + y * render_width] = real_colour;
@@ -204,7 +199,7 @@ void Screen::Render()
         for (uint16_t x = x_start; x < x_end; x += 2)
         {
             const uint16_t data_buff_idx = (x / quantization_divisor) + y_offset;
-            const uint8_t quant_colour = data_buff->buffer[data_buff_idx];
+            const uint8_t quant_colour = buffers->data->buffer[data_buff_idx];
             const uint16_t upper_colour = Colour_Map[quant_colour >> 4];
             const uint16_t lower_colour = Colour_Map[quant_colour & 0x0F];
             const size_t idx = (x - draw_bound.x1) + y_render_offset;
@@ -227,11 +222,9 @@ void Screen::Transfer()
 
     const uint16_t render_width = draw_bound.x2 - draw_bound.x1;
     const uint16_t render_height =
-        std::min<const uint16_t>(draw_bound.y2 - draw_bound.y1, scan_line_buff->num_lines);
+        std::min<const uint16_t>(draw_bound.y2 - draw_bound.y1, buffers->scanline->num_lines);
 
-    scanline_ptr =
-        &scan_line_buff
-             ->buffer[scanline_idx * scan_line_buff->num_lines * scan_line_buff->num_cols];
+    uint16_t* const scanline_ptr = buffers->scanline->Current();
     auto res = ili9341.WriteDataDMA(reinterpret_cast<const uint8_t*>(scanline_ptr),
                                     render_width * sizeof(uint16_t) * render_height);
 
@@ -239,11 +232,7 @@ void Screen::Transfer()
     {
         draw_bound.y1 += render_height;
 
-        ++scanline_idx;
-        if (scanline_idx >= scan_line_buff->num_buffs)
-        {
-            scanline_idx = 0;
-        }
+        buffers->scanline->Advance();
     }
     else
     {
@@ -759,7 +748,7 @@ bool Screen::SubmitShape(Graphics::Shape& shape)
 
 void Screen::RasterizeShape(Graphics::Shape& shape, const Graphics::bound_t& bound)
 {
-    Graphics::Rasterize(shape, data_buff->buffer, data_buff->width, data_buff->height);
+    Graphics::Rasterize(shape, buffers->data->buffer, buffers->data->width, buffers->data->height);
 
     tile_map.Mark(bound);
 }
@@ -778,7 +767,7 @@ void Screen::ScrollText()
         .mem =
             {
                 .x1 = 0,
-                .x2 = static_cast<uint16_t>(data_buff->width * 2),
+                .x2 = static_cast<uint16_t>(buffers->data->width * 2),
                 .dest_y = dest_y,
                 .src_y1 = src_y1,
                 .src_y2 = src_y2,

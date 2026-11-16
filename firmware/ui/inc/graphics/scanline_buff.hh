@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 class ScanlineBuffer
@@ -17,12 +18,33 @@ public:
     {
     }
 
+    uint16_t* Current() const noexcept
+    {
+        return buffer + idx * num_lines * num_cols;
+    }
+
+    void Advance() noexcept
+    {
+        if (++idx >= num_buffs)
+        {
+            idx = 0;
+        }
+    }
+
+    void Reset() noexcept
+    {
+        idx = 0;
+    }
+
     uint16_t* const buffer;
     const uint16_t num_lines;
     const uint16_t num_cols;
     const uint16_t num_buffs;
 
     ~ScanlineBuffer() = default;
+
+private:
+    std::size_t idx = 0;
 };
 
 template <uint16_t NUM_LINES, uint16_t NUM_COLS, uint16_t NUM_BUFFS>

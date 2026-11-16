@@ -15,10 +15,9 @@
 #include "logger.hh"
 #include "main.h"
 #include "protector.hh"
-#include "quantized_data_buff.hh"
 #include "renderer.hh"
-#include "scanline_buff.hh"
 #include "screen.hh"
+#include "screen_buffers.hh"
 #include "serial.hh"
 #include "stm32f4xx_hal_gpio.h"
 #include "tile_map.hh"
@@ -100,9 +99,12 @@ static constexpr uint16_t Screen_Height = 240;
 static constexpr uint16_t Bit_Quantization = 4;
 static constexpr uint16_t Num_Scan_Lines = 20;
 static constexpr uint16_t Num_Scanline_Buffs = 2;
-static constinit StaticScanLineBuffer<Num_Scan_Lines, Screen_Width, Num_Scanline_Buffs>
-    scanline_buff;
-static constinit StaticQuantizedBuffer<Screen_Width, Screen_Height, Bit_Quantization> data_buff;
+static constinit StaticScreenBuffers<Screen_Width,
+                                     Screen_Height,
+                                     Bit_Quantization,
+                                     Num_Scan_Lines,
+                                     Num_Scanline_Buffs>
+    screen_buffers;
 
 static Battery battery;
 
@@ -118,8 +120,7 @@ static uint8_t tiles[Tile_Cols * Tile_Rows]{0};
 
 static TileMap tile_map(tiles, Tile_Arr_Size, Screen_Width, Screen_Height, Tile_Size);
 
-Screen screen(&scanline_buff,
-              &data_buff,
+Screen screen(&screen_buffers,
               battery,
               tile_map,
               Screen_Width,
