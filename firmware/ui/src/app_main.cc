@@ -99,12 +99,6 @@ static constexpr uint16_t Screen_Height = 240;
 static constexpr uint16_t Bit_Quantization = 4;
 static constexpr uint16_t Num_Scan_Lines = 20;
 static constexpr uint16_t Num_Scanline_Buffs = 2;
-static constinit StaticScreenBuffers<Screen_Width,
-                                     Screen_Height,
-                                     Bit_Quantization,
-                                     Num_Scan_Lines,
-                                     Num_Scanline_Buffs>
-    screen_buffers;
 
 static Battery battery;
 
@@ -120,21 +114,23 @@ static uint8_t tiles[Tile_Cols * Tile_Rows]{0};
 
 static TileMap tile_map(tiles, Tile_Arr_Size, Screen_Width, Screen_Height, Tile_Size);
 
-Screen screen(&screen_buffers,
-              battery,
-              tile_map,
-              Screen_Width,
-              Screen_Height,
-              hspi1,
-              DISP_CS_GPIO_Port,
-              DISP_CS_Pin,
-              DISP_DC_GPIO_Port,
-              DISP_DC_Pin,
-              DISP_RST_GPIO_Port,
-              DISP_RST_Pin,
-              DISP_BL_GPIO_Port,
-              DISP_BL_Pin,
-              ILI9341::Orientation::Landscape);
+static ILI9341 display(Screen_Width,
+                       Screen_Height,
+                       hspi1,
+                       DISP_CS_GPIO_Port,
+                       DISP_CS_Pin,
+                       DISP_DC_GPIO_Port,
+                       DISP_DC_Pin,
+                       DISP_RST_GPIO_Port,
+                       DISP_RST_Pin,
+                       DISP_BL_GPIO_Port,
+                       DISP_BL_Pin,
+                       ILI9341::Orientation::Landscape);
+
+StaticScreen<Screen_Width, Screen_Height, Bit_Quantization, Num_Scan_Lines, Num_Scanline_Buffs>
+    screen(battery, tile_map, display);
+
+size_t x = sizeof(screen);
 
 GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
