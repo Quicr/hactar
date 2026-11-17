@@ -35,6 +35,7 @@ struct ScreenTextLine
 class Screen
 {
 public:
+    static constexpr size_t Num_Icons = 5;
     static constexpr uint16_t Title_y1 = 1;
 
     static constexpr uint16_t Icon_Position_Y1 = Title_y1;
@@ -272,7 +273,10 @@ template <size_t WIDTH,
           typename TEXT_FONT>
 class StaticScreen
     : private StaticScreenBuffers<WIDTH, HEIGHT, QUANTIZATION, NUM_SCAN_LINES, NUM_SCANLINE_BUFFS>,
-      private TitleStorage<std::max(WIDTH, HEIGHT), TITLE_FONT>,
+      private TitleStorage<std::max(
+                               WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width),
+                               WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width)),
+                           TITLE_FONT>,
       private TextStorage<std::max(WIDTH, HEIGHT),
                           TextAreaHeight(
                               std::max(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font),
@@ -293,7 +297,9 @@ public:
 
     StaticScreen(const Battery& battery, TileMap& tile_map, ILI9341& ili9341) :
         StaticScreenBuffers<WIDTH, HEIGHT, QUANTIZATION, NUM_SCAN_LINES, NUM_SCANLINE_BUFFS>(),
-        TitleStorage<std::max(WIDTH, HEIGHT), TITLE_FONT>(),
+        TitleStorage<std::max(WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width),
+                              WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width)),
+                     TITLE_FONT>(),
         TextStorage<std::max(WIDTH, HEIGHT),
                     TextAreaHeight(std::max(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font),
                     TEXT_FONT>(),
