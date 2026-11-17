@@ -137,8 +137,6 @@ StaticScreen<Screen_Width,
              JetBrainsMono10x16>
     screen(battery, tile_map, display);
 
-size_t x = sizeof(screen);
-
 GPIO_TypeDef* col_ports[Keyboard::Q10_Cols] = {
     KB_COL1_GPIO_Port, KB_COL2_GPIO_Port, KB_COL3_GPIO_Port, KB_COL4_GPIO_Port, KB_COL5_GPIO_Port,
 };
