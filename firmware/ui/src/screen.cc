@@ -11,44 +11,24 @@
 #include "stm32f4xx_hal_gpio.h"
 #include "wifi_icon.hh"
 #include <math.h>
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 
 Screen::Screen(ScreenBuffers* buffers,
+               std::span<char> title_buffer,
                const Battery& battery,
                TileMap& tile_map,
-               const uint16_t screen_width_pixels,
-               const uint16_t screen_height_pixels,
-               SPI_HandleTypeDef& hspi,
-               GPIO_TypeDef* cs_port,
-               const uint16_t cs_pin,
-               GPIO_TypeDef* dc_port,
-               const uint16_t dc_pin,
-               GPIO_TypeDef* rst_port,
-               const uint16_t rst_pin,
-               GPIO_TypeDef* bl_port,
-               const uint16_t bl_pin,
-               ILI9341::Orientation orientation) :
+               ILI9341& ili9341) :
     buffers(buffers),
     battery(battery),
     tile_map(tile_map),
-    ili9341(screen_width_pixels,
-            screen_height_pixels,
-            hspi,
-            cs_port,
-            cs_pin,
-            dc_port,
-            dc_pin,
-            rst_port,
-            rst_pin,
-            bl_port,
-            bl_pin,
-            orientation),
-    draw_bound({screen_width_pixels, screen_height_pixels, 0, 0}),
+    ili9341(ili9341),
+    draw_bound({ili9341.GetWidth(), ili9341.GetHeight(), 0, 0}),
     render_height(0),
     title_x1(0),
     title_x2(0),
-    title_buffer{0},
+    title_buffer(title_buffer),
     title_len(0),
     text_write(0),
     text_read(0),
@@ -278,7 +258,7 @@ void Screen::FillScreen(const Graphics::Colour colour)
 
 void Screen::UpdateTitle(const char* title, const uint32_t len)
 {
-    const uint16_t title_len = len < Max_Title_Length ? len : Max_Title_Length;
+    const uint16_t title_len = std::min<size_t>({len, title_buffer.size(), UINT16_MAX});
     for (uint16_t i = 0; i < title_len; ++i)
     {
         title_buffer[i] = title[i];
@@ -306,7 +286,7 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
         .type = Graphics::ShapeType::String,
         .string =
             {
-                .str = title_buffer,
+                .str = title_buffer.data(),
                 .len = title_len,
                 .x = title_x1,
                 .y = Title_y1,

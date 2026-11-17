@@ -12,8 +12,10 @@
 #include "screen_buffers.hh"
 #include "stm32.h"
 #include "tile_map.hh"
+#include <array>
+#include <cstddef>
 #include <cstdint>
-#include <istream>
+#include <span>
 
 namespace
 {
@@ -26,16 +28,13 @@ static constexpr uint16_t swap_u16(const uint16_t val)
 class Screen
 {
 public:
-    // TODO revist these offsets
     static constexpr uint16_t Title_y1 = 1;
-    static constexpr uint32_t Max_Title_Length = 21;
     static constexpr uint32_t Max_Characters = 320 / JetBrainsMono10x16::font.width;
     static constexpr uint16_t Top_Fixed_Height = JetBrainsMono15x20::font.height;
     static constexpr uint16_t Bottom_Fixed_Height = JetBrainsMono10x16::font.height + 2;
     static constexpr uint32_t Max_Texts =
         (320 - Top_Fixed_Height - Bottom_Fixed_Height) / JetBrainsMono10x16::font.height;
 
-    // TODO this needs to be calculated because we may have it in portrait mode
     static constexpr uint16_t Icon_Position_Y1 = Title_y1;
     static constexpr uint16_t Icon_Position_Y2 = Title_y1 + Battery_Critical_20x18::bitmap.height;
 
@@ -68,20 +67,10 @@ private:
 
 public:
     Screen(ScreenBuffers* buffers,
+           std::span<char> title_buffer,
            const Battery& battery,
            TileMap& tile_map,
-           const uint16_t screen_width_pixels,
-           const uint16_t screen_height_pixels,
-           SPI_HandleTypeDef& hspi,
-           GPIO_TypeDef* cs_port,
-           const uint16_t cs_pin,
-           GPIO_TypeDef* dc_port,
-           const uint16_t dc_pin,
-           GPIO_TypeDef* rst_port,
-           const uint16_t rst_pin,
-           GPIO_TypeDef* bl_port,
-           const uint16_t bl_pin,
-           ILI9341::Orientation orientation);
+           ILI9341& ili9341);
 
     enum class IconType
     {
@@ -167,8 +156,8 @@ private:
     void RasterizeShape(Graphics::Shape& shape, const Graphics::bound_t& bound);
 
     // Private functions
-    const Font& title_font = JetBrainsMono15x20::font;
-    const Font& text_font = JetBrainsMono10x16::font;
+    static constexpr Font title_font = JetBrainsMono15x20::font;
+    static constexpr Font text_font = JetBrainsMono10x16::font;
 
     // Variables
     ScreenBuffers* const buffers;
@@ -176,7 +165,7 @@ private:
     const Battery& battery;
     TileMap& tile_map;
 
-    ILI9341 ili9341;
+    ILI9341& ili9341;
 
     Graphics::bound_t draw_bound;
     uint16_t render_height;
@@ -184,23 +173,18 @@ private:
     uint16_t title_x1;
     uint16_t title_x2;
 
-    // Window: 0-20px
-    // Max 21 characters
-    char title_buffer[Max_Title_Length];
+    const std::span<char> title_buffer;
     size_t title_len;
 
-    // Window: 20 - 308px
     uint32_t text_write;
     uint32_t text_read;
     uint32_t texts_in_use;
     uint32_t scroll_offset;
 
-    // Move into a ring buffer
     char text_buffer[Max_Texts][Max_Characters];
     char text_lens[Max_Texts];
     size_t max_texts;
 
-    // Window: 308-320px
     char usr_buffer[Max_Characters];
     size_t usr_buffer_idx;
 
@@ -219,4 +203,42 @@ private:
     uint32_t render_flags;
 };
 
-// 44226 bytes approximately.
+namespace
+{
+template <size_t TITLE_WIDTH, typename TITLE_FONT>
+struct TitleStorage
+{
+    static_assert(TITLE_FONT::font.width > 0);
+
+    static constexpr size_t Capacity = TITLE_WIDTH / TITLE_FONT::font.width;
+    static_assert(Capacity > 0);
+
+    std::array<char, Capacity> title{};
+};
+} // namespace
+
+template <size_t WIDTH,
+          size_t HEIGHT,
+          size_t QUANTIZATION,
+          size_t NUM_SCAN_LINES,
+          size_t NUM_SCANLINE_BUFFS>
+class StaticScreen
+    : private StaticScreenBuffers<WIDTH, HEIGHT, QUANTIZATION, NUM_SCAN_LINES, NUM_SCANLINE_BUFFS>,
+      private TitleStorage<WIDTH, JetBrainsMono15x20>,
+      public Screen
+{
+
+public:
+    static_assert(WIDTH > 0 && WIDTH <= UINT16_MAX);
+    static_assert(HEIGHT > 0 && HEIGHT <= UINT16_MAX);
+    static_assert(QUANTIZATION == 1 || QUANTIZATION == 2 || QUANTIZATION == 4 || QUANTIZATION == 8);
+    static_assert(NUM_SCAN_LINES > 0 && NUM_SCAN_LINES <= UINT16_MAX);
+    static_assert(NUM_SCANLINE_BUFFS > 0 && NUM_SCANLINE_BUFFS <= UINT16_MAX);
+
+    StaticScreen(const Battery& battery, TileMap& tile_map, ILI9341& ili9341) :
+        StaticScreenBuffers<WIDTH, HEIGHT, QUANTIZATION, NUM_SCAN_LINES, NUM_SCANLINE_BUFFS>(),
+        TitleStorage<WIDTH, JetBrainsMono15x20>(),
+        Screen(this, this->title, battery, tile_map, ili9341)
+    {
+    }
+};
