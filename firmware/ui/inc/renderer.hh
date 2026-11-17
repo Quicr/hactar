@@ -41,14 +41,10 @@ private:
     // static void DefaultDraw(const uint32_t ticks);
 private:
     void Refresh(const char* title, const size_t title_len, const uint32_t ticks) noexcept;
-    static constexpr uint32_t User_Input_Buff_Size = Screen::Max_Characters;
 
     Screen& screen;
     Keyboard& keyboard;
     View view;
 
     bool change_view;
-
-    char user_input[User_Input_Buff_Size] = {0};
-    uint32_t user_input_idx = 0;
 };

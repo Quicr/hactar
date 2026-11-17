@@ -7,6 +7,7 @@
 #include "config_storage.hh"
 #include "constants.hh"
 #include "graphics.hh"
+#include "jetbrainsmono_15x20.hh"
 #include "keyboard.hh"
 #include "keyboard_display.hh"
 #include "led_control.hh"
@@ -127,7 +128,13 @@ static ILI9341 display(Screen_Width,
                        DISP_BL_Pin,
                        ILI9341::Orientation::Landscape);
 
-StaticScreen<Screen_Width, Screen_Height, Bit_Quantization, Num_Scan_Lines, Num_Scanline_Buffs>
+StaticScreen<Screen_Width,
+             Screen_Height,
+             Bit_Quantization,
+             Num_Scan_Lines,
+             Num_Scanline_Buffs,
+             JetBrainsMono15x20,
+             JetBrainsMono10x16>
     screen(battery, tile_map, display);
 
 size_t x = sizeof(screen);

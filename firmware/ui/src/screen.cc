@@ -17,27 +17,34 @@
 
 Screen::Screen(ScreenBuffers* buffers,
                std::span<char> title_buffer,
+               std::span<ScreenTextLine> texts,
+               std::span<char> usr_buffer,
                const Battery& battery,
                TileMap& tile_map,
-               ILI9341& ili9341) :
+               ILI9341& ili9341,
+               const Font& title_font,
+               const Font& text_font) :
     buffers(buffers),
+    title_buffer(title_buffer),
+    texts(texts),
+    usr_buffer(usr_buffer),
     battery(battery),
     tile_map(tile_map),
     ili9341(ili9341),
+    title_font(title_font),
+    text_font(text_font),
+    Top_Fixed_Height(title_font.height),
+    Bottom_Fixed_Height(text_font.height + 2),
     draw_bound({ili9341.GetWidth(), ili9341.GetHeight(), 0, 0}),
     render_height(0),
     title_x1(0),
     title_x2(0),
-    title_buffer(title_buffer),
     title_len(0),
     text_write(0),
     text_read(0),
     texts_in_use(0),
     scroll_offset(0),
-    text_buffer{},
-    text_lens{},
-    max_texts(Max_Texts),
-    usr_buffer{0},
+    max_texts(texts.size()),
     usr_buffer_idx(0),
     shapes(20),
     icons_x_offset(0),
@@ -49,6 +56,7 @@ Screen::Screen(ScreenBuffers* buffers,
     update_flags(0),
     render_flags(0)
 {
+    CalculateDrawAreas();
 }
 
 void Screen::Init()
@@ -258,8 +266,10 @@ void Screen::FillScreen(const Graphics::Colour colour)
 
 void Screen::UpdateTitle(const char* title, const uint32_t len)
 {
-    const uint16_t title_len = std::min<size_t>({len, title_buffer.size(), UINT16_MAX});
-    for (uint16_t i = 0; i < title_len; ++i)
+    title_len = std::min<size_t>({len, title_buffer.size(), UINT16_MAX});
+    const uint16_t visible_length =
+        std::min<size_t>(title_len, ili9341.GetWidth() / title_font.width);
+    for (size_t i = 0; i < title_len; ++i)
     {
         title_buffer[i] = title[i];
     }
@@ -271,7 +281,7 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
             {
                 .x1 = title_x1,
                 .y1 = Title_y1,
-                .x2 = title_x2,
+                .x2 = std::min(title_x2, ili9341.GetWidth()),
                 .y2 = static_cast<const uint16_t>(Title_y1 + title_font.height),
                 .colour = Graphics::Colour::Black,
             },
@@ -279,7 +289,7 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
 
     SubmitShape(clear_rec);
 
-    const uint16_t next_x2 = title_x1 + title_len * title_font.width;
+    const uint16_t next_x2 = title_x1 + visible_length * title_font.width;
     title_x2 = next_x2 > title_x2 ? next_x2 : title_x2;
 
     Graphics::Shape title_shape = {
@@ -287,7 +297,7 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
         .string =
             {
                 .str = title_buffer.data(),
-                .len = title_len,
+                .len = visible_length,
                 .x = title_x1,
                 .y = Title_y1,
                 .font = &title_font,
@@ -301,28 +311,38 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
 
 void Screen::AppendText(const char* text, const uint32_t len)
 {
-    // Work our way down
-    const uint32_t num_bytes = Max_Characters < len ? Max_Characters : len;
-    char* text_buf = text_buffer[text_write];
-    char& text_len = text_lens[text_write];
+    if (max_texts == 0)
+    {
+        return;
+    }
+
+    ScreenTextLine& line = texts[text_write];
+    const size_t capacity = std::min<size_t>(
+        {line.buffer.size(), size_t(ili9341.GetWidth() / text_font.width), UINT16_MAX});
 
     size_t idx = 0;
-    while (text_len < Max_Characters && idx < num_bytes)
+    while (line.length < capacity && idx < len)
     {
-        text_buf[uint32_t(text_len++)] = text[idx++];
+        line.buffer[line.length++] = text[idx++];
     }
 }
 
 void Screen::CommitText()
 {
+    if (max_texts == 0)
+    {
+        return;
+    }
+
     ScrollText();
 
     Graphics::Shape str = {
         .type = Graphics::ShapeType::String,
         .string =
             {
-                .str = text_buffer[text_read],
-                .len = text_lens[text_read],
+                .str = texts[text_read].buffer.data(),
+                .len = static_cast<uint16_t>(std::min<size_t>(
+                    texts[text_read].length, ili9341.GetWidth() / text_font.width)),
                 .x = 0,
                 .y = static_cast<uint16_t>(texts_area_y_offset - text_font.height),
                 .font = &text_font,
@@ -333,7 +353,7 @@ void Screen::CommitText()
 
     SubmitShape(str);
 
-    if (texts_in_use < max_texts)
+    if (texts_in_use < texts.size())
     {
         ++texts_in_use;
     }
@@ -341,19 +361,20 @@ void Screen::CommitText()
     {
     }
 
+    // Keep history indices tied to storage, not the orientation's visible line count.
     ++text_write;
-    if (text_write >= max_texts)
+    if (text_write >= texts.size())
     {
         text_write = 0;
     }
     ++text_read;
-    if (text_read >= max_texts)
+    if (text_read >= texts.size())
     {
         text_read = 0;
     }
 
     // Clear the next write
-    text_lens[text_write] = '\0';
+    texts[text_write].length = 0;
 }
 
 void Screen::CommitText(const char* text, const uint32_t len)
@@ -364,12 +385,14 @@ void Screen::CommitText(const char* text, const uint32_t len)
 
 void Screen::AppendUserText(const char* text, const uint32_t len)
 {
-    if (usr_buffer_idx >= Max_Characters)
+    const size_t capacity =
+        std::min<size_t>(usr_buffer.size(), ili9341.GetWidth() / text_font.width);
+    if (usr_buffer_idx >= capacity)
     {
         return;
     }
 
-    const uint32_t num_char = std::min(len, Max_Characters - usr_buffer_idx);
+    const uint32_t num_char = std::min<size_t>(len, capacity - usr_buffer_idx);
     for (uint32_t i = 0; i < num_char; ++i)
     {
         usr_buffer[usr_buffer_idx + i] = text[i];
@@ -380,7 +403,7 @@ void Screen::AppendUserText(const char* text, const uint32_t len)
         .type = Graphics::ShapeType::String,
         .string =
             {
-                .str = usr_buffer + usr_buffer_idx,
+                .str = usr_buffer.data() + usr_buffer_idx,
                 .len = static_cast<uint16_t>(num_char),
                 .x = x1,
                 .y = usr_text_y_offset,
@@ -399,7 +422,9 @@ void Screen::AppendUserText(const char* text, const uint32_t len)
 
 void Screen::AppendUserText(const char ch)
 {
-    if (usr_buffer_idx >= Max_Characters)
+    const size_t capacity =
+        std::min<size_t>(usr_buffer.size(), ili9341.GetWidth() / text_font.width);
+    if (usr_buffer_idx >= capacity)
     {
         return;
     }
@@ -411,7 +436,7 @@ void Screen::AppendUserText(const char ch)
         .type = Graphics::ShapeType::String,
         .string =
             {
-                .str = usr_buffer + usr_buffer_idx,
+                .str = usr_buffer.data() + usr_buffer_idx,
                 .len = static_cast<uint16_t>(1),
                 .x = x1,
                 .y = usr_text_y_offset,
@@ -435,6 +460,12 @@ void Screen::BackspaceUserText()
         return;
     }
 
+    usr_buffer[--usr_buffer_idx] = '\0';
+    if (usr_buffer_idx >= ili9341.GetWidth() / text_font.width)
+    {
+        return;
+    }
+
     const uint16_t x1 = usr_buffer_idx * text_font.width;
     const uint16_t x2 = std::min<uint16_t>(x1 + text_font.width * 2, ili9341.GetWidth());
     const uint16_t y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height);
@@ -451,8 +482,6 @@ void Screen::BackspaceUserText()
     };
 
     SubmitShape(rec);
-
-    usr_buffer[--usr_buffer_idx] = '\0';
 
     DrawCursor(true);
 }
@@ -475,7 +504,7 @@ void Screen::ClearUserText()
 
     SubmitShape(rec);
 
-    std::memset(usr_buffer, 0, usr_buffer_idx);
+    std::fill_n(usr_buffer.begin(), usr_buffer_idx, '\0');
     usr_buffer_idx = 0;
 
     DrawCursor(true);
@@ -483,7 +512,7 @@ void Screen::ClearUserText()
 
 const char* Screen::UserText() const noexcept
 {
-    return usr_buffer;
+    return usr_buffer.data();
 }
 
 uint16_t Screen::UserTextLength() const noexcept
@@ -499,11 +528,12 @@ void Screen::RotateScreen(ILI9341::Orientation orientation)
 
 void Screen::CalculateDrawAreas()
 {
-    usr_text_y_offset = ili9341.GetHeight() - text_font.height;
-    texts_area_y_offset = ili9341.GetHeight() - Bottom_Fixed_Height;
-    scroll_area_height = texts_area_y_offset - Top_Fixed_Height;
+    const uint16_t height = ili9341.GetHeight();
+    usr_text_y_offset = height - std::min<uint16_t>(height, text_font.height);
+    texts_area_y_offset = height - std::min(height, Bottom_Fixed_Height);
+    scroll_area_height = texts_area_y_offset - std::min(texts_area_y_offset, Top_Fixed_Height);
 
-    max_texts = scroll_area_height / text_font.height;
+    max_texts = std::min<size_t>(scroll_area_height / text_font.height, texts.size());
 }
 
 void Screen::RaiseFlag(uint32_t& flags, const uint32_t flag)
@@ -538,9 +568,9 @@ uint32_t Screen::TakeFlag(uint32_t& flags, const uint32_t flag)
 void Screen::DrawTitleLine()
 {
     constexpr uint16_t line_x1 = 0;
-    constexpr uint16_t line_y1 = Top_Fixed_Height - 1;
+    const uint16_t line_y1 = Top_Fixed_Height - 1;
     const uint16_t line_x2 = ili9341.GetWidth();
-    constexpr uint16_t line_y2 = Top_Fixed_Height;
+    const uint16_t line_y2 = Top_Fixed_Height;
     Graphics::Shape rec = {
         .type = Graphics::ShapeType::FillRectangle,
         .fill_rectangle =
@@ -647,6 +677,11 @@ uint16_t Screen::PixelHeight()
 
 void Screen::DrawCursor(const bool solid)
 {
+    if (usr_buffer_idx >= ili9341.GetWidth() / text_font.width)
+    {
+        return;
+    }
+
     const uint16_t x1 = static_cast<uint16_t>(usr_buffer_idx * text_font.width);
     const uint16_t x2 = std::min<uint16_t>(x1 + text_font.width, ili9341.GetWidth());
     const uint16_t y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height);
@@ -735,8 +770,9 @@ void Screen::RasterizeShape(Graphics::Shape& shape, const Graphics::bound_t& bou
 
 void Screen::ScrollText()
 {
-    const uint16_t dest_idx = texts_in_use < max_texts ? texts_in_use + 1 : texts_in_use;
-    const uint16_t src_idx = texts_in_use < max_texts ? texts_in_use : texts_in_use - 1;
+    const size_t visible_texts = std::min<size_t>(texts_in_use, max_texts);
+    const uint16_t dest_idx = visible_texts < max_texts ? visible_texts + 1 : visible_texts;
+    const uint16_t src_idx = visible_texts < max_texts ? visible_texts : visible_texts - 1;
 
     uint16_t dest_y = texts_area_y_offset - dest_idx * text_font.height;
     const uint16_t src_y1 = texts_area_y_offset - src_idx * text_font.height;

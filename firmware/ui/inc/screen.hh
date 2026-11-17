@@ -12,6 +12,7 @@
 #include "screen_buffers.hh"
 #include "stm32.h"
 #include "tile_map.hh"
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -25,15 +26,16 @@ static constexpr uint16_t swap_u16(const uint16_t val)
 }
 } // namespace
 
+struct ScreenTextLine
+{
+    std::span<char> buffer;
+    uint16_t length = 0;
+};
+
 class Screen
 {
 public:
     static constexpr uint16_t Title_y1 = 1;
-    static constexpr uint32_t Max_Characters = 320 / JetBrainsMono10x16::font.width;
-    static constexpr uint16_t Top_Fixed_Height = JetBrainsMono15x20::font.height;
-    static constexpr uint16_t Bottom_Fixed_Height = JetBrainsMono10x16::font.height + 2;
-    static constexpr uint32_t Max_Texts =
-        (320 - Top_Fixed_Height - Bottom_Fixed_Height) / JetBrainsMono10x16::font.height;
 
     static constexpr uint16_t Icon_Position_Y1 = Title_y1;
     static constexpr uint16_t Icon_Position_Y2 = Title_y1 + Battery_Critical_20x18::bitmap.height;
@@ -68,9 +70,13 @@ private:
 public:
     Screen(ScreenBuffers* buffers,
            std::span<char> title_buffer,
+           std::span<ScreenTextLine> texts,
+           std::span<char> usr_buffer,
            const Battery& battery,
            TileMap& tile_map,
-           ILI9341& ili9341);
+           ILI9341& ili9341,
+           const Font& title_font = JetBrainsMono15x20::font,
+           const Font& text_font = JetBrainsMono10x16::font);
 
     enum class IconType
     {
@@ -143,8 +149,6 @@ private:
     void DefineScrollArea();
     void ScrollText();
 
-    // TODO should make a flag helper class, as we have a lot of flag raising
-    // through out the program
     void RaiseFlag(uint32_t& flags, const uint32_t flag);
     void LowerFlag(uint32_t& flags, const uint32_t flag);
     uint32_t ReadFlag(const uint32_t flags, const uint32_t flag);
@@ -155,25 +159,24 @@ private:
 
     void RasterizeShape(Graphics::Shape& shape, const Graphics::bound_t& bound);
 
-    // Private functions
-    static constexpr Font title_font = JetBrainsMono15x20::font;
-    static constexpr Font text_font = JetBrainsMono10x16::font;
-
-    // Variables
     ScreenBuffers* const buffers;
-
+    const std::span<char> title_buffer;
+    const std::span<ScreenTextLine> texts;
+    const std::span<char> usr_buffer;
     const Battery& battery;
     TileMap& tile_map;
-
     ILI9341& ili9341;
+    const Font& title_font;
+    const Font& text_font;
+
+    const uint16_t Top_Fixed_Height;
+    const uint16_t Bottom_Fixed_Height;
 
     Graphics::bound_t draw_bound;
     uint16_t render_height;
 
     uint16_t title_x1;
     uint16_t title_x2;
-
-    const std::span<char> title_buffer;
     size_t title_len;
 
     uint32_t text_write;
@@ -181,11 +184,8 @@ private:
     uint32_t texts_in_use;
     uint32_t scroll_offset;
 
-    char text_buffer[Max_Texts][Max_Characters];
-    char text_lens[Max_Texts];
     size_t max_texts;
 
-    char usr_buffer[Max_Characters];
     size_t usr_buffer_idx;
 
     RingBuffer<Graphics::Shape> shapes;
@@ -215,16 +215,69 @@ struct TitleStorage
 
     std::array<char, Capacity> title{};
 };
+
+constexpr size_t TextAreaHeight(size_t height,
+                                const Font& title_font = JetBrainsMono15x20::font,
+                                const Font& text_font = JetBrainsMono10x16::font) noexcept
+{
+    const size_t Fixed_Height = title_font.height + text_font.height + 2;
+    return height >= Fixed_Height ? height - Fixed_Height : 0;
+}
+
+template <size_t TEXT_WIDTH, size_t TEXT_HEIGHT, typename TEXT_FONT>
+struct TextStorage
+{
+    static_assert(TEXT_FONT::font.width > 0 && TEXT_FONT::font.height > 0);
+
+    static constexpr size_t Characters_Per_Line = TEXT_WIDTH / TEXT_FONT::font.width;
+    static constexpr size_t Line_Count = TEXT_HEIGHT / TEXT_FONT::font.height;
+
+    static_assert(Characters_Per_Line > 0 && Characters_Per_Line <= UINT16_MAX);
+    static_assert(Line_Count > 0);
+
+    std::array<std::array<char, Characters_Per_Line>, Line_Count> characters{};
+    std::array<ScreenTextLine, Line_Count> text_lines{};
+
+    constexpr TextStorage() noexcept
+    {
+        for (size_t i = 0; i < Line_Count; ++i)
+        {
+            text_lines[i].buffer = characters[i];
+        }
+    }
+
+    TextStorage(const TextStorage&) = delete;
+    TextStorage& operator=(const TextStorage&) = delete;
+    TextStorage(TextStorage&&) = delete;
+    TextStorage& operator=(TextStorage&&) = delete;
+};
+template <size_t WIDTH, typename TEXT_FONT>
+struct UserTextStorage
+{
+    static_assert(TEXT_FONT::font.width > 0);
+
+    static constexpr size_t Capacity = WIDTH / TEXT_FONT::font.width;
+    static_assert(Capacity > 0 && Capacity <= UINT16_MAX);
+
+    std::array<char, Capacity> user{};
+};
 } // namespace
 
 template <size_t WIDTH,
           size_t HEIGHT,
           size_t QUANTIZATION,
           size_t NUM_SCAN_LINES,
-          size_t NUM_SCANLINE_BUFFS>
+          size_t NUM_SCANLINE_BUFFS,
+          typename TITLE_FONT,
+          typename TEXT_FONT>
 class StaticScreen
     : private StaticScreenBuffers<WIDTH, HEIGHT, QUANTIZATION, NUM_SCAN_LINES, NUM_SCANLINE_BUFFS>,
-      private TitleStorage<WIDTH, JetBrainsMono15x20>,
+      private TitleStorage<std::max(WIDTH, HEIGHT), TITLE_FONT>,
+      private TextStorage<std::max(WIDTH, HEIGHT),
+                          TextAreaHeight(
+                              std::max(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font),
+                          TEXT_FONT>,
+      private UserTextStorage<std::max(WIDTH, HEIGHT), TEXT_FONT>,
       public Screen
 {
 
@@ -234,11 +287,26 @@ public:
     static_assert(QUANTIZATION == 1 || QUANTIZATION == 2 || QUANTIZATION == 4 || QUANTIZATION == 8);
     static_assert(NUM_SCAN_LINES > 0 && NUM_SCAN_LINES <= UINT16_MAX);
     static_assert(NUM_SCANLINE_BUFFS > 0 && NUM_SCANLINE_BUFFS <= UINT16_MAX);
+    static_assert(TITLE_FONT::font.height > 0 && TEXT_FONT::font.height > 0);
+    static_assert(TextAreaHeight(std::min(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font)
+                  >= TEXT_FONT::font.height);
 
     StaticScreen(const Battery& battery, TileMap& tile_map, ILI9341& ili9341) :
         StaticScreenBuffers<WIDTH, HEIGHT, QUANTIZATION, NUM_SCAN_LINES, NUM_SCANLINE_BUFFS>(),
-        TitleStorage<WIDTH, JetBrainsMono15x20>(),
-        Screen(this, this->title, battery, tile_map, ili9341)
+        TitleStorage<std::max(WIDTH, HEIGHT), TITLE_FONT>(),
+        TextStorage<std::max(WIDTH, HEIGHT),
+                    TextAreaHeight(std::max(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font),
+                    TEXT_FONT>(),
+        UserTextStorage<std::max(WIDTH, HEIGHT), TEXT_FONT>(),
+        Screen(this,
+               this->title,
+               this->text_lines,
+               this->user,
+               battery,
+               tile_map,
+               ili9341,
+               TITLE_FONT::font,
+               TEXT_FONT::font)
     {
     }
 };
