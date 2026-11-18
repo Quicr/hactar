@@ -65,9 +65,9 @@ public:
         return eeprom.Write(Sframe_Key_Address, buf, Sframe_Key_Size) == HAL_OK;
     }
 
-    void Clear()
+    bool Clear()
     {
-        eeprom.Fill(0x00);
+        return eeprom.Fill(0x00);
     }
 
     // Legacy compatibility - these match the old API signatures

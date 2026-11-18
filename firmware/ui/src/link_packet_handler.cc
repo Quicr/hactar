@@ -12,10 +12,30 @@
 #include <cstdio>
 #include <span>
 
-static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Screen& screen)
+static void HandleAiResponse(link_packet_t& packet, AudioChip& audio, Screen& screen)
 {
-    auto* response =
-        static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload.data() + 1));
+    static constexpr size_t channel_size = 1;
+    if (packet.length - 1
+        < sizeof(ui_net_link::AIResponseChunk) - sizeof(ui_net_link::AIResponseChunk::chunk_data))
+    {
+        UI_LOG_ERROR("Packet is smaller than the required size of chunk");
+        return;
+    }
+
+    auto* response = static_cast<ui_net_link::AIResponseChunk*>(
+        static_cast<void*>(packet.payload.data() + channel_size));
+
+    if (response->chunk_length > sizeof(ui_net_link::AIResponseChunk::chunk_data))
+    {
+        UI_LOG_ERROR("Chunk length is larger than the chunk_data can support");
+        return;
+    }
+
+    if (response->chunk_length > packet.length - 1)
+    {
+        UI_LOG_ERROR("Chunk length is larger than the data that is inside of packet");
+        return;
+    }
 
     screen.DrawIcon(Screen::IconType::Speaker, !response->last_chunk);
     switch (response->content_type)
@@ -32,6 +52,7 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Screen& sc
     }
     case ui_net_link::ContentType::Json:
     {
+        // Truncate the message so we are able to print as a c_str
         response->chunk_data[response->chunk_length] = 0;
         UI_LOG_INFO("[AI] %s", response->chunk_data);
         break;
@@ -39,7 +60,7 @@ static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Screen& sc
     }
 }
 
-void ForwardToMgmt(Serial& mgmt_serial, link_packet_t* packet, const bool last)
+void ForwardToMgmt(Serial& mgmt_serial, link_packet_t& packet, const bool last)
 {
     static bool first = true;
 
@@ -49,9 +70,9 @@ void ForwardToMgmt(Serial& mgmt_serial, link_packet_t* packet, const bool last)
         mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioStart), std::span<const uint8_t>{});
     }
 
-    packet->type = static_cast<uint16_t>(UiToCtl::AudioFrameUnprotected);
+    packet.type = static_cast<uint16_t>(UiToCtl::AudioFrameUnprotected);
 
-    mgmt_serial.Write(*packet);
+    mgmt_serial.Write(packet);
 
     if (last)
     {
@@ -65,7 +86,7 @@ void HandleQuicrPackets(Serial& mgmt_serial,
                         AudioChip& audio,
                         const AudioReceiveMode audio_receive_mode,
                         Screen& screen,
-                        link_packet_t* packet)
+                        link_packet_t& packet)
 {
     // Send to mgmt, and then handle locally
     if (!protector.TryUnprotect(packet))
@@ -74,14 +95,14 @@ void HandleQuicrPackets(Serial& mgmt_serial,
         return;
     }
 
-    const auto message_type = static_cast<ui_net_link::MessageType>(packet->payload[1]);
+    const auto message_type = static_cast<ui_net_link::MessageType>(packet.payload[1]);
 
     switch (message_type)
     {
     case ui_net_link::MessageType::Media:
     {
         ui_net_link::Chunk* audio_chunk =
-            static_cast<ui_net_link::Chunk*>(static_cast<void*>(packet->payload.data() + 1));
+            static_cast<ui_net_link::Chunk*>(static_cast<void*>(packet.payload.data() + 1));
 
         screen.DrawIcon(Screen::IconType::Speaker, !audio_chunk->last_chunk);
 
@@ -163,7 +184,7 @@ void HandleNetLinkPackets(Serial& net_serial,
         }
         case ui_net_link::NetToUi::AudioFrame:
         {
-            HandleQuicrPackets(mgmt_serial, protector, audio, audio_receive_mode, screen, packet);
+            HandleQuicrPackets(mgmt_serial, protector, audio, audio_receive_mode, screen, *packet);
             break;
         }
         case ui_net_link::NetToUi::WifiStatus:
@@ -398,9 +419,18 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
         case CtlToUi::ClearStorage:
         {
             UI_LOG_INFO("OK! Clearing configurations");
-            storage.Clear();
-            UI_LOG_INFO("OK! Cleared all configurations");
-            mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            if (storage.Clear())
+            {
+                UI_LOG_INFO("OK! Cleared all configurations");
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Ack), std::span<const uint8_t>{});
+            }
+            else
+            {
+                UI_LOG_INFO("ERROR! Failed to cleared all configurations");
+                mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::Error),
+                                  std::span<const uint8_t>{});
+            }
+
             break;
         }
         case CtlToUi::GetVolume:

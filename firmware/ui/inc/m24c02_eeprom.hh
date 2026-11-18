@@ -1,6 +1,10 @@
 #pragma once
 
+#include "logger.hh"
 #include "stm32.h"
+#include "stm32f4xx_hal_def.h"
+#include <algorithm>
+#include <cstring>
 
 class M24C02_EEPROM
 {
@@ -108,22 +112,25 @@ public:
     // too many bricks.
     bool Fill(uint8_t fill_value = 0xFF)
     {
-        // Address to start writing is 0
-        uint8_t fill_byte[size_in_bytes + 1] = {0};
 
-        // Write a bunch of 1s
-        HAL_StatusTypeDef clear_res = HAL_ERROR;
-        for (int16_t i = 0; i < size_in_bytes; i++)
+        HAL_StatusTypeDef clear_res;
+        uint8_t data[Page_Size]{0};
+
+        for (int i = 0; i < Page_Size; ++i)
         {
-            fill_byte[i + 1] = fill_value;
+            data[i] = fill_value;
         }
 
-        // Write to the eeprom starting from address zero, and filling all bytes with the fill_value
-        clear_res =
-            HAL_I2C_Master_Transmit(i2c, Device_Addr, fill_byte, size_in_bytes + 1, HAL_MAX_DELAY);
+        const uint16_t num_pages = size_in_bytes / Page_Size;
+        for (uint16_t i = 0; i < num_pages; ++i)
+        {
+            clear_res = PerformWrite(data, i * Page_Size, Page_Size);
 
-        // Give the eeprom time to write
-        HAL_Delay(write_operation_timeout_ms * size_in_bytes);
+            if (clear_res != HAL_OK)
+            {
+                return false;
+            }
+        }
 
         return clear_res == HAL_OK;
     }
@@ -134,35 +141,47 @@ public:
     }
 
 private:
-    HAL_StatusTypeDef PerformWrite(uint8_t* data, const uint8_t address, const uint16_t data_size)
+    HAL_StatusTypeDef PerformWrite(uint8_t* data, const uint8_t address, uint16_t data_size)
     {
-        if (data_size > size_in_bytes)
+        if (address + data_size > size_in_bytes)
         {
+            UI_LOG_ERROR("address + data_size is too large for EEPROM");
             return HAL_ERROR;
         }
 
-        uint8_t write_bytes[2];
-        HAL_StatusTypeDef write_res = HAL_OK;
+        // Find the boundaries on the data starting address and where it ends
+        uint8_t next_addr = address;
+        uint8_t page[Page_Size + 1];
+        HAL_StatusTypeDef res = HAL_OK;
+        const uint16_t num_pages =
+            std::min(1, (data_size + (address % Page_Size) + Page_Size - 1) / Page_Size);
 
-        for (uint16_t i = 0; i < data_size; ++i)
+        for (uint16_t i = 0; i < num_pages; ++i)
         {
-            write_bytes[0] = address + i;
-            write_bytes[1] = data[i];
-            write_res = HAL_I2C_Master_Transmit(i2c, Device_Addr, write_bytes, 2, HAL_MAX_DELAY);
+            page[0] = next_addr;
 
-            if (write_res != HAL_OK)
+            const uint16_t len = std::min(data_size, Page_Size);
+            std::memcpy(page + 1, data + i * Page_Size, len);
+
+            res = HAL_I2C_Master_Transmit(i2c, Device_Addr, page, sizeof(page), HAL_MAX_DELAY);
+
+            if (res != HAL_OK)
             {
-                return write_res;
+                UI_LOG_ERROR("Failed to write to eeprom");
+                return res;
             }
+
+            data_size -= len;
 
             HAL_Delay(write_operation_timeout_ms);
         }
 
-        return write_res;
+        return res;
     }
 
     // Shifted pre left 1 bit
     static constexpr uint8_t Device_Addr = 0x50 << 1;
+    static constexpr uint16_t Page_Size = 16;
 
     I2C_HandleTypeDef* i2c;
     const size_t size_in_bytes;
