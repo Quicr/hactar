@@ -12,11 +12,12 @@
 #include <cstdio>
 #include <span>
 
-static void HandleAiResponse(link_packet_t* packet, AudioChip& audio)
+static void HandleAiResponse(link_packet_t* packet, AudioChip& audio, Screen& screen)
 {
     auto* response =
         static_cast<ui_net_link::AIResponseChunk*>(static_cast<void*>(packet->payload.data() + 1));
 
+    screen.DrawIcon(Screen::IconType::Speaker, !response->last_chunk);
     switch (response->content_type)
     {
     case ui_net_link::ContentType::Audio:
@@ -119,7 +120,7 @@ void HandleQuicrPackets(Serial& mgmt_serial,
     }
     case ui_net_link::MessageType::AIResponse:
     {
-        HandleAiResponse(packet, audio);
+        HandleAiResponse(packet, audio, screen);
         break;
     }
     case ui_net_link::MessageType::Chat:
