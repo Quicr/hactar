@@ -190,13 +190,24 @@ link_packet_t* SerialHandler::TLVRead()
             continue;
         }
 
+        if (bytes_read >= packet_data.size())
+        {
+            Logger::Log(Logger::Level::Info, "TLV frame size error");
+
+            packet->is_ready = false;
+            bytes_read = 0;
+            sync_matched = 0;
+            continue;
+        }
+
         packet_data[bytes_read++] = byte;
+
         if (bytes_read < link_packet_t::Header_Size)
         {
             continue;
         }
 
-        if (bytes_read >= packet->length + link_packet_t::Header_Size)
+        if (bytes_read >= link_packet_t::Header_Size + packet->length)
         {
             bytes_read = 0;
             sync_matched = 0;
@@ -204,15 +215,6 @@ link_packet_t* SerialHandler::TLVRead()
             packet->is_ready = true;
             packet = &rx_packets.Write();
             packet_data = packet->WriteableData();
-            continue;
-        }
-        else if (bytes_read >= link_packet_t::Packet_Size)
-        {
-            Logger::Log(Logger::Level::Info, "TLV frame size error");
-
-            packet->is_ready = false;
-            bytes_read = 0;
-            sync_matched = 0;
             continue;
         }
     }

@@ -482,7 +482,7 @@ void SendAudio(Protector& protector,
                                true);
     }
 
-    if (!protector.TryProtect(&audio_packet))
+    if (!protector.TryProtect(audio_packet))
     {
         UI_LOG_ERROR("Failed to encrypt audio packet");
         return;
@@ -515,7 +515,7 @@ void SendAudio(Protector& protector,
 
     if (loopback_mode == UiLoopbackMode::Sframe)
     {
-        if (!protector.TryUnprotect(&audio_packet))
+        if (!protector.TryUnprotect(audio_packet))
         {
             UI_LOG_ERROR("Failed to unprotect sframe loopback");
             return;

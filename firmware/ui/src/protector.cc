@@ -3,6 +3,7 @@
 #include <cmox_crypto.h>
 #include <cmox_init.h>
 #include <cmox_low_level.h>
+#include <limits>
 
 Protector::Protector(ConfigStorage& storage) :
     storage(storage),
@@ -17,11 +18,34 @@ Protector::Protector(ConfigStorage& storage) :
     ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
     if (config.loaded && config.len == 16)
     {
-        UI_LOG_INFO("Using stored MLS key!");
-        mls_ctx.add_epoch(
-            0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(config.buff), config.len});
+        // Check its not all zeroes or all ones.
+        bool all_zeroes = true;
+        bool all_ones = true;
+        for (int i = 0; i < config.len; ++i)
+        {
+            if (config.buff[i] > std::numeric_limits<std::decay_t<decltype(config.buff[0])>>::min())
+            {
+                all_zeroes = false;
+            }
+            if (config.buff[i] < std::numeric_limits<std::decay_t<decltype(config.buff[0])>>::max())
+            {
+                all_ones = false;
+            }
+        }
 
-        return;
+        // If the eeprom is filled with all ones or zeroes then it has either been cleared or not
+        // initialized default to default key
+        if (!(all_zeroes || all_ones))
+        {
+            UI_LOG_INFO("Using stored MLS key!");
+            mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(config.buff),
+                                                     static_cast<uint16_t>(config.len)});
+            return;
+        }
+        else
+        {
+            UI_LOG_INFO("Mls key is all ones or zeroes");
+        }
     }
     else if (config.len != 16)
     {
@@ -39,15 +63,15 @@ Protector::~Protector()
 {
 }
 
-bool Protector::TryProtect(link_packet_t* packet) noexcept
+bool Protector::TryProtect(link_packet_t& packet) noexcept
 try
 {
     uint8_t ct[link_packet_t::Payload_Size];
     auto payload = mls_ctx.protect(
-        0, 0, ct, sframe::input_bytes{packet->payload.data(), packet->length}.subspan(1), {});
+        0, 0, ct, sframe::input_bytes{packet.payload.data(), packet.length}.subspan(1), {});
 
-    std::memcpy(packet->payload.data() + 1, payload.data(), payload.size());
-    packet->length = payload.size() + 1;
+    std::memcpy(packet.payload.data() + 1, payload.data(), payload.size());
+    packet.length = payload.size() + 1;
     return true;
 }
 catch (const std::exception& e)
@@ -56,13 +80,13 @@ catch (const std::exception& e)
     return false;
 }
 
-bool Protector::TryUnprotect(link_packet_t* packet) noexcept
+bool Protector::TryUnprotect(link_packet_t& packet) noexcept
 try
 {
     auto payload = mls_ctx.unprotect(
-        sframe::output_bytes{packet->payload.data(), link_packet_t::Payload_Size}.subspan(1),
-        sframe::input_bytes{packet->payload.data(), packet->length}.subspan(1), {});
-    packet->length = payload.size() + 1;
+        sframe::output_bytes{packet.payload.data(), link_packet_t::Payload_Size}.subspan(1),
+        sframe::input_bytes{packet.payload.data(), packet.length}.subspan(1), {});
+    packet.length = payload.size() + 1;
     return true;
 }
 catch (const std::exception& e)

@@ -13,16 +13,16 @@ void InitScreen(Screen& screen)
     screen.EnableBacklight();
 }
 
-void HandleChatMessages(Screen& screen, link_packet_t* packet)
+void HandleChatMessages(Screen& screen, link_packet_t& packet)
 {
 
     // Ignore the first bytes, which are just header information
     // +1 channel id, +1 message type, +4 length
     constexpr uint8_t payload_offset = 6;
-    char* text = (char*)(packet->payload.data() + payload_offset);
+    char* text = (char*)(packet.payload.data() + payload_offset);
 
-    UI_LOG_INFO("Got text message of len %d", packet->length - payload_offset);
-    screen.CommitText(text, packet->length - payload_offset);
+    UI_LOG_INFO("Got text message of len %d", packet.length - payload_offset);
+    screen.CommitText(text, packet.length - payload_offset);
 }
 
 void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, Protector& protector)
@@ -60,7 +60,7 @@ void HandleKeypress(Screen& screen, Keyboard& keyboard, Serial& serial, Protecto
 
             memcpy(packet.payload.data() + offset, screen.UserText(), text_len);
 
-            if (!protector.TryProtect(&packet))
+            if (!protector.TryProtect(packet))
             {
                 UI_LOG_ERROR("Failed to encrypt text packet");
                 return;
