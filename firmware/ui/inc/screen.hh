@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <tuple>
 
 namespace
 {
@@ -28,7 +29,7 @@ static constexpr uint16_t swap_u16(const uint16_t val)
 
 struct ScreenTextLine
 {
-    std::span<char> buffer;
+    const std::span<char> buffer;
     uint16_t length = 0;
 };
 
@@ -239,12 +240,11 @@ struct TextStorage
     std::array<std::array<char, Characters_Per_Line>, Line_Count> characters{};
     std::array<ScreenTextLine, Line_Count> text_lines{};
 
-    constexpr TextStorage() noexcept
+    constexpr TextStorage() noexcept :
+
+        text_lines(std::apply([](auto&... args) { return std::array{ScreenTextLine{args, 0}...}; },
+                              characters))
     {
-        for (size_t i = 0; i < Line_Count; ++i)
-        {
-            text_lines[i].buffer = characters[i];
-        }
     }
 
     TextStorage(const TextStorage&) = delete;
