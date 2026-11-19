@@ -116,10 +116,7 @@ public:
         HAL_StatusTypeDef clear_res;
         uint8_t data[Page_Size]{0};
 
-        for (int i = 0; i < Page_Size; ++i)
-        {
-            data[i] = fill_value;
-        }
+        std::memset(data, fill_value, Page_Size);
 
         const uint16_t num_pages = size_in_bytes / Page_Size;
         for (uint16_t i = 0; i < num_pages; ++i)
