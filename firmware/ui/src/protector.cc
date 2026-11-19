@@ -18,18 +18,24 @@ Protector::Protector(ConfigStorage& storage) :
     ConfigStorage::Config config = storage.Load(ConfigStorage::Config_Id::Sframe_Key);
     if (config.loaded && config.len == 16)
     {
-        // Byte reduction by addition
-        // at uint32_t config.len would need to have 16777216 bytes of all 255
-        // to overflow the check variable
-        uint32_t check = 0;
+        // Check its not all zeroes or all ones.
+        bool all_zeroes = true;
+        bool all_ones = true;
         for (int i = 0; i < config.len; ++i)
         {
-            check += config.buff[i];
+            if (config.buff[i] > std::numeric_limits<std::decay_t<decltype(config.buff[0])>>::min())
+            {
+                all_zeroes = false;
+            }
+            if (config.buff[i] < std::numeric_limits<std::decay_t<decltype(config.buff[0])>>::max())
+            {
+                all_ones = false;
+            }
         }
 
         // If the eeprom is filled with all ones or zeroes then it has either been cleared or not
         // initialized default to default key
-        if (check > 0 && check < static_cast<uint32_t>((config.len * 0xFF)))
+        if (!(all_zeroes || all_ones))
         {
             UI_LOG_INFO("Using stored MLS key!");
             mls_ctx.add_epoch(0, sframe::input_bytes{reinterpret_cast<const uint8_t*>(config.buff),
