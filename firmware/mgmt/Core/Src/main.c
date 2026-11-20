@@ -177,6 +177,8 @@ int main(void)
 
         /* USER CODE BEGIN 3 */
         app_main();
+
+        HAL_Delay(10);
     }
     /* USER CODE END 3 */
 }

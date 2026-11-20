@@ -31,13 +31,11 @@ pub const GPIO_PIN_SET: GPIO_PinState = 1;
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 unsafe extern "C" {
-    pub fn PortA() -> *mut GPIO_TypeDef;
-    pub fn PortB() -> *mut GPIO_TypeDef;
-    pub fn PortC() -> *mut GPIO_TypeDef;
     pub fn led_r() -> gpio_t;
     pub fn led_g() -> gpio_t;
     pub fn led_b() -> gpio_t;
 
+    pub fn HAL_GPIO_ReadPin(GPIOx: *mut GPIO_TypeDef, GPIO_Pin: u16) -> GPIO_PinState;
     pub fn HAL_GPIO_WritePin(GPIOx: *mut GPIO_TypeDef, GPIO_Pin: u16, PinState: GPIO_PinState);
-
+    pub fn HAL_GPIO_TogglePin(GPIOx: *mut GPIO_TypeDef, GPIO_Pin: u16);
 }
