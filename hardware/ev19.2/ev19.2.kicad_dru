@@ -1,0 +1,69 @@
+(version 1)
+(rule gnd_thickness
+	(constraint track_width (max 0.650mm))
+	(condition "A.NetName == 'GND'")
+	(severity error)
+)
+(rule gnda_thickness
+	(constraint track_width (max 0.650mm))
+	(condition "A.NetName == 'GNDA'")
+	(severity error)
+)
+(rule 3.3v_thickness
+	(constraint track_width (max 0.650mm))
+	(condition "A.NetName == '+3.3V'")
+	(severity error)
+)
+(rule +3.0va_thickness
+	(constraint track_width (max 0.650mm))
+	(condition "A.NetName == '+3.0VA'")
+	(severity error)
+)
+(rule min_trace_width
+	(constraint track_width (min 0.127mm))
+	(severity error)
+)
+
+(rule "Edge (routed) to track clearance"
+	(condition "A.Type == 'track'")
+	(constraint edge_clearance (min 0.3mm))
+)
+
+(rule "Edge (v-cut) to track clearance"
+	(condition "A.Type == 'track'")
+	(constraint edge_clearance (min 0.4mm))
+)
+(rule "Hole diameter"
+	(constraint hole_size (min 0.2mm) (max 6.3mm))
+)
+(rule "Hole (NPTH) diameter"
+	(layer outer)
+	(condition "!A.isPlated()")
+	(constraint hole_size (min 0.5mm))
+)
+(rule "Annular ring width (via and PTH)"
+	(layer outer)
+	(condition "A.isPlated()")
+	(constraint annular_width (min 0.075mm))
+)
+
+(rule "Clearance: hole to hole (perimeter), different nets"
+	(layer outer)
+	(condition "A.Net != B.Net")
+	(constraint hole_to_hole (min 0.5mm))
+)
+
+(rule "Clearance: hole to hole (perimeter), same net"
+	(layer outer)
+	(condition "A.Net == B.Net")
+	(constraint hole_to_hole (min 0.254mm))
+)
+(rule "Clearance: pad/via to pad/via"
+	(layer outer)
+	(condition "A.isPlated() && B.isPlated() && A.Net != B.Net")
+	(constraint clearance (min 0.127mm))
+)
+(rule "via_to_via_spacing"
+    (constraint clearance (min 0.2mm))
+    (condition "A.Type == 'Via' && B.Type == 'Via'")
+)
