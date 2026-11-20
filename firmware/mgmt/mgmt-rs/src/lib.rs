@@ -17,14 +17,17 @@ pub extern "C" fn app_main() -> i32 {
         let led_b = drivers::gpio::led_b();
         drivers::gpio::HAL_GPIO_TogglePin(led_b.port, led_b.pin);
 
-        let mut input: [u8; 1024] = [0; 1024];
-        let mut len = 0;
-        let data = "Hello\n\0";
-        let usb_serial = uart::usb_uart();
+        // let mut input: [u8; 1024] = [0; 1024];
+        // let mut len = 0;
+        // let data = "Hello\n\0";
+        // let usb_serial = uart::usb_uart();
+        //
+        // uart::HAL_UART_Receive(usb_serial, input.as_ptr(), 1, 0xFFFF);
+        //
+        // uart::HAL_UART_Transmit(usb_serial, input.as_ptr(), 1, 0xFFFF);
 
-        uart::HAL_UART_Receive(usb_serial, input.as_ptr(), 1, 0xFFFF);
-
-        uart::HAL_UART_Transmit(usb_serial, input.as_ptr(), 1, 0xFFFF);
+        let mut usb_serial = uart::Uart::take(uart::UartId::Uart1).unwrap();
+        usb_serial.transmit(b"Hello!\n", 100).ok();
     }
     return 0;
 }
