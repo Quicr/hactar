@@ -3,12 +3,9 @@
 #include "battery_icon.hh"
 #include "font.hh"
 #include "graphics.hh"
-#include "ili9341.hh"
 #include "logger.hh"
-#include "main.h"
 #include "mic_icon.hh"
 #include "moq_icon.hh"
-#include "stm32f4xx_hal_gpio.h"
 #include "wifi_icon.hh"
 #include <math.h>
 #include <algorithm>
@@ -21,7 +18,7 @@ Screen::Screen(ScreenBuffers* buffers,
                std::span<char> usr_buffer,
                const Battery& battery,
                TileMap& tile_map,
-               ILI9341& ili9341,
+               DisplayDriver& display,
                const Font& title_font,
                const Font& text_font) :
     buffers(buffers),
@@ -30,12 +27,12 @@ Screen::Screen(ScreenBuffers* buffers,
     usr_buffer(usr_buffer),
     battery(battery),
     tile_map(tile_map),
-    ili9341(ili9341),
+    display(display),
     title_font(title_font),
     text_font(text_font),
     Top_Fixed_Height(title_font.height),
     Bottom_Fixed_Height(text_font.height + 2),
-    draw_bound({ili9341.GetWidth(), ili9341.GetHeight(), 0, 0}),
+    draw_bound({display.GetWidth(), display.GetHeight(), 0, 0}),
     render_height(0),
     title_x1(0),
     title_x2(0),
@@ -61,13 +58,13 @@ Screen::Screen(ScreenBuffers* buffers,
 
 void Screen::Init()
 {
-    ili9341.Init();
+    display.Init();
     CalculateDrawAreas();
 }
 
 void Screen::Draw(const uint32_t timeout)
 {
-    UNUSED(timeout);
+    (void)timeout;
 
     if (ReadFlag(render_flags, RenderFlags::Rendering))
     {
@@ -106,20 +103,19 @@ void Screen::StartRender()
 {
     draw_bound = tile_map.GetNext();
 
-    draw_bound.x2 = std::min<uint16_t>(draw_bound.x2, ili9341.GetWidth());
-    draw_bound.y2 = std::min<uint16_t>(draw_bound.y2, ili9341.GetHeight());
+    draw_bound.x2 = std::min<uint16_t>(draw_bound.x2, display.GetWidth());
+    draw_bound.y2 = std::min<uint16_t>(draw_bound.y2, display.GetHeight());
     if (draw_bound.x1 >= draw_bound.x2 || draw_bound.y1 >= draw_bound.y2)
     {
         LowerFlag(render_flags, RenderFlags::Rendering);
-        ili9341.Deselect();
+        display.EndWrite();
         return;
     }
 
     // UI_LOG_INFO("draw bounds (%d, %d), (%d, %d)", draw_bound.x1, draw_bound.y1, draw_bound.x2,
     //             draw_bound.y2);
     RaiseFlag(render_flags, Rendering);
-    ili9341.SetRenderRegion(draw_bound.x1, draw_bound.y1, draw_bound.x2 - 1, draw_bound.y2 - 1);
-    ili9341.Select();
+    display.SetRenderRegion(draw_bound.x1, draw_bound.y1, draw_bound.x2 - 1, draw_bound.y2 - 1);
 
     Render();
     Transfer();
@@ -213,10 +209,8 @@ void Screen::Transfer()
         std::min<const uint16_t>(draw_bound.y2 - draw_bound.y1, buffers->scanline->num_lines);
 
     uint16_t* const scanline_ptr = buffers->scanline->Current();
-    auto res = ili9341.WriteDataDMA(reinterpret_cast<const uint8_t*>(scanline_ptr),
-                                    render_width * sizeof(uint16_t) * render_height);
-
-    if (res == HAL_OK)
+    if (display.WritePixels({reinterpret_cast<const uint8_t*>(scanline_ptr),
+                             render_width * sizeof(uint16_t) * render_height}))
     {
         draw_bound.y1 += render_height;
 
@@ -224,21 +218,21 @@ void Screen::Transfer()
     }
     else
     {
-        UI_LOG_ERROR("Failed to start screen DMA transfer");
+        UI_LOG_ERROR("Failed to start screen pixel transfer");
         LowerFlag(render_flags, RenderFlags::Rendering);
-        ili9341.Deselect();
+        display.EndWrite();
         FullRefresh();
     }
 }
 
 void Screen::EnableBacklight()
 {
-    ili9341.EnableBacklight();
+    display.EnableBacklight();
 }
 
 void Screen::DisableBacklight()
 {
-    ili9341.DisableBacklight();
+    display.DisableBacklight();
 }
 
 void Screen::FullRefresh()
@@ -255,8 +249,8 @@ void Screen::FillScreen(const Graphics::Colour colour)
             {
                 .x1 = 0,
                 .y1 = 0,
-                .x2 = ili9341.GetWidth(),
-                .y2 = ili9341.GetHeight(),
+                .x2 = display.GetWidth(),
+                .y2 = display.GetHeight(),
                 .colour = colour,
             },
     };
@@ -268,7 +262,7 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
 {
     title_len = std::min<size_t>({len, title_buffer.size(), UINT16_MAX});
     const uint16_t visible_length =
-        std::min<size_t>(title_len, ili9341.GetWidth() / title_font.width);
+        std::min<size_t>(title_len, display.GetWidth() / title_font.width);
     for (size_t i = 0; i < title_len; ++i)
     {
         title_buffer[i] = title[i];
@@ -281,8 +275,8 @@ void Screen::UpdateTitle(const char* title, const uint32_t len)
             {
                 .x1 = title_x1,
                 .y1 = Title_y1,
-                .x2 = std::min(title_x2, ili9341.GetWidth()),
-                .y2 = static_cast<const uint16_t>(Title_y1 + title_font.height),
+                .x2 = std::min(title_x2, display.GetWidth()),
+                .y2 = static_cast<uint16_t>(Title_y1 + title_font.height),
                 .colour = Graphics::Colour::Black,
             },
     };
@@ -318,7 +312,7 @@ void Screen::AppendText(const char* text, const uint32_t len)
 
     ScreenTextLine& line = texts[text_write];
     const size_t capacity = std::min<size_t>(
-        {line.buffer.size(), size_t(ili9341.GetWidth() / text_font.width), UINT16_MAX});
+        {line.buffer.size(), size_t(display.GetWidth() / text_font.width), UINT16_MAX});
 
     size_t idx = 0;
     while (line.length < capacity && idx < len)
@@ -342,7 +336,7 @@ void Screen::CommitText()
             {
                 .str = texts[text_read].buffer.data(),
                 .len = static_cast<uint16_t>(std::min<size_t>(
-                    texts[text_read].length, ili9341.GetWidth() / text_font.width)),
+                    texts[text_read].length, display.GetWidth() / text_font.width)),
                 .x = 0,
                 .y = static_cast<uint16_t>(texts_area_y_offset - text_font.height),
                 .font = &text_font,
@@ -386,7 +380,7 @@ void Screen::CommitText(const char* text, const uint32_t len)
 void Screen::AppendUserText(const char* text, const uint32_t len)
 {
     const size_t capacity =
-        std::min<size_t>(usr_buffer.size(), ili9341.GetWidth() / text_font.width);
+        std::min<size_t>(usr_buffer.size(), display.GetWidth() / text_font.width);
     if (usr_buffer_idx >= capacity)
     {
         return;
@@ -423,7 +417,7 @@ void Screen::AppendUserText(const char* text, const uint32_t len)
 void Screen::AppendUserText(const char ch)
 {
     const size_t capacity =
-        std::min<size_t>(usr_buffer.size(), ili9341.GetWidth() / text_font.width);
+        std::min<size_t>(usr_buffer.size(), display.GetWidth() / text_font.width);
     if (usr_buffer_idx >= capacity)
     {
         return;
@@ -461,13 +455,13 @@ void Screen::BackspaceUserText()
     }
 
     usr_buffer[--usr_buffer_idx] = '\0';
-    if (usr_buffer_idx >= ili9341.GetWidth() / text_font.width)
+    if (usr_buffer_idx >= display.GetWidth() / text_font.width)
     {
         return;
     }
 
     const uint16_t x1 = usr_buffer_idx * text_font.width;
-    const uint16_t x2 = std::min<uint16_t>(x1 + text_font.width * 2, ili9341.GetWidth());
+    const uint16_t x2 = std::min<uint16_t>(x1 + text_font.width * 2, display.GetWidth());
     const uint16_t y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height);
     Graphics::Shape rec = {
         .type = Graphics::ShapeType::FillRectangle,
@@ -488,7 +482,7 @@ void Screen::BackspaceUserText()
 
 void Screen::ClearUserText()
 {
-    const uint16_t x2 = static_cast<uint16_t>(ili9341.GetWidth());
+    const uint16_t x2 = static_cast<uint16_t>(display.GetWidth());
     const uint16_t y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height);
     Graphics::Shape rec = {
         .type = Graphics::ShapeType::FillRectangle,
@@ -520,15 +514,15 @@ uint16_t Screen::UserTextLength() const noexcept
     return usr_buffer_idx;
 }
 
-void Screen::RotateScreen(ILI9341::Orientation orientation)
+void Screen::RotateScreen(DisplayDriver::Orientation orientation)
 {
-    ili9341.Rotate(orientation);
+    display.Rotate(orientation);
     CalculateDrawAreas();
 }
 
 void Screen::CalculateDrawAreas()
 {
-    const uint16_t height = ili9341.GetHeight();
+    const uint16_t height = display.GetHeight();
     usr_text_y_offset = height - std::min<uint16_t>(height, text_font.height);
     texts_area_y_offset = height - std::min(height, Bottom_Fixed_Height);
     scroll_area_height = texts_area_y_offset - std::min(texts_area_y_offset, Top_Fixed_Height);
@@ -569,7 +563,7 @@ void Screen::DrawTitleLine()
 {
     constexpr uint16_t line_x1 = 0;
     const uint16_t line_y1 = Top_Fixed_Height - 1;
-    const uint16_t line_x2 = ili9341.GetWidth();
+    const uint16_t line_x2 = display.GetWidth();
     const uint16_t line_y2 = Top_Fixed_Height;
     Graphics::Shape rec = {
         .type = Graphics::ShapeType::FillRectangle,
@@ -589,9 +583,9 @@ void Screen::DrawTitleLine()
 void Screen::DrawUserLine()
 {
     constexpr uint16_t line_x1 = 0;
-    const uint16_t line_y1 = ili9341.GetHeight() - Bottom_Fixed_Height;
-    const uint16_t line_x2 = ili9341.GetWidth();
-    const uint16_t line_y2 = ili9341.GetHeight() - Bottom_Fixed_Height + 1;
+    const uint16_t line_y1 = display.GetHeight() - Bottom_Fixed_Height;
+    const uint16_t line_x2 = display.GetWidth();
+    const uint16_t line_y2 = display.GetHeight() - Bottom_Fixed_Height + 1;
     Graphics::Shape rec = {
         .type = Graphics::ShapeType::FillRectangle,
         .fill_rectangle =
@@ -611,7 +605,7 @@ void Screen::DrawIcon(const IconType icon_type, const bool flag)
 {
     const Bitmap* map = nullptr;
     constexpr uint16_t margin = 2;
-    uint16_t x = ili9341.GetWidth();
+    uint16_t x = display.GetWidth();
 
     switch (icon_type)
     {
@@ -667,23 +661,23 @@ bool Screen::IsRendering()
 
 uint16_t Screen::PixelWidth()
 {
-    return ili9341.GetWidth();
+    return display.GetWidth();
 }
 
 uint16_t Screen::PixelHeight()
 {
-    return ili9341.GetHeight();
+    return display.GetHeight();
 }
 
 void Screen::DrawCursor(const bool solid)
 {
-    if (usr_buffer_idx >= ili9341.GetWidth() / text_font.width)
+    if (usr_buffer_idx >= display.GetWidth() / text_font.width)
     {
         return;
     }
 
     const uint16_t x1 = static_cast<uint16_t>(usr_buffer_idx * text_font.width);
-    const uint16_t x2 = std::min<uint16_t>(x1 + text_font.width, ili9341.GetWidth());
+    const uint16_t x2 = std::min<uint16_t>(x1 + text_font.width, display.GetWidth());
     const uint16_t y2 = static_cast<uint16_t>(usr_text_y_offset + text_font.height);
 
     // Clear or fill in

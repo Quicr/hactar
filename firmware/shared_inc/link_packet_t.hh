@@ -69,7 +69,7 @@ struct link_packet_t
         Logger::Log(Logger::Level::Info, "Dumping packet");
         Logger::Log(Logger::Level::Raw, "type %d", type);
         Logger::Log(Logger::Level::Raw, "len %d", length);
-        for (int i = 0; i < length; i++)
+        for (uint32_t i = 0; i < length; i++)
         {
             Logger::Log(Logger::Level::Raw, "%d", (int)payload[i]);
         }

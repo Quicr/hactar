@@ -568,7 +568,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
         case CtlToUi::GetAudioTransmitMode:
         {
             UI_LOG_INFO("Mgmt requested audio transmit mode");
-            const uint8_t tmp = static_cast<const uint8_t>(audio_transmit_mode);
+            const uint8_t tmp = static_cast<uint8_t>(audio_transmit_mode);
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioTransmitMode),
                               std::span<const uint8_t>(&tmp, 1));
             break;
@@ -590,7 +590,7 @@ void HandleMgmtLinkPackets(Serial& mgmt_serial,
         case CtlToUi::GetAudioReceiveMode:
         {
             UI_LOG_INFO("Mgmt requested audio receive mode");
-            const uint8_t tmp = static_cast<const uint8_t>(audio_receive_mode);
+            const uint8_t tmp = static_cast<uint8_t>(audio_receive_mode);
             mgmt_serial.Reply(static_cast<uint16_t>(UiToCtl::AudioReceiveMode),
                               std::span<const uint8_t>(&tmp, 1));
             break;

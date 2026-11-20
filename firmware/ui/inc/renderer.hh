@@ -1,6 +1,5 @@
 #pragma once
 
-#include "keyboard.hh"
 #include "screen.hh"
 
 class Renderer
@@ -23,7 +22,7 @@ public:
         Wifi
     };
 
-    Renderer(Screen& screen, Keyboard& keyboard);
+    explicit Renderer(Screen& screen);
 
     void SetDrawFunction(DrawRoutine draw_routine);
 
@@ -43,7 +42,6 @@ private:
     void Refresh(const char* title, const size_t title_len, const uint32_t ticks) noexcept;
 
     Screen& screen;
-    Keyboard& keyboard;
     View view;
 
     bool change_view;

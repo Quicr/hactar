@@ -230,8 +230,7 @@ void Graphics::RasterizeFillRectangle(Shape& shape,
     const uint16_t y2 = std::min<uint16_t>(shape.fill_rectangle.y2, height);
     const uint16_t x2 = std::min<uint16_t>(shape.fill_rectangle.x2, width * 2);
 
-    FillRectangle(buff, width, height, shape.fill_rectangle.x1, y1, x2, y2,
-                  shape.fill_rectangle.colour);
+    FillRectangle(buff, width, shape.fill_rectangle.x1, y1, x2, y2, shape.fill_rectangle.colour);
 
     shape.done = true;
 }
@@ -619,7 +618,6 @@ inline void Graphics::SetPixel(uint8_t* buff,
 
 inline void Graphics::FillRectangle(uint8_t* buff,
                                     const size_t width,
-                                    const size_t height,
                                     const uint16_t x1,
                                     const uint16_t y1,
                                     const uint16_t x2,

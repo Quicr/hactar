@@ -46,22 +46,22 @@ link_packet_t* SerialHandler::Read()
     return TLVRead();
 }
 
-void SerialHandler::Write(const uint8_t data, const bool end_frame)
+void SerialHandler::Write(const uint8_t data)
 {
-    Write(&data, 1, end_frame);
+    Write(&data, 1);
 }
 
-void SerialHandler::Write(const link_packet_t& packet, const bool end_frame)
+void SerialHandler::Write(const link_packet_t& packet)
 {
-    Write(packet.PacketData(), end_frame);
+    Write(packet.PacketData());
 }
 
-void SerialHandler::Write(std::span<const uint8_t> data, const bool end_frame)
+void SerialHandler::Write(std::span<const uint8_t> data)
 {
-    Write(data.data(), data.size(), end_frame);
+    Write(data.data(), data.size());
 }
 
-void SerialHandler::Write(const uint8_t* data, const uint16_t size, const bool end_frame)
+void SerialHandler::Write(const uint8_t* data, const uint16_t size)
 {
 #ifdef PLATFORM_ESP
     std::lock_guard<std::mutex> _(write_mux);
