@@ -6,7 +6,7 @@
 	(paper "A2")
 	(title_block
 		(title "HACTAR - Finn Berg & Brett Regnier")
-		(date "2026-07-27")
+		(date "2026-11-20")
 		(rev "EV19.2")
 		(company "CISCO SYSTEMS INC")
 	)
@@ -36571,7 +36571,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_FFC-FPC:Hirose_FH12-32S-0.5SH_1x32-1MP_P0.50mm_Horizontal"
+		(property "Footprint" "Hactar_Footprints:FPC-05F-NPH20"
 			(at 570.23 167.64 0)
 			(hide yes)
 			(show_name no)
@@ -36604,7 +36604,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" "C597985"
+		(property "JLCPCB Part #" "C2856809"
 			(at 570.23 167.64 0)
 			(hide yes)
 			(show_name no)
