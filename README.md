@@ -92,6 +92,8 @@ the follow-up publication workflow to be available.
 
 - firmware - Code for UI, Net, and Mgmt chips
 
+- [emulator](emulator/README.md) - Native Linux/macOS UI emulator using the firmware's display code
+
 - hardware - Schematics and PCB designs
 
 - models - 3D models for project

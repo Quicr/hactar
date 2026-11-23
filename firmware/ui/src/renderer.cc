@@ -3,9 +3,8 @@
 #include "graphics.hh"
 #include "splash_logo.hh"
 
-Renderer::Renderer(Screen& screen, Keyboard& keyboard) :
+Renderer::Renderer(Screen& screen) :
     screen(screen),
-    keyboard(keyboard),
     view(View::Startup),
     change_view(true)
 {
@@ -58,6 +57,7 @@ void Renderer::ChangeView(const View view) noexcept
 
 void Renderer::StartupView(const uint32_t ticks) noexcept
 {
+    (void)ticks;
     if (change_view)
     {
         const uint16_t x = (screen.PixelWidth() - Splash_Logo_240x120::bitmap.width) / 2;
@@ -91,6 +91,7 @@ void Renderer::ChatView(const uint32_t ticks) noexcept
 
 void Renderer::MainMenuView(const uint32_t ticks) noexcept
 {
+    (void)ticks;
     if (change_view)
     {
         screen.FillScreen(Graphics::Colour::Black);
@@ -107,14 +108,17 @@ void Renderer::MainMenuView(const uint32_t ticks) noexcept
 
 void Renderer::RoomsView(const uint32_t ticks) noexcept
 {
+    (void)ticks;
 }
 
 void Renderer::WifiView(const uint32_t ticks) noexcept
 {
+    (void)ticks;
 }
 
 void Renderer::Refresh(const char* title, const size_t title_len, const uint32_t ticks) noexcept
 {
+    (void)ticks;
     screen.FillScreen(Graphics::Colour::Black);
     screen.UpdateTitle(title, title_len);
     screen.DrawTitleLine();

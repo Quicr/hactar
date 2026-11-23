@@ -5,9 +5,6 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
-#include "stm32.h"
-
 enum Timer_Flags
 {
     Audio_Interrupt = 0,

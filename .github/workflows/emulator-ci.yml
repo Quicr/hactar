@@ -1,0 +1,41 @@
+name: Emulator CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - emulator/**
+      - firmware/ui/inc/**
+      - firmware/ui/src/**
+      - firmware/shared_inc/**
+      - .github/workflows/emulator-ci.yml
+  pull_request:
+    paths:
+      - emulator/**
+      - firmware/ui/inc/**
+      - firmware/ui/src/**
+      - firmware/shared_inc/**
+      - .github/workflows/emulator-ci.yml
+  workflow_dispatch:
+
+jobs:
+  display:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SDL2 (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
+      - name: Install SDL2 (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sdl2
+      - name: Configure
+        run: cmake -S emulator -B emulator/build -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build emulator/build --parallel
+      - name: Test display
+        run: ctest --test-dir emulator/build --output-on-failure

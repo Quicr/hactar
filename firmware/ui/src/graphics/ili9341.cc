@@ -291,6 +291,22 @@ void ILI9341::WriteData(const uint8_t* data, uint16_t size)
     Deselect();
 }
 
+bool ILI9341::WritePixels(std::span<const uint8_t> pixels)
+{
+    if (pixels.empty() || pixels.size() > UINT16_MAX || pixels.size() % sizeof(uint16_t) != 0)
+    {
+        return false;
+    }
+
+    Select();
+    return WriteDataDMA(pixels.data(), static_cast<uint16_t>(pixels.size())) == HAL_OK;
+}
+
+void ILI9341::EndWrite()
+{
+    Deselect();
+}
+
 HAL_StatusTypeDef ILI9341::WriteDataDMA(const uint8_t* data, uint16_t size)
 {
     if (size == 0U)

@@ -3,14 +3,13 @@
 #include "battery.hh"
 #include "battery_icon.hh"
 #include "bitmap.hh"
+#include "display_driver.hh"
 #include "font.hh"
 #include "graphics.hh"
-#include "ili9341.hh"
 #include "jetbrainsmono_10x16.hh"
 #include "jetbrainsmono_15x20.hh"
 #include "ring_buffer.hh"
 #include "screen_buffers.hh"
-#include "stm32.h"
 #include "tile_map.hh"
 #include <algorithm>
 #include <array>
@@ -76,7 +75,7 @@ public:
            std::span<char> usr_buffer,
            const Battery& battery,
            TileMap& tile_map,
-           ILI9341& ili9341,
+           DisplayDriver& display,
            const Font& title_font = JetBrainsMono15x20::font,
            const Font& text_font = JetBrainsMono10x16::font);
 
@@ -146,7 +145,7 @@ private:
         CursorSolid = 1 << 0
     };
 
-    void RotateScreen(ILI9341::Orientation orientation);
+    void RotateScreen(DisplayDriver::Orientation orientation);
     void CalculateDrawAreas();
     void DefineScrollArea();
     void ScrollText();
@@ -167,7 +166,7 @@ private:
     const std::span<char> usr_buffer;
     const Battery& battery;
     TileMap& tile_map;
-    ILI9341& ili9341;
+    DisplayDriver& display;
     const Font& title_font;
     const Font& text_font;
 
@@ -205,7 +204,7 @@ private:
     uint32_t render_flags;
 };
 
-namespace
+namespace screen_detail
 {
 template <size_t TITLE_WIDTH, typename TITLE_FONT>
 struct TitleStorage
@@ -262,7 +261,7 @@ struct UserTextStorage
 
     std::array<char, Capacity> user{};
 };
-} // namespace
+} // namespace screen_detail
 
 template <size_t WIDTH,
           size_t HEIGHT,
@@ -273,15 +272,15 @@ template <size_t WIDTH,
           typename TEXT_FONT>
 class StaticScreen
     : private StaticScreenBuffers<WIDTH, HEIGHT, QUANTIZATION, NUM_SCAN_LINES, NUM_SCANLINE_BUFFS>,
-      private TitleStorage<std::max(
-                               WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width),
-                               WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width)),
-                           TITLE_FONT>,
-      private TextStorage<std::max(WIDTH, HEIGHT),
-                          TextAreaHeight(
-                              std::max(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font),
-                          TEXT_FONT>,
-      private UserTextStorage<std::max(WIDTH, HEIGHT), TEXT_FONT>,
+      private screen_detail::TitleStorage<
+          std::max(WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width),
+                   WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width)),
+          TITLE_FONT>,
+      private screen_detail::TextStorage<
+          std::max(WIDTH, HEIGHT),
+          screen_detail::TextAreaHeight(std::max(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font),
+          TEXT_FONT>,
+      private screen_detail::UserTextStorage<std::max(WIDTH, HEIGHT), TEXT_FONT>,
       public Screen
 {
 
@@ -292,25 +291,29 @@ public:
     static_assert(NUM_SCAN_LINES > 0 && NUM_SCAN_LINES <= UINT16_MAX);
     static_assert(NUM_SCANLINE_BUFFS > 0 && NUM_SCANLINE_BUFFS <= UINT16_MAX);
     static_assert(TITLE_FONT::font.height > 0 && TEXT_FONT::font.height > 0);
-    static_assert(TextAreaHeight(std::min(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font)
+    static_assert(screen_detail::TextAreaHeight(std::min(WIDTH, HEIGHT),
+                                                TITLE_FONT::font,
+                                                TEXT_FONT::font)
                   >= TEXT_FONT::font.height);
 
-    StaticScreen(const Battery& battery, TileMap& tile_map, ILI9341& ili9341) :
+    StaticScreen(const Battery& battery, TileMap& tile_map, DisplayDriver& display) :
         StaticScreenBuffers<WIDTH, HEIGHT, QUANTIZATION, NUM_SCAN_LINES, NUM_SCANLINE_BUFFS>(),
-        TitleStorage<std::max(WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width),
-                              WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width)),
-                     TITLE_FONT>(),
-        TextStorage<std::max(WIDTH, HEIGHT),
-                    TextAreaHeight(std::max(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font),
-                    TEXT_FONT>(),
-        UserTextStorage<std::max(WIDTH, HEIGHT), TEXT_FONT>(),
+        screen_detail::TitleStorage<
+            std::max(WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width),
+                     WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width)),
+            TITLE_FONT>(),
+        screen_detail::TextStorage<std::max(WIDTH, HEIGHT),
+                                   screen_detail::TextAreaHeight(
+                                       std::max(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font),
+                                   TEXT_FONT>(),
+        screen_detail::UserTextStorage<std::max(WIDTH, HEIGHT), TEXT_FONT>(),
         Screen(this,
                this->title,
                this->text_lines,
                this->user,
                battery,
                tile_map,
-               ili9341,
+               display,
                TITLE_FONT::font,
                TEXT_FONT::font)
     {

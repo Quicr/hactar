@@ -7,6 +7,7 @@
 #include "config_storage.hh"
 #include "constants.hh"
 #include "graphics.hh"
+#include "ili9341.hh"
 #include "jetbrainsmono_15x20.hh"
 #include "keyboard.hh"
 #include "keyboard_display.hh"
@@ -85,15 +86,13 @@ static Serial net_serial(&huart2,
                          *net_ui_serial_tx_buff,
                          net_ui_serial_tx_buff_sz,
                          *net_ui_serial_rx_buff,
-                         net_ui_serial_rx_buff_sz,
-                         false);
+                         net_ui_serial_rx_buff_sz);
 static Serial mgmt_serial(&huart1,
                           mgmt_ui_serial_num_rx_packets,
                           *mgmt_ui_serial_tx_buff,
                           mgmt_ui_serial_tx_buff_sz,
                           *mgmt_ui_serial_rx_buff,
-                          mgmt_ui_serial_rx_buff_sz,
-                          false);
+                          mgmt_ui_serial_rx_buff_sz);
 
 static constexpr uint16_t Screen_Width = 320;
 static constexpr uint16_t Screen_Height = 240;
@@ -188,7 +187,7 @@ int app_main()
     mgmt_serial.StartReceive();
 
     InitScreen(screen);
-    Renderer renderer(screen, keyboard);
+    Renderer renderer(screen);
     renderer.ChangeView(Renderer::View::Startup);
     renderer.Render(HAL_GetTick());
 
@@ -385,14 +384,6 @@ void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
     }
 }
 
-void ConstructPacketHeader(link_packet_t& message_packet,
-                           const ui_net_link::Channel_Id channel_id,
-                           const bool last,
-                           uint32_t& offset)
-{
-    offset = 0;
-}
-
 void SendAudioToMgmt(link_packet_t& packet, const bool last)
 {
     static bool first = true;
@@ -584,6 +575,7 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 
 void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef* hspi)
 {
+    UNUSED(hspi);
     __disable_irq();
     screen.Render();
     __enable_irq();
@@ -591,6 +583,7 @@ void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef* hspi)
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
+    UNUSED(hspi);
     screen.Transfer();
 }
 

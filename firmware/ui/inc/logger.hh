@@ -1,6 +1,10 @@
 #pragma once
 
+#ifdef STM32F405xx
 #include "stm32.h"
+#else
+#include <cstdint>
+#endif
 #include <string.h>
 #include <cstring>
 #include <functional>
@@ -51,7 +55,9 @@
 #define UI_LOG_RAW(...)
 #endif
 
+#ifdef STM32F405xx
 extern UART_HandleTypeDef huart1;
+#endif
 constexpr int MAX_LOG_LENGTH = 256;
 constexpr int Prefix_Len = 8;
 constexpr uint16_t UiToCtl_Log = 0x0037;
@@ -126,6 +132,11 @@ public:
         }
         HAL_UART_Transmit(&huart1, (const uint8_t*)log_line, line_size, HAL_MAX_DELAY);
         HAL_UART_Transmit(&huart1, (const uint8_t*)"\n", 1, HAL_MAX_DELAY);
+    }
+#else
+    template <typename... T>
+    static void Log(Level, const char*, const T&...)
+    {
     }
 #endif
 
