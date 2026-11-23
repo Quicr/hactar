@@ -2,11 +2,10 @@
 
 #ifdef STM32F405xx
 #include "stm32.h"
-#endif
-#include <algorithm>
-#include <cstdarg>
+#else
 #include <cstdint>
-#include <cstdio>
+#endif
+#include <string.h>
 #include <cstring>
 #include <functional>
 #include <iomanip>
@@ -60,7 +59,7 @@
 extern UART_HandleTypeDef huart1;
 #endif
 constexpr int MAX_LOG_LENGTH = 256;
-constexpr int Prefix_Len = sizeof("[UI-I] ") - 1;
+constexpr int Prefix_Len = 8;
 constexpr uint16_t UiToCtl_Log = 0x0037;
 
 // Callback type for sending TLV logs
@@ -86,7 +85,9 @@ public:
         log_sender = callback;
     }
 
-    static void Log(Level level, const char* format, ...)
+#ifdef STM32F405xx
+    template <typename... T>
+    static void Log(Level level, const char* format, const T&... args)
     {
         if (!enabled)
         {
@@ -94,15 +95,7 @@ public:
         }
 
         static char log_line[MAX_LOG_LENGTH] = {0};
-        va_list args;
-        va_start(args, format);
-        const int formatted_size = std::vsnprintf(log_line, sizeof(log_line), format, args);
-        va_end(args);
-        if (formatted_size < 0)
-        {
-            return;
-        }
-        const int line_size = std::min(formatted_size, MAX_LOG_LENGTH - 1);
+        const int line_size = std::sprintf(log_line, format, args...);
 
         // Send log via TLV protocol if log_sender is configured
         // NOTE: When log_sender is set, we ONLY send via TLV because the serial
@@ -123,8 +116,7 @@ public:
             return; // Don't also send raw bytes - would corrupt TLV stream
         }
 
-        // Fallback: hardware debug UART, or the host console during screen bring-up.
-#ifdef STM32F405xx
+        // Fallback: output to debug UART only if mgmt_serial not configured
         switch (level)
         {
         case Level::Raw:
@@ -140,15 +132,13 @@ public:
         }
         HAL_UART_Transmit(&huart1, (const uint8_t*)log_line, line_size, HAL_MAX_DELAY);
         HAL_UART_Transmit(&huart1, (const uint8_t*)"\n", 1, HAL_MAX_DELAY);
-#else
-        if (level != Level::Raw)
-        {
-            std::fputs(log_level_string(level), stderr);
-        }
-        std::fwrite(log_line, 1, line_size, stderr);
-        std::fputc('\n', stderr);
-#endif
     }
+#else
+    template <typename... T>
+    static void Log(Level, const char*, const T&...)
+    {
+    }
+#endif
 
     static void Enable()
     {

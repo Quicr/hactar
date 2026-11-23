@@ -1,13 +1,20 @@
 #pragma once
 
-#include "display_driver.hh"
 #include "stm32.h"
 #include <cstddef>
 #include <cstdint>
 
-class ILI9341 : public DisplayDriver
+class ILI9341
 {
 public:
+    enum class Orientation : uint8_t
+    {
+        Portrait,
+        Landscape,
+        Portrait_Inverted,
+        Landscape_Inverted,
+    };
+
     ILI9341(const uint16_t width,
             const uint16_t height,
             SPI_HandleTypeDef& spi,
@@ -21,23 +28,21 @@ public:
             const uint16_t bl_pin,
             const Orientation orientation);
 
-    void Init() override;
-    void Reset() override;
-    void EnableBacklight() override;
-    void DisableBacklight() override;
-    void Rotate(Orientation orientation) override;
-    void SetRenderRegion(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) override;
-    bool WritePixels(std::span<const uint8_t> pixels) override;
-    void EndWrite() override;
+    void Init();
+    void Reset();
+    void EnableBacklight();
+    void DisableBacklight();
+    void Rotate(Orientation orientation);
+    void SetRenderRegion(uint16_t x_start, uint16_t y_start, uint16_t x_end, uint16_t y_end);
     bool Render(const uint8_t* data, size_t size);
     bool IsSpiBusy() const;
     void OnSpiTransmitComplete(SPI_HandleTypeDef* completed_spi);
-    void Sleep() override;
-    void Wake() override;
+    void Sleep();
+    void Wake();
     void SetScrollArea(const uint16_t y1, const uint16_t y2, const uint16_t height);
 
-    uint16_t GetWidth() const override;
-    uint16_t GetHeight() const override;
+    uint16_t GetWidth() const;
+    uint16_t GetHeight() const;
 
     void WriteData(const uint8_t* data, uint16_t size);
     HAL_StatusTypeDef WriteDataDMA(const uint8_t* data, uint16_t size);

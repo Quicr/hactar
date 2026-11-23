@@ -191,6 +191,7 @@ private:
 
     static inline void FillRectangle(uint8_t* buff,
                                      const size_t width,
+                                     const size_t height,
                                      const uint16_t x1,
                                      const uint16_t y1,
                                      const uint16_t x2,
