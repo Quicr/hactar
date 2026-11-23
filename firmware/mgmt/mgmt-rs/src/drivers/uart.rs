@@ -105,4 +105,6 @@ impl Uart {
             x => Err(UartError::Unknown(x)),
         }
     }
+
+    pub fn receive(&mut self);
 }

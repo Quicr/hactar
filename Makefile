@@ -1,14 +1,13 @@
 .PHONY: all clean flash flash-mgmt flash-ui flash-net run-ctl FORCE
 
 CTL_BIN := link/ctl/target/release/ctl
-MGMT_BIN := link/mgmt/target/thumbv6m-none-eabi/release/mgmt.bin
+MGMT_BIN := firmware/mgmt/build/mgmt.bin
 UI_BIN := firmware/ui/build/ui.bin
 NET_ELF := firmware/net/build/net.elf
 NET_PARTITION := firmware/net/build/partition_table/partition-table.bin
 
 # Source file dependencies for Rust crates
 CTL_SRCS := $(shell find link/ctl/src -name '*.rs') link/ctl/Cargo.toml
-MGMT_SRCS := $(shell find link/mgmt/src -name '*.rs') link/mgmt/Cargo.toml
 LINK_SRCS := $(shell find link/link/src -name '*.rs') link/link/Cargo.toml
 
 .PHONY: all flash flash-mgmt flash-ui flash-net run-ctl
@@ -20,8 +19,8 @@ all: $(CTL_BIN) $(MGMT_BIN) $(UI_BIN) $(NET_ELF)
 $(CTL_BIN): $(CTL_SRCS) $(LINK_SRCS)
 	cd link/ctl && cargo build --release
 
-$(MGMT_BIN): $(MGMT_SRCS) $(LINK_SRCS)
-	cd link/mgmt && cargo objcopy --release -- -O binary target/thumbv6m-none-eabi/release/mgmt.bin
+$(MGMT_BIN): FORCE
+	$(MAKE) -C firmware/mgmt compile
 
 $(UI_BIN): FORCE
 	$(MAKE) -C firmware/ui compile
