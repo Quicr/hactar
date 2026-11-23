@@ -285,7 +285,7 @@ void TrackReader::TransmitText()
 
 void TrackReader::WriteToSerial(const moq_packet_t& moq_packet)
 {
-    serial.Write(link_packet_t::Sync_Word);
+    serial.Write(link_packet_t::Sync_Word, sizeof(link_packet_t::Sync_Word));
     const uint16_t type = static_cast<uint16_t>(ui_net_link::NetToUi::AudioFrame);
     serial.Write((uint8_t*)&type, sizeof(type));
     const uint32_t ext_len = moq_packet.len + 1;

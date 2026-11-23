@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cstdint>
+#include "stdint.h"
+#include "stm32.h"
 
 struct Font
 {
