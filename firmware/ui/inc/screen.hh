@@ -5,12 +5,11 @@
 #include "bitmap.hh"
 #include "font.hh"
 #include "graphics.hh"
-#include "ili9341.hh"
 #include "jetbrainsmono_10x16.hh"
 #include "jetbrainsmono_15x20.hh"
 #include "ring_buffer.hh"
 #include "screen_buffers.hh"
-#include "stm32.h"
+#include "template/screen_driver.hh"
 #include "tile_map.hh"
 #include <algorithm>
 #include <array>
@@ -76,7 +75,7 @@ public:
            std::span<char> usr_buffer,
            const Battery& battery,
            TileMap& tile_map,
-           ILI9341& ili9341,
+           ScreenDriver& driver,
            const Font& title_font = JetBrainsMono15x20::font,
            const Font& text_font = JetBrainsMono10x16::font);
 
@@ -146,7 +145,7 @@ private:
         CursorSolid = 1 << 0
     };
 
-    void RotateScreen(ILI9341::Orientation orientation);
+    void RotateScreen(ScreenDriver::Orientation orientation);
     void CalculateDrawAreas();
     void DefineScrollArea();
     void ScrollText();
@@ -167,7 +166,7 @@ private:
     const std::span<char> usr_buffer;
     const Battery& battery;
     TileMap& tile_map;
-    ILI9341& ili9341;
+    ScreenDriver& driver;
     const Font& title_font;
     const Font& text_font;
 
@@ -295,7 +294,7 @@ public:
     static_assert(TextAreaHeight(std::min(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font)
                   >= TEXT_FONT::font.height);
 
-    StaticScreen(const Battery& battery, TileMap& tile_map, ILI9341& ili9341) :
+    StaticScreen(const Battery& battery, TileMap& tile_map, ScreenDriver& driver) :
         StaticScreenBuffers<WIDTH, HEIGHT, QUANTIZATION, NUM_SCAN_LINES, NUM_SCANLINE_BUFFS>(),
         TitleStorage<std::max(WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width),
                               WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width)),
@@ -310,7 +309,7 @@ public:
                this->user,
                battery,
                tile_map,
-               ili9341,
+                driver,
                TITLE_FONT::font,
                TEXT_FONT::font)
     {

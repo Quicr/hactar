@@ -7,6 +7,7 @@
 #include "config_storage.hh"
 #include "constants.hh"
 #include "graphics.hh"
+#include "ili9341.hh"
 #include "jetbrainsmono_15x20.hh"
 #include "keyboard.hh"
 #include "keyboard_display.hh"
@@ -584,14 +585,21 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 
 void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef* hspi)
 {
-    __disable_irq();
-    screen.Render();
-    __enable_irq();
+    if (hspi == &hspi1)
+    {
+        const uint32_t primask = __get_PRIMASK();
+        __disable_irq();
+        screen.Render();
+        __set_PRIMASK(primask);
+    }
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
-    screen.Transfer();
+    if (hspi == &hspi1)
+    {
+        screen.Transfer();
+    }
 }
 
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
