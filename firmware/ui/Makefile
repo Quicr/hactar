@@ -32,6 +32,7 @@ OPT = -Os
 #######################################
 # Build path
 BUILD_DIR = ./build
+HOST_TEST_BUILD_DIR ?= $(BUILD_DIR)/host-tests
 
 #######################################
 # programming
@@ -64,7 +65,9 @@ release: check_who_compiled CMakeLists.txt
 	cmake --build $(BUILD_DIR) -j
 
 test:
-	$(MAKE) -C test test
+	cmake -S tests -B "$(HOST_TEST_BUILD_DIR)" && \
+	cmake --build "$(HOST_TEST_BUILD_DIR)" && \
+	"$(HOST_TEST_BUILD_DIR)/ui_tests"
 
 wave_csv:
 	$(MAKE) -C test wave_csv ARGS="$(ARGS)"
