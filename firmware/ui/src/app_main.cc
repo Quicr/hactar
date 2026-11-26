@@ -7,6 +7,7 @@
 #include "config_storage.hh"
 #include "constants.hh"
 #include "graphics.hh"
+#include "ili9341.hh"
 #include "jetbrainsmono_15x20.hh"
 #include "keyboard.hh"
 #include "keyboard_display.hh"
@@ -20,6 +21,7 @@
 #include "screen.hh"
 #include "screen_buffers.hh"
 #include "serial.hh"
+#include "stm32f4xx_hal_def.h"
 #include "stm32f4xx_hal_gpio.h"
 #include "tile_map.hh"
 #include "tools.hh"
@@ -584,6 +586,7 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 
 void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef* hspi)
 {
+    UNUSED(hspi);
     __disable_irq();
     screen.Render();
     __enable_irq();
@@ -591,6 +594,7 @@ void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef* hspi)
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
+    UNUSED(hspi);
     screen.Transfer();
 }
 

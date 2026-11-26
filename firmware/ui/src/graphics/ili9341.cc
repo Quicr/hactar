@@ -170,6 +170,23 @@ void ILI9341::Rotate(Orientation orientation)
     WriteData(&value, 1U);
 }
 
+void ILI9341::BeginRegion(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
+{
+    SetRenderRegion(x1, y1, x2 - 1, y2 - 1);
+    Select();
+}
+
+bool ILI9341::WritePixels(std::span<const uint8_t> pixels)
+{
+    return pixels.size() <= UINT16_MAX
+        && WriteDataDMA(pixels.data(), static_cast<uint16_t>(pixels.size())) == HAL_OK;
+}
+
+void ILI9341::EndRegion()
+{
+    Deselect();
+}
+
 void ILI9341::SetRenderRegion(uint16_t x_start, uint16_t y_start, uint16_t x_end, uint16_t y_end)
 {
     if (x_start >= view_width || y_start >= view_height || x_end < x_start || y_end < y_start)
