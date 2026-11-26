@@ -1,11 +1,11 @@
 #pragma once
 
 #include "stm32.h"
-#include "template/screen_driver.hh"
+#include "template/display_driver.hh"
 #include <cstddef>
 #include <cstdint>
 
-class ILI9341 final : public ScreenDriver
+class ILI9341 final : public DisplayDriver
 {
 public:
     ILI9341(const uint16_t width,

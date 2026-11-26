@@ -17,7 +17,7 @@ Screen::Screen(ScreenBuffers* buffers,
                std::span<char> usr_buffer,
                const Battery& battery,
                TileMap& tile_map,
-               ScreenDriver& driver,
+               DisplayDriver& driver,
                const Font& title_font,
                const Font& text_font) :
     buffers(buffers),
@@ -329,8 +329,8 @@ void Screen::CommitText()
         .string =
             {
                 .str = texts[text_read].buffer.data(),
-                .len = static_cast<uint16_t>(std::min<size_t>(
-                    texts[text_read].length, driver.GetWidth() / text_font.width)),
+                .len = static_cast<uint16_t>(
+                    std::min<size_t>(texts[text_read].length, driver.GetWidth() / text_font.width)),
                 .x = 0,
                 .y = static_cast<uint16_t>(texts_area_y_offset - text_font.height),
                 .font = &text_font,
@@ -508,7 +508,7 @@ uint16_t Screen::UserTextLength() const noexcept
     return usr_buffer_idx;
 }
 
-void Screen::RotateScreen(ScreenDriver::Orientation orientation)
+void Screen::RotateScreen(DisplayDriver::Orientation orientation)
 {
     driver.Rotate(orientation);
     CalculateDrawAreas();

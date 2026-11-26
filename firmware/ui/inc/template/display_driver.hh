@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <span>
 
-class ScreenDriver
+class DisplayDriver
 {
 public:
     enum class Orientation : uint8_t
@@ -33,5 +33,5 @@ public:
 
 protected:
     // Screen borrows the driver; it does not delete it through this interface.
-    ~ScreenDriver() = default;
+    ~DisplayDriver() = default;
 };

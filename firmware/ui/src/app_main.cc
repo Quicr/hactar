@@ -21,6 +21,7 @@
 #include "screen.hh"
 #include "screen_buffers.hh"
 #include "serial.hh"
+#include "stm32f4xx_hal_def.h"
 #include "stm32f4xx_hal_gpio.h"
 #include "tile_map.hh"
 #include "tools.hh"
@@ -585,21 +586,16 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef* hi2s)
 
 void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef* hspi)
 {
-    if (hspi == &hspi1)
-    {
-        const uint32_t primask = __get_PRIMASK();
-        __disable_irq();
-        screen.Render();
-        __set_PRIMASK(primask);
-    }
+    UNUSED(hspi);
+    __disable_irq();
+    screen.Render();
+    __enable_irq();
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 {
-    if (hspi == &hspi1)
-    {
-        screen.Transfer();
-    }
+    UNUSED(hspi);
+    screen.Transfer();
 }
 
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)

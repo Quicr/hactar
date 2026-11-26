@@ -9,7 +9,7 @@
 #include "jetbrainsmono_15x20.hh"
 #include "ring_buffer.hh"
 #include "screen_buffers.hh"
-#include "template/screen_driver.hh"
+#include "template/display_driver.hh"
 #include "tile_map.hh"
 #include <algorithm>
 #include <array>
@@ -75,7 +75,7 @@ public:
            std::span<char> usr_buffer,
            const Battery& battery,
            TileMap& tile_map,
-           ScreenDriver& driver,
+           DisplayDriver& driver,
            const Font& title_font = JetBrainsMono15x20::font,
            const Font& text_font = JetBrainsMono10x16::font);
 
@@ -145,7 +145,7 @@ private:
         CursorSolid = 1 << 0
     };
 
-    void RotateScreen(ScreenDriver::Orientation orientation);
+    void RotateScreen(DisplayDriver::Orientation orientation);
     void CalculateDrawAreas();
     void DefineScrollArea();
     void ScrollText();
@@ -166,7 +166,7 @@ private:
     const std::span<char> usr_buffer;
     const Battery& battery;
     TileMap& tile_map;
-    ScreenDriver& driver;
+    DisplayDriver& driver;
     const Font& title_font;
     const Font& text_font;
 
@@ -294,7 +294,7 @@ public:
     static_assert(TextAreaHeight(std::min(WIDTH, HEIGHT), TITLE_FONT::font, TEXT_FONT::font)
                   >= TEXT_FONT::font.height);
 
-    StaticScreen(const Battery& battery, TileMap& tile_map, ScreenDriver& driver) :
+    StaticScreen(const Battery& battery, TileMap& tile_map, DisplayDriver& driver) :
         StaticScreenBuffers<WIDTH, HEIGHT, QUANTIZATION, NUM_SCAN_LINES, NUM_SCANLINE_BUFFS>(),
         TitleStorage<std::max(WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width),
                               WIDTH - (Screen::Num_Icons * Battery_Critical_20x18::bitmap.width)),
@@ -309,7 +309,7 @@ public:
                this->user,
                battery,
                tile_map,
-                driver,
+               driver,
                TITLE_FONT::font,
                TEXT_FONT::font)
     {
