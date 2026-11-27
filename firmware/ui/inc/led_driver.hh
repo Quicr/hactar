@@ -18,6 +18,7 @@ public:
     }
 
     virtual void Set(const uint16_t value) = 0;
+    virtual void Toggle() = 0;
 
     void On()
     {

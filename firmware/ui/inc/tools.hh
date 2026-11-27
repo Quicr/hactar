@@ -1,7 +1,8 @@
 #pragma once
 
-// #include "app_main.hh"
+#include "app_main.hh"
 #include "audio_chip.hh"
+#include "led_pwm.hh"
 #include "logger.hh"
 #include "stm32.h"
 
@@ -58,12 +59,12 @@ static uint32_t CountNumAudioInterrupts(const AudioChip& audio, volatile bool& s
     return actual_interrupt_count;
 }
 
-static void Heartbeat(GPIO_TypeDef* port, const uint16_t pin)
+static void Heartbeat(LEDPwm& led)
 {
     static uint32_t blinky = 0;
     if (HAL_GetTick() > blinky)
     {
-        HAL_GPIO_TogglePin(port, pin);
+        led.Toggle();
         blinky = HAL_GetTick() + 2000;
         UI_LOG_INFO("Heartbeat");
     }

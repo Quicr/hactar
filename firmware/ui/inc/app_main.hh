@@ -8,6 +8,8 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32.h"
 
+static constexpr uint16_t LED_Brightness = 2047;
+
 enum Timer_Flags
 {
     Audio_Interrupt = 0,

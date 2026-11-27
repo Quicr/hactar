@@ -195,8 +195,10 @@ int app_main()
     ledg.Start();
     ledb.Start();
 
-    ledr.Set(100);
-    ledg.Set(1000);
+    ledr.Set(LED_Brightness);
+    ledg.Set(0);
+    ledb.Set(0);
+
     mgmt_serial.StartReceive();
 
     InitScreen(screen);
@@ -226,9 +228,6 @@ int app_main()
     // Test in case the audio chip settings change and something looks suspicious
     CountNumAudioInterrupts(audio_chip, sleeping);
 
-    // HAL_GPIO_WritePin(UI_LED_R_GPIO_Port, UI_LED_R_Pin, GPIO_PIN_RESET);
-    // HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_RESET);
-    // HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_RESET);
     net_serial.StartReceive();
 
     UI_LOG_INFO("Starting main loop");
@@ -238,7 +237,7 @@ int app_main()
 
     while (1)
     {
-        // Heartbeat(UI_LED_R_GPIO_Port, UI_LED_R_Pin);
+        Heartbeat(ledr);
 
         while (sleeping)
         {
@@ -289,6 +288,10 @@ int app_main()
                               audio_transmit_mode, audio_receive_mode, screen, battery);
 
         renderer.Render(ticks_ms);
+
+        ledr.Update(ticks_ms);
+        ledg.Update(ticks_ms);
+        ledb.Update(ticks_ms);
 
         // TODO remove?
         RaiseFlag(Rx_Audio_Companded);
@@ -377,7 +380,7 @@ void CheckPTTAI(Protector& protector, const UiLoopbackMode loopback_mode)
         HAL_TIM_Base_Stop(&htim5);
         screen.DrawIcon(Screen::IconType::Mic, true);
         ptt_ai_state = Ptt_Btn_State::Pressed;
-        // HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_SET);
+        ledb.Set(LED_Brightness);
     }
     else if (HAL_GPIO_ReadPin(PTT_AI_BTN_GPIO_Port, PTT_AI_BTN_Pin) == GPIO_PIN_RESET
              && ptt_ai_state == Ptt_Btn_State::Pressed)
@@ -613,14 +616,6 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
     UNUSED(hspi);
 }
 
-void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef* htim)
-{
-    if (htim->Instance == TIM3 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
-    {
-        ledr.Update();
-    }
-}
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 {
     // Keyboard timer callback!
@@ -637,13 +632,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
         // Turn off ptt
         HAL_TIM_Base_Stop(&htim4);
         ptt_state = Ptt_Btn_State::Last_Send;
-        // HAL_GPIO_WritePin(UI_LED_G_GPIO_Port, UI_LED_G_Pin, GPIO_PIN_RESET);
+        ledg.Set(LED_Brightness);
     }
     else if (htim->Instance == TIM5)
     {
         HAL_TIM_Base_Stop(&htim5);
         ptt_ai_state = Ptt_Btn_State::Last_Send;
-        // HAL_GPIO_WritePin(UI_LED_B_GPIO_Port, UI_LED_B_Pin, GPIO_PIN_RESET);
+        ledb.Set(LED_Brightness);
     }
     else if (htim->Instance == TIM6)
     {
@@ -651,7 +646,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
     }
     else if (htim->Instance == TIM7)
     {
-        // LedBToggle();
         HAL_GPIO_WritePin(UI_READY_GPIO_Port, UI_READY_Pin, GPIO_PIN_RESET);
         HAL_TIM_Base_Stop_IT(&htim7);
     }
